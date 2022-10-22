@@ -37,6 +37,7 @@
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/genvar-dollar" :dir :system)
 (include-book "kestrel/std/system/measure-plus" :dir :system)
+(include-book "kestrel/std/system/one-way-unify-dollar" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
 (include-book "kestrel/std/system/untranslate-dollar" :dir :system)
@@ -4548,7 +4549,6 @@
      and @('A') with an instantiated call of the measure function;
      we obtain the instantiation by matching @('B') to @('A').
      It is not yet clear whether this approach will work in all cases."))
-  :mode :program
 
   (define atc-gen-loop-tthm-formula ((term pseudo-termp)
                                      (fn symbolp)
@@ -4556,8 +4556,9 @@
                                      (measure-formals symbol-listp)
                                      (ctx ctxp)
                                      state)
+    :guard (not (eq measure-of-fn 'quote))
     :returns (mv erp
-                 (new-term "A @(tsee pseudo-termp).")
+                 new-term ; PSEUDO-TERMP proved below
                  state)
     (b* (((when (variablep term)) (acl2::value term))
          ((when (fquotep term)) (acl2::value term))
@@ -4565,7 +4566,7 @@
          ((when (eq term-fn 'o<))
           (b* ((meas-gen (fargn term 2))
                (meas-inst (fargn term 1))
-               ((mv okp subst) (one-way-unify meas-gen meas-inst))
+               ((mv okp subst) (one-way-unify$ meas-gen meas-inst state))
                ((when (not okp))
                 (er-soft+ ctx t nil
                           "Failed to match istantiated measure ~x0 ~
@@ -4575,12 +4576,13 @@
             (acl2::value
              `(< (,measure-of-fn ,@measure-args)
                  (,measure-of-fn ,@measure-formals)))))
-         ((er new-args) (atc-gen-loop-tthm-formula-lst (fargs term)
-                                                       fn
-                                                       measure-of-fn
-                                                       measure-formals
-                                                       ctx
-                                                       state)))
+         ((er new-args :iferr nil)
+          (atc-gen-loop-tthm-formula-lst (fargs term)
+                                         fn
+                                         measure-of-fn
+                                         measure-formals
+                                         ctx
+                                         state)))
       (acl2::value (fcons-term term-fn new-args))))
 
   (define atc-gen-loop-tthm-formula-lst ((terms pseudo-term-listp)
@@ -4589,23 +4591,54 @@
                                          (measure-formals symbol-listp)
                                          (ctx ctxp)
                                          state)
+    :guard (not (eq measure-of-fn 'quote))
     :returns (mv erp
-                 (new-terms "A @(tsee pseudo-term-listp).")
+                 new-terms ; PSEUDO-TERM-LISTP proved below
                  state)
     (b* (((when (endp terms)) (acl2::value nil))
-         ((er new-term) (atc-gen-loop-tthm-formula (car terms)
-                                                   fn
-                                                   measure-of-fn
-                                                   measure-formals
-                                                   ctx
-                                                   state))
+         ((er new-term :iferr nil)
+          (atc-gen-loop-tthm-formula (car terms)
+                                     fn
+                                     measure-of-fn
+                                     measure-formals
+                                     ctx
+                                     state))
          ((er new-terms) (atc-gen-loop-tthm-formula-lst (cdr terms)
                                                         fn
                                                         measure-of-fn
                                                         measure-formals
                                                         ctx
                                                         state)))
-      (acl2::value (cons new-term new-terms)))))
+      (acl2::value (cons new-term new-terms))))
+
+  ///
+
+  (defret-mutual len-of-atc-gen-loop-tthm-formula/lst
+    (defret len-of-atc-gen-loop-tthm-formula
+      t
+      :rule-classes nil
+      :fn atc-gen-loop-tthm-formula)
+    (defret len-of-atc-gen-loop-tthm-formula-lst
+      (implies (not erp)
+               (equal (len new-terms)
+                      (len terms)))
+      :fn atc-gen-loop-tthm-formula-lst))
+
+  (defret-mutual return-types-of-atc-gen-loop-tthm-formula/lst
+    (defret pseudo-termp-of-atc-gen-loop-tthm-formula
+      (pseudo-termp new-term)
+      :hyp (and (pseudo-termp term)
+                (symbolp measure-of-fn)
+                (not (eq measure-of-fn 'quote))
+                (symbol-listp measure-formals))
+      :fn atc-gen-loop-tthm-formula)
+    (defret pseudo-termp-of-atc-gen-loop-tthm-formula-lst
+      (pseudo-term-listp new-terms)
+      :hyp (and (pseudo-term-listp terms)
+                (symbolp measure-of-fn)
+                (not (eq measure-of-fn 'quote))
+                (symbol-listp measure-formals))
+      :fn atc-gen-loop-tthm-formula-lst)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
