@@ -204,6 +204,12 @@
      See the documentation for details,
      including functional differences with @(tsee untranslate).")
 
+   (xdoc::p
+    "A new utility @(tsee genvar$) has been added,
+     which is a logic-mode guard-verified version of @(tsee genvar).
+     See the documentation for details,
+     including functional differences with @(tsee genvar).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
