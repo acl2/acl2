@@ -4647,12 +4647,13 @@
                                           (prog-const symbolp)
                                           (names-to-avoid symbol-listp)
                                           (wrld plist-worldp))
-  :guard (irecursivep+ fn wrld)
-  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
-               (exec-stmt-while-for-fn "A @(tsee symbolp).")
-               (exec-stmt-while-for-fn-thm "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :guard (and (irecursivep+ fn wrld)
+              (stmt-case loop-stmt :while))
+  :returns (mv (events pseudo-event-form-listp)
+               (exec-stmt-while-for-fn symbolp)
+               (exec-stmt-while-for-fn-thm symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate a version of @(tsee exec-stmt-while)
           specialized to the loop represented by @('fn')."
   :long
@@ -4742,6 +4743,7 @@
                                             (preprocess ,prog-const))
                                            limit))
          :rule-classes nil
+         :enable nil
          :hints `(("Goal" :in-theory '(,exec-stmt-while-for-fn
                                        exec-stmt-while))))))
     (mv (list exec-stmt-while-for-fn-event
