@@ -121,6 +121,7 @@
                nats=>string
                nvariablep
                one-way-unify
+               one-way-unify$
                packn
                packn-pos
                pos
