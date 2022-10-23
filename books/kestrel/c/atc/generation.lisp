@@ -4743,7 +4743,6 @@
                                             (preprocess ,prog-const))
                                            limit))
          :rule-classes nil
-         :enable nil
          :hints `(("Goal" :in-theory '(,exec-stmt-while-for-fn
                                        exec-stmt-while))))))
     (mv (list exec-stmt-while-for-fn-event
@@ -4762,10 +4761,10 @@
                                   (names-to-avoid symbol-listp)
                                   (wrld plist-worldp))
   :guard (irecursivep+ fn wrld)
-  :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (event pseudo-event-formp)
+               (name symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate type prescription theorem asserting that
           the measure of the recursive function @('fn')
           yields a natural number."
