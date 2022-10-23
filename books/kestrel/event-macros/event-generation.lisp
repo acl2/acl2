@@ -111,10 +111,13 @@
                                &key
                                ((formula "A term.") ':absent)
                                ((rule-classes "Rule classes.") ':rewrite)
-                               ((enable booleanp) ':absent)
+                               ((enable (or (booleanp enable)
+                                            (eq enable :absent)))
+                                ':absent)
                                ((hints true-listp) 'nil)
                                ((instructions true-listp) 'nil)
-                               ((otf-flg booleanp) 'nil))
+                                ((otf-flg booleanp) 'nil))
+  :guard (implies (not rule-classes) (eq enable :absent))
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
   :short "Generate a @('defthm') or @('defthmd') theorem
