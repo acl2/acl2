@@ -296,9 +296,8 @@ book that depends on Glucose being installed.</p>")
 (include-book "tools/er-soft-logic" :dir :system)
 (include-book "tools/run-script" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
-(include-book "system/event-names" :dir :system)
-(include-book "system/acl2-system-exports" :dir :system)
 (include-book "system/doc/developers-guide" :dir :system)
+; Probably included under system/top below:
 (include-book "system/pseudo-tests-and-calls-listp" :dir :system)
 
 ;; [Jared] removing these to speed up the manual build
@@ -389,4 +388,42 @@ book that depends on Glucose being installed.</p>")
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 
 (include-book "std/util/defretgen" :dir :system)
+
+(include-book "system/top" :dir :system)
+; Books from books/system/ that are not included by including books/system/top
+; (see comments near the top of books/system/top.lisp):
+(include-book "system/acl2-system-exports" :dir :system)
+(include-book "system/bigger-limits" :dir :system)
+; Name conflict (function sum) with
+; books/data-structures/number-list-defuns.lisp:
+; (include-book "system/cantor-pairing-bijective" :dir :system)
+; Testing file, perhaps not suitable for inclusion:
+; (include-book "system/check-system-guards" :dir :system)
+(include-book "system/compare-out-files" :dir :system)
+(include-book "system/dead-source-code" :dir :system)
+; Dependency scan stuff only:
+; (include-book "system/deps-pcert" :dir :system)
+; Probably redundant, but harmless:
+(include-book "system/devel-check" :dir :system)
+(include-book "system/event-names" :dir :system)
+(include-book "system/f-put-global" :dir :system)
+(include-book "system/fancy-string-reader-test" :dir :system)
+(include-book "system/hl-nat-combine-onto" :dir :system)
+(include-book "system/obviously-equiv-terms" :dir :system)
+; Testing files:
+; (include-book "system/optimize-check-aux" :dir :sysem)
+; (include-book "system/optimize-check" :dir :system)
+(include-book "system/origin" :dir :system)
+(include-book "system/pseudo-termp-lemmas" :dir :system)
+(include-book "system/random" :dir :system)
+(include-book "system/remove-guard-holders-lemmas" :dir :system)
+(include-book "system/too-many-ifs" :dir :system)
+; Dependency scan stuff only:
+; (include-book "system/toothbrush-deps" :dir :system)
+; Name conflict (function rev) with books/std/lists/rev.lisp:
+; (include-book "system/untranslate-car-cdr" :dir :system)
+(include-book "system/update-state" :dir :system)
+; Probably ttag stuff would make the following fail:
+; (include-book "system/worldp-check" :dir :system)
+
 ) ;; end progn for including all the books
