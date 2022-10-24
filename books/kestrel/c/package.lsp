@@ -108,6 +108,7 @@
                keyword-symbol-alistp
                keyword-value-list-to-alist
                lnfix
+               logicp
                make-event-terse
                make-evmac-appcond
                maybe-natp
@@ -178,6 +179,7 @@
                symbol-pseudoterm-alist-fix
                symbol-symbol-alistp
                table-alist+
+               termination-theorem$
                tuple
                ubody+
                uguard+
