@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "const-namep")
 (include-book "const-symbolp")
 (include-book "fresh-namep")
 (include-book "function-name-listp")
