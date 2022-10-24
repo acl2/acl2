@@ -10,11 +10,11 @@
 
 (in-package "ACL2")
 
-(include-book "const-symbolp")
+(include-book "constant-symbolp")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define const-namep (x (wrld plist-worldp))
+(define constant-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (std/system/event-name-queries)
   :short "Recognize symbols that name constants."
@@ -23,5 +23,5 @@
    "This function is enabled because it is meant as an abbreviation.
     Theorems triggered by this function should be generally avoided.")
   (and (symbolp x)
-       (const-symbolp x wrld))
+       (constant-symbolp x wrld))
   :enabled t)

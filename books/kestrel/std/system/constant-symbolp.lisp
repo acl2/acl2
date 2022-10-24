@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define const-symbolp ((sym symbolp) (wrld plist-worldp))
+(define constant-symbolp ((sym symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (std/system/event-name-queries)
   :short "Check if a symbol names a constant,
@@ -27,8 +27,8 @@
   (not (eq (getpropc sym 'const t wrld) t))
   ///
 
-  (defthm const-symbolp-forward-to-symbolp
-    (implies (and (const-symbolp fn wrld)
+  (defthm constant-symbolp-forward-to-symbolp
+    (implies (and (constant-symbolp fn wrld)
                   (plist-worldp wrld))
              (symbolp fn))
     :rule-classes :forward-chaining))

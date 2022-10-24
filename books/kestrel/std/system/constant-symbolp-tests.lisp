@@ -10,19 +10,17 @@
 
 (in-package "ACL2")
 
-(include-book "const-namep")
+(include-book "constant-symbolp")
 
 (include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (const-namep '*primitive-formals-and-guards* (w state)))
+(assert! (constant-symbolp '*primitive-formals-and-guards* (w state)))
 
-(assert! (not (const-namep '*this-is-not-a-constant* (w state))))
-
-(assert! (not (const-namep 37 (w state))))
+(assert! (not (constant-symbolp '*this-is-not-a-constant* (w state))))
 
 (must-succeed*
  (defconst *this-is-a-const* 0)
- (assert! (const-namep '*this-is-a-const* (w state))))
+ (assert! (constant-symbolp '*this-is-a-const* (w state))))
