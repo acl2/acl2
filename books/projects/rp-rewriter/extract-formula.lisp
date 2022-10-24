@@ -83,8 +83,10 @@
   (declare (xargs :guard t))
   (case-match if-form
     (('if a b ''nil)
-     (cons a
-           (if-to-and-list b)))
+     (append (if-to-and-list a)
+             (if-to-and-list b)))
+    (''t
+     nil)
     (& (cons if-form nil))))
 
 (defun custom-rewrite-from-formula (formula)
@@ -94,6 +96,8 @@
      (case-match conc
        (('equal lhs rhs)
         (mv nil hyp lhs rhs))
+       (('iff lhs rhs)
+        (mv t hyp lhs rhs))
        (&
         (mv t hyp conc ''t;`(nonnil-fix ,conc)
             ))))
@@ -101,6 +105,8 @@
      (case-match formula
        (('equal lhs rhs)
         (mv nil ''t lhs rhs))
+       (('iff lhs rhs)
+        (mv t ''t lhs rhs))
        (&
         (mv t ''t formula ''t;`(nonnil-fix ,formula)
             ))))))
@@ -168,7 +174,7 @@
   ;; returns a list of rules because a single rule can create multiplie
   ;; rewrite rules because of "and"
   (declare (xargs :guard t))
-  (b* ((formula (beta-search-reduce formula *big-number*)))
+  (b* ()
     (case-match formula
       (('implies p q)
        (b* ((new-terms (if-to-and-list q))
@@ -255,14 +261,20 @@
                   :stobjs (state)
                   :verify-guards t))
   (b* ((formula (meta-extract-formula rule-name state))
-       (formula (insert-iff-to-force formula rule-name nil nil))
+       
+       
        #|((when (equal formula ''t))
         nil)||#
        ((when (not (pseudo-termp formula)))
         (hard-error 'custom-rewrite-with-meta-extract
                     "Rule ~p0 does not seem to be pseudo-termp ~%"
                     (list (cons #\0 rule-name))))
+       (formula (beta-search-reduce formula *big-number*))
+       
        (formulas (make-formula-better formula))
+       
+       (formulas (insert-iff-to-force-lst formulas rule-name nil))
+       
        (rune (get-rune-name rule-name state)))
     (formulas-to-rules rune rule-new-synp warning formulas)))
 

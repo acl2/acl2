@@ -821,7 +821,7 @@ RP-Rewriter will throw an eligible error.</p>"
                enable-rules
                disable-rules)
            ``(with-output
-               :off :all
+               :off :all :on (comment)
                :stack :push
                (encapsulate
                  nil
