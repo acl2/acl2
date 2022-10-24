@@ -4964,10 +4964,10 @@
                                        (prec-objs atc-string-objinfo-alistp)
                                        (names-to-avoid symbol-listp)
                                        state)
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (correct-test-thm "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (local-events pseudo-event-form-listp)
+               (correct-test-thm symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate the correctness theorem for the test of a loop."
   :long
   (xdoc::topstring
