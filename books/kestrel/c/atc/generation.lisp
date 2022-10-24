@@ -5128,10 +5128,10 @@
                                        (limit pseudo-termp)
                                        (names-to-avoid symbol-listp)
                                        state)
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (correct-body-thm "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (local-events pseudo-event-form-listp)
+               (correct-body-thm symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate the correctness theorem for the body of a loop."
   :long
   (xdoc::topstring
