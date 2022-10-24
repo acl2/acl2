@@ -38,6 +38,7 @@
 (include-book "kestrel/std/system/genvar-dollar" :dir :system)
 (include-book "kestrel/std/system/measure-plus" :dir :system)
 (include-book "kestrel/std/system/one-way-unify-dollar" :dir :system)
+(include-book "kestrel/std/system/termination-theorem-dollar" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
 (include-book "kestrel/std/system/untranslate-dollar" :dir :system)
@@ -4809,14 +4810,18 @@
                                       (names-to-avoid symbol-listp)
                                       (ctx ctxp)
                                       state)
-  :guard (irecursivep+ fn (w state))
+  :guard (and (function-symbolp fn (w state))
+              (logicp fn (w state))
+              (irecursivep+ fn (w state))
+              (not (eq measure-of-fn 'quote)))
   :returns (mv erp
-               (val "A @('(tuple (event pseudo-event-formp)
-                                 (name symbolp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
+               (val (tuple (event pseudo-event-formp)
+                           (name symbolp)
+                           (updated-names-to-avoid
+                            symbol-listp
+                            :hyp (symbol-listp names-to-avoid))
+                           val))
                state)
-  :mode :program
   :short "Generate the version of the termination theorem
           tailored to the limits and measure function."
   :long
@@ -4833,7 +4838,8 @@
      The purpose of this variant of the termination theorem
      is to help establish the induction hypothesis
      in the loop correctness theorem, as explained below."))
-  (b* ((wrld (w state))
+  (b* (((acl2::fun (irr)) (list '(_) nil nil))
+       (wrld (w state))
        (termination-of-fn-thm
         (packn-pos (list 'termination-of- fn) fn))
        ((mv termination-of-fn-thm names-to-avoid)
@@ -4841,8 +4847,12 @@
                                            nil
                                            names-to-avoid
                                            wrld))
-       ((er tthm-formula)
-        (atc-gen-loop-tthm-formula (termination-theorem fn wrld)
+       (tthm (termination-theorem$ fn state))
+       ((when (eq (car tthm) :failed))
+        (raise "Internal error: cannot find termination theorem of ~x0." fn)
+        (acl2::value (irr)))
+       ((er tthm-formula :iferr (irr))
+        (atc-gen-loop-tthm-formula tthm
                                    fn
                                    measure-of-fn
                                    measure-formals
