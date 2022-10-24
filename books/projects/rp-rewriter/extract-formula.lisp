@@ -757,45 +757,56 @@
            ((mv given-type name)
             (case-match rule ((type name . &) (mv type name)) (& (mv nil rule))))
            ((unless (symbolp name))
-            (hard-error 'enable-rp-rules
+            (hard-error 'e/d-rp-rules-fn
                         "Rule name from ~p0 is not a symbolp ~%"
                         (list (cons #\0 rule))))
-           (rune (get-rune-name name state))
-           (rune (if given-type rule rune))
-           (rest
-            (if (not (consp (hons-assoc-equal rune (table-alist ruleset (w state)))))
-                (progn$
-                 (and (or (atom rune)
-                          (and (not (equal (car rune) ':definition))
-                               (not (equal (car rune) ':executable-counterpart))))
-                      (cw "Warning! ~p0 does not seem to be registered with ~
-  rp::add-rp-rule. Will do that now, but be aware that it will have a higher priority. ~%"
-                          rune))
-                 (if (or (atom rune)
-                         (not (equal (car rune) ':executable-counterpart)))
-                     (cons `(table ,ruleset ',rune '(:inside-out . t)) rest)
-                   rest))
-              rest))
-           (rune-entry-value (cdr (hons-assoc-equal rune (table-alist ruleset
-                                                                      (w state)))))
+
+
+           (corresponding-rule (hons-assoc-equal
+                                name
+                                (table-alist 'corresponding-rp-rule-reverse (w state))))
+           ((mv given-type name)
+            (if (and corresponding-rule
+                     (symbolp (cdr corresponding-rule)))
+                (mv nil (cdr corresponding-rule))
+              (mv given-type name)))
+           
+           (rune (if given-type rule (get-rune-name name state)))
+
+           ((when (case-match rune ((':executable-counterpart &) t)))
+            (cons (if e/d
+                      `(enable-exc-counterpart ,(second rune))
+                    `(disable-exc-counterpart ,(second rune)))
+                  rest))
+
+           (rune-entry (hons-assoc-equal rune (table-alist ruleset (w state))))
+
+           
+           
+           ((when (not (consp rune-entry)))
+            (progn$
+             (cw
+              "~%------------------------------------------------------------------
+Warning: ~p0 does not seem to be registered with ~
+rp::add-rp-rule. Will do that now, but beware that it will have a higher ~
+priority.
+------------------------------------------------------------------~%"
+                 rune)
+             (cons `(table ,ruleset ',rune '(:inside-out . ,e/d)) rest)))
+
+           (rune-entry-value (cdr rune-entry))
+           
            (both (case-match rune-entry-value
                    ((':both . &) t)
                    (& nil)))
            (outside-in (case-match rune-entry-value
                          ((':outside-in . &) t)
                          (& nil))))
-        (case-match rune
-          ((':executable-counterpart name)
-           (cons (if e/d
-                     `(enable-exc-counterpart ,name)
-                   `(disable-exc-counterpart ,name))
-                 rest))
-          (&
-           (cons `(table ,ruleset ',rune ',(cond
-                                            (both `(:both . ,e/d))
-                                            (outside-in `(:outside-in . ,e/d))
-                                            (t `(:inside-out . ,e/d))))
-                 rest))))))
+        (cons `(table ,ruleset ',rune ',(cond
+                                         (both `(:both . ,e/d))
+                                         (outside-in `(:outside-in . ,e/d))
+                                         (t `(:inside-out . ,e/d))))
+              rest))))
 
   (defmacro enable-rules (rules &key
                                 (ruleset 'rp-rules))

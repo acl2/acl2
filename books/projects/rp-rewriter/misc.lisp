@@ -281,6 +281,7 @@
                           :rw-direction ,rw-direction
                           :disabled ,disabled-for-rp)
              (table corresponding-rp-rule ',rule-name ',rule-name-for-rp)
+             (table corresponding-rp-rule-reverse ',rule-name-for-rp ',rule-name)
              #|(acl2::extend-pe-table ,rule-name-for-rp
                                     (def-rp-rule ,rule-name-for-rp
                                       ,body
