@@ -893,6 +893,42 @@ RP-Rewriter will throw an eligible error.</p>"
  )
 
 
+(progn
+  (defun pp-rw-rules (rules world)
+    (declare (xargs :mode :program))
+    (b* (((when (atom rules)) nil)
+         (rule (car rules))
+         ((Unless (weak-custom-rewrite-rule-p rule))
+          (cw "Unexpected rule type: ~p0 ~%" rule))
+         (rune (access custom-rewrite-rule rule :rune))
+         (rune-entry (hons-assoc-equal rune (table-alist 'rp-rules world)))
+         (- (cw "Rune:              ~p0~%" rune))
+         (- (cw "Enabled:           ~p0~%" (and rune-entry (cddr rune-entry))))
+         (- (cw "Hyps:              ~p0~%" (cons 'and (untranslate-lst (access custom-rewrite-rule rule :hyp)
+                                                        t world))))
+         (- (cw "Equiv:             ~p0~%" (if (access custom-rewrite-rule rule :flg) 'iff 'equal)))
+         (- (cw "Lhs:               ~p0~%" (untranslate (access custom-rewrite-rule rule :lhs/trig-fnc)
+                                                        t world)))
+         (- (cw "Rhs:               ~p0~%" (untranslate (access custom-rewrite-rule rule :rhs/meta-fnc)
+                                                        t world)))
+         (- (cw "~%")))
+      (pp-rw-rules (cdr rules) world)))
+       
+    
+
+  (defun rp-pr-fn (name state)
+    (declare (xargs :mode :program
+                    :stobjs (state)))
+    (b* ((rules (get-rules (list name) state))
+         ((unless rules)
+          nil)
+         (rules (acl2::flatten (strip-cdrs rules))))
+      (pp-rw-rules rules (w state))))
+       
+
+  (defmacro rp-pr (name)
+    (list 'rp-pr-fn (list 'quote name) 'state)))
+
 (xdoc::defxdoc
  rp-other-utilities
  :short "Some names that are aliases to other tools"

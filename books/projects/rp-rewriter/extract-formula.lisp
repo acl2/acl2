@@ -167,25 +167,48 @@
   (declare (xargs :guard t))
   (if (atom qs)
       nil
-    (cons `(implies ,p ,(car qs))
+    (cons (b* ((q (car qs)))
+            (case-match q
+              (('implies qp qq)
+               `(implies (if ,p ,qp 'nil) ,qq))
+              (& `(implies ,p ,q)))) 
           (make-rule-better-aux1 p (cdr qs)))))
 
-(defun make-formula-better (formula)
-  ;; returns a list of rules because a single rule can create multiplie
-  ;; rewrite rules because of "and"
-  (declare (xargs :guard t))
-  (b* ()
-    (case-match formula
-      (('implies p q)
-       (b* ((new-terms (if-to-and-list q))
-            (new-terms (not-to-equal-nil-list new-terms))
-            (formulas (make-rule-better-aux1 p new-terms)))
-         formulas))
-      (&
-       (b* ((new-terms (if-to-and-list formula))
-            (new-terms (not-to-equal-nil-list new-terms)))
-         new-terms)))))
+(mutual-recursion
+ (defun make-formula-better (formula limit)
+   ;; returns a list of rules because a single rule can create multiplie
+   ;; rewrite rules because of "and"
+   (declare (xargs :guard (natp limit)))
+   (declare (xargs :measure (nfix limit)))
+   (if (zp limit)
+       (list formula)
+     (case-match formula
+       (('implies p q)
+        (b* ((new-terms (if-to-and-list q))
+             (new-terms (not-to-equal-nil-list new-terms))
+             (new-terms (if (> (len new-terms) 1)
+                            (make-formula-better-lst new-terms (1- limit))
+                          new-terms))
+             (formulas (make-rule-better-aux1 p new-terms)))
+          formulas))
+       (&
+        (b* ((new-terms (if-to-and-list formula))
+             (new-terms (not-to-equal-nil-list new-terms))
+             (new-terms (if (> (len new-terms) 1)
+                            (make-formula-better-lst new-terms (1- limit))
+                          new-terms)))
+          new-terms)))))
 
+ (defun make-formula-better-lst (formulas limit)
+   (declare (xargs :guard (natp limit)))
+   (declare (xargs :measure (nfix limit)))
+   (if (zp limit)
+       formulas
+     (if (atom formulas)
+         nil
+       (acl2::append-without-guard
+        (make-formula-better (car formulas) (1- limit))
+        (make-formula-better-lst (cdr formulas) (1- limit)))))))
 
 (mutual-recursion
  (defun insert-iff-to-force (term rule-name iff-flg in-hyps)
@@ -227,6 +250,8 @@
                      (insert-iff-to-force-lst (cdr lst) rule-name in-hyps)
                      lst))))
 
+
+
 (defund formulas-to-rules (rune rule-new-synp warning formulas)
   (declare (xargs :guard t))
   (if (atom formulas)
@@ -240,6 +265,10 @@
                        ,hyp
                      'nil)
                 hyp))
+         (lhs (if (and (is-return-last lhs)
+                       (not (atom (cadddr lhs))))
+                  (remove-return-last lhs)
+                lhs))
          
          (rule (make custom-rewrite-rule
                      :rune rune
@@ -271,7 +300,7 @@
                     (list (cons #\0 rule-name))))
        (formula (beta-search-reduce formula *big-number*))
        
-       (formulas (make-formula-better formula))
+       (formulas (make-formula-better formula *big-number*))
        
        (formulas (insert-iff-to-force-lst formulas rule-name nil))
        

@@ -41,9 +41,10 @@
 (include-book "../extract-formula")
 (include-book "proof-functions")
 
-(local (include-book "proof-function-lemmas"))
 (local (include-book "aux-function-lemmas"))
+(local (include-book "proof-function-lemmas"))
 (local (include-book "rp-equal-lemmas"))
+(local (include-book "eval-functions-lemmas"))
 
 (defthm remove-warning-from-rule-syntaxp
   (implies (syntaxp (not (equal warning ''nil)))
@@ -75,6 +76,40 @@
   :hints (("Goal"
            :induct (if-to-and-list term)
            :in-theory (e/d (if-to-and-list) ()))))
+
+
+(make-flag remove-return-last :defthm-macro-name defthm-remove-return-last)
+
+(defthm-remove-return-last
+  (defthm rp-evl-of-remove-return-last
+    (equal (rp-evl (remove-return-last term) a)
+           (rp-evl term a))
+    :flag remove-return-last)
+  (defthm rp-evl-of-remove-return-last-subterms
+    (equal (rp-evl-lst (remove-return-last-subterms subterms) a)
+           (rp-evl-lst subterms a))
+    :flag remove-return-last-subterms)
+  :hints (("Goal"
+           :in-theory (e/d (rp-evl-of-fncall-args
+                            remove-return-last
+                            remove-return-last-subterms)
+                           ()))))
+
+(defthm-remove-return-last
+  (defthm rp-evlt-of-remove-return-last
+    (equal (rp-evlt (remove-return-last term) a)
+           (rp-evlt term a))
+    :flag remove-return-last)
+  (defthm rp-evlt-of-remove-return-last-subterms
+    (equal (rp-evlt-lst (remove-return-last-subterms subterms) a)
+           (rp-evlt-lst subterms a))
+    :flag remove-return-last-subterms)
+  :hints (("Goal"
+           :in-theory (e/d (rp-evl-of-fncall-args
+                            remove-return-last
+                            remove-return-last-subterms)
+                           ()))))
+
 
 (local
  ;;local funcitons for local lemmas
@@ -182,11 +217,11 @@
               :in-theory (e/d (if-to-and-list) ())))))
 
   #|(local
-   (defthm consp-if-to-and-list
-     (implies t;term
-              (consp (if-to-and-list term)))
-     :hints (("Goal"
-              :in-theory (e/d (if-to-and-list) ())))))|#
+  (defthm consp-if-to-and-list
+  (implies t;term
+  (consp (if-to-and-list term)))
+  :hints (("Goal"
+  :in-theory (e/d (if-to-and-list) ())))))|#
 
   (local
    (defthm consp-not-to-equal-nil-list
@@ -220,20 +255,40 @@
                     (acl2::beta-eval-list rp-evl-lst)))
              :in-theory (e/d (rp-evl-of-fncall-args) ()))))
 
-  
 
-  (defthm correctness-of-make-formula-better
-    (implies (and ;;(pseudo-termp formula)
-                  (rp-evl formula a))
-             (eval-and-all-nt (make-formula-better formula) a))
+  (defthm EVAL-AND-ALL-NT-of-append
+    (equal (eval-and-all-nt (append x y) a)
+           (and (eval-and-all-nt x a)
+                (eval-and-all-nt y a)))
+    :hints (("Goal"
+             :in-theory (e/d (eval-and-all-nt) ()))))
+  
+  (make-flag make-formula-better :defthm-macro-name defthm-make-formula-better)
+
+  
+  
+  (defthm-make-formula-better
+
+    (defthm correctness-of-make-formula-better
+      (implies (and ;;(pseudo-termp formula)
+                (rp-evl formula a))
+               (eval-and-all-nt (make-formula-better formula limit) a))
+      :flag make-formula-better)
+
+    (defthm correctness-of-make-formula-better-lst
+      (implies (and ;;(pseudo-termp formula)
+                (eval-and-all-nt formulas a))
+               (eval-and-all-nt (make-formula-better-lst formulas limit) a))
+      :flag make-formula-better-lst)
     :hints (("Goal"
              :do-not-induct t
-             :use ((:instance rp-evl-of-beta-search-reduce
-                              (term formula)
-                              (limit *big-number*)))
+             ;; :use ((:instance rp-evl-of-beta-search-reduce
+             ;;                  (term formula)
+             ;;                  (limit *big-number*)))
              :in-theory (e/d ()
                              (beta-search-reduce
-                              rp-evl-of-beta-search-reduce))))
+                              ;;rp-evl-of-beta-search-reduce
+                              ))))
     :otf-flg t))
 
 (local
@@ -326,7 +381,6 @@
                                rp-hyp
                                rule-syntaxp)))))))
 
-
 (local
  (defun cdr-cdr-induct (x y)
    (if (or (atom x) (atom y))
@@ -368,17 +422,16 @@
                                ;;                               (:rewrite acl2::o-p-o-infp-car)
                                (:type-prescription insert-iff-to-force))))))
 
-
    (defthm EVAL-AND-ALL-NT-of-insert-off-to-force-lst
-       (equal (EVAL-AND-ALL-NT (insert-iff-to-force-lst lst rule-name in-hyps) a)
-              (EVAL-AND-ALL-NT lst a))
-       :hints (("Goal"
-                :use ((:instance
-                       EVAL-AND-ALL-NT-EQUIV-WHEN-RP-EVL-LST-ARE-EQUIV
-                       (lst1 (insert-iff-to-force-lst lst rule-name in-hyps))
-                       (lst2 lst)))
-                :in-theory (e/d () ()))))
-   
+     (equal (EVAL-AND-ALL-NT (insert-iff-to-force-lst lst rule-name in-hyps) a)
+            (EVAL-AND-ALL-NT lst a))
+     :hints (("Goal"
+              :use ((:instance
+                     EVAL-AND-ALL-NT-EQUIV-WHEN-RP-EVL-LST-ARE-EQUIV
+                     (lst1 (insert-iff-to-force-lst lst rule-name in-hyps))
+                     (lst2 lst)))
+              :in-theory (e/d () ()))))
+
    (defthm rp-evl-of-insert-off-to-force
      (and (iff (rp-evl (insert-iff-to-force term rule-name t in-hyps) a)
                (rp-evl term a))
@@ -1129,8 +1182,8 @@
   (valid-sc SC-TERM A)
   (rp-termp SC-TERM)
   (NOT (EQUAL (CAR SC-TERM) 'IF))
-; (NOT (INCLUDE-FNC-SUBTERMS (CDR SC-TERM) ; ; ; ; ; ; ; ; ; ;
-;                           'IF)) ; ; ; ; ; ; ; ; ; ;
+; (NOT (INCLUDE-FNC-SUBTERMS (CDR SC-TERM) ; ; ; ; ; ; ; ; ; ; ;
+;                           'IF)) ; ; ; ; ; ; ; ; ; ; ;
   (not (is-rp sc-term))
   (IS-RP (LIST 'RP
   (LIST 'QUOTE SC-TYPE)
