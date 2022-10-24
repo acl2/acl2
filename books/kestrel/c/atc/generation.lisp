@@ -3457,7 +3457,9 @@
                (hyps true-listp)
                (subst symbol-symbol-alistp
                       :hyp (atc-symbol-type-alistp typed-formals))
-               (instantiation doublet-listp))
+               (instantiation symbol-pseudoterm-alistp
+                              :hyp (and (atc-symbol-type-alistp typed-formals)
+                                        (symbolp compst-var))))
   :short "Generate the outer bindings,
           pointer hypotheses,
           pointer substitutions,
@@ -3477,7 +3479,9 @@
      explained below.
      We also generate a variable substitution, explained below.
      We also generate an instantiation
-     for lemmas used in the hints of generated theorems.")
+     for lemmas used in the hints of generated theorems;
+     the instantiation is in alist form,
+     so that we can use a readily available stronger type for it.")
    (xdoc::p
     "The (outer) bindings can be determined from
      the formals of the ACL2 function @('fn') that represents
@@ -3635,7 +3639,7 @@
        ((cons formal type) (car typed-formals))
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
        (formal-objdes `(value-pointer->designator ,formal-ptr))
-       (formal-id `(ident ,(symbol-name formal)))
+       (formal-id `(ident ',(symbol-name formal)))
        (pointerp (type-case type :pointer))
        (extobjp (assoc-equal (symbol-name formal) prec-objs))
        (bindings
@@ -3670,18 +3674,25 @@
        (inst (if fn-recursivep
                  (if pointerp
                      (if extobjp
-                         (list `(,formal
-                                 (read-static-var ,formal-id ,compst-var)))
-                       (list `(,formal (read-object (value-pointer->designator
-                                                     (read-var ,formal-id
-                                                               ,compst-var))
-                                                    ,compst-var))))
-                   (list `(,formal (read-var ,formal-id ,compst-var))))
+                         (list
+                          (cons formal
+                                `(read-static-var ,formal-id ,compst-var)))
+                       (list
+                        (cons formal
+                              `(read-object (value-pointer->designator
+                                             (read-var ,formal-id ,compst-var))
+                                            ,compst-var))))
+                   (list
+                    (cons formal
+                          `(read-var ,formal-id ,compst-var))))
                (if pointerp
                    (if extobjp
-                       (list `(,formal
-                               (read-static-var ,formal-id ,compst-var)))
-                     (list `(,formal (read-object ,formal-objdes ,compst-var))))
+                       (list
+                        (cons formal
+                              `(read-static-var ,formal-id ,compst-var)))
+                     (list
+                      (cons formal
+                            `(read-object ,formal-objdes ,compst-var))))
                  nil)))
        ((mv more-bindings more-hyps more-subst more-inst)
         (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
@@ -4104,7 +4115,7 @@
                                ,@measure-thms
                                ,fn-fun-env-thm))
                  :use (:instance (:guard-theorem ,fn)
-                       :extra-bindings-ok ,@instantiation)
+                       :extra-bindings-ok ,@(alist-to-doublets instantiation))
                  :expand (:lambdas))
                 (and stable-under-simplificationp
                      '(:in-theory (union-theories
@@ -5035,7 +5046,8 @@
                                ,@member-read-thms
                                ,@extobj-recognizers))
                  :use ((:instance (:guard-theorem ,fn)
-                                  :extra-bindings-ok ,@instantiation))
+                                  :extra-bindings-ok ,@(alist-to-doublets
+                                                        instantiation)))
                  :expand :lambdas)))
        ((mv correct-test-thm-event &)
         (evmac-generate-defthm correct-test-thm
@@ -5231,7 +5243,7 @@
                                ,@correct-thms
                                ,@measure-thms))
                  :use ((:instance (:guard-theorem ,fn)
-                        :extra-bindings-ok ,@instantiation))
+                        :extra-bindings-ok ,@(alist-to-doublets instantiation)))
                  :expand :lambdas)))
        ((mv correct-body-thm-event &)
         (evmac-generate-defthm correct-body-thm
@@ -5453,9 +5465,11 @@
                                      ,correct-test-thm
                                      ,correct-body-thm))
                        :use ((:instance (:guard-theorem ,fn)
-                              :extra-bindings-ok ,@instantiation)
+                                        :extra-bindings-ok ,@(alist-to-doublets
+                                                              instantiation))
                              (:instance ,termination-of-fn-thm
-                              :extra-bindings-ok ,@instantiation)))
+                                        :extra-bindings-ok ,@(alist-to-doublets
+                                                              instantiation))))
                       (and stable-under-simplificationp
                            '(:in-theory
                              (append
@@ -5511,8 +5525,7 @@
                                 ,correct-body-thm))
                              :expand (:lambdas
                                       (,fn ,@(fsublis-var-lst
-                                              (doublets-to-alist
-                                               instantiation)
+                                              instantiation
                                               formals)))))))
        (lemma-instructions
         `((:in-theory '(,exec-stmt-while-for-fn))
