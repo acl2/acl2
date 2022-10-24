@@ -107,4 +107,21 @@
 (load-system-from-acl2-quicklisp-bundle "uiop")
 
 (load-system-from-acl2-quicklisp-bundle "dexador")
+
+; Matt K. mod, 10/22/2022: The next form caused the following error in Allegro
+; CL so I'm excluding it for that Lisp.  (I've edited out the ACL2 directory
+; above books/, replacing it with <ACL2>.)
+
+#|
+;;; Compiling file
+;;;   <ACL2>/books/quicklisp/bundle/software/zippy-20220707-git/package.lisp
+; While EVALUATING
+#'(:INTERNAL ASDF/LISP-ACTION:PERFORM-LISP-COMPILATION) in
+#P"<ACL2>/books/quicklisp/bundle/software/zippy-20220707-git/package.lisp":
+Error: Illegal argument to defpackage:
+       (:LOCAL-NICKNAMES
+        (#:FILE-ATTRIBUTES #:ORG.SHIRAKUMO.FILE-ATTRIBUTES))
+  [condition type: PACKAGE-ERROR]
+|#
+#-allegro
 (load-system-from-acl2-quicklisp-bundle "zippy")
