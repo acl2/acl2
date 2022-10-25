@@ -941,25 +941,25 @@
              (new-hints (enable-runes-in-hints theorem-hints (list rule))))
           ;; Not built-in, so we'll have to try finding the rule in a book:
           ;; TODO: Would be nice to not bother if it is a definition that we don't have.
-          (b* ( ;; TODO: For each of these, if it works, maybe just try the include-book without the enable:
-               ;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
+          (b* (;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
+               ;; TODO: Try to get a good variety of books here, if there are too many to try them all:
                ((mv erp successful-include-book-form-or-nil state)
                 (try-prove$-with-include-books 'try-add-enable-hint theorem-body books-to-try rule :enable new-hints theorem-otf-flg *step-limit* state))
                ((when erp) (mv erp nil state))
-               (provedp (if successful-include-book-form-or-nil t nil))
                ;; todo: clarify whether we even found an include-book that works
-               ((when (not provedp))
+               ((when (not successful-include-book-form-or-nil))
                 (if (< 3 num-books-to-try-orig)
                     ;; todo: try more if we didn't find it?:
                     (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len books-to-try) num-books-to-try-orig rule)
                   (cw "fail (enabling ~x0 didn't help)~%" rule))
                 (mv nil nil state))
+               (successful-include-book-form successful-include-book-form-or-nil) ; rename for clarity
                ;; We proved it with an include-book and an enable hint.  Now
                ;; try again but without the enable hint (maybe the include-book is enough):
                ((mv erp provedp-with-no-hint state)
                 (prove$-with-include-book 'try-add-enable-hint ; todo: the redoes the include-book
                                           theorem-body
-                                          successful-include-book-form-or-nil ; won't be nil
+                                          successful-include-book-form
                                           nil ; name-to-check (no need to check this again)
                                           :enable
                                           ;; args to prove$:
@@ -970,14 +970,15 @@
                ((when erp) (mv erp nil state))
                ;; todo: we could even try to see if a smaller library would work
                (rec (if provedp-with-no-hint
+                        ;; Turn the rec into an :add-library, because the library is what mattered:
                         (make-rec (nth 0 rec) ;name (ok to keep the same name, i guess)
                                   :add-library ;; Change the rec to :add-library since the hint didn't matter!
-                                  successful-include-book-form-or-nil
+                                  successful-include-book-form
                                   (nth 3 rec) ; not very meaningful now
                                   (nth 4 rec) ; not very meaningful now
                                   nil ; pre-commands (always none for :add-library)
                                   )
-                   (update-rec-type :add-enable-hint (update-pre-commands (list successful-include-book-form-or-nil) rec))))
+                   (update-rec-type :add-enable-hint (update-pre-commands (list successful-include-book-form) rec))))
                (- (cw-success-message rec)))
             (mv nil
                 rec
@@ -1058,19 +1059,19 @@
            ((mv erp successful-include-book-form-or-nil state)
             (try-prove$-with-include-books 'try-add-use-hint theorem-body include-book-forms item :use new-hints theorem-otf-flg *step-limit* state))
            ((when erp) (mv erp nil state))
-           (provedp (if successful-include-book-form-or-nil t nil))
-           ((when (not provedp))
+           ((when (not successful-include-book-form-or-nil))
             (if (< 3 num-include-book-forms-orig)
                 ;; todo: try more if we didn't find it?:
                 (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len include-book-forms) num-include-book-forms-orig item)
               (cw "fail (using ~x0 didn't help)~%" item))
             (mv nil nil state))
+           (successful-include-book-form successful-include-book-form-or-nil) ; rename for clarity
            ;; We proved it with an include-book and a :use hint.  Now
            ;; try again but without the :use hint (maybe the include-book is enough):
            ((mv erp provedp-with-no-hint state)
             (prove$-with-include-book 'try-add-use-hint ; todo: the redoes the include-book
                                       theorem-body
-                                      successful-include-book-form-or-nil ; won't be nil
+                                      successful-include-book-form
                                       nil ; name-to-check (no need to check this again)
                                       :use
                                       ;; args to prove$:
@@ -1083,12 +1084,12 @@
            (rec (if provedp-with-no-hint
                     (make-rec (nth 0 rec) ;name (ok to keep the same name, i guess)
                               :add-library ;; Change the rec to :add-library since the hint didn't matter!
-                              successful-include-book-form-or-nil
+                              successful-include-book-form
                               (nth 3 rec) ; not very meaningful now
                               (nth 4 rec) ; not very meaningful now
                               nil ; pre-commands (always none for :add-library)
                               )
-                  (update-pre-commands (list successful-include-book-form-or-nil) rec)))
+                  (update-pre-commands (list successful-include-book-form) rec)))
            (- (cw-success-message rec)))
         (mv nil
             rec
