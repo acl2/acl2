@@ -67,14 +67,6 @@
 
 ; move to a more general library:
 
-(defruled true-listp-when-pseudo-event-form-listp
-  (implies (pseudo-event-form-listp x)
-           (true-listp x)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; move to a more general library:
-
 (defrule pseudo-term-list-count-of-pseudo-term-call->args
   (implies (pseudo-term-case term :call)
            (< (pseudo-term-list-count (pseudo-term-call->args term))
@@ -7109,7 +7101,9 @@
 
   (verify-guards atc-gen-ext-declon-list
     :hints
-    (("Goal" :in-theory (enable true-listp-when-pseudo-event-form-listp)))))
+    (("Goal"
+      :in-theory
+      (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -7141,9 +7135,8 @@
                         (prog-const symbolp)
                         (wf-thm symbolp)
                         (print evmac-input-print-p))
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (exported-events "A @(tsee pseudo-event-form-listp)."))
-  :mode :program
+  :returns (mv (local-events pseudo-event-form-listp)
+               (exported-events pseudo-event-form-listp))
   :short "Generate the theorem asserting
           the static well-formedness of the generated C code
           (referenced as the named constant)."
