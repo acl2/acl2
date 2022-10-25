@@ -3029,12 +3029,12 @@
         (raise "Internal error: ~
                 the loop body ~x0 of ~x1 ~ returns type ~x2."
                then-term gin.fn body.type)
-        (acl2::value (irr)))
+        (mv t (irr) state))
        (body-stmt (make-stmt-compound :items body.items))
        (stmt (make-stmt-while :test test.expr :body body-stmt))
        ((when (eq gin.measure-for-fn 'quote))
         (raise "Internal error: the measure function is QUOTE.")
-        (acl2::value (irr)))
+        (mv t (irr) state))
        (measure-call (pseudo-term-fncall gin.measure-for-fn
                                          gin.measure-formals))
        (limit `(binary-+ '1 (binary-+ ,body.limit ,measure-call))))
@@ -3047,7 +3047,13 @@
                                   :thm-index body.thm-index
                                   :names-to-avoid body.names-to-avoid)))
   :measure (pseudo-term-count term)
-  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p))))
+  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))
+  ///
+
+  (defret stmt-kind-of-atc-gen-loop-stmt
+    (implies (not erp)
+             (equal (stmt-kind (lstmt-gout->stmt val))
+                    :while))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5641,9 +5647,6 @@
                      (logicp fn (w state))
                      (irecursivep+ fn (w state))))
         (raise "Internal error with W of STATE.")
-        (acl2::value (irr)))
-       ((unless (stmt-case loop.stmt :while))
-        (raise "Internal error: wrong loop satement kind ~x0." loop.stmt)
         (acl2::value (irr)))
        ((er (list local-events
                   exported-events
