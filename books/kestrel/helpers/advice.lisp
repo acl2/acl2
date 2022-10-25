@@ -937,13 +937,13 @@
                ((when erp) (mv erp nil state))
                ;; todo: we could even try to see if a smaller library would work
                (rec (if provedp-with-no-hint
-                        (list (nth 0 rec) ;name (ok to keep the same name, i guess)
-                              :add-library ;; Change the rec to :add-library since the hint didn't matter!
-                              successful-include-book-form-or-nil
-                              (nth 3 rec) ; not very meaningful now
-                              (nth 4 rec) ; not very meaningful now
-                              nil ; pre-commands (always none for :add-library)
-                              )
+                        (make-rec (nth 0 rec) ;name (ok to keep the same name, i guess)
+                                  :add-library ;; Change the rec to :add-library since the hint didn't matter!
+                                  successful-include-book-form-or-nil
+                                  (nth 3 rec) ; not very meaningful now
+                                  (nth 4 rec) ; not very meaningful now
+                                  nil ; pre-commands (always none for :add-library)
+                                  )
                    (update-rec-type :add-enable-hint (update-pre-commands (list successful-include-book-form-or-nil) rec))))
                (- (cw-success-message rec)))
             (mv nil
@@ -1047,13 +1047,13 @@
            ((when erp) (mv erp nil state))
            ;; todo: we could even try to see if a smaller library would work
            (rec (if provedp-with-no-hint
-                    (list (nth 0 rec) ;name (ok to keep the same name, i guess)
-                          :add-library ;; Change the rec to :add-library since the hint didn't matter!
-                          successful-include-book-form-or-nil
-                          (nth 3 rec) ; not very meaningful now
-                          (nth 4 rec) ; not very meaningful now
-                          nil ; pre-commands (always none for :add-library)
-                          )
+                    (make-rec (nth 0 rec) ;name (ok to keep the same name, i guess)
+                              :add-library ;; Change the rec to :add-library since the hint didn't matter!
+                              successful-include-book-form-or-nil
+                              (nth 3 rec) ; not very meaningful now
+                              (nth 4 rec) ; not very meaningful now
+                              nil ; pre-commands (always none for :add-library)
+                              )
                   (update-pre-commands (list successful-include-book-form-or-nil) rec)))
            (- (cw-success-message rec)))
         (mv nil
@@ -1232,13 +1232,13 @@
                               (posp num))))
   (if (endp names)
       nil
-    (cons (list (concatenate 'string "E" (nat-to-string num))
-                :add-enable-hint
-                (first names) ; the name to enable
-                0            ; confidence percentage (TODO: allow unknown)
-                nil ; book map ; todo: indicate that the name must be present?
-                nil ; no pre-commands
-                )
+    (cons (make-rec (concatenate 'string "E" (nat-to-string num))
+                    :add-enable-hint
+                    (first names) ; the name to enable
+                    0             ; confidence percentage (TODO: allow unknown)
+                    nil ; book map ; todo: indicate that the name must be present?
+                    nil ; no pre-commands
+                    )
           (make-enable-recs-aux (rest names) (+ 1 num)))))
 
 (local
@@ -1247,6 +1247,7 @@
             (recommendation-listp (make-enable-recs-aux names num)))))
 
 ;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
+;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
 (defun make-enable-recs (formula wrld)
   (declare (xargs :guard (and (pseudo-termp formula)
                               (plist-worldp wrld))
