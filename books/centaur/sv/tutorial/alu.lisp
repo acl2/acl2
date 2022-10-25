@@ -1,4 +1,4 @@
-; Centaur SV Hardware Verification Tutorial
+(ld; Centaur SV Hardware Verification Tutorial
 ; Copyright (C) 2012-2015 Centaur Technology
 ;
 ; Contact:
@@ -121,10 +121,14 @@
                         :search-path '("lib")))))
       (mv (vl::vl-loadresult->design loadresult) state))))
 
-(def-saved-nonevent alu-print-reportcard
-  (vl::cw-unformatted
-   (vl::vl-reportcard-to-string (vl::vl-design-reportcard *alu-vl-design*))))
 
+(def-saved-nonevent alu-print-reportcard
+  ;; Silent (meaning a NIL result) if there are no problems.
+  (vl::cw-unformatted
+   (vl::vl-reportcard-to-string
+    (vl::vl-design-reportcard *alu-vl-design*))))
+
+; Next, we will flatten the VL design into a SVEX form.
 (def-saved-event alu->svex-form
   (defconsts (*alu-svex-design*
               *alu-simplified-good*
@@ -239,17 +243,20 @@ full:</p>
 
 ;;     :parents (stvs-and-testing)
 ;;     :short "A simple test of the alu16 module."
-;;     :labels  '(dat1  dat2  op1   op2   out1  out2)
+;;     :labels  '(dat1  dat2  op1   op2   out1  out2)  !!! Misleading, possibly wrong !!!
 
 ;;     :inputs
 ;;       ;; verilog name --> sequence of inputs to supply
-;;     '(("clk"    1     0     1     0     1     0)
+;;     '(("clk"    0     1     0     1     0     1)
 ;;       ("opcode" _     _     _     op    _)
 ;;       ("abus"   _     a     _)
 ;;       ("bbus"   _     b     _))
 
 ;;     :outputs                  ;; verilog name --> variable names we will use
 ;;     '(("out"    _     _     _     _     _    res))))
+;;     '(("out2"   _     _     _     _     _    _    _   res2))))
+
+:i-am-here
 
 (def-saved-event alu-svtv
   (defsvtv$ alu-test-vector        ;; name for this test vector
@@ -262,12 +269,19 @@ full:</p>
                        ("abus" a)
                        ("bbus" b)))
              (:label op
-              :delay 2
+              :delay 2                      ;WAHJr:  worries me!!!
               :inputs (("opcode" op)))
-             
+
              (:label out
               :delay 2
-              :outputs (("out" res))))))
+              :outputs (("out" res)))
+
+#|
+             (:label out2
+              :delay 2
+              :outputs (("out2" res2)))
+|#
+             )))
 
 
 
@@ -300,6 +314,8 @@ full:</p>
 ; We can use STV-RUN to run the test vector on particular input alists.  The
 ; input alists need to give values for the input variables of the vector, i.e.,
 ; OP, A, and B.
+
+; Should there be an SVTV-run$ command?
 
 (def-saved-nonevent alu-example-1
   (svtv-run (alu-test-vector)
@@ -386,35 +402,43 @@ You can see the documentation generated for this SVTV <see topic='@(url
 alu-test-vector)'>here</see>.</p>
 
 <p>Each entry in @(':phases') says what should happen in a particular
-time (phase) in the simulation.  The first entry says that the \"clk\" signal will initially be set to 0, but will toggle every time step.  It also says that the \"abus\" and \"bbus\" inputs should be set to symbolic variables @('a') and @('b') at that time.  That phase is also labeled @('dat') for documentation purposes.</p>
+time (phase) in the simulation.  The first entry says that the \"clk\"
+signal will initially be set to 0, but will toggle every time step.
+It also says that the \"abus\" and \"bbus\" inputs should be set to
+symbolic variables @('a') and @('b') at that time.  That phase is also
+labeled @('dat') for documentation purposes.</p>
 
-<p>The next entry in the phases is labeled @('op').  It has a @(':delay')
-argument, which says how many time steps after the previous entry the current
-entry should happen; the default delay is 1 and the delay must be positive. In
-this design everything of importance happens on the clock-low phase of a clock
-cycle, which is standard for designs that use positive edge-triggered
-flip-flops. So the delay on each phase after the first is 2 because on the
-skipped phases the clock is high and nothing much happens. In this phase
-another input signal, \"opcode\", is set to another symbolic variable, @('op').</p>
+<p>The next entry in the phases is labeled @('op').  It has a
+@(':delay') argument, which says how many time steps after the
+previous entry the current entry should happen; the default delay is 1
+and the delay must be positive. In this design everything of
+importance happens on the clock-low phase of a clock cycle, which is
+standard for designs that use positive edge-triggered flip-flops. So
+the delay on each phase after the first is 2 because on the skipped
+phases the clock is high and nothing much happens. In this phase
+another input signal, \"opcode\", is set to another symbolic variable,
+@('op').</p>
 
-<p>Finally, in the third entry, labelled @('out'), we read an output signal
-\"out\" into a symbolic variable called @('res').  Again, this happens 2 phases
-after the last one, so on the next clock-low phase.</p>
+<p>Finally, in the third entry, labelled @('out'), we read an output
+signal \"out\" into a symbolic variable called @('res').  Again, this
+happens 2 phases after the last one, so on the next clock-low
+phase.</p>
 
 <p>The main effect of this @(see defsvtv$) form is to create a
-constant (accessed via a 0-ary function, @('(alu-test-vector)') that encapsulates
-the given simulation pattern in a set of svex expressions, one for each output
-variable, expressed in terms of the input variables.  So the resulting
-@('(alu-test-vector)') from the @('defsvtv$') above contains an svex expression for
-@('res') as a combinational function in terms of @('a'), @('b'), and @('op').
-You can examine this function by looking at the @('outexprs') field of the SVTV
-structure:</p>
+constant (accessed via a 0-ary function, @('(alu-test-vector)') that
+encapsulates the given simulation pattern in a set of svex
+expressions, one for each output variable, expressed in terms of the
+input variables.  So the resulting @('(alu-test-vector)') from the
+@('defsvtv$') above contains an svex expression for @('res') as a
+combinational function in terms of @('a'), @('b'), and @('op').  You
+can examine this function by looking at the @('outexprs') field of the
+SVTV structure:</p>
 
 @(`(:code ($ alu-function-examine))`)
 
-<p>Warning: This  prints a  lot of  output --  around 11,000  lines.  We  get a
-somewhat nicer result if we  apply some @(see rewriting) before displaying
-it:</p>
+<p>Warning: This prints a lot of output -- around 11,000 lines.  We
+get a somewhat nicer result if we apply some @(see rewriting) before
+displaying it:</p>
 
 @(`(:code ($ alu-function-examine-rw))`)
 
