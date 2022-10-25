@@ -44,12 +44,15 @@
 (include-book "resize-list")
 (include-book "make-list-ac")
 (include-book "list-sets")
+(include-book "position-equal-ac")
+(include-book "position-equal")
 
 ;; Books about non-built-in functions:
 (include-book "equiv-def")
 (include-book "find-index")
 (include-book "firstn-def")
 (include-book "firstn")
+(include-book "repeat-def")
 (include-book "repeat")
 (include-book "reverse-list-def")
 (include-book "reverse-list")
@@ -100,3 +103,6 @@
 (include-book "replace-item")
 
 (include-book "index-of-subseq")
+
+(include-book "filter-non-members")
+(include-book "union-equal-alt")

@@ -576,7 +576,7 @@
            t)
        (if (eq (car ee-entry) 'include-book)
            (and (consp (cdr ee-entry))
-                (stringp (cadr ee-entry)))
+                (book-name-p (cadr ee-entry)))
            t)))
 
 
@@ -642,7 +642,7 @@
 ; The include-book-alist contains elements of the
 ; general form         example value
 
-; (full-book-name     ; "/usr/home/moore/project/arith.lisp"
+; (full-book-name     ; "/usr/home/moore/project/arith.lisp" ; could be sysfile
 ;  user-book-name     ; "project/arith.lisp"
 ;  familiar-name      ; "arith"
 ;  cert-annotations   ; ((:SKIPPED-PROOFSP . sp)
@@ -655,10 +655,6 @@
 ; Cert-annotationsp is defined in the source code and uses ttag-alistp.
 ; We need to admit guard-verified versions of each.
 
-(verify-termination sysfile-p) ; and guards
-
-(verify-termination sysfile-or-string-listp) ; and guards
-
 (verify-termination ttag-alistp) ; and guards
 
 (verify-termination cert-annotationsp) ; and guards
@@ -666,7 +662,7 @@
 (defun pseudo-include-book-alist-entryp (entry)
   (case-match entry
     ((full-name user-name familiar-name cert-annotations . chk-sum)
-     (and (stringp full-name)
+     (and (book-name-p full-name)
           (stringp user-name)
           (stringp familiar-name)
 
@@ -682,7 +678,7 @@
 ; is the natural predicate.
 
           (or (null cert-annotations)
-              (cert-annotationsp cert-annotations t))
+              (cert-annotationsp cert-annotations))
           (case-match chk-sum
             (((':BOOK-LENGTH . book-length)
               (':BOOK-WRITE-DATE . book-write-date))
@@ -723,18 +719,18 @@
 ; -----------------------------------------------------------------
 ; PCERT-BOOKS [GLOBAL-VALUE]
 
-; The pcert-books is a list of full book names.
+; The pcert-books is a list of full-book-names.
 
 (defun pseudo-pcert-booksp (val)
-  (string-listp val))
+  (book-name-listp val))
 
 ; -----------------------------------------------------------------
 ; INCLUDE-BOOK-PATH [GLOBAL-VALUE]
 
-; The include-book-path is a list of full book names.
+; The include-book-path is a list of full-book-names.
 
 (defun pseudo-include-book-pathp (val)
-  (string-listp val))
+  (book-name-listp val))
 
 ; -----------------------------------------------------------------
 ; CERTIFICATION-TUPLE [GLOBAL-VALUE]
@@ -920,7 +916,7 @@
       (and (true-listp val)
            (equal (len val) 2)
            (eq (car val) :include-book)
-           (stringp (cadr val)))
+           (book-name-p (cadr val)))
       (pseudo-event-formp val)))
 
 ; -----------------------------------------------------------------
@@ -1174,7 +1170,7 @@
 ; has been declared, and possibly nil, indicating that the ttag was declared at
 ; top-level.
 
-                (string-listp (remove1-eq 'nil (cdr (car val))))
+                (book-name-listp (remove1-eq 'nil (cdr (car val))))
                 (ttags-seenp (cdr val))))))
 
 ; -----------------------------------------------------------------
@@ -1873,6 +1869,9 @@
     (NEVER-IRRELEVANT-FNS-ALIST (never-irrelevant-fns-alistp val))
     (REWRITE-QUOTED-CONSTANT-RULES
      (pseudo-rewrite-quoted-constant-rulesp val))
+    (PROJECT-DIR-ALIST (and (alistp val)
+                            (keyword-listp (strip-cars val))
+                            (string-listp (strip-cdrs val))))
     (otherwise nil)))
 
 ;-----------------------------------------------------------------

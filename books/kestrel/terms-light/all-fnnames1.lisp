@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-;; See also [books]/kestrel/std/system/all-fnnames.lisp.
+;; See also community book kestrel/std/system/all-fnnames.lisp.
 
 (in-theory (disable all-fnnames1))
 

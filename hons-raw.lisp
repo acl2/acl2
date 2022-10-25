@@ -2313,15 +2313,17 @@
 
   (let ((action (get-slow-alist-action nil *the-live-state*)))
     (when action
-      (let* ((path (global-val 'include-book-path
-                              (w *the-live-state*)))
+      (let* ((wrld (w *the-live-state*))
+             (path (global-val 'include-book-path wrld))
              (book-string (if path
                               (concatenate
                                'string
                                "
 This violation occurred while attempting to include the book:
 "
-                               (car path))
+                               (book-name-to-filename (car path)
+                                                      wrld
+                                                      'slow-alist-warning))
                             ""))
              (normal-string "
 *****************************************************************
@@ -2608,8 +2610,8 @@ To avoid the following break and get only the above warning:~%  ~s~%"
   (let ((action (get-slow-alist-action t *the-live-state*)))
     (when (and action
                (not (eq *defeat-slow-alist-action* 'stolen)))
-      (let ((path (global-val 'include-book-path
-                              (w *the-live-state*))))
+      (let* ((wrld (w *the-live-state*))
+             (path (global-val 'include-book-path wrld)))
         (format *error-output* "
 *****************************************************************
 Fast alist stolen by ~a.
@@ -2624,7 +2626,9 @@ or suppress this warning message with:~%  ~a~a
                      "
 This violation occurred while attempting to include the book:
 "
-                     (car path))
+                     (book-name-to-filename (car path)
+                                            wrld
+                                            'hl-alist-stolen-warning))
                   "")))
       (when (eq action :break)
         (format *error-output* "

@@ -16,7 +16,7 @@
 ;; of the exponentiation).  The book expt2.lisp deals with the special case
 ;; when the base is 2.
 
-(local (include-book "times-and-divides"))
+(local (include-book "times-and-divide"))
 (local (include-book "times"))
 (local (include-book "plus"))
 (local (include-book "floor"))

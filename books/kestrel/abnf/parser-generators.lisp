@@ -14,6 +14,7 @@
 
 (include-book "kestrel/fty/pos-list" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
+(include-book "std/strings/case-conversion" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

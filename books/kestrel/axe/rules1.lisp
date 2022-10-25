@@ -16,14 +16,13 @@
 
 ;;  This file was called axerulescore.lisp.
 
-(include-book "list-rules")
+;;(include-book "list-rules")
 (include-book "kestrel/bv-lists/list-patterns" :dir :system) ;for negated-elems-listp
 (include-book "kestrel/bv/unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system)
 (include-book "kestrel/bv-lists/bvnth" :dir :system)
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
-(local (include-book "kestrel/bv-lists/bytes-to-bits2" :dir :system))
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
@@ -35,7 +34,7 @@
 (include-book "kestrel/lists-light/update-subrange2" :dir :system)
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;todo
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
-;(local (include-book "kestrel/bv/arith" :dir :system)) ; for expt-collect-hack
+(local (include-book "kestrel/bv-lists/bytes-to-bits2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -96,12 +95,6 @@
            (equal (equal (len x) (len y))
                   t))
   :hints (("Goal" :in-theory (enable nthcdr))))
-
-(defthm equal-of-repeat-of-len-same
-  (equal (equal data (repeat (len data) item))
-         (and (true-listp data)
-              (all-equal$ item data)))
-  :hints (("Goal" :in-theory (enable true-listp))))
 
 ;TTODO: Move these rules to the appropriate libraries!
 ;TODO: Handle the things with -dag in the name
@@ -650,8 +643,6 @@
                            (y (bvchop n index))
                            (vals (true-list-fix vals))))))
 
-
-
 (defthm equal-of-nthcdr-and-subrange-of-minus1
   (implies (and (natp n)
                 (natp len)
@@ -755,16 +746,6 @@
 ;;           (EQUAL (GETBIT 0 INDEX)
 ;;                  0))
 ;;  :hints (("Goal" :in-theory (e/d (getbit) (SLICE-BECOMES-GETBIT BVCHOP-1-BECOMES-GETBIT)))))
-
-;drop the getbit?
-(defthm array-reduction-1-0
-  (equal (bv-array-read 1 2 index '(1 0))
-         (bitnot (getbit 0 (ifix index))))
-  :hints (("Goal"
-           :expand (NTH (GETBIT 0 INDEX) '(1 0))
-           :in-theory (enable bitnot bv-array-read ;LIST::NTH-OF-CONS
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
-                                   ))))
 
 ;; ;yuck?
 ;; (defthmd myif-of-constant-lists
@@ -896,7 +877,7 @@
 
 ;bozo gen
 ;fixme problems due to nfix around bv-array-read index
-(defthm bv-array-read-of-logext-64-32
+(defthmd bv-array-read-of-logext-64-32
   (implies (and ; (unsigned-byte-p 32 x)
 ;               (<= 0 (logext 32 x))
             (integerp x)
@@ -906,45 +887,6 @@
            (equal (bv-array-read n 64 (logext m x) vals)
                   (bv-array-read n 64 (bvchop 6 x) vals)))
   :hints (("Goal" :in-theory (enable bv-array-read BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
-
-
-
-;bozo should we restrict this to constant arrays?
-(DEFTHM ARRAY-REDUCTION-WHEN-ALL-SAME-improved
-  (IMPLIES (AND (all-equal$ (car data) data) ;old way (involves consing): (EQUAL DATA (REPEAT (LEN DATA) (CAR DATA)))
-                (NATP INDEX)
-                (< INDEX LEN)
-                (EQUAL (LEN DATA) LEN)
-                (TRUE-LISTP DATA)
-                (ALL-UNSIGNED-BYTE-P ELEMENT-SIZE DATA))
-           (EQUAL (BV-ARRAY-READ ELEMENT-SIZE LEN INDEX DATA)
-                  (BV-ARRAY-READ ELEMENT-SIZE LEN 0 DATA) ;(BVCHOP ELEMENT-SIZE (CAR DATA))
-                  ))
-  :hints (("Goal" :use (:instance ARRAY-REDUCTION-WHEN-ALL-SAME)
-           :in-theory (disable ARRAY-REDUCTION-WHEN-ALL-SAME; CAR-BECOMES-NTH-OF-0
-                               ))))
-
-;; This could loop when INDEX is the constant 0, except that then the whole
-;; bv-array-read should be evaluated because all the args would be constants.
-(defthmd array-reduction-when-all-same-improved2
-  (implies (and (syntaxp (quotep data))
-                (syntaxp (quotep len)) ;these prevent loops
-                (syntaxp (quotep element-size))
-                ;; should be evaluated:
-                (all-equal$ (bv-array-read element-size len 0 data) data) ;old way (involves consing): (equal data (repeat (len data) (car data)))
-                (natp index)
-                (< index len)
-                (equal (len data) len)
-                (true-listp data)
-                (all-unsigned-byte-p element-size data))
-           (equal (bv-array-read element-size len index data)
-                  (bv-array-read element-size len 0 data) ;(bvchop element-size (car data))
-                  ))
-  :hints (("Goal" :use (:instance array-reduction-when-all-same)
-           :in-theory (e/d (;all-equal$-when-true-listp
-                            )
-                           ( array-reduction-when-all-same ;car-becomes-nth-of-0
-                             )))))
 
 
 ;move
@@ -1577,8 +1519,6 @@
 ;;                   (push-bvchop-list size lst)))
 ;;   :hints (("Goal" :in-theory (enable bv-array-write))))
 
-(in-theory (disable ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED ARRAY-REDUCTION-WHEN-ALL-SAME))
-
 (defthm bv-array-read-of-bv-array-write-tighten2
   (implies (and (< width2 width1) ;if we allow =, it will loop
                 (natp width2)
@@ -1852,7 +1792,7 @@
   :hints (("Goal" :cases ((equal (+ 1 KEY) (len rhs)))
            :in-theory (e/d (BV-ARRAY-CLEAR bv-array-write BV-ARRAY-READ update-nth2
                                            UPDATE-NTH-WHEN-EQUAL-OF-NTH
-                                           equal-of-update-nth)
+                                           equal-of-update-nth-new)
                            (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
@@ -2558,7 +2498,7 @@
                                                   take
                                                   UNSIGNED-BYTE-P-OF-INTEGER-LENGTH-GEN)
                                   (update-nth-becomes-update-nth2-extend-gen
-                                   EQUAL-OF-UPDATE-NTH
+                                   EQUAL-OF-UPDATE-NTH-new
                                    FIRSTN-BECOMES-TAKE-GEN
                                    natp)))))
 

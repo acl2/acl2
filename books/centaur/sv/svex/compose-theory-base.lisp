@@ -1432,7 +1432,7 @@
   (defret eval-of-<fn>
     (equal (neteval-ordering-eval new-ord network env)
            (svex-env-reduce vars (neteval-ordering-eval x network env)))
-    :hints(("Goal" :in-theory (enable svex-env-reduce-redef neteval-ordering-eval))))
+    :hints(("Goal" :in-theory (enable svex-env-reduce-redef neteval-ordering-eval neteval-ordering-fix))))
 
   (defret compile-of-<fn>
     (svex-alist-eval-equiv (neteval-ordering-compile new-ord network)
@@ -1463,7 +1463,7 @@
   (defret eval-of-<fn>
     (equal (neteval-ordering-eval new-ord network env)
            (svex-env-extract vars (append (neteval-ordering-eval x network env) env)))
-    :hints(("Goal" :in-theory (enable svex-env-extract neteval-ordering-eval)
+    :hints(("Goal" :in-theory (enable svex-env-extract neteval-ordering-eval neteval-ordering-fix)
             :expand ((:free (signal offset)
                       (neteval-sigordering-eval '(:remainder (:null)) signal offset network env))
                      (:free (signal)

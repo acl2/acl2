@@ -362,6 +362,9 @@
          (read n base-addr x86))
   :hints (("Goal" :in-theory (enable memi))))
 
+;; Note that the program-at assumption we have will be about the initial x86 state,
+;; which is unlikely to be the state we're reading from.  This rule deals with that.
+;rename
 (defthm read-byte-in-terms-of-nth-and-pos-eric
   (implies (and ;; find that a program is loaded in the initial state:
             (program-at paddr bytes x86-init) ;these are free vars
@@ -372,12 +375,9 @@
             (integerp addr)
 ;           (integerp paddr)
             (< addr (+ paddr (len bytes)))
-;            (member-p addr addresses)
             (canonical-address-p paddr)
             (canonical-address-p (+ -1 (len bytes) paddr))
-            ;;(canonical-address-listp addresses)
             (app-view x86)
-            (app-view x86-init)
             (x86p x86) ;too bad
             )
            (equal (read-byte addr x86)
@@ -403,6 +403,10 @@
 
 
 ;todo: compare to read-when-program-at
+;; Note that the program-at assumption we have will be about the initial x86 state,
+;; which is unlikely to be the state we're reading from.  This rule deals with that.
+;; TODO: Generalize the 1
+;rename
 (defthm read-in-terms-of-nth-and-pos-eric
   (implies (and ;; find that a program is loaded in the initial state:
             (program-at paddr bytes x86-init) ;these are free vars
@@ -413,12 +417,9 @@
             (integerp addr)
 ;           (integerp paddr)
             (< addr (+ paddr (len bytes)))
-;            (member-p addr addresses)
             (canonical-address-p paddr)
             (canonical-address-p (+ -1 (len bytes) paddr))
-;(canonical-address-listp addresses)
             (app-view x86)
-            (app-view x86-init)
             (x86p x86) ;too bad
             )
            (equal (read 1 addr x86)
@@ -1086,6 +1087,25 @@
 
 ;todo: gen
 ;; this is a 4-byte version of READ-IN-TERMS-OF-NTH-AND-POS-ERIC
+(defthm read-in-terms-of-nth-and-pos-eric-2-bytes
+  (implies (and (program-at paddr bytes x86-init)
+                (program-at paddr bytes x86)
+                (byte-listp bytes)
+                (<= paddr addr)
+                (integerp addr)
+                (< (+ 1 addr) (+ paddr (len bytes)))
+                (canonical-address-p paddr)
+                (canonical-address-p (+ -1 (len bytes) paddr))
+                (app-view x86)
+                (app-view x86-init)
+                (x86p x86))
+           (equal (read 2 addr x86)
+                  (acl2::bvcat2 8 (nth (+ 1 addr (- paddr)) bytes)
+                                8 (nth (+ addr (- paddr)) bytes))))
+  :hints (("Goal" :expand ((read 2 (+ 2 addr) x86)))))
+
+;todo: gen
+;; this is a 4-byte version of READ-IN-TERMS-OF-NTH-AND-POS-ERIC
 (defthm read-in-terms-of-nth-and-pos-eric-4-bytes
   (implies (and (program-at paddr bytes x86-init)
                 (program-at paddr bytes x86)
@@ -1312,6 +1332,7 @@
                                      acl2::bvplus-recollapse))))
 
 ;todo: gen the 1
+;todo: the hyps of read-in-terms-of-nth-and-pos-eric seem better than this
 (defthm read-when-program-at
   (implies (and (program-at addr2 bytes x86)
                 (syntaxp (quotep bytes))
@@ -1500,6 +1521,22 @@
                            (READ 2 (+ 2 ADDR) X86))
            :in-theory (e/d (read bvplus)
                            (ACL2::BVPLUS-RECOLLAPSE)))))
+
+;; This variant uses + instead of bvplus
+(defthmd read-4-blast-alt
+  (implies (integerp addr)
+           (equal (read 4 addr x86)
+                  (bvcat 8
+                         (read 1 (+ 3 addr) x86)
+                         24
+                         (bvcat 8
+                                (read 1 (+ 2 addr) x86)
+                                16
+                                (bvcat 8
+                                       (read 1 (+ 1 addr) x86)
+                                       8
+                                       (read 1 addr x86))))))
+  :hints (("Goal" :use (:instance read-4-blast))))
 
 (defthm read-of-write-both-size-1
   (implies (and (app-view x86) ;drop

@@ -96,7 +96,7 @@ macro to easily cause unsoundness.</li>
          state)            ; Adjusted with changes to the oracle
 })
 
-<p>See also the file @('[books]/tools/oracle-timelimit-tests.lisp') for some
+<p>See also the community book @('tools/oracle-timelimit-tests.lisp') for some
 additional tests and working examples.</p>
 
 <h5>General Form</h5>

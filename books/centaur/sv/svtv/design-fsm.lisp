@@ -86,7 +86,7 @@
 
 (defprod flatnorm-res
   ((assigns svex-alist)
-   (delays svar-map)
+   (delays svex-alist)
    (constraints constraintlist)))
 
 (define flatten-res-vars ((x flatten-res-p))
@@ -147,7 +147,11 @@
              (<= (moddb-mod-totalwires
                   (moddb-modname-get-index (design->top x) new-moddb) new-moddb)
                  (len new-aliases)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret svarlist-addr-p-aliases-vars-of-<fn>
+    (implies (not err)
+             (svarlist-addr-p (aliases-vars new-aliases)))))
 
 
 (defprod flatnorm-setup
@@ -163,33 +167,71 @@
         (svex-normalize-assigns flatten.assigns flatten.fixups flatten.constraints flatten.var-decl-map aliases))
        ((flatnorm-setup setup))
        (assigns (if setup.monotonify
-                    (pairlis$ (svex-alist-keys assigns)
-                              (time$ (svexlist-monotonify (svex-alist-vals assigns))
-                                     :msg "; svexlist-monotonify: ~st sec (~sa bytes)~%"))
+                    (svex-alist-monotonify assigns)
                   assigns)))
-    (make-flatnorm-res :assigns assigns :delays delays :constraints constraints)))
+    (make-flatnorm-res :assigns assigns :delays delays :constraints constraints))
+  ///
+  (defret svarlist-addr-p-assigns-vars-of-<fn>
+    (b* (((flatnorm-res res)))
+      (implies (svarlist-addr-p (aliases-vars aliases))
+               (svarlist-addr-p (svex-alist-vars res.assigns)))))
 
-(local
- (defsection no-duplicate-svex-alist-keys-of-fast-alist-clean
-   (local (include-book "std/alists/fast-alist-clean" :dir :system))
-   (defthm svex-alist-p-of-fast-alist-fork
-     (implies (and (svex-alist-p x)
-                   (svex-alist-p y))
-              (svex-alist-p (fast-alist-fork x y))))
-   (defthm cdr-last-of-svex-alist-p
-     (implies (svex-alist-p x)
-              (equal (cdr (last x)) nil)))
-   (defthm svex-alist-p-of-fast-alist-clean
+  (defret svarlist-addr-p-assigns-keys-of-<fn>
+    (b* (((flatnorm-res res)))
+      (implies (svarlist-addr-p (aliases-vars aliases))
+               (svarlist-addr-p (svex-alist-keys res.assigns)))))
+
+  (defret svarlist-addr-p-delay-vars-of-<fn>
+    (b* (((flatnorm-res res)))
+      (implies (svarlist-addr-p (aliases-vars aliases))
+               (svarlist-addr-p (svex-alist-vars res.delays)))))
+
+  (defret svarlist-addr-p-delay-keys-of-<fn>
+    (b* (((flatnorm-res res)))
+      (implies (svarlist-addr-p (aliases-vars aliases))
+               (svarlist-addr-p (svex-alist-keys res.delays)))))
+
+  (defret svarlist-addr-p-constraint-vars-of-<fn>
+    (b* (((flatnorm-res res)))
+      (implies (svarlist-addr-p (aliases-vars aliases))
+               (svarlist-addr-p (constraintlist-vars res.constraints)))))
+
+  (defret no-duplicate-assigns-keys-of-<fn>
+    (b* (((flatnorm-res res)))
+      (no-duplicatesp-equal (svex-alist-keys res.assigns))))
+
+  (defret no-duplicate-delay-keys-of-<fn>
+    (b* (((flatnorm-res res)))
+      (no-duplicatesp-equal (svex-alist-keys res.delays)))))
+
+
+(defsection no-duplicate-svex-alist-keys-of-fast-alist-clean
+  (local (include-book "std/alists/fast-alist-clean" :dir :system))
+  (local (in-theory (enable fast-alist-clean)))
+  (defthm svex-alist-p-of-fast-alist-fork
+    (implies (and (svex-alist-p x)
+                  (svex-alist-p y))
+             (svex-alist-p (fast-alist-fork x y))))
+  (local
+   (progn
+     (defthm cdr-last-of-svex-alist-p
+       (implies (svex-alist-p x)
+                (equal (cdr (last x)) nil)))))
+
+  (defthm svex-alist-p-of-fast-alist-clean
      (implies (svex-alist-p x)
               (svex-alist-p (fast-alist-clean x))))
 
-   (defthm no-duplicate-svex-alist-keys-of-fast-alist-fork
-     (implies  (no-duplicatesp-equal (svex-alist-keys y))
-               (no-duplicatesp-equal (svex-alist-keys (fast-alist-fork x y))))
-     :hints(("Goal" :in-theory (enable svex-alist-keys svex-lookup))))
-   (defthm svex-alist-keys-of-cdr-last
-     (equal (svex-alist-keys (cdr (last x))) nil)
-     :hints(("Goal" :in-theory (enable svex-alist-keys))))
+   (local
+    (progn
+      (defthm no-duplicate-svex-alist-keys-of-fast-alist-fork
+        (implies  (no-duplicatesp-equal (svex-alist-keys y))
+                  (no-duplicatesp-equal (svex-alist-keys (fast-alist-fork x y))))
+        :hints(("Goal" :in-theory (enable svex-alist-keys svex-lookup))))
+      (defthm svex-alist-keys-of-cdr-last
+        (equal (svex-alist-keys (cdr (last x))) nil)
+        :hints(("Goal" :in-theory (enable svex-alist-keys))))))
+
    (defthm no-duplicate-svex-alist-keys-of-fast-alist-clean
      (no-duplicatesp-equal (svex-alist-keys (fast-alist-clean x)))
      :hints(("Goal" :in-theory (enable svex-alist-keys))))
@@ -210,7 +252,7 @@
    (defthm no-duplicate-keys-of-fast-alist-clean
      (no-duplicatesp-equal (alist-keys (fast-alist-clean x))))
 
-   (in-theory (disable fast-alist-clean))))
+   (in-theory (disable fast-alist-clean)))
 
 (deftagsum svtv-assigns-override-config
   (:omit ((vars svarlist-p)))
@@ -234,37 +276,7 @@
   (defret <fn>-subset-of-keys
     (subsetp-equal override-vars (svex-alist-keys assigns))))
 
-(define svtv-delay-alist ((x svar-map-p)
-                          (internal-signals svarlist-p)
-                          (masks svex-mask-alist-p))
-  ;; Converts an alist mapping delayed vars to undelayed vars (or more
-  ;; generally, delay-n+1 to delay-n vars) into an svex-alist where the bound
-  ;; value of each delayed variable is either (1) the corresponding undelayed
-  ;; variable, if it is an internal signal bound in the given alist or (2) the
-  ;; masked value of the undelayed variable, if not (for the case in which the
-  ;; variable is a primary input).
-  :returns (xx svex-alist-p)
-  :measure (len (svar-map-fix x))
-  (b* ((x (svar-map-fix x))
-       ((when (atom x)) nil)
-       ((cons key val) (car x))
-       ((when (member-equal (svar-fix val) (svarlist-fix internal-signals)))
-        (cons (cons key (svex-var val))
-              (svtv-delay-alist (cdr x) internal-signals masks)))
-       (mask (svex-mask-lookup (svex-var key) masks)))
-    (cons (cons key
-                (svcall bit?
-                        (svex-quote (2vec (sparseint-val mask)))
-                        (svex-var val)
-                        (svex-quote (2vec 0))))
-          (svtv-delay-alist (cdr x) internal-signals masks)))
-  ///
-  (defret svex-alist-keys-of-<fn>
-    (equal (svex-alist-keys xx)
-           (alist-keys (svar-map-fix x)))
-    :hints(("Goal" :in-theory (enable alist-keys svar-map-fix svex-alist-keys))))
 
-  (defcong set-equiv equal (svtv-delay-alist x internal-signals masks) 2))
        
 
 (defprod phase-fsm-config
@@ -285,9 +297,7 @@
                         (svtv-assigns-override-vars flatnorm.assigns config)))
        ((acl2::with-fast override-alist))
        (overridden-assigns (svex-alist-compose flatnorm.assigns override-alist))
-       (masks (svexlist-mask-alist (svex-alist-vals flatnorm.assigns)))
-       (overridden-delays (svex-alist-compose (svtv-delay-alist (fast-alist-clean flatnorm.delays)
-                                                                (svex-alist-keys flatnorm.assigns) masks)
+       (overridden-delays (svex-alist-compose (fast-alist-clean flatnorm.delays)
                                               override-alist)))
     (mv overridden-assigns overridden-delays))
   ///
@@ -297,7 +307,7 @@
 
   (defret svex-alist-keys-of-<fn>-delays
     (equal (svex-alist-keys delay-alist)
-           (alist-keys (fast-alist-clean (flatnorm-res->delays flatnorm))))))
+           (svex-alist-keys (fast-alist-clean (flatnorm-res->delays flatnorm))))))
 
 (local (defthm append-subset-under-set-equiv
            (implies (subsetp a b)
@@ -339,19 +349,6 @@
 
 
 
-(local
- (defthm svex-compose-delays-in-terms-of-svtv-delay-alist
-   (equal (svex-compose-delays delays updates masks)
-          (svex-alist-compose
-           (svtv-delay-alist delays (svex-alist-keys updates) masks)
-           updates))
-   :hints(("Goal" :in-theory (enable svex-compose-delays
-                                     svtv-delay-alist
-                                     svex-alist-compose
-                                     svex-acons
-                                     svex-compose
-                                     svexlist-compose)))))
-
 (defprod phase-fsm-params
   ((scc-selfcompose-limit maybe-natp
                           "Limit on the number of times to self-compose a set
@@ -382,8 +379,7 @@ to a small number is usually practical if there is such a problem.")
                                           :rewrite params.rewrite
                                           :scc-selfcompose-limit params.scc-selfcompose-limit))))
        (updates2 (fast-alist-fork updates1 (make-fast-alist (svex-alist-compose override-alist updates1))))
-       (masks (svexlist-mask-alist (svex-alist-vals flatnorm.assigns)))
-       (nextstates (svex-compose-delays (fast-alist-clean flatnorm.delays) updates2 masks)))
+       (nextstates (make-fast-alist (svex-alist-compose (fast-alist-clean flatnorm.delays) updates2))))
     (fast-alist-free updates2)
     (make-base-fsm :values updates1 :nextstate nextstates))
   ///
@@ -508,8 +504,7 @@ to a small number is usually practical if there is such a problem.")
                     (svex-assigns-compose overridden-assigns :rewrite rewrite
                                           :scc-selfcompose-limit selfcompose-limit))))
        (updates2 (svex-alist-compose override-alist updates1))
-       (masks (svexlist-mask-alist (svex-alist-vals updates2)))
-       (nextstates (with-fast-alist updates2 (svex-compose-delays delays updates2 masks))))
+       (nextstates (with-fast-alist updates2 (svex-alist-compose delays updates2))))
     (mv nil
         (make-base-fsm :values updates1
                        :nextstate (fast-alist-clean nextstates))

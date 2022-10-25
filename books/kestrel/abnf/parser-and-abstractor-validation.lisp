@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,8 +13,8 @@
 (include-book "parser")
 (include-book "abstractor")
 
-; (depends-on "core-rules.txt")
-; (depends-on "concrete-syntax-rules.txt")
+; (depends-on "core-rules.abnf")
+; (depends-on "concrete-syntax-rules.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,7 +39,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('core-rules.txt') contains
+    "The file @('core-rules.abnf') contains
      the definition of the core rules of ABNF
      using the concrete syntax of ABNF itself,
      copied and pasted from [RFC].
@@ -51,7 +51,7 @@
      to keep this constant unexpanded in output."))
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "core-rules.txt") state)
+     (parse-grammar-from-file (string-append (cbd) "core-rules.abnf") state)
      (value `(progn
                (defconst *core-rules-parse-tree* ',tree)
                (add-const-to-untranslate-preprocess *core-rules-parse-tree*)
@@ -65,7 +65,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('concrete-syntax-rules.txt') contains
+    "The file @('concrete-syntax-rules.abnf') contains
      the definition of the concrete syntax of ABNF
      using the concrete syntax of ABNF itself,
      copied and pasted from [RFC].
@@ -77,7 +77,7 @@
      to keep this constant unexpanded in output."))
   (make-event
    (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "concrete-syntax-rules.txt")
+     (parse-grammar-from-file (string-append (cbd) "concrete-syntax-rules.abnf")
                               state)
      (value `(progn
                (defconst *concrete-syntax-rules-parse-tree*
@@ -94,7 +94,7 @@
   (xdoc::topstring
    (xdoc::p
     "Applying the grammar abstractor to the parse tree
-     obtained by applying the grammar parser to the file @('core-rules.txt'),
+     obtained by applying the grammar parser to the file @('core-rules.abnf'),
      yields a list of rules.
      This shows that the abstractor
      abstracts the parsed definition of the core rules of ABNF
@@ -125,7 +125,7 @@
    (xdoc::p
     "Applying the grammar abstractor to the parse tree
      obtained by applying the grammar parser
-     to the file @('concrete-syntax-rules.txt'),
+     to the file @('concrete-syntax-rules.abnf'),
      yields a list of rules.
      This shows that the abstractor
      abstracts the parsed definition of the concrete syntax of ABNF

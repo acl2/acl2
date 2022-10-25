@@ -27,3 +27,4 @@
 (defthm character-listp-of-read-file-into-character-list
   (character-listp (read-file-into-character-list filename state))
   :hints (("Goal" :in-theory (enable read-file-into-character-list))))
+

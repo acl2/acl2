@@ -14,6 +14,8 @@
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-syntaxp-hyp-for-expr-pure ((var symbolp))
@@ -36,7 +38,9 @@
                                        exec-const
                                        exec-iconst
                                        exec-arrsub
+                                       exec-member
                                        exec-memberp
+                                       exec-arrsub-of-member
                                        exec-arrsub-of-memberp
                                        exec-unary
                                        exec-cast

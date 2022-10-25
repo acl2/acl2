@@ -1,0 +1,4 @@
+(ld "acl2s-pkg.lsp")
+
+
+(ACL2::CERTIFY-BOOK "canonical-print" ACL2::?)

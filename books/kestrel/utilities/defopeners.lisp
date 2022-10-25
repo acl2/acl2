@@ -76,22 +76,6 @@
 
 ;; end of library stuff
 
-(defun some-expr-calls-some-fn (fns exprs)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (pseudo-term-listp exprs))))
-  (if (atom fns)
-      nil
-    (or (some-expr-calls-fn (first fns) exprs)
-        (some-expr-calls-some-fn (rest fns) exprs))))
-
-(defun expr-calls-some-fn (fns expr)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (pseudo-termp expr))))
-  (if (atom fns)
-      nil
-    (or (expr-calls-fn (first fns) expr)
-        (expr-calls-some-fn (rest fns) expr))))
-
 ;; ;count the number of branches of the ITE nest that are base cases and the number that contain recursive calls
 ;; ;returns (mv base-case-count recursive-case-count)
 ;; (defun count-and-recursive-cases-bases-aux (fn term base-case-count recursive-case-count)

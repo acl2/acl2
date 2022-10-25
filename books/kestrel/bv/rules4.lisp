@@ -11,18 +11,22 @@
 
 (in-package "ACL2")
 
-(include-book "rules") ;drop?
+(include-book "rules") ;drop? for signed-byte-p-when-top-bit-0
+(local (include-book "unsigned-byte-p"))
 (include-book "getbit")
 (include-book "repeatbit")
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;todo
 
 ;(local (in-theory (enable boolor booland)))
+
+(local (in-theory (disable signed-byte-p)))
 
 ; if x has a zero in it, and is negative, it can't be too big
 (defthm getbit-of-0-bound-when-negative
@@ -344,6 +348,35 @@
                   (bvlt size (trim size (bvcat highsize x lowsize y)) k)))
   :hints (("Goal" :in-theory (enable trim))))
 
+
+;move
+
+
+(defthm <-of-bvchop-and-bvchop-when-<=-of-bvchop-and-bvchop-one-less
+  (implies (and (<= (bvchop sizeminus1 x) (bvchop sizeminus1 y))
+                (equal sizeminus1 (+ -1 size))
+                (posp size))
+           (equal (< (bvchop size y) (bvchop size x))
+                  (and (equal 1 (getbit sizeminus1 x))
+                       (equal 0 (getbit sizeminus1 y)))))
+  :hints (("Goal" :in-theory (enable BVCHOP-TOP-BIT-CASES))))
+
+(defthm <-of-bvchop-and-bvchop-when-<-of-bvchop-and-bvchop-one-less
+  (implies (and (< (bvchop sizeminus1 x) (bvchop sizeminus1 y))
+                (equal sizeminus1 (+ -1 size))
+                (posp size))
+           (equal (< (bvchop size y) (bvchop size x))
+                  (and (equal 1 (getbit sizeminus1 x))
+                       (equal 0 (getbit sizeminus1 y)))))
+  :hints (("Goal" :in-theory (enable BVCHOP-TOP-BIT-CASES))))
+
+(defthm <-of-bvchop-and-bvchop-when-top-bits-equal
+  (implies (and (equal (getbit (+ -1 size) x) (getbit (+ -1 size) y))
+                (posp size))
+           (equal (< (bvchop size y) (bvchop size x))
+                  (< (bvchop (+ -1 size) y) (bvchop (+ -1 size) x))))
+  :hints (("Goal" :in-theory (enable BVCHOP-TOP-BIT-CASES))))
+
 ;these is a worse version of this in MUSE somewhere
 (defthm sbvlt-of-bvsx-arg2
   (implies (and (signed-byte-p size2 y)
@@ -356,12 +389,14 @@
                   (sbvlt size2 x y)))
   :hints (("Goal" :cases ((equal size size2))
            :in-theory (e/d (bvsx bvlt-of-bvcat-trim-gen boolor bvlt trim sbvlt-rewrite
-                                 BVCHOP-TOP-BIT-CASES)
+                                 ;BVCHOP-TOP-BIT-CASES
+                                 )
                                   (EXPONENTS-ADD
                                    ;BVCAT-OF-+-HIGH ;looped
                                    BVLT-OF-BVCHOP-ARG3-SAME
                                    BVLT-OF-BVCHOP-ARG2
                                    EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
+                                   getbit-of-one-less
                                    )))))
 
 ;gen?

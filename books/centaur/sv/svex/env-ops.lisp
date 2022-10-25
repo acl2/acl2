@@ -357,7 +357,10 @@ provides.</p>")
   (deffixcong svex-env-equiv svex-env-equiv (append a b) b)
 
   (defrefinement svex-env-equiv svex-envs-similar
-    :hints ((witness))))
+    :hints ((witness)))
+
+  (defcong svex-envs-similar equal (svex-env-extract keys x) 2
+    :hints(("Goal" :in-theory (enable svex-env-extract)))))
 
 
 
@@ -481,7 +484,12 @@ of @(see svex-env-lookup), and they bind the same variables.")
 ; the change, after v8-0, to keep LET expressions on right-hand-sides of
 ; rewrite rules, like this one.
 
-                 (hons-assoc-equal-of-svex-alist-fix))))))
+                 (hons-assoc-equal-of-svex-alist-fix)))))
+
+  (defthm svex-alist-keys-of-svex-alist-extract
+    (equal (svex-alist-keys (svex-alist-extract keys x))
+           (svarlist-fix keys))
+    :hints(("Goal" :in-theory (enable svex-alist-extract svex-alist-keys)))))
 
 
 
@@ -669,7 +677,12 @@ of @(see svex-env-lookup), and they bind the same variables.")
   (defthm svex-alist-eval-of-svarlist-x-subst
     (equal (svex-alist-eval (svarlist-x-subst x) env)
            (svarlist-x-env x))
-    :hints(("Goal" :in-theory (enable svarlist-x-env svex-alist-eval)))))
+    :hints(("Goal" :in-theory (enable svarlist-x-env svex-alist-eval))))
+
+  (defthm svex-alist-keys-of-svarlist-x-subst
+    (equal (svex-alist-keys (svarlist-x-subst x))
+           (svarlist-fix x))
+    :hints(("Goal" :in-theory (enable svex-alist-keys)))))
 
 
 (defthm svex-env-p-of-pairlis$
@@ -931,3 +944,94 @@ of @(see svex-env-lookup), and they bind the same variables.")
   (local (in-theory (enable svex-envs-agree))))
 
 
+
+
+
+(define svex-envs-agree-except-witness ((vars svarlist-p)
+                                        (x svex-env-p)
+                                        (y svex-env-p))
+  :returns (witness svar-p)
+  (ec-call
+   (svar-fix (ec-call (svex-envs-similar-witness (svex-env-fix (append (svex-env-extract vars y) x))
+                                                 (svex-env-fix y))))))
+
+
+(define svex-envs-agree-except ((vars svarlist-p)
+                                (x svex-env-p)
+                                (y svex-env-p))
+  (ec-call (svex-envs-similar (append (svex-env-extract vars y) x) y))
+  ///
+  (defthmd svex-envs-agree-except-implies
+    (implies (and (svex-envs-agree-except vars x y)
+                  (not (member-equal (svar-fix var) (svarlist-fix vars))))
+             (equal (svex-env-lookup var x) (svex-env-lookup var y)))
+    :hints (("goal" :use ((:instance svex-envs-similar-necc
+                           (x (append (svex-env-extract vars y) x))
+                           (k var)))
+             :in-theory (disable svex-envs-similar-implies-equal-svex-env-lookup-2))))
+
+  (defthmd svex-envs-agree-except-by-witness
+    (equal (svex-envs-agree-except vars x y)
+           (let ((var (svex-envs-agree-except-witness vars x y)))
+             (implies (not (member-equal (svar-fix var) (svarlist-fix vars)))
+                      (equal (svex-env-lookup var x) (svex-env-lookup var y)))))
+    :hints (("goal" :in-theory (e/d (svex-envs-agree-except-implies)
+                                    (svex-envs-agree-except)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable svex-envs-agree-except)))
+            (and stable-under-simplificationp
+                 (let ((lit (car (last clause))))
+                   (and (eq (car lit) 'svex-envs-similar)
+                        `(:use ((:instance svex-envs-similar
+                                 (x (svex-env-fix ,(cadr lit)))
+                                 (y (svex-env-fix ,(caddr lit)))))
+                          :in-theory (enable svex-envs-agree-except-witness))))))
+    :rule-classes :definition)
+
+  (local (in-theory (disable svex-envs-agree-except)))
+  
+  (defthmd svex-envs-agree-except-commutative
+    (implies (svex-envs-agree-except vars x y)
+             (svex-envs-agree-except vars y x))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))
+                   :in-theory (enable svex-envs-agree-except-implies)))))
+
+  (defthm svex-envs-agree-except-refl
+    (svex-envs-agree-except vars x x)
+    :hints (("goal" :expand ((svex-envs-agree-except vars x x)))))
+
+  (defthmd svex-envs-agree-except-transitive
+    (implies (and (svex-envs-agree-except vars x y)
+                  (svex-envs-agree-except vars y z))
+             (svex-envs-agree-except vars x z))
+    :hints (("goal" :expand ((svex-envs-agree-except vars x z))
+             :in-theory (enable svex-envs-agree-except-implies))))
+
+
+  (defthm-svex-eval-flag
+    (defthmd svex-eval-when-agree-except-non-intersecting
+      (implies (and (svex-envs-agree-except vars env1 env2)
+                    (not (intersectp-equal (svarlist-fix vars) (svex-vars x))))
+               (equal (svex-eval x env1)
+                      (svex-eval x env2)))
+      :hints ('(:expand ((svex-vars x)
+                         (:free (env) (svex-eval x env)))
+                :in-theory (enable svex-envs-agree-except-implies)))
+      :flag expr)
+    (defthmd svexlist-eval-when-agree-except-non-intersecting
+      (implies (and (svex-envs-agree-except vars env1 env2)
+                    (not (intersectp-equal (svarlist-fix vars) (svexlist-vars x))))
+               (equal (svexlist-eval x env1)
+                      (svexlist-eval x env2)))
+      :hints ('(:expand ((svexlist-vars x)
+                         (:free (env) (svexlist-eval x env1)))))
+      :flag list))
+
+  (defthmd svex-alist-eval-when-agree-except-non-intersecting
+    (implies (and (svex-envs-agree-except vars env1 env2)
+                  (not (intersectp-equal (svarlist-fix vars) (svex-alist-vars x))))
+             (equal (svex-alist-eval x env1)
+                    (svex-alist-eval x env2)))
+    :hints(("Goal" :in-theory (enable svex-alist-eval svex-alist-vars
+                                      svex-eval-when-agree-except-non-intersecting)))))

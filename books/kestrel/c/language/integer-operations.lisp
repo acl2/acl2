@@ -14,6 +14,7 @@
 (include-book "values")
 (include-book "static-semantics")
 
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -771,7 +772,7 @@
     "         (signed-byte-p n (lognot x)))")
    (xdoc::p
     "which can be proved, for example,
-     by including @('[books]/kestrel/arithmetic-light/expt.lisp').")
+     by including community book @('kestrel/arithmetic-light/expt.lisp').")
    (xdoc::p
     "Thus, applying @(tsee result-integer-value) never yields an error
      when applied to the result @(tsee lognot),
@@ -907,8 +908,371 @@
        ((when (equal mathint2 0)) (error :division-by-zero))
        (result (truncate mathint1 mathint2))
        (resval (result-integer-value result (type-of-value val1)))
-       ((when (errorp resval)) (error (list :undefined-mul
+       ((when (errorp resval)) (error (list :undefined-div
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define rem-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2)
+              (equal (type-of-value val1)
+                     (type-of-value val2)))
+  :returns (resval value-resultp)
+  :short "Apply @('%') to integer values [C:6.5.5/5] [C:6.5.5/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the usual arithmetic conversions,
+     so they are promoted arithmetic value with the same type.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is the same as the operands [C:6.3.1.8/1].
+     We use @(tsee result-integer-value) to return the resulting value,
+     or an error, as documented in that function.")
+   (xdoc::p
+    "It is an error if the divisor is 0 [C:6.5.5/5].")
+   (xdoc::p
+    "We use @(tsee rem) because it matches the use of @(tsee truncate),
+     in terms of the relationship between quotient and remainder [C:6.5.5/6],
+     in the definition of @('/') in @(tsee rem-integer-values)."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2))
+       ((when (equal mathint2 0)) (error :division-by-zero))
+       (result (rem mathint1 mathint2))
+       (resval (result-integer-value result (type-of-value val1)))
+       ((when (errorp resval)) (error (list :undefined-rem
+                                            (value-fix val1)
+                                            (value-fix val2)))))
+    resval)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2)
+              (equal (type-of-value val1)
+                     (type-of-value val2)))
+  :returns (resval value-resultp)
+  :short "Apply binary @('+') to integer values [C:6.5.6/5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the usual arithmetic conversions,
+     so they are promoted arithmetic value with the same type.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is the same as the operands [C:6.3.1.8/1].
+     We use @(tsee result-integer-value) to return the resulting value,
+     or an error, as documented in that function."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2))
+       (result (+ mathint1 mathint2))
+       (resval (result-integer-value result (type-of-value val1)))
+       ((when (errorp resval)) (error (list :undefined-add
+                                            (value-fix val1)
+                                            (value-fix val2)))))
+    resval)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sub-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2)
+              (equal (type-of-value val1)
+                     (type-of-value val2)))
+  :returns (resval value-resultp)
+  :short "Apply binary @('-') to integer values [C:6.5.6/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the usual arithmetic conversions,
+     so they are promoted arithmetic value with the same type.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is the same as the operands [C:6.3.1.8/1].
+     We use @(tsee result-integer-value) to return the resulting value,
+     or an error, as documented in that function."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2))
+       (result (- mathint1 mathint2))
+       (resval (result-integer-value result (type-of-value val1)))
+       ((when (errorp resval)) (error (list :undefined-sub
+                                            (value-fix val1)
+                                            (value-fix val2)))))
+    resval)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define shl-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2))
+  :returns (resval value-resultp)
+  :short "Apply @('<<') to integer values [C:6.5.7/3] [C:6.5.7/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the arithmetic promotions.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is the same as the left operand [C:6.5.7/3].
+     We use @(tsee result-integer-value) to return the resulting value,
+     or an error, as documented in that function.
+     The left operand must be non-negative,
+     otherwise it is an error.
+     The right operand must be non-negative
+     and below the number of bits of the left operand,
+     otherwise it is an error."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2))
+       (type1 (type-of-value val1))
+       ((unless (<= 0 mathint1))
+        (error (list :undefined-shl
+                     (value-fix val1)
+                     (value-fix val2))))
+       ((unless (integer-range-p 0 (integer-type-bits type1) mathint2))
+        (error (list :undefined-shl
+                     (value-fix val1)
+                     (value-fix val2))))
+       (result (* mathint1 (expt 2 mathint2)))
+       (resval (result-integer-value result type1))
+       ((when (errorp resval)) (error (list :undefined-shl
+                                            (value-fix val1)
+                                            (value-fix val2)))))
+    resval)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define shr-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2))
+  :returns (resval value-resultp)
+  :short "Apply @('>>') to integer values [C:6.5.7/3] [C:6.5.7/5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the arithmetic promotions.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is the same as the left operand [C:6.5.7/3].
+     We use @(tsee result-integer-value) to return the resulting value,
+     or an error, as documented in that function.
+     The left operand must be non-negative,
+     otherwise it is an error.
+     The right operand must be non-negative
+     and below the number of bits of the left operand,
+     otherwise it is an error."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2))
+       (type1 (type-of-value val1))
+       ((unless (<= 0 mathint1))
+        (error (list :undefined-shr
+                     (value-fix val1)
+                     (value-fix val2))))
+       ((unless (integer-range-p 0 (integer-type-bits type1) mathint2))
+        (error (list :undefined-shr
+                     (value-fix val1)
+                     (value-fix val2))))
+       (result (truncate mathint1 (expt 2 mathint2)))
+       (resval (result-integer-value result type1))
+       ((when (errorp resval)) (error (list :undefined-shr
+                                            (value-fix val1)
+                                            (value-fix val2)))))
+    resval)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lt-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2)
+              (equal (type-of-value val1)
+                     (type-of-value val2)))
+  :returns (resval valuep)
+  :short "Apply @('<') to integer values [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the usual arithmetic conversions,
+     so they are promoted arithmetic value with the same type.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is always @('int').
+     This operation is always well-defined,
+     so it always returns a value (never an error)."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2)))
+    (if (< mathint1 mathint2)
+        (value-sint 1)
+      (value-sint 0)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define gt-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2)
+              (equal (type-of-value val1)
+                     (type-of-value val2)))
+  :returns (resval valuep)
+  :short "Apply @('>') to integer values [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the usual arithmetic conversions,
+     so they are promoted arithmetic value with the same type.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is always @('int').
+     This operation is always well-defined,
+     so it always returns a value (never an error)."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2)))
+    (if (> mathint1 mathint2)
+        (value-sint 1)
+      (value-sint 0)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define le-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2)
+              (equal (type-of-value val1)
+                     (type-of-value val2)))
+  :returns (resval valuep)
+  :short "Apply @('<=') to integer values [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the usual arithmetic conversions,
+     so they are promoted arithmetic value with the same type.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is always @('int').
+     This operation is always well-defined,
+     so it always returns a value (never an error)."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2)))
+    (if (<= mathint1 mathint2)
+        (value-sint 1)
+      (value-sint 0)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ge-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2)
+              (equal (type-of-value val1)
+                     (type-of-value val2)))
+  :returns (resval valuep)
+  :short "Apply @('>=') to integer values [C:6.5.8/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the usual arithmetic conversions,
+     so they are promoted arithmetic value with the same type.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is always @('int').
+     This operation is always well-defined,
+     so it always returns a value (never an error)."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2)))
+    (if (>= mathint1 mathint2)
+        (value-sint 1)
+      (value-sint 0)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eq-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2)
+              (equal (type-of-value val1)
+                     (type-of-value val2)))
+  :returns (resval valuep)
+  :short "Apply @('==') to integer values [C:6.5.9/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the usual arithmetic conversions,
+     so they are promoted arithmetic value with the same type.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is always @('int').
+     This operation is always well-defined,
+     so it always returns a value (never an error)."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2)))
+    (if (= mathint1 mathint2)
+        (value-sint 1)
+      (value-sint 0)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ne-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2)
+              (equal (type-of-value val1)
+                     (type-of-value val2)))
+  :returns (resval valuep)
+  :short "Apply @('!=') to integer values [C:6.5.9/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the usual arithmetic conversions,
+     so they are promoted arithmetic value with the same type.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is always @('int').
+     This operation is always well-defined,
+     so it always returns a value (never an error)."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2)))
+    (if (/= mathint1 mathint2)
+        (value-sint 1)
+      (value-sint 0)))
   :hooks (:fix))

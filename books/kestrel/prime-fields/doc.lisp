@@ -26,7 +26,7 @@
    (xdoc::p
     "To define the notion of primality, we currently use the
     function " (xdoc::tt "rtl::primep") " defined
-    in " (xdoc::tt "[books]/projects/quadratic-reciprocity/euclid") ".")
+    in community booko " (xdoc::tt "projects/quadratic-reciprocity/euclid") ".")
    (xdoc::p "The following "
             (xdoc::tt "include-book")
             " command may be helpful to bring in the library:")

@@ -29,6 +29,7 @@
 (include-book "read-file-into-byte-list")
 (include-book "read-file-into-character-list")
 (include-book "read-file-into-byte-array-stobj")
+(include-book "read-file-into-byte-array-stobj2")
 (include-book "read-file-into-character-array-stobj")
 
 (include-book "write-bytes-to-channel")

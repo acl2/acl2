@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,8 +12,11 @@
 
 (include-book "kestrel/abnf/parser" :dir :system)
 (include-book "kestrel/abnf/abstractor" :dir :system)
+(include-book "kestrel/abnf/operations/well-formedness" :dir :system)
+(include-book "kestrel/abnf/operations/closure" :dir :system)
+(include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)
 
-; (depends-on "abnf-grammar-old.txt")
+; (depends-on "grammar-old.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,7 +53,7 @@
 
   (make-event
    (mv-let (tree state)
-     (abnf::parse-grammar-from-file (str::cat (cbd) "abnf-grammar-old.txt")
+     (abnf::parse-grammar-from-file (str::cat (cbd) "grammar-old.abnf")
                                     state)
      (acl2::value `(defconst *grammar-old*
                      (abnf::abstract-rulelist ',tree)))))

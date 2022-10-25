@@ -73,7 +73,8 @@
 (defprod pipeline-setup
   ((probes svtv-probealist)
    (inputs svex-alistlist)
-   (overrides svex-alistlist)
+   (override-vals svex-alistlist)
+   (override-tests svex-alistlist)
    (initst svex-alist)))
 
 (defconst *svtv-data-nonstobj-fields*
@@ -237,7 +238,9 @@
                    (svtv-normalize-assigns flatten aliases setup)
                    spec))
        ((flatnorm-res flatnorm)))
-    (and (ec-call (svex-alist-eval-equiv flatnorm.assigns spec.assigns))
+    (and (ec-call (svex-alist-eval-equiv! flatnorm.assigns spec.assigns))
+         (subsetp-equal (svex-alist-vars flatnorm.assigns) (svex-alist-vars spec.assigns))
+         ;; (no-duplicatesp-equal (svex-alist-keys flatnorm.assigns))
          (equal flatnorm.delays spec.delays)
          (equal flatnorm.constraints spec.constraints)))
   ///
@@ -475,9 +478,10 @@
                   ((pipeline-setup pipe) (svtv-data$c->pipeline-setup svtv-data$c))
                   (run (svtv-fsm-run
                         (svex-alistlist-eval pipe.inputs env)
-                        (svex-alistlist-eval pipe.overrides env)
                         (svex-alist-eval pipe.initst env)
-                        rename-fsm (svtv-probealist-outvars pipe.probes))))
+                        rename-fsm (svtv-probealist-outvars pipe.probes)
+                        :override-vals (svex-alistlist-eval pipe.override-vals env)
+                        :override-tests (svex-alistlist-eval pipe.override-tests env))))
                (and (equal (svex-alist-keys pipe.initst)
                            (svex-alist-keys (base-fsm->nextstate fsm)))
                     (ec-call
@@ -1324,6 +1328,8 @@
                 (svtv-normalize-assigns flatten aliases flatnorm-setup)
                 assigns))
    :msg "; Svtv-data flatnorm: ~st seconds, ~sa bytes.~%"))
+
+(local (include-book "std/lists/sets" :dir :system))
 
 (define svtv-data-compute-flatnorm (svtv-data)
   :guard (and (svtv-data->flatten-validp svtv-data)

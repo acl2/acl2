@@ -26,7 +26,7 @@
     "The definition of BLAKE2 is more general than Zcash.
      BLAKE2 is defined elsewhere, and used by Zcash.
      In the ACL2 community books, this is defined under
-     @('[books]/kestrel/crypto/blake/')."))
+     @('kestrel/crypto/blake/')."))
   :order-subtopics t
   :default-parent t)
 

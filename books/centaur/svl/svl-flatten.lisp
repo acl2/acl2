@@ -692,24 +692,12 @@
      :hints (("Goal"
               :in-theory (e/d (alias-alist-p) ()))))
 
-   (defthm ALIAS-ALIST-P-of-FAST-ALIST-clean
-     (implies (and (alias-alist-p f))
-              (alias-alist-p (fast-alist-clean f)))
-     :hints (("Goal"
-              :in-theory (e/d () (fast-alist-fork)))))
-
    (defthm svl-aliasdb-alist-p-of-FAST-ALIST-fork
      (implies (and (svl-aliasdb-alist-p f)
                    (svl-aliasdb-alist-p e))
               (svl-aliasdb-alist-p (fast-alist-fork f e)))
      :hints (("Goal"
-              :in-theory (e/d (alias-alist-p) ()))))
-
-   (defthm svl-aliasdb-alist-p-of-FAST-ALIST-clean
-     (implies (and (svl-aliasdb-alist-p f))
-              (svl-aliasdb-alist-p (fast-alist-clean f)))
-     :hints (("Goal"
-              :in-theory (e/d () (fast-alist-fork)))))))
+              :in-theory (e/d (alias-alist-p) ()))))))
 
 (define merge-this-insts-svl-aliasdb ((sub-svl-aliasdb svl-aliasdb-alist-p)
                                       (insts-svl-aliasdb-alist svl-aliasdb-alist-p))

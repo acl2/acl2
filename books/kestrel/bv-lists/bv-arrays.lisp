@@ -22,10 +22,12 @@
 (include-book "bvxor-list")
 (include-book "kestrel/bv/bvif" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
+(include-book "kestrel/bv/bitnot" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
-(include-book "ihs/basic-definitions" :dir :system) ;for logext
+(include-book "ihs/basic-definitions" :dir :system) ;for logext, todo: use bv/logext-def
+(include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -45,6 +47,13 @@
 
 ;move
 (in-theory (disable len))
+
+;move
+(defthm equal-of-repeat-of-len-same
+  (equal (equal data (repeat (len data) item))
+         (and (true-listp data)
+              (all-equal$ item data)))
+  :hints (("Goal" :in-theory (enable true-listp))))
 
 ;; (thm
 ;;  (implies (and (< x y)
@@ -975,7 +984,17 @@
                             NTH-OF-CONS)
                            ()))))
 
-(defthm array-reduction-when-all-same
+;drop the getbit?
+(defthm array-reduction-1-0
+  (equal (bv-array-read 1 2 index '(1 0))
+         (bitnot (getbit 0 (ifix index))))
+  :hints (("Goal"
+           :expand (NTH (GETBIT 0 INDEX) '(1 0))
+           :in-theory (enable bitnot bv-array-read ;LIST::NTH-OF-CONS
+                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+                                   ))))
+
+(defthmd array-reduction-when-all-same
   (implies (and (equal data (repeat (len data) (car data))) ;expensive to check?
                 (natp index)
                 (< index len)
@@ -991,6 +1010,43 @@
            :in-theory (e/d (bv-array-read ;LIST::NTH-OF-CONS
                                    )
                            ()))))
+
+;bozo should we restrict this to constant arrays?
+(DEFTHMd ARRAY-REDUCTION-WHEN-ALL-SAME-improved
+  (IMPLIES (AND (all-equal$ (car data) data) ;old way (involves consing): (EQUAL DATA (REPEAT (LEN DATA) (CAR DATA)))
+                (NATP INDEX)
+                (< INDEX LEN)
+                (EQUAL (LEN DATA) LEN)
+                (TRUE-LISTP DATA)
+                (ALL-UNSIGNED-BYTE-P ELEMENT-SIZE DATA))
+           (EQUAL (BV-ARRAY-READ ELEMENT-SIZE LEN INDEX DATA)
+                  (BV-ARRAY-READ ELEMENT-SIZE LEN 0 DATA) ;(BVCHOP ELEMENT-SIZE (CAR DATA))
+                  ))
+  :hints (("Goal" :use (:instance ARRAY-REDUCTION-WHEN-ALL-SAME)
+           :in-theory (disable ARRAY-REDUCTION-WHEN-ALL-SAME; CAR-BECOMES-NTH-OF-0
+                               ))))
+
+;; This could loop when INDEX is the constant 0, except that then the whole
+;; bv-array-read should be evaluated because all the args would be constants.
+(defthmd array-reduction-when-all-same-improved2
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len) ;these prevent loops
+                              (quotep element-size)))
+                ;; should be evaluated:
+                (all-equal$ (bv-array-read element-size len 0 data) data) ;old way (involves consing): (equal data (repeat (len data) (car data)))
+                (natp index)
+                (< index len)
+                (equal (len data) len)
+                (true-listp data)
+                (all-unsigned-byte-p element-size data))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size len 0 data) ;(bvchop element-size (car data))
+                  ))
+  :hints (("Goal" :use (:instance array-reduction-when-all-same)
+           :in-theory (e/d (;all-equal$-when-true-listp
+                            )
+                           ( array-reduction-when-all-same ;car-becomes-nth-of-0
+                             )))))
 
 (defthm all-unsigned-byte-p-of-bv-array-write-gen-2
   (implies (and (< size element-size) ;not logically necessary, but keeps us from wasting time on this rule when the regular rule would suffice (BOZO ensure that one fires first?)

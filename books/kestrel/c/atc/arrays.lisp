@@ -380,7 +380,9 @@
                     ,<type>-array->elements-alt-def
                     ,<type>-array-index-okp
                     value-array->length
-                    ,type-of-value-when-<type>p)))
+                    ,type-of-value-when-<type>p
+                    remove-flexible-array-member
+                    flexible-array-member-p)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

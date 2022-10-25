@@ -19,11 +19,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This book is an adaptation of [books]/meta/meta-plus-equal.lisp,
+; This book is an adaptation of community book meta/meta-plus-equal.lisp,
 ; authored by Matt Kaufmann and John Cowles,
 ; to integer arithmetic; specifically.
 ;
-; This book is verbatim equivalent to [books]/meta/meta-plus-equal.lisp,
+; This book is verbatim equivalent to community book meta/meta-plus-equal.lisp,
 ; with the following substitutions:
 ;
 ;   binary-+     --> binary-i+

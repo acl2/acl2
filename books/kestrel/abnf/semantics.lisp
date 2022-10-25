@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -42,6 +42,8 @@
      but because ABNF is more complex, its semantics are more complex."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defflexsum symbol
   :short "Symbols."
@@ -92,6 +94,8 @@
                (rulenamep x)))
     :enable symbolp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist string
   :short "Strings."
   :long
@@ -108,6 +112,8 @@
     (implies (nat-listp x)
              (stringp x))
     :enable stringp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes trees
 
@@ -156,7 +162,7 @@
        at that place in the tree."))
     (:leafterm ((get nat-list)))
     (:leafrule ((get rulename)))
-    (:nonleaf ((rulename? maybe-rulename)
+    (:nonleaf ((rulename? rulename-option)
                (branches tree-list-list)))
     :pred treep
     ///
@@ -207,10 +213,14 @@
   (true-listp (car (tree-nonleaf->branches x)))
   :rule-classes :type-prescription)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption tree-option
   tree
   :short "Union of trees and @('nil')."
   :pred tree-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset tree-set
   :elt-type tree
@@ -220,26 +230,36 @@
   :equiv tree-set-equiv
   :short "Finite sets of trees.")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult tree-result
   :short "Fixtype of errors and trees."
   :ok tree
   :pred tree-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult tree-list-result
   :short "Fixtype of errors and lists of trees."
   :ok tree-list
   :pred tree-list-resultp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult tree-list-list-result
   :short "Fixtype of errors and lists of lists of trees."
   :ok tree-list-list
   :pred tree-list-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult tree-option-result
   :short "Fixtype of errors and optional trees."
   :ok tree-option
   :pred tree-option-resultp
   :prepwork ((local (in-theory (enable tree-optionp treep)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines tree->string
   :short "String at the leaves of trees."
@@ -310,6 +330,8 @@
            (append (tree-list-list->string treess1)
                    (tree-list-list->string treess2)))
     :enable append))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines tree-terminatedp
   :short "Notion of terminated tree."
@@ -390,6 +412,8 @@
                                        tree-list->string
                                        tree-list-list->string)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tree-match-num-val-p ((tree treep) (num-val num-val-p))
   :returns (yes/no booleanp)
   :short "Semantics of numeric value notations."
@@ -422,6 +446,8 @@
   :no-function t
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define nat-match-sensitive-char-p ((nat natp) (char characterp))
   :returns (yes/no booleanp)
   :short "Semantics of characters in case-sensitive character value notations."
@@ -439,6 +465,8 @@
   (defrule nat-match-sensitive-char-p-of-char-fix
     (equal (nat-match-sensitive-char-p nat (char-fix char))
            (nat-match-sensitive-char-p nat char))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nat-match-insensitive-char-p ((nat natp) (char characterp))
   :returns (yes/no booleanp)
@@ -463,6 +491,8 @@
     (equal (nat-match-insensitive-char-p nat (char-fix char))
            (nat-match-insensitive-char-p nat char))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define nats-match-sensitive-chars-p ((nats nat-listp)
                                       (chars character-listp))
   :returns (yes/no booleanp)
@@ -485,6 +515,8 @@
            (and (consp nats)
                 (nat-match-sensitive-char-p (car nats) char)
                 (nats-match-sensitive-chars-p (cdr nats) chars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nats-match-insensitive-chars-p ((nats nat-listp)
                                         (chars character-listp))
@@ -509,6 +541,8 @@
                 (nat-match-insensitive-char-p (car nats) char)
                 (nats-match-insensitive-chars-p (cdr nats) chars)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tree-match-char-val-p ((tree treep) (char-val char-val-p))
   :returns (yes/no booleanp)
   :short "Semantics of character value notations."
@@ -530,6 +564,8 @@
   :no-function t
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tree-match-prose-val-p ((tree treep) (prose-val prose-val-p))
   :returns (yes/no booleanp)
   :short "Semantics of prose value notations."
@@ -538,11 +574,13 @@
    "Formally speaking, any tree matches prose,
     because prose has no formal semantics.
     When a rule includes prose,
-    its meaning can be formalized via external predicates on trees.=")
+    its meaning can be formalized via external predicates on trees.")
   t
   :ignore-ok t
   :no-function t
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define numrep-match-repeat-range-p ((numrep natp) (range repeat-rangep))
   :returns (yes/no booleanp)
@@ -562,11 +600,12 @@
   ///
 
   (defrule 0-when-match-repeat-range-0
-    (implies (and (equal range (repeat-range 0 (nati-finite 0)))
-                  (acl2-numberp n)) ; added by Matt K after tau bug fix 8/16/18
+    (implies (equal range (repeat-range 0 (nati-finite 0)))
              (equal (numrep-match-repeat-range-p n range)
                     (equal (nfix n) 0)))
     :enable numrep-match-repeat-range-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lookup-rulename ((rulename rulenamep) (rules rulelistp))
   :returns (alternation alternationp)
@@ -590,6 +629,8 @@
   :no-function t
   :measure (len rules)
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines tree-match-alt/conc/rep/elem-p
   :flag-local nil
@@ -882,6 +923,8 @@
 
   (fty::deffixequiv-mutual tree-match-alt/conc/rep/elem-p))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parse-treep
   (tree (string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
@@ -907,6 +950,8 @@
   (defrule treep-when-parse-treep
     (implies (parse-treep tree string rulename rules)
              (treep tree))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk string-parsablep
   ((string stringp) (rulename rulenamep) (rules rulelistp))
@@ -937,6 +982,8 @@
                           rulename
                           rules))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define-sk string-ambiguousp
   ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
@@ -965,6 +1012,8 @@
              (equal tree1 tree2))
     :rule-classes nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define string-unambiguousp
   ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
@@ -991,6 +1040,8 @@
   (defrule treep-of-string-parsablep-witness-when-string-unambiguousp
     (implies (string-unambiguousp string rulename rules)
              (treep (string-parsablep-witness string rulename rules)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk parse-trees-of-string-p
   ((trees tree-setp) (string stringp) (rulename rulenamep) (rules rulelistp))
@@ -1081,6 +1132,8 @@
            (tree (mv-nth 1 (string-ambiguousp-witness
                             string rulename rules)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define-sk string-has-finite-parse-trees-p
   ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (yes/no booleanp)
@@ -1158,6 +1211,8 @@
              string-parsablep-suff
              parse-trees-of-string-p)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parse ((string stringp) (rulename rulenamep) (rules rulelistp))
   :returns (result (or (tree-setp result)
                        (equal result :infinite))
@@ -1202,6 +1257,8 @@
                             nil))
              (string-unambiguousp string rulename rules))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parse! ((string stringp) (rulename rulenamep) (rules rulelistp))
   :guard (string-unambiguousp string rulename rules)
   :returns (tree treep)
@@ -1220,6 +1277,8 @@
              (equal (parse string rulename rules)
                     (insert (parse! string rulename rules) nil)))
     :enable string-unambiguousp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk languagep (nats (rulenames rulename-setp) (rules rulelistp))
   :returns (yes/no booleanp)
@@ -1244,6 +1303,8 @@
           (and (nat-listp nats)
                (in rulename rulenames)
                (string-parsablep nats rulename rules))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk terminal-string-for-rules-p (nats (rules rulelistp))
   :returns (yes/no booleanp)

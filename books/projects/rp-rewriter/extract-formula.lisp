@@ -83,8 +83,10 @@
   (declare (xargs :guard t))
   (case-match if-form
     (('if a b ''nil)
-     (cons a
-           (if-to-and-list b)))
+     (append (if-to-and-list a)
+             (if-to-and-list b)))
+    (''t
+     nil)
     (& (cons if-form nil))))
 
 (defun custom-rewrite-from-formula (formula)
@@ -94,6 +96,8 @@
      (case-match conc
        (('equal lhs rhs)
         (mv nil hyp lhs rhs))
+       (('iff lhs rhs)
+        (mv t hyp lhs rhs))
        (&
         (mv t hyp conc ''t;`(nonnil-fix ,conc)
             ))))
@@ -101,6 +105,8 @@
      (case-match formula
        (('equal lhs rhs)
         (mv nil ''t lhs rhs))
+       (('iff lhs rhs)
+        (mv t ''t lhs rhs))
        (&
         (mv t ''t formula ''t;`(nonnil-fix ,formula)
             ))))))
@@ -161,25 +167,48 @@
   (declare (xargs :guard t))
   (if (atom qs)
       nil
-    (cons `(implies ,p ,(car qs))
+    (cons (b* ((q (car qs)))
+            (case-match q
+              (('implies qp qq)
+               `(implies (if ,p ,qp 'nil) ,qq))
+              (& `(implies ,p ,q)))) 
           (make-rule-better-aux1 p (cdr qs)))))
 
-(defun make-formula-better (formula)
-  ;; returns a list of rules because a single rule can create multiplie
-  ;; rewrite rules because of "and"
-  (declare (xargs :guard t))
-  (b* ((formula (beta-search-reduce formula *big-number*)))
-    (case-match formula
-      (('implies p q)
-       (b* ((new-terms (if-to-and-list q))
-            (new-terms (not-to-equal-nil-list new-terms))
-            (formulas (make-rule-better-aux1 p new-terms)))
-         formulas))
-      (&
-       (b* ((new-terms (if-to-and-list formula))
-            (new-terms (not-to-equal-nil-list new-terms)))
-         new-terms)))))
+(mutual-recursion
+ (defun make-formula-better (formula limit)
+   ;; returns a list of rules because a single rule can create multiplie
+   ;; rewrite rules because of "and"
+   (declare (xargs :guard (natp limit)))
+   (declare (xargs :measure (nfix limit)))
+   (if (zp limit)
+       (list formula)
+     (case-match formula
+       (('implies p q)
+        (b* ((new-terms (if-to-and-list q))
+             (new-terms (not-to-equal-nil-list new-terms))
+             (new-terms (if (> (len new-terms) 1)
+                            (make-formula-better-lst new-terms (1- limit))
+                          new-terms))
+             (formulas (make-rule-better-aux1 p new-terms)))
+          formulas))
+       (&
+        (b* ((new-terms (if-to-and-list formula))
+             (new-terms (not-to-equal-nil-list new-terms))
+             (new-terms (if (> (len new-terms) 1)
+                            (make-formula-better-lst new-terms (1- limit))
+                          new-terms)))
+          new-terms)))))
 
+ (defun make-formula-better-lst (formulas limit)
+   (declare (xargs :guard (natp limit)))
+   (declare (xargs :measure (nfix limit)))
+   (if (zp limit)
+       formulas
+     (if (atom formulas)
+         nil
+       (acl2::append-without-guard
+        (make-formula-better (car formulas) (1- limit))
+        (make-formula-better-lst (cdr formulas) (1- limit)))))))
 
 (mutual-recursion
  (defun insert-iff-to-force (term rule-name iff-flg in-hyps)
@@ -221,6 +250,8 @@
                      (insert-iff-to-force-lst (cdr lst) rule-name in-hyps)
                      lst))))
 
+
+
 (defund formulas-to-rules (rune rule-new-synp warning formulas)
   (declare (xargs :guard t))
   (if (atom formulas)
@@ -234,6 +265,10 @@
                        ,hyp
                      'nil)
                 hyp))
+         (lhs (if (and (is-return-last lhs)
+                       (not (atom (cadddr lhs))))
+                  (remove-return-last lhs)
+                lhs))
          
          (rule (make custom-rewrite-rule
                      :rune rune
@@ -250,19 +285,29 @@
           (cons rule rest)
         rest))))
 
+
+
 (defun custom-rewrite-with-meta-extract (rule-name rule-new-synp warning state)
   (declare (xargs :guard (and (symbolp rule-name))
                   :stobjs (state)
                   :verify-guards t))
   (b* ((formula (meta-extract-formula rule-name state))
-       (formula (insert-iff-to-force formula rule-name nil nil))
+       
+       
        #|((when (equal formula ''t))
         nil)||#
        ((when (not (pseudo-termp formula)))
         (hard-error 'custom-rewrite-with-meta-extract
                     "Rule ~p0 does not seem to be pseudo-termp ~%"
                     (list (cons #\0 rule-name))))
-       (formulas (make-formula-better formula))
+       (formula (beta-search-reduce formula *big-number*))
+
+       (formula (light-remove-return-last formula))
+       
+       (formulas (make-formula-better formula *big-number*))
+       
+       (formulas (insert-iff-to-force-lst formulas rule-name nil))
+       
        (rune (get-rune-name rule-name state)))
     (formulas-to-rules rune rule-new-synp warning formulas)))
 
@@ -757,45 +802,56 @@
            ((mv given-type name)
             (case-match rule ((type name . &) (mv type name)) (& (mv nil rule))))
            ((unless (symbolp name))
-            (hard-error 'enable-rp-rules
+            (hard-error 'e/d-rp-rules-fn
                         "Rule name from ~p0 is not a symbolp ~%"
                         (list (cons #\0 rule))))
-           (rune (get-rune-name name state))
-           (rune (if given-type rule rune))
-           (rest
-            (if (not (consp (hons-assoc-equal rune (table-alist ruleset (w state)))))
-                (progn$
-                 (and (or (atom rune)
-                          (and (not (equal (car rune) ':definition))
-                               (not (equal (car rune) ':executable-counterpart))))
-                      (cw "Warning! ~p0 does not seem to be registered with ~
-  rp::add-rp-rule. Will do that now, but be aware that it will have a higher priority. ~%"
-                          rune))
-                 (if (or (atom rune)
-                         (not (equal (car rune) ':executable-counterpart)))
-                     (cons `(table ,ruleset ',rune '(:inside-out . t)) rest)
-                   rest))
-              rest))
-           (rune-entry-value (cdr (hons-assoc-equal rune (table-alist ruleset
-                                                                      (w state)))))
+
+
+           (corresponding-rule (hons-assoc-equal
+                                name
+                                (table-alist 'corresponding-rp-rule-reverse (w state))))
+           ((mv given-type name)
+            (if (and corresponding-rule
+                     (symbolp (cdr corresponding-rule)))
+                (mv nil (cdr corresponding-rule))
+              (mv given-type name)))
+           
+           (rune (if given-type rule (get-rune-name name state)))
+
+           ((when (case-match rune ((':executable-counterpart &) t)))
+            (cons (if e/d
+                      `(enable-exc-counterpart ,(second rune))
+                    `(disable-exc-counterpart ,(second rune)))
+                  rest))
+
+           (rune-entry (hons-assoc-equal rune (table-alist ruleset (w state))))
+
+           
+           
+           ((when (not (consp rune-entry)))
+            (progn$
+             (cw
+              "~%------------------------------------------------------------------
+Warning: ~p0 does not seem to be registered with ~
+rp::add-rp-rule. Will do that now, but beware that it will have a higher ~
+priority.
+------------------------------------------------------------------~%"
+                 rune)
+             (cons `(table ,ruleset ',rune '(:inside-out . ,e/d)) rest)))
+
+           (rune-entry-value (cdr rune-entry))
+           
            (both (case-match rune-entry-value
                    ((':both . &) t)
                    (& nil)))
            (outside-in (case-match rune-entry-value
                          ((':outside-in . &) t)
                          (& nil))))
-        (case-match rune
-          ((':executable-counterpart name)
-           (cons (if e/d
-                     `(enable-exc-counterpart ,name)
-                   `(disable-exc-counterpart ,name))
-                 rest))
-          (&
-           (cons `(table ,ruleset ',rune ',(cond
-                                            (both `(:both . ,e/d))
-                                            (outside-in `(:outside-in . ,e/d))
-                                            (t `(:inside-out . ,e/d))))
-                 rest))))))
+        (cons `(table ,ruleset ',rune ',(cond
+                                         (both `(:both . ,e/d))
+                                         (outside-in `(:outside-in . ,e/d))
+                                         (t `(:inside-out . ,e/d))))
+              rest))))
 
   (defmacro enable-rules (rules &key
                                 (ruleset 'rp-rules))

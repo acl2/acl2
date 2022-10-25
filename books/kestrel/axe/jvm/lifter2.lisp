@@ -204,7 +204,7 @@
        ;; Build a rule to inline methods not already lifted:
        (inlining-theorem (make-step-opener-for-non-already-lifted-methods all-lifted-method-designator-strings))
        ;; This gets rolled back after the make-event:
-       (state (submit-event inlining-theorem state))
+       (state (submit-event-brief inlining-theorem state))
        (remove-rules (append '(jvm::step-opener ;since we trigger the theorems for subroutines off of step
                                )
                              remove-rules))

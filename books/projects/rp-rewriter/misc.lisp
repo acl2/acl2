@@ -159,7 +159,8 @@
                                            :disabled-for-ACL2
                                            :from-add-rp-rule
                                            :beta-reduce
-                                           :rw-direction)))
+                                           :rw-direction
+                                           :hints)))
          (from-add-rp-rule (cdr (hons-assoc-equal :from-add-rp-rule
                                                   pulled-args)))
          (disabled (cdr (hons-assoc-equal :disabled
@@ -171,9 +172,11 @@
                                 (cdr (hons-assoc-equal :disabled-for-acl2
                                                        pulled-args))))
          (rw-direction (cdr (hons-assoc-equal :rw-direction pulled-args)))
+         (hints (cdr (hons-assoc-equal :hints pulled-args)))
          (beta-reduce (if (hons-assoc-equal :beta-reduce pulled-args)
                           (cdr (hons-assoc-equal :beta-reduce pulled-args))
                         t))
+         
          
          ((mv hyp lhs rhs iff)
           (case-match rule
@@ -245,15 +248,21 @@
                                 ,lhs-body
                                 ,rhs-body))
                       ,@(if (or (equal rw-direction :outside-in)
-                                (equal rw-direction :both))
+                                (equal rw-direction :both)
+                                (and from-add-rp-rule (not hints)))
                             nil
                           openers))
-                 ,@args))
+                 ,@args
+                 ,@(if (and from-add-rp-rule (not hints))
+                       `(:hints (("Goal"
+                                  :in-theory '(,rule-name ,@(strip-cars fnc-names)))))
+                     `(:hints ,hints))))
 
              ;; if outside-in is selected, then opener lemmas should be separate
              
              ,@(and (or (equal rw-direction :outside-in)
-                        (equal rw-direction :both))
+                        (equal rw-direction :both)
+                        (and from-add-rp-rule (not hints)))
                     `((with-output
                         :stack :pop
                         :on (acl2::summary acl2::event)
@@ -271,16 +280,26 @@
                    nil
                  `((,(if disabled-for-acl2 'defthmd 'defthm)
                     ,rule-name
-                     ,rule
-                     :hints (("Goal"
-                              :use ((:instance ,rule-name-for-rp))
-                              :in-theory '(,rule-name-for-rp))))))
+                    ,untranslated-rule
+                    :hints (("Goal"
+                             :use ((:instance ,rule-name-for-rp)
+                                   ,@(and (or (equal rw-direction :outside-in)
+                                              (equal rw-direction :both))
+                                          `((:instance ,rule-name-for-rp-openers))))
+                             :in-theory '((:definition iff) 
+                                          ,rule-name-for-rp
+                                          ,@(and (or (equal rw-direction :outside-in)
+                                                     (equal rw-direction :both))
+                                                 `(,rule-name-for-rp-openers))))))))
 
              (add-rp-rule ,rule-name
                           :beta-reduce nil
                           :rw-direction ,rw-direction
                           :disabled ,disabled-for-rp)
              (table corresponding-rp-rule ',rule-name ',rule-name-for-rp)
+             (table corresponding-rp-rule-reverse ',rule-name-for-rp ',rule-name)
+
+             
              #|(acl2::extend-pe-table ,rule-name-for-rp
                                     (def-rp-rule ,rule-name-for-rp
                                       ,body
@@ -292,8 +311,9 @@
              :summary-off (:other-than acl2::time acl2::rules)
              (,(if disabled-for-acl2 'defthmd 'defthm)
               ,rule-name
-               ,untranslated-rule
-               ,@args))
+              ,untranslated-rule
+              ,@args
+              :hints ,hints))
            (add-rp-rule ,rule-name
                         :beta-reduce nil
                         :rw-direction ,rw-direction
@@ -794,6 +814,12 @@ RP-Rewriter will throw an eligible error.</p>"
                            (runes-outside-in 'nil);; when nil, runes will be read from
                            ;; rp-rules table
                            (cases 'nil)
+                           (beta-reduce 't)
+                           (disabled 'nil)
+                           (disabled-for-rp 'nil)
+                           (disabled-for-ACL2 'nil)
+                           (rw-direction ':inside-out)
+                           (supress-warnings 'nil)
                            )
   `(make-event
     (b* ((world (w state))
@@ -806,6 +832,11 @@ RP-Rewriter will throw an eligible error.</p>"
                   :summary-off (:other-than acl2::time acl2::rules)
                   (def-rp-rule ,',name ,',term
                     :rule-classes ,',rule-classes
+                    :beta-reduce ,',beta-reduce
+                    :disabled-for-ACL2 ,',disabled-for-ACL2
+                    :disabled-for-rp ,',disabled-for-rp
+                    :disabled ,',disabled
+                    :rw-direction ,',rw-direction
                     :hints (("goal"
                              :do-not-induct t
                              :rw-cache-state nil
@@ -820,7 +851,7 @@ RP-Rewriter will throw an eligible error.</p>"
                enable-rules
                disable-rules)
            ``(with-output
-               :off :all
+               :off :all ,@(and ,(not supress-warnings) '(:on (comment)))
                :stack :push
                (encapsulate
                  nil
@@ -891,6 +922,42 @@ RP-Rewriter will throw an eligible error.</p>"
 "
  )
 
+
+(progn
+  (defun pp-rw-rules (rules world)
+    (declare (xargs :mode :program))
+    (b* (((when (atom rules)) nil)
+         (rule (car rules))
+         ((Unless (weak-custom-rewrite-rule-p rule))
+          (cw "Unexpected rule type: ~p0 ~%" rule))
+         (rune (access custom-rewrite-rule rule :rune))
+         (rune-entry (hons-assoc-equal rune (table-alist 'rp-rules world)))
+         (- (cw "Rune:              ~p0~%" rune))
+         (- (cw "Enabled:           ~p0~%" (and rune-entry (cddr rune-entry))))
+         (- (cw "Hyps:              ~p0~%" (cons 'and (untranslate-lst (access custom-rewrite-rule rule :hyp)
+                                                        t world))))
+         (- (cw "Equiv:             ~p0~%" (if (access custom-rewrite-rule rule :flg) 'iff 'equal)))
+         (- (cw "Lhs:               ~p0~%" (untranslate (access custom-rewrite-rule rule :lhs/trig-fnc)
+                                                        t world)))
+         (- (cw "Rhs:               ~p0~%" (untranslate (access custom-rewrite-rule rule :rhs/meta-fnc)
+                                                        t world)))
+         (- (cw "~%")))
+      (pp-rw-rules (cdr rules) world)))
+       
+    
+
+  (defun rp-pr-fn (name state)
+    (declare (xargs :mode :program
+                    :stobjs (state)))
+    (b* ((rules (get-rules (list name) state))
+         ((unless rules)
+          nil)
+         (rules (acl2::flatten (strip-cdrs rules))))
+      (pp-rw-rules rules (w state))))
+       
+
+  (defmacro rp-pr (name)
+    (list 'rp-pr-fn (list 'quote name) 'state)))
 
 (xdoc::defxdoc
  rp-other-utilities

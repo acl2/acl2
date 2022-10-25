@@ -82,9 +82,10 @@ following:</p>
  (include-book \"xdoc/constructors\" :dir :system)
 })
 
-<p>This book includes @('[books]/xdoc/top.lisp'), and in addition provides
-utilities to construct well-formed XDOC strings in a modular way.  See <see
-topic='@(url xdoc::constructors)'>the documentation</see> for more details.</p>
+<p>This book includes community book @('xdoc/top.lisp'), and in addition
+provides utilities to construct well-formed XDOC strings in a modular way.  See
+<see topic='@(url xdoc::constructors)'>the documentation</see> for more
+details.</p>
 
 <p>Once you have documented your books, you may wish to create a manual that
 can be viewed from a web browser or from the @(see acl2::acl2-doc) Emacs-based
@@ -667,7 +668,10 @@ As might be expected:</p>
 <li>If the target directory does not exist, it will be created.</li>
 
 <li>If the target directory already exists, it <color rgb=\"#ff0000\">will be
-overwritten</color>.</li>
+overwritten</color>.  (<b><color rgb=\"#ff0000\">WARNING</color></b>: So, the
+target directory should not be one containing files that you want to keep, such
+as the directory containing the file that invokes @('xdoc::save'), or its
+parent directory (or its parent, etc.).)</li>
 
 </ul>
 
@@ -1218,6 +1222,7 @@ with keyword arguments.  See also @(see extract-keyword-from-args).</p>
     [:long      long]
     [:autodoc   autodoc]
     [:extension topic]
+    [:set-as-default-parent t/nil]
     ... events and commentary ...)
 })
 
@@ -1298,6 +1303,10 @@ with:</p>
 <p>If you do not want this automatic documentation, you can turn it off with
 @(':autodoc nil').</p>
 
+<p>If you want the section name to be the default parent for the encapsulated
+events, then you can pass @(':set-as-default-parent t'). Then @('(local
+(xdoc::set-default-parents name))') will be inserted at the beginning of the
+events, where \"name\" is the name of the section.</p>
 
 <h3>Extended Sections</h3>
 

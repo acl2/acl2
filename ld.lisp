@@ -1626,7 +1626,7 @@
                        (cons #\l (f-get-global 'ld-level state))
                        (cons #\c (f-get-global 'connected-book-directory
                                                state))
-                       (cons #\b (project-dir-alist state)))
+                       (cons #\b (project-dir-alist (w state))))
                  (standard-co state)
                  state
                  (ld-evisc-tuple state))))))
@@ -1972,7 +1972,9 @@
       (cond (*load-compiled-stack*
              (error "It is illegal to call LD while loading a compiled book, ~
                      in this case:~%~a .~%See :DOC calling-ld-in-bad-contexts."
-                    (caar *load-compiled-stack*)))
+                    (book-name-to-filename (caar *load-compiled-stack*)
+                                           (w state)
+                                           'ld)))
             ((= *ld-level* 0)
              (return-from
               ld-fn
@@ -3234,18 +3236,21 @@
 ; We puff an include-book simply by going to the file named by the include-book
 ; and return the events in it.  Recursive include-books are not flattened here.
 
-  (let ((full-book-name (access-event-tuple-namex (cddr (car wrld)))))
+  (let* ((full-book-string (access-event-tuple-namex (cddr (car wrld))))
+         (installed-wrld (w state))
+         (full-book-name (filename-to-book-name full-book-string
+                                                installed-wrld)))
     (cond
-     ((assoc-equal full-book-name (table-alist 'puff-included-books (w state)))
+     ((assoc-equal full-book-name (table-alist 'puff-included-books
+                                               installed-wrld))
       (value final-cmds))
      (t
       (er-progn
-       (chk-input-object-file full-book-name ctx state)
-       (chk-book-name full-book-name full-book-name ctx state)
+       (chk-input-object-file full-book-string ctx state)
        (er-let*
-           ((ev-lst (read-object-file full-book-name ctx state))
+           ((ev-lst (read-object-file full-book-string ctx state))
             (cert-obj (chk-certificate-file
-                       full-book-name
+                       full-book-string
                        nil
                        'puff
                        ctx
@@ -3278,7 +3283,7 @@
                            (access cert-obj cert-obj :cmds))))
            (er-let* ((ev-lst-book-hash
                       (if old-book-hash ; otherwise, don't care
-                          (book-hash old-book-hash full-book-name cmds
+                          (book-hash old-book-hash full-book-string cmds
                                      expansion-alist cert-data ev-lst state)
                         (value nil))))
              (cond
@@ -3299,7 +3304,7 @@
                     thus presumably been modified since it was last included ~
                     and we cannot now recover the events that created the ~
                     current logical world."
-                   full-book-name
+                   full-book-string
                    old-book-hash
                    ev-lst-book-hash))
               (t (let ((fixed-cmds
@@ -3324,7 +3329,7 @@
 
                        '((set-cbd
                           ,(directory-of-absolute-pathname
-                            full-book-name))
+                            full-book-string))
                          ,@fixed-cmds
                          ,@(and include-book-alist-entry ; always true?
                                 `((table puff-included-books
@@ -3368,7 +3373,9 @@
        ((and (eq immediate 'certify-book)
              (eq event-type 'include-book)
              (equal (car include-book-alist-entry)
-                    (access-event-tuple-namex event-tuple)))
+                    (filename-to-book-name
+                     (access-event-tuple-namex event-tuple)
+                     (w state))))
 
 ; The include-book here represents the evaluation of all events after the final
 ; local event in the book common to the certify-book command and the current
@@ -5211,21 +5218,34 @@
            (unsigned-byte-p 29 len)
            (project-dir-string-p s 0 len))))
 
-(defun merge-len>=-cdr (l1 l2)
+(defun merge-length>=-cdr (l1 l2)
   (declare (xargs :guard (and (alistp l1)
                               (alistp l2))
-                  :measure (+ (len l1) (len l2))))
+                  :measure (+ (length l1) (length l2))))
   (cond ((endp l1) l2)
         ((endp l2) l1)
-        ((<= (len (cdar l1)) (len (cdar l2)))
-         (cons (car l1) (merge-len>=-cdr (cdr l1) l2)))
-        (t (cons (car l2) (merge-len>=-cdr l1 (cdr l2))))))
+        ((>= (length (cdar l1)) (length (cdar l2)))
+         (cons (car l1) (merge-length>=-cdr (cdr l1) l2)))
+        (t (cons (car l2) (merge-length>=-cdr l1 (cdr l2))))))
 
-(defun merge-sort-len>=-cdr (l)
+(defun merge-sort-length>=-cdr (l)
   (declare (xargs :guard (alistp l)
-                  :measure (len l)
+                  :measure (length l)
                   :verify-guards nil))
   (cond ((endp (cdr l)) l)
-        (t (merge-len>=-cdr (merge-sort-len>=-cdr (evens l))
-                            (merge-sort-len>=-cdr (odds l))))))
+        (t (merge-length>=-cdr (merge-sort-length>=-cdr (evens l))
+                               (merge-sort-length>=-cdr (odds l))))))
 
+(defun conflicting-symbol-alists (a1 a2)
+
+; Returns nil if some key has different values in a1 and a2; otherwise return
+; (key v1 . v2) where key is bound to vi in ai (i=1,2).  We consider only the
+; first binding of each key in a2.
+
+  (declare (xargs :guard (and (symbol-alistp a1)
+                              (symbol-alistp a2))))
+  (cond ((endp a1) nil)
+        (t (let ((pair (assoc-eq (caar a1) a2)))
+             (cond ((and pair (not (equal (cdr pair) (cdar a1))))
+                    (list* (car pair) (cdar a1) (cdr pair)))
+                   (t (conflicting-symbol-alists (cdr a1) a2)))))))
