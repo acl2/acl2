@@ -795,6 +795,12 @@ RP-Rewriter will throw an eligible error.</p>"
                            (runes-outside-in 'nil);; when nil, runes will be read from
                            ;; rp-rules table
                            (cases 'nil)
+                           (beta-reduce 't)
+                           (disabled 'nil)
+                           (disabled-for-rp 'nil)
+                           (disabled-for-ACL2 'nil)
+                           (rw-direction ':inside-out)
+                           (supress-warnings 'nil)
                            )
   `(make-event
     (b* ((world (w state))
@@ -807,6 +813,11 @@ RP-Rewriter will throw an eligible error.</p>"
                   :summary-off (:other-than acl2::time acl2::rules)
                   (def-rp-rule ,',name ,',term
                     :rule-classes ,',rule-classes
+                    :beta-reduce ,',beta-reduce
+                    :disabled-for-ACL2 ,',disabled-for-ACL2
+                    :disabled-for-rp ,',disabled-for-rp
+                    :disabled ,',disabled
+                    :rw-direction ,',rw-direction
                     :hints (("goal"
                              :do-not-induct t
                              :rw-cache-state nil
@@ -821,7 +832,7 @@ RP-Rewriter will throw an eligible error.</p>"
                enable-rules
                disable-rules)
            ``(with-output
-               :off :all :on (comment)
+               :off :all ,@(and ,(not supress-warnings) '(:on (comment)))
                :stack :push
                (encapsulate
                  nil

@@ -1373,7 +1373,7 @@ nil
 
 <h3>Accessors</h3>
 
-<p> Using the generated functions, users can access a part of a given data structure. For example, if we have a large struct with a lot of fields, say named \"t_main\", then the program will generate a macro with the same name: |t_main| (reminder: Verilog is case-sensitive and so are our symbol/function names). Say that we have a variable called \"main\" in our conjectures representing a signal of type \"t_main\" (assuming we use (@see acl2::defsvtv) semantics). Then, we can access individual fields of this signal using the generated |t_main| macro. For example:</p>
+<p> Using the generated functions, users can access a part of a given data structure. For example, if we have a large struct with a lot of fields, say named \"t_main\", then the program will generate a macro with the same name: |t_main| (reminder: Verilog is case-sensitive and so are our symbol/function names). Say that we have a variable called \"main\" in our conjectures representing a signal of type \"t_main\" (assuming we use @(see acl2::defsvtv)). Then, we can access individual fields of this signal using the generated |t_main| macro. For example:</p>
 @({
 (|t_main| main \"data[0].dword[3]\")
 (|t_main| main \"uop.size\")
@@ -1391,7 +1391,8 @@ nil
 <p> More arguments can be passed to change other entries in the same call:</p>
 @({(change-|t_main| main \"data[0].dword[3]\" 12 \"uop.size\" 0)})
 
-<p> If a field is repeated in the arguments or a field is passed that has an overlap with a previos argument, then the most recent one will take override the previous one(s). </p>
+<p> If a field is repeated in the arguments or a field is passed that has an
+overlap with a previos argument, then the most recent one will override the previous one(s). </p>
 
 <h3> Debug Functions </h3>
 
