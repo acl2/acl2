@@ -212,6 +212,7 @@
     ("add-library" . :add-library)
     ("add-nonlinearp-hint" . :add-nonlinearp-hint)
     ("add-use-hint" . :add-use-hint)
+    ;; Confusingly named: Does not indicate a :use hint:
     ("use-lemma" . :use-lemma)))
 
 (defconst *ml-rec-types* (strip-cdrs *rec-to-symbol-alist*))
@@ -225,7 +226,7 @@
        (<= p 100)))
 
 ;; todo: strengthen
-(defun recommendationp (rec)
+(defund recommendationp (rec)
   (declare (xargs :guard t))
   (and (true-listp rec)
        (= 6 (len rec))
@@ -244,7 +245,20 @@
               (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
                   (true-listp pre-commands))))))
 
-(defun make-rec (name type object confidence-percent book-map pre-commands)
+(local
+ (defthm recommendationp-forward-to-true-listp
+   (implies (recommendationp rec)
+            (true-listp rec))
+   :rule-classes :forward-chaining
+   :hints (("Goal" :in-theory (enable recommendationp)))))
+
+(local
+ (defthm rationalp-of-nth-3-when-recommendationp
+   (implies (recommendationp rec)
+            (rationalp (nth 3 rec)))
+   :hints (("Goal" :in-theory (enable recommendationp)))))
+
+(defund make-rec (name type object confidence-percent book-map pre-commands)
   (declare (xargs :guard (and (stringp name)
                               (member-eq type *all-rec-types*)
                               ;; object
@@ -253,6 +267,17 @@
                               (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
                                   (true-listp pre-commands)))))
   (list name type object confidence-percent book-map pre-commands))
+
+(defthm recommendationp-of-make-rec
+  (equal (recommendationp (make-rec name type object confidence-percent book-map pre-commands))
+         (and (stringp name)
+              (member-eq type *all-rec-types*)
+              ;; object
+              (confidence-percentp confidence-percent)
+              ;; book-map
+              (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
+                  (true-listp pre-commands))))
+  :hints (("Goal" :in-theory (enable make-rec recommendationp))))
 
 (defund update-pre-commands (pre-commands rec)
   (declare (xargs :guard (recommendationp rec)))
@@ -1281,23 +1306,23 @@
  ;; Returns a list of recs.
  (defun make-recs-from-event (event num seen-recs)
    (if (not (consp event))
-       (er hard? 'make-rec-from-event "Unexpected command: ~x0." event)
+       (er hard? 'make-recs-from-event "Unexpected command (not a cons!): ~x0." event)
      (if (eq 'local (ffn-symb event)) ; (local e1)
          (make-recs-from-event (farg1 event) num seen-recs)
        (if (eq 'encapsulate (ffn-symb event)) ; (encapsulate <sigs> e1 e2 ...)
            (make-recs-from-events (rest (fargs event)) num seen-recs)
          (if (eq 'progn (ffn-symb event)) ; (progn e1 e2 ...)
              (make-recs-from-events (fargs event) num seen-recs)
-           (and (consp event) ; todo: strip local?  what else can we harvest hints from?
+           (and ;; todo: what else can we harvest hints from?
                 (member-eq (ffn-symb event) '(defthm defthmd))
                 (let ((res (assoc-keyword :hints (rest (rest (fargs event))))))
                   (and res
                        (let ((hints (cadr res)))
-                         (and (not (rec-presentp :exact-hints hints seen-recs))
+                         (and (not (rec-presentp :exact-hints hints seen-recs)) ; todo: also look for equivalent recs?
                               ;; make a new rec:
                               (list
                                (make-rec (concatenate 'string "H" (nat-to-string num))
-                                         :exact-hints ; new kind of rec, to replace all hints
+                                         :exact-hints ; new kind of rec, to replace all hints (todo: if the rec is expressible as something simpler, use that)
                                          (cadr res)
                                          0
                                          nil
@@ -1313,13 +1338,13 @@
        (make-recs-from-events (rest events) num acc)))))
 
 ;; Returns (mv erp val state).
+;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But there are :exact-hints.
 (defun make-recs-from-history (state)
   (declare (xargs :mode :program
                   :stobjs state))
   (b* (((mv erp events state) (get-command-sequence-fn 1 :max state))
        ((when erp) (mv erp nil state)))
     (mv nil (make-recs-from-events events 1 nil) state)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1433,6 +1458,7 @@
        (- (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil))
        (- (and verbose (cw "Original hints were:~%~X01:~%" theorem-hints nil)))
        ;; Get the checkpoints from the failed attempt:
+       ;; TODO: Consider trying again with no hints, in case the user gave were wrongheaded.
        (raw-checkpoint-clauses (checkpoint-list ;-pretty
                                 t               ; todo: consider non-top
                                 state))
@@ -1482,11 +1508,11 @@
        (- (and debug (cw "Parsed ML recommendations: ~X01~%" ml-recommendations nil)))
        ;; Make some other recs:
        (enable-recommendations (make-enable-recs theorem-body wrld))
-       ((mv erp historical-recommendations state) (make-recs-from-history state))
+       ((mv erp recs-from-history state) (make-recs-from-history state))
        ((when erp) (mv erp nil state))
        ;; todo: remove duplicate recs from multiple sources:
        (recommendations (append enable-recommendations
-                                historical-recommendations
+                                recs-from-history
                                 ml-recommendations))
        ;; (num-recs (len recommendations))
        ;; Print the recommendations (for now):
