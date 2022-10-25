@@ -81,13 +81,14 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "kestrel/utilities/margins" :dir :system))
 
-(local (in-theory (disable member-equal)))
+(local (in-theory (disable member-equal len true-listp nth)))
 
 ;; ;; Returns all disabled runes associate with NAME.
 ;; ;; Like disabledp but hygienic, also doesn't end in "p" since not a predicate.
@@ -270,7 +271,116 @@
                (rec-sourcesp recs)))
    :hints (("Goal" :in-theory (enable rec-sourcesp)))))
 
+(local
+ (defthm rec-sourcesp-of-append
+   (implies (and (rec-sourcesp recs1)
+                 (rec-sourcesp recs2))
+            (rec-sourcesp (append recs1 recs2)))
+   :hints (("Goal" :in-theory (enable rec-sourcesp)))))
+
+(local
+ (defthm rec-sourcesp-forward-to-true-listp
+   (implies (rec-sourcesp recs)
+            (true-listp recs))
+   :rule-classes :forward-chaining
+   :hints (("Goal" :in-theory (enable rec-sourcesp)))))
+
+(defund pre-commandsp (pre-commands)
+  (declare (xargs :guard t))
+  (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
+      (true-listp pre-commands)))
+
+(defund rec-typep (type)
+  (declare (xargs :guard t))
+  (member-eq type *all-rec-types*))
+
+(defund include-book-formp (form)
+  (declare (xargs :guard t))
+  (and (consp form)
+       (true-listp form)
+       (eq 'include-book (car form))
+       (stringp (cadr form))
+       ;; todo: what else?
+       ))
+
+(defund include-book-form-listp (forms)
+  (declare (xargs :guard t))
+  (if (atom forms)
+      (null forms)
+    (and (include-book-formp (first forms))
+         (include-book-form-listp (rest forms)))))
+
+(local
+ (defthm include-book-form-listp-forward-to-true-listp
+   (implies (include-book-form-listp forms)
+            (true-listp forms))
+   :rule-classes :forward-chaining
+   :hints (("Goal" :in-theory (enable include-book-form-listp)))))
+
+(defthm include-book-form-listp-of-union-equal
+  (implies (and (include-book-form-listp info1)
+                (include-book-form-listp info2))
+           (include-book-form-listp (union-equal info1 info2)))
+  :hints (("Goal" :in-theory (enable include-book-form-listp union-equal))))
+
+(defund include-book-infop (info)
+  (declare (xargs :guard t))
+  (or (eq :builtin info)
+      (include-book-form-listp info)))
+
+(local
+ (defthm true-listp-when-include-book-infop
+   (implies (include-book-infop info)
+            (equal (true-listp info)
+                   (not (equal :builtin info))))
+   :hints (("Goal" :in-theory (enable include-book-infop)))))
+
+(defund include-book-info-listp (infos)
+  (declare (xargs :guard t))
+  (if (atom infos)
+      (null infos)
+    (and (include-book-infop (first infos))
+         (include-book-info-listp (rest infos)))))
+
+(local
+ (defthm include-book-info-listp-forward-to-true-listp
+   (implies (include-book-info-listp infos)
+            (true-listp infos))
+   :rule-classes :forward-chaining
+   :hints (("Goal" :in-theory (enable include-book-info-listp)))))
+
+(defund book-mapp (book-map)
+  (declare (xargs :guard t))
+  (and (symbol-alistp book-map)
+       (include-book-info-listp (strip-cdrs book-map))))
+
+(local
+ (defthm book-mapp-forward-to-alistp
+   (implies (book-mapp book-map)
+            (alistp book-map))
+   :rule-classes :forward-chaining
+   :hints (("Goal" :in-theory (enable book-mapp)))))
+
+(defthm book-mapp-of-pairlis$
+  (implies (and (symbol-listp keys)
+                (include-book-info-listp vals))
+           (book-mapp (pairlis$ keys vals)))
+  :hints (("Goal" :in-theory (enable book-mapp include-book-info-listp))))
+
+(local
+ (defthm include-book-infop-of-lookup-equal
+   (implies (book-mapp book-map)
+            (include-book-infop (lookup-equal key book-map)))
+   :hints (("Goal" :in-theory (enable book-mapp lookup-equal assoc-equal include-book-info-listp)))))
+
+(local
+ (defthm symbol-listp-of-strip-cars-when-book-mapp
+   (implies (book-mapp book-map)
+            (symbol-listp (strip-cars book-map)))
+   :hints (("Goal" :in-theory (enable book-mapp)))))
+
 ;; todo: strengthen
+;; todo: make a separate version for successful recs (to contain the actual theorem/hints, the pre-commands).  The remove the pre-commands from this.
 (defund recommendationp (rec)
   (declare (xargs :guard t))
   (and (true-listp rec)
@@ -279,17 +389,16 @@
              (type (nth 1 rec))
              ;; (object (nth 2 rec))
              (confidence-percent (nth 3 rec))
-             ;; (book-map (nth 4 rec))
+             (book-map (nth 4 rec))
              ;; this (possibly) gets populated when we try the rec:
              (pre-commands (nth 5 rec))
              (sources (nth 6 rec)))
          (and (stringp name)
-              (member-eq type *all-rec-types*)
+              (rec-typep type)
               ;; object
               (confidence-percentp confidence-percent)
-              ;; book-map
-              (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
-                  (true-listp pre-commands))
+              (book-mapp book-map)
+              (pre-commandsp pre-commands)
               (rec-sourcesp sources)))))
 
 (local
@@ -300,19 +409,66 @@
    :hints (("Goal" :in-theory (enable recommendationp)))))
 
 (local
+ (defthm true-listp-when-recommendationp
+   (implies (recommendationp rec)
+            (true-listp rec))
+   :hints (("Goal" :in-theory (enable recommendationp)))))
+
+(local
+ (defthm stringp-of-nth-0-when-recommendationp
+   (implies (recommendationp rec)
+            (stringp (nth 0 rec)))
+   :hints (("Goal" :in-theory (enable recommendationp)))))
+
+(local
+ (defthm rec-typep-of-nth-1-when-recommendationp
+   (implies (recommendationp rec)
+            (rec-typep (nth 1 rec)))
+   :hints (("Goal" :in-theory (enable recommendationp)))))
+
+(local
  (defthm rationalp-of-nth-3-when-recommendationp
    (implies (recommendationp rec)
             (rationalp (nth 3 rec)))
    :hints (("Goal" :in-theory (enable recommendationp)))))
 
+(local
+ (defthm confidence-percentp-of-nth-3-when-recommendationp
+   (implies (recommendationp rec)
+            (confidence-percentp (nth 3 rec)))
+   :hints (("Goal" :in-theory (enable recommendationp)))))
+
+(local
+ (defthm book-mapp-of-nth-4-when-recommendationp
+   (implies (recommendationp rec)
+            (book-mapp (nth 4 rec)))
+   :hints (("Goal" :in-theory (enable recommendationp)))))
+
+(local
+ (defthm pre-commandsp-of-nth-5-when-recommendationp
+   (implies (recommendationp rec)
+            (pre-commandsp (nth 5 rec)))
+   :hints (("Goal" :in-theory (enable recommendationp)))))
+
+(local
+ (defthm true-listp-of-nth-6-when-recommendationp
+   (implies (recommendationp rec)
+            (true-listp (nth 6 rec)))
+   :hints (("Goal" :in-theory (enable recommendationp)))))
+
+(local
+ (defthm rec-sourcesp-of-nth-6-when-recommendationp
+   (implies (recommendationp rec)
+            (rec-sourcesp (nth 6 rec)))
+   :hints (("Goal" :in-theory (enable recommendationp)))))
+
 (defund make-rec (name type object confidence-percent book-map pre-commands sources)
   (declare (xargs :guard (and (stringp name)
-                              (member-eq type *all-rec-types*)
+                              (rec-typep type)
                               ;; object
                               (confidence-percentp confidence-percent)
-                              ;; book-map
-                              (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
-                                  (true-listp pre-commands))
+                              (book-mapp book-map)
+                              (pre-commandsp pre-commands)
                               (rec-sourcesp sources)
                               )))
   (list name type object confidence-percent book-map pre-commands sources))
@@ -320,12 +476,11 @@
 (defthm recommendationp-of-make-rec
   (equal (recommendationp (make-rec name type object confidence-percent book-map pre-commands sources))
          (and (stringp name)
-              (member-eq type *all-rec-types*)
+              (rec-typep type)
               ;; object
               (confidence-percentp confidence-percent)
-              ;; book-map
-              (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
-                  (true-listp pre-commands))
+              (book-mapp book-map)
+              (pre-commandsp pre-commands)
               (rec-sourcesp sources)))
   :hints (("Goal" :in-theory (enable make-rec recommendationp))))
 
@@ -358,15 +513,28 @@
          )
     (cw "~s0: Try ~x1 with ~x2 (conf: ~x3%).~%" name type object (floor confidence-percent 1))))
 
-(defun recommendation-listp (recs)
+(defund recommendation-listp (recs)
   (declare (xargs :guard t))
   (if (atom recs)
       (null recs)
     (and (recommendationp (first recs))
          (recommendation-listp (rest recs)))))
 
+(local
+ (defthm recommendation-listp-forward-to-true-listp
+   (implies (recommendation-listp recs)
+            (true-listp recs))
+   :rule-classes :forward-chaining
+   :hints (("Goal" :in-theory (enable recommendation-listp)))))
+
+(defthm recommendation-listp-of-remove-equal
+  (implies (recommendation-listp recs)
+           (recommendation-listp (remove-equal rec recs)))
+  :hints (("Goal" :in-theory (enable recommendation-listp))))
+
 (defun show-recommendations-aux (recs)
-  (declare (xargs :guard (recommendation-listp recs)))
+  (declare (xargs :guard (recommendation-listp recs)
+                  :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
   (if (endp recs)
       nil
     (prog2$ (show-recommendation (first recs))
@@ -482,8 +650,14 @@
   (declare (xargs :guard (recommendation-listp recs)))
   (if (endp recs)
       nil
-    (let ((rec (first recs)))
-      (progn$ (cw "~S0: " (nth 0 rec))
+    (let* ((rec (first recs))
+           (name (nth 0 rec))
+           (sources (nth 0 rec))
+           )
+      (progn$ (cw "~S0" name)
+              (and (< 1 (len sources))
+                   (cw "~x0" sources))
+              (cw ": ")
               (show-successful-recommendation rec)
               (show-successful-recommendations-aux (rest recs))))))
 
@@ -499,18 +673,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp form state).
+;; Returns (mv erp include-book-form state).
 (defund parse-include-book (string state)
   (declare (xargs :guard (stringp string)
                   :stobjs state))
   (b* (((mv erp form state) (read-string-as-single-item string state)) ; todo: what about packages?
        ((when erp) (mv :error-parsing-include-book nil state))
-       ((when (not (and (consp form)
-                        (consp (cdr form))
-                        (eq 'include-book (car form))
-                        (stringp (cadr form))
-                        ;; incomplete check, as there may be a :dir
-                        )))
+       ((when (not (include-book-formp form)))
         (mv :error-parsing-include-book nil state)))
     (mv nil form state)))
 
@@ -524,21 +693,43 @@
     (let ((item (first list)))
       (if (equal item ":BUILTIN")
           (parse-book-map-info-list (rest list)
-                                     (cons :builtin acc)
-                                     state)
+                                    (cons :builtin acc)
+                                    state)
         ;; otherwise, it should be an include-book:
         (b* (((mv erp include-book-form state)
               (parse-include-book item state))
              ((when erp) (mv erp nil state)))
           (parse-book-map-info-list (rest list)
-                                     (cons include-book-form acc)
-                                     state))))))
+                                    (cons include-book-form acc)
+                                    state))))))
 
 (defthm true-listp-of-mv-nth-1-of-parse-book-map-info-list
   (implies (true-listp acc)
            (true-listp (mv-nth 1 (parse-book-map-info-list list acc state))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable parse-book-map-info-list))))
+
+(defun include-book-form-or-builtin-listp (items)
+  (if (atom items)
+      (null items)
+    (let ((item (first items)))
+      (and (or (include-book-formp item)
+               (eq :builtin item))
+           (include-book-form-or-builtin-listp (rest items))))))
+
+(defthm include-book-form-listp-when-include-book-form-or-builtin-listp
+  (implies (and (include-book-form-or-builtin-listp items)
+                (not (member-equal :builtin items)))
+           (include-book-form-listp items))
+  :hints (("Goal" :in-theory (enable include-book-form-listp include-book-form-or-builtin-listp member-equal))))
+
+(defthm include-book-info-listp-of-mv-nth-1-of-parse-book-map-info-list
+  (implies (and (not (mv-nth 0 (parse-book-map-info-list list acc state)))
+                (include-book-form-or-builtin-listp acc))
+           (include-book-form-or-builtin-listp (mv-nth 1 (parse-book-map-info-list list acc state))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable parse-book-map-info-list
+                                     parse-include-book))))
 
 ;; Returns (mv erp lists state) where each of the LISTS is a list of include-book forms, or the special value :builtin.
 (defund parse-book-map-info-lists (lists acc state)
@@ -565,7 +756,14 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable parse-book-map-info-lists))))
 
-;; returns (mv erp parsed-book-map state)
+(defthm include-book-info-listp-of-mv-nth-1-of-parse-book-map-info-lists
+  (implies (include-book-info-listp acc)
+           (include-book-info-listp (mv-nth 1 (parse-book-map-info-lists lists acc state))))
+  :hints (("Goal" :in-theory (enable parse-book-map-info-lists include-book-info-listp
+                                     include-book-infop))))
+
+;; Returns (mv erp book-map state).
+;; This will have a single key for some kinds of rec but not all (e.g., not for :add-hyp).
 (defund parse-book-map (book-map state)
   (declare (xargs :stobjs state))
   (if (not (parsed-json-objectp book-map))
@@ -586,6 +784,10 @@
           (parse-book-map-info-lists lists nil state))
          ((when erp) (mv erp nil state)))
       (mv nil (pairlis$ syms book-lists-for-keys) state))))
+
+(defthm book-mapp-of-mv-nth-1-of-parse-book-map
+  (book-mapp (mv-nth 1 (parse-book-map book-map state)))
+  :hints (("Goal" :in-theory (enable parse-book-map))))
 
 (defund round-to-hundredths (x)
   (declare (xargs :guard (rationalp x)))
@@ -979,17 +1181,18 @@
              ((when (not (equal book-map-keys (list rule))))
               (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil rule)
               (mv :bad-book-map nil state))
-             (books-to-try (lookup-eq rule book-map))
-             ((when (eq :builtin books-to-try))
+             (include-book-info (lookup-eq rule book-map))
+             ((when (eq :builtin include-book-info))
               (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" rule)
               (mv :bad-book-info nil state))
-             ;; todo: check for empty books-to-try, or is that already checked?
-             (num-books-to-try-orig (len books-to-try))
-             ;; (- (and (< 1 num-books-to-try)
-             ;;         (cw "NOTE: There are ~x0 books that might contain ~x1: ~X23~%" num-books-to-try rule books-to-try nil)))
-             (books-to-try (if (< 3 num-books-to-try-orig)
-                               (take 3 books-to-try)
-                             books-to-try))
+             ;; todo: check for empty books-to-try (here and elsewhere?)
+             (include-books-to-try include-book-info) ; rename for clarity
+             (num-include-books-to-try-orig (len include-books-to-try))
+             ;; (- (and (< 1 num-include-books-to-try)
+             ;;         (cw "NOTE: There are ~x0 books that might contain ~x1: ~X23~%" num-include-books-to-try rule include-books-to-try nil)))
+             (include-books-to-try (if (< 3 num-include-books-to-try-orig)
+                                       (take 3 include-books-to-try)
+                                     include-books-to-try))
              ;; todo: ensure this is nice:
              (new-hints (enable-runes-in-hints theorem-hints (list rule))))
           ;; Not built-in, so we'll have to try finding the rule in a book:
@@ -997,13 +1200,13 @@
           (b* (;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
                ;; TODO: Try to get a good variety of books here, if there are too many to try them all:
                ((mv erp successful-include-book-form-or-nil state)
-                (try-prove$-with-include-books 'try-add-enable-hint theorem-body books-to-try rule :enable new-hints theorem-otf-flg *step-limit* state))
+                (try-prove$-with-include-books 'try-add-enable-hint theorem-body include-books-to-try rule :enable new-hints theorem-otf-flg *step-limit* state))
                ((when erp) (mv erp nil state))
                ;; todo: clarify whether we even found an include-book that works
                ((when (not successful-include-book-form-or-nil))
-                (if (< 3 num-books-to-try-orig)
+                (if (< 3 num-include-books-to-try-orig)
                     ;; todo: try more if we didn't find it?:
-                    (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len books-to-try) num-books-to-try-orig rule)
+                    (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len include-books-to-try) num-include-books-to-try-orig rule)
                   (cw "fail (enabling ~x0 didn't help)~%" rule))
                 (mv nil nil state))
                (successful-include-book-form successful-include-book-form-or-nil) ; rename for clarity
@@ -1091,18 +1294,18 @@
            ((when (not (equal book-map-keys (list item))))
             (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil item)
             (mv :bad-book-map nil state))
-           (include-book-forms (lookup-eq item book-map))
-           ((when (eq :builtin include-book-forms))
+           (include-book-info (lookup-eq item book-map))
+           ((when (eq :builtin include-book-info))
             (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" item)
             (mv :bad-book-info nil state))
+           (include-books-to-try include-book-info) ; rename for clarity
            ;; TODO: Filter out include-books that are known to clash with this tool?
-           ;; todo: check for empty include-book-forms, or is that already checked?
-           (num-include-book-forms-orig (len include-book-forms))
-           ;; (- (and (< 1 num-include-book-forms)
-           ;;         (cw "NOTE: There are ~x0 books that might contain ~x1: ~X23~%" num-include-book-forms item include-book-forms nil)))
-           (include-book-forms (if (< 3 num-include-book-forms-orig)
-                             (take 3 include-book-forms)
-                           include-book-forms))
+           (num-include-books-to-try-orig (len include-books-to-try))
+           ;; (- (and (< 1 num-include-books-to-try)
+           ;;         (cw "NOTE: There are ~x0 books that might contain ~x1: ~X23~%" num-include-books-to-try item include-books-to-try nil)))
+           (include-books-to-try (if (< 3 num-include-books-to-try-orig)
+                                     (take 3 include-books-to-try)
+                                   include-books-to-try))
            ;; todo: ensure this is nice:
            (new-hints ;; todo: ensure this is nice:
             ;; todo: also disable the item, if appropriate
@@ -1111,12 +1314,12 @@
            ;; TODO: For each of these, if it works, maybe just try the include-book without the enable:
            ;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
            ((mv erp successful-include-book-form-or-nil state)
-            (try-prove$-with-include-books 'try-add-use-hint theorem-body include-book-forms item :use new-hints theorem-otf-flg *step-limit* state))
+            (try-prove$-with-include-books 'try-add-use-hint theorem-body include-books-to-try item :use new-hints theorem-otf-flg *step-limit* state))
            ((when erp) (mv erp nil state))
            ((when (not successful-include-book-form-or-nil))
-            (if (< 3 num-include-book-forms-orig)
+            (if (< 3 num-include-books-to-try-orig)
                 ;; todo: try more if we didn't find it?:
-                (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len include-book-forms) num-include-book-forms-orig item)
+                (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len include-books-to-try) num-include-books-to-try-orig item)
               (cw "fail (using ~x0 didn't help)~%" item))
             (mv nil nil state))
            (successful-include-book-form successful-include-book-form-or-nil) ; rename for clarity
@@ -1281,11 +1484,11 @@
                (<= max-wins (len successful-recs))))
       (mv nil (reverse successful-recs) state)
     (b* ((rec (first recs))
-         (name (car rec))
-         (type (cadr rec))
-         (object (caddr rec))
-         ;; (confidence-percent (cadddr rec))
-         (book-map (car (cddddr rec)))
+         (name (nth 0 rec))
+         (type (nth 1 rec))
+         (object (nth 2 rec))
+         ;; (confidence-percent (nth 3 rec))
+         (book-map (nth 4 rec))
          (- (cw "~s0: " name))
          ((mv & ; erp ; for now, we ignore errors and just continue
               maybe-successful-rec state)
@@ -1334,7 +1537,8 @@
 (local
  (defthm recommendation-listp-of-make-enable-recs-aux
    (implies (symbol-listp names)
-            (recommendation-listp (make-enable-recs-aux names num)))))
+            (recommendation-listp (make-enable-recs-aux names num)))
+   :hints (("Goal" :in-theory (enable recommendation-listp)))))
 
 ;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
@@ -1423,6 +1627,8 @@
 
 ;; compares the type and object fields
 (defund same-recp (rec1 rec2)
+  (declare (xargs :guard (and (recommendationp rec1)
+                              (recommendationp rec2))))
   (and (equal (nth 1 rec1) (nth 1 rec2))
        (equal (nth 2 rec1) (nth 2 rec2))))
 
@@ -1470,6 +1676,113 @@
         (mv erp nil state))
        (- (and debug (cw "Parsed POST response: ~X01~%" parsed-json-response nil))))
     (mv nil parsed-json-response state)))
+
+;; Returns a member of RECS that is equivalent to REC, or nil.
+(defund find-equivalent-rec (rec recs)
+  (declare (xargs :guard (and (recommendationp rec)
+                              (recommendation-listp recs))
+                  :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
+  (if (endp recs)
+      nil
+    (let ((this-rec (first recs)))
+      (if (same-recp rec this-rec)
+          this-rec
+        (find-equivalent-rec rec (rest recs))))))
+
+(defthm recommendationp-of-find-equivalent-rec
+  (implies (and (find-equivalent-rec rec recs)
+                (recommendation-listp recs))
+           (recommendationp (find-equivalent-rec rec recs)))
+  :hints (("Goal" :in-theory (enable find-equivalent-rec recommendation-listp))))
+
+;; for now, if one is :builtin, we just take the other (but should that ever happen?)
+(defund combine-include-book-infos (info1 info2)
+  (declare (xargs :guard (and (include-book-infop info1)
+                              (include-book-infop info2))))
+  (if (eq :builtin info1)
+      info2
+    (if (eq :builtin info2)
+        info1
+      (union-equal info1 info2))))
+
+(local
+ (defthm include-book-infop-of-combine-include-book-infos
+   (implies (and (include-book-infop info1)
+                 (include-book-infop info2))
+            (include-book-infop (combine-include-book-infos info1 info2)))
+   :hints (("Goal" :in-theory (enable include-book-infop
+                                      combine-include-book-infos)))))
+
+(defund combine-book-maps-aux (keys map1 map2 acc)
+  (declare (xargs :guard (and (symbol-listp keys)
+                              (book-mapp map1)
+                              (book-mapp map2)
+                              (alistp acc))))
+  (if (endp keys)
+      acc
+    (let* ((key (first keys))
+           (info1 (lookup-eq key map1))
+           (info2 (lookup-eq key map2))
+           (val (if (not info1)
+                    info2
+                  (if (not info2)
+                      info1
+                    (combine-include-book-infos info1 info2)))))
+      (combine-book-maps-aux (rest keys) map1 map2
+                             (acons key
+                                    val
+                                    acc)))))
+
+(local
+ (defthm book-mapp-of-combine-book-maps-aux
+   (implies (and (symbol-listp keys)
+                 (book-mapp map1)
+                 (book-mapp map2)
+                 (book-mapp acc))
+            (book-mapp (combine-book-maps-aux keys map1 map2 acc)))
+   :hints (("Goal" :in-theory (enable combine-book-maps-aux book-mapp include-book-info-listp
+                                      ;include-book-infop
+                                      )))))
+
+(defund combine-book-maps (map1 map2)
+  (declare (xargs :guard (and (book-mapp map1)
+                              (book-mapp map2))))
+  (combine-book-maps-aux (union-eq (strip-cars map1) (strip-cars map2))
+                         map1
+                         map2
+                         nil))
+
+(local
+ (defthm book-mapp-of-combine-book-maps
+   (implies (and (book-mapp map1)
+                 (book-mapp map2))
+            (book-mapp (combine-book-maps map1 map2)))
+   :hints (("Goal" :in-theory (enable combine-book-maps)))))
+
+;; Can this be slow?
+(defun merge-rec-into-recs (rec recs)
+  (declare (xargs :guard (and (recommendationp rec)
+                              (recommendation-listp recs))))
+  (let ((match (find-equivalent-rec rec recs)))
+    (if match
+        (cons (make-rec (concatenate 'string (nth 0 rec) "/" (nth 0 match)) ; combine the names
+                        (nth 1 rec) ; same in both
+                        (nth 2 rec) ; same in both
+                        (max (nth 3 rec) (nth 3 match)) ; take max confidence (todo: do better?)
+                        (combine-book-maps (nth 4 rec) (nth 4 match))
+                        (nth 5 rec) ; todo: drop, should always be :unknown
+                        (append (nth 6 rec) (nth 6 match)) ; combine lists of sources
+                        )
+              (remove-equal match recs))
+      (cons rec recs))))
+
+(defun merge-recs-into-recs (recs1 recs2)
+  (declare (xargs :guard (and (recommendation-listp recs1)
+                              (recommendation-listp recs2))
+                  :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
+  (if (endp recs1)
+      recs2
+    (merge-recs-into-recs (rest recs1) (merge-rec-into-recs (first recs1) recs2))))
 
 ;; Returns (mv erp nil state).
 ;; TODO: Support getting checkpoints from a defun, but then we'd have no body
@@ -1584,9 +1897,10 @@
        ((mv erp recs-from-history state) (make-recs-from-history state))
        ((when erp) (mv erp nil state))
        ;; todo: remove duplicate recs from multiple sources:
-       (recommendations (append enable-recommendations
-                                recs-from-history
-                                ml-recommendations))
+       ;; TODO: Can any of these 3 lists contain dups?
+       (recommendations (merge-recs-into-recs enable-recommendations
+                                              (merge-recs-into-recs recs-from-history
+                                                                    ml-recommendations)))
        ;; (num-recs (len recommendations))
        ;; Print the recommendations (for now):
        (-  (cw "~%RECOMMENDATIONS TO TRY:~%"))
