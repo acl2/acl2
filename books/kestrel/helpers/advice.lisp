@@ -255,6 +255,21 @@
    :rule-classes :forward-chaining
    :hints (("Goal" :in-theory (enable rec-sourcep)))))
 
+;; Recognize a true list of recommendation sources
+(defund rec-sourcesp (sources)
+  (declare (xargs :guard t))
+  (if (atom sources)
+      (null sources)
+    (and (rec-sourcep (first sources))
+         (rec-sourcesp (rest sources)))))
+
+(local
+ (defthm rec-sourcesp-of-cons
+   (equal (rec-sourcesp (cons rec recs))
+          (and (rec-sourcep rec)
+               (rec-sourcesp recs)))
+   :hints (("Goal" :in-theory (enable rec-sourcesp)))))
+
 ;; todo: strengthen
 (defund recommendationp (rec)
   (declare (xargs :guard t))
@@ -267,7 +282,7 @@
              ;; (book-map (nth 4 rec))
              ;; this (possibly) gets populated when we try the rec:
              (pre-commands (nth 5 rec))
-             (source (nth 6 rec)))
+             (sources (nth 6 rec)))
          (and (stringp name)
               (member-eq type *all-rec-types*)
               ;; object
@@ -275,7 +290,7 @@
               ;; book-map
               (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
                   (true-listp pre-commands))
-              (rec-sourcep source)))))
+              (rec-sourcesp sources)))))
 
 (local
  (defthm recommendationp-forward-to-true-listp
@@ -290,7 +305,7 @@
             (rationalp (nth 3 rec)))
    :hints (("Goal" :in-theory (enable recommendationp)))))
 
-(defund make-rec (name type object confidence-percent book-map pre-commands source)
+(defund make-rec (name type object confidence-percent book-map pre-commands sources)
   (declare (xargs :guard (and (stringp name)
                               (member-eq type *all-rec-types*)
                               ;; object
@@ -298,12 +313,12 @@
                               ;; book-map
                               (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
                                   (true-listp pre-commands))
-                              (rec-sourcep source)
+                              (rec-sourcesp sources)
                               )))
-  (list name type object confidence-percent book-map pre-commands source))
+  (list name type object confidence-percent book-map pre-commands sources))
 
 (defthm recommendationp-of-make-rec
-  (equal (recommendationp (make-rec name type object confidence-percent book-map pre-commands source))
+  (equal (recommendationp (make-rec name type object confidence-percent book-map pre-commands sources))
          (and (stringp name)
               (member-eq type *all-rec-types*)
               ;; object
@@ -311,7 +326,7 @@
               ;; book-map
               (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
                   (true-listp pre-commands))
-              (rec-sourcep source)))
+              (rec-sourcesp sources)))
   :hints (("Goal" :in-theory (enable make-rec recommendationp))))
 
 (defund update-pre-commands (pre-commands rec)
@@ -633,7 +648,7 @@
          (name (concatenate 'string "ML" (nat-to-string rec-num)))
          )
       (mv nil ; no error
-          (make-rec name type-keyword parsed-object confidence-percent book-map :unknown source)
+          (make-rec name type-keyword parsed-object confidence-percent book-map :unknown (list source))
           state))))
 
 ;; Returns (mv erp parsed-recommendations state).
@@ -1312,7 +1327,7 @@
                     0             ; confidence percentage (TODO: allow unknown)
                     nil ; book map ; todo: indicate that the name must be present?
                     nil ; no pre-commands
-                    :advice-tool
+                    (list :advice-tool)
                     )
           (make-enable-recs-aux (rest names) (+ 1 num)))))
 
@@ -1377,7 +1392,7 @@
                                          0
                                          nil
                                          nil
-                                         :advice-tool))))))))))))
+                                         (list :advice-tool)))))))))))))
 
  (defun make-recs-from-events (events num acc)
    (if (endp events)
