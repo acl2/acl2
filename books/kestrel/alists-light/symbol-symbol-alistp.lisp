@@ -10,16 +10,7 @@
 
 (in-package "ACL2")
 
-;; From including std/typed-alists/symbol-symbol-alistp.lisp
-(defund symbol-symbol-alistp (x)
-  (declare (xargs :guard t
-                  :normalize nil))
-  (if (consp x)
-      (and (consp (car x))
-           (symbolp (caar x))
-           (symbolp (cdar x))
-           (symbol-symbol-alistp (cdr x)))
-    (null x)))
+(include-book "symbol-symbol-alistp-def")
 
 (defthm symbol-symbol-alistp-forward-to-symbol-alistp
   (implies (symbol-symbol-alistp x)
@@ -38,4 +29,16 @@
 (defthmd symbol-alistp-when-symbol-symbol-alistp
   (implies (symbol-symbol-alistp x)
            (symbol-alistp x))
+  :hints (("Goal" :in-theory (enable symbol-symbol-alistp))))
+
+(defthm symbol-symbol-alistp-of-cons-of-cons
+  (equal (symbol-symbol-alistp (cons (cons key val) x))
+         (and (symbolp key)
+              (symbolp val)
+              (symbol-symbol-alistp x)))
+  :hints (("Goal" :in-theory (enable symbol-symbol-alistp))))
+
+(defthm symbolp-of-cdr-of-assoc-equal-when-symbol-symbol-alistp
+  (implies (symbol-symbol-alistp x)
+           (symbolp (cdr (assoc-equal key x))))
   :hints (("Goal" :in-theory (enable symbol-symbol-alistp))))
