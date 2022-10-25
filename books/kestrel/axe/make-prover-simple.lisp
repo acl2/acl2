@@ -303,7 +303,7 @@
     (:FORWARD-CHAINING PSEUDO-DAG-ARRAYP-FORWARD-TO-NATP-ARG3)
     ;;(:FORWARD-CHAINING RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP)
     (:FORWARD-CHAINING SYMBOL-ALISTP-FORWARD-TO-EQLABLE-ALISTP)
-    (:FORWARD-CHAINING SYMBOL-ALISTP-FORWARD-TO-TRUE-LISTP)
+    (:FORWARD-CHAINING SYMBOL-ALISTP-FORWARD-TO-aLISTP)
 ; Matt K. mod, 7/15/2022: SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP is being removed,
 ; but its effect follows from the three I've added just below the next line.
 ;   (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
@@ -870,6 +870,7 @@
        (local (include-book "kestrel/lists-light/cdr" :dir :system)) ; for cdr-iff
        (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
        (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+       (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
        (local (include-book "kestrel/utilities/acl2-count" :dir :system))
