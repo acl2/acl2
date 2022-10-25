@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
+(include-book "maybe-natp")
 
 (local (xdoc::set-default-parents std/basic))
 
@@ -158,27 +159,6 @@ that returns @('x')."
   (defun false ()
     (declare (xargs :guard t))
     nil))
-
-
-(defsection maybe-natp
-  :short "Recognizer for naturals and @('nil')."
-  :long "<p>This is like an <a
-href='https://en.wikipedia.org/wiki/Option_type'>option type</a>; when @('x')
-satisfies @('maybe-natp'), then either it is a natural number or nothing.</p>"
-
-  (defund-inline maybe-natp (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (natp x)))
-
-  (local (in-theory (enable maybe-natp)))
-
-  (defthm maybe-natp-compound-recognizer
-    (equal (maybe-natp x)
-           (or (not x)
-               (and (integerp x)
-                    (<= 0 x))))
-    :rule-classes :compound-recognizer))
 
 
 (defsection maybe-integerp
