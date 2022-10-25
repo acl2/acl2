@@ -1364,6 +1364,7 @@
                   debug
                   step-limit
                   max-wins
+                  models
                   state)
   (declare (xargs :guard (and (natp n)
                               (booleanp verbose)
@@ -1375,7 +1376,8 @@
                                   (natp step-limit))
                               (or (eq :auto max-wins)
                                   (null max-wins)
-                                  (natp max-wins)))
+                                  (natp max-wins))
+                              (stringp models))
                   :stobjs state
                   :mode :program ; because we untranslate (for now)
                   ))
@@ -1431,15 +1433,21 @@
                       n
                       (len checkpoint-clauses)
                       (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint")))
-               (post-data (acons "n" (nat-to-string n)
-                                 (make-numbered-checkpoint-entries 0 checkpoint-clauses)))
+               (post-data (acons "use-group" models
+                                 (acons "n" (nat-to-string n)
+                                        (make-numbered-checkpoint-entries 0 checkpoint-clauses))))
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url post-data debug state))
                ((when erp)
                 (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
-                (mv erp nil state)))
+                (mv erp nil state))
+               ((when (not (parsed-json-arrayp parsed-response)))
+                (er hard? 'advice-fn "Error: Response from server is not a JSON array: ~x0." parsed-response)
+                (mv :bad-server-response nil state)))
             (mv nil (parsed-json-array->values parsed-response) state))))
        ((when erp) (mv erp nil state))
+       (- (and (not (consp semi-parsed-recommendations))
+               (cw "~% WARNING: No recommendations returned from server.~%")))
        ;; Parse the individual strings in the recs:
        ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations state))
        ((when erp)
@@ -1516,8 +1524,8 @@
        (mv nil ; no error
         '(value-triple :invisible) state)))
 
-(defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil) (debug 'nil) (step-limit ':auto) (max-wins ':auto))
-  `(make-event-quiet (advice-fn ,n ,verbose ,server-url ,debug ,step-limit ,max-wins state)))
+(defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil) (debug 'nil) (step-limit ':auto) (max-wins ':auto) (models '"kestrel-calpoly"))
+  `(make-event-quiet (advice-fn ,n ,verbose ,server-url ,debug ,step-limit ,max-wins ,models state)))
 
 ;; Example:
 ;; (acl2s-defaults :set testing-enabled nil) ; turn off testing
