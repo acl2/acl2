@@ -81,6 +81,8 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "kestrel/utilities/margins" :dir :system))
@@ -216,6 +218,12 @@
 
 (defconst *all-rec-types* (cons :exact-hints *ml-rec-types*))
 
+(defund confidence-percentp (p)
+  (declare (xargs :guard t))
+  (and (rationalp p)
+       (<= 0 p)
+       (<= p 100)))
+
 ;; todo: strengthen
 (defun recommendationp (rec)
   (declare (xargs :guard t))
@@ -231,15 +239,19 @@
          (and (stringp name)
               (member-eq type *all-rec-types*)
               ;; object
-              (and (rationalp confidence-percent)
-                   (<= 0 confidence-percent)
-                   (<= confidence-percent 100))
+              (confidence-percentp confidence-percent)
               ;; book-map
               (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
                   (true-listp pre-commands))))))
 
 (defun make-rec (name type object confidence-percent book-map pre-commands)
-  (declare (xargs :guard t)) ; todo: strengthen
+  (declare (xargs :guard (and (stringp name)
+                              (member-eq type *all-rec-types*)
+                              ;; object
+                              (confidence-percentp confidence-percent)
+                              ;; book-map
+                              (or (eq :unknown pre-commands) ; until we decide if any include-books are needed
+                                  (true-listp pre-commands)))))
   (list name type object confidence-percent book-map pre-commands))
 
 (defund update-pre-commands (pre-commands rec)
@@ -498,6 +510,19 @@
   (/ (floor (* x 100) 1)
      100))
 
+(defthm confidence-percentp-of-round-to-hundredths
+  (implies (confidence-percentp x)
+           (confidence-percentp (round-to-hundredths x)))
+  :hints (("Goal" :in-theory (enable confidence-percentp round-to-hundredths))))
+
+(local
+ (defthm confidence-percentp-of-*-of-100
+   (implies (and (<= 0 x)
+                 (<= x 1)
+                 (rationalp x))
+            (confidence-percentp (* 100 x)))
+   :hints (("Goal" :in-theory (enable confidence-percentp)))))
+
 ;; Returns (mv erp parsed-recommendation state) where parsed-recommendation may be :none.
 (defund parse-recommendation (rec rec-num state)
   (declare (xargs :guard (and (parsed-json-valuep rec)
@@ -519,8 +544,8 @@
             (cw "WARNING: When parsing book map: ~x0.~%" erp))
           (mv nil ; supressing this error for now
               :none state))
-         (confidence (rfix confidence)) ; for guards
-         ((when (or (< confidence 0)
+         ((when (or (not (rationalp confidence))
+                    (< confidence 0)
                     (< 1 confidence)))
           (er hard? 'parse-recommendation "Bad confidence: ~x0." confidence)
           (mv :bad-confidence nil state))
@@ -1458,6 +1483,7 @@
        (enable-recommendations (make-enable-recs theorem-body wrld))
        ((mv erp historical-recommendations state) (make-recs-from-history state))
        ((when erp) (mv erp nil state))
+       ;; todo: remove duplicate recs from multiple sources:
        (recommendations (append enable-recommendations
                                 historical-recommendations
                                 ml-recommendations))
