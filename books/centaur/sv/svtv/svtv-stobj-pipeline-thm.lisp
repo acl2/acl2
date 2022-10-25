@@ -154,10 +154,10 @@
        (outvars (svtv-probealist-outvars pipe.probes))
        (run (base-fsm-run
              (svex-alistlist-eval
-              (svtv-fsm-run-input-substs
+              (svtv-fsm-to-base-fsm-inputsubsts
                (take (len outvars) pipe.inputs)
-               pipe.overrides
-               rename-fsm)
+               pipe.override-vals pipe.override-tests
+               namemap)
               env)
              (svex-alist-eval pipe.initst env)
              renamed-fsm
@@ -574,10 +574,10 @@
                  (outvars  (svtv-probealist-outvars pipe.probes))
                  (run (base-fsm-run
                        (svex-alistlist-eval
-                        (svtv-fsm-run-input-substs
+                        (svtv-fsm-to-base-fsm-inputsubsts
                          (take (len outvars) pipe.inputs)
-                         pipe.overrides
-                         rename-fsm)
+                         pipe.override-vals pipe.override-tests
+                         (,namemap-name))
                         env)
                        (svex-alist-eval pipe.initst env)
                        renamed-fsm
@@ -632,10 +632,10 @@ following form:</p>
         (outvars  (svtv-probealist-outvars pipe.probes))
         (run (base-fsm-run
               (svex-alistlist-eval
-               (svtv-fsm-run-input-substs
+               (svtv-fsm-to-base-fsm-inputsubsts
                 (take (len outvars) pipe.inputs)
-                pipe.overrides
-                rename-fsm)
+                pipe.override-vals pipe.override-tests
+                (svtv-namemap))
                env)
               (svex-alist-eval pipe.initst env)
               renamed-fsm

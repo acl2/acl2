@@ -39,8 +39,8 @@
 ;; where x and y are integers in the field Z_p (i.e., in [0, p-1]).
 ;; p, the size of the field, is:
 ;;   2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
-;; p is defined in the file
-;; [books]/kestrel/crypto/primes/secp256k1-field-prime.lisp,
+;; p is defined in the community book
+;; kestrel/crypto/primes/secp256k1-field-prime.lisp,
 ;; as the nullary function secp256k1-field-prime.
 ;;
 ;; secp256k1 also defines a group defined on points on the curve

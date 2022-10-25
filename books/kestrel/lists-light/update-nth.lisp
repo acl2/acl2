@@ -154,3 +154,21 @@
              (append (update-nth n val x) y)
            (append x (update-nth (- n (len x)) val y))))
   :hints (("Goal" :in-theory (enable equal-of-append))))
+
+(local
+ (defun sub1-cdr-cdr-induct (n x y)
+  (if (zp n)
+      (list n x y)
+    (sub1-cdr-cdr-induct (+ -1 n) (cdr x) (cdr y)))))
+
+(defthmd equal-of-update-nth-new
+  (implies (natp n)
+           (equal (equal y (update-nth n val x))
+                  (and (<= (+ 1 n) (len y))
+                       (equal (nth n y) val)
+                       (equal (take n y)
+                              (take n x))
+                       (equal (nthcdr (+ 1 n) x)
+                              (nthcdr (+ 1 n) y)))))
+  :hints (("Goal" :induct (sub1-cdr-cdr-induct n x y)
+           :in-theory (e/d (update-nth) ()))))

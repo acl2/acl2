@@ -253,7 +253,9 @@
   (b* ((frame (top-frame compst))
        (scopes (frame->scopes frame))
        (scope (car scopes))
-       (new-scope (omap::update (ident-fix var) (value-fix val) scope))
+       (new-scope (omap::update (ident-fix var)
+                                (remove-flexible-array-member val)
+                                scope))
        (new-scopes (cons new-scope (cdr scopes)))
        (new-frame (change-frame frame :scopes new-scopes))
        (new-compst (push-frame new-frame (pop-frame compst))))
@@ -345,7 +347,9 @@
              (new-frame (change-frame frame :scopes new-scopes)))
           (push-frame new-frame (pop-frame compst))))
        (static (compustate->static compst))
-       (new-static (omap::update (ident-fix var) (value-fix val) static)))
+       (new-static (omap::update (ident-fix var)
+                                 (remove-flexible-array-member val)
+                                 static)))
     (change-compustate compst :static new-static))
   :hooks (:fix)
 
@@ -357,7 +361,9 @@
           (scope (scope-fix (car scopes)))
           (pair (omap::in (ident-fix var) scope))
           ((when (consp pair))
-           (cons (omap::update (ident-fix var) (value-fix val) scope)
+           (cons (omap::update (ident-fix var)
+                               (remove-flexible-array-member val)
+                               scope)
                  (scope-list-fix (cdr scopes)))))
        (cons scope (update-var-aux var val (cdr scopes))))
      :hooks (:fix)
@@ -390,7 +396,9 @@
      It is equivalent to @(tsee write-static-var)
      when the latter does not return an error."))
   (b* ((static (compustate->static compst))
-       (new-static (omap::update (ident-fix var) (value-fix val) static))
+       (new-static (omap::update (ident-fix var)
+                                 (remove-flexible-array-member val)
+                                 static))
        (new-compst (change-compustate compst :static new-static)))
     new-compst)
   :hooks (:fix))
@@ -486,7 +494,16 @@
      to a nest of @(tsee omap::update) calls
      (as it is, because we use rules for @(tsee init-scope) that do that),
      the two theorems below move the variables into @(tsee add-var) calls,
-     and finally turn @(tsee push-frame) into @(tsee add-frame)."))
+     and finally turn @(tsee push-frame) into @(tsee add-frame).")
+   (xdoc::p
+    "During symbolic execution,
+     the values stored into a scope never have flexible array members.
+     This is because @(tsee init-scope) removes them, if present.
+     During symbolic execution, these values will satisfy that predicate,
+     making the application of @(tsee remove-flexible-array-member)
+     in the @(tsee omap::update) nest disappear,
+     which justifies its absence
+     in the left side of @('push-frame-of-one-nonempty-scope')."))
 
   (defruled push-frame-of-one-empty-scope
     (equal (push-frame (frame fun (list nil)) compst)
@@ -496,7 +513,8 @@
   (defruled push-frame-of-one-nonempty-scope
     (implies (and (identp var)
                   (valuep val)
-                  (scopep scope))
+                  (scopep scope)
+                  (not (flexible-array-member-p val)))
              (equal (push-frame (frame fun (list (omap::update var val scope)))
                                 compst)
                     (add-var var
@@ -932,7 +950,7 @@
     (equal (read-var var (add-var var2 val compst))
            (if (equal (ident-fix var)
                       (ident-fix var2))
-               (value-fix val)
+               (remove-flexible-array-member val)
              (read-var var compst)))
     :enable (read-var
              read-auto-var
@@ -948,7 +966,7 @@
     (equal (read-var var (update-var var2 val2 compst))
            (if (equal (ident-fix var)
                       (ident-fix var2))
-               (value-fix val2)
+               (remove-flexible-array-member val2)
              (read-var var compst)))
     :enable (read-var
              read-auto-var
@@ -969,7 +987,7 @@
                 (equal (read-auto-var-aux var (update-var-aux var2 val2 scopes))
                        (if (equal (ident-fix var)
                                   (ident-fix var2))
-                           (value-fix val2)
+                           (remove-flexible-array-member val2)
                          (read-auto-var-aux var scopes))))
        :enable (var-in-scopes-p
                 read-auto-var-aux
@@ -997,7 +1015,7 @@
   (defruled read-var-of-update-static-var-same
     (implies (not (var-autop var compst))
              (equal (read-var var (update-static-var var val compst))
-                    (value-fix val)))
+                    (remove-flexible-array-member val)))
     :enable (read-var
              read-auto-var
              read-static-var
@@ -1193,7 +1211,7 @@
     (equal (read-static-var var (update-static-var var2 val compst))
            (if (equal (ident-fix var)
                       (ident-fix var2))
-               (value-fix val)
+               (remove-flexible-array-member val)
              (read-static-var var compst)))
     :enable (read-static-var update-static-var))
 
@@ -1316,7 +1334,6 @@
               (update-var-aux var val scopes))
        :enable update-var-aux)))
 
-
   (defruled update-var-of-update-var-less
     (implies (and (syntaxp (and (consp var2)
                                 (eq (car var2) 'ident)
@@ -1350,6 +1367,7 @@
                   (compustatep compst1)
                   (> (compustate-frames-number compst1) 0)
                   (valuep (read-var var compst))
+                  (not (flexible-array-member-p (read-var var compst)))
                   (equal (read-var var compst)
                          (read-var var compst1)))
              (equal (update-var var (read-var var compst) compst1)
@@ -1357,7 +1375,9 @@
     :use (:instance update-var-of-read-var-same-lemma (compst compst1))
     :prep-lemmas
     ((defruled update-var-aux-of-read-auto-var-aux-same
-       (implies (valuep (read-auto-var-aux var scopes))
+       (implies (and (valuep (read-auto-var-aux var scopes))
+                     (not (flexible-array-member-p
+                           (read-auto-var-aux var scopes))))
                 (equal (update-var-aux var (read-auto-var-aux var scopes) scopes)
                        (scope-list-fix scopes)))
        :enable (read-auto-var-aux
@@ -1365,7 +1385,8 @@
      (defruled update-var-of-read-var-same-lemma
        (implies (and (compustatep compst)
                      (> (compustate-frames-number compst) 0)
-                     (valuep (read-var var compst)))
+                     (valuep (read-var var compst))
+                     (not (flexible-array-member-p (read-var var compst))))
                 (equal (update-var var (read-var var compst) compst)
                        compst))
        :enable (read-var
@@ -1855,6 +1876,7 @@
     (implies (and (syntaxp (symbolp compst))
                   (compustatep compst1)
                   (valuep (read-static-var var compst))
+                  (not (flexible-array-member-p (read-static-var var compst)))
                   (equal (read-static-var var compst)
                          (read-static-var var compst1)))
              (equal (update-static-var var (read-static-var var compst) compst1)
@@ -1867,8 +1889,12 @@
     :prep-lemmas
     ((defruled update-static-var-of-read-static-var-same-lemma
        (implies (and (compustatep compst)
-                     (valuep (read-static-var var compst)))
-                (equal (update-static-var var (read-static-var var compst) compst)
+                     (valuep (read-static-var var compst))
+                     (not (flexible-array-member-p
+                           (read-static-var var compst))))
+                (equal (update-static-var var
+                                          (read-static-var var compst)
+                                          compst)
                        compst))
        :enable (read-static-var
                 update-static-var

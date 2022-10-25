@@ -62,9 +62,9 @@
       (sharp-atsign-read-er
        "Non-digit character ~s following #@~s"
        bad-ch index))
-     ((symbol-value (f-get-global 'certify-book-info state))
+     ((f-get-global 'certify-book-info state)
       (sharp-atsign-read-er
-       "Illegal reader macro during certify-book, #@~s#"
+       "Illegal use of #@ reader macro during certify-book, #@~s#"
        index))
      ((iprint-ar-illegal-index index state)
       (sharp-atsign-read-er
@@ -4900,7 +4900,8 @@
 ; without reading the comment in *uninhibited-warning-summaries* about
 ; "Compiled file".
 
-  (let ((see-doc "  See :DOC include-book."))
+  (let ((see-doc "  See :DOC include-book.")
+        (wrld (w state)))
     (cond ((null load-compiled-file)
            (er hard ctx
                "Implementation error: the LOAD-COMPILED-FILE argument is ~x0 ~
@@ -4912,19 +4913,21 @@
                (rassoc-eq t *load-compiled-stack*))
            (let ((stack-msg
                   (cond ((eq load-compiled-file t)
-                         (tilde-@-book-stack-msg t *load-compiled-stack*))
+                         (tilde-@-book-stack-msg t *load-compiled-stack* ctx
+                                                 wrld))
                         (t
                          (tilde-@-book-stack-msg
                           (car (rassoc-eq t *load-compiled-stack*))
-                          *load-compiled-stack*)))))
+                          *load-compiled-stack* ctx wrld)))))
              (cond (reason-msg
                     (er hard ctx
-                        "Unable to load compiled file~|  ~s0~|because ~@1.~@2~@3"
+                        "Unable to load compiled file~|  ~s0~|because ~
+                         ~@1.~@2~@3"
                         file reason-msg see-doc stack-msg))
                    (t
                     (er hard ctx
-                        "Unable to complete load of compiled file for book~|~ ~ ~
-                         ~s0,~|as already noted by a warning.~@1~@2"
+                        "Unable to complete load of compiled file for book~|~ ~
+                         ~ ~s0,~|as already noted by a warning.~@1~@2"
                         file see-doc stack-msg)))))
           (reason-msg
            (warning$ ctx "Compiled file"
@@ -4933,13 +4936,15 @@
                      file
                      reason-msg
                      see-doc
-                     (tilde-@-book-stack-msg nil *load-compiled-stack*)))
+                     (tilde-@-book-stack-msg nil *load-compiled-stack* ctx
+                                             wrld)))
           (t
            (warning$ ctx "Compiled file"
                      "Unable to complete load of compiled file for book~|  ~
                     ~s0,~|as already noted by a previous warning.~@1"
                      file
-                     (tilde-@-book-stack-msg nil *load-compiled-stack*)))))
+                     (tilde-@-book-stack-msg nil *load-compiled-stack* ctx
+                                             wrld)))))
   'incomplete)
 
 (defmacro our-handler-bind (bindings &rest forms)
@@ -4947,21 +4952,23 @@
   #-cltl2 `(progn ,@forms)
   #+cltl2 `(handler-bind ,bindings ,@forms))
 
-(defun load-compiled-book (file directory-name load-compiled-file ctx state)
+(defun load-compiled-book (file full-book-name directory-name
+                                load-compiled-file ctx state)
 
 ; We are processing include-book-raw underneath include-book-fn (hence
-; presumably not in raw mode).  File is an ACL2 full-book-name and
-; load-compiled-file is non-nil.  We attempt to load the corresponding compiled
-; or perhaps expansion file if not out of date with respect to the book's
-; certificate file.  Normally, we return COMPLETE if such a suitable compiled
-; file or expansion file exists and is loaded to completion, but if file is the
-; book being processed by a surrounding include-book-fn and compilation is
-; indicated because load-compiled-file is :comp and the expansion file is
-; loaded (not the compiled file), then we return TO-BE-COMPILED in that case.
-; Otherwise we return INCOMPLETE, that is, either no load is attempted for the
-; compiled or expansion file (because they don't exist or are out of date), or
-; else such a load but is aborted part way through, which can happen because of
-; an incomplete load of a subsidiary include-book's compiled or expansion file.
+; presumably not in raw mode).  File is an ACL2 pathname for the given
+; full-book-name and load-compiled-file is non-nil.  We attempt to load the
+; corresponding compiled or perhaps expansion file if not out of date with
+; respect to the book's certificate file.  Normally, we return COMPLETE if such
+; a suitable compiled file or expansion file exists and is loaded to
+; completion, but if file is the book being processed by a surrounding
+; include-book-fn and compilation is indicated because load-compiled-file is
+; :comp and the expansion file is loaded (not the compiled file), then we
+; return TO-BE-COMPILED in that case.  Otherwise we return INCOMPLETE, that is,
+; either no load is attempted for the compiled or expansion file (because they
+; don't exist or are out of date), or else such a load but is aborted part way
+; through, which can happen because of an incomplete load of a subsidiary
+; include-book's compiled or expansion file.
 
 ; As suggested above, we may allow the corresponding expansion file to take the
 ; place of a missing or out-of-date compiled file.  However, we do not allow
@@ -4975,7 +4982,7 @@
    (let* ((cfile (and acl2-cfile (pathname-unix-to-os acl2-cfile state)))
           (os-file (pathname-unix-to-os file state))
           (cfile-date (and cfile (file-write-date cfile)))
-          (ofile (convert-book-name-to-compiled-name os-file state))
+          (ofile (convert-book-string-to-compiled os-file state))
           (ofile-exists (probe-file ofile))
           (ofile-date (and ofile-exists (file-write-date ofile)))
           (ofile-p (and ofile-date cfile-date (>= ofile-date cfile-date)))
@@ -4988,7 +4995,7 @@
       ((not cfile)
        (missing-compiled-book ctx
                               file
-                              (if (probe-file (convert-book-name-to-cert-name
+                              (if (probe-file (convert-book-string-to-cert
                                                file t))
                                   "that book is not certified (but note that ~
                                    its .cert file exists and is not readable)"
@@ -5057,7 +5064,7 @@
 ; include-book-fn, either that compilation will succeed or there will be an
 ; error -- either way, there is no need to warn here.
 
-           (let ((acl2-ofile (convert-book-name-to-compiled-name file state)))
+           (let ((acl2-ofile (convert-book-string-to-compiled file state)))
              (warning$ ctx "Compiled file"
                        "Loading expansion file ~x0 in place of compiled file ~
                         ~x1, because ~@2."
@@ -5072,7 +5079,7 @@
            (state-global-let*
             ((raw-include-book-dir-alist nil)
              (connected-book-directory directory-name))
-            (let ((*load-compiled-stack* (acons file
+            (let ((*load-compiled-stack* (acons full-book-name
                                                 load-compiled-file
                                                 *load-compiled-stack*)))
               (multiple-value-bind
@@ -5119,7 +5126,7 @@
 
 (defvar *set-hcomp-loop$-alist* nil)
 
-(defun extend-hcomp-loop$-alist (new old full-book-name)
+(defun extend-hcomp-loop$-alist (new old full-book-string)
 
 ; Extend old by new, checking that we never change an existing value.
 
@@ -5132,29 +5139,33 @@
                               "Implementation error: unexpected ~
                                incompatibility in loop$-alists when ~
                                processing the book ~x0.~%new:~%~x1~%old~%~x2"
-                              full-book-name new old))))
+                              full-book-string new old))))
           do (push pair result)
           finally (return result))))
 
-(defmacro handle-hcomp-loop$-alist (form full-book-name)
+(defmacro handle-hcomp-loop$-alist (form full-book-string)
   (let ((saved-hcomp-loop$-alist (gensym)))
     `(let ((,saved-hcomp-loop$-alist *hcomp-loop$-alist*))
        (prog1 ,form
          (setq *hcomp-loop$-alist*
                (extend-hcomp-loop$-alist *hcomp-loop$-alist*
                                          ,saved-hcomp-loop$-alist
-                                         ,full-book-name))))))
+                                         ,full-book-string))))))
 
-(defun include-book-raw (book-name directory-name load-compiled-file dir ctx
-                                   state
-                                   &aux ; protect global value
-                                   (*set-hcomp-loop$-alist*
-                                    *set-hcomp-loop$-alist*))
+(defun include-book-raw (book-string book-name
+                                     directory-name load-compiled-file dir ctx
+                                     state
+                                     &aux ; protect global value
+                                     (*set-hcomp-loop$-alist*
+                                      *set-hcomp-loop$-alist*))
+
+; Book-string and book-name are an ACL2 pathname and a corresponding book-name
+; or nil.  These are discussed further below.
 
 ; This function is generally called on behalf of include-book-fn.  No load
 ; takes place if load-compiled-file is effectively nil (either nil or else
 ; compiler-enabled is nil) unless we are in raw mode, in which case we attempt
-; to load the source file, book-name.  So suppose load-compiled-file is not
+; to load the source file, book-string.  So suppose load-compiled-file is not
 ; nil.  When the call is not under certify-book-fn, the effect is to populate
 ; *hcomp-book-ht* with *hcomp-xxx-ht* hash tables for the given book and
 ; (recursively) all its sub-books; see the Essay on Hash Table Support for
@@ -5164,8 +5175,9 @@
 ; *hcomp-xxx* variables are irrelevant, by the way, if we are not calling
 ; add-trip or otherwise involving ACL2 event processing.)
 
-; If directory-name is nil, then book-name is a user-book-name.  Otherwise
-; book-name is a full-book-name whose directory is directory-name.
+; If directory-name is nil, then book-string is a user-book-name and book-name
+; is nil.  Otherwise book-string and book-name are a corresponding
+; full-book-string and full-book-name, with directory directory-name.
 ; Load-compiled-file and dir are the arguments of these names from
 ; include-book.
 
@@ -5210,46 +5222,29 @@
                (null load-compiled-file))
       (return-from include-book-raw nil))
     (mv-let
-     (full-book-name directory-name ignore-familiar-name)
-     (cond (directory-name (mv book-name directory-name nil))
+     (full-book-string full-book-name directory-name ignore-familiar-name)
+     (cond (directory-name (mv book-string book-name directory-name nil))
            (t (parse-book-name
                (cond (dir (or (include-book-dir dir state)
                               (er hard ctx
-                                  "Unable to find the :dir argument to ~
+                                  "Unable to resolve the :DIR argument to ~
                                    include-book, ~x0, which should have been ~
-                                   defined by ~v1.  Perhaps the book ~x2 ~
-                                   needs to be recertified."
+                                   defined by ~v1 or by the ~
+                                   project-dir-alist.  Perhaps the book ~x2 ~
+                                   needs to be recertified, or perhaps the ~
+                                   project-dir-alist needs to be set up to ~
+                                   associate a directory with ~x0 and ~
+                                   possibly other keywords (see :DOC ~
+                                   project-dir-alist)."
                                   dir
                                   '(add-include-book-dir add-include-book-dir!)
-                                  book-name)))
+                                  book-string)))
                      (t (f-get-global 'connected-book-directory state)))
-               book-name ".lisp" ctx state)))
+               book-string ".lisp" ctx state)))
      (declare (ignore ignore-familiar-name))
      (cond
-      ((let ((true-full-book-name (our-truename full-book-name :safe)))
-         (and true-full-book-name
-              (assoc-equal (pathname-os-to-unix true-full-book-name
-                                                (os (w state))
-                                                state)
-                           (global-val 'include-book-alist (w state)))))
-
-; In ACL2 Version_4.1 running on Allegro CL, we got an error when attempting to
-; certify the following book.
-
-; (in-package "ACL2")
-; (include-book "coi/lists/memberp" :dir :system)
-
-; The problem was that truename is (one might say) broken in Allegro CL.
-; Fortunately, Allegro CL provides an alternative that seems to work --
-; excl::pathname-resolve-symbolic-links -- and we now use that function (see
-; our-truename).  The problem goes away if that function is applied to
-; full-book-name under the call of assoc-equal below.  But the error occurred
-; in the context of loading a file just compiled from a book, and in that
-; context there is no reason to execute any raw-Lisp include-book.  Thus, we
-; short-circuit in that case -- see the use of *compiling-certified-file* above
-; -- and now we never even get to the above assoc-equal test in that case.
-
-; A final comment in the case that we really do get to this point:
+      ((assoc-equal full-book-name
+                    (global-val 'include-book-alist (w state)))
 
 ; Since all relevant values have been defined, there is no need to transfer to
 ; hash tables (as per the Essay on Hash Table Support for Compilation).  This
@@ -5269,8 +5264,8 @@
            (null *hcomp-book-ht*))
        (state-free-global-let*-safe
         ((connected-book-directory directory-name))
-        (let* ((os-file (pathname-unix-to-os full-book-name state))
-               (ofile (convert-book-name-to-compiled-name os-file state))
+        (let* ((os-file (pathname-unix-to-os full-book-string state))
+               (ofile (convert-book-string-to-compiled os-file state))
                (os-file-exists (probe-file os-file))
                (ofile-exists (probe-file ofile))
                (book-date (and os-file-exists (file-write-date os-file)))
@@ -5278,7 +5273,7 @@
           (cond ((not os-file-exists)
                  (er hard ctx
                      "The file named ~x0 does not exist."
-                     full-book-name))
+                     full-book-string))
                 ((null load-compiled-file)
                  (assert$ raw-mode-p ; otherwise we already returned above
 
@@ -5292,7 +5287,7 @@
                       (<= book-date ofile-date))
                  (handle-hcomp-loop$-alist
                   (load-compiled ofile t)
-                  full-book-name))
+                  full-book-string))
                 (t (let ((reason (cond (ofile-exists
                                         "the compiled file is not at least as ~
                                          recent as the book")
@@ -5321,7 +5316,7 @@
                                                         argument under the ~
                                                         include-book-fn call ~
                                                         in certify-book-fn."
-                                                       book-name)))))
+                                                       book-string)))))
                                 (warning$ ctx "Compiled file"
                                           "Attempting to load ~@0 instead of ~
                                            the corresponding compiled file, ~
@@ -5335,7 +5330,7 @@
                                        (with-reckless-readtable
                                         (handle-hcomp-loop$-alist
                                          (load efile)
-                                         full-book-name)))
+                                         full-book-string)))
                                       (raw-mode-p (load os-file))))))))))))
       ((let* ((entry (assert$ *hcomp-book-ht* ; not raw mode, e.g.
                               (gethash full-book-name *hcomp-book-ht*)))
@@ -5380,7 +5375,7 @@
 ; Code we keep in case our thinking above is flawed:
 
                 (throw 'missing-compiled-book
-                       (missing-compiled-book ctx full-book-name nil
+                       (missing-compiled-book ctx full-book-string nil
                                               load-compiled-file state)))
                (t status))))
       (t ; not raw-mode, and load-compiled-file is non-nil
@@ -5396,9 +5391,10 @@
 
                       *user-stobj-alist*))
                  (handle-hcomp-loop$-alist
-                  (load-compiled-book full-book-name directory-name
-                                      load-compiled-file ctx state)
-                  full-book-name))))
+                  (load-compiled-book full-book-string full-book-name
+                                      directory-name load-compiled-file
+                                      ctx state)
+                  full-book-string))))
           (setf (gethash full-book-name *hcomp-book-ht*)
                 (make hcomp-book-ht-entry
                       :status   status
@@ -5413,8 +5409,9 @@
                                  (throw 'missing-compiled-book 'incomplete))
                                 (t 'incomplete))))))))))))
 
-(defun include-book-raw-top (full-book-name directory-name load-compiled-file
-                                            dir ctx state)
+(defun include-book-raw-top (full-book-string full-book-name
+                                              directory-name load-compiled-file
+                                              dir ctx state)
   (handler-bind
 
 ; Without this handler-bind, CCL produces redefinition warnings when we attempt
@@ -5469,7 +5466,7 @@
 
              nil))
            (progn (include-book-raw
-                   full-book-name directory-name
+                   full-book-string full-book-name directory-name
                    load-compiled-file dir ctx state)
                   (value nil)))
         (setq *saved-hcomp-restore-hts*
@@ -7158,48 +7155,41 @@
 
 ; The next set-w will avail itself of the empty frame left above.
 
-  (set-w 'extension
-         (primordial-world operating-system)
-         *the-live-state*)
-
-; Set the system books directory now that the operating-system has been defined
-; (needed by pathname-os-to-unix).  Note that the value of state global
-; project-dir-alist will eventually be an alist that includes a pair mapping
-; :system to the system books directory, but at this point, that value is just
-; that directory.
-
-  (cond (system-books-dir
-         (let* ((dir (unix-full-pathname
-                      (cond
-                       ((symbolp system-books-dir)
-                        (symbol-name system-books-dir))
-                       ((stringp system-books-dir)
-                        system-books-dir)
-                       (t (er hard 'initialize-acl2
-                              "Unable to complete initialization, because the ~
-                               supplied system books directory, ~x0, is not a ~
-                               string."
-                              system-books-dir)))))
-                (msg (bad-lisp-stringp dir)))
-           (when msg
-             (interface-er
-              "The value of the system-books-dir argument of ~
-               ENTER-BOOT-STRAP-MODE, which is ~x0, is not a legal ACL2 ~
-               string.~%~@1"
-              dir msg))
-           (f-put-global 'project-dir-alist ; see comment above
-                         (canonical-dirname! (maybe-add-separator dir)
-                                             'enter-boot-strap-mode
-                                             *the-live-state*)
-                         *the-live-state*)))
-        (t (f-put-global 'project-dir-alist ; see comment above
-                         (concatenate
-                          'string
-                          (canonical-dirname! (our-pwd)
-                                              'enter-boot-strap-mode
-                                              *the-live-state*)
-                          "books/")
-                         *the-live-state*)))
+  (let ((project-dir-alist
+         (acons :system
+                (cond
+                 (system-books-dir
+                  (let* ((dir (unix-full-pathname
+                               (cond
+                                ((symbolp system-books-dir)
+                                 (symbol-name system-books-dir))
+                                ((stringp system-books-dir)
+                                 system-books-dir)
+                                (t (er hard 'initialize-acl2
+                                       "Unable to complete initialization, ~
+                                        because the supplied system books ~
+                                        directory, ~x0, is not a string."
+                                       system-books-dir)))))
+                         (msg (bad-lisp-stringp dir)))
+                    (when msg
+                      (interface-er
+                       "The value of the system-books-dir argument of ~
+                        ENTER-BOOT-STRAP-MODE, which is ~x0, is not a legal ~
+                        ACL2 string.~%~@1"
+                       dir msg))
+                    (canonical-dirname! (maybe-add-separator dir)
+                                        'enter-boot-strap-mode
+                                        *the-live-state*)))
+                 (t (concatenate
+                     'string
+                     (canonical-dirname! (our-pwd)
+                                         'enter-boot-strap-mode
+                                         *the-live-state*)
+                     "books/")))
+                nil)))
+    (set-w 'extension
+           (primordial-world operating-system project-dir-alist)
+           *the-live-state*))
 
 ; Inhibit proof-tree output during the build, including pass-2 if present.
 
@@ -7516,6 +7506,7 @@
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants
            memoize
+           program
            push
            reset-future-parallelism-variables
            set-duplicate-keys-action
@@ -7895,6 +7886,14 @@
                     '*rewrite-lambda-modep-xnume*
                     *rewrite-lambda-modep-xnume*
                     (fn-rune-nume 'rewrite-lambda-modep t t (w state)))))
+    (cond
+     ((not
+       (equal *rewrite-lambda-modep-def-nume*
+              (fn-rune-nume 'rewrite-lambda-modep t nil (w state))))
+      (interface-er str
+                    '*rewrite-lambda-modep-def-nume*
+                    *rewrite-lambda-modep-def-nume*
+                    (fn-rune-nume 'rewrite-lambda-modep t nil (w state)))))
     (cond
      ((not
        (equal *tau-acl2-numberp-pair*
@@ -9052,7 +9051,7 @@
                        (quit 1))
                   (t (value val))))))))))
 
-(defun project-dir-filename (dir filename filename-dir key ctx state)
+(defun project-dir-filename (dir0 filename filename-dir key ctx state)
 
 ; This function is similar to canonical-dirname!.
 
@@ -9061,16 +9060,15 @@
 ; resolved.
 
 ; As of August 2022 when we introduced the project-dir-alist, for sysfiles
-; other than :system, this code had been in LP for a few years for computing
-; the system books directory (which was stored in state global
-; 'system-books-dir).  We use this same code for other project-dir-alist
-; entries.
+; whose keyword is not necessarily :system.  This code had been in LP for a few
+; years for computing the system books directory.  We use this same code for
+; other project-dir-alist entries.
 
 ; Filename is used for error reporting.  It is nil when we are using an
 ; environment variable to set the directory for :system; otherwise it is the
 ; project-dir-alist file.
 
-  (let* ((dir (extend-pathname+ filename-dir dir t state)))
+  (let* ((dir (extend-pathname+ filename-dir dir0 t state)))
     (cond ((and dir
                 (or (equal dir "")
                     (not (eql (char dir (1- (length dir)))
@@ -9080,23 +9078,23 @@
              (er soft ctx
                  "The project pathname ~x0, supplied in file ~x1 for the key ~
                   ~x2, represents a file but not a directory."
-                 dir filename key))
+                 dir0 filename key))
             (t
              (er soft ctx
                  "The pathname ~x0, supplied by environment variable ~
                   ACL2_SYSTEM_BOOKS, represents a file but not a directory."
-                 dir))))
+                 dir0))))
           (dir (value dir))
           (filename
            (er soft ctx
                "The project pathname ~x0, supplied in file ~x1 for the key ~
                 ~x2, represents a directory that does not exist."
-               dir filename key))
+               dir0 filename key))
           (t
            (er soft ctx
                "The pathname ~x0, supplied by environment variable ~
                 ACL2_SYSTEM_BOOKS, represents a directory that does not exist."
-               dir)))))
+               dir0)))))
 
 (defun project-dir-alist-from-file-rec (lst filename filename-dir ctx state)
 
@@ -9114,43 +9112,35 @@
                                                   key ctx state))
                        (rest (project-dir-alist-from-file-rec
                               (cddr lst) filename filename-dir ctx state)))
-               (cond
-                ((> (length dir) (fixnum-bound))
-                 (er soft ctx
-                     "Length is too long for directory associated in the ~
-                      project-dir-alist with keyword ~x0!"
-                     key))
-                (t (value (acons (car lst) dir rest)))))))))
+               (value (acons (car lst) dir rest)))))))
 
 (defun project-dir-alist-from-file-0 (filename ctx state)
   (declare (xargs :stobjs state :mode :program))
   (let ((filename-u (pathname-os-to-unix filename (os (w state)) state)))
-    (er-let* ((lst (read-file+ filename
+    (er-let* ((lst (read-file+ filename-u
                                (msg "Unable to open file ~x0 to read the ~
-                                   project-dir-alist (see :DOC ~
-                                   project-dir-alist)."
+                                     project-dir-alist."
                                     filename)
                                ctx
                                state)))
       (cond ((not (keyword-value-string-listp lst))
              (er soft ctx
-                 "The value read for the project-dir-alist (see :DOC ~
-                  project-dir-alist) must be an alternating list of keywords ~
-                  and strings, starting with a keyword.  But the value read ~
-                  from file ~x0 is ~x1, which does not have that property."
+                 "The value read for the project-dir-alist must be an ~
+                  alternating list of keywords and strings, starting with a ~
+                  keyword.  But the value read from file ~x0 is ~x1, which ~
+                  does not have that property."
                  filename lst))
-            ((not (project-dir-file-p filename state))
+            ((not (project-dir-file-p filename-u state))
              (er soft ctx
                  "The value read for the project-dir-alist is, as expected, ~
                   an alternating list of keywords and strings, starting with ~
                   a keyword.  But each line must either be blank, be a ~
                   comment (i.e., its first non-whitespace character is `;'), ~
                   or contain a keyword followed by a filename without `\"' in ~
-                  its name.  File ~x0 does not have that property.  See :DOC ~
-                  project-dir-alist."
+                  its name.  File ~x0 does not have that property."
                  filename))
             (t
-             (let ((abs (unix-truename-pathname filename-u nil state)))
+             (let ((abs (canonical-unix-pathname filename-u nil state)))
                (cond
                 ((null abs)
                  (er soft ctx
@@ -9171,88 +9161,175 @@
 ; We avoid using with-output! below because we get an error pertaining to
 ; acl2-unwind-protect in that case.
 
+; Note that the result is not sorted.  To install it as the value of state
+; global project-dir-alist, we need to sort this result by decreasing length of
+; filenames.
+
   (let* ((old-inh (f-get-global 'inhibit-output-lst state))
          (flg (member-eq 'error old-inh)))
     (er-progn
      (if flg
          (set-inhibit-output-lst (cons 'error old-inh))
        (value nil))
-     (mv-let (erp val state)
-       (project-dir-alist-from-file-0 filename ctx state)
-       (cond (erp (pprogn
-                   (fms "ABORTING start of ACL2!  Address the error message ~
-                         shown above in order to run ACL2."
-                        nil *standard-co* state nil)
-                   (prog2$ (exit 1)
-                           (value nil))))
-             (t (er-progn (if flg
-                              (set-inhibit-output-lst old-inh)
-                            (value nil))
-                          (value val))))))))
+     (er-let* ((val (project-dir-alist-from-file-0 filename ctx state)))
+       (er-progn (if flg
+                     (set-inhibit-output-lst old-inh)
+                   (value nil))
+                 (cond
+                  ((duplicate-keysp-eq val)
+                   (er soft ctx
+                       "The keyword ~x0 occurs more than once in the ~
+                        ACL2_PROJECTS file, ~x1."
+                       (car (duplicate-keysp-eq val))
+                       filename))
+                  ((loop for tail on val thereis
+                         (rassoc-equal (cdar tail) (cdr tail)))
+                   (er soft ctx
+                       "The directory ~x0 is specified more than once in the ~
+                        ACL2_PROJECTS file, ~x1."
+                       (loop for tail on val when
+                             (rassoc-equal (cdar tail) (cdr tail))
+                             do (return (cdar tail)))
+                       filename))
+                  (t (value val))))))))
+
+(defun replace-project-dir-alist (project-dir-alist)
+  (let ((doublet (assoc-eq 'global-value
+                           (get 'project-dir-alist *current-acl2-world-key*))))
+    (assert (and (consp doublet)
+                 (consp (cdr doublet))
+                 (not (eq (cadr doublet) *acl2-property-unbound*))))
+    (setf (cadr doublet) project-dir-alist))
+  (loop for trip in (lookup-world-index 'event 0 (w *the-live-state*))
+        when (and (eq (car trip) 'project-dir-alist)
+                  (eq (cadr trip) 'global-value))
+        do (progn (setf (cddr trip)
+                        (merge-sort-length>=-cdr project-dir-alist))
+                  (return t))
+        finally (error "Implementation error: Failure in ~
+                        replace-project-dir-alist!")))
 
 (defun establish-project-dir-alist (system-dir0 ctx state)
 
+; This function may set the value of state global project-dir-alist.  It is
+; evaluated only for side effect; the return value is irrelevant.
+
 ; System-dir0 is either nil or the value of environment variable
 ; ACL2_SYSTEM_BOOKS (possibly with a trailing slash added).  We assume that
-; state global project-dir-alist has already been set to the
-; system-books-directory; it's not yet an alist.
+; state global project-dir-alist has already been set: to the
+; system books directory in the normal case, but to an alist if the executable
+; was created with save-exec.
 
   (declare (xargs :stobjs state :mode :program))
-  (let ((system-books-dir
-         (if system-dir0 ; from getenv$-raw, so a legal ACL2 string if non-nil
-             (extend-pathname+ (cbd) system-dir0 t state)
+  (mv-let (erp val state)
+    (er-let* ((system-books-dir
+               (value (and system-dir0 ; legal ACL2 string from getenv$-raw
+                           (extend-pathname+
+                            (cbd)
+                            (pathname-os-to-unix system-dir0
+                                                 (os (w state))
+                                                 state)
+                            t state))))
+              (proj-file (getenv$ "ACL2_PROJECTS" state))
+              (proj-alist (if proj-file
+                              (project-dir-alist-from-file proj-file ctx state)
+                            (value nil)))
+              (new-sys-pair (value (assoc-eq :system proj-alist)))
+              (old-project-dir-alist
+               (value (project-dir-alist (w state)))))
+      (cond
+       ((null proj-file) ; hence also (null new-sys-pair)
+        (when system-books-dir
+          (replace-project-dir-alist (put-assoc-eq :system
+                                                   system-books-dir
+                                                   old-project-dir-alist)))
+        (value nil))
+       ((and new-sys-pair     ; hence ACL2_PROJECTS was specified
+             system-books-dir ; hence ACL2_SYSTEM_BOOKS was specified
+             (not (equal (cdr new-sys-pair) system-books-dir)))
 
-; Else the value of project-dir-alist is the system books directory, as
-; established in enter-boot-strap-mode.
+; Conflict!  Print an error message and exit.
 
-           (f-get-global 'project-dir-alist state))))
-    (cond
-     ((alistp system-books-dir)
-      (er soft ctx
-          "The project-dir-alist has already been set, but an attempt is ~
-           being made to set it again.  That is illegal.  The existing value ~
-           of the project-dir-alist is~|~x0."
-          system-books-dir))
-     ((not (stringp system-books-dir))
-      (er soft ctx
-          "Implementation error: The project-dir-alist has value~|~x0~|but ~
-           that is neither a string nor an alist."
-          system-books-dir))
-     (t
-      (er-let*
-          ((filename (getenv$ "ACL2_PROJECTS" state))
-           (alist (if (and filename (not (equal filename "")))
-                      (project-dir-alist-from-file filename ctx state)
-                    (value nil)))
-           (pair (value (assoc-eq :system alist)))
-           (val
-            (cond
-             ((null alist)
-              (value (list (cons :system system-books-dir))))
-             ((and pair
-                   (not (equal (cdr pair) system-books-dir)))
-              (mv-let
-                (erp val state)
-                (er-let* ((dir0 (getenv$ "ACL2_SYSTEM_BOOKS" state)))
-                  (er soft ctx
-                      "ABORTING start of ACL2!  The project-dir-alist read ~
-                       from file ~x0 associates :SYSTEM with ~x1.  This ~
-                       conflicts with the value ~x2 associated with ~
-                       :SYSTEM~@3.  Address this error in order to run ACL2."
-                      filename
-                      (cdr pair)
-                      system-books-dir
-                      (if (and dir0 (not (equal dir0 "")))
-                          (msg " by environment variable ACL2_SYSTEM_BOOKS")
-                        (msg ", which by default is the pathname of the ~
-                              books/ directory of your ACL2 distribution"))))
-                (prog2$ (exit 1)
-                        (mv erp val state))))
-              (pair (value (merge-sort-len>=-cdr alist)))
-              (t (value (merge-sort-len>=-cdr
-                         (acons :SYSTEM system-books-dir alist)))))))
-        (pprogn (f-put-global 'project-dir-alist val state)
-                (value val)))))))
+        (er-let* ((dir0 (getenv$ "ACL2_SYSTEM_BOOKS" state)))
+          (er soft ctx
+              "The project-dir-alist read from file ~x0 associates :SYSTEM ~
+               with ~x1.  This conflicts with the value ~x2 associated with ~
+               :SYSTEM~@3."
+              proj-file
+              (cdr new-sys-pair)
+              system-books-dir
+              (if dir0
+                  (msg " using environment variable ACL2_SYSTEM_BOOKS")
+                (msg ", which is the pathname of the books/ directory of your ~
+                      ACL2 distribution")))))
+       ((rassoc-equal (or system-books-dir
+                          (cdr (assoc-eq :system old-project-dir-alist)))
+                      (remove-assoc-eq :system proj-alist))
+
+; The test above will be false if system-books-dir is nil and
+; old-project-dir-alist is an alist (because the executable was created by
+; save-exec).  That's fine if you think about it: when system-books-dir is nil,
+; our only concern is that old-project-dir-alist is a string that will be the
+; system books directory.
+
+        (let ((pair (rassoc-equal (or system-books-dir
+                                      (cdr (assoc-eq :system
+                                                     old-project-dir-alist)))
+                                  (remove-assoc-equal :system proj-alist))))
+          (er soft ctx
+              "The project-dir-alist read from file ~x0 associates keyword ~
+               ~x1 with ~x2, which is also the system books directory."
+              proj-file
+              (car pair)
+              (cdr pair))))
+       ((and ; proj-file is non-nil
+         (let ((wrld (w state)))
+           (or (conflicting-symbol-alists
+                proj-alist
+                (cdr (assoc-eq :include-book-dir-alist
+                               (table-alist 'acl2-defaults-table wrld))))
+               (conflicting-symbol-alists
+                proj-alist
+                (table-alist 'include-book-dir!-table wrld)))))
+        (let* ((wrld (w state))
+               (c1 (conflicting-symbol-alists
+                    proj-alist
+                    (cdr (assoc-eq :include-book-dir-alist
+                                   (table-alist 'acl2-defaults-table wrld)))))
+               (c2 (conflicting-symbol-alists
+                    proj-alist
+                    (table-alist 'include-book-dir!-table wrld))))
+          (mv-let (k new old fn)
+            (if c1
+                (mv (car c1) (cadr c1) (cddr c1) 'add-include-book-dir)
+              (mv (car c2) (cadr c2) (cddr c2) 'add-include-book-dir!))
+            (er soft ctx
+                "The project-dir-alist read from file ~x0 assigns the value ~
+                 ~x1 to the key ~x2.  But before the present ACL2 executable ~
+                 was created with save-exec, that key was associated with a ~
+                 different value by ~x3, namely, ~x4."
+                proj-file new k fn old))))
+
+; We get to this point if proj-file is non-nil and there is no conflict.  We
+; set the project-dir-alist to the proj-alist read from the proj-file, except
+; that we add a value for :SYSTEM if one is not already there.
+
+       (t
+        (replace-project-dir-alist
+         (if new-sys-pair
+             proj-alist
+           (acons :system
+                  (or system-books-dir
+                      (cdr (assoc-eq :system old-project-dir-alist)))
+                  proj-alist)))
+        (value nil))))
+    (cond (erp (pprogn (fms "**ABORTING start of ACL2!**~|Address the error ~
+                             noted above in order to run ACL2.~|See :DOC ~
+                             project-dir-alist."
+                            nil *standard-co* state nil)
+                       (prog2$ (exit 1)
+                               (mv erp val state))))
+          (t (value val)))))
 
 (defun lp (&rest args)
 
@@ -9543,83 +9620,80 @@
   (and (symbolp fn)
        (not (gethash fn *stack-access-defeat-hook-cert-ht*))))
 
-(defun acl2-compile-file (full-book-name os-expansion-filename)
+(defun acl2-compile-file (full-book-string os-expansion-filename)
 
-; Full-book-name is an ACL2 pathname, while os-expansion-filename is an OS
+; Full-book-string is an ACL2 pathname, while os-expansion-filename is an OS
 ; pathname; see the Essay on Pathnames.  We compile os-expansion-filename but
-; into the compiled filename corresponding to full-book-name.
+; into the compiled filename corresponding to full-book-string.
 
 ; To compile os-expansion-filename, we need to make sure that uses in the file
 ; of backquote and comma conform in meaning to those that were in effect during
 ; certification.
 
 ; We assume that this function is called only after forms in the given
-; full-book-name have already been evaluated and (if appropriate) proclaimed,
+; full-book-string have already been evaluated and (if appropriate) proclaimed,
 ; hence in particular so that macros have been defined.
 
-  (progn
-   (chk-book-name full-book-name full-book-name 'acl2-compile-file
-                  *the-live-state*)
-   (let ((*defeat-slow-alist-action* t)
-         (*readtable* *acl2-readtable*)
-         (ofile (convert-book-name-to-compiled-name
-                 (pathname-unix-to-os full-book-name *the-live-state*)
-                 *the-live-state*))
-         (stream (get (proofs-co *the-live-state*)
-                      *open-output-channel-key*)))
+  (let ((*defeat-slow-alist-action* t)
+        (*readtable* *acl2-readtable*)
+        (ofile (convert-book-string-to-compiled
+                (pathname-unix-to-os full-book-string *the-live-state*)
+                *the-live-state*))
+        (stream (get (proofs-co *the-live-state*)
+                     *open-output-channel-key*)))
 
 ; It is tempting to evaluate (proclaim-file os-expansion-filename).  However,
-; all functions in full-book-name were presumably already proclaimed, as
+; all functions in full-book-string were presumably already proclaimed, as
 ; appropriate, during add-trip.
 
-     (let ((*readtable* *reckless-acl2-readtable*)
+    (let ((*readtable* *reckless-acl2-readtable*)
 
 ; We reduce the compiled file size produced by CCL, even if we have previously
 ; set ccl::*save-source-locations* to t (though we stopped doing so in
 ; Version_7.0).  We have seen an example where this binding reduced the
 ; .dx64fsl size from 13696271 to 24493.
 
-           #+ccl (ccl::*save-source-locations* nil))
-       (cond
-        #+ccl
-        (*stack-access-defeat-hook-cert-ht*
-         (let ((ccl::*stack-access-defeat-hook*
-                'stack-access-defeat-hook-cert))
-           (declare (special ccl::*stack-access-defeat-hook*))
-           (compile-file os-expansion-filename :output-file ofile)))
-        (t (compile-file os-expansion-filename :output-file ofile))))
+          #+ccl (ccl::*save-source-locations* nil))
+      (cond
+       #+ccl
+       (*stack-access-defeat-hook-cert-ht*
+        (let ((ccl::*stack-access-defeat-hook*
+               'stack-access-defeat-hook-cert))
+          (declare (special ccl::*stack-access-defeat-hook*))
+          (compile-file os-expansion-filename :output-file ofile)))
+       (t (compile-file os-expansion-filename :output-file ofile))))
 
 ; Warning: Keep the following "compile on the fly" readtime conditional in sync
 ; with the one in initialize-state-globals.  Here, we avoid loading the
 ; compiled file when compiling a certified book, because all functions are
 ; already compiled.
 
-     #-(or ccl sbcl)
-     (let ((*compiling-certified-file*
+    #-(or ccl sbcl)
+    (let ((*compiling-certified-file*
 
 ; See the comment about an optimization using *compiling-certified-file* in the
 ; raw Lisp definition of acl2::defconst.
 
-            t)
-           (alist (loop for pair in
-                        (table-alist 'memoize-table (w *the-live-state*))
-                        when (fboundp (car pair)) ; always true?
-                        collect (cons (car pair)
-                                      (symbol-function (car pair))))))
-       (load-compiled ofile t)
-       (loop for pair in alist
-             when (not (eq (symbol-function (car pair))
-                           (cdr pair)))
-             do (setf (symbol-function (car pair))
-                      (cdr pair)))
-       (terpri stream)
-       (prin1 ofile stream))
-     (terpri stream)
-     (terpri stream))))
+           t)
+          (alist (loop for pair in
+                       (table-alist 'memoize-table (w *the-live-state*))
+                       when (fboundp (car pair)) ; always true?
+                       collect (cons (car pair)
+                                     (symbol-function (car pair))))))
+      (load-compiled ofile t)
+      (loop for pair in alist
+            when (not (eq (symbol-function (car pair))
+                          (cdr pair)))
+            do (setf (symbol-function (car pair))
+                     (cdr pair)))
+      (terpri stream)
+      (prin1 ofile stream))
+    (terpri stream)
+    (terpri stream)))
 
-(defun-one-output delete-auxiliary-book-files (full-book-name)
-  (let* ((file (pathname-unix-to-os full-book-name *the-live-state*))
-         (ofile (convert-book-name-to-compiled-name file *the-live-state*))
+(defun-one-output delete-auxiliary-book-files (full-book-string)
+  (let* ((file (pathname-unix-to-os full-book-string *the-live-state*))
+         (ofile (convert-book-string-to-compiled file *the-live-state*))
          (efile (expansion-filename file))
          (err-string "A file created for book ~x0, namely ~x1, exists and ~
                       cannot be deleted with Common Lisp's delete-file.  We ~
@@ -9632,7 +9706,7 @@
       (cond ((delete-file ofile) nil)
             (t (er hard 'delete-auxiliary-book-files
                    err-string
-                   full-book-name ofile))))
+                   full-book-string ofile))))
     #+clisp
     (let* ((len (length file))
            (lib-file (assert$ (equal (subseq file (- len 5) len) ".lisp")
@@ -9643,25 +9717,25 @@
         (cond ((delete-file lib-file) nil)
               (t (er hard 'delete-auxiliary-book-files
                      err-string
-                     full-book-name lib-file)))))
+                     full-book-string lib-file)))))
     (when (probe-file efile)
       (cond ((delete-file efile) nil)
             (t (er hard 'delete-auxiliary-book-files
                    err-string
-                   full-book-name efile))))))
+                   full-book-string efile))))))
 
-(defun delete-expansion-file (os-expansion-filename full-book-name state)
+(defun delete-expansion-file (os-expansion-filename full-book-string state)
 
 ; Os-expansion-filename is, as the name suggests, an OS filename; see the Essay
 ; on Pathnames.  Since that pathname could contain characters that are not ACL2
 ; characters, we print the message using the ACL2 string for the corresponding
-; book, full-book-name.
+; book, full-book-string.
 
   (delete-file os-expansion-filename)
   (io? event nil state
-       (full-book-name)
+       (full-book-string)
        (fms! "Note: Deleting expansion file for the book, ~s0.~|"
-             (list (cons #\0 full-book-name))
+             (list (cons #\0 full-book-string))
              (proofs-co state) state nil)))
 
 (defun compile-uncompiled-defuns (file &optional (fns :some) gcl-flg
@@ -10112,26 +10186,27 @@
         (value nil))))
     os-file))
 
-(defun compile-certified-file (os-expansion-filename full-book-name state)
+(defun compile-certified-file (os-expansion-filename full-book-string state)
 
-; Warning: full-book-name should be the full book name of a book that has
-; already have been included, so that its macro definitions have been evaluated
+; Warning: full-book-string should be the full pathname of a book that has
+; already been included, so that its macro definitions have been evaluated
 ; before we compile.  Moreover, os-expansion-filename must already have been
 ; written.  As the names suggest, os-expansion-filename is an OS pathname and
-; full-book-name is an ACL2 pathname; see the Essay on Pathnames.
+; full-book-string is an ACL2 pathname; see the Essay on Pathnames.
 
-  (let* ((os-full-book-name (pathname-unix-to-os full-book-name state))
-         (os-full-book-name-compiled
-          (convert-book-name-to-compiled-name os-full-book-name state))
+  (let* ((os-full-book-string (pathname-unix-to-os full-book-string state))
+         (os-full-book-string-compiled
+          (convert-book-string-to-compiled os-full-book-string state))
          #+ccl
          (*stack-access-defeat-hook-cert-ht*
           (stack-access-defeat-hook-cert-ht)))
-    (when (probe-file os-full-book-name-compiled)
-      (delete-file os-full-book-name-compiled))
-    (acl2-compile-file full-book-name os-expansion-filename)
-    os-full-book-name-compiled))
+    (when (probe-file os-full-book-string-compiled)
+      (delete-file os-full-book-string-compiled))
+    (acl2-compile-file full-book-string os-expansion-filename)
+    os-full-book-string-compiled))
 
-(defun compile-for-include-book (full-book-name certified-p ctx state)
+(defun compile-for-include-book (full-book-string full-book-name certified-p
+                                                  ctx state)
   (cond
    ((not certified-p)
 
@@ -10144,10 +10219,10 @@
                       "An include-book form for book ~x0 has specified option ~
                        :load-compiled-file :comp.  But this book is ~
                        uncertified, so compilation is being skipped."
-                      full-book-name)
+                      full-book-string)
             (value nil)))
    (t
-    (let* ((efile (pathname-unix-to-os (expansion-filename full-book-name)
+    (let* ((efile (pathname-unix-to-os (expansion-filename full-book-string)
                                        state))
            (entry (and *hcomp-book-ht*
                        (gethash full-book-name *hcomp-book-ht*)))
@@ -10158,7 +10233,7 @@
             (t
              (mv-let
               (cfile state)
-              (certificate-file full-book-name state)
+              (certificate-file full-book-string state)
               (let* ((cfile (and cfile (pathname-unix-to-os cfile state)))
                      (cfile-write-date (and cfile
                                             (file-write-date cfile)))
@@ -10186,14 +10261,14 @@
                                    book~|~s0,~|because ~@1.  See :DOC ~
                                    include-book and see :DOC ~
                                    book-compiled-file."
-                                  full-book-name reason))
+                                  full-book-string reason))
                       (t
                        (observation ctx
                                     "Compiling file ~x0, as specified by ~
                                      include-book option :load-compiled-file ~
                                      :comp."
-                                    full-book-name)
-                       (acl2-compile-file full-book-name efile)
+                                    full-book-string)
+                       (acl2-compile-file full-book-string efile)
                        (value nil)))))))))))
 
 
@@ -10271,7 +10346,7 @@
                            (find-package-fast
                             (current-package *the-live-state*))))))))
 
-(defun-one-output trace-hide-world-and-state (l)
+(defun trace-hide-world-and-state (l &optional no-stobj-hiding)
 
 ; This function intuitively belongs over in init.lisp but it is here so
 ; that it will get compiled so we won't get stack overflow when
@@ -10284,16 +10359,18 @@
 ; If that changes then we should use protect-mv there as we do in some other
 ; places.
 
-  (let* ((stobj-pair (rassoc l *user-stobj-alist*))
-         (l (cond
-             (stobj-pair
-              (intern-in-package-of-symbol
-               (stobj-print-name (car stobj-pair))
-               (car stobj-pair)))
-             (t ; consider local stobjs
-              (or (and (arrayp l)
-                       (stobj-print-symbol l *user-stobj-alist*))
-                  l))))
+  (let* ((l (if no-stobj-hiding
+                l
+              (let ((stobj-pair (rassoc l *user-stobj-alist*)))
+                (cond
+                 (stobj-pair
+                  (intern-in-package-of-symbol
+                   (stobj-print-name (car stobj-pair))
+                   (car stobj-pair)))
+                 (t ; consider local stobjs
+                  (or (and (arrayp l)
+                           (stobj-print-symbol l *user-stobj-alist*))
+                      l))))))
          (pair (assoc-eq-trace-alist l *trace-alist*)))
     (cond (pair (cdr pair))
           ((atom l) l)
@@ -10317,8 +10394,8 @@
 ;                 (eq (car (cdr (car l))) 'global-value))
 ;            '|some-other-world-perhaps|)
 
-          (t (cons (trace-hide-world-and-state (car l))
-                   (trace-hide-world-and-state (cdr l)))))))
+          (t (cons (trace-hide-world-and-state (car l) no-stobj-hiding)
+                   (trace-hide-world-and-state (cdr l) no-stobj-hiding))))))
 
 (defun-one-output get-stobjs-out-for-declare-form (fn)
 

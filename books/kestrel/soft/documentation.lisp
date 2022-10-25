@@ -67,10 +67,10 @@
      <a href=
       \"http://www.cs.utexas.edu/users/moore/acl2/workshop-2015/program.html\"
      >here</a>.
-     The examples from the paper are in
-     @('[books]/kestrel/soft/workshop-paper-examples.lisp');
-     the examples from the talk that are not in the paper are in
-     @('[books]/kestrel/soft/workshop-talk-examples.lisp').
+     The examples from the paper are in community book
+     @('kestrel/soft/workshop-paper-examples.lisp');
+     the examples from the talk that are not in the paper are in community book
+     @('kestrel/soft/workshop-talk-examples.lisp').
      As SOFT is being extended and improved over time,
      some of the contents of the paper and presentation are becoming outdated.
      This manual provides up-to-date information about SOFT.

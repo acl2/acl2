@@ -42,6 +42,7 @@
 (include-book "../aux-functions")
 
 (make-flag include-fnc :defthm-macro-name defthm-include-fnc)
+
 (make-flag rp-termp :defthm-macro-name defthm-rp-termp)
 (make-flag beta-search-reduce :defthm-macro-name defthm-beta-search-reduce)
 #|(make-flag all-falist-consistent :defthm-macro-name
@@ -1393,3 +1394,6 @@
               a))
   :hints (("Goal"
            :in-theory (e/d (binary-and**) ()))))|#
+
+
+

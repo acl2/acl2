@@ -157,8 +157,8 @@
       which therefore no longer needs to be initialized
       by code external to AIJ.
       The consistency of this Java value with the actual ACL2 value
-      is checked via an assertion in a newly added file
-      @('[books]/kestrel/java/aij/assumptions.lisp').")
+      is checked via an assertion in a newly added community book
+      @('kestrel/java/aij/assumptions.lisp').")
     (xdoc::li
      "The return types of some of the native Java implementation methods
       of the ACL2 primitive functions in AIJ

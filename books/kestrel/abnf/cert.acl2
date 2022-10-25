@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,8 +10,9 @@
 
 (include-book "portcullis")
 
-; Matt K. mod: Certification fails for semantics.lisp in ACL2(p) with
-; waterfall-parallelism enabled, but the log doesn't seem to show why.  So I'm
-; doing what's easiest, by simply disabling waterfall-parallelism here.
+; Certification has been observed to fail for semantics.lisp
+; in ACL2(p) with waterfall-parallelism enabled,
+; but the log didn't seem to show why.
+; So we just disable waterfall-parallelism here for now.
 #+acl2-par
 (set-waterfall-parallelism nil)

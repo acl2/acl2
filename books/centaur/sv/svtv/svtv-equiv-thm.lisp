@@ -230,7 +230,7 @@
                                           acl2::svex-env-p-of-svtv-run
                                           alist-keys-of-svtv-run
                                           <svtv>-refvars-subset-of-output-vars
-                                          lookup-of-svtv-pipeline-override-triples-extract
+                                          lookup-of-svar-override-triplelist-map-refs-to-values
                                           svar-override-triplelist-lookup-valvar-force-execute))))))
     (acl2::template-subst
      template

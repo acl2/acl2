@@ -14,6 +14,8 @@
 (include-book "../../language/computation-states")
 (include-book "../integers")
 
+(local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-distributivity-over-if-rewrite-rules

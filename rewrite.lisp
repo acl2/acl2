@@ -8021,20 +8021,6 @@
          wrld)
         (t (scan-to-defpkg name (cdr wrld)))))
 
-(defun scan-to-include-book (full-book-name wrld)
-
-; We wish to give meaning to stringp logical names such as "arith".  We
-; do it in an inefficient way: we scan the whole world looking for an event
-; tuple of type INCLUDE-BOOK and namex full-book-name.
-
-  (cond ((null wrld) nil)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value)
-              (eq (access-event-tuple-type (cddar wrld)) 'include-book)
-              (equal full-book-name (access-event-tuple-namex (cddar wrld))))
-         wrld)
-        (t (scan-to-include-book full-book-name (cdr wrld)))))
-
 (defun multiple-assoc-terminal-substringp1 (x i alist)
   (cond ((null alist) nil)
         ((terminal-substringp x (caar alist) i (1- (length (caar alist))))
@@ -8264,32 +8250,17 @@
            (let ((n (getpropc name 'absolute-event-number nil wrld)))
              (cond ((null n) nil)
                    (t (lookup-world-index 'event n wrld)))))))
-   ((stringp name)
-
-; Name may be a package name or a book name.
-
-    (cond
-     ((find-non-hidden-package-entry name
-                                     (global-val 'known-package-alist wrld))
-      (cond ((find-package-entry name *initial-known-package-alist*)
+   ((and (stringp name)
+         (find-non-hidden-package-entry name
+                                        (global-val 'known-package-alist
+                                                    wrld)))
+    (cond ((find-package-entry name *initial-known-package-alist*)
 
 ; These names are not DEFPKGd and so won't be found in a scan.  They
 ; are introduced by absolute event number 0.
 
-             (lookup-world-index 'event 0 wrld))
-            (t (scan-to-defpkg name wrld))))
-     (t (let ((hits (multiple-assoc-terminal-substringp
-                     (possibly-add-lisp-extension name)
-                     (global-val 'include-book-alist wrld))))
-
-; Hits is a subset of the include-book-alist.  The form of each
-; element is (full-book-name user-book-name familiar-name
-; cert-annotations . book-hash).
-
-          (cond
-           ((and hits (null (cdr hits)))
-            (scan-to-include-book (car (car hits)) wrld))
-           (t nil))))))
+           (lookup-world-index 'event 0 wrld))
+          (t (scan-to-defpkg name wrld))))
    (t nil)))
 
 (defun access-x-rule-rune (x rule)
@@ -13174,6 +13145,9 @@
 (defconst *rewrite-lambda-modep-xrune*
   '(:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP))
 
+(defconst *rewrite-lambda-modep-def-rune*
+  '(:DEFINITION REWRITE-LAMBDA-MODEP))
+
 (mutual-recursion
 
 ; State is an argument of rewrite only to permit us to call ev.  In general,
@@ -13584,12 +13558,34 @@
                           (access rewrite-constant rcnst :pt))))
       (t
        (let ((fn (ffn-symb term)))
-         (mv-let (mv-nth-result mv-nth-rewritep)
-           (if (eq fn 'mv-nth)
-               (simplifiable-mv-nth term alist)
-             (mv nil nil))
-           (cond
-            (mv-nth-result
+         (mv-let (term ttree)
+           (if (and (eq fn 'DO$)
+                    (quotep (fargn term 6))
+                    (quotep (fargn term 7))
+                    (unquote (fargn term 6)) ; both non-nil
+                    (unquote (fargn term 7)))
+
+; We rewrite any non-nil quoted irrelevant arg of a DO$ call to 'nil and blame
+; DO$.  It's a mild stretch to blame this on DO$ since technically it's an
+; inductively proved lemma about DO$.
+
+               (mv (cons-term fn 
+                              (list (fargn term 1)
+                                    (fargn term 2)
+                                    (fargn term 3)
+                                    (fargn term 4)
+                                    (fargn term 5)
+                                    *nil*
+                                    *nil*))
+                   (push-lemma (fn-rune-nume 'do$ nil nil wrld)
+                               ttree))
+               (mv term ttree))
+           (mv-let (mv-nth-result mv-nth-rewritep)
+             (if (eq fn 'mv-nth)
+                 (simplifiable-mv-nth term alist)
+                 (mv nil nil))
+             (cond
+              (mv-nth-result
 
 ; This is a special case.  We are looking at a term/alist of the form (mv-nth
 ; 'i (cons x0 (cons x1 ... (cons xi ...)...))) and we immediately rewrite it to
@@ -13603,47 +13599,47 @@
 ; below is 2, i.e., we say we are rewriting the 2nd arg of the mv-nth, when in
 ; fact we are rewriting a piece of it (namely xi).
 
-             (let ((ttree (push-lemma
-                           (fn-rune-nume 'mv-nth nil nil wrld)
-                           ttree))
-                   (step-limit (1+f step-limit)))
-               (declare (type (signed-byte 30) step-limit))
-               (if mv-nth-rewritep
-                   (rewrite-entry
-                    (rewrite mv-nth-result alist 2))
-                 (rewrite-entry
-                  (rewrite-solidify-plus mv-nth-result)))))
-            (t
-             (let ((ens (access rewrite-constant rcnst
-                                :current-enabled-structure)))
-               (mv-let
-                 (deep-pequiv-lst shallow-pequiv-lst)
-                 (pequivs-for-rewrite-args fn geneqv pequiv-info wrld ens)
-                 (sl-let
-                  (rewritten-args ttree)
-                  (rewrite-entry
-                   (rewrite-args (fargs term) alist 1 nil
-                                 deep-pequiv-lst shallow-pequiv-lst
-                                 geneqv fn)
-                   :obj '?
-                   :geneqv
-                   (geneqv-lst fn geneqv ens wrld)
-                   :pequiv-info nil ; ignored
-                   )
-                  (cond
-                   ((and
-                     (or (flambdap fn)
-                         (logicp fn wrld))
-                     (all-quoteps rewritten-args)
-                     (or
-                      (flambda-applicationp term)
-                      (and (enabled-xfnp fn ens wrld)
+               (let ((ttree (push-lemma
+                             (fn-rune-nume 'mv-nth nil nil wrld)
+                             ttree))
+                     (step-limit (1+f step-limit)))
+                 (declare (type (signed-byte 30) step-limit))
+                 (if mv-nth-rewritep
+                     (rewrite-entry
+                      (rewrite mv-nth-result alist 2))
+                     (rewrite-entry
+                      (rewrite-solidify-plus mv-nth-result)))))
+              (t
+               (let ((ens (access rewrite-constant rcnst
+                                  :current-enabled-structure)))
+                 (mv-let
+                   (deep-pequiv-lst shallow-pequiv-lst)
+                   (pequivs-for-rewrite-args fn geneqv pequiv-info wrld ens)
+                   (sl-let
+                    (rewritten-args ttree)
+                    (rewrite-entry
+                     (rewrite-args (fargs term) alist 1 nil
+                                   deep-pequiv-lst shallow-pequiv-lst
+                                   geneqv fn)
+                     :obj '?
+                     :geneqv
+                     (geneqv-lst fn geneqv ens wrld)
+                     :pequiv-info nil ; ignored
+                     )
+                    (cond
+                     ((and
+                       (or (flambdap fn)
+                           (logicp fn wrld))
+                       (all-quoteps rewritten-args)
+                       (or
+                        (flambda-applicationp term)
+                        (and (enabled-xfnp fn ens wrld)
 
 ; We don't mind disallowing constrained functions that have attachments,
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).  Indeed, we rely on this check in chk-live-state-p.
 
-                           (not (getpropc fn 'constrainedp nil wrld)))))
+                             (not (getpropc fn 'constrainedp nil wrld)))))
 
 ; Note: The test above, if true, leads here where we execute the
 ; executable-counterpart of the fn (or just go into the lambda
@@ -13656,43 +13652,43 @@
 ; provided such functions are currently toggled.  Undefined functions
 ; (e.g., car) pass the test.
 
-                    (cond
-                     ((flambda-applicationp term)
-                      (rewrite-entry
-                       (rewrite (lambda-body fn)
-                                (pairlis$ (lambda-formals fn)
-                                          rewritten-args)
-                                'lambda-body)))
-                     (t
-                      (let ((ok-to-force (ok-to-force rcnst)))
-                        (mv-let
-                          (erp val apply$ed-fns)
-                          (pstk
-                           (ev-fncall+ fn
-                                       (strip-cadrs rewritten-args)
+                      (cond
+                       ((flambda-applicationp term)
+                        (rewrite-entry
+                         (rewrite (lambda-body fn)
+                                  (pairlis$ (lambda-formals fn)
+                                            rewritten-args)
+                                  'lambda-body)))
+                       (t
+                        (let ((ok-to-force (ok-to-force rcnst)))
+                          (mv-let
+                            (erp val apply$ed-fns)
+                            (pstk
+                             (ev-fncall+ fn
+                                         (strip-cadrs rewritten-args)
 
 ; The strictp argument is nil here, as we will deal with required true warrants
 ; in push-warrants, below.  See the Essay on Evaluation of Apply$ and Loop$
 ; Calls During Proofs.
 
-                                       nil
-                                       state))
-                          (mv-let
-                            (erp2 ttree)
-                            (cond ((or erp
+                                         nil
+                                         state))
+                            (mv-let
+                              (erp2 ttree)
+                              (cond ((or erp
 
 ; No special action is necessary if apply$ed-fns is nil, as opposed to a
 ; non-empty list.
 
-                                       (null apply$ed-fns))
-                                   (mv erp ttree))
-                                  (t (push-warrants
-                                      apply$ed-fns
-                                      (cons-term fn rewritten-args)
-                                      type-alist ens wrld ok-to-force
-                                      ttree ttree)))
-                            (cond
-                             (erp2
+                                         (null apply$ed-fns))
+                                     (mv erp ttree))
+                                    (t (push-warrants
+                                        apply$ed-fns
+                                        (cons-term fn rewritten-args)
+                                        type-alist ens wrld ok-to-force
+                                        ttree ttree)))
+                              (cond
+                               (erp2
 
 ; We following a suggestion from Matt Wilding and attempt to rewrite the term
 ; before applying HIDE.  This is really a heuristic choice; we could choose
@@ -13701,39 +13697,39 @@
 ; apply in the rare case that the current function symbol (whose evaluation has
 ; errored out) is a compound recognizer.
 
-                              (let ((new-term1
-                                     (cons-term fn rewritten-args)))
-                                (sl-let
-                                 (new-term2 ttree)
-                                 (rewrite-entry
-                                  (rewrite-with-lemmas new-term1))
-                                 (cond
-                                  ((equal new-term1 new-term2)
-                                   (mv step-limit
-                                       (hide-with-comment
-                                        (if erp
-                                            (cons :non-executable erp)
-                                          (cons :missing-warrant erp2))
-                                        new-term1
-                                        wrld state)
-                                       (push-lemma
-                                        (fn-rune-nume 'hide nil nil
-                                                      wrld)
-                                        ttree)))
-                                  (t (mv step-limit new-term2 ttree))))))
-                             (t (mv step-limit
-                                    (kwote val)
-                                    (push-lemma
-                                     (fn-rune-nume fn nil t wrld)
-                                     ttree))))))))))
-                   (t
-                    (sl-let
-                     (rewritten-term ttree)
-                     (rewrite-entry
-                      (rewrite-primitive fn rewritten-args))
-                     (rewrite-entry
-                      (rewrite-with-lemmas
-                       rewritten-term)))))))))))))))))
+                                (let ((new-term1
+                                       (cons-term fn rewritten-args)))
+                                  (sl-let
+                                   (new-term2 ttree)
+                                   (rewrite-entry
+                                    (rewrite-with-lemmas new-term1))
+                                   (cond
+                                    ((equal new-term1 new-term2)
+                                     (mv step-limit
+                                         (hide-with-comment
+                                          (if erp
+                                              (cons :non-executable erp)
+                                              (cons :missing-warrant erp2))
+                                          new-term1
+                                          wrld state)
+                                         (push-lemma
+                                          (fn-rune-nume 'hide nil nil
+                                                        wrld)
+                                          ttree)))
+                                    (t (mv step-limit new-term2 ttree))))))
+                               (t (mv step-limit
+                                      (kwote val)
+                                      (push-lemma
+                                       (fn-rune-nume fn nil t wrld)
+                                       ttree))))))))))
+                     (t
+                      (sl-let
+                       (rewritten-term ttree)
+                       (rewrite-entry
+                        (rewrite-primitive fn rewritten-args))
+                       (rewrite-entry
+                        (rewrite-with-lemmas
+                         rewritten-term))))))))))))))))))
 
 (defun rewrite-solidify-plus (term ; &extra formals
                               rdepth step-limit
@@ -19829,22 +19825,48 @@
 
 ; Evg is some evg and rewrite has been called on 'evg.  Furthermore, we know
 ; from geneqv that 'evg is in a :FN slot.  If evg is in fact a well-formed
-; lambda object we attempt to rewrite its body, in a context-free way, carrying
-; no external assumptions in and expanding no recursive functions in it.  (The
-; last restriction is accomplished by pushing :rewrite-lambda-object on the
-; fnstack, which signals rewrite-fncall not to open any recursive function.
-; See the explanation of a simplify loop below.)  If the rewritten body is
-; different, contains no free variables and is tame, we return a new lambda
-; object with the rewritten body.  Coincidentally, we drop the optional DECLARE
-; form permitted in lambda objects; we take no special action to eliminate
-; RETURN-LAST because there is an abbreviation-style rewrite rule that will do
-; that.  But if evg is not well-formed or its rewritten body is equal to the
-; original body (and there is no DECLARE form) or it contains free variables,
-; or it is not tame, we return evg unchanged.  In the case that a well-formed
-; lambda object is rewritten but the rewritten body is rejected on the grounds
-; of free variables or tameness, we print a "rewrite-lambda-object" warning,
-; which can be inhibited if it gets annoying.  To inhibit the warning but leave
-; all other warnings on, do (set-inhibit-warnings "rewrite-lambda-object").
+; lambda object and all the user defined functions in it have had warrants
+; issued (whether they're in the type-alist or not) we attempt to ``rewrite''
+; its body, in a context-free way, carrying in no external assumptions other
+; than warrants and expanding no recursive functions in it.
+
+; Actually, we carry in all 0-ary entries in the type-alist.
+
+; Actually, the user can select three different senses of ``rewrite'' behavior
+; by appropriately specifying the enabled status of two runes,
+; (:executable-counterpart rewrite-lambda-modep) and (:definition
+; rewrite-lambda-modep), which we abbreviate below as runes e and d
+; respectively.
+
+; ``Rewrite'' Action Desired                      Rune Status
+
+; full-blown rewriting                        e and d both enabled
+; just syntactic cleaning up                  e enabled and d disabled
+; hands off (i.e., modifying lambda objects)  e disabled
+
+; Both full-blown rewriting and syntactic cleaning effectively force
+; needed warrants.  (Actually, cleaning forces the warrants of all user fns
+; in the body that aren't assumed true in type-alist.  And if some such warrant
+; is assumed false, no cleaning is done.)
+
+; The restriction that we expand no recursive functions is accomplished by
+; pushing :rewrite-lambda-object on the fnstack, which signals rewrite-fncall
+; not to open any recursive function.  See the explanation of a simplify loop
+; below.)
+
+; If the rewritten body is different, contains no free variables and is tame,
+; we return a new lambda object with the rewritten body and appropriately
+; forced warrants.  Coincidentally, we drop the optional DECLARE form permitted
+; in lambda objects; we take no special action to eliminate RETURN-LAST because
+; there is an abbreviation-style rewrite rule that will do that.  We nilify the
+; last two arguments of DO$ with a special clause inside the rewriter itself.
+; But if evg is not well-formed or its rewritten body is equal to the original
+; body (and there is no DECLARE form) or it contains free variables, or it is
+; not tame, we return evg unchanged.  In the case that a well-formed lambda
+; object is rewritten but the rewritten body is rejected on any grounds, we
+; print a "rewrite-lambda-object" warning, which can be inhibited if it gets
+; annoying.  To inhibit the warning but leave all other warnings on, do
+; (set-inhibit-warnings "rewrite-lambda-object").
 
 ; Explanation of an infinite simplify loop:
 
@@ -19907,13 +19929,14 @@
             (mv-let (pre-have-warrants pre-have-no-warrants)
               (partition-userfns-by-warrantp fns wrld nil nil)
 
-; Fns is the list of fns in body.  It does not include fns buried in quoted
-; objects; they are handled by recursion.  Progs is the list of :program mode
-; functions in fns, pre-have-warrants are the symbols in fns that have warrants
-; (whether they're assumed in the current context or not), and
-; pre-have-no-warrants are the symbols in fns for which no warrants exist but
-; which would require a warrant to be apply$d.  (Primitives and apply$
-; primitives don't have warrants but don't need them.)
+; Note that (:executable-counterpart rewrite-lambda-modep) is enabled.  Fns is
+; the list of fns in body.  It does not include fns buried in quoted objects;
+; they are handled by recursion.  Progs is the list of :program mode functions
+; in fns, pre-have-warrants are the symbols in fns that have warrants (whether
+; they're assumed in the current context or not), and pre-have-no-warrants are
+; the symbols in fns for which no warrants exist but which would require a
+; warrant to be apply$d.  (Primitives and apply$ primitives don't have warrants
+; but don't need them.)
 
               (cond
                ((and (null progs)
@@ -19922,112 +19945,158 @@
 ; So body is in :logic mode and every function symbol occurring in it has a
 ; warrant or doesn't need one.
 
+; Since (:executable-counterpart rewrite-lambda-modep), aka ``e'', is enabled
+; and body is a well-formed tame term and all the functions in it are in :logic
+; mode and have had warrants issued (whether or not they are assumed true in
+; type-alist1) we have permission to modify body.
+
+; We are going to bind rewritten-body and ttree1 to the result of either (a)
+; rewriting and normalizing body or (b) removing guards and cleaning up body.
+; Since e is enabled, the user can select (a) or (b) by manipulating the
+; enabled status of (:definition rewrite-lambda-modep), aka ``d''.  If d is
+; enabled, we do (a), and if d is disabled we do (b).  The use of
+; clean-up-dirty-lambda-object-body below is intended to perform the same
+; transformation on the body of this lambda as add-rewrite-rule, for example,
+; would if the body were the lhs of a :rewrite rule.
+
+; Note: Since we normalize the result of rewriting it was natural to normalize
+; the result of just cleaning up.  That's easy enough to do here but impossible
+; in add-rewrite-rule because there we don't have a stable ens, which is used
+; in type-set and assume-true-false to normalize.  (The global ens not won't be
+; the same as it was when rules were added.)  Given that we use the enabled
+; status of e and d to select our action here, and that we offer 3 options now,
+; we could easily offer a fourth: normalize wrt the ens available here after
+; cleaning.  But we see no need, yet.
+
                 (sl-let
                  (rewritten-body ttree1)
-                 (rewrite-entry (rewrite body
-                                         nil
-                                         'lambda-object-body)
-                                :fnstack (cons :rewrite-lambda-object fnstack)
-                                :type-alist type-alist1
-                                :obj '?
-                                :geneqv nil ; maintain EQUAL
-                                :pequiv-info nil
-                                :ancestors nil
-                                :simplify-clause-pot-lst nil
-                                :ttree nil)
-                 (mv-let (rewritten-body1 ttree1)
-                   (normalize rewritten-body
-                              nil ; iff-flg
-                              nil ; type-alist
-                              (access rewrite-constant
-                                      rcnst
-                                      :current-enabled-structure)
-                              wrld
-                              ttree1
-                              (backchain-limit wrld :ts))
+                 (if (enabled-numep *rewrite-lambda-modep-def-nume*
+                                    (access rewrite-constant
+                                            rcnst
+                                            :current-enabled-structure))
+                     (sl-let
+                      (temp-rewritten-body temp-ttree1)
+                      (rewrite-entry (rewrite body
+                                              nil
+                                              'lambda-object-body)
+                                     :fnstack (cons :rewrite-lambda-object fnstack)
+                                     :type-alist type-alist1
+                                     :obj '?
+                                     :geneqv nil ; maintain EQUAL
+                                     :pequiv-info nil
+                                     :ancestors nil
+                                     :simplify-clause-pot-lst nil
+                                     :ttree nil)
+                      (mv-let (temp-rewritten-body temp-ttree1)
+                        (normalize temp-rewritten-body
+                                   nil ; iff-flg
+                                   nil ; type-alist
+                                   (access rewrite-constant
+                                           rcnst
+                                           :current-enabled-structure)
+                                   wrld
+                                   temp-ttree1
+                                   (backchain-limit wrld :ts))
+                        (mv step-limit temp-rewritten-body temp-ttree1)))
+                     (mv step-limit
+                         (clean-up-dirty-lambda-object-body
+                          :all
+                          body
+                          wrld
+                          (remove-guard-holders-lamp))
+                         ttree))
+                 (cond
+                  ((equal rewritten-body body) ; no change
                    (cond
-                    ((equal rewritten-body1 body)
-                     (cond
-                      ((null dcl)
-                       (mv step-limit evg ttree))
-                      (t (mv step-limit
-                             `(lambda ,formals ,body) ; Just drop the dcl
-                             ttree))))
-                    ((or (not (subsetp-eq (all-vars rewritten-body1) formals))
-                         (not (executable-tamep rewritten-body1 wrld)))
+                    ((null dcl)
+                     (mv step-limit evg ttree))
+                    (t (mv step-limit
+                           `(lambda ,formals ,body) ; Just drop the dcl
+                           ttree))))
+                  ((or (not (subsetp-eq (all-vars rewritten-body) formals))
+                       (not (executable-tamep rewritten-body wrld)))
 
 ; If the rewritten body contains free variables or is not tame, we reject this
 ; whole rewrite, after possibly printing a warning.
 
-                     (prog2$ (rewrite-lambda-object-post-warning
-                              evg rewritten-body nil ttree1 wrld)
-                             (mv step-limit evg ttree)))
-                    (t
+                   (prog2$ (rewrite-lambda-object-post-warning
+                            evg rewritten-body nil ttree1 wrld)
+                           (mv step-limit evg ttree)))
+                  (t
 
-; The replacement of body by rewritten-body (or, actually, by the normalized
-; rewritten-body) inside a quoted lambda object depends on the equivalence of
-; the ev$ of the quotations of those two terms.  We know that body is equal to
-; rewritten-body, by the correctness of rewrite.  So the equivalence of the
-; ev$s of their quotations is just analogous to the theorem justifying meta
-; rules, except we need to know that (ev$ '(fn a1 ... an) env) = (fn (ev$ 'a1
-; env) ... (ev$ 'an env)), for every function in either term.  (Note: here
-; ``ev$'' is used where a suitable evaluator is used in metafunction
-; correctness theorems.)  But we have that theorem for every apply$ primitive
-; and for every apply$ boot function (provided the two terms are both tame),
-; but we warrants for every userfn in either term.  (The tameness hypotheses
-; required in the warrants are already assured by the tameness checks here, so
-; we know we have badges, but not necessarily warrants.  We know all fns in
-; rewritten-body1 are in :logic mode because it was produced by rewriting a
-; :logic mode term and the rewriter never introduces a :program mode fn.)
-; Furthermore, we don't just need the userfns to be warranted, we need to have
-; each warrant hypothesis.  We ensure that by collecting all the warranted
-; userfns functions occurring in either term and then calling push-warrants.
+; The replacement of body by rewritten-body inside a quoted lambda object
+; depends on the equivalence of the ev$ of the quotations of those two terms.
+; We know that body is equal to rewritten-body, by the correctness of rewrite,
+; normalize, etc.  So the equivalence of the ev$s of their quotations is just
+; analogous to the theorem justifying meta rules, except we need to know that
+; (ev$ '(fn a1 ... an) env) = (fn (ev$ 'a1 env) ... (ev$ 'an env)), for every
+; function in either term.  (Note: here ``ev$'' is used where a suitable
+; evaluator is used in metafunction correctness theorems.)  But we have that
+; theorem for every apply$ primitive and for every apply$ boot function
+; (provided the two terms are both tame), but we warrants for every userfn in
+; either term.  (The tameness hypotheses required in the warrants are already
+; assured by the tameness checks here, so we know we have badges, but not
+; necessarily warrants.  We know all fns in rewritten-body1 are in :logic mode
+; because it was produced by rewriting a :logic mode term and the rewriter
+; never introduces a :program mode fn.)  Furthermore, we don't just need the
+; userfns to be warranted, we need to have each warrant hypothesis.  We ensure
+; that by collecting all the warranted userfns functions occurring in either
+; term and then calling push-warrants.
 
-                     (mv-let (post-have-warrants post-have-no-warrants)
-                       (partition-userfns-by-warrantp
-                        (all-fnnames rewritten-body1)
-                        wrld nil nil)
-                       (cond
-                        (post-have-no-warrants
-                         (prog2$
-                          (rewrite-lambda-object-post-warning
-                           evg rewritten-body post-have-no-warrants ttree1
-                           wrld)
-                          (mv step-limit evg ttree)))
-                        (t
-                         (mv-let (erp ttree2)
-                           (push-warrants (union-eq pre-have-warrants
-                                                    post-have-warrants)
-                                          body
-                                          type-alist1
-                                          (access rewrite-constant rcnst
-                                                  :current-enabled-structure)
-                                          wrld
-                                          (ok-to-force rcnst)
-                                          ttree1 ttree)
+                   (mv-let (post-have-warrants post-have-no-warrants)
+                     (partition-userfns-by-warrantp
+                      (all-fnnames rewritten-body)
+                      wrld nil nil)
+                     (cond
+                      (post-have-no-warrants
+                       (prog2$
+                        (rewrite-lambda-object-post-warning
+                         evg rewritten-body post-have-no-warrants ttree1
+                         wrld)
+                        (mv step-limit evg ttree)))
+                      (t
+                       (mv-let (erp ttree2)
+                         (push-warrants (union-eq pre-have-warrants
+                                                  post-have-warrants)
+                                        body
+                                        type-alist1
+                                        (access rewrite-constant rcnst
+                                                :current-enabled-structure)
+                                        wrld
+                                        (ok-to-force rcnst)
+                                        ttree1 ttree)
 
 ; Body, above, is passed in as the ``target'' for push-warrants.  The target is
 ; only used in commentary about the forcing.  The :target of a forced rewerite
 ; rule is generally the term to which the rule was applied, but here we're
 ; talking about function symbols that must (probably) be apply$'d during the
 ; rewriting of :target.
-                           (cond
-                            (erp
+                         (cond
+                          (erp
 
 ; A warrant is assumed false, the apply$ rule for a fn is disabled, or forcing
 ; is not allowed.
 
-                             (prog2$
-                              (rewrite-lambda-object-post-warning
-                               evg rewritten-body nil ttree1 wrld)
-                              (mv step-limit
-                                  evg
-                                  ttree)))
-                            (t (mv step-limit
-                                   `(lambda ,formals ,rewritten-body1)
-                                   (push-lemma
-                                    *rewrite-lambda-modep-xrune*
-                                    (cons-tag-trees ttree2 ttree))))))))))))))
+                           (prog2$
+                            (rewrite-lambda-object-post-warning
+                             evg rewritten-body nil ttree1 wrld)
+                            (mv step-limit
+                                evg
+                                ttree)))
+                          (t (let ((ttree3
+                                    (push-lemma
+                                     *rewrite-lambda-modep-xrune*
+                                     (cons-tag-trees ttree2 ttree))))
+                               (mv step-limit
+                                   `(lambda ,formals ,rewritten-body)
+                                   (if (enabled-numep *rewrite-lambda-modep-def-nume*
+                                                      (access rewrite-constant
+                                                              rcnst
+                                                              :current-enabled-structure))
+                                       (push-lemma
+                                        *rewrite-lambda-modep-def-rune*
+                                        ttree3)
+                                       ttree3)))))))))))))
                (t (prog2$
                    (rewrite-lambda-object-pre-warning
                     evg nil progs pre-have-no-warrants wrld)

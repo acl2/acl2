@@ -970,6 +970,12 @@
      (cons (remove-return-last (car subterms))
            (remove-return-last-subterms (cdr subterms))))))
 
+(defund light-remove-return-last (term)
+  (declare (xargs :guard t))
+  (if (is-return-last term)
+      (light-remove-return-last (cadddr term))
+    term))
+
 (defund is-hide (term)
   (declare (xargs :guard t))
   (case-match term

@@ -35,27 +35,47 @@
 ;; order to have their def-fgl-thms exported.
 
 (include-book "std/alists/alist-defuns" :dir :system)
+(include-book "config")
+
+(defconst *fgl-thm-keywords*
+  '(:concl :hyp :rule-classes :hints :parents :short :long))
+
+(define fgl-thm-check-keyword-args ((args keyword-value-listp)
+                                    (thm-keywords symbol-listp))
+  :mode :program
+  (if (atom args)
+      nil
+    (if (or (acl2::assoc-symbol-name-equal (car args) *fgl-config-fields*)
+            (member-eq (car args) thm-keywords))
+        (fgl-thm-check-keyword-args (cddr args) thm-keywords)
+      (car args))))
+
 
 (defun fgl-thm-fn (args)
   (declare (xargs :mode :program))
-  (let* ((concl (if (keywordp (car args))
-                    (cadr (assoc-keyword :concl args))
-                  (car args)))
-         (args (if (keywordp (car args))
-                   args
-                 (cdr args)))
-         (body (let ((look (assoc-keyword :hyp args)))
-                 (if look
-                     `(implies ,(cadr look) ,concl)
-                   concl)))
-         (rule-classes (let ((look (assoc-keyword :rule-classes args)))
-                         (and look
-                              `(:rule-classes ,(cadr look)))))
-         (hints (cadr (assoc-keyword :hints args))))
+  (b* ((concl (if (keywordp (car args))
+                  (cadr (assoc-keyword :concl args))
+                (car args)))
+       (args (if (keywordp (car args))
+                 args
+               (cdr args)))
+       ((unless (keyword-value-listp args))
+        (er hard? 'fgl-thm-fn "Argument list (excluding theorem body) must be a keyword-value-list."))
+       (bad-key (fgl-thm-check-keyword-args args *fgl-thm-keywords*))
+       ((when bad-key)
+        (er hard 'fgl-thm-fn "Unrecognized keyword: ~x0" bad-key))
+       (body (let ((look (assoc-keyword :hyp args)))
+               (if look
+                   `(implies ,(cadr look) ,concl)
+                 concl)))
+       (rule-classes (let ((look (assoc-keyword :rule-classes args)))
+                       (and look
+                            `(:rule-classes ,(cadr look)))))
+       (hints (cadr (assoc-keyword :hints args))))
     `(thm
       ,body
       :hints (,@hints
-              '(:clause-processor expand-an-implies-cp)
+              '(:clause-processor (expand-an-implies-cp clause (default-fgl-config . ,args)))
               '(:clause-processor (fgl-interp-cp clause (default-fgl-config . ,args) interp-st state)))
       ,@rule-classes)))
 
@@ -145,14 +165,23 @@ This probably will someday need to change.</p>
           (fgl-param-thm-cases (cdr param-bindings) param-hyp))))
 
 
+(defconst *fgl-param-thm-keywords*
+  '(:concl :hyp :rule-classes :hints :parents :short :long
+    :param-bindings :param-hyp :split-params :solve-params :split-concl :repeat-concl))
+
 (defun fgl-param-thm-fn (args)
   (declare (xargs :mode :program))
-  (let* ((concl (if (keywordp (car args))
+  (b* ((concl (if (keywordp (car args))
                     (cadr (assoc-keyword :concl args))
                   (car args)))
          (args (if (keywordp (car args))
                    args
                  (cdr args)))
+       ((unless (keyword-value-listp args))
+        (er hard? 'fgl-thm-fn "Argument list (excluding theorem body) must be a keyword-value-list."))
+       (bad-key (fgl-thm-check-keyword-args args *fgl-param-thm-keywords*))
+       ((when bad-key)
+        (er hard 'fgl-thm-fn "Unrecognized keyword: ~x0" bad-key))
          (body (let ((look (assoc-keyword :hyp args)))
                  (if look
                      `(implies ,(cadr look) ,concl)
@@ -170,8 +199,10 @@ This probably will someday need to change.</p>
                               ',(cadr (assoc-keyword :param-hyp args)))
                              :split-params ,(cadr (assoc-keyword :split-params args))
                              :solve-params ,(cadr (assoc-keyword :solve-params args))
-                             :split-concl-p ,(cadr (assoc-keyword :split-concl-p args))
-                             :repeat-concl-p ,(cadr (assoc-keyword :repeat-concl-p args)))
+                             :split-concl ,(let ((look (assoc-keyword :split-concl args)))
+                                             (or (not look) (cadr look)))
+                             :repeat-concl ,(cadr (assoc-keyword :repeat-concl args))
+                             :fgl-config (default-fgl-config . ,args))
               '(:clause-processor (fgl-interp-cp clause (default-fgl-config . ,args) interp-st state)))
       ,@rule-classes)))
 
@@ -215,10 +246,23 @@ proving that case split provided covers all cases.</li>
 
 <li>@(':solve-params') provides the @(see fgl-sat-check) object for proving each case.</li>
 
-<li>@(':repeat-concl-p') controls whether the conclusion is (if nil)
+<li>@(':repeat-concl') controls whether the conclusion is (if nil)
 rewritten/symbolically executed once and then solved separately for each case,
 or (if nonnil) rewritten/symbolically executed (and also solved) separately for
 each case.</li>
+
+<li>@(':hints') gives a list of hints (computed or subgoal) that are provided
+before the casesplit and FGL interpreter clause processor hints.  Practically
+speaking, if these hints don't trigger immediately, then they won't trigger
+until after the casesplit and FGL interpreter hints, since those occur
+unconditionally.</li>
+
+<li>@(':split-concl') pertains to cases where previous hints have allowed ACL2
+to clausify the conjecture -- normally, the case split happens on the original,
+unclausified conjecture.  If @(':split-concl') is non-nil (the default), then
+the last literal in the clause is considered the conclusion and previous
+literals are bundled into the hypothesis; if nil, then the whole clause is
+bundled into the conclusion and the hyp is just T.</li>
 
 </ul>
 

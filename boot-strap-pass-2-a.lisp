@@ -198,6 +198,15 @@
 (verify-termination-boot-strap project-dir) ; and guards
 (verify-termination-boot-strap system-books-dir) ; and guards
 
+(verify-termination-boot-strap sysfile-p) ; and guards
+(verify-termination-boot-strap sysfile-key) ; and guards
+(verify-termination-boot-strap sysfile-filename) ; and guards
+(verify-termination-boot-strap book-name-p) ; and guards
+(verify-termination-boot-strap book-name-listp) ; and guards
+(verify-termination-boot-strap book-name-to-filename-1) ; and guards
+(verify-termination-boot-strap book-name-to-filename) ; and guards
+(verify-termination-boot-strap book-name-lst-to-filename-lst) ; and guards
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

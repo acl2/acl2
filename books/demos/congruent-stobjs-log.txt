@@ -15,14 +15,14 @@ ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
 Summary
 Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
 Rules: NIL
- "[books]/std/testing/must-fail.lisp"
+ (:SYSTEM . "std/testing/must-fail.lisp")
 ACL2 !>>(INCLUDE-BOOK "std/testing/must-succeed"
                       :DIR :SYSTEM)
 
 Summary
 Form:  ( INCLUDE-BOOK "std/testing/must-succeed" ...)
 Rules: NIL
- "[books]/std/testing/must-succeed.lisp"
+ (:SYSTEM . "std/testing/must-succeed.lisp")
 ACL2 !>>(DEFMACRO MUST-FAIL^ (X)
                   (CONS 'MUST-FAIL
                         (CONS X '(:WITH-OUTPUT-OFF NIL))))

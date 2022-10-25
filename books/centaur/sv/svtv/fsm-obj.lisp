@@ -100,15 +100,36 @@ names in SystemVerilog hierarchical syntax (strings)."
 
 
 
-(define fast-alistlist-clean-aux (x)
+(define fast-alistlist-free-aux (x)
   (if (atom x)
       nil
-    (let ((ans1 (fast-alist-clean (car x))))
+    (let ((ans1 (fast-alist-free (car x))))
       (declare (ignore ans1))
-      (fast-alistlist-clean-aux (cdr x)))))
+      (fast-alistlist-free-aux (cdr x)))))
 
-(define fast-alistlist-clean (x)
+(define fast-alistlist-free (x)
   (mbe :logic x
-       :exec (let ((ans1 (fast-alistlist-clean-aux x)))
+       :exec (let ((ans1 (fast-alistlist-free-aux x)))
                (declare (ignore ans1))
                x)))
+
+;; there is absolutely no reason for this to be here in particular
+(define fast-alistlist-clean-aux (x acc)
+  (if (atom x)
+      (rev acc)
+    (fast-alistlist-clean-aux (cdr x) (cons (fast-alist-clean (car x)) acc))))
+
+(define fast-alistlist-clean (x)
+  :verify-guards nil
+  (mbe :logic (if (atom x)
+                  nil
+                (cons (fast-alist-clean (car x))
+                      (fast-alistlist-clean (cdr x))))
+       :exec (fast-alistlist-clean-aux x nil))
+  ///
+  (local (defthm fast-alistlist-clean-aux-elim
+           (equal (fast-alistlist-clean-aux x acc)
+                  (revappend acc (fast-alistlist-clean x)))
+           :hints(("Goal" :in-theory (enable fast-alistlist-clean-aux)))))
+  
+  (verify-guards fast-alistlist-clean))

@@ -15,6 +15,8 @@
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-limit-rules

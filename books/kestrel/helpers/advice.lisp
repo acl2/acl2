@@ -64,7 +64,6 @@
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/theory-hints" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
-(include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
 (include-book "kestrel/utilities/read-string" :dir :system) ; todo: slowish
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
@@ -73,6 +72,7 @@
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
+(include-book "kestrel/untranslated-terms/conjuncts-of-uterm" :dir :system)
 (include-book "kestrel/alists-light/string-string-alistp" :dir :system)
 (include-book "kestrel/htclient/post" :dir :system) ; todo: slow
 (include-book "kestrel/json-parser/parse-json" :dir :system)
@@ -129,6 +129,9 @@
          (state (set-fmt-hard-right-margin 410 state))
          (state (set-fmt-soft-right-margin 400 state)))
     state))
+
+;; Same as in centaur/fty.
+(defun pos-fix (x) (declare (xargs :guard t)) (if (posp x) x 1))
 
 (defund unwiden-margins (state)
   (declare (xargs :stobjs state
@@ -232,6 +235,10 @@
                    (<= confidence-percent 100))
               ;; book-map
               (true-listp pre-commands)))))
+
+(defun make-rec (name type object confidence-percent book-map pre-commands)
+  (declare (xargs :guard t)) ; todo: strengthen
+  (list name type object confidence-percent book-map pre-commands))
 
 (defund update-pre-commands (pre-commands rec)
   (declare (xargs :guard (recommendationp rec)))
@@ -364,7 +371,9 @@
                         (:add-use-hint (fms-to-string-one-line ":use ~x0" (acons #\0 object nil)))
                         (:exact-hints (fms-to-string-one-line ":hints ~x0" (acons #\0 object nil)))
                         (t (er hard? 'show-successful-recommendation "Unknown rec type: ~x0." type)))))
-    (if pre-commands
+    (if (and pre-commands
+             (not (eq :unknown pre-commands)) ; todo: eventually eliminate this
+             )
         (if (consp (cdr pre-commands))
             ;; More than one pre-command:
             (cw "~s0, after doing ~&1~%" english-rec pre-commands)
@@ -529,7 +538,7 @@
          (name (concatenate 'string "ML" (nat-to-string rec-num)))
          )
       (mv nil ; no error
-          (list name type-keyword parsed-object confidence-percent book-map)
+          (make-rec name type-keyword parsed-object confidence-percent book-map :unknown)
           state))))
 
 ;; Returns (mv erp parsed-recommendations state).
@@ -707,26 +716,6 @@
       (second formula)
     *t*))
 
-(mutual-recursion
- (defun get-conjuncts-of-uterm (uterm ;; untranslated
-                                )
-   (if (not (consp uterm))
-       (list uterm)
-     (if (eq 'and (ffn-symb uterm))
-         (get-conjuncts-of-uterms (fargs uterm))
-       (if (and (eq 'if (ffn-symb uterm)) ; (if <x> <y> nil) is (and <x> <y>)
-                (or (equal nil (farg3 uterm))
-                    (equal *nil* (farg3 uterm))))
-           (union-equal (get-conjuncts-of-uterm (farg1 uterm))
-                        (get-conjuncts-of-uterm (farg2 uterm)))
-         (list uterm)))))
- (defun get-conjuncts-of-uterms (uterms ;; untranslated
-                                 )
-   (if (endp uterms)
-       nil
-     (union-eq (get-conjuncts-of-uterm (first uterms))
-               (get-conjuncts-of-uterms (rest uterms))))))
-
 ;; Returns (mv contradictp state).
 (defund provably-contradictoryp (ctx formula state)
   (declare (xargs :mode :program
@@ -759,7 +748,7 @@
         (cw "fail (hyp not translatable: ~x0)~%" hyp) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        (existing-hyp (formula-hyp-simple theorem-body))
-       (existing-hyp-conjunts (get-conjuncts-of-uterm existing-hyp))
+       (existing-hyp-conjunts (conjuncts-of-uterm existing-hyp))
        ((when (member-equal hyp existing-hyp-conjunts))
         (cw "skip (hyp ~x0 is already present)~%" hyp)
         (mv nil nil state))
@@ -785,6 +774,7 @@
                                          theorem-otf-flg
                                          step-limit
                                          state))
+       (rec (update-pre-commands nil rec)) ; update once we use the book map
        (- (if provedp
               (cw-success-message rec)
             (let ((translated-hyp (translate-term hyp 'try-add-hyp (w state))))
@@ -1278,12 +1268,12 @@
                          (and (not (rec-presentp :exact-hints hints seen-recs))
                               ;; make a new rec:
                               (list
-                               (list (concatenate 'string "H" (nat-to-string num))
-                                     :exact-hints ; new kind of rec, to replace all hints
-                                     (cadr res)
-                                     0
-                                     nil
-                                     nil))))))))))))
+                               (make-rec (concatenate 'string "H" (nat-to-string num))
+                                         :exact-hints ; new kind of rec, to replace all hints
+                                         (cadr res)
+                                         0
+                                         nil
+                                         nil))))))))))))
 
  (defun make-recs-from-events (events num acc)
    (if (endp events)
@@ -1403,14 +1393,15 @@
         (if (member-eq (car most-recent-failed-theorem) '(thm rule))
             (mv :thm ; no name
                 (cadr most-recent-failed-theorem)
-                (assoc-eq :hints (cddr most-recent-failed-theorem))
-                (assoc-eq :otf-flg (cddr most-recent-failed-theorem)))
+                (cadr (assoc-keyword :hints (cddr most-recent-failed-theorem)))
+                (cadr (assoc-keyword :otf-flg (cddr most-recent-failed-theorem))))
           ;; Must be a defthm, etc:
           (mv (cadr most-recent-failed-theorem)
               (caddr most-recent-failed-theorem)
-              (assoc-eq :hints (cdddr most-recent-failed-theorem))
-              (assoc-eq :otf-flg (cdddr most-recent-failed-theorem)))))
+              (cadr (assoc-keyword :hints (cdddr most-recent-failed-theorem)))
+              (cadr (assoc-keyword :otf-flg (cdddr most-recent-failed-theorem))))))
        (- (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil))
+       (- (and verbose (cw "Original hints were:~%~X01:~%" theorem-hints nil)))
        ;; Get the checkpoints from the failed attempt:
        (raw-checkpoint-clauses (checkpoint-list ;-pretty
                                 t               ; todo: consider non-top

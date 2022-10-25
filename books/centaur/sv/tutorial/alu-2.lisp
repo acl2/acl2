@@ -1,10 +1,10 @@
-; Centaur SV Hardware Verification Tutorial
-; Copyright (C) 2012-2015 Centaur Technology
+
+; (ld "alu-2.lisp" :ld-pre-eval-print t)
+
+; Updated in September, 2022, by Warren A. Hunt, Jr. and Mihir Metha
 ;
 ; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+;   Sol Swords, Warren A. Hunt, Jr., Mihir Metha -- all of Intel Corp.
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -30,9 +30,10 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 
-; This is the first example in the tutorial.  We are going to try to verify a
-; basic 16-bit ALU module that implements 8 opcodes.  We will discover that
-; there is a bug in its COUNT operation.
+; WAHJr.  This version of Sol's tutorial has a more complicated
+; implementation because it has been altered from it original form so
+; it takes two cycles to complete the multiply operation; the product
+; is returned through a second output port.
 
 (in-package "SV")
 
@@ -65,15 +66,12 @@
 
 (make-event
 
-; Disabling waterfall parallelism.
+; Disable waterfall parallelism.
 
  (if (f-get-global 'acl2::parallel-execution-enabled state)
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))
-
-
-
 
 ; The PLEV (print level) tool lets you control how much output ACL2 prints when
 ; it tries to print an object.  It is very important to be able to control the
@@ -100,8 +98,6 @@
 (value-triple (acl2::set-max-mem (* 3 (expt 2 30))))
 
 
-
-
 ; -----------------------------------------------------------------------------
 ;
 ;                        LOADING THE ALU16 MODULE
@@ -111,8 +107,11 @@
 ; The file alu16.v contains a very simple ALU module that we will verify.  You
 ; should probably look at it now, and then come back.
 
+; We note that DEF-SAVED-EVENT saves the event provided (and
+; submitted) in the ACL2 table SAVED-FORMS-TABLE.
 
-; First, we read that module into a VL design.  This form does that.
+; First, we read that module into a VL design.
+
 (def-saved-event alu-design-form
   (defconsts (*alu-vl-design* state)
     (b* (((mv loadresult state)
@@ -243,7 +242,7 @@ full:</p>
 
 ;;     :inputs
 ;;       ;; verilog name --> sequence of inputs to supply
-;;     '(("clk"    1     0     1     0     1     0)
+;;     '(("clk"    0     1     0     1     0     1     0     1)
 ;;       ("opcode" _     _     _     op    _)
 ;;       ("abus"   _     a     _)
 ;;       ("bbus"   _     b     _))
@@ -273,7 +272,6 @@ full:</p>
              (:label out2
               :delay 2
               :outputs (("out2" res2))))))
-
 
 
 ; This DEFSTV command introduces several things, but among them is a 0-ary
@@ -312,6 +310,10 @@ full:</p>
               (a  . 5)
               (b  . 3))))
 
+; As you can see, the output is provided as an ALIST of values for the STV's
+; output variables.  In this case we see that RES has value 8, so the circuit
+; added 5 and 3 correctly.
+
 (def-saved-nonevent alu-example-2
   (svtv-run (alu-test-vector)
             `((op . ,*op-mult*)
@@ -331,6 +333,21 @@ full:</p>
             `((op . ,*op-mult*)
               (a  . 5)
               (b  . 3))
+
+; Now the output is provided as an ALIST of values for the STV's
+; output variables.  In this case we see that RES2 has value 35, so
+; the circuit multiplied 5 and 7 correctly.
+;
+; By default STV-RUN prints lots of debugging info.  We'll see below
+; that this is very useful in theorems.  But when we're just doing
+; concrete runs, this output can be irritating.  You can turn it off
+; by adding :quiet t, like this:
+
+(def-saved-nonevent alu-example-2-quiet
+  (svtv-run (alu-test-vector)
+            `((op . ,*op-mult*)
+              (a  . 5)
+              (b  . 7))
             :quiet t))
 
 (defttag write-ok)
@@ -346,7 +363,7 @@ full:</p>
    (svtv-debug$ (alu-test-vector)
                 `((op . ,*op-mult*)
                   (a  . 5)
-                  (b  . 3))
+                  (b  . 7))
                 :filename "alu-min-debug.vcd")
    :return (mv vcd-wiremap vcd-vals svtv-data state)
    :writep t))
@@ -397,7 +414,11 @@ You can see the documentation generated for this SVTV <see topic='@(url
 alu-test-vector)'>here</see>.</p>
 
 <p>Each entry in @(':phases') says what should happen in a particular
-time (phase) in the simulation.  The first entry says that the \"clk\" signal will initially be set to 0, but will toggle every time step.  It also says that the \"abus\" and \"bbus\" inputs should be set to symbolic variables @('a') and @('b') at that time.  That phase is also labeled @('dat') for documentation purposes.</p>
+time (phase) in the simulation.  The first entry says that the \"clk\"
+signal will initially be set to 0, but will toggle every time step.
+It also says that the \"abus\" and \"bbus\" inputs should be set to
+symbolic variables @('a') and @('b') at that time.  That phase is also
+labeled @('dat') for documentation purposes.</p>
 
 <p>The next entry in the phases is labeled @('op').  It has a @(':delay')
 argument, which says how many time steps after the previous entry the current
@@ -515,6 +536,26 @@ gtkwave:</p>
                                              (alu-test-vector-autoins))))
                   (loghead 16 (+ a b)))))
 
+(def-saved-event alu-simple-proof-that-might-succeed
+  (fgl::def-fgl-thm alu16-adds-but-look-at-res2
+    :hyp (and (alu-test-vector-autohyps)
+              (equal op *op-plus*))
+    ;; We are looking for the sum on the multiplier output!
+    :concl (equal (cdr (assoc 'res2 (svtv-run (alu-test-vector)
+                                              (alu-test-vector-autoins))))
+                  ;; but it's not there; the next expression means 16 X bits.
+                  (cons #uxFFFF #ux0))))
+
+
+(def-saved-event alu-simple-proof-mult
+  (fgl::def-fgl-thm alu16-multiplies
+    :hyp (and (alu-test-vector-autohyps)
+              (equal op *op-mult*))
+    :concl (equal (cdr (assoc 'res2 (svtv-run (alu-test-vector)
+                                              (alu-test-vector-autoins))))
+                  (loghead 16 (* a b)))))
+
+
 (def-saved-event alu-simple-proof-opt
   (fgl::def-fgl-thm alu16-adds-opt
     :hyp (and (alu-test-vector-autohyps)
@@ -610,15 +651,16 @@ SAT solver, we can try some proofs about it.  Here is a simple example:</p>
 <p>In addition to defining the STV @('(alu-test-vector)') itself, the @('defsvtv$')
 form from the previous section also defines  the following macros/functions:</p>
 
-<ul>
-<li>@('(alu-test-vector-autohyps)') expands to a function that checks type hypotheses for the input variables -- in this case,</li>
+<ul> <li>@('(alu-test-vector-autohyps)') expands to a function that
+checks type hypotheses for the input variables -- in this case,</li>
 @({
  (and (unsigned-byte-p 16 b)
       (unsigned-byte-p 16 a)
       (unsigned-byte-p 3 op))
  })
-<li>@('(alu-test-vector-autoins)') expands to a function that takes the input variables as inputs and outputs an alist binding the variable symbols to their corresponding values, i.e.,</li>
-@({
+<li>@('(alu-test-vector-autoins)') expands to a function that takes
+the input variables as inputs and outputs an alist binding the
+variable symbols to their corresponding values, i.e.,</li> @({
  (list (cons 'A a)
        (cons 'B b)
        (cons 'OP op))

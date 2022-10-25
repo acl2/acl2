@@ -1,7 +1,7 @@
 ; Logical negation of a bit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -46,12 +46,11 @@
            (unsigned-byte-p size (bitnot x)))
   :hints (("Goal" :in-theory (enable bitnot))))
 
-(defthm bitnot-equal-0-rewrite
-  (equal (equal (bitnot x) 0)
+(defthm equal-of-0-and-bitnot
+  (equal (equal 0 (bitnot x))
          (equal 1 (getbit 0 x)))
   :hints (("Goal" :in-theory (enable bitnot))))
 
-;gen
 (defthm equal-of-1-and-bitnot
   (equal (equal 1 (bitnot x))
          (equal 0 (getbit 0 x)))

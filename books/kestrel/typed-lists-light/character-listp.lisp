@@ -16,6 +16,13 @@
            (character-listp (cdr x)))
   :hints (("Goal" :in-theory (enable character-listp))))
 
+;; Better than the version in std
+(defthm characterp-of-car-when-character-listp-strong
+  (implies (character-listp x)
+           (equal (characterp (car x))
+                  (consp x)))
+  :hints (("Goal" :in-theory (enable character-listp))))
+
 (defthm character-listp-of-append-2 ;avoid name clash with std?
   (equal (character-listp (append x y))
          (and (character-listp (true-list-fix x))

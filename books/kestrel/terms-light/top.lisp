@@ -1,6 +1,6 @@
 ; Top file for terms-light library
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "all-quotep")
+(include-book "trivial-formals")
 (include-book "non-trivial-formals")
 (include-book "bound-vars-in-term")
 (include-book "let-vars-in-term")

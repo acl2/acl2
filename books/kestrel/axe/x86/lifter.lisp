@@ -288,6 +288,7 @@
 ;;              (cons b x)
 ;;              (member-equal a x))))
 
+;; todo: move this?
 (defun lifter-rules2 ()
   (append ;or put these in symbolic-execution-rules ?:
    '(stack-height-increased-wrt
@@ -335,6 +336,7 @@
      write-of-write-same
      read-in-terms-of-nth-and-pos-eric ; this is for resolving reads of the program.
      read-in-terms-of-nth-and-pos-eric-4-bytes ; this is for resolving reads of the program.
+     read-in-terms-of-nth-and-pos-eric-2-bytes ; this is for resolving reads of the program.
      read-in-terms-of-nth-and-pos-eric-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
@@ -1670,7 +1672,7 @@
                  `(defun ,loop-fn (,@param-names)
                     (declare (xargs :measure ,measure))
                     ,defun-body)))
-        (state (submit-event defun state))
+        (state (acl2::submit-event-brief defun state))
 
         ;; TODO: Need to prove that x86p is preserved... ugh... example: show that nth 0 of the loop function is a SIGNED-BYTE-P '64.
 

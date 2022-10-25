@@ -61,7 +61,7 @@
       which refers to them in some places.")
 
     (xdoc::p
-     "The file @('[books]/kestrel/apt/tailrec-examples.lisp')
+     "The community book @('kestrel/apt/tailrec-examples.lisp')
       contains some commented examples of use of @('tailrec')."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

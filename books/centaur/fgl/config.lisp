@@ -30,9 +30,9 @@
 
 (in-package "FGL")
 ;; (include-book "shape-spec-defs")
+(include-book "arith-base")
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
-
 (include-book "centaur/fty/bitstruct" :dir :system)
 
 (fty::defbitstruct fgl-function-mode
@@ -74,8 +74,9 @@
     (function-modes fgl-function-mode-alist :default (table-alist 'fgl-fn-modes (w state)))
     (prof-enabledp booleanp :default 't)
     (sat-config)
+    (sat-config-vacuity)
     (skip-toplevel-sat-check booleanp :default 'nil)
-    
+    (skip-vacuity-check booleanp :default 'nil)
     ))
 
 (local
@@ -157,3 +158,9 @@
   `(default-fgl-config-fn (list . ,(default-fgl-config-filter-args args)) state))
 
 (table fgl-config-table)
+
+(define fgl-toplevel-sat-check-config-wrapper (override)
+  (or override (fgl-toplevel-sat-check-config)))
+
+(define fgl-toplevel-vacuity-check-config-wrapper (override)
+  (or override (fgl-toplevel-vacuity-check-config)))

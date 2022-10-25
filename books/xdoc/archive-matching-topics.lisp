@@ -145,7 +145,7 @@ events from there:</p>
  (include-book \"xdoc/archive-matching-topics\" :dir :system)
  (local (include-book \"std/strings/top\" :dir :system))
 
- (archive-matching-topics (str::strprefixp \"[books]/std/strings/\" (cdr (assoc :from x))))
+ (archive-matching-topics (str::strprefixp \"std/strings/\" (cdr (assoc :from x))))
  })
 
 <p>The topics that are archived by this event may be ones that were process
@@ -160,4 +160,4 @@ found.</p>")
 
 ;; (logic)
 
-;; (local (archive-matching-topics (str::strprefixp "[books]/std/strings/" (cdr (assoc :from x)))))
+;; (local (archive-matching-topics (str::strprefixp "std/strings/" (cdr (assoc :from x)))))

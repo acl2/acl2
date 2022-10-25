@@ -37,9 +37,10 @@
 (local (include-book "transforms/problem-mods"))
 (local (include-book "doc"))
 (local (include-book "mlib/remove-bad")) ;; hack -- only included by sv/vl/top
+(local (include-book "mlib/extract-vl-types"))
 
 (xdoc::archive-matching-topics
- (or (str::strprefixp "[books]/centaur/vl/" (cdr (assoc :from x)))
+ (or (str::strprefixp "centaur/vl/" (cdr (assoc :from x)))
      ;; hack -- this book isn't included in sv, probably should be moved to vl/lint dir
-     (equal (cdr (assoc :from x)) "[books]/centaur/sv/vl/use-set.lisp")
+     (equal (cdr (assoc :from x)) "centaur/sv/vl/use-set.lisp :DIR :SYSTEM")
      (equal (cdr (assoc :from x)) "[defxdoc-raw]"))) ;; for topics defined using defxdoc-raw

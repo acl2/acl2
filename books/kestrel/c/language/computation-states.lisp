@@ -452,13 +452,18 @@
      (in the static storage or in the top scope of the top frame),
      we return an error: C disallows variable redefinition.
      However, there may well be a variable with the same in a different scope:
-     in this case, the new variable hides the other one."))
+     in this case, the new variable hides the other one.")
+   (xdoc::p
+    "Prior to storing the value, we remove its flexible array member, if any.
+     See @(tsee remove-flexible-array-member)."))
   (b* ((var (ident-fix var))
        ((when (equal (compustate-frames-number compst) 0))
         (b* ((static (compustate->static compst))
              (pair (omap::in var static))
              ((when (consp pair)) (error (list :var-redefinition var)))
-             (new-static (omap::update var (value-fix val) static))
+             (new-static (omap::update var
+                                       (remove-flexible-array-member val)
+                                       static))
              (new-compst (change-compustate compst :static new-static)))
           new-compst))
        (frame (top-frame compst))
@@ -466,7 +471,9 @@
        (scope (car scopes))
        (pair (omap::in var scope))
        ((when (consp pair)) (error (list :var-redefinition var)))
-       (new-scope (omap::update var (value-fix val) scope))
+       (new-scope (omap::update var
+                                (remove-flexible-array-member val)
+                                scope))
        (new-scopes (cons new-scope (cdr scopes)))
        (new-frame (change-frame frame :scopes new-scopes))
        (new-compst (push-frame new-frame (pop-frame compst))))
@@ -594,7 +601,10 @@
    (xdoc::p
     "We do not look at other frames,
      because the variables in other frames are not in scope
-     when running in the top frame."))
+     when running in the top frame.")
+   (xdoc::p
+    "Prior to storing the value, we remove its flexible array member, if any.
+     See @(tsee remove-flexible-array-member)."))
   (b* ((frame (top-frame compst))
        (new-scopes (write-auto-var-aux var val (frame->scopes frame)))
        ((when (errorp new-scopes)) new-scopes)
@@ -618,7 +628,9 @@
           ((when (consp pair))
            (if (equal (type-of-value (cdr pair))
                       (type-of-value val))
-               (cons (omap::update (ident-fix var) (value-fix val) scope)
+               (cons (omap::update (ident-fix var)
+                                   (remove-flexible-array-member val)
+                                   scope)
                      (scope-list-fix (cdr scopes)))
              (error (list :write-auto-var-mistype (ident-fix var)
                           :required (type-of-value (cdr pair))
@@ -679,7 +691,10 @@
      If the variable is found but its current value
      has a different type from the one of the new value,
      we return an error.
-     Otherwise, we overwrite the old value with the new one."))
+     Otherwise, we overwrite the old value with the new one.")
+   (xdoc::p
+    "Prior to storing the value, we remove its flexible array member, if any.
+     See @(tsee remove-flexible-array-member)."))
   (b* ((static (compustate->static compst))
        (pair (omap::in (ident-fix var) static))
        ((when (not pair)) (error (list :var-not-found (ident-fix var))))
@@ -688,7 +703,9 @@
         (error (list :write-static-var-mistype (ident-fix var)
                      :required (type-of-value (cdr pair))
                      :supplied (type-of-value val))))
-       (new-static (omap::update (ident-fix var) (value-fix val) static))
+       (new-static (omap::update (ident-fix var)
+                                 (remove-flexible-array-member val)
+                                 static))
        (new-compst (change-compustate compst :static new-static)))
     new-compst)
   :hooks (:fix)
@@ -810,7 +827,13 @@
      we retrieve the super-object,
      and we update its element or member,
      provided that the super-object is of the right kind.
-     Then we recursively write the updated super-object."))
+     Then we recursively write the updated super-object.")
+   (xdoc::p
+    "If the object designator is an address,
+     we store the value without removing the flexible array member
+     (see @(tsee remove-flexible-array-member).
+     In all other cases, we remove it, indirectly,
+     via the functions called by this function."))
   (objdesign-case
    objdes
    :variable (write-static-var objdes.get val compst)

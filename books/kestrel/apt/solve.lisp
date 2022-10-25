@@ -209,16 +209,16 @@
            (er-soft+
             ctx t nil
             "In order to use the ACL2 rewriter as the solving method ~
-             it is necessary to include ~
-             [books]/kestrel/apt/solve-method-acl2-rewriter.lisp.")))
+             it is necessary to include community book ~
+             kestrel/apt/solve-method-acl2-rewriter.lisp.")))
         ((eq method :axe-rewriter)
          (if (function-symbolp *solve-call-axe-rewriter* (w state))
              (value nil)
            (er-soft+
             ctx t nil
             "In order to use the Axe rewriter as the solving method ~
-             it is necessary to include ~
-             [books]/kestrel/apt/solve-method-axe-rewriter.lisp.")))
+             it is necessary to include community book ~
+             kestrel/apt/solve-method-axe-rewriter.lisp.")))
         ((eq method :manual)
          (value nil))
         (method?

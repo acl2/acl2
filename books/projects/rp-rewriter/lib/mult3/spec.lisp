@@ -1122,7 +1122,9 @@
                 (integerp mcand)
                 (natp out-size))
            (equal (loghead out-size (* mult mcand))
-                  (mult-final-spec mult mcand out-size)))
+                  (mult-final-spec (loghead out-size mult)
+                                   (loghead out-size mcand)
+                                   out-size)))
   :hints (("Goal"
            :in-theory (e/d (mult-simple-spec-is-*
                             mult-final-spec-mult-bycol-bybit-spec

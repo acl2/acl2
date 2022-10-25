@@ -41,7 +41,6 @@
 
 (include-book "../eval-functions")
 
-
 (defthmd rp-evl-of-ex-from-rp
   (equal (rp-evl (ex-from-rp term) a)
          (rp-evl term a))
@@ -331,5 +330,6 @@
   :hints (("Goal"
            :Expand ((rp-trans (cons 'rp rest)))
            :in-theory (e/d () ()))))
+
 
 

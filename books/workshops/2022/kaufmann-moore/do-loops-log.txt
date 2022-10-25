@@ -23,7 +23,7 @@ ACL2 !>>(INCLUDE-BOOK "projects/apply/top"
 Summary
 Form:  ( INCLUDE-BOOK "projects/apply/top" ...)
 Rules: NIL
- "[books]/projects/apply/top.lisp"
+ (:SYSTEM . "projects/apply/top.lisp")
 ACL2 !>>(DEFSTOBJ ST FLD)
 
 Summary

@@ -55,8 +55,8 @@ The formalization is based on our ACL2 formalization of prime
  the specification holds over the inputs and outputs, then there exist values
  for the intermediate variables such that the entire R1CS holds).  This requires
  exhibiting suitable expressions for the intermediate variables, but these can
- often be obtained automatically (see @('[books]/kestrel/zcash/gadgets/a-3-3-1-proof.lisp')
- for an example).
+ often be obtained automatically (see community book
+ @('kestrel/zcash/gadgets/a-3-3-1-proof.lisp') for an example).
 
  We always assume that all values are field elements.  If necessary, additional
  assumptions on the input variables (e.g., claims that some of them are single

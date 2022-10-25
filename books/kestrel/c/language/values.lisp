@@ -93,11 +93,19 @@
        That all the values have the element type
        can and will be enforced in separate predicates.")
      (xdoc::p
-      "Structures are modeled as consisting of a tag (identifier)
-       and a non-empty list of member values.
+      "Structures are modeled as consisting of a tag (identifier),
+       a non-empty list of member values,
+       and a flag saying whether the structure has a flexible array member
+       [C:6.7.2.1/18].
        The tag is the one that identifies the structure type;
        we only model structures with non-anonymous types.
-       [C:6.2.5/20] requires at least one member.
+       [C:6.2.5/20] requires at least one member,
+       which we capture with an invariant.
+       If the flexible array member flag is set,
+       there must be at least two members
+       (i.e. one besides the flexible array member),
+       and the last member must be an array;
+       we do not capture these requirements here, but we may in the future.
        The member values must have distinct names;
        we do not capture this requirement here, but we may in the future.")
      (xdoc::p
@@ -127,7 +135,8 @@
               (members member-value-list
                        :reqfix (if (consp members)
                                    members
-                                 (list (member-value-fix :irrelevant)))))
+                                 (list (member-value-fix :irrelevant))))
+              (flexiblep bool))
      :require (consp members))
     :pred valuep
     :measure (two-nats-measure (acl2-count x) 0))
@@ -461,7 +470,7 @@
               :array (make-type-array :of val.elemtype
                                       :size (len val.elements))
               :struct (type-struct val.tag))
-  :guard-hints (("Goal" :in-theory (enable acl2::pos-optionp)))
+  :guard-hints (("Goal" :in-theory (enable pos-optionp)))
   :hooks (:fix)
   :prepwork ((local (include-book "std/lists/len" :dir :system)))
   ///

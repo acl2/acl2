@@ -67,13 +67,13 @@
      t))
 
  (defund term-skeletons-match-dagp (terms dargs dag-array)
-   (declare (xargs :guard (and (and (pseudo-term-listp terms)
-                                    (all-dargp dargs)
-                                    (true-listp dargs)
-                                    (true-listp terms)
-                                    (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep dargs)))
-                                    ;; (same-lengthp terms dargs) ;; should be true, but we don't want the caller to have to ensure this
-                                    ))))
+   (declare (xargs :guard (and (pseudo-term-listp terms)
+                               (all-dargp dargs)
+                               (true-listp dargs)
+                               (true-listp terms)
+                               (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep dargs)))
+                               ;; (same-lengthp terms dargs) ;; should be true, but we don't want the caller to have to ensure this
+                               )))
    (if (endp terms)
        ;;everything matched:
        t

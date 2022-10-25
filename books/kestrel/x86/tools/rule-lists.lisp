@@ -155,7 +155,7 @@
     <-of-read-and-non-positive
     read-of-xw-irrel
     read-of-set-flag
-    read-when-program-at
+    read-in-terms-of-nth-and-pos-eric ; read-when-program-at
     read-of-logext-48
     read-when-equal-of-read
     read-when-equal-of-read-alt
@@ -597,6 +597,7 @@
           (decoding-and-dispatch-rules)
           (x86-type-rules)
           (x86-bv-rules)
+          (acl2::array-reduction-rules)
           (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
           '(ACL2::BOOLOR-OF-NON-NIL)
@@ -991,8 +992,8 @@
             x86isa::part-install-width-low-becomes-bvcat-32
             x86isa::rflags-is-n32p-unforced
              ;targets unsigned-byte-p-of-rflags
-;                    acl2::bvcat-trim-arg2-dag-all
- ;                   acl2::bvcat-trim-arg1-dag-all
+;                    acl2::bvcat-trim-arg4-axe-all
+ ;                   acl2::bvcat-trim-arg2-axe-all
 
             x86isa::64-bit-modep-of-xw
             x86isa::64-bit-modep-of-mv-nth-1-of-wb
@@ -1004,6 +1005,7 @@
             x86isa::select-address-size$inline
             x86isa::mv-nth-of-if
             x86isa::canonical-address-p-of-if
+            read-in-terms-of-nth-and-pos-eric-2-bytes
             read-in-terms-of-nth-and-pos-eric-4-bytes
             read-in-terms-of-nth-and-pos-eric-8-bytes
 

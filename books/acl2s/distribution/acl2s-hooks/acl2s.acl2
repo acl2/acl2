@@ -1,0 +1,5 @@
+; cert-flags: ? t :ttags :all
+(ld "acl2s-pkg.lsp")
+
+
+;;(ACL2::CERTIFY-BOOK "acl2s" ACL2::? T :TTAGS ((:ACL2S-SUPER-HISTORY) (:REDEF+) (:ACL2S-PROTECTION) (:ACL2S-INTERACTION) (:ACL2S-MARKUP) (DEFCODE)))

@@ -19,7 +19,7 @@ ACL2 !>>(INCLUDE-BOOK "projects/apply/loop"
 Summary
 Form:  ( INCLUDE-BOOK "projects/apply/loop" ...)
 Rules: NIL
- "[books]/projects/apply/loop.lisp"
+ (:SYSTEM . "projects/apply/loop.lisp")
 ACL2 !>>(DEFCONST
              *TESTS*
              '((TRACE$ HELLO)
@@ -2746,7 +2746,8 @@ attempt has failed.
 
 Summary
 Form:  ( THM ...)
-Rules: ((:EXECUTABLE-COUNTERPART FORCE)
+Rules: ((:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART FORCE)
         (:EXECUTABLE-COUNTERPART HELLO)
         (:EXECUTABLE-COUNTERPART RETURN-LAST)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
@@ -3472,7 +3473,8 @@ attempt has failed.
 
 Summary
 Form:  ( THM ...)
-Rules: ((:EXECUTABLE-COUNTERPART FORCE)
+Rules: ((:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART FORCE)
         (:EXECUTABLE-COUNTERPART HELLO)
         (:EXECUTABLE-COUNTERPART RETURN-LAST)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)

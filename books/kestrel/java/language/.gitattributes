@@ -1,2 +1,2 @@
-lexical-grammar.txt binary
-syntactic-grammar.txt binary
+lexical-grammar.abnf text eol=crlf
+syntactic-grammar.abnf text eol=crlf
