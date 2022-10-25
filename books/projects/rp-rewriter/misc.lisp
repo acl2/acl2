@@ -159,7 +159,8 @@
                                            :disabled-for-ACL2
                                            :from-add-rp-rule
                                            :beta-reduce
-                                           :rw-direction)))
+                                           :rw-direction
+                                           :hints)))
          (from-add-rp-rule (cdr (hons-assoc-equal :from-add-rp-rule
                                                   pulled-args)))
          (disabled (cdr (hons-assoc-equal :disabled
@@ -171,9 +172,11 @@
                                 (cdr (hons-assoc-equal :disabled-for-acl2
                                                        pulled-args))))
          (rw-direction (cdr (hons-assoc-equal :rw-direction pulled-args)))
+         (hints (cdr (hons-assoc-equal :hints pulled-args)))
          (beta-reduce (if (hons-assoc-equal :beta-reduce pulled-args)
                           (cdr (hons-assoc-equal :beta-reduce pulled-args))
                         t))
+         
          
          ((mv hyp lhs rhs iff)
           (case-match rule
@@ -245,15 +248,21 @@
                                 ,lhs-body
                                 ,rhs-body))
                       ,@(if (or (equal rw-direction :outside-in)
-                                (equal rw-direction :both))
+                                (equal rw-direction :both)
+                                (and from-add-rp-rule (not hints)))
                             nil
                           openers))
-                 ,@args))
+                 ,@args
+                 ,@(if (and from-add-rp-rule (not hints))
+                       `(:hints (("Goal"
+                                  :in-theory '(,rule-name ,@(strip-cars fnc-names)))))
+                     `(:hints ,hints))))
 
              ;; if outside-in is selected, then opener lemmas should be separate
              
              ,@(and (or (equal rw-direction :outside-in)
-                        (equal rw-direction :both))
+                        (equal rw-direction :both)
+                        (and from-add-rp-rule (not hints)))
                     `((with-output
                         :stack :pop
                         :on (acl2::summary acl2::event)
@@ -271,10 +280,17 @@
                    nil
                  `((,(if disabled-for-acl2 'defthmd 'defthm)
                     ,rule-name
-                     ,rule
-                     :hints (("Goal"
-                              :use ((:instance ,rule-name-for-rp))
-                              :in-theory '(,rule-name-for-rp))))))
+                    ,untranslated-rule
+                    :hints (("Goal"
+                             :use ((:instance ,rule-name-for-rp)
+                                   ,@(and (or (equal rw-direction :outside-in)
+                                              (equal rw-direction :both))
+                                          `((:instance ,rule-name-for-rp-openers))))
+                             :in-theory '((:definition iff) 
+                                          ,rule-name-for-rp
+                                          ,@(and (or (equal rw-direction :outside-in)
+                                                     (equal rw-direction :both))
+                                                 `(,rule-name-for-rp-openers))))))))
 
              (add-rp-rule ,rule-name
                           :beta-reduce nil
@@ -282,6 +298,8 @@
                           :disabled ,disabled-for-rp)
              (table corresponding-rp-rule ',rule-name ',rule-name-for-rp)
              (table corresponding-rp-rule-reverse ',rule-name-for-rp ',rule-name)
+
+             
              #|(acl2::extend-pe-table ,rule-name-for-rp
                                     (def-rp-rule ,rule-name-for-rp
                                       ,body
@@ -293,8 +311,9 @@
              :summary-off (:other-than acl2::time acl2::rules)
              (,(if disabled-for-acl2 'defthmd 'defthm)
               ,rule-name
-               ,untranslated-rule
-               ,@args))
+              ,untranslated-rule
+              ,@args
+              :hints ,hints))
            (add-rp-rule ,rule-name
                         :beta-reduce nil
                         :rw-direction ,rw-direction
