@@ -33,7 +33,7 @@
    (xdoc::p
     "We use @(tsee magic-ev-fncall) to call @('termination-theorem'),
      and check that the result is either a term
-     or a pair @('(:failed . msg')') where @('msg') is an error message.
+     or a pair @('(:failed . msg)') where @('msg') is an error message.
      We check the returned value, so that we can have a return type theorem.
      Hard errors happening in @('termination-theorem') are not suppressed,
      i.e. cause @('termination-theorem$') to stop with those hard errors.
@@ -41,7 +41,7 @@
      or if the result is not a symbol,
      we also stop with hard errors.")
    (xdoc::p
-    "Compared to @('termination-theorem),
+    "Compared to @('termination-theorem'),
      this utility requires a @(see state) argument.
      It may also be slightly less efficient
      due the @(tsee magic-ev-fncall) overhead.
