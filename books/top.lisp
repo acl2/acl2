@@ -376,6 +376,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "projects/doc" :dir :system)
 
 ;(include-book "kestrel/top" :dir :system)
+(include-book "kestrel/alists-light/top" :dir :system)
 (include-book "kestrel/top-doc" :dir :system) ; for now
 
 (include-book "centaur/ipasir/ipasir-tools" :dir :system)
