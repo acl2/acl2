@@ -67,6 +67,14 @@
 
 ; move to a more general library:
 
+(defruled true-listp-when-pseudo-event-form-listp
+  (implies (pseudo-event-form-listp x)
+           (true-listp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; move to a more general library:
+
 (defrule pseudo-term-list-count-of-pseudo-term-call->args
   (implies (pseudo-term-case term :call)
            (< (pseudo-term-list-count (pseudo-term-call->args term))
@@ -4479,7 +4487,11 @@
                        local-events
                        exported-events
                        (acons fn info prec-fns)
-                       names-to-avoid))))
+                       names-to-avoid)))
+  ///
+
+  (more-returns
+   (val true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5783,7 +5795,11 @@
     (acl2::value (list local-events
                        exported-events
                        (acons fn info prec-fns)
-                       names-to-avoid))))
+                       names-to-avoid)))
+  ///
+
+  (more-returns
+   (val true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6935,16 +6951,18 @@
                                  (ctx ctxp)
                                  state)
   :returns (mv erp
-               (val "A @('(tuple (exts ext-declon-listp)
-                                 (local-events pseudo-event-form-listp)
-                                 (exported-events pseudo-event-form-listp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
+               (val (tuple (exts ext-declon-listp)
+                           (local-events pseudo-event-form-listp)
+                           (exported-events pseudo-event-form-listp)
+                           (updated-names-to-avoid symbol-listp)
+                           val)
+                    :hyp (and (atc-symbol-fninfo-alistp prec-fns)
+                              (symbol-listp names-to-avoid)))
                state)
-  :mode :program
   :short "Generate a list of C external declarations from the targets,
           including generating C loops from recursive ACL2 functions."
-  (b* (((when (endp targets)) (acl2::value (list nil nil nil names-to-avoid)))
+  (b* (((acl2::fun (irr)) (list nil nil nil nil))
+       ((when (endp targets)) (acl2::value (list nil nil nil names-to-avoid)))
        (target (car targets))
        ((er (list exts
                   prec-fns
@@ -6952,9 +6970,16 @@
                   prec-objs
                   local-events
                   exported-events
-                  names-to-avoid))
+                  names-to-avoid)
+            :iferr (irr))
         (b* (((when (function-symbolp target (w state)))
               (b* ((fn target)
+                   ((when (eq fn 'quote))
+                    (raise "Internal error: QUOTE target function.")
+                    (acl2::value (list nil nil nil nil nil nil nil)))
+                   ((unless (logicp fn (w state)))
+                    (raise "Internal error: ~x0 not in logic mode." fn)
+                    (acl2::value (list nil nil nil nil nil nil nil)))
                    ((er (list exts
                               prec-fns
                               local-events
@@ -7047,7 +7072,44 @@
     (acl2::value (list (append exts more-exts)
                        (append local-events more-local-events)
                        (append exported-events more-exported-events)
-                       names-to-avoid))))
+                       names-to-avoid)))
+
+  :prepwork
+  ((local
+    (in-theory
+     ;; to speed up proofs, based on accumulated persistence:
+     (disable
+      acl2::consp-of-car-when-alistp
+      acl2::subsetp-when-atom-right
+      acl2::subsetp-car-member
+      acl2::alistp-of-cdr
+      default-symbol-name
+      acl2::symbolp-when-member-equal-of-symbol-listp
+      omap::alistp-when-mapp
+      pseudo-event-form-listp
+      acl2::alistp-when-hons-duplicity-alist-p
+      acl2::pseudo-event-formp-when-member-equal-of-pseudo-event-form-listp
+      acl2::subsetp-when-atom-left
+      acl2::alistp-when-atom
+      acl2::hons-duplicity-alist-p-when-not-consp
+      member-equal
+      acl2::subsetp-implies-subsetp-cdr
+      acl2::pseudo-event-form-listp-of-cdr-when-pseudo-event-form-listp
+      omap::mfix-implies-mapp
+      mapp-when-scopep
+      omap::mapp-when-not-empty
+      default-cdr))))
+
+  :verify-guards nil ; done below
+
+  ///
+
+  (more-returns
+   (val true-listp :rule-classes :type-prescription))
+
+  (verify-guards atc-gen-ext-declon-list
+    :hints
+    (("Goal" :in-theory (enable true-listp-when-pseudo-event-form-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
