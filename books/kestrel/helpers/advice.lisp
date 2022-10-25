@@ -1784,6 +1784,59 @@
       recs2
     (merge-recs-into-recs (rest recs1) (merge-rec-into-recs (first recs1) recs2))))
 
+;; Returns (mv erp rec state).
+(defun get-recs-from-model (model num-recs checkpoint-clauses server-url debug state)
+  (declare (xargs :guard (and (rec-modelp model)
+                              (natp num-recs)
+                              (pseudo-term-list-listp checkpoint-clauses)
+                              (stringp server-url)
+                              (booleanp debug))
+                  :mode :program ; because of make-numbered-checkpoint-entries
+                  :stobjs state))
+  (b* ((model-string (if (stringp model)
+                         model
+                       ;; must be a keyword indicating a known model:
+                       (let ((res (assoc-eq model *known-models-and-strings*)))
+                         (if res
+                             (cdr res)
+                           (er hard? 'advice-fn "Unknown :model: ~x0." model)))))
+       ;; Send query to server:
+       ((mv erp semi-parsed-recommendations state)
+        (if (zp num-recs)
+            (prog2$ (cw "Not asking server for recommendations since num-recs=0.")
+                    (mv nil
+                        nil ; empty list of recommendations
+                        state))
+          (b* ((- (cw "Asking server for ~x0 recommendations on ~x1 ~s2...~%"
+                      num-recs
+                      (len checkpoint-clauses)
+                      (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint")))
+               (post-data (acons "use-group" model-string
+                                 (acons "n" (nat-to-string num-recs)
+                                        (make-numbered-checkpoint-entries 0 checkpoint-clauses))))
+               ((mv erp parsed-response state)
+                (post-and-parse-response-as-json server-url post-data debug state))
+               ((when erp)
+                (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
+                (mv erp nil state))
+               ((when (not (parsed-json-arrayp parsed-response)))
+                (er hard? 'advice-fn "Error: Response from server is not a JSON array: ~x0." parsed-response)
+                (mv :bad-server-response nil state)))
+            (mv nil (parsed-json-array->values parsed-response) state))))
+       ((when erp) (mv erp nil state))
+       (- (and (not (consp semi-parsed-recommendations))
+               (cw "~% WARNING: No recommendations returned from server.~%")))
+       ;; Parse the individual strings in the recs:
+       ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
+       ((when erp)
+        (er hard? 'advice-fn "Error parsing recommendations.")
+        (mv erp nil state))
+       (- (and debug (cw "Parsed ML recommendations: ~X01~%" ml-recommendations nil))))
+    (mv nil ; no error
+        ml-recommendations
+        state)))
+
+
 ;; Returns (mv erp nil state).
 ;; TODO: Support getting checkpoints from a defun, but then we'd have no body
 ;; to fall back on when (equal untranslated-checkpoints '(<goal>)) (see
@@ -1815,13 +1868,6 @@
        ;; Elaborate options:
        (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
-       (model-string (if (stringp model)
-                         model
-                       ;; must be a keyword indicating a known model:
-                       (let ((res (assoc-eq model *known-models-and-strings*)))
-                         (if res
-                             (cdr res)
-                           (er hard? 'advice-fn "Unknown :model: ~x0." model)))))
        ;; Get server info:
        ((mv erp server-url state) (if server-url (mv nil server-url state) (getenv$ "ACL2_ADVICE_SERVER" state)))
        ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
@@ -1859,39 +1905,10 @@
                                                               wrld)
                                               wrld)
                              raw-checkpoint-clauses))
-       (- (and verbose (cw "Checkpoints in query: ~X01.)~%" checkpoint-clauses nil)))
-       ;; Send query to server:
-       ((mv erp semi-parsed-recommendations state)
-        (if (zp n)
-            (prog2$ (cw "Not asking server for recommendations since n=0.")
-                    (mv nil
-                        nil ; empty list of recommendations
-                        state))
-          (b* ((- (cw "Asking server for ~x0 recommendations on ~x1 ~s2...~%"
-                      n
-                      (len checkpoint-clauses)
-                      (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint")))
-               (post-data (acons "use-group" model-string
-                                 (acons "n" (nat-to-string n)
-                                        (make-numbered-checkpoint-entries 0 checkpoint-clauses))))
-               ((mv erp parsed-response state)
-                (post-and-parse-response-as-json server-url post-data debug state))
-               ((when erp)
-                (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
-                (mv erp nil state))
-               ((when (not (parsed-json-arrayp parsed-response)))
-                (er hard? 'advice-fn "Error: Response from server is not a JSON array: ~x0." parsed-response)
-                (mv :bad-server-response nil state)))
-            (mv nil (parsed-json-array->values parsed-response) state))))
+       (- (and verbose (cw "Proof checkpoints to use: ~X01.)~%" checkpoint-clauses nil)))
+       ((mv erp ml-recommendations state)
+        (get-recs-from-model model n checkpoint-clauses server-url debug state))
        ((when erp) (mv erp nil state))
-       (- (and (not (consp semi-parsed-recommendations))
-               (cw "~% WARNING: No recommendations returned from server.~%")))
-       ;; Parse the individual strings in the recs:
-       ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
-       ((when erp)
-        (er hard? 'advice-fn "Error parsing recommendations.")
-        (mv erp nil state))
-       (- (and debug (cw "Parsed ML recommendations: ~X01~%" ml-recommendations nil)))
        ;; Make some other recs:
        (enable-recommendations (make-enable-recs theorem-body wrld))
        ((mv erp recs-from-history state) (make-recs-from-history state))
