@@ -5794,10 +5794,10 @@
                                       (meminfo defstruct-member-infop)
                                       (names-to-avoid symbol-listp)
                                       (wrld plist-worldp))
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (member-read-thms "A @(tsee symbol-listp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (local-events pseudo-event-form-listp)
+               (member-read-thms symbol-listp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorems to rewrite
           the execution of certain pure expressions to structure reads,
           for a member of a structure type."
@@ -5948,10 +5948,10 @@
                                              (wrld plist-worldp))
      :guard (and (type-nonchar-integerp elemtype)
                  (type-nonchar-integer-listp indextypes))
-     :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-                  (member-read-thms "A @(tsee symbol-listp).")
-                  (updated-names-to-avoid "A @(tsee symbol-listp)."))
-     :mode :program
+     :returns (mv (local-events pseudo-event-form-listp)
+                  (member-read-thms symbol-listp)
+                  (updated-names-to-avoid symbol-listp
+                                          :hyp (symbol-listp names-to-avoid)))
      :parents nil
      (b* (((when (endp indextypes)) (mv nil nil nil))
           (indextype (car indextypes))
@@ -6123,10 +6123,10 @@
                                           (meminfos defstruct-member-info-listp)
                                           (names-to-avoid symbol-listp)
                                           (wrld plist-worldp))
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (member-read-thms "A @(tsee symbol-listp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (local-events pseudo-event-form-listp)
+               (member-read-thms symbol-listp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorems to rewrite
           the execution of certain pure expressions to structure reads,
           for all the members of a structure type."
@@ -6165,10 +6165,10 @@
                                        (meminfo defstruct-member-infop)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (member-write-thms "A @(tsee symbol-listp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (local-events pseudo-event-form-listp)
+               (member-write-thms symbol-listp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorems to rewrite
           the execution of certain assignment expressions to structure writes,
           for a member of a structure type."
@@ -6452,10 +6452,10 @@
                                               (wrld plist-worldp))
      :guard (and (type-nonchar-integerp elemtype)
                  (type-nonchar-integer-listp indextypes))
-     :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-                  (member-write-thms "A @(tsee symbol-listp).")
-                  (updated-names-to-avoid "A @(tsee symbol-listp)."))
-     :mode :program
+     :returns (mv (local-events pseudo-event-form-listp)
+                  (member-write-thms symbol-listp)
+                  (updated-names-to-avoid symbol-listp
+                                          :hyp (symbol-listp names-to-avoid)))
      :parents nil
      (b* (((when (endp indextypes)) (mv nil nil nil))
           (indextype (car indextypes))
@@ -6788,10 +6788,10 @@
    (meminfos defstruct-member-info-listp)
    (names-to-avoid symbol-listp)
    (wrld plist-worldp))
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (member-write-thms "A @(tsee symbol-listp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (local-events pseudo-event-form-listp)
+               (member-write-thms symbol-listp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorems to rewrite @(tsee exec-expr-asg)
           with a @(':memberp') left expression
           to a structure writer,
@@ -6847,11 +6847,14 @@
                             (proofs booleanp)
                             (names-to-avoid symbol-listp)
                             (wrld plist-worldp))
-  :returns (mv (declon "A @(tsee tag-declonp).")
-               (local-events "A @(tsee pseudo-event-form-listp).")
-               (updated-prec-tags "A @(tsee atc-string-taginfo-alistp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (declon tag-declonp)
+               (local-events pseudo-event-form-listp)
+               (updated-prec-tags
+                atc-string-taginfo-alistp
+                :hyp (and (stringp tag)
+                          (atc-string-taginfo-alistp prec-tags)))
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate a C structure type declaration,
           with accompanying theorems."
   (b* ((meminfos (defstruct-info->members info))
