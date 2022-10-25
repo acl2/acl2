@@ -35,6 +35,7 @@
 (include-book "kestrel/std/system/add-suffix-to-fn-lst" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "kestrel/std/system/function-symbolp" :dir :system)
 (include-book "kestrel/std/system/genvar-dollar" :dir :system)
 (include-book "kestrel/std/system/measure-plus" :dir :system)
 (include-book "kestrel/std/system/one-way-unify-dollar" :dir :system)
@@ -4885,7 +4886,11 @@
     (acl2::value
      (list termination-of-fn-thm-event
            termination-of-fn-thm
-           names-to-avoid))))
+           names-to-avoid)))
+  ///
+
+  (more-returns
+   (val true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5566,15 +5571,19 @@
                       (names-to-avoid symbol-listp)
                       (ctx ctxp)
                       state)
-  :guard (irecursivep+ fn (w state))
+  :guard (and (function-symbolp fn (w state))
+              (logicp fn (w state))
+              (irecursivep+ fn (w state))
+              (not (eq fn 'quote)))
   :returns (mv erp
-               (val "A @('(tuple (local-events pseudo-event-form-listp)
-                                 (exported-events pseudo-event-form-listp)
-                                 (updated-prec-fns atc-symbol-fninfo-alistp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
+               (val (tuple (local-events pseudo-event-form-listp)
+                           (exported-events pseudo-event-form-listp)
+                           (updated-prec-fns atc-symbol-fninfo-alistp)
+                           (updated-names-to-avoid symbol-listp)
+                           val)
+                    :hyp (and (atc-symbol-fninfo-alistp prec-fns)
+                              (symbol-listp names-to-avoid)))
                state)
-  :mode :program
   :short "Generate a C loop from a recursive ACL2 function,
           with accompanying theorems."
   :long
@@ -5589,7 +5598,8 @@
    (xdoc::p
     "No C external declaration is generated for this function,
      because this function just represents a loop used in oher functions."))
-  (b* ((wrld (w state))
+  (b* (((acl2::fun (irr)) (list nil nil nil nil))
+       (wrld (w state))
        ((mv measure-of-fn-event
             measure-of-fn
             measure-formals
@@ -5597,9 +5607,13 @@
         (if proofs
             (atc-gen-loop-measure-fn fn names-to-avoid state)
           (mv '(_) nil nil names-to-avoid)))
-       ((er typed-formals) (atc-typed-formals fn prec-tags prec-objs ctx state))
+       ((when (eq measure-of-fn 'quote))
+        (raise "Internal error: MEASURE-OF-FN is QUOTE.")
+        (acl2::value (irr)))
+       ((er typed-formals :iferr (irr))
+        (atc-typed-formals fn prec-tags prec-objs ctx state))
        (body (ubody+ fn wrld))
-       ((er (lstmt-gout loop))
+       ((er (lstmt-gout loop) :iferr (irr))
         (atc-gen-loop-stmt body
                            (make-lstmt-gin :inscope (list typed-formals)
                                            :fn fn
@@ -5614,12 +5628,22 @@
                            ctx
                            state))
        (names-to-avoid loop.names-to-avoid)
+       ((unless (and (plist-worldp (w state))
+                     (function-symbolp fn (w state))
+                     (logicp fn (w state))
+                     (irecursivep+ fn (w state))))
+        (raise "Internal error with W of STATE.")
+        (acl2::value (irr)))
+       ((unless (stmt-case loop.stmt :while))
+        (raise "Internal error: wrong loop satement kind ~x0." loop.stmt)
+        (acl2::value (irr)))
        ((er (list local-events
                   exported-events
                   natp-of-measure-of-fn-thm
                   fn-result-thm
                   fn-correct-thm
-                  names-to-avoid))
+                  names-to-avoid)
+            :iferr (irr))
         (if proofs
             (b* (((mv fn-result-events
                       fn-result-thm
@@ -5655,7 +5679,8 @@
                                             names-to-avoid
                                             wrld))
                  ((er (list termination-of-fn-thm-event
-                            termination-of-fn-thm))
+                            termination-of-fn-thm)
+                      :iferr (list nil nil nil nil nil nil))
                   (atc-gen-loop-termination-thm fn
                                                 measure-of-fn
                                                 measure-formals
@@ -5663,6 +5688,10 @@
                                                 names-to-avoid
                                                 ctx
                                                 state))
+                 ((unless (and (plist-worldp (w state))
+                               (irecursivep+ fn (w state))))
+                  (raise "Internal error with W of STATE.")
+                  (acl2::value (irr)))
                  ((mv test-local-events
                       correct-test-thm
                       names-to-avoid)
