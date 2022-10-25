@@ -15,6 +15,7 @@
 (include-book "add-suffix-to-fn-or-const")
 (include-book "add-suffix-to-fn-or-const-lst")
 (include-book "arglistp")
+(include-book "constant-queries")
 (include-book "enhanced-utilities")
 (include-book "event-landmark-names")
 (include-book "event-name-queries")
