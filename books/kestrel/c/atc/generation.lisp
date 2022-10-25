@@ -4530,6 +4530,9 @@
        (name (packn-pos (list 'measure-of- fn) fn))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name 'function names-to-avoid wrld))
+       ((when (eq name 'quote))
+        (raise "Internal error: name is QUOTE.")
+        (mv '(_) nil nil nil))
        (measure-term (measure+ fn wrld))
        (measure-vars (all-vars measure-term))
        ((mv & event)
@@ -4539,7 +4542,11 @@
          :body (untranslate$ measure-term nil state)
          :verify-guards nil
          :enable nil)))
-    (mv event name measure-vars names-to-avoid)))
+    (mv event name measure-vars names-to-avoid))
+  ///
+
+  (defret atc-gen-loop-measure-fn-name-not-quote
+    (not (equal name 'quote))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5611,9 +5618,6 @@
         (if proofs
             (atc-gen-loop-measure-fn fn names-to-avoid state)
           (mv '(_) nil nil names-to-avoid)))
-       ((when (eq measure-of-fn 'quote))
-        (raise "Internal error: MEASURE-OF-FN is QUOTE.")
-        (acl2::value (irr)))
        ((er typed-formals :iferr (irr))
         (atc-typed-formals fn prec-tags prec-objs ctx state))
        (body (ubody+ fn wrld))
