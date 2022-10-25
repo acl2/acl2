@@ -5277,12 +5277,11 @@
                                   (names-to-avoid symbol-listp)
                                   state)
   :guard (irecursivep+ fn (w state))
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (exported-events "A @(tsee pseudo-event-form-listp).")
-               (natp-of-measure-of-fn-thm "A @(tsee symbolp).")
-               (fn-correct-thm "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (local-events pseudo-event-form-listp)
+               (exported-events pseudo-event-form-listp)
+               (fn-correct-thm symbolp :hyp (symbol-symbol-alistp fn-thms))
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate the correctness theorem for a C loop."
   :long
   (xdoc::topstring
@@ -5549,7 +5548,6 @@
        (exported-events (list correct-thm-exported-event)))
     (mv local-events
         exported-events
-        natp-of-measure-of-fn-thm
         correct-thm
         names-to-avoid)))
 
@@ -5696,7 +5694,6 @@
                                                  state))
                  ((mv correct-local-events
                       correct-exported-events
-                      natp-of-measure-of-fn-thm
                       fn-correct-thm
                       names-to-avoid)
                   (atc-gen-loop-correct-thm fn
