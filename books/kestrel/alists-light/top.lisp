@@ -43,4 +43,5 @@
 (include-book "symbol-alistp")
 (include-book "maybe-replace-var")
 (include-book "string-string-alistp")
+(include-book "symbol-symbol-alistp-def")
 (include-book "symbol-symbol-alistp")
