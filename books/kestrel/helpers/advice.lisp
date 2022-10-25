@@ -87,6 +87,8 @@
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "kestrel/utilities/margins" :dir :system))
 
+(local (in-theory (disable member-equal)))
+
 ;; ;; Returns all disabled runes associate with NAME.
 ;; ;; Like disabledp but hygienic, also doesn't end in "p" since not a predicate.
 ;; (defun disabled-runes (name ens wrld)
@@ -280,9 +282,15 @@
   :hints (("Goal" :in-theory (enable make-rec recommendationp))))
 
 (defund update-pre-commands (pre-commands rec)
-  (declare (xargs :guard (recommendationp rec)))
-  (append (take 5 rec)
-          (list pre-commands)))
+  (declare (xargs :guard (and (recommendationp rec)
+                              (true-listp pre-commands))
+                  :guard-hints (("Goal" :in-theory (enable recommendationp)))))
+  (make-rec (nth 0 rec)
+            (nth 1 rec)
+            (nth 2 rec)
+            (nth 3 rec)
+            (nth 4 rec)
+            pre-commands))
 
 (defund update-rec-type (new-type rec)
   (declare (xargs :guard (recommendationp rec)))
@@ -1028,17 +1036,18 @@
            ((when (not (equal book-map-keys (list item))))
             (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil item)
             (mv :bad-book-map nil state))
-           (books-to-try (lookup-eq item book-map))
-           ((when (eq :builtin books-to-try))
+           (include-book-forms (lookup-eq item book-map))
+           ((when (eq :builtin include-book-forms))
             (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" item)
             (mv :bad-book-info nil state))
-           ;; todo: check for empty books-to-try, or is that already checked?
-           (num-books-to-try-orig (len books-to-try))
-           ;; (- (and (< 1 num-books-to-try)
-           ;;         (cw "NOTE: There are ~x0 books that might contain ~x1: ~X23~%" num-books-to-try item books-to-try nil)))
-           (books-to-try (if (< 3 num-books-to-try-orig)
-                             (take 3 books-to-try)
-                           books-to-try))
+           ;; TODO: Filter out include-books that are known to clash with this tool?
+           ;; todo: check for empty include-book-forms, or is that already checked?
+           (num-include-book-forms-orig (len include-book-forms))
+           ;; (- (and (< 1 num-include-book-forms)
+           ;;         (cw "NOTE: There are ~x0 books that might contain ~x1: ~X23~%" num-include-book-forms item include-book-forms nil)))
+           (include-book-forms (if (< 3 num-include-book-forms-orig)
+                             (take 3 include-book-forms)
+                           include-book-forms))
            ;; todo: ensure this is nice:
            (new-hints ;; todo: ensure this is nice:
             ;; todo: also disable the item, if appropriate
@@ -1047,13 +1056,13 @@
            ;; TODO: For each of these, if it works, maybe just try the include-book without the enable:
            ;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
            ((mv erp successful-include-book-form-or-nil state)
-            (try-prove$-with-include-books 'try-add-use-hint theorem-body books-to-try item :use new-hints theorem-otf-flg *step-limit* state))
+            (try-prove$-with-include-books 'try-add-use-hint theorem-body include-book-forms item :use new-hints theorem-otf-flg *step-limit* state))
            ((when erp) (mv erp nil state))
            (provedp (if successful-include-book-form-or-nil t nil))
            ((when (not provedp))
-            (if (< 3 num-books-to-try-orig)
+            (if (< 3 num-include-book-forms-orig)
                 ;; todo: try more if we didn't find it?:
-                (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len books-to-try) num-books-to-try-orig item)
+                (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len include-book-forms) num-include-book-forms-orig item)
               (cw "fail (using ~x0 didn't help)~%" item))
             (mv nil nil state))
            ;; We proved it with an include-book and a :use hint.  Now
