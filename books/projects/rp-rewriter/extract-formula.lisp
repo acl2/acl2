@@ -285,6 +285,8 @@
           (cons rule rest)
         rest))))
 
+
+
 (defun custom-rewrite-with-meta-extract (rule-name rule-new-synp warning state)
   (declare (xargs :guard (and (symbolp rule-name))
                   :stobjs (state)
@@ -299,6 +301,8 @@
                     "Rule ~p0 does not seem to be pseudo-termp ~%"
                     (list (cons #\0 rule-name))))
        (formula (beta-search-reduce formula *big-number*))
+
+       (formula (light-remove-return-last formula))
        
        (formulas (make-formula-better formula *big-number*))
        
