@@ -29,6 +29,55 @@
 (include-book "oslib/file-types" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) :oslib))
 (include-book "kestrel/std/util/tuple" :dir :system)
 
+(local (include-book "std/alists/top" :dir :system))
+
+(local (in-theory (disable state-p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (defthm partition-rest-and-keyword-args1-results
+   (implies (true-listp x)
+            (mv-let (rest keypart)
+                (acl2::partition-rest-and-keyword-args1 x)
+              (and (true-listp rest)
+                   (true-listp keypart))))))
+
+(local
+ (defthm partition-rest-and-keyword-arg2-results
+   (implies (symbol-alistp alist)
+            (let ((alist1
+                   (acl2::partition-rest-and-keyword-args2 keypart keys alist)))
+              (implies (not (equal alist1 t))
+                       (symbol-alistp alist1))))))
+
+(local
+ (defthm true-listp-of-partition-rest-and-keyword.rest
+   (implies (true-listp x)
+            (mv-let (erp rest keypart)
+                (partition-rest-and-keyword-args x keys)
+              (declare (ignore keypart))
+              (implies (not erp)
+                       (true-listp rest))))
+   :rule-classes (:rewrite :type-prescription)))
+
+(local
+ (defthm symbol-alistp-of-partition-rest-and-keyword.keypart
+   (implies (true-listp x)
+            (mv-let (erp rest keypart)
+                (partition-rest-and-keyword-args x keys)
+              (declare (ignore rest))
+              (implies (not erp)
+                       (symbol-alistp keypart))))))
+
+(local (in-theory (disable partition-rest-and-keyword-args)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel alistp-when-symbol-alistp
+  (implies (symbol-alistp x)
+           (alistp x)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing atc)
@@ -354,7 +403,13 @@
     (b* (((list & & & new-uncalled-fns) val))
       (true-listp new-uncalled-fns))
     :hyp (true-listp uncalled-fns)
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret symbolp-when-atc-process-target
+    (Implies (not erp)
+             (symbolp target)))
+
+  (in-theory (disable symbolp-when-atc-process-target)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -429,7 +484,15 @@
     (b* (((list & & & new-uncalled-fns) val))
       (true-listp new-uncalled-fns))
     :hyp (true-listp uncalled-fns)
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret symbol-listp-when-atc-process-target-list
+    (implies (and (not erp)
+                  (true-listp targets))
+             (symbol-listp targets))
+    :hints (("Goal" :in-theory (enable symbolp-when-atc-process-target))))
+
+  (in-theory (disable symbol-listp-when-atc-process-target-list)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -460,7 +523,17 @@
                   "The recursive target functions ~&0 ~
                    are not called by any other target function."
                   uncalled-fns)))
-    (acl2::value previous-fns)))
+    (acl2::value previous-fns))
+  ///
+
+  (defret symbol-listp-when-atc-process-targets
+    (implies (and (not erp)
+                  (true-listp targets))
+             (symbol-listp targets))
+    :hints
+    (("Goal" :in-theory (enable symbol-listp-when-atc-process-target-list))))
+
+  (in-theory (disable symbol-listp-when-atc-process-targets)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -529,7 +602,21 @@
                    is not a regular file; it has kind ~x1 instead."
                   output-file kind)))
     (acl2::value nil))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string)))
+  ///
+
+  (defret stringp-when-atc-process-output-file
+    (implies (not erp)
+             (stringp output-file))
+    :hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
+
+  (in-theory (disable stringp-when-atc-process-output-file))
+
+  (defret erp-of-atc-process-output-file-when-absent
+    (implies (not output-file?)
+             erp))
+
+  (in-theory (disable erp-of-atc-process-output-file-when-absent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -691,7 +778,12 @@
           ((er fn-thms) (atc-process-const-name-aux
                          (cdr target-fns) prog-const ctx state)))
        (acl2::value (acons fn fn-thm fn-thms)))
-     :verify-guards :after-returns)))
+     :verify-guards :after-returns))
+
+  ///
+
+  (more-returns
+   (val true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -709,56 +801,78 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-process-inputs ((args true-listp) (ctx ctxp) state)
-  :returns (mv erp
-               (val "A @('(tuple (targets symbol-listp)
-                                 (output-file stringp)
-                                 (pretty-printing pprint-options-p)
-                                 (proofs booleanp)
-                                 (prog-const symbolp)
-                                 (wf-thm symbolp)
-                                 (fn-thms symbol-symbol-alistp)
-                                 (print evmac-input-print-p)
-                                 val)').")
-               state)
-  :mode :program
+  :returns
+  (mv erp
+      (val (tuple (targets symbol-listp)
+                  (output-file stringp)
+                  (pretty-printing pprint-options-p)
+                  (proofs booleanp)
+                  (prog-const symbolp)
+                  (wf-thm symbolp)
+                  (fn-thms symbol-symbol-alistp)
+                  (print evmac-input-print-p)
+                  val)
+           :hyp (true-listp args)
+           :hints
+           (("Goal"
+             :in-theory (enable stringp-when-atc-process-output-file
+                                evmac-process-input-print
+                                acl2::ensure-value-is-boolean
+                                erp-of-atc-process-output-file-when-absent)
+             :use
+             ((:instance symbol-listp-when-atc-process-targets
+                         (targets
+                          (mv-nth 1 (partition-rest-and-keyword-args
+                                     args *atc-allowed-options*)))
+                         (ctx ctx)
+                         (state state))))))
+      state)
   :short "Process all the inputs."
-  (b* (((mv erp targets options)
+  (b* (((acl2::fun (irr))
+        (list nil
+              ""
+              (ec-call (pprint-options-fix :irrelevant))
+              nil
+              nil
+              nil
+              nil
+              nil))
+       ((mv erp targets options)
         (partition-rest-and-keyword-args args *atc-allowed-options*))
-       ((when erp) (er-soft+ ctx t nil
+       ((when erp) (er-soft+ ctx t (irr)
                              "The inputs must be the targets ~
                               followed by the options ~&0."
                              *atc-allowed-options*))
-       ((er target-fns) (atc-process-targets targets ctx state))
+       ((er target-fns :iferr (irr)) (atc-process-targets targets ctx state))
        (output-file-option (assoc-eq :output-file options))
        ((mv output-file output-file?)
         (if output-file-option
             (mv (cdr output-file-option) t)
           (mv :irrelevant nil)))
-       ((er &) (atc-process-output-file output-file
-                                        output-file?
-                                        ctx
-                                        state))
+       ((er & :iferr (irr)) (atc-process-output-file output-file
+                                                     output-file?
+                                                     ctx
+                                                     state))
        (pretty-printing-option (assoc-eq :pretty-printing options))
        (pretty-printing (if pretty-printing-option
                             (cdr pretty-printing-option)
                           nil))
-       ((er pretty-printing) (atc-process-pretty-printing pretty-printing
-                                                          ctx
-                                                          state))
+       ((er pretty-printing :iferr (irr))
+        (atc-process-pretty-printing pretty-printing ctx state))
        (proofs-option (assoc-eq :proofs options))
        (proofs (if proofs-option
                    (cdr proofs-option)
                  t))
-       ((er &) (ensure-value-is-boolean$ proofs
-                                         "The :PROOFS input"
-                                         t
-                                         nil))
+       ((er & :iferr (irr)) (ensure-value-is-boolean$ proofs
+                                                      "The :PROOFS input"
+                                                      t
+                                                      nil))
        (const-name-option (assoc-eq :const-name options))
        ((mv const-name const-name?)
         (if const-name-option
             (mv (cdr const-name-option) t)
           (mv :auto nil)))
-       ((er (list prog-const wf-thm fn-thms))
+       ((er (list prog-const wf-thm fn-thms) :iferr (irr))
         (atc-process-const-name const-name
                                 const-name?
                                 target-fns
@@ -769,7 +883,7 @@
        (print (if print-option
                   (cdr print-option)
                 :result))
-       ((er &) (evmac-process-input-print print ctx state)))
+       ((er & :iferr (irr)) (evmac-process-input-print print ctx state)))
     (acl2::value (list targets
                        output-file
                        pretty-printing
@@ -777,4 +891,7 @@
                        prog-const
                        wf-thm
                        fn-thms
-                       print))))
+                       print)))
+  :guard-hints
+  (("Goal" :in-theory (e/d (acl2::ensure-value-is-boolean)
+                           (not))))) ; reduce case splits
