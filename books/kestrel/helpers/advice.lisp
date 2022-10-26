@@ -66,11 +66,13 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
 (include-book "kestrel/utilities/read-string" :dir :system) ; todo: slowish
+(include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
+(include-book "kestrel/strings-light/downcase" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/untranslated-terms/conjuncts-of-uterm" :dir :system)
 (include-book "kestrel/alists-light/string-string-alistp" :dir :system)
@@ -235,12 +237,37 @@
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
 
-;; Indicates one of the machine learning recommendation models
 (defund rec-modelp (x)
   (declare (xargs :guard t))
   (or (stringp x) ; raw string to pass in the HTTP POST data
       (member-eq x *known-models*) ; known model sets
       ))
+
+;; Indicates one of the machine learning recommendation models
+(defund rec-modelsp (models)
+  (declare (xargs :guard t))
+  (if (atom models)
+      (null models)
+    (and (rec-modelp (first models))
+         (rec-modelsp (rest models)))))
+
+(defun model-to-string (model)
+  (declare (xargs :guard (rec-modelp model)))
+  (if (stringp model)
+      model
+    ;; must be a keyword indicating a known model:
+    (let ((res (assoc-eq model *known-models-and-strings*)))
+      (if res
+          (cdr res)
+        (er hard? 'model-to-string "Unknown :model: ~x0." model)))))
+
+(defun model-to-nice-string (model)
+  (declare (xargs :guard (rec-modelp model)
+                  :guard-hints (("Goal" :in-theory (enable rec-modelp member-equal)))))
+  (if (stringp model)
+      model
+    ;; must be a keyword indicating a known model:
+    (string-downcase-gen (symbol-name model))))
 
 ;; The source of a recommendation: Either one of the ML models or the advice tool itself.
 (defund rec-sourcep (x)
@@ -551,6 +578,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund rec-confidence> (rec1 rec2)
+  (declare (xargs :guard (and (recommendationp rec1)
+                              (recommendationp rec2))))
+  (> (nth 3 rec1) (nth 3 rec2)))
+
+(defmergesort merge-recs-by-confidence merge-sort-recs-by-confidence rec-confidence> recommendationp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *option-names* '(:max-wins))
 
 ;; Returns (mv presentp val)
@@ -623,12 +659,12 @@
          (pre-commands (nth 5 rec))
          (english-rec (case type
                         (:add-cases-hint (fms-to-string-one-line ":cases ~x0" (acons #\0 object nil)))
-                        (:add-disable-hint (fms-to-string-one-line "disabling ~x0" (acons #\0 object nil)))
+                        (:add-disable-hint (fms-to-string-one-line "Disable ~x0" (acons #\0 object nil)))
                         (:add-do-not-hint (fms-to-string-one-line ":do-not ~x0" (acons #\0 object nil)))
                         ;; Same handling for both:
-                        ((:add-enable-hint :use-lemma) (fms-to-string-one-line "enabling ~x0" (acons #\0 object nil)))
+                        ((:add-enable-hint :use-lemma) (fms-to-string-one-line "Enable ~x0" (acons #\0 object nil)))
                         (:add-expand-hint (fms-to-string-one-line ":expand ~x0" (acons #\0 object nil)))
-                        (:add-hyp (fms-to-string-one-line "adding the hyp ~x0" (acons #\0 object nil)))
+                        (:add-hyp (fms-to-string-one-line "Add the hyp ~x0" (acons #\0 object nil)))
                         (:add-induct-hint (fms-to-string-one-line ":induct ~x0" (acons #\0 object nil)))
                         (:add-library (fms-to-string-one-line "~x0" (acons #\0 object nil)))
                         (:add-nonlinearp-hint (fms-to-string-one-line ":nonlinearp ~x0" (acons #\0 object nil)))
@@ -640,10 +676,10 @@
              )
         (if (consp (cdr pre-commands))
             ;; More than one pre-command:
-            (cw "~s0, after doing ~&1~%" english-rec pre-commands)
+            (cw "~s0, after doing ~&1" english-rec pre-commands)
           ;; Exactly one pre-command:
-          (cw "~s0, after doing ~x1~%" english-rec (first pre-commands)))
-      (cw "~s0~%" english-rec))))
+          (cw "~s0, after doing ~x1" english-rec (first pre-commands)))
+      (cw "~s0" english-rec))))
 
 (defun show-successful-recommendations-aux (recs)
   (declare (xargs :mode :program))
@@ -652,13 +688,14 @@
       nil
     (let* ((rec (first recs))
            (name (nth 0 rec))
-           (sources (nth 0 rec))
+           ;;(sources (nth 0 rec))
            )
-      (progn$ (cw "~S0" name)
-              (and (< 1 (len sources))
-                   (cw "~x0" sources))
-              (cw ": ")
-              (show-successful-recommendation rec)
+      (progn$ (show-successful-recommendation rec)
+              (cw " (~S0)~%" name)
+              ;; todo: drop the sources:
+              ;; (and (< 1 (len sources))
+              ;;      (cw "~x0" sources))
+              ;;(cw ": ")
               (show-successful-recommendations-aux (rest recs))))))
 
 ;; Returns state.
@@ -847,7 +884,7 @@
          ((when erp)
           (er hard? 'parse-recommendation "Error (~x0) parsing recommended action: ~x1." erp object)
           (mv :parse-error nil state))
-         (name (concatenate 'string "ML" (nat-to-string rec-num)))
+         (name (concatenate 'string (model-to-nice-string source) (nat-to-string rec-num)))
          )
       (mv nil ; no error
           (make-rec name type-keyword parsed-object confidence-percent book-map :unknown (list source))
@@ -1625,36 +1662,73 @@
          (term (remove-guard-holders term wrld)))
     (clausify term nil t (sr-limit wrld))))
 
+(defun successful-recommendationp (rec)
+  (declare (xargs :guard t))
+  (recommendationp rec) ; for now
+  )
+
+(defund successful-recommendation-listp (recs)
+  (declare (xargs :guard t))
+  (if (atom recs)
+      (null recs)
+    (and (successful-recommendationp (first recs))
+         (successful-recommendation-listp (rest recs)))))
+
 ;; compares the type and object fields
-(defund same-recp (rec1 rec2)
-  (declare (xargs :guard (and (recommendationp rec1)
-                              (recommendationp rec2))))
-  (and (equal (nth 1 rec1) (nth 1 rec2))
-       (equal (nth 2 rec1) (nth 2 rec2))))
+(defund equivalent-successful-recommendationsp (rec1 rec2)
+  (declare (xargs :guard (and (successful-recommendationp rec1)
+                              (successful-recommendationp rec2))))
+  (and (equal (nth 1 rec1) (nth 1 rec2)) ; same type
+       (equal (nth 2 rec1) (nth 2 rec2)) ; same object
+       (equal (nth 5 rec1) (nth 5 rec2)) ; same pre-commands
+       ))
 
-;; Remove all members of RECS that are the same as REC (wrt type and object)
-(defun remove-duplicate-rec (rec recs acc)
+;; Returns a member of RECS that is equivalent to REC, or nil.
+(defund find-equivalent-successful-rec (rec recs)
+  (declare (xargs :guard (and (successful-recommendationp rec)
+                              (successful-recommendation-listp recs))
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendation-listp)))))
   (if (endp recs)
-      (reverse acc)
-    (if (same-recp rec (first recs))
-        (remove-duplicate-rec rec (rest recs) acc)
-      (remove-duplicate-rec rec (rest recs) (cons (first recs) acc)))))
+      nil
+    (let ((this-rec (first recs)))
+      (if (equivalent-successful-recommendationsp rec this-rec)
+          this-rec
+        (find-equivalent-successful-rec rec (rest recs))))))
 
-(local
- (defthm len-of-remove-duplicate-rec-linear
-   (<= (len (remove-duplicate-rec rec recs acc))
-       (+ (len recs) (len acc)))
-   :rule-classes :linear))
+(defthm recommendationp-of-find-equivalent-successful-rec
+  (implies (and (find-equivalent-successful-rec rec recs)
+                (recommendation-listp recs))
+           (recommendationp (find-equivalent-successful-rec rec recs)))
+  :hints (("Goal" :in-theory (enable find-equivalent-successful-rec recommendation-listp))))
 
-;; Keeps the first of each set of duplicates
-(defun remove-duplicate-recs (recs acc)
-  (declare (xargs :measure (len recs)))
-  (if (endp recs)
-      (reverse acc)
-    (let* ((rec (first recs))
-           (reduced-rest (remove-duplicate-rec rec (rest recs) nil)))
-      (remove-duplicate-recs reduced-rest
-                             (cons rec acc)))))
+;; Can this be slow?
+(defun merge-successful-rec-into-recs (rec recs)
+  (declare (xargs :guard (and (successful-recommendationp rec)
+                              (successful-recommendation-listp recs))
+                  :verify-guards nil ; todo
+                  ))
+  (let ((match (find-equivalent-successful-rec rec recs)))
+    (if match
+        (cons (make-rec (concatenate 'string (nth 0 rec) "/" (nth 0 match)) ; combine the names
+                        (nth 1 rec) ; same in both
+                        (nth 2 rec) ; same in both
+                        (max (nth 3 rec) (nth 3 match)) ; take max confidence (todo: do better?) ;todo: drop?
+                        (nth 4 rec) ;(combine-book-maps (nth 4 rec) (nth 4 match)) ; todo: drop
+                        (nth 5 rec) ; same in both
+                        (append (nth 6 rec) (nth 6 match)) ; combine lists of sources
+                        )
+              (remove-equal match recs))
+      (cons rec recs))))
+
+;; This effectively reverses the first arg.
+(defun merge-successful-recs-into-recs (recs1 recs2)
+  (declare (xargs :guard (and (successful-recommendation-listp recs1)
+                              (successful-recommendation-listp recs2))
+                  :verify-guards nil ; todo
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendation-listp)))))
+  (if (endp recs1)
+      recs2
+    (merge-successful-recs-into-recs (rest recs1) (merge-successful-rec-into-recs (first recs1) recs2))))
 
 ;; Sends an HTTP POST request containing the POST-DATA to the server at
 ;; SERVER-URL.  Parses the response as JSON.  Returns (mv erp
@@ -1676,6 +1750,12 @@
         (mv erp nil state))
        (- (and debug (cw "Parsed POST response: ~X01~%" parsed-json-response nil))))
     (mv nil parsed-json-response state)))
+
+(defund same-recp (rec1 rec2)
+  (declare (xargs :guard (and (recommendationp rec1)
+                              (recommendationp rec2))))
+  (and (equal (nth 1 rec1) (nth 1 rec2))
+       (equal (nth 2 rec1) (nth 2 rec2))))
 
 ;; Returns a member of RECS that is equivalent to REC, or nil.
 (defund find-equivalent-rec (rec recs)
@@ -1776,6 +1856,7 @@
               (remove-equal match recs))
       (cons rec recs))))
 
+;; This effectively reverses the first arg.
 (defun merge-recs-into-recs (recs1 recs2)
   (declare (xargs :guard (and (recommendation-listp recs1)
                               (recommendation-listp recs2))
@@ -1783,6 +1864,73 @@
   (if (endp recs1)
       recs2
     (merge-recs-into-recs (rest recs1) (merge-rec-into-recs (first recs1) recs2))))
+
+;; Returns (mv erp recs state).
+(defun get-recs-from-model (model num-recs checkpoint-clauses server-url debug state)
+  (declare (xargs :guard (and (rec-modelp model)
+                              (natp num-recs)
+                              (pseudo-term-list-listp checkpoint-clauses)
+                              (stringp server-url)
+                              (booleanp debug))
+                  :mode :program ; because of make-numbered-checkpoint-entries
+                  :stobjs state))
+  (b* ((model-string (model-to-string model))
+       ;; Send query to server:
+       ((mv erp semi-parsed-recommendations state)
+        (if (zp num-recs)
+            (prog2$ (cw "Not asking server for recommendations since num-recs=0.")
+                    (mv nil
+                        nil ; empty list of recommendations
+                        state))
+          (b* ((- (cw "Asking server for ~x0 recommendations from ~x1 on ~x2 ~s3...~%"
+                      num-recs
+                      model
+                      (len checkpoint-clauses)
+                      (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint")))
+               (post-data (acons "use-group" model-string
+                                 (acons "n" (nat-to-string num-recs)
+                                        (make-numbered-checkpoint-entries 0 checkpoint-clauses))))
+               ((mv erp parsed-response state)
+                (post-and-parse-response-as-json server-url post-data debug state))
+               ((when erp)
+                (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
+                (mv erp nil state))
+               ((when (not (parsed-json-arrayp parsed-response)))
+                (er hard? 'advice-fn "Error: Response from server is not a JSON array: ~x0." parsed-response)
+                (mv :bad-server-response nil state)))
+            (mv nil (parsed-json-array->values parsed-response) state))))
+       ((when erp) (mv erp nil state))
+       (- (and (not (consp semi-parsed-recommendations))
+               (cw "~% WARNING: No recommendations returned from server.~%")))
+       ;; Parse the individual strings in the recs:
+       ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
+       ((when erp)
+        (er hard? 'advice-fn "Error parsing recommendations.")
+        (mv erp nil state))
+       (- (and debug (cw "Parsed ML recommendations: ~X01~%" ml-recommendations nil))))
+    (mv nil ; no error
+        ml-recommendations
+        state)))
+
+;; Returns (mv erp recs state).
+(defun get-recs-from-models (models num-recs checkpoint-clauses server-url debug acc state)
+  (declare (xargs :guard (and (rec-modelsp models)
+                              (natp num-recs)
+                              (pseudo-term-list-listp checkpoint-clauses)
+                              (stringp server-url)
+                              (booleanp debug))
+                  :mode :program
+                  :stobjs state))
+  (if (endp models)
+      (mv nil acc state) ; no error
+    (b* (((mv erp recs state)
+          (get-recs-from-model (first models) num-recs checkpoint-clauses server-url debug state))
+         ((when erp) (mv erp nil state)))
+      (get-recs-from-models (rest models) num-recs checkpoint-clauses server-url debug
+                            ;; TODO: Sort by priority once merged?:
+                            (merge-recs-into-recs (reverse recs) acc)
+                            state))))
+
 
 ;; Returns (mv erp nil state).
 ;; TODO: Support getting checkpoints from a defun, but then we'd have no body
@@ -1807,7 +1955,8 @@
                               (or (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
-                              (rec-modelp model))
+                              (or (eq :all model)
+                                  (rec-modelp model)))
                   :stobjs state
                   :mode :program ; because we untranslate (for now)
                   ))
@@ -1815,13 +1964,9 @@
        ;; Elaborate options:
        (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
-       (model-string (if (stringp model)
-                         model
-                       ;; must be a keyword indicating a known model:
-                       (let ((res (assoc-eq model *known-models-and-strings*)))
-                         (if res
-                             (cdr res)
-                           (er hard? 'advice-fn "Unknown :model: ~x0." model)))))
+       (models (if (eq model :all)
+                   '(:calpoly :leidos)
+                 (list model)))
        ;; Get server info:
        ((mv erp server-url state) (if server-url (mv nil server-url state) (getenv$ "ACL2_ADVICE_SERVER" state)))
        ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
@@ -1859,39 +2004,12 @@
                                                               wrld)
                                               wrld)
                              raw-checkpoint-clauses))
-       (- (and verbose (cw "Checkpoints in query: ~X01.)~%" checkpoint-clauses nil)))
-       ;; Send query to server:
-       ((mv erp semi-parsed-recommendations state)
-        (if (zp n)
-            (prog2$ (cw "Not asking server for recommendations since n=0.")
-                    (mv nil
-                        nil ; empty list of recommendations
-                        state))
-          (b* ((- (cw "Asking server for ~x0 recommendations on ~x1 ~s2...~%"
-                      n
-                      (len checkpoint-clauses)
-                      (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint")))
-               (post-data (acons "use-group" model-string
-                                 (acons "n" (nat-to-string n)
-                                        (make-numbered-checkpoint-entries 0 checkpoint-clauses))))
-               ((mv erp parsed-response state)
-                (post-and-parse-response-as-json server-url post-data debug state))
-               ((when erp)
-                (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
-                (mv erp nil state))
-               ((when (not (parsed-json-arrayp parsed-response)))
-                (er hard? 'advice-fn "Error: Response from server is not a JSON array: ~x0." parsed-response)
-                (mv :bad-server-response nil state)))
-            (mv nil (parsed-json-array->values parsed-response) state))))
+       (- (and verbose (cw "Proof checkpoints to use: ~X01.)~%" checkpoint-clauses nil)))
+       ((mv erp ml-recommendations state)
+        (get-recs-from-models models n checkpoint-clauses server-url debug nil state))
+       ;; Sort the whole list by confidence (hope the numbers are comparable):
+       (ml-recommendations (merge-sort-recs-by-confidence ml-recommendations))
        ((when erp) (mv erp nil state))
-       (- (and (not (consp semi-parsed-recommendations))
-               (cw "~% WARNING: No recommendations returned from server.~%")))
-       ;; Parse the individual strings in the recs:
-       ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
-       ((when erp)
-        (er hard? 'advice-fn "Error parsing recommendations.")
-        (mv erp nil state))
-       (- (and debug (cw "Parsed ML recommendations: ~X01~%" ml-recommendations nil)))
        ;; Make some other recs:
        (enable-recommendations (make-enable-recs theorem-body wrld))
        ((mv erp recs-from-history state) (make-recs-from-history state))
@@ -1916,7 +2034,7 @@
        ((when erp)
         (er hard? 'advice-fn "Error trying recommendations: ~x0" erp)
         (mv erp nil state))
-       (successful-recs-no-dupes (remove-duplicate-recs successful-recs nil))
+       (successful-recs-no-dupes (merge-successful-recs-into-recs successful-recs nil))
        (removed-count (- (len successful-recs) (len successful-recs-no-dupes)))
        (- (and (posp removed-count)
                (cw "~%NOTE: ~x0 duplicate ~s1 removed.~%" removed-count
@@ -1964,7 +2082,7 @@
        (mv nil ; no error
         '(value-triple :invisible) state)))
 
-(defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil) (debug 'nil) (step-limit ':auto) (max-wins ':auto) (model ':calpoly))
+(defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil) (debug 'nil) (step-limit ':auto) (max-wins ':auto) (model ':all))
   `(make-event-quiet (advice-fn ,n ,verbose ,server-url ,debug ,step-limit ,max-wins ,model state)))
 
 ;; Example:
