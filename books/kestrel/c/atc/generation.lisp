@@ -63,6 +63,8 @@
 (local (include-book "projects/apply/loop" :dir :system))
 (local (in-theory (disable acl2::loop-book-theory)))
 
+(local (in-theory (disable state-p)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; move to a more general library:
