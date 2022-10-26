@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "HELP")
 
 ;; SETUP:
 ;;
@@ -117,13 +117,13 @@
             name))))))
 
 (local (in-theory (disable state-p
-                           checkpoint-list-guard
+                           acl2::checkpoint-list-guard
                            global-table
                            put-global
                            get-global
-                           global-table-p
+                           acl2::global-table-p
                            set-fmt-hard-right-margin
-                           deref-macro-name)))
+                           acl2::deref-macro-name)))
 
 (defund widen-margins (state)
   (declare (xargs :stobjs state))
@@ -161,26 +161,26 @@
                   :verify-guards nil
                   ))
   (if (symbolp item)
-      (let ((name (deref-macro-name item (macro-aliases wrld)))) ; no change if item is not a macro name
+      (let ((name (acl2::deref-macro-name item (macro-aliases wrld)))) ; no change if item is not a macro name
         (if (getpropc name 'runic-mapping-pairs nil wrld)
             t
           nil))
-    (if (runep item wrld)
+    (if (acl2::runep item wrld)
         t
       (cw "NOTE: Unknown kind of item: ~x0." item))))
 
 ;; Returns (mv erp lists)
 ;; Map parsed-json-array->values over a list.
 (defun json-arrays-to-lists (arrays acc)
-  (declare (xargs :guard (and (parsed-json-array-listp arrays)
+  (declare (xargs :guard (and (acl2::parsed-json-array-listp arrays)
                               (true-listp acc))))
   (if (endp arrays)
       (mv nil (reverse acc))
     (let ((array (first arrays)))
-      (if (not (parsed-json-arrayp array)) ;drop?
+      (if (not (acl2::parsed-json-arrayp array)) ;drop?
           (mv t nil)
         (json-arrays-to-lists (rest arrays)
-                              (cons (parsed-json-array->values array)
+                              (cons (acl2::parsed-json-array->values array)
                                     acc))))))
 
 ;; (defun untranslate-list (terms iff-flg wrld)
@@ -201,7 +201,7 @@
   (declare (xargs :mode :program)) ; because we call fms-to-string
   (if (endp checkpoints)
       nil
-    (acons (concatenate 'string "checkpoint_" (nat-to-string current-number))
+    (acons (concatenate 'string "checkpoint_" (acl2::nat-to-string current-number))
            (fms-to-string "~X01" (acons #\0 (first checkpoints) (acons #\1 nil nil)))
            (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoints)))))
 
@@ -267,7 +267,7 @@
   (if (stringp model)
       model
     ;; must be a keyword indicating a known model:
-    (string-downcase-gen (symbol-name model))))
+    (acl2::string-downcase-gen (symbol-name model))))
 
 ;; The source of a recommendation: Either one of the ML models or the advice tool itself.
 (defund rec-sourcep (x)
@@ -397,8 +397,8 @@
 (local
  (defthm include-book-infop-of-lookup-equal
    (implies (book-mapp book-map)
-            (include-book-infop (lookup-equal key book-map)))
-   :hints (("Goal" :in-theory (enable book-mapp lookup-equal assoc-equal include-book-info-listp)))))
+            (include-book-infop (acl2::lookup-equal key book-map)))
+   :hints (("Goal" :in-theory (enable book-mapp acl2::lookup-equal assoc-equal include-book-info-listp)))))
 
 (local
  (defthm symbol-listp-of-strip-cars-when-book-mapp
@@ -583,7 +583,7 @@
                               (recommendationp rec2))))
   (> (nth 3 rec1) (nth 3 rec2)))
 
-(defmergesort merge-recs-by-confidence merge-sort-recs-by-confidence rec-confidence> recommendationp)
+(acl2::defmergesort merge-recs-by-confidence merge-sort-recs-by-confidence rec-confidence> recommendationp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -628,7 +628,7 @@
 ;; (advice-option <name>) ;; print the value of the given option
 ;; (advice-option <name> <val>) ;; set the value of the given option
 (defmacro advice-option (option-name &rest rest-args)
-  `(make-event-quiet (advice-option-fn ,option-name ',rest-args (w state))))
+  `(acl2::make-event-quiet (advice-option-fn ,option-name ',rest-args (w state))))
 
 (advice-option :max-wins nil) ; don't limit the number of successes before we stop trying recs
 
@@ -714,7 +714,7 @@
 (defund parse-include-book (string state)
   (declare (xargs :guard (stringp string)
                   :stobjs state))
-  (b* (((mv erp form state) (read-string-as-single-item string state)) ; todo: what about packages?
+  (b* (((mv erp form state) (acl2::read-string-as-single-item string state)) ; todo: what about packages?
        ((when erp) (mv :error-parsing-include-book nil state))
        ((when (not (include-book-formp form)))
         (mv :error-parsing-include-book nil state)))
@@ -770,7 +770,7 @@
 
 ;; Returns (mv erp lists state) where each of the LISTS is a list of include-book forms, or the special value :builtin.
 (defund parse-book-map-info-lists (lists acc state)
-  (declare (xargs :guard (and (string-list-listp lists)
+  (declare (xargs :guard (and (acl2::string-list-listp lists)
                               (true-listp acc))
                   :stobjs state))
   (if (endp lists)
@@ -803,18 +803,18 @@
 ;; This will have a single key for some kinds of rec but not all (e.g., not for :add-hyp).
 (defund parse-book-map (book-map state)
   (declare (xargs :stobjs state))
-  (if (not (parsed-json-objectp book-map))
+  (if (not (acl2::parsed-json-objectp book-map))
       (mv :ill-formed-book-map nil state)
-    (b* ((dict (parsed-json-object->pairs book-map)) ; strip the :object
+    (b* ((dict (acl2::parsed-json-object->pairs book-map)) ; strip the :object
          (keys (strip-cars dict))
          ((when (not (string-listp keys))) (mv :ill-formed-book-map nil state))
          (vals (strip-cdrs dict))
-         ((when (not (parsed-json-array-listp vals))) (mv :ill-formed-book-map nil state))
-         ((mv erp syms state) (read-strings-as-single-symbols keys nil state))
+         ((when (not (acl2::parsed-json-array-listp vals))) (mv :ill-formed-book-map nil state))
+         ((mv erp syms state) (acl2::read-strings-as-single-symbols keys nil state))
          ((when erp) (mv erp nil state))
          ((mv erp lists) (json-arrays-to-lists vals nil))
          ((when erp) (mv erp nil state))
-         ((when (not (string-list-listp lists))) (mv :ill-formed-book-map nil state))
+         ((when (not (acl2::string-list-listp lists))) (mv :ill-formed-book-map nil state))
          ((mv erp
               book-lists-for-keys ; each is a list of include-book-forms or :builtin
               state)
@@ -846,19 +846,19 @@
 
 ;; Returns (mv erp parsed-recommendation state) where parsed-recommendation may be :none.
 (defund parse-recommendation (rec rec-num source state)
-  (declare (xargs :guard (and (parsed-json-valuep rec)
+  (declare (xargs :guard (and (acl2::parsed-json-valuep rec)
                               (natp rec-num)
                               (rec-modelp source))
                   :stobjs state
-                  :guard-hints (("Goal" :in-theory (enable parsed-json-objectp)))))
-  (if (not (parsed-json-objectp rec))
+                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-json-objectp)))))
+  (if (not (acl2::parsed-json-objectp rec))
       (progn$ (er hard? 'parse-recommendation "Bad rec: ~x0." rec)
               (mv :bad-rec nil state))
-    (b* ((dict (parsed-json-object->pairs rec)) ; strip the :object
-         (type (lookup-equal "type" dict))
-         (object (lookup-equal "object" dict))
-         (confidence (lookup-equal "confidence" dict))
-         (book-map (lookup-equal "book_map" dict))
+    (b* ((dict (acl2::parsed-json-object->pairs rec)) ; strip the :object
+         (type (acl2::lookup-equal "type" dict))
+         (object (acl2::lookup-equal "object" dict))
+         (confidence (acl2::lookup-equal "confidence" dict))
+         (book-map (acl2::lookup-equal "book_map" dict))
          ((mv erp book-map state) (parse-book-map book-map state))
          ((when erp)
           (if (stringp erp)
@@ -880,11 +880,11 @@
          ((when (not (stringp object)))
           (er hard? 'parse-recommendation "Non-string object: ~x0" object)
           (mv :bad-rec nil state))
-         ((mv erp parsed-object state) (read-string-as-single-item object state)) ; todo: what about packages?
+         ((mv erp parsed-object state) (acl2::read-string-as-single-item object state)) ; todo: what about packages?
          ((when erp)
           (er hard? 'parse-recommendation "Error (~x0) parsing recommended action: ~x1." erp object)
           (mv :parse-error nil state))
-         (name (concatenate 'string (model-to-nice-string source) (nat-to-string rec-num)))
+         (name (concatenate 'string (model-to-nice-string source) (acl2::nat-to-string rec-num)))
          )
       (mv nil ; no error
           (make-rec name type-keyword parsed-object confidence-percent book-map :unknown (list source))
@@ -892,12 +892,12 @@
 
 ;; Returns (mv erp parsed-recommendations state).
 (defund parse-recommendations-aux (recs rec-num source acc state)
-  (declare (xargs :guard (and (parsed-json-valuesp recs)
+  (declare (xargs :guard (and (acl2::parsed-json-valuesp recs)
                               (natp rec-num)
                               (rec-modelp source)
                               (true-listp acc))
                   :stobjs state
-                  :guard-hints (("Goal" :in-theory (enable parsed-json-valuesp)))))
+                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-json-valuesp)))))
   (if (endp recs)
       (mv nil (reverse acc) state)
     (b* (((mv erp parsed-recommendation state) (parse-recommendation (first recs) rec-num source state))
@@ -912,10 +912,10 @@
 
 ;; Returns (mv erp parsed-recommendations state).
 (defund parse-recommendations (recs source state)
-  (declare (xargs :guard (and (parsed-json-valuesp recs)
+  (declare (xargs :guard (and (acl2::parsed-json-valuesp recs)
                               (rec-modelp source))
                   :stobjs state
-                  :guard-hints (("Goal" :in-theory (enable parsed-json-arrayp)))))
+                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-json-arrayp)))))
   (parse-recommendations-aux recs 1 source nil state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -933,7 +933,7 @@
                   :stobjs state))
   (mv-let (erp provedp state)
     ;; TODO: Drop the :time-limit once :step-limit can interrupt subsumption:
-    (prove$ term :hints hints :otf-flg otf-flg :step-limit step-limit :time-limit 5)
+    (acl2::prove$ term :hints hints :otf-flg otf-flg :step-limit step-limit :time-limit 5)
     (if erp
         (prog2$ (cw "Syntax error in prove$ call (made by ~x0).~%" ctx)
                 (mv nil state))
@@ -945,7 +945,7 @@
                   :stobjs state))
   (mv-let (erp provedp failure-info state)
     ;; TODO: Drop the :time-limit once :step-limit can interrupt subsumption:
-    (prove$+ term :hints hints :otf-flg otf-flg :step-limit step-limit :time-limit 5 :print nil)
+    (acl2::prove$+ term :hints hints :otf-flg otf-flg :step-limit step-limit :time-limit 5 :print nil)
     (if erp
         (prog2$ (cw "Syntax error in prove$ call (made by ~x0).~%" ctx)
                 (mv nil nil state))
@@ -955,8 +955,8 @@
 (defund symbol-that-can-be-usedp (sym wrld)
   (declare (xargs :guard (and (symbolp sym)
                               (plist-worldp wrld))))
-  (or (defined-functionp sym wrld)
-      (defthm-or-defaxiom-symbolp sym wrld)))
+  (or (acl2::defined-functionp sym wrld)
+      (acl2::defthm-or-defaxiom-symbolp sym wrld)))
 
 ;; Calls prove$ on FORMULA after submitting INCLUDE-BOOK-FORM, which is undone after the prove$.
 ;; Returns (mv erp provedp state).  If NAME-TO-CHECK is non-nil, we require it to be something
@@ -972,7 +972,7 @@
   (declare (xargs :stobjs state :mode :program))
   (revert-world ;; ensures the include-book gets undone
    (b* (        ;; Try to include the recommended book:
-        ((mv erp state) (submit-event-helper include-book-form nil nil state))
+        ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
         ((when erp) ; can happen if there is a name clash
          (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
          (mv nil ; not considering this an error, since if there is a name clash we want to try the other recommendations
@@ -1064,7 +1064,7 @@
 (defun formula-hyp-simple (formula ;; untranslated
                            )
   (if (and (consp formula)
-           (eq 'implies (ffn-symb formula)))
+           (eq 'implies (acl2::ffn-symb formula)))
       (second formula)
     *t*))
 
@@ -1095,12 +1095,12 @@
 (defun try-add-hyp (hyp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* ((translatablep (translatable-termp hyp (w state)))
+  (b* ((translatablep (acl2::translatable-termp hyp (w state)))
        ((when (not translatablep))
         (cw "fail (hyp not translatable: ~x0)~%" hyp) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        (existing-hyp (formula-hyp-simple theorem-body))
-       (existing-hyp-conjunts (conjuncts-of-uterm existing-hyp))
+       (existing-hyp-conjunts (acl2::conjuncts-of-uterm existing-hyp))
        ((when (member-equal hyp existing-hyp-conjunts))
         (cw "skip (hyp ~x0 is already present)~%" hyp)
         (mv nil nil state))
@@ -1115,7 +1115,7 @@
         (cw "skip (hyp ~x0 would contradict existing hyps)~%" hyp)
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
-       ;; ((mv erp state) (submit-event-helper
+       ;; ((mv erp state) (acl2::submit-event-helper
        ;;                  ;; TODO: Add the hyp more nicely:
        ;;                  (make-thm-to-attempt `(implies ,hyp ,theorem-body) theorem-hints theorem-otf-flg)
        ;;                  t nil state))
@@ -1129,7 +1129,7 @@
        (rec (update-pre-commands nil rec)) ; update once we use the book map
        (- (if provedp
               (cw-success-message rec)
-            (let ((translated-hyp (translate-term hyp 'try-add-hyp (w state))))
+            (let ((translated-hyp (acl2::translate-term hyp 'try-add-hyp (w state))))
               (cw-failure-message (fms-to-string-one-line "adding hyp ~x0 didn't help" (acons #\0 translated-hyp nil)) failure-info)))))
     (mv nil (if provedp rec nil) state)))
 
@@ -1159,22 +1159,22 @@
     (if (function-symbolp rule wrld)
         ;; It's a function in the current world:
         (b* ((fn rule)
-             ((when (not (logicp fn wrld)))
+             ((when (not (acl2::logicp fn wrld)))
               (cw "skip (Can't enable ~x0. Not in :logic mode.)~%" fn)
               (mv nil nil state))
              ((when (not (and
-                          ;; (defined-functionp fn wrld) ;todo
+                          ;; (acl2::defined-functionp fn wrld) ;todo
                           )))
               (cw "skip (Can't enable ~x0. No body.)~%" fn)
               (mv nil nil state))
              ;; TODO: Consider whether to enable, say the :type-prescription rule
              (rune `(:definition ,fn))
              ;; Rule already enabled, so don't bother (TODO: I suppose if the :hints disable it, we could reverse that):
-             ((when (enabled-runep rune (ens-maybe-brr state) (w state)))
+             ((when (acl2::enabled-runep rune (acl2::ens-maybe-brr state) (w state)))
               (cw "skip (~x0 is already enabled.)~%" fn)
               (mv nil nil state))
              ;; FN exists and just needs to be enabled:
-             (new-hints (enable-runes-in-hints theorem-hints (list fn))) ;; todo: ensure this is nice
+             (new-hints (acl2::enable-runes-in-hints theorem-hints (list fn))) ;; todo: ensure this is nice
              ((mv provedp state)
               (prove$-no-error 'try-add-enable-hint
                                theorem-body
@@ -1194,11 +1194,11 @@
           (b* ( ;; TODO: Consider whether to enable, say the :type-prescription rule
                (rune `(:rewrite ,rule))
                ;; Rule already enabled, so don't bother (TODO: I suppose if the :hints disable it, we could reverse that):
-               ((when (enabled-runep rune (ens-maybe-brr state) (w state)))
+               ((when (acl2::enabled-runep rune (acl2::ens-maybe-brr state) (w state)))
                 (cw "skip (~x0 is already enabled.)~%" rule)
                 (mv nil nil state))
                ;; RULE exists and just needs to be enabled:
-               (new-hints (enable-runes-in-hints theorem-hints (list rule))) ;; todo: ensure this is nice
+               (new-hints (acl2::enable-runes-in-hints theorem-hints (list rule))) ;; todo: ensure this is nice
                ((mv provedp state)
                 (prove$-no-error 'try-add-enable-hint
                                  theorem-body
@@ -1218,7 +1218,7 @@
              ((when (not (equal book-map-keys (list rule))))
               (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil rule)
               (mv :bad-book-map nil state))
-             (include-book-info (lookup-eq rule book-map))
+             (include-book-info (acl2::lookup-eq rule book-map))
              ((when (eq :builtin include-book-info))
               (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" rule)
               (mv :bad-book-info nil state))
@@ -1231,7 +1231,7 @@
                                        (take 3 include-books-to-try)
                                      include-books-to-try))
              ;; todo: ensure this is nice:
-             (new-hints (enable-runes-in-hints theorem-hints (list rule))))
+             (new-hints (acl2::enable-runes-in-hints theorem-hints (list rule))))
           ;; Not built-in, so we'll have to try finding the rule in a book:
           ;; TODO: Would be nice to not bother if it is a definition that we don't have.
           (b* (;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
@@ -1291,13 +1291,13 @@
         (cw "skip (Not disabling unknown name: ~x0)~%" rule) ;; For now, we don't try to including the book that brings in the thing to disable!
         (mv nil nil state))
        (rule (handle-macro-alias rule (w state))) ; TODO: Handle the case of a macro-alias we don't know about
-       ((when (disabledp-fn rule (ens-maybe-brr state) (w state)))
+       ((when (acl2::disabledp-fn rule (acl2::ens-maybe-brr state) (w state)))
         (cw "skip (Not disabling since already disabled: ~x0)~%" rule)
         (mv nil nil state))
        ((mv provedp state) (prove$-no-error 'try-add-disable-hint
                                             theorem-body
                                             ;; todo: ensure this is nice:
-                                            (disable-runes-in-hints theorem-hints (list rule))
+                                            (acl2::disable-runes-in-hints theorem-hints (list rule))
                                             theorem-otf-flg
                                             step-limit
                                             state))
@@ -1331,7 +1331,7 @@
            ((when (not (equal book-map-keys (list item))))
             (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil item)
             (mv :bad-book-map nil state))
-           (include-book-info (lookup-eq item book-map))
+           (include-book-info (acl2::lookup-eq item book-map))
            ((when (eq :builtin include-book-info))
             (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" item)
             (mv :bad-book-info nil state))
@@ -1401,11 +1401,11 @@
         (cw "fail (ignoring illegal recommendation to expand a symbol)~%")
         (mv nil nil state))
        ;; todo: can it be a single term?:
-       ((when (not (translatable-term-listp item (w state))))
+       ((when (not (acl2::translatable-term-listp item (w state))))
         (cw "fail (term not all translatable: ~x0)~%" item) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
-       ;; ((mv erp state) (submit-event-helper
+       ;; ((mv erp state) (acl2::submit-event-helper
        ;;                  (make-thm-to-attempt theorem-body
        ;;                                       ;; todo: ensure this is nice:
        ;;                                       (cons `("Goal" :expand ,item)
@@ -1453,11 +1453,11 @@
 (defun try-add-cases-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (((when (not (translatable-term-listp item (w state))))
+  (b* (((when (not (acl2::translatable-term-listp item (w state))))
         (cw "fail (terms not all translatable: ~x0)~%" item) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; Now see whether we can prove the theorem using the new hyp:
-       ;; ((mv erp state) (submit-event-helper
+       ;; ((mv erp state) (acl2::submit-event-helper
        ;;                  (make-thm-to-attempt theorem-body
        ;;                                       ;; todo: ensure this is nice:
        ;;                                       (cons `("Goal" :cases ,item)
@@ -1561,7 +1561,7 @@
                               (posp num))))
   (if (endp names)
       nil
-    (cons (make-rec (concatenate 'string "E" (nat-to-string num))
+    (cons (make-rec (concatenate 'string "E" (acl2::nat-to-string num))
                     :add-enable-hint
                     (first names) ; the name to enable
                     0             ; confidence percentage (TODO: allow unknown)
@@ -1583,8 +1583,8 @@
   (declare (xargs :guard (and (pseudo-termp formula)
                               (plist-worldp wrld))
                   :mode :program))
-  (let* ((translated-formula (translate-term formula 'make-enable-recs wrld))
-         (fns-to-try-enabling (set-difference-eq (defined-fns-in-term translated-formula wrld)
+  (let* ((translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
+         (fns-to-try-enabling (set-difference-eq (acl2::defined-fns-in-term translated-formula wrld)
                                                  ;; Don't bother wasting time with trying to enable implies
                                                  ;; (I suppose we coud try it if implies is disabled):
                                                  '(implies))))
@@ -1613,21 +1613,21 @@
  (defun make-recs-from-event (event num seen-recs)
    (if (not (consp event))
        (er hard? 'make-recs-from-event "Unexpected command (not a cons!): ~x0." event)
-     (if (eq 'local (ffn-symb event)) ; (local e1)
-         (make-recs-from-event (farg1 event) num seen-recs)
-       (if (eq 'encapsulate (ffn-symb event)) ; (encapsulate <sigs> e1 e2 ...)
-           (make-recs-from-events (rest (fargs event)) num seen-recs)
-         (if (eq 'progn (ffn-symb event)) ; (progn e1 e2 ...)
-             (make-recs-from-events (fargs event) num seen-recs)
+     (if (eq 'local (acl2::ffn-symb event)) ; (local e1)
+         (make-recs-from-event (acl2::farg1 event) num seen-recs)
+       (if (eq 'encapsulate (acl2::ffn-symb event)) ; (encapsulate <sigs> e1 e2 ...)
+           (make-recs-from-events (rest (acl2::fargs event)) num seen-recs)
+         (if (eq 'progn (acl2::ffn-symb event)) ; (progn e1 e2 ...)
+             (make-recs-from-events (acl2::fargs event) num seen-recs)
            (and ;; todo: what else can we harvest hints from?
-                (member-eq (ffn-symb event) '(defthm defthmd))
-                (let ((res (assoc-keyword :hints (rest (rest (fargs event))))))
+                (member-eq (acl2::ffn-symb event) '(defthm defthmd))
+                (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
                   (and res
                        (let ((hints (cadr res)))
                          (and (not (rec-presentp :exact-hints hints seen-recs)) ; todo: also look for equivalent recs?
                               ;; make a new rec:
                               (list
-                               (make-rec (concatenate 'string "H" (nat-to-string num))
+                               (make-rec (concatenate 'string "H" (acl2::nat-to-string num))
                                          :exact-hints ; new kind of rec, to replace all hints (todo: if the rec is expressible as something simpler, use that)
                                          (cadr res)
                                          0
@@ -1649,7 +1649,7 @@
 (defun make-recs-from-history (state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (b* (((mv erp events state) (get-command-sequence-fn 1 :max state))
+  (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state))
        ((when erp) (mv erp nil state)))
     (mv nil (make-recs-from-events events 1 nil) state)))
 
@@ -1658,9 +1658,9 @@
 ;; from Matt K:
 (defun clausify-term (term wrld)
   (declare (xargs :mode :program))
-  (let* ((term (expand-some-non-rec-fns '(implies) term wrld))
+  (let* ((term (acl2::expand-some-non-rec-fns '(implies) term wrld))
          (term (remove-guard-holders term wrld)))
-    (clausify term nil t (sr-limit wrld))))
+    (acl2::clausify term nil t (acl2::sr-limit wrld))))
 
 (defun successful-recommendationp (rec)
   (declare (xargs :guard t))
@@ -1735,7 +1735,7 @@
 ;; parsed-json-response state).
 (defund post-and-parse-response-as-json (server-url post-data debug state)
   (declare (xargs :guard (and (stringp server-url)
-                              (string-string-alistp post-data)
+                              (acl2::string-string-alistp post-data)
                               (booleanp debug))
                   :stobjs state))
   (b* ((- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
@@ -1744,7 +1744,7 @@
        ((when erp) (mv erp nil state))
        (- (and debug (cw "Raw POST response: ~X01~%" post-response nil)))
        ;; Parse the JSON:
-       ((mv erp parsed-json-response) (parse-string-as-json post-response))
+       ((mv erp parsed-json-response) (acl2::parse-string-as-json post-response))
        ((when erp)
         (cw "Error parsing JSON response from ~x0.~%" server-url)
         (mv erp nil state))
@@ -1801,8 +1801,8 @@
   (if (endp keys)
       acc
     (let* ((key (first keys))
-           (info1 (lookup-eq key map1))
-           (info2 (lookup-eq key map2))
+           (info1 (acl2::lookup-eq key map1))
+           (info2 (acl2::lookup-eq key map2))
            (val (if (not info1)
                     info2
                   (if (not info2)
@@ -1869,7 +1869,7 @@
 (defun get-recs-from-model (model num-recs checkpoint-clauses server-url debug state)
   (declare (xargs :guard (and (rec-modelp model)
                               (natp num-recs)
-                              (pseudo-term-list-listp checkpoint-clauses)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (stringp server-url)
                               (booleanp debug))
                   :mode :program ; because of make-numbered-checkpoint-entries
@@ -1888,17 +1888,17 @@
                       (len checkpoint-clauses)
                       (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint")))
                (post-data (acons "use-group" model-string
-                                 (acons "n" (nat-to-string num-recs)
+                                 (acons "n" (acl2::nat-to-string num-recs)
                                         (make-numbered-checkpoint-entries 0 checkpoint-clauses))))
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url post-data debug state))
                ((when erp)
                 (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
                 (mv erp nil state))
-               ((when (not (parsed-json-arrayp parsed-response)))
+               ((when (not (acl2::parsed-json-arrayp parsed-response)))
                 (er hard? 'advice-fn "Error: Response from server is not a JSON array: ~x0." parsed-response)
                 (mv :bad-server-response nil state)))
-            (mv nil (parsed-json-array->values parsed-response) state))))
+            (mv nil (acl2::parsed-json-array->values parsed-response) state))))
        ((when erp) (mv erp nil state))
        (- (and (not (consp semi-parsed-recommendations))
                (cw "~% WARNING: No recommendations returned from server.~%")))
@@ -1916,7 +1916,7 @@
 (defun get-recs-from-models (models num-recs checkpoint-clauses server-url debug acc state)
   (declare (xargs :guard (and (rec-modelsp models)
                               (natp num-recs)
-                              (pseudo-term-list-listp checkpoint-clauses)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (stringp server-url)
                               (booleanp debug))
                   :mode :program
@@ -1946,7 +1946,7 @@
                   state)
   (declare (xargs :guard (and (natp n)
                               (booleanp verbose)
-                              (checkpoint-list-guard t ;top-p
+                              (acl2::checkpoint-list-guard t ;top-p
                                                      state)
                               (booleanp debug)
                               (or (eq :auto step-limit)
@@ -1974,7 +1974,7 @@
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
         (mv :no-server nil state))
        ;; Get most recent failed theorem:
-       (most-recent-failed-theorem (most-recent-failed-command *theorem-event-types* state))
+       (most-recent-failed-theorem (acl2::most-recent-failed-command acl2::*theorem-event-types* state))
        ((mv theorem-name theorem-body theorem-hints theorem-otf-flg)
         (if (member-eq (car most-recent-failed-theorem) '(thm rule))
             (mv :thm ; no name
@@ -1990,7 +1990,7 @@
        (- (and verbose (cw "Original hints were:~%~X01:~%" theorem-hints nil)))
        ;; Get the checkpoints from the failed attempt:
        ;; TODO: Consider trying again with no hints, in case the user gave were wrongheaded.
-       (raw-checkpoint-clauses (checkpoint-list ;-pretty
+       (raw-checkpoint-clauses (acl2::checkpoint-list ;-pretty
                                 t               ; todo: consider non-top
                                 state))
        ((when (eq :unavailable raw-checkpoint-clauses))
@@ -1999,9 +1999,9 @@
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
        ;; TODO: Or use :otf-flg to get the real checkpoints?
        (checkpoint-clauses (if (equal raw-checkpoint-clauses '((<goal>)))
-                               (clausify-term (translate-term (most-recent-failed-theorem-goal state)
-                                                              'advice-fn
-                                                              wrld)
+                               (clausify-term (acl2::translate-term (acl2::most-recent-failed-theorem-goal state)
+                                                                    'advice-fn
+                                                                    wrld)
                                               wrld)
                              raw-checkpoint-clauses))
        (- (and verbose (cw "Proof checkpoints to use: ~X01.)~%" checkpoint-clauses nil)))
@@ -2058,7 +2058,7 @@
 
        ;; Try to ensure the checkpoints are restored, in case the tool is run again:
        (state
-        (b* ((new-raw-checkpoint-clauses (checkpoint-list ;-pretty
+        (b* ((new-raw-checkpoint-clauses (acl2::checkpoint-list ;-pretty
                                           t ; todo: consider non-top
                                           state))
              ((when (equal new-raw-checkpoint-clauses raw-checkpoint-clauses))
@@ -2071,7 +2071,7 @@
              ((when provedp) ; surprising!
               (cw "Tried the theorem again and it worked!")
               state)
-             (new-raw-checkpoint-clauses (checkpoint-list ;-pretty
+             (new-raw-checkpoint-clauses (acl2::checkpoint-list ;-pretty
                                           t ; todo: consider non-top
                                           state))
              ((when (not (equal new-raw-checkpoint-clauses raw-checkpoint-clauses)))
@@ -2083,7 +2083,10 @@
         '(value-triple :invisible) state)))
 
 (defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil) (debug 'nil) (step-limit ':auto) (max-wins ':auto) (model ':all))
-  `(make-event-quiet (advice-fn ,n ,verbose ,server-url ,debug ,step-limit ,max-wins ,model state)))
+  `(acl2::make-event-quiet (advice-fn ,n ,verbose ,server-url ,debug ,step-limit ,max-wins ,model state)))
+
+;; Just a synonym in ACL2 package
+(defmacro acl2::advice (&rest rest) `(advice ,@rest))
 
 ;; Example:
 ;; (acl2s-defaults :set testing-enabled nil) ; turn off testing
