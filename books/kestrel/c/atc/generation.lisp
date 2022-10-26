@@ -7303,7 +7303,10 @@
     (acl2::value (list file
                        local-events
                        exported-events
-                       names-to-avoid))))
+                       names-to-avoid)))
+  ///
+  (more-returns
+   (val true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -7328,10 +7331,7 @@
                                (pretty-printing pprint-options-p)
                                (print evmac-input-print-p)
                                state)
-  :returns (mv erp
-               (event "A @(tsee pseudo-event-formp).")
-               state)
-  :mode :program
+  :returns (mv erp (event pseudo-event-formp) state)
   :short "Event to pretty-print the generated C code to the output file."
   :long
   (xdoc::topstring
@@ -7412,8 +7412,7 @@
                             (call pseudo-event-formp)
                             (ctx ctxp)
                             state)
-  :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
-  :mode :program
+  :returns (mv erp (event pseudo-event-formp) state)
   :short "Generate the file and the events."
   :long
   (xdoc::topstring
@@ -7434,7 +7433,7 @@
      if the call is the body of a @(tsee let),
      the formals that are not affected then become ignored."))
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
-       ((er (list file local-events exported-events &))
+       ((er (list file local-events exported-events &) :iferr '(_))
         (atc-gen-cfile targets proofs prog-const wf-thm fn-thms
                        print names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-outfile-event file
@@ -7445,17 +7444,21 @@
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
        (encapsulate
-         `(encapsulate ()
-            (evmac-prepare-proofs)
-            (local (acl2::use-trivial-ancestors-check))
-            (set-ignore-ok t)
-            ,@local-events
-            ,@exported-events
-            ,file-gen-event))
+           `(encapsulate ()
+              (evmac-prepare-proofs)
+              (local (acl2::use-trivial-ancestors-check))
+              (set-ignore-ok t)
+              ,@local-events
+              ,@exported-events
+              ,file-gen-event))
        (encapsulate+ (restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
        (table-event (atc-table-record-event call info)))
     (acl2::value `(progn ,encapsulate+
                          ,table-event
                          ,@print-events
-                         (value-triple :invisible)))))
+                         (value-triple :invisible))))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
