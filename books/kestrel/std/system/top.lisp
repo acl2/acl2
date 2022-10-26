@@ -30,6 +30,7 @@
 (include-book "known-packages-plus")
 (include-book "macro-queries")
 (include-book "maybe-pseudo-event-formp")
+(include-book "partition-rest-and-keyword-args")
 (include-book "plist-worldp-with-formals")
 (include-book "pseudo-command-landmark-listp")
 (include-book "pseudo-event-form-fix")
