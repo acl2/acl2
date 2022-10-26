@@ -108,6 +108,7 @@
                keyword-symbol-alistp
                keyword-value-list-to-alist
                lnfix
+               logicp
                make-event-terse
                make-evmac-appcond
                maybe-natp
@@ -121,6 +122,7 @@
                nats=>string
                nvariablep
                one-way-unify
+               one-way-unify$
                packn
                packn-pos
                pos
@@ -177,6 +179,7 @@
                symbol-pseudoterm-alist-fix
                symbol-symbol-alistp
                table-alist+
+               termination-theorem$
                tuple
                ubody+
                uguard+
