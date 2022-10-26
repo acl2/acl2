@@ -7224,13 +7224,13 @@
                        (ctx ctxp)
                        state)
   :returns (mv erp
-               (val "A @('(tuple (file filep)
-                                 (local-events pseudo-event-form-listp)
-                                 (exported-events pseudo-event-form-listp)
-                                 (updated-names-to-avoid symbol-listp)
-                                 val)').")
+               (val (tuple (file filep)
+                           (local-events pseudo-event-form-listp)
+                           (exported-events pseudo-event-form-listp)
+                           (updated-names-to-avoid symbol-listp)
+                           val)
+                    :hyp (symbol-listp names-to-avoid))
                state)
-  :mode :program
   :short "Generate a C file from the ATC targets, and accompanying events."
   :long
   (xdoc::topstring
@@ -7256,7 +7256,8 @@
      and then we generate the theorem;
      however, in the generated events,
      we put that theorem before the ones for the functions."))
-  (b* (((mv appcond-local-events fn-appconds appcond-thms names-to-avoid)
+  (b* (((acl2::fun (irr)) (list (ec-call (file-fix :irrelevant)) nil nil nil))
+       ((mv appcond-local-events fn-appconds appcond-thms names-to-avoid)
         (if proofs
             (b* (((mv appconds fn-appconds)
                   (atc-gen-appconds targets (w state)))
@@ -7273,8 +7274,11 @@
                                            nil
                                            names-to-avoid
                                            (w state)))
-       ((er
-         (list exts fn-thm-local-events fn-thm-exported-events names-to-avoid))
+       ((er (list exts
+                  fn-thm-local-events
+                  fn-thm-exported-events
+                  names-to-avoid)
+            :iferr (irr))
         (atc-gen-ext-declon-list targets nil nil nil proofs
                                  prog-const init-fun-env-thm
                                  fn-thms fn-appconds appcond-thms
