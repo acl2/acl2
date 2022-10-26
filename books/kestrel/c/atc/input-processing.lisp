@@ -468,8 +468,7 @@
                                  (output-file? booleanp)
                                  (ctx ctxp)
                                  state)
-  :returns (mv erp (nothing "Always @('nil').") state)
-  :mode :program
+  :returns (mv erp (nothing null) state)
   :short "Process the @(':output-file') input."
   (b* (((unless output-file?)
         (er-soft+ ctx t nil
@@ -529,7 +528,8 @@
                   "The output file path ~x0 ~
                    is not a regular file; it has kind ~x1 instead."
                   output-file kind)))
-    (acl2::value nil)))
+    (acl2::value nil))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -591,12 +591,14 @@
                                 (ctx ctxp)
                                 state)
   :returns (mv erp
-               (val "A @('(tuple (prog-const symbolp)
-                                 (wf-thm symbolp)
-                                 (fn-thms symbol-symbol-alistp)
-                                 val)').")
+               (val (tuple (prog-const symbolp)
+                           (wf-thm symbolp)
+                           (fn-thms symbol-symbol-alistp)
+                           val)
+                    :hyp (symbol-listp target-fns)
+                    :hints
+                    (("Goal" :in-theory (enable acl2::ensure-value-is-symbol))))
                state)
-  :mode :program
   :short "Process the @(':const-name') input."
   :long
   (xdoc::topstring
@@ -621,10 +623,10 @@
      the @(':const-name') input must be absent
      and we return @('nil') for this as well as for the theorem names.
      No constant and theorems are generated when @(':proofs') is @('nil')."))
-  (b* ((irrelevant (list nil nil nil))
+  (b* (((acl2::fun (irr)) (list nil nil nil))
        ((when (not proofs))
         (if const-name?
-            (er-soft+ ctx t irrelevant
+            (er-soft+ ctx t (irr)
                       "Since the :PROOFS input is NIL, ~
                        the :CONST-NAME input must be absent, ~
                        but it is ~x0 instead."
@@ -633,7 +635,7 @@
        ((er &) (ensure-value-is-symbol$ const-name
                                         "The :CONST-NAME input"
                                         t
-                                        irrelevant))
+                                        (irr)))
        (prog-const (if (eq const-name :auto)
                        'c::*program*
                      const-name))
@@ -642,10 +644,10 @@
                 (msg "The constant name ~x0 ~
                       specified by the :CONST-NAME input"
                      prog-const)
-                'const
+                'acl2::const
                 nil
                 t
-                nil))
+                (irr)))
        (wf-thm (add-suffix prog-const "-WELL-FORMED"))
        ((er &) (ensure-symbol-is-fresh-event-name$
                 wf-thm
@@ -655,22 +657,25 @@
                 nil
                 nil
                 t
-                nil))
-       ((er fn-thms)
+                (irr)))
+       ((er fn-thms :iferr (irr))
         (atc-process-const-name-aux target-fns prog-const ctx state)))
     (acl2::value (list prog-const
                        wf-thm
                        fn-thms)))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-symbol)))
 
   :prepwork
-  ((define atc-process-const-name-aux ((target-fns symbol-listp)
+
+  ((local (in-theory (disable packn)))
+
+   (define atc-process-const-name-aux ((target-fns symbol-listp)
                                        (prog-const symbolp)
                                        (ctx ctxp)
                                        state)
      :returns (mv erp
-                  (val "A @(tsee symbol-symbol-alistp).")
+                  (val symbol-symbol-alistp :hyp (symbol-listp target-fns))
                   state)
-     :mode :program
      (b* (((when (endp target-fns)) (acl2::value nil))
           (fn (car target-fns))
           (fn-thm (packn (list prog-const "-" (symbol-name fn) "-CORRECT")))
@@ -685,7 +690,8 @@
                    nil))
           ((er fn-thms) (atc-process-const-name-aux
                          (cdr target-fns) prog-const ctx state)))
-       (acl2::value (acons fn fn-thm fn-thms))))))
+       (acl2::value (acons fn fn-thm fn-thms)))
+     :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
