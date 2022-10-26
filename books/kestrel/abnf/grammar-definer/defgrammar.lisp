@@ -22,6 +22,8 @@
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/untranslate-preprocessing" :dir :system)
 
+(local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (verify-termination std::split-///)
@@ -33,31 +35,6 @@
                   (true-listp post-///)))))
 
 (in-theory (disable std::split-///))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel partition-rest-and-keyword-args1-results
-  (implies (true-listp x)
-           (b* (((mv rest keypart) (acl2::partition-rest-and-keyword-args1 x)))
-             (and (true-listp rest)
-                  (true-listp keypart)))))
-
-(defrulel partition-rest-and-keyword-arg2-results
-  (implies (symbol-alistp alist)
-           (b* ((alist1
-                 (acl2::partition-rest-and-keyword-args2 keypart keys alist)))
-             (implies (not (equal alist1 t))
-                      (symbol-alistp alist1)))))
-
-(defrulel partition-rest-and-keyword-args-results
-  (implies (true-listp x)
-           (b* (((mv erp rest keypart)
-                 (partition-rest-and-keyword-args x keys)))
-             (implies (not erp)
-                      (and (true-listp rest)
-                           (symbol-alistp keypart))))))
-
-(local (in-theory (disable partition-rest-and-keyword-args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

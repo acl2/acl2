@@ -21,4 +21,9 @@
   :val (symbolp x)
   :true-listp t
   :keyp-of-nil nil
-  :valp-of-nil t)
+  :valp-of-nil t
+  ///
+
+  (defthmd alistp-when-keyword-symbol-alistp-rewrite
+    (implies (keyword-symbol-alistp x)
+             (alistp x))))
