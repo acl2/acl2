@@ -51,7 +51,7 @@
 ;(include-book "centaur/svl/portcullis" :dir :system) ; todo: this includes an include-book !
 (include-book "centaur/sv/portcullis" :dir :system)
 (include-book "centaur/truth/portcullis" :dir :system)
-(include-book "centaur/vl2014/portcullis" :dir :system)
+;(include-book "centaur/vl2014/portcullis" :dir :system) ; todo: brings in extra stuff
 (include-book "centaur/vl/portcullis" :dir :system)
 (include-book "coi/adviser/portcullis" :dir :system)
 (include-book "coi/alists/portcullis" :dir :system)
