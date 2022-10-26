@@ -1,5 +1,3 @@
-; Centaur SV Hardware Verification Tutorial
-; Copyright (C) 2012-2015 Centaur Technology
 
 ; (ld "alu-2.lisp" :ld-pre-eval-print t)
 
@@ -31,10 +29,6 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
-
-; This is the first example in the tutorial.  We are going to try to verify a
-; basic 16-bit ALU module that implements 8 opcodes.  We will discover that
-; there is a bug in its COUNT operation.
 
 ; WAHJr.  This version of Sol's tutorial has a more complicated
 ; implementation because it has been altered from it original form so
@@ -70,8 +64,6 @@
 
 ; (gl::def-gl-clause-processor sv-tutorial-glcp)
 
-
-
 (make-event
 
 ; Disable waterfall parallelism.
@@ -80,7 +72,6 @@
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))
-
 
 ; The PLEV (print level) tool lets you control how much output ACL2 prints when
 ; it tries to print an object.  It is very important to be able to control the
@@ -91,7 +82,6 @@
 (make-event (b* (((er &) (acl2::plev)))
               (value '(value-triple :plev))))
 
-
 ; Debugger configuration.  These are optional commands that we generally use to
 ; enable the interactive debugger.  It's often very useful to get backtraces
 ; with :b when you interrupt.  On the other hand, this configuration can be
@@ -101,13 +91,11 @@
 (make-event (b* ((state (set-debugger-enable t)))
               (value '(value-triple :set-debugger-enable))))
 
-
 ; Memory configuration.  The set-max-mem command sort of gives the Lisp a soft
 ; hint as to when to GC.  For this example we don't need very much memory, so
 ; lets set up a 3 GB threshold.  Putting this in a value-triple makes it an
 ; embeddable event.
 (value-triple (acl2::set-max-mem (* 3 (expt 2 30))))
-
 
 
 ; -----------------------------------------------------------------------------
@@ -119,11 +107,11 @@
 ; The file alu16.v contains a very simple ALU module that we will verify.  You
 ; should probably look at it now, and then come back.
 
-
 ; We note that DEF-SAVED-EVENT saves the event provided (and
 ; submitted) in the ACL2 table SAVED-FORMS-TABLE.
 
 ; First, we read that module into a VL design.
+
 (def-saved-event alu-design-form
   (defconsts (*alu-vl-design* state)
     (b* (((mv loadresult state)
@@ -325,12 +313,26 @@ full:</p>
 ; As you can see, the output is provided as an ALIST of values for the STV's
 ; output variables.  In this case we see that RES has value 8, so the circuit
 ; added 5 and 3 correctly.
-;
+
 (def-saved-nonevent alu-example-2
   (svtv-run (alu-test-vector)
             `((op . ,*op-mult*)
               (a  . 5)
               (b  . 7))))
+
+; As you can see, the output is provided as an ALIST of values for the STV's
+; output variables.  In this case we see that RES has value 8, so the circuit
+; added 5 and 3 correctly.
+;
+; By default STV-RUN prints lots of debugging info.  We'll see below that this
+; is very useful in theorems.  But when we're just doing concrete runs, this
+; output can be irritating.  You can turn it off by adding :quiet t, like this:
+
+(def-saved-nonevent alu-example-2
+  (svtv-run (alu-test-vector)
+            `((op . ,*op-mult*)
+              (a  . 5)
+              (b  . 3))
 
 ; Now the output is provided as an ALIST of values for the STV's
 ; output variables.  In this case we see that RES2 has value 35, so
@@ -340,8 +342,6 @@ full:</p>
 ; that this is very useful in theorems.  But when we're just doing
 ; concrete runs, this output can be irritating.  You can turn it off
 ; by adding :quiet t, like this:
-
-:i-am-here
 
 (def-saved-nonevent alu-example-2-quiet
   (svtv-run (alu-test-vector)
@@ -414,7 +414,11 @@ You can see the documentation generated for this SVTV <see topic='@(url
 alu-test-vector)'>here</see>.</p>
 
 <p>Each entry in @(':phases') says what should happen in a particular
-time (phase) in the simulation.  The first entry says that the \"clk\" signal will initially be set to 0, but will toggle every time step.  It also says that the \"abus\" and \"bbus\" inputs should be set to symbolic variables @('a') and @('b') at that time.  That phase is also labeled @('dat') for documentation purposes.</p>
+time (phase) in the simulation.  The first entry says that the \"clk\"
+signal will initially be set to 0, but will toggle every time step.
+It also says that the \"abus\" and \"bbus\" inputs should be set to
+symbolic variables @('a') and @('b') at that time.  That phase is also
+labeled @('dat') for documentation purposes.</p>
 
 <p>The next entry in the phases is labeled @('op').  It has a @(':delay')
 argument, which says how many time steps after the previous entry the current
@@ -532,7 +536,6 @@ gtkwave:</p>
                                              (alu-test-vector-autoins))))
                   (loghead 16 (+ a b)))))
 
-
 (def-saved-event alu-simple-proof-that-might-succeed
   (fgl::def-fgl-thm alu16-adds-but-look-at-res2
     :hyp (and (alu-test-vector-autohyps)
@@ -648,15 +651,16 @@ SAT solver, we can try some proofs about it.  Here is a simple example:</p>
 <p>In addition to defining the STV @('(alu-test-vector)') itself, the @('defsvtv$')
 form from the previous section also defines  the following macros/functions:</p>
 
-<ul>
-<li>@('(alu-test-vector-autohyps)') expands to a function that checks type hypotheses for the input variables -- in this case,</li>
+<ul> <li>@('(alu-test-vector-autohyps)') expands to a function that
+checks type hypotheses for the input variables -- in this case,</li>
 @({
  (and (unsigned-byte-p 16 b)
       (unsigned-byte-p 16 a)
       (unsigned-byte-p 3 op))
  })
-<li>@('(alu-test-vector-autoins)') expands to a function that takes the input variables as inputs and outputs an alist binding the variable symbols to their corresponding values, i.e.,</li>
-@({
+<li>@('(alu-test-vector-autoins)') expands to a function that takes
+the input variables as inputs and outputs an alist binding the
+variable symbols to their corresponding values, i.e.,</li> @({
  (list (cons 'A a)
        (cons 'B b)
        (cons 'OP op))
