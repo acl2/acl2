@@ -28,7 +28,8 @@
               (normalizedp (fargn term 3))))
         (t t)))
 
-(verify-termination conjoin)
+; Commented out by Matt K. 10/23/2022.  The following is now redundant:
+; (verify-termination conjoin)
 
 ; Cntp-M stands for ``meaning'', with prefix ``cntp'' standing for
 ; convert-normalized-term-to-pairs.
@@ -71,8 +72,8 @@
         (cntp-evl (conjoin x) alist))))
 
 
-
-(verify-termination dumb-negate-lit)
+; Commented out by Matt K. 10/23/2022.  The following is now redundant:
+; (verify-termination dumb-negate-lit)
 
 ; The following definition is straight out of tau.lisp and could be replaced
 ; by (verify-termination convert-normalized-term-to-pairs) except I wanted to

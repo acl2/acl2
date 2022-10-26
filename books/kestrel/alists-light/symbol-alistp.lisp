@@ -77,10 +77,16 @@
   (implies (symbol-listp symbols)
            (symbol-alistp (pairlis$ symbols vals))))
 
-(defthm symbol-alistp-forward-to-true-listp
+(defthm symbol-alistp-forward-to-alistp
   (implies (symbol-alistp x)
-           (true-listp x))
+           (alistp x))
   :rule-classes :forward-chaining)
+
+;; Disabled since we have symbol-alistp-forward-to-alistp and alistp-forward-to-true-listp is built-in.
+;; (defthmd symbol-alistp-forward-to-true-listp
+;;   (implies (symbol-alistp x)
+;;            (true-listp x))
+;;   :rule-classes :forward-chaining)
 
 ;; Disabled by default for speed
 (defthmd true-listp-when-symbol-alistp
