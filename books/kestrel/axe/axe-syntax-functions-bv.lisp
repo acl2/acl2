@@ -464,12 +464,6 @@
            (member-eq (ffn-symb expr)
                       *operators-whose-size-we-know*)))))
 
-(defund not-bv-term-syntaxp (nodenum-or-quotep dag-array)
-  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
-                             (and (natp nodenum-or-quotep)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
-  (not (bv-term-syntaxp nodenum-or-quotep dag-array)))
-
 ;; ;bbbozo use this all over the place
 ;; ;term should be a nodenum or quoted constant (is this always the case for the da-syntaxp fns?)
 ;; ;restricted to the operators we want to trim...

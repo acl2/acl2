@@ -21,7 +21,6 @@
 (make-axe-syntaxp-evaluator 'jvm '(not-quotep ;drop?
                                    heavier-dag-term
                                    bv-term-syntaxp
-                                   not-bv-term-syntaxp
                                    is-a-myif
                                    not-is-a-myif ;drop?
                                    syntactic-booleanp

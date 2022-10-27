@@ -2080,7 +2080,7 @@
 
 (defthmd turn-equal-around-axe3
   (implies (and (axe-syntaxp (bv-term-syntaxp x dag-array))
-                (axe-syntaxp (not-bv-term-syntaxp y dag-array)))
+                (axe-syntaxp (not (bv-term-syntaxp y dag-array))))
            (equal (equal y x)
                   (equal x y))))
 
