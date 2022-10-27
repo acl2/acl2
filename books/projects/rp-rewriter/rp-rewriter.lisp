@@ -674,7 +674,6 @@
                 (xargs :stobjs (state rp-state)))
        (mv term nil rp-state)))
 
-    
 
     (local
      (defun rp-meta-fnc-formula-checks (state)
@@ -714,7 +713,6 @@
              (implies (VALID-RP-STATE-SYNTAXP rp-state)
                       (VALID-RP-STATE-SYNTAXP  res-rp-state)))))
 
-
     (defthm rp-rw-meta-rule-valid-rp-termp
       (implies (and (rp-termp term)
                     (rp-term-listp context)
@@ -722,7 +720,7 @@
                (b* (((mv res-term ?dont-rw ?rp-state)
                      (rp-rw-meta-rule term meta-fnc-name dont-rw context limit rp-state state)))
                  (rp-termp res-term)))))
-  
+
   (encapsulate
     ((rp-rw-preprocessor (term context rp-state state)
                          (mv t rp-state)
@@ -735,7 +733,6 @@
                                       (valid-rp-state-syntaxp rp-state))
                           :stobjs (state rp-state))
      (rp-proc-formula-checks (state) t :stobjs (state)))
-    
 
     (local
      (defun rp-rw-preprocessor (term  context rp-state state)
@@ -791,7 +788,6 @@
                       (rp-statep  res-rp-state))
              (implies (valid-rp-state-syntaxp rp-state)
                       (valid-rp-state-syntaxp  res-rp-state)))))
-
 
     (defthm rp-rw-postprocessor-valid-eval
       (implies (and (rp-termp term)
@@ -938,6 +934,10 @@ returns (mv rule rules-rest bindings rp-context)"
       (('cons a rest)
        (cons (if (and (symbolp a) (equal (symbol-name a) "@CONTEXT")) context a)
              (rp-rw-fix-cw-list rest context)))
+      (('quote x)
+       (let* ((x (true-list-fix x)))
+         (loop$ for e in x collect
+                `',e)))
       (''nil
        nil)
       (& nil)))
@@ -1674,7 +1674,6 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           ;; return the term
           (mv term rp-state))|#
 
-
           ((mv r1 r1-context-has-nil rp-state)
            (rp-rw-if-branch cond-rw then then-dont-rw context
                             iff-flg  limit rp-state state)
@@ -2001,7 +2000,6 @@ relieving the hypothesis for ~x1! You can disable this error by running:
        (if changed
            (rp-rw-context-loop context limit (1- loop-limit) rp-state state)
          (mv context rp-state)))))
-
 
  (defun rp-rw-context (old-context new-context limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
