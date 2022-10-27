@@ -11,3 +11,4 @@
 (ld "workshops/1999/mu-calculus/book/packages.lsp" :dir :system)
 (ld "centaur/svl/portcullis.acl2" :dir :system)
 (ld "coi/types/package.lsp" :dir :system) ; no portcullis.lisp in that dir
+(ld "centaur/vl2014/package.lsp" :dir :system) ; portcullis.lisp in that dir has too much stuff
