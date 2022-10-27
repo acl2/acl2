@@ -12,6 +12,9 @@
 
 (include-book "defmapping")
 
+(include-book "kestrel/std/system/rune-disabledp" :dir :system)
+(include-book "kestrel/std/system/rune-enabledp" :dir :system)
+(include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 (include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 (include-book "std/testing/must-be-table-key" :dir :system)

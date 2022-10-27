@@ -27,6 +27,7 @@
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
 (include-book "kestrel/std/system/pure-raw-p" :dir :system)
 (include-book "kestrel/std/system/rawp" :dir :system)
+(include-book "kestrel/std/system/uguard" :dir :system)
 (include-book "kestrel/std/system/unquote-term" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)

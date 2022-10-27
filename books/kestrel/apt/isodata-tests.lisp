@@ -17,6 +17,8 @@
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "std/testing/must-succeed" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
+(include-book "kestrel/std/system/rune-disabledp" :dir :system)
+(include-book "kestrel/std/system/rune-enabledp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
