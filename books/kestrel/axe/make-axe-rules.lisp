@@ -130,10 +130,10 @@
 ;; Returns (mv erp processed-argument).
 ;;sample inputs: (QUOTEP SHIFT-AMOUNT), (NOT (QUOTEP X)), (IF (QUOTEP K) (QUOTEP SIZE) 'NIL)
 ;;handles a nest of IFs and NOTs with constants and calls to quotep at the leaves
-(defund process-syntaxp-argument (term rule-symbol)
+(defund process-axe-syntaxp-argument (term rule-symbol)
   (declare (xargs :guard (pseudo-termp term)))
   (if (not (consp term)) ;;maybe it's okay to allow a variable here?
-      (prog2$ (er hard? 'process-syntaxp-argument "unexpected term, ~x0, in syntaxp hyp in rule ~x1." term rule-symbol)
+      (prog2$ (er hard? 'process-axe-syntaxp-argument "unexpected term, ~x0, in syntaxp hyp in rule ~x1." term rule-symbol)
               (mv (erp-t) nil))
     (if (myquotep term) ;quoted constant
         (mv (erp-nil) term)
@@ -145,40 +145,40 @@
                  )
             (mv (erp-nil) `(axe-quotep ,(first (fargs term))))
           (if (eq fn 'if)
-              (b* (((mv erp processed-test) (process-syntaxp-argument (farg1 term) rule-symbol))
+              (b* (((mv erp processed-test) (process-axe-syntaxp-argument (farg1 term) rule-symbol))
                    ((when erp) (mv erp nil))
-                   ((mv erp processed-then) (process-syntaxp-argument (farg2 term) rule-symbol))
+                   ((mv erp processed-then) (process-axe-syntaxp-argument (farg2 term) rule-symbol))
                    ((when erp) (mv erp nil))
-                   ((mv erp processed-else) (process-syntaxp-argument (farg3 term) rule-symbol))
+                   ((mv erp processed-else) (process-axe-syntaxp-argument (farg3 term) rule-symbol))
                    ((when erp) (mv erp nil)))
                 (mv (erp-nil) `(if ,processed-test ,processed-then ,processed-else)))
             (if (eq fn 'not)
-                (b* (((mv erp processed-arg) (process-syntaxp-argument (farg1 term) rule-symbol))
+                (b* (((mv erp processed-arg) (process-axe-syntaxp-argument (farg1 term) rule-symbol))
                      ((when erp) (mv erp nil)))
                   (mv (erp-nil) `(not ,processed-arg)))
-              (prog2$ (er hard? 'process-syntaxp-argument "unexpected term, ~x0, in syntaxp hyp in rule ~x1." term rule-symbol)
+              (prog2$ (er hard? 'process-axe-syntaxp-argument "unexpected term, ~x0, in syntaxp hyp in rule ~x1." term rule-symbol)
                       (mv (erp-t) nil)))))))))
 
-(defthm pseudo-termp-of-mv-nth-1-of-process-syntaxp-argument
+(defthm pseudo-termp-of-mv-nth-1-of-process-axe-syntaxp-argument
   (implies (pseudo-termp term)
-           (pseudo-termp (mv-nth 1 (process-syntaxp-argument term rule-symbol))))
-  :hints (("Goal" :in-theory (enable process-syntaxp-argument))))
+           (pseudo-termp (mv-nth 1 (process-axe-syntaxp-argument term rule-symbol))))
+  :hints (("Goal" :in-theory (enable process-axe-syntaxp-argument))))
 
-(defthm axe-syntaxp-exprp-of-mv-nth-1-of-process-syntaxp-argument
+(defthm axe-syntaxp-exprp-of-mv-nth-1-of-process-axe-syntaxp-argument
   (implies (and (pseudo-termp conjunct)
-                (not (mv-nth 0 (process-syntaxp-argument conjunct rule-symbol))))
-           (axe-syntaxp-exprp (mv-nth 1 (process-syntaxp-argument conjunct rule-symbol))))
-  :hints (("Goal" :in-theory (enable process-syntaxp-argument axe-syntaxp-exprp axe-syntaxp-function-applicationp list-of-variables-and-constantsp))))
+                (not (mv-nth 0 (process-axe-syntaxp-argument conjunct rule-symbol))))
+           (axe-syntaxp-exprp (mv-nth 1 (process-axe-syntaxp-argument conjunct rule-symbol))))
+  :hints (("Goal" :in-theory (enable process-axe-syntaxp-argument axe-syntaxp-exprp axe-syntaxp-function-applicationp list-of-variables-and-constantsp))))
 
 ;; Returns (mv erp hyp).
-;; process-syntaxp-argument helps catch errors if the rule has unsupported stuff in a syntaxp hyp
+;; process-axe-syntaxp-argument helps catch errors if the rule has unsupported stuff in a syntaxp hyp
 (defund make-axe-syntaxp-hyp-for-synp-expr (expr bound-vars rule-symbol hyp)
   (declare (xargs :guard (and (pseudo-termp expr)
                               (symbol-listp bound-vars)
                               (symbolp rule-symbol))))
   (b* (;; Remove dag-array args from axe-syntaxp functions ('dag-array might remain as an argument to quotep):
        ((mv erp expr)
-        (process-syntaxp-argument expr rule-symbol))
+        (process-axe-syntaxp-argument expr rule-symbol))
        ((when erp)
         (er hard? 'make-axe-syntaxp-hyp-for-synp-expr "Error processing synp hyp ~x0 in rule ~x1." hyp rule-symbol)
         (mv erp nil))
@@ -301,15 +301,15 @@
   :hints (("Goal" :in-theory (enable process-axe-bind-free-function-application axe-bind-free-function-applicationp))))
 
 ;zz
-;; (defthm subsetp-equal-of-free-vars-in-term-of-mv-nth-1-of-process-syntaxp-argument
-;;   (implies (and (not (mv-nth 0 (process-syntaxp-argument term rule-symbol)))
+;; (defthm subsetp-equal-of-free-vars-in-term-of-mv-nth-1-of-process-axe-syntaxp-argument
+;;   (implies (and (not (mv-nth 0 (process-axe-syntaxp-argument term rule-symbol)))
 ;;                 (subsetp-equal (free-vars-in-term term)
 ;;                                (cons 'dag-array bound-vars))
 ;;                 (pseudo-termp term))
-;;            (subsetp-equal (free-vars-in-term (mv-nth 1 (process-syntaxp-argument term rule-symbol)))
+;;            (subsetp-equal (free-vars-in-term (mv-nth 1 (process-axe-syntaxp-argument term rule-symbol)))
 ;;                           bound-vars))
 ;;   :hints (("Goal" :expand (free-vars-in-terms (cdr term))
-;;            :in-theory (enable process-syntaxp-argument
+;;            :in-theory (enable process-axe-syntaxp-argument
 ;;                               myquotep
 ;;                               free-vars-in-term))))
 
@@ -786,8 +786,7 @@
                     )
            :in-theory (enable make-axe-rule-hyps-for-hyp
                               bound-vars-suitable-for-hypp
-                              MAKE-AXE-SYNTAXP-HYP-FOR-SYNP-EXPR
-                              PROCESS-SYNTAXP-ARGUMENT))))
+                              MAKE-AXE-SYNTAXP-HYP-FOR-SYNP-EXPR))))
 
 (local (in-theory (disable INTERSECTION-EQUAL))) ;prevent indution
 
