@@ -682,8 +682,8 @@
       (cw "~s0" english-rec))))
 
 (defun show-successful-recommendations-aux (recs)
-  (declare (xargs :mode :program))
-  (declare (xargs :guard (recommendation-listp recs)))
+  (declare (xargs :guard (recommendation-listp recs)
+                  :mode :program))
   (if (endp recs)
       nil
     (let* ((rec (first recs))
@@ -1037,8 +1037,9 @@
 
 (defun cw-success-message (rec)
   (declare (xargs :mode :program)) ; todo
-  (prog2$ (cw "SUCCESS: ")
-          (show-successful-recommendation rec)))
+  (progn$ (cw "SUCCESS: ")
+          (show-successful-recommendation rec)
+          (cw "~%")))
 
 ;; Returns (mv erp successp state).
 ;; TODO: Skip if library already included
