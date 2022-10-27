@@ -3125,6 +3125,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-fn-guard ((fn symbolp)
+                          (names-to-avoid symbol-listp)
+                          state)
+  :returns (mv (local-event pseudo-event-formp)
+               (name symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
+  :short "Generate a local function for the guard of @('fn')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This will be just used (in the future) in theorems,
+     so there is no need to guard-verify it."))
+  (b* ((wrld (w state))
+       (name (pack fn "-GUARD"))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name
+                                           'function
+                                           names-to-avoid
+                                           wrld))
+       (guard (uguard+ fn wrld))
+       ((mv event &)
+        (evmac-generate-defun name
+                              :formals (formals+ fn wrld)
+                              :body (untranslate$ guard t state)
+                              :verify-guards nil
+                              :enable nil)))
+    (mv event name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-cfun-fun-env-thm ((fn symbolp)
                                   (prog-const symbolp)
                                   (finfo? fun-info-optionp)
@@ -4418,14 +4449,18 @@
             fn-correct-thm
             names-to-avoid)
         (if proofs
-            (b* (((mv fn-fun-env-events
+            (b* (((mv fn-guard-event
+                      & ; fn-guard
+                      names-to-avoid)
+                  (atc-gen-fn-guard fn body.names-to-avoid state))
+                 ((mv fn-fun-env-events
                       fn-fun-env-thm
                       names-to-avoid)
                   (atc-gen-cfun-fun-env-thm fn
                                             prog-const
                                             finfo
                                             init-fun-env-thm
-                                            body.names-to-avoid
+                                            names-to-avoid
                                             wrld))
                  ((mv fn-result-events
                       fn-result-thm
@@ -4461,6 +4496,7 @@
                                      `((cw-event " done.~%"))))
                  (local-events (append body.events
                                        progress-start?
+                                       (list fn-guard-event)
                                        fn-fun-env-events
                                        fn-result-events
                                        fn-correct-local-events
