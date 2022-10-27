@@ -351,6 +351,7 @@
                                             (min (- size start)
                                                  bits-size)))
                       0)))
+    :beta-reduce nil
     :hints (("Goal"
              :in-theory (e/d (4VEC-PART-SELECT-of-4vec-bitnot$-2
                               4VEC-PART-SELECT-of-4vec-bitnot$-1
