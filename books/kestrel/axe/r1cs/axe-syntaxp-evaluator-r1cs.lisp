@@ -32,9 +32,9 @@
                                     syntactic-variablep
                                     is-the-variablep
                                     should-reverse-equality
-                                    bv-array-write-nest-ending-inp
-                                    bvcat-nest-with-low-zeros
-                                    bv-array-write-nest-with-val-at-index
+                                    bv-array-write-nest-ending-inp-axe
+                                    bvcat-nest-with-low-zerosp-axe
+                                    bv-array-write-nest-with-val-at-indexp-axe
                                     term-should-be-trimmed-axe-plus-one
                                     term-should-be-trimmed-axe
                                     should-commute-axe-argsp

@@ -1509,7 +1509,7 @@
 
 (defthmd bvor-disjoint-ones-arg2-gen
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
-                (axe-syntaxp (bvcat-nest-with-low-zeros x size2 dag-array)) ;new
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array)) ;new
                 (< size2 size)
                 (equal 0 (bvchop size2 x))
                 (unsigned-byte-p-forced size2 y)
@@ -1534,7 +1534,7 @@
 (defthmd bvplus-disjoint-ones-arg1-gen-better
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
                 (< size2 size)
-                (axe-syntaxp (bvcat-nest-with-low-zeros x size2 dag-array))
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array))
                 (equal 0 (bvchop size2 x)) ;; force, or something?
                 (unsigned-byte-p-forced size2 y)
                 (natp size)
@@ -1547,7 +1547,7 @@
 (defthmd bvplus-disjoint-ones-arg2-gen-better
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
                 (< size2 size)
-                (axe-syntaxp (bvcat-nest-with-low-zeros x size2 dag-array))
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array))
                 (equal 0 (bvchop size2 x)) ;; force, or something?
                 (unsigned-byte-p-forced size2 y)
                 (natp size)
@@ -1562,7 +1562,7 @@
 (defthmd bvplus-disjoint-ones-2
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
                 (< size2 size)
-                (axe-syntaxp (bvcat-nest-with-low-zeros x size2 dag-array))
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array))
                 (equal 0 (bvchop size2 x)) ;; force, or something?
                 (unsigned-byte-p-forced size2 y)
                 ;(natp size)
@@ -1575,7 +1575,7 @@
 (defthmd bvplus-disjoint-ones-2-alt
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
                 (< size2 size)
-                (axe-syntaxp (bvcat-nest-with-low-zeros x size2 dag-array))
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array))
                 (equal 0 (bvchop size2 x)) ;; force, or something?
                 (unsigned-byte-p-forced size2 y)
                 ;(natp size)
@@ -1587,7 +1587,7 @@
 
 (defthmd bvor-disjoint-ones-arg1-gen
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
-                (axe-syntaxp (bvcat-nest-with-low-zeros x size2 dag-array)) ;new
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array)) ;new
                 (< size2 size)
                 (equal 0 (bvchop size2 x))
                 (unsigned-byte-p-forced size2 y)

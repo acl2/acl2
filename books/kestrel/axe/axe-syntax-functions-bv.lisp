@@ -237,7 +237,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;term and nest are nodenums or quoteps?
-(defund bv-array-write-nest-ending-inp (term nest dag-array)
+(defund bv-array-write-nest-ending-inp-axe (term nest dag-array)
   (declare (xargs :guard (or (myquotep nest)
                              (and (natp nest)
                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
@@ -250,12 +250,12 @@
            (= 5 (len (dargs expr)))
            (if (quotep (darg5 expr))
                (equal term (darg5 expr))
-             (and (natp (darg5 expr))           ;drop somehow?
-                  (mbt (natp nest))               ;for termination
-                  (mbt (< (darg5 expr) nest))   ;for termination
-                  (bv-array-write-nest-ending-inp term
-                                                  (darg5 expr)
-                                                  dag-array)))))))
+             (and (natp (darg5 expr))         ;drop somehow?
+                  (mbt (natp nest))           ;for termination
+                  (mbt (< (darg5 expr) nest)) ;for termination
+                  (bv-array-write-nest-ending-inp-axe term
+                                                      (darg5 expr)
+                                                      dag-array)))))))
 
 ;; ;; scheme for getting rid of logext-lists in myif nests
 
@@ -356,7 +356,7 @@
 
 ;BOZO for what other terms is it syntactically evident that they have low zeros?
 ;termination depends on dag property?
-(defund bvcat-nest-with-low-zeros-aux (term zero-count-needed dag-array)
+(defund bvcat-nest-with-low-zerosp-axe-aux (term zero-count-needed dag-array)
   (declare (xargs :measure (if (quotep term)
                                0
                              (+ 1 (nfix term)))
@@ -390,18 +390,18 @@
                              (mbt (or (quotep (darg4 expr)) ;for termination
                                       (and (< (darg4 expr) term)
                                            (natp (darg4 expr)))))
-                             (bvcat-nest-with-low-zeros-aux (darg4 expr) zero-count-needed dag-array)))))))))))
+                             (bvcat-nest-with-low-zerosp-axe-aux (darg4 expr) zero-count-needed dag-array)))))))))))
 
 ;zero-count-needed is quoted
-(defund bvcat-nest-with-low-zeros (term zero-count-needed dag-array)
+(defund bvcat-nest-with-low-zerosp-axe (term zero-count-needed dag-array)
   (declare (xargs :guard (or (myquotep term)
                              (and (natp term)
                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))))
   (and (myquotep zero-count-needed)
        (natp (unquote zero-count-needed))
-       (bvcat-nest-with-low-zeros-aux term (unquote zero-count-needed) dag-array)))
+       (bvcat-nest-with-low-zerosp-axe-aux term (unquote zero-count-needed) dag-array)))
 
-(defund bv-array-write-nest-with-val-at-index-aux (term val index dag-array
+(defund bv-array-write-nest-with-val-at-indexp-axe-aux (term val index dag-array
                                                         calls-remaining ;ensures termination (todo: drop and use mbt instead)
                                                         )
   (declare (xargs :measure (nfix (+ 1 calls-remaining))
@@ -435,10 +435,10 @@
                      (let ((index2 (darg3 expr)))
                        (if (and (quotep index2)
                                 (not (equal (unquote index2) index)))
-                           (bv-array-write-nest-with-val-at-index-aux (darg5 expr) val index dag-array (+ -1 calls-remaining))
+                           (bv-array-write-nest-with-val-at-indexp-axe-aux (darg5 expr) val index dag-array (+ -1 calls-remaining))
                          nil)))))))))))
 
-(defund bv-array-write-nest-with-val-at-index (term val index dag-array)
+(defund bv-array-write-nest-with-val-at-indexp-axe (term val index dag-array)
   (declare (xargs :guard (and (or (natp index)
                                   (myquotep index))
                               (or (natp val)
@@ -449,9 +449,9 @@
   (and (quotep val)
        (quotep index)
        (natp (unquote index)) ;new, can prevent loops?
-       (bv-array-write-nest-with-val-at-index-aux term (unquote val) (unquote index) dag-array
-                                                  1000000 ;is term a nodenum?  can we use it here?
-                                                  )))
+       (bv-array-write-nest-with-val-at-indexp-axe-aux term (unquote val) (unquote index) dag-array
+                                                       1000000 ;is term a nodenum?  can we use it here?
+                                                       )))
 
 (defund bv-term-syntaxp (nodenum-or-quotep dag-array)
   (declare (xargs :guard (or (myquotep nodenum-or-quotep)
