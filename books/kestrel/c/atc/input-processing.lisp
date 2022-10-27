@@ -31,6 +31,7 @@
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
 (include-book "oslib/dirname" :dir :system :ttags ((:quicklisp) :oslib))
 (include-book "oslib/file-types" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) :oslib))
+(include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 
 (local (include-book "std/alists/top" :dir :system))
