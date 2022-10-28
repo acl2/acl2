@@ -322,6 +322,7 @@
   :hints (("Goal" :in-theory (e/d
                               (context-syntaxp
                                rp-termp
+                               is-hide
                                rp-term-listp
                                rp-check-context)
                               ((:REWRITE RP-EQUAL-IS-SYMMETRIC)
@@ -581,6 +582,16 @@
                    (iff (rp-evlt (cadr term) a)
                         (rp-evlt (caddr term) a))))))
 
+(local
+ (defthm rp-evlt-of-hide
+   (implies (is-hide x)
+            (equal (rp-evlt x a)
+                   (rp-evlt (cadr x) a)))
+   :hints (("Goal"
+            :in-theory (e/d (rp-trans
+                             is-hide)
+                            ())))))
+
 (defthm rp-check-context-is-correct-iff
   (implies
    (and  (context-syntaxp context)
@@ -623,6 +634,7 @@
            :in-theory (e/d (rp-check-context
                             ;;RP-EVLT-OF-RP-EQUAL-2
                             context-syntaxp
+                            ;;is-hide
                             rp-check-context-is-correct-iff-lemma
                             rp-check-context-is-correct-iff-lemma-2
                             rp-check-context-is-correct-iff-lemma-3

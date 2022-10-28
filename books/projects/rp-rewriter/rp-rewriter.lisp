@@ -311,7 +311,7 @@
   (if (atom context)
       (mv term dont-rw)
     (let* ((c (car context))
-           ;;(c (if (is-hide c) (cadr c) c))
+           (c (if (is-hide c) (cadr c) c))
            ;;(rw-context-flg nil)
            )
       (cond ((and attach-sc

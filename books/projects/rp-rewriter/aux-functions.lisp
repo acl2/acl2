@@ -976,11 +976,17 @@
       (light-remove-return-last (cadddr term))
     term))
 
-(defund is-hide (term)
+(define is-hide (term)
   (declare (xargs :guard t))
   (case-match term
     (('hide &) t)
-    (& nil)))
+    (& nil))
+  ///
+  (defthm is-hide-implies
+    (implies (is-hide x)
+             (case-match x
+               (('hide &) t)))
+    :rule-classes :forward-chaining))
 
 (in-theory (disable extract-from-rp-with-context))
 
