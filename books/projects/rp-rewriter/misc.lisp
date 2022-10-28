@@ -164,7 +164,7 @@
   :disabled
   :disabled-for-ACL2
   :from-add-rp-rule
-  :beta-reduce
+  :lambda-opt
   :rw-direction
   :hints)))
   (from-add-rp-rule (cdr (hons-assoc-equal :from-add-rp-rule
@@ -179,8 +179,8 @@
   pulled-args))))
   (rw-direction (cdr (hons-assoc-equal :rw-direction pulled-args)))
   (hints (cdr (hons-assoc-equal :hints pulled-args)))
-  (beta-reduce (if (hons-assoc-equal :beta-reduce pulled-args)
-  (cdr (hons-assoc-equal :beta-reduce pulled-args))
+  (lambda-opt (if (hons-assoc-equal :lambda-opt pulled-args)
+  (cdr (hons-assoc-equal :lambda-opt pulled-args))
   t))
 
   ((mv hyp lhs rhs iff)
@@ -214,7 +214,7 @@
   (rule-name-for-rp-openers (intern$ (str::cat (symbol-name rule-name)
   "-FOR-RP-OPENERS")
   (symbol-package-name rule-name))))
-  (if (and beta-reduce
+  (if (and lambda-opt
   (or (and sigs fncs openers)
   (and (or sigs fncs openers)
   (hard-error
@@ -275,7 +275,7 @@
   (def-rp-rule :disabled-for-acl2 t
   ,rule-name-for-rp-openers
   (and ,@openers)
-  :beta-reduce nil
+  :lambda-opt nil
   :hints (("Goal"
   :use ((:instance opener-lemmas))
   :in-theory nil))))))
@@ -297,7 +297,7 @@
   `(,rule-name-for-rp-openers))))))))
 
   (add-rp-rule ,rule-name
-  :beta-reduce nil
+  :lambda-opt nil
   :rw-direction ,rw-direction
   :disabled ,disabled-for-rp)
   (table corresponding-rp-rule ',rule-name ',rule-name-for-rp)
@@ -318,7 +318,7 @@
   ,@args
   :hints ,hints))
   (add-rp-rule ,rule-name
-  :beta-reduce nil
+  :lambda-opt nil
   :rw-direction ,rw-direction
   :disabled ,disabled-for-rp)))))|#
 
@@ -386,7 +386,7 @@
   :short "A useful utility to use rewrite rules that has lambda expression on
  RHS for RP-Rewriter."
   :long "<p>RP-Rewriter does not work with terms that has lambda expressions. Every
- rewrite rule and conjectures are beta-reduced. However, for some cases, doing
+ rewrite rule and conjectures are lambda-optd. However, for some cases, doing
  beta-reduction without rewriting subterms first can cause performance issues
  due to repetition.</p>
 <p> To mitigate this issue, we use a macro defthm-lambda that can retain the
@@ -496,7 +496,7 @@ nothing to bump!" nil)))
     `(progn
        . ,(bump-rules-body args)))
 
-  (define add-rp-rule-fn-aux (formulas rule-name beta-reduce index)
+  (define add-rp-rule-fn-aux (formulas rule-name lambda-opt index)
     :mode :program
     :returns (mv sigs fncs fnc-names openers bodies res-index)
     (if (atom formulas)
@@ -506,8 +506,8 @@ nothing to bump!" nil)))
            ;; recollect into a lambda expression (rhs and hyp only) if there is
            ;; room for improvement
            ;;((list rhs-old hyp-old) (list rhs hyp)) 
-           (rhs (if (equal beta-reduce :max) (cmr::let-abstract-term rhs 'rhs-var) rhs))
-           (hyp (if (equal beta-reduce :max) (cmr::let-abstract-term hyp 'hyp-var) hyp))
+           (rhs (if (equal lambda-opt :max) (cmr::let-abstract-term rhs 'rhs-var) rhs))
+           (hyp (if (equal lambda-opt :max) (cmr::let-abstract-term hyp 'hyp-var) hyp))
            #|(- (or (equal rhs-old rhs)
                   (cw "changed rhs: rule: ~p0 ~%" rule-name)))|#
            #|(- (or (equal hyp-old hyp)
@@ -525,7 +525,7 @@ nothing to bump!" nil)))
                             ,rhs-body)))
 
            ((mv sigs fncs fnc-names openers bodies index)
-            (add-rp-rule-fn-aux (cdr formulas) rule-name beta-reduce index)))
+            (add-rp-rule-fn-aux (cdr formulas) rule-name lambda-opt index)))
 
         (mv (append rhs-sigs hyp-sigs sigs)
             (append rhs-fncs hyp-fncs fncs)
@@ -616,7 +616,7 @@ nothing to bump!" nil)))
   (define add-rp-rule-fn (rule args state)
     :mode :program
     (b* ((?world (w state))
-         ((std::extract-keyword-args (beta-reduce 'nil)
+         ((std::extract-keyword-args (lambda-opt 'nil)
                                      (disabled 'nil)
                                      (rw-direction ':inside-out)
                                      (ruleset 'rp-rules)
@@ -655,7 +655,7 @@ nothing to bump!" nil)))
          ;; just check if the rune can be parsed
          (- (get-rules (list rune) state :warning :err))
 
-         ((unless beta-reduce)
+         ((unless lambda-opt)
           (value `(progn (table ,ruleset ',rune (cons ',rw-direction ',(not disabled)))
                          (value-triple ',rune))))
 
@@ -670,7 +670,7 @@ nothing to bump!" nil)))
          (term (remove-unused-vars-from-lambdas term))
          (formulas (make-formula-better term *big-number*))
          ((mv sigs fncs fnc-names openers bodies &)
-          (add-rp-rule-fn-aux formulas rule-name beta-reduce 0))
+          (add-rp-rule-fn-aux formulas rule-name lambda-opt 0))
 
          ((unless (and sigs fncs fnc-names))
           ;; nothing.
@@ -692,7 +692,7 @@ nothing to bump!" nil)))
             ,rule-name-for-rp-openers
             (and ,@openers)
             :disabled-for-acl2 t
-            :beta-reduce nil
+            :lambda-opt nil
             :hints (("Goal"
                      :in-theory (union-theories
                                  '(hard-error hons-copy return-last ,@(strip-cars fnc-names))
@@ -723,7 +723,7 @@ nothing to bump!" nil)))
   (defmacro add-rp-rule (rule &rest args
                               ;; &key
                               ;; (disabled 'nil)
-                              ;; (beta-reduce 'nil)
+                              ;; (lambda-opt 'nil)
                               ;; (hints 'nil)
                               ;; (rw-direction ':inside-out)
                               ;; (ruleset 'rp-rules)
@@ -737,7 +737,7 @@ nothing to bump!" nil)))
 
   #|(defmacro add-rp-rule (rule-name &key
   (disabled 'nil)
-  (beta-reduce 'nil)
+  (lambda-opt 'nil)
   (hints 'nil)
   (rw-direction ':inside-out)
   (ruleset 'rp-rules))
@@ -756,12 +756,12 @@ nothing to bump!" nil)))
   or nil (meaning :inside-out) but it is given: ~p0 ~%"
   (list (cons #\0 rw-direction)))))))
   `(make-event
-  (b* ((body (and ,beta-reduce
+  (b* ((body (and ,lambda-opt
   (meta-extract-formula ',rule-name state)))
-  (beta-reduce (and ,beta-reduce
+  (lambda-opt (and ,lambda-opt
   (contains-lambda-expression body)))
   (rule-name ',rule-name)
-  (new-rule-name (if beta-reduce
+  (new-rule-name (if lambda-opt
   (intern$ (str::cat (symbol-name ',rule-name)
   "-FOR-RP")
   (symbol-package-name ',rule-name))
@@ -779,7 +779,7 @@ nothing to bump!" nil)))
   ',rune
   (cons ,,',rw-direction
   ,(not disabled)))))))))
-  (if beta-reduce
+  (if lambda-opt
   `(progn
   (defthm-lambda ,rule-name
   ,body
@@ -792,7 +792,7 @@ nothing to bump!" nil)))
   (value-triple (cw "This rule has a lambda expression, ~
   and it is automatically put through rp::defthm-lambda  and a ~
   new rule is created to be used by RP-Rewriter. You can disable this by setting ~
-  :beta-reduce to nil ~% The name of this rule is: ~p0 ~%" ',new-rule-name))
+  :lambda-opt to nil ~% The name of this rule is: ~p0 ~%" ',new-rule-name))
   (value-triple ',new-rule-name))))
   rest-body)))))|#
 
@@ -806,7 +806,7 @@ nothing to bump!" nil)))
                          (list (cons #\0 args)))))
 
          ((std::extract-keyword-args (rule-classes ':rewrite)
-                                     (beta-reduce 't)
+                                     (lambda-opt 't)
                                      (disabled 'nil)
                                      (disabled-for-rp 'nil)
                                      (disabled-for-ACL2 'nil)
@@ -825,7 +825,7 @@ nothing to bump!" nil)))
           ,@(and instructions `(:instructions ,instructions))
           :rule-classes ,rule-classes)
          (add-rp-rule ,rule-name
-                      :beta-reduce ,beta-reduce
+                      :lambda-opt ,lambda-opt
                       :disabled ,(or disabled disabled-for-rp)
                       :rw-direction ,rw-direction)
          #|(acl2::extend-pe-table ,rule-name
@@ -842,7 +842,7 @@ nothing to bump!" nil)))
   ,rule-name ,rule ,@hints)
   (with-output :off :all :gag-mode nil :on error
   (add-rp-rule  ,rule-name :disabled ,disabled
-  :beta-reduce nil))))|#)
+  :lambda-opt nil))))|#)
 
 (encapsulate
   nil
@@ -1087,7 +1087,7 @@ RP-Rewriter will throw an eligible error.</p>"
                                    (runes 'nil)
                                    (runes-outside-in 'nil)
                                    (cases 'nil)
-                                   (beta-reduce 't)
+                                   (lambda-opt 't)
                                    (disabled 'nil)
                                    (disabled-for-rp 'nil)
                                    (disabled-for-ACL2 'nil)
@@ -1110,7 +1110,7 @@ RP-Rewriter will throw an eligible error.</p>"
                                                    :cases ',cases)))))
        (body
         (cond
-         (beta-reduce
+         (lambda-opt
           (b* ((rule-name-for-rp (intern-in-package-of-symbol (str::cat (symbol-name name) "-FOR-RP") name))
                #|(name-tmp (intern-in-package-of-symbol (str::cat (symbol-name name) "-TMP") name))|#
                ((mv ?sigs fncs ?fnc-names ?openers reduced-body &) (search-lambda-to-fnc name 0 translated-term))
@@ -1166,7 +1166,7 @@ RP-Rewriter will throw an eligible error.</p>"
 
               ,@(and add-rp-rule
                      `((add-rp-rule ,name
-                                    :beta-reduce ,beta-reduce
+                                    :lambda-opt ,lambda-opt
                                     :disabled ,(or disabled disabled-for-rp)
                                     :rw-direction ,rw-direction)))
               ))
@@ -1193,7 +1193,7 @@ RP-Rewriter will throw an eligible error.</p>"
 ;;                          (runes-outside-in 'nil) ;; when nil, runes will be read from
 ;;                          ;; rp-rules table
 ;;                          (cases 'nil)
-;;                          (beta-reduce 't)
+;;                          (lambda-opt 't)
 ;;                          (disabled 'nil)
 ;;                          (disabled-for-rp 'nil)
 ;;                          (disabled-for-ACL2 'nil)
@@ -1217,7 +1217,7 @@ RP-Rewriter will throw an eligible error.</p>"
 
 ;;                   (def-rp-rule ,',name ,',term
 ;;                     :rule-classes ,',rule-classes
-;;                     :beta-reduce ,',beta-reduce
+;;                     :lambda-opt ,',lambda-opt
 ;;                     :disabled-for-ACL2 ,',disabled-for-ACL2
 ;;                     :disabled-for-rp ,',disabled-for-rp
 ;;                     :disabled ,',disabled

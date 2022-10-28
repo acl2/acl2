@@ -351,7 +351,7 @@
                                             (min (- size start)
                                                  bits-size)))
                       0)))
-    :beta-reduce nil
+    :lambda-opt nil
     :hints (("Goal"
              :in-theory (e/d (4VEC-PART-SELECT-of-4vec-bitnot$-2
                               4VEC-PART-SELECT-of-4vec-bitnot$-1
@@ -376,7 +376,7 @@
                               bits)
                              ()))))
 
-  (add-svex-simplify-rule bits-of-4vec-bitnot$)
+  (add-svex-simplify-rule bits-of-4vec-bitand$)
 
   (def-rp-rule 4vec-bitor-of-negated-same-var-with-bitnot$
     (implies (and (natp size)

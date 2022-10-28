@@ -48,9 +48,7 @@
 
 (set-ignore-ok t)
 (add-rp-rule acl2::svtv-run-fn
-             :beta-reduce t
-             :hints (("Goal"
-                      :in-theory (e/d (acl2::svtv-run-fn) ()))))
+             :lambda-opt t)
 
 ;; (enable-rules '(svl::svexl-alist-correct
 ;;                 svl::svexllist-correct
