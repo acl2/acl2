@@ -873,6 +873,14 @@
                                 STR::COERCE-TO-LIST-REMOVAL
                                 STR::COERCE-TO-STRING-REMOVAL))))))
 
+  #!RP
+  (local
+   (defthm integerp-of-*RW-BACKCHAIN-LIMIT*
+     (implies (rp-statep rp-state)
+              (integerp (nth  *rw-backchain-limit* rp-state)))
+     :hints (("Goal"
+              :in-theory (e/d (rp-statep) ())))))
+
   (define svexl-node-simplify ((node svexl-node-p)
                                (context)
                                (node-integerp-alist alistp)
@@ -956,7 +964,7 @@
 
          ((mv rw rp::rp-state)
           (rp::rp-rw
-           term nil context nil  (rp::rw-step-limit rp::rp-state)
+           term nil context nil (rp::rw-backchain-limit rp::rp-state) (rp::rw-step-limit rp::rp-state)
            rp::rp-state state))
 
          #|((mv rw rp::rp-state)
@@ -966,7 +974,7 @@
          
          ((mv integerp rp::rp-state)
           (rp::rp-rw
-           `(integerp ,rw) `(nil t) context t  (rp::rw-step-limit rp::rp-state)
+           `(integerp ,rw) `(nil t) context t (rp::rw-backchain-limit rp::rp-state) (rp::rw-step-limit rp::rp-state)
            rp::rp-state state))
 
          ;; (- (cw "node: ~p0 ~%" node))
@@ -1025,7 +1033,8 @@
                                          (rp::rp 'sv::svex-env-p svex-env)))
          ((mv rw rp::rp-state)
           (rp::rp-rw
-           term nil context nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
+           term nil context nil (rp::rw-backchain-limit rp::rp-state)
+           (rp::rw-step-limit rp::rp-state) rp::rp-state state))
          ((mv err node-new) (4vec-to-svex-termlist rw t nil))
          (- (and err
                  (hard-error
@@ -1159,16 +1168,36 @@
           rp::rp-state))))
 
 (local
+ (defthm true-listp-of-update-nth
+   (implies (true-listp x)
+            (true-listp (update-nth key val x)))))
+
+(local
+ (defthm length-of-update-nth
+   (EQUAL (LENgth (UPDATE-NTH ACL2::N ACL2::VAL ACL2::X))
+          (MAX (1+ (NFIX ACL2::N))
+               (len ACL2::X)))))
+
+(local
  (defthm RP::rp-statep-of-UPDATE-NOT-SIMPLIFIED-ACTION
    (implies (and (rp::rp-statep RP::RP-STATE)
                  (symbolp x))
             (rp::rp-statep
-             (RP::UPDATE-NOT-SIMPLIFIED-ACTION x RP::RP-STATE)))
+             (rp::update-not-simplified-action x rp::RP-STATE)))
    :hints (("Goal"
             :do-not-induct t
-            :in-theory (e/d (rp::rp-statep
-                             RP::UPDATE-NOT-SIMPLIFIED-ACTION)
-                            ())))))
+            :expand (LENGTH RP-STATE)
+            :in-theory '(true-listp-of-update-nth
+                         rp::rp-statep coerce
+                         NTH-UPDATE-NTH
+                         LEN-UPDATE-NTH length-of-update-nth
+                         nfix
+                         (:e nfix) max
+                         RP::NOT-SIMPLIFIED-ACTIONP
+                         TRUE-LISTP
+                         ;;UPDATE-NTH
+                         RP::RW-STEP-LIMITP
+                         RP::UPDATE-NOT-SIMPLIFIED-ACTION)))))
 
 (local
  (defthm RP::VALID-RP-STATE-SYNTAXP-of-UPDATE-NOT-SIMPLIFIED-ACTION
@@ -1311,7 +1340,7 @@
        (context (if (rp::context-syntaxp context) context nil))
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
-         context nil nil  (rp::rw-step-limit rp::rp-state)  rp::rp-state state))
+         context nil nil  (rp::rw-backchain-limit rp::rp-state)(rp::rw-step-limit rp::rp-state)  rp::rp-state state))
        (context (if (rp::context-syntaxp context) context nil))
 
        ((mv svexl rp::rp-state)
@@ -1328,7 +1357,8 @@
         (if only-local
             (mv term rp::rp-state)
           (rp::rp-rw
-           term nil context nil  (rp::rw-step-limit rp::rp-state) rp::rp-state state)))
+           term nil context nil (rp::rw-backchain-limit rp::rp-state)
+           (rp::rw-step-limit rp::rp-state) rp::rp-state state)))
 
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action
@@ -1435,7 +1465,7 @@
 
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
-         context nil nil (rp::rw-step-limit rp::rp-state)
+         context nil nil (rp::rw-backchain-limit rp::rp-state) (rp::rw-step-limit rp::rp-state)
          rp::rp-state state))
 
        (context (if (rp::context-syntaxp context) context nil))
@@ -1453,7 +1483,8 @@
         (if only-local
             (mv term rp::rp-state)
           (rp::rp-rw
-           term nil context  nil  (rp::rw-step-limit rp::rp-state) rp::rp-state state)))
+           term nil context  nil (rp::rw-backchain-limit rp::rp-state)
+           (rp::rw-step-limit rp::rp-state) rp::rp-state state)))
 
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action

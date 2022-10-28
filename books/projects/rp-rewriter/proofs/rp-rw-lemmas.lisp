@@ -977,53 +977,48 @@
       (defthm rp-rw-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
-                  (mv-nth 1 (rp-rw term dont-rw context iff-flg limit rp-state state))))
+                  (mv-nth 1 (rp-rw term dont-rw context iff-flg backchain-limit limit rp-state state))))
         :flag rp-rw)
       (defthm rp-rw-rule-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
-                  (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state))))
+                  (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg backchain-limit limit rp-state state))))
         :flag rp-rw-rule)
 
       (defthm rp-rw-relieve-hyp-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
-                  (mv-nth 1 (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings limit rp-state state))))
+                  (mv-nth 1 (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings backchain-limit limit rp-state state))))
         :flag rp-rw-relieve-hyp)
 
       (defthm rp-rw-context-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
-                  (mv-nth 2 (rp-rw-context old-context new-context limit
-                                           rp-state state))))
+                  (mv-nth 2 (rp-rw-context old-context new-context limit rp-state state))))
         :flag rp-rw-context)
 
       (defthm rp-rw-context-loop-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
-                  (mv-nth 1 (rp-rw-context-loop context limit loop-limit
-                                                rp-state state))))
+                  (mv-nth 1 (rp-rw-context-loop context limit loop-limit rp-state state))))
         :flag rp-rw-context-loop)
 
       (defthm rp-rw-if-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
-                  (mv-nth 1 (rp-rw-if term dont-rw context iff-flg  limit
-                                      rp-state state))))
+                  (mv-nth 1 (rp-rw-if term dont-rw context iff-flg backchain-limit limit rp-state state))))
         :flag rp-rw-if)
 
-      (defthm rp-rw-branch-rp-statep
+      (defthm rp-rw-if-branch-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
-                  (mv-nth 2 (rp-rw-if-branch cond-rw then then-dont-rw
-                                             context
-                                             iff-flg  limit rp-state state))))
+                  (mv-nth 2 (rp-rw-if-branch cond-rw then then-dont-rw context iff-flg backchain-limit limit rp-state state))))
         :flag rp-rw-if-branch)
 
       (defthm rp-rw-and-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
-                  (mv-nth 1 (rp-rw-and term1 term2 context  limit rp-state state))))
+                  (mv-nth 1 (rp-rw-and term1 term2 context backchain-limit limit rp-state state))))
         :flag rp-rw-and)
 
       (defthm rp-rw-context-main-rp-statep
@@ -1035,40 +1030,33 @@
       (defthm rp-rw-subterms-rp-statep
         (implies (rp-statep rp-state)
                  (rp-statep
-                  (mv-nth 1 (rp-rw-subterms subterms dont-rw context  limit
-                                            rp-state state))))
+                  (mv-nth 1 (rp-rw-subterms subterms dont-rw context backchain-limit limit rp-state state))))
         :flag rp-rw-subterms)
 
       :hints (("goal"
-               :expand ((RP-RW-CONTEXT-LOOP CONTEXT
-                                            LIMIT LOOP-LIMIT RP-STATE STATE)
-                        (RP-RW-IF-BRANCH COND-RW THEN THEN-DONT-RW CONTEXT
-                                         IFF-FLG  LIMIT RP-STATE STATE)
-                        (RP-RW-CONTEXT-MAIN TERM CONTEXT
-                                            ENABLED NIL LIMIT RP-STATE STATE)
-                        (RP-RW-CONTEXT-MAIN TERM
-                                            CONTEXT NIL QUICK-ENABLED LIMIT RP-STATE STATE)
-                        (rp-rw-relieve-hyp term-lst dont-rw context rule
-                                           stack-index var-bindings limit rp-state state)
+               :expand ((RP-RW-CONTEXT-LOOP CONTEXT LIMIT LOOP-LIMIT RP-STATE STATE)
+                        (RP-RW-IF-BRANCH COND-RW THEN THEN-DONT-RW CONTEXT IFF-FLG backchain-limit LIMIT RP-STATE STATE)
+                        (RP-RW-CONTEXT-MAIN TERM CONTEXT ENABLED NIL LIMIT RP-STATE STATE)
+                        (RP-RW-CONTEXT-MAIN TERM CONTEXT NIL QUICK-ENABLED LIMIT RP-STATE STATE)
+                        (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings backchain-limit limit rp-state state)
                         (rp-rw-context-main term context enabled QUICK-ENABLED limit rp-state state)
-                        (rp-rw-and term1 term2 context  limit rp-state
-                                   state)
+                        (rp-rw-and term1 term2 context backchain-limit limit rp-state state)
                         (rp-rw-if term dont-rw context
-                                  nil  limit rp-state state)
+                                  nil backchain-limit limit rp-state state)
                         (rp-rw-if term dont-rw
-                                  context nil  limit rp-state state)
+                                  context nil backchain-limit limit rp-state state)
                         (rp-rw-rule term dont-rw rules-for-term
-                                    context iff-flg outside-in-flg limit
+                                    context iff-flg outside-in-flg backchain-limit limit
                                     rp-state state)
                         (RP-RW-IF TERM DONT-RW CONTEXT
-                                  IFF-FLG  LIMIT RP-STATE STATE)
+                                  IFF-FLG backchain-limit LIMIT RP-STATE STATE)
                         (RP-RW-IF TERM DONT-RW
-                                  CONTEXT IFF-FLG  LIMIT RP-STATE STATE)
-                        (rp-rw term dont-rw context iff-flg  limit rp-state
+                                  CONTEXT IFF-FLG backchain-limit LIMIT RP-STATE STATE)
+                        (rp-rw term dont-rw context iff-flg backchain-limit  limit rp-state
                                state)
                         (RP-RW TERM DONT-RW
-                               CONTEXT NIL  LIMIT RP-STATE STATE)
-                        (rp-rw-subterms subterms dont-rw context  limit
+                               CONTEXT NIL backchain-limit  LIMIT RP-STATE STATE)
+                        (rp-rw-subterms subterms dont-rw context backchain-limit limit
                                         rp-state state)
                         (rp-rw-context old-context
                                        new-context limit rp-state state))
@@ -1135,18 +1123,18 @@
       (defthm rp-rw-returns-valid-valid-rp-state-syntaxp
         (implies (valid-rp-state-syntaxp rp-state)
                  (valid-rp-state-syntaxp
-                  (mv-nth 1 (rp-rw term dont-rw context iff-flg  limit rp-state state))))
+                  (mv-nth 1 (rp-rw term dont-rw context iff-flg backchain-limit limit rp-state state))))
         :flag rp-rw)
       (defthm rp-rw-rule-retuns-valid-valid-rp-state-syntaxp
         (implies (valid-rp-state-syntaxp rp-state)
                  (valid-rp-state-syntaxp
-                  (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state))))
+                  (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg backchain-limit limit rp-state state))))
         :flag rp-rw-rule)
 
       (defthm rp-rw-relieve-hyp-retuns-valid-valid-rp-state-syntaxp
         (implies (valid-rp-state-syntaxp rp-state)
                  (valid-rp-state-syntaxp
-                  (mv-nth 1 (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings limit rp-state state))))
+                  (mv-nth 1 (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings backchain-limit limit rp-state state))))
         :flag rp-rw-relieve-hyp)
 
       (defthm rp-rw-context-main-retuns-valid-valid-rp-state-syntaxp
@@ -1172,35 +1160,32 @@
       (defthm rp-rw-if-retuns-valid-valid-rp-state-syntaxp
         (implies (valid-rp-state-syntaxp rp-state)
                  (valid-rp-state-syntaxp
-                  (mv-nth 1 (rp-rw-if term dont-rw context iff-flg  limit
-                                      rp-state state))))
+                  (mv-nth 1 (rp-rw-if term dont-rw context iff-flg  backchain-limit limit rp-state state))))
         :flag rp-rw-if)
 
       (defthm rp-rw-if-branch-retuns-valid-valid-rp-state-syntaxp
         (implies (valid-rp-state-syntaxp rp-state)
                  (valid-rp-state-syntaxp
-                  (mv-nth 2 (rp-rw-if-branch cond-rw then then-dont-rw
-                                             context
-                                             iff-flg  limit rp-state state))))
+                  (mv-nth 2 (rp-rw-if-branch cond-rw then then-dont-rw context iff-flg  backchain-limit limit rp-state state))))
         :flag rp-rw-if-branch)
 
       (defthm rp-rw-and-retuns-valid-valid-rp-state-syntaxp
         (implies (valid-rp-state-syntaxp rp-state)
                  (valid-rp-state-syntaxp
-                  (mv-nth 1 (rp-rw-and term1 term2 context  limit rp-state state))))
+                  (mv-nth 1 (rp-rw-and term1 term2 context backchain-limit limit rp-state state))))
         :flag rp-rw-and)
 
       (defthm rp-rw-subterms-retuns-valid-valid-rp-state-syntaxp
         (implies (valid-rp-state-syntaxp rp-state)
                  (valid-rp-state-syntaxp
-                  (mv-nth 1 (rp-rw-subterms subterms dont-rw context  limit
+                  (mv-nth 1 (rp-rw-subterms subterms dont-rw context backchain-limit limit
                                             rp-state state))))
         :flag rp-rw-subterms)
 
       :hints (("goal"
                :expand ((rp-rw-if-branch cond-rw then then-dont-rw
                                          context
-                                         iff-flg  limit rp-state state)
+                                         iff-flg  backchain-limit limit rp-state state)
                         (RP-RW-CONTEXT-LOOP CONTEXT
                                             LIMIT LOOP-LIMIT RP-STATE STATE)
                         (RP-RW-CONTEXT-MAIN TERM
@@ -1211,28 +1196,28 @@
                         (RP-RW-CONTEXT-MAIN TERM
                                             CONTEXT enabled nil LIMIT RP-STATE STATE)
                         (rp-rw-relieve-hyp term-lst dont-rw context rule
-                                           stack-index var-bindings limit rp-state state)
+                                           stack-index var-bindings backchain-limit limit rp-state state)
                         (rp-rw-context-main term context  enabled QUICK-ENABLED limit rp-state state)
-                        (rp-rw-and term1 term2 context  limit rp-state
+                        (rp-rw-and term1 term2 context  backchain-limit limit rp-state
                                    state)
                         (rp-rw-context old-context new-context limit
                                        rp-state state)
                         (RP-RW-IF TERM DONT-RW CONTEXT
-                                  NIL  LIMIT RP-STATE STATE)
+                                  NIL  backchain-limit LIMIT RP-STATE STATE)
                         (rp-rw-if term dont-rw
-                                  context nil  limit rp-state state)
+                                  context nil backchain-limit  limit rp-state state)
                         (rp-rw-rule term dont-rw rules-for-term
-                                    context iff-flg outside-in-flg limit
+                                    context iff-flg outside-in-flg backchain-limit limit
                                     rp-state state)
                         (RP-RW-IF TERM DONT-RW CONTEXT
-                                  IFF-FLG  LIMIT RP-STATE STATE)
+                                  IFF-FLG backchain-limit  LIMIT RP-STATE STATE)
                         (RP-RW-IF TERM DONT-RW
-                                  CONTEXT IFF-FLG  LIMIT RP-STATE STATE)
-                        (rp-rw term dont-rw context iff-flg  limit rp-state
+                                  CONTEXT IFF-FLG backchain-limit LIMIT RP-STATE STATE)
+                        (rp-rw term dont-rw context iff-flg backchain-limit limit rp-state
                                state)
                         (RP-RW TERM DONT-RW
-                               CONTEXT NIL  LIMIT RP-STATE STATE)
-                        (rp-rw-subterms subterms dont-rw context  limit
+                               CONTEXT NIL backchain-limit LIMIT RP-STATE STATE)
+                        (rp-rw-subterms subterms dont-rw context backchain-limit limit
                                         rp-state state))
                :in-theory (e/d (RP-STAT-ADD-TO-RULES-USED)
                                (;;update-rules-used
@@ -1408,13 +1393,13 @@
         (implies (and (valid-rp-statep rp-state)
                       (rp-statep rp-state))
                  (valid-rp-statep
-                  (mv-nth 1 (rp-rw term dont-rw context iff-flg  limit rp-state state))))
+                  (mv-nth 1 (rp-rw term dont-rw context iff-flg backchain-limit  limit rp-state state))))
         :flag rp-rw)
       (defthm valid-rp-statep-of-rp-rw-rule
         (implies (and (valid-rp-statep rp-state)
                       (rp-statep rp-state))
                  (valid-rp-statep
-                  (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state))))
+                  (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg backchain-limit limit rp-state state))))
         :flag rp-rw-rule)
 
       (defthm valid-rp-statep-of-rp-rw-context
@@ -1437,7 +1422,7 @@
         (implies (and (valid-rp-statep rp-state)
                       (rp-statep rp-state))
                  (valid-rp-statep
-                  (mv-nth 1 (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings limit rp-state state))))
+                  (mv-nth 1 (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings backchain-limit limit rp-state state))))
         :flag rp-rw-relieve-hyp)
 
       (defthm valid-rp-statep-of-rp-rw-context-main
@@ -1452,7 +1437,7 @@
         (implies (and (valid-rp-statep rp-state)
                       (rp-statep rp-state))
                  (valid-rp-statep
-                  (mv-nth 1 (rp-rw-if term dont-rw context iff-flg   limit
+                  (mv-nth 1 (rp-rw-if term dont-rw context iff-flg backchain-limit  limit
                                       rp-state state))))
         :flag rp-rw-if)
 
@@ -1462,21 +1447,21 @@
                  (valid-rp-statep
                   (mv-nth 2 (rp-rw-if-branch cond-rw then then-dont-rw
                                              context
-                                             iff-flg  limit rp-state state))))
+                                             iff-flg backchain-limit limit rp-state state))))
         :flag rp-rw-if-branch)
 
       (defthm valid-rp-statep-of-rp-rw-and-retuns
         (implies (and (valid-rp-statep rp-state)
                       (rp-statep rp-state))
                  (valid-rp-statep
-                  (mv-nth 1 (rp-rw-and term1 term2 context  limit rp-state state))))
+                  (mv-nth 1 (rp-rw-and term1 term2 context backchain-limit limit rp-state state))))
         :flag rp-rw-and)
 
       (defthm valid-rp-statep-of-rp-rw-subterms
         (implies (and (valid-rp-statep rp-state)
                       (rp-statep rp-state))
                  (valid-rp-statep
-                  (mv-nth 1 (rp-rw-subterms subterms dont-rw context  limit
+                  (mv-nth 1 (rp-rw-subterms subterms dont-rw context backchain-limit limit
                                             rp-state state))))
         :flag rp-rw-subterms)
 
@@ -1485,35 +1470,35 @@
                                             LIMIT LOOP-LIMIT RP-STATE STATE)
                         (rp-rw-if-branch cond-rw then then-dont-rw
                                          context
-                                         iff-flg  limit rp-state state)
+                                         iff-flg backchain-limit limit rp-state state)
                         (RP-RW-CONTEXT-MAIN TERM
                                             CONTEXT NIL QUICK-ENABLED LIMIT
                                             RP-STATE STATE)
                         (RP-RW-CONTEXT-MAIN TERM
                                             CONTEXT enabled nil LIMIT RP-STATE STATE)
                         (rp-rw-relieve-hyp term-lst dont-rw context rule
-                                           stack-index var-bindings limit rp-state state)
+                                           stack-index var-bindings backchain-limit limit rp-state state)
                         (rp-rw-context-main term context enabled QUICK-ENABLED limit rp-state state)
-                        (rp-rw-and term1 term2 context  limit rp-state
+                        (rp-rw-and term1 term2 context backchain-limit limit rp-state
                                    state)
                         (rp-rw-context old-context new-context limit
                                        rp-state state)
                         (rp-rw-if term dont-rw context
-                                  nil  limit rp-state state)
+                                  nil backchain-limit limit rp-state state)
                         (rp-rw-if term dont-rw
-                                  context nil  limit rp-state state)
+                                  context nil backchain-limit limit rp-state state)
                         (rp-rw-rule term dont-rw rules-for-term
-                                    context iff-flg outside-in-flg limit
+                                    context iff-flg outside-in-flg backchain-limit limit
                                     rp-state state)
                         (rp-rw-if term dont-rw context
-                                  iff-flg  limit rp-state state)
+                                  iff-flg backchain-limit limit rp-state state)
                         (rp-rw-if term dont-rw
-                                  context iff-flg  limit rp-state state)
-                        (rp-rw term dont-rw context iff-flg  limit rp-state
+                                  context iff-flg  backchain-limit limit rp-state state)
+                        (rp-rw term dont-rw context iff-flg backchain-limit limit rp-state
                                state)
                         (rp-rw term dont-rw
-                               context nil  limit rp-state state)
-                        (rp-rw-subterms subterms dont-rw context  limit
+                               context nil backchain-limit  limit rp-state state)
+                        (rp-rw-subterms subterms dont-rw context backchain-limit  limit
                                         rp-state state))
                :in-theory (e/d (rp-stat-add-to-rules-used)
                                (;;update-rules-used
@@ -1744,29 +1729,29 @@ a)
   (defthm is-rp-rp-rw-subterms
     (implies (is-rp (cons 'rp subterms))
              (is-rp (cons 'rp (mv-nth 0 (rp-rw-subterms SUBTERMS DONT-RW
-                                                        CONTEXT  LIMIT
+                                                        CONTEXT  BACKCHAIN-LIMIT LIMIT
                                                         rp-state STATE)))))
     :hints (("Goal"
              :do-not-induct t
              :expand ((RP-RW-SUBTERMS (CDR SUBTERMS)
                                       (DONT-RW-CDR DONT-RW)
-                                      CONTEXT  LIMIT RP-STATE STATE)
-                      (rp-rw-subterms SUBTERMS DONT-RW CONTEXT  LIMIT
+                                      CONTEXT  BACKCHAIN-LIMIT LIMIT RP-STATE STATE)
+                      (rp-rw-subterms SUBTERMS DONT-RW CONTEXT  BACKCHAIN-LIMIT LIMIT
                                       rp-state
                                       STATE)
                       (RP-RW-SUBTERMS (CDR SUBTERMS)
                                       (dont-rw-cdr DONT-RW)
-                                      CONTEXT  (+ -1 LIMIT)
+                                      CONTEXT  BACKCHAIN-LIMIT (+ -1 LIMIT)
                                       RP-STATE STATE)
                       (RP-RW-SUBTERMS (CDR SUBTERMS)
-                                      NIL CONTEXT  (+ -1 LIMIT)
+                                      NIL CONTEXT  BACKCHAIN-LIMIT (+ -1 LIMIT)
                                       RP-STATE STATE)
                       (RP-RW (CAR SUBTERMS)
                              (dont-rw-car DONT-RW)
-                             CONTEXT  (+ -1 LIMIT)
+                             CONTEXT  BACKCHAIN-LIMIT (+ -1 LIMIT)
                              NIL RP-STATE STATE)
                       (RP-RW (CAR SUBTERMS)
-                             NIL CONTEXT  (+ -1 LIMIT)
+                             NIL CONTEXT  BACKCHAIN-LIMIT (+ -1 LIMIT)
                              NIL RP-STATE STATE))
              :in-theory (e/d (is-rp
                               RP-RW-SUBTERMS
@@ -1828,7 +1813,7 @@ a)
                       (CONTEXT-SYNTAXP CONTEXT)
                       (valid-rp-state-syntaxp rp-state))
                  (let ((res (mv-nth 0
-                                    (rp-rw term dont-rw context iff-flg  limit rp-state state))))
+                                    (rp-rw term dont-rw context iff-flg  backchain-limit limit rp-state state))))
                    (and (rp-termp res)
 
                         )))
@@ -1843,7 +1828,7 @@ a)
                  (let ((res (mv-nth 1
                                     (rp-rw-rule TERM dont-rw RULES-FOR-TERM
                                                 CONTEXT IFF-FLG outside-in-flg
-                                                LIMIT rp-state STATE))))
+                                                BACKCHAIN-LIMIT LIMIT rp-state STATE))))
                    (and (rp-termp res)
 
                         )))
@@ -1852,7 +1837,7 @@ a)
       (defthm booleanp-rp-rw-relieve-hyp
         (implies t
                  (let ((res (mv-nth 0
-                                    (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings limit rp-state state))))
+                                    (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings backchain-limit limit rp-state state))))
                    (booleanp res )))
         :flag rp-rw-relieve-hyp)
 
@@ -1864,7 +1849,7 @@ a)
                       (valid-rp-state-syntaxp rp-state))
                  (let ((res (mv-nth 0
                                     (rp-rw-if term dont-rw context  iff-flg
-                                              limit rp-state state))))
+                                              backchain-limit limit rp-state state))))
                    (and (rp-termp res)
 
                         )))
@@ -1878,7 +1863,7 @@ a)
                  (let ((res (mv-nth 0
                                     (rp-rw-if-branch cond-rw then then-dont-rw
                                                      context
-                                                     iff-flg  limit rp-state state))))
+                                                     iff-flg  backchain-limit limit rp-state state))))
                    (rp-termp res)))
         :flag rp-rw-if-branch)
 
@@ -1887,7 +1872,7 @@ a)
                       (rp-termp term2)
                       (context-syntaxp context)
                       (valid-rp-state-syntaxp rp-state))
-                 (let ((res (mv-nth 0 (rp-rw-and term1 term2 context  limit rp-state state))))
+                 (let ((res (mv-nth 0 (rp-rw-and term1 term2 context  backchain-limit limit rp-state state))))
                    (rp-termp res)))
         :flag rp-rw-and)
 
@@ -1920,7 +1905,7 @@ a)
         (implies (and (RP-TERM-LISTP SUBTERMS)
                       (context-syntaxp context)
                       (valid-rp-state-syntaxp rp-state))
-                 (let ((res (mv-nth 0 (rp-rw-subterms SUBTERMS DONT-RW CONTEXT  LIMIT
+                 (let ((res (mv-nth 0 (rp-rw-subterms SUBTERMS DONT-RW CONTEXT  BACKCHAIN-LIMIT LIMIT
                                                       rp-state STATE))))
                    (and (rp-term-listp res)
 
@@ -1951,16 +1936,16 @@ a)
                :expand
                ((RP-RW-CONTEXT-LOOP NIL LIMIT LOOP-LIMIT RP-STATE STATE)
                 (RP-RW-IF-BRANCH COND-RW THEN THEN-DONT-RW CONTEXT
-                                 IFF-FLG  LIMIT RP-STATE STATE)
+                                 IFF-FLG  BACKCHAIN-LIMIT LIMIT RP-STATE STATE)
                 (RP-RW-CONTEXT-LOOP CONTEXT
                                     LIMIT LOOP-LIMIT RP-STATE STATE)
                 (RP-RW-CONTEXT-MAIN TERM
                                     CONTEXT NIL QUICK-ENABLED LIMIT RP-STATE STATE)
-                (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings limit rp-state state)
+                (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings backchain-limit limit rp-state state)
                 (rp-rw-context-main term context enabled QUICK-ENABLED limit
                                     rp-state state)
                 (rp-rw-context-main term context enabled nil limit rp-state state)
-                (rp-rw-and term1 term2 context  limit rp-state state)
+                (rp-rw-and term1 term2 context  backchain-limit limit rp-state state)
                 (RP-RW-CONTEXT NIL
                                NEW-CONTEXT  LIMIT RP-STATE STATE)
 
@@ -1969,25 +1954,25 @@ a)
                 (RP-RW-CONTEXT NIL
                                NEW-CONTEXT  LIMIT RP-STATE STATE)
                 (RP-RW-IF TERM DONT-RW CONTEXT
-                          NIL  LIMIT RP-STATE STATE)
+                          NIL  BACKCHAIN-LIMIT LIMIT RP-STATE STATE)
                 (RP-RW-IF TERM DONT-RW
-                          CONTEXT NIL  LIMIT RP-STATE STATE)
+                          CONTEXT NIL  BACKCHAIN-LIMIT LIMIT RP-STATE STATE)
                 (RP-RW-IF TERM DONT-RW CONTEXT
-                          IFF-FLG  LIMIT RP-STATE STATE)
+                          IFF-FLG  BACKCHAIN-LIMIT LIMIT RP-STATE STATE)
 
-                (rp-rw-subterms nil dont-rw context  limit
+                (rp-rw-subterms nil dont-rw context  backchain-limit limit
                                 rp-state state)
                 (rp-rw-if term dont-rw context
-                          iff-flg  limit rp-state state)
-                (rp-rw-subterms subterms dont-rw context  limit
+                          iff-flg  backchain-limit limit rp-state state)
+                (rp-rw-subterms subterms dont-rw context  backchain-limit limit
                                 rp-state state)
                 (rp-rw term dont-rw context
-                       nil  limit rp-state state)
+                       nil  backchain-limit limit rp-state state)
                 (rp-rw-rule term dont-rw
-                            rules-for-term context iff-flg outside-in-flg  limit rp-state state)
-                (rp-rw-rule term dont-rw nil context iff-flg  outside-in-flg limit rp-state state)
-                (rp-rw term t context iff-flg  limit rp-state state)
-                (rp-rw term dont-rw context  iff-flg  limit rp-state state)))))))
+                            rules-for-term context iff-flg outside-in-flg  backchain-limit limit rp-state state)
+                (rp-rw-rule term dont-rw nil context iff-flg  outside-in-flg backchain-limit limit rp-state state)
+                (rp-rw term t context iff-flg  backchain-limit limit rp-state state)
+                (rp-rw term dont-rw context  iff-flg  backchain-limit limit rp-state state)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2272,13 +2257,13 @@ a)
       (equal (mv-nth 0 (rp-rw (cadr term)
                               dont-rw
                               context
-                              iff-flg  limit rp-state state))
+                              iff-flg  backchain-limit limit rp-state state))
              (cadr term)))
      :hints (("goal"
               :expand (rp-rw (cadr term)
                              dont-rw
                              context
-                             iff-flg  limit rp-state state)
+                             iff-flg  backchain-limit limit rp-state state)
               :in-theory (e/d () ())))))
 
   (defthm eval-and-all-context-from-when-valid-sc
@@ -2399,17 +2384,17 @@ a)
       (consp term)
       (rp-termp term)
       (equal (rp-evlt-lst
-              (mv-nth 0 (rp-rw-subterms (cdr term) dont-rw context  limit
+              (mv-nth 0 (rp-rw-subterms (cdr term) dont-rw context  backchain-limit limit
                                         rp-state state))
               a)
              (rp-evlt-lst (cdr term) a))
       (valid-sc-subterms
-       (mv-nth 0 (rp-rw-subterms (cdr term) dont-rw context  limit
+       (mv-nth 0 (rp-rw-subterms (cdr term) dont-rw context  backchain-limit limit
                                  rp-state state))
        a))
      (valid-sc
       (cons (car term)
-            (mv-nth  0 (rp-rw-subterms (cdr term) dont-rw context  limit
+            (mv-nth  0 (rp-rw-subterms (cdr term) dont-rw context  backchain-limit limit
                                        rp-state state)))
       a))
     :otf-flg t
@@ -2420,24 +2405,24 @@ a)
                       (:free (x y) (valid-sc (cons x y) a))
                       (:free (x y) (EX-FROM-RP (list 'rp x y)))
                       (RP-RW-SUBTERMS (CDDR TERM)
-                                      NIL CONTEXT  (+ -1 LIMIT)
+                                      NIL CONTEXT  BACKCHAIN-LIMIT (+ -1 LIMIT)
                                       (MV-NTH 1
                                               (RP-RW (CADR TERM)
                                                      NIL CONTEXT
-                                                     NIL  (+ -1 LIMIT) rp-state STATE))
+                                                     NIL  BACKCHAIN-LIMIT (+ -1 LIMIT) rp-state STATE))
                                       STATE)
                       (rp-rw-subterms (cddr term)
                                       (dont-rw-cdr dont-rw)
-                                      context  (+ -1 limit)
+                                      context  backchain-limit (+ -1 limit)
 
                                       (mv-nth 1
                                               (rp-rw (cadr term)
                                                      (dont-rw-car dont-rw)
                                                      context
-                                                     nil  (+ -1 limit) rp-state state))
+                                                     nil  backchain-limit (+ -1 limit) rp-state state))
                                       state)
                       (rp-rw-subterms (cdr term)
-                                      dont-rw context  limit
+                                      dont-rw context  backchain-limit limit
                                       rp-state state))
              :in-theory (e/d (is-rp
                               is-if
@@ -3133,7 +3118,7 @@ a)
                (let ((res
                       (mv-nth 0
                               (rp-rw term dont-rw context
-                                     iff-flg limit rp-state state))))
+                                     iff-flg backchain-limit limit rp-state state))))
                  (and (valid-sc res a)
                       (implies iff-flg
                                (iff (rp-evlt res a) (rp-evlt term a)))
@@ -3160,7 +3145,7 @@ a)
                (let ((res
                       (mv-nth 1
                               (rp-rw-rule term dont-rw rules-for-term context
-                                          iff-flg outside-in-flg  limit rp-state state))))
+                                          iff-flg outside-in-flg  backchain-limit limit rp-state state))))
                  (and (valid-sc res a)
                       (implies iff-flg
                                (iff (rp-evlt res a) (rp-evlt term a)))
@@ -3185,7 +3170,7 @@ a)
                     (valid-rp-statep rp-state))
                (let ((res
                       (mv-nth 0
-                              (rp-rw-if term dont-rw context iff-flg  limit rp-state state))))
+                              (rp-rw-if term dont-rw context iff-flg  backchain-limit limit rp-state state))))
                  (and  (valid-sc res a)
                        (implies iff-flg
                                 (iff (rp-evlt res a) (rp-evlt term a)))
@@ -3212,7 +3197,7 @@ a)
                     (valid-rp-statep rp-state))
                (b* (((mv r1 r1-context-has-nil &)
                      (RP-RW-IF-BRANCH COND-RW THEN THEN-DONT-RW CONTEXT
-                                      IFF-FLG  LIMIT RP-STATE STATE)))
+                                      IFF-FLG  BACKCHAIN-LIMIT LIMIT RP-STATE STATE)))
                  (and  (implies (rp-evlt cond-rw a)
                                 (valid-sc r1 a))
                        (implies r1-context-has-nil
@@ -3240,7 +3225,7 @@ a)
                     (eval-and-all context a)
                     (valid-sc-subterms term-lst a)
                     (valid-rp-statep rp-state)
-                    (mv-nth 0 (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings limit rp-state state)))
+                    (mv-nth 0 (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index var-bindings backchain-limit limit rp-state state)))
                (eval-and-all term-lst a))
       :flag rp-rw-relieve-hyp)
 
@@ -3261,7 +3246,7 @@ a)
 
                     (valid-rp-statep rp-state))
                (let ((res
-                      (mv-nth 0 (rp-rw-and term1 term2 context  limit rp-state state))))
+                      (mv-nth 0 (rp-rw-and term1 term2 context  backchain-limit limit rp-state state))))
                  (and  (implies (and (valid-sc term1 a)
                                      (valid-sc term2 a))
                                 (valid-sc res a))
@@ -3364,7 +3349,7 @@ a)
                     (valid-sc-subterms subterms a)
                     )
                (let ((res
-                      (mv-nth 0 (rp-rw-subterms subterms dont-rw context  limit
+                      (mv-nth 0 (rp-rw-subterms subterms dont-rw context  backchain-limit limit
                                                 rp-state state))))
                  (and (valid-sc-subterms res a)
                       (equal (rp-evlt-lst res a) (rp-evlt-lst subterms a)))))
@@ -3440,23 +3425,23 @@ a)
                      (RP-TRANS (list 'if x y z)))
               (:free (dont-rw outside-in-flg iff-flg)
                      (rp-rw-rule term dont-rw rules-for-term context
-                                 iff-flg outside-in-flg limit
+                                 iff-flg outside-in-flg backchain-limit limit
                                  rp-state state))
               (RP-RW-IF-BRANCH COND-RW THEN THEN-DONT-RW CONTEXT
-                               NIL  LIMIT RP-STATE STATE)
+                               NIL  BACKCHAIN-LIMIT LIMIT RP-STATE STATE)
               (RP-RW-CONTEXT-LOOP NIL LIMIT LOOP-LIMIT RP-STATE STATE)
               (RP-RW-CONTEXT-MAIN TERM CONTEXT
                                   ENABLED NIL LIMIT RP-STATE STATE)
 
               (rp-rw-relieve-hyp term-lst dont-rw context rule stack-index
-                                 var-bindings limit rp-state state)
+                                 var-bindings backchain-limit limit rp-state state)
               (rp-rw-context-main term context enabled QUICK-ENABLED limit
                                   rp-state state)
               (rp-rw-context-main term context nil QUICK-ENABLED limit rp-state
                                   state)
               (RP-RW-IF-BRANCH COND-RW THEN THEN-DONT-RW CONTEXT
-                               IFF-FLG  LIMIT RP-STATE STATE)
-              (rp-rw-and term1 term2 context  limit rp-state state)
+                               IFF-FLG  BACKCHAIN-LIMIT LIMIT RP-STATE STATE)
+              (rp-rw-and term1 term2 context  backchain-limit limit rp-state state)
               (RP-RW-CONTEXT NIL NEW-CONTEXT  LIMIT RP-STATE STATE)
               (RP-RW-CONTEXT NIL NEW-CONTEXT  LIMIT RP-STATE STATE)
               (rp-rw-context old-context new-context  limit
@@ -3467,35 +3452,35 @@ a)
               (RP-RW-CONTEXT-LOOP CONTEXT
                                   LIMIT LOOP-LIMIT RP-STATE STATE)
               (RP-RW-IF TERM DONT-RW CONTEXT
-                        NIL  LIMIT RP-STATE STATE)
+                        NIL  BACKCHAIN-LIMIT LIMIT RP-STATE STATE)
               (RP-RW-IF TERM DONT-RW
-                        CONTEXT NIL  LIMIT RP-STATE STATE)
+                        CONTEXT NIL  BACKCHAIN-LIMIT LIMIT RP-STATE STATE)
               (RP-RW-IF TERM DONT-RW CONTEXT
-                        IFF-FLG  LIMIT RP-STATE STATE)
+                        IFF-FLG  BACKCHAIN-LIMIT LIMIT RP-STATE STATE)
               (rp-rw-if term dont-rw
-                        context nil  limit rp-state state)
-              (rp-rw-if term dont-rw context iff-flg  limit rp-state state)
+                        context nil  backchain-limit limit rp-state state)
+              (rp-rw-if term dont-rw context iff-flg  backchain-limit limit rp-state state)
               (rp-rw term dont-rw context
-                     iff-flg  limit rp-state state)
+                     iff-flg  backchain-limit limit rp-state state)
               (rp-rw term dont-rw context
-                     nil  limit rp-state state)
+                     nil  backchain-limit limit rp-state state)
               (rp-rw (cadr subterms)
                      (cadr dont-rw)
                      context
-                     nil  (+ -2 limit) rp-state state)
+                     nil  backchain-limit (+ -2 limit) rp-state state)
               (rp-rw term t context
-                     iff-flg  limit rp-state state)
+                     iff-flg  backchain-limit limit rp-state state)
               (rp-rw-if term dont-rw context
-                        nil  limit rp-state state)
+                        nil  backchain-limit limit rp-state state)
               (rp-rw-subterms subterms dont-rw context
-                              limit  rp-state state)
+                              backchain-limit limit  rp-state state)
               (rp-rw-subterms (cdr subterms)
                               (cdr dont-rw)
-                              context  (+ -1 limit)
+                              context  backchain-limit (+ -1 limit)
                               rp-state state)
               (rp-rw-subterms (cddr subterms)
                               (cddr dont-rw)
-                              context  (+ -2 limit)
+                              context  backchain-limit (+ -2 limit)
                               rp-state state)
               (rp-rw-subterms nil dont-rw context
-                              limit  rp-state state))))))
+                              backchain-limit limit  rp-state state))))))

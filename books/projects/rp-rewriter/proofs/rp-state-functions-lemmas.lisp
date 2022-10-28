@@ -109,6 +109,7 @@
            :expand ((valid-rp-state-syntaxp (UPDATE-NTH INDEX VAL RP-STATE))
                     (VALID-RP-STATE-SYNTAXP RP-STATE))
            :do-not-induct t
+           :do-not '(preprocess fertilize generalize)
            :use ((:instance VALID-RP-STATE-SYNTAXP-aux-necc
                             (key (VALID-RP-STATE-SYNTAXP-AUX-WITNESS (UPDATE-NTH INDEX VAL RP-STATE)))))
            :in-theory (e/d (RULES-ALIST-OUTSIDE-IN-GET
@@ -221,6 +222,30 @@
   :hints (("goal"
            :in-theory (e/d (rp-state-push-to-result-to-rw-stack) ()))))
 
+
+(defret RULES-ALIST-OUTSIDE-IN-GET-of-RP-STATE-PUSH-TO-RESULT-TO-RW-STACK
+  (and (equal (RULES-ALIST-OUTSIDE-IN-GET key res-rp-state)
+              (RULES-ALIST-OUTSIDE-IN-GET key rp-state))
+       (equal (RULES-ALIST-INSIDE-OUT-GET key res-rp-state)
+              (RULES-ALIST-INSIDE-OUT-GET key rp-state)))
+  :fn rp-state-push-to-result-to-rw-stack
+  :hints (("Goal"
+           :in-theory (e/d (rp-state-push-to-result-to-rw-stack) ()))))
+
+(defthm rp-statep-of-update-rw-stack
+  (implies (and (rp-statep rp-state)
+                (alistp v))
+           (rp-statep (update-rw-stack v rp-state)))
+  :hints (("goal"
+           :in-theory (e/d () ()))))
+
+(defthm rp-statep-of-UPDATE-RULE-FRAME-CNTS
+    (implies (and (rp-statep rp-state)
+                  (alistp v))
+             (rp-statep (UPDATE-RULE-FRAME-CNTS v rp-state)))
+    :hints (("Goal"
+             :in-theory (e/d (rp-statep) ()))))
+
 (defthm valid-rp-statep-rp-state-push-to-result-to-rw-stack
   (implies (valid-rp-statep rp-state)
            (valid-rp-statep (rp-state-push-to-result-to-rw-stack rule
@@ -240,7 +265,7 @@
                                                          old-term
                                                          new-term
                                                          rp-state)))))
-           :in-theory (e/d (rp-state-push-to-result-to-rw-stack
+           :in-theory (e/d (;;rp-state-push-to-result-to-rw-stack
                             valid-rp-statep
                             ;;valid-rp-statep-necc
                             )
@@ -264,6 +289,18 @@
 
 
 
+(defthm alistp-of-rule-frame-cnts
+  (implies (rp-statep rp-state)
+           (alistp (rule-frame-cnts rp-state)))
+  :hints (("goal"
+           :in-theory (e/d (rp-statep) ()))))
+
+(defthm alistp-of-rw-stack
+  (implies (rp-statep rp-state)
+           (alistp (rw-stack rp-state)))
+  :hints (("goal"
+           :in-theory (e/d (rp-statep) ())))) 
+
 (defthm valid-rp-state-syntaxp-rp-state-push-to-result-to-rw-stack
   (implies (valid-rp-state-syntaxp rp-state)
            (valid-rp-state-syntaxp (rp-state-push-to-result-to-rw-stack rule
@@ -285,8 +322,9 @@
                                                          old-term
                                                          new-term
                                                          rp-state)))))
-           :in-theory (e/d (rp-state-push-to-result-to-rw-stack
-                            valid-rp-state-syntaxp)
+           :in-theory (e/d (;;rp-state-push-to-result-to-rw-stack
+                            valid-rp-state-syntaxp
+                            hons-acons)
                            (valid-rp-statep
                             rule-list-syntaxp
                             update-rule-frame-cnts
@@ -298,7 +336,7 @@
                             (:rewrite default-cdr)
                             rw-stack
                             nfix
-                            hons-acons
+                            
                             hons-get
                             fix
                             rw-stack-size
@@ -488,7 +526,8 @@
 
 (defthm rp-statep-of-update-rw-stack-size
   (implies (and (rp-statep rp-state)
-                (integerp v))
+                (integerp v)
+                )
            (rp-statep (update-rw-stack-size v rp-state)))
   :hints (("goal"
            :in-theory (e/d () ()))))
@@ -548,12 +587,7 @@
                             VALID-RP-STATE-SYNTAXP)
                            ()))))
 
-(defthm rp-statep-of-update-rw-stack
-  (implies (and (rp-statep rp-state)
-                (alistp v))
-           (rp-statep (update-rw-stack v rp-state)))
-  :hints (("goal"
-           :in-theory (e/d () ()))))
+
 
 (defthm rp-state-preservedp-of-update-rw-stack
   (implies (and (rp-state-preservedp rp-state1 rp-state2)
@@ -833,8 +867,7 @@
 
 
 (defret rp-statep-of-post-backchain-ops
-  (implies (and (rp-statep rp-state)
-                (booleanp old-limit-error-setting))
+  (implies (and (rp-statep rp-state))
            (rp-statep res-rp-state))
   :fn post-backchain-ops
   :hints (("Goal"
@@ -851,7 +884,7 @@
                   valid-rp-statep-necc
                   (key
                    (valid-rp-statep-witness
-                    (POST-BACKCHAIN-OPS BACKCHAIN-ENDS OLD-LIMIT-ERROR-SETTING
+                    (POST-BACKCHAIN-OPS BACKCHAIN-ENDS
                                         RP-STATE)))))
            :in-theory (e/d (post-backchain-ops
                             RULES-ALIST-OUTSIDE-IN-GET
@@ -860,8 +893,7 @@
                            (rp-statep)))))
 
 (defret valid-rp-state-syntaxp-of-post-backchain-ops
-  (implies (and (valid-rp-state-syntaxp rp-state)
-                (booleanp old-limit-error-setting))
+  (implies (and (valid-rp-state-syntaxp rp-state))
            (valid-rp-state-syntaxp res-rp-state))
   :fn post-backchain-ops
   :hints (("Goal"
@@ -870,7 +902,7 @@
                   valid-rp-state-syntaxp-aux-necc
                   (key
                    (valid-rp-state-syntaxp-aux-witness
-                    (POST-BACKCHAIN-OPS BACKCHAIN-ENDS OLD-LIMIT-ERROR-SETTING
+                    (post-backchain-ops BACKCHAIN-ENDS ;
                                         RP-STATE)))))
            :in-theory (e/d (post-backchain-ops
                             valid-rp-state-syntaxp                        
@@ -879,31 +911,21 @@
                             rp-statep)))))
 
 (defret rp-state-preservedp-of-post-backchain-ops
-  (implies (and (rp-state-preservedp rp-state-old rp-state)
-                (booleanp old-limit-error-setting))
-            (RP-STATE-PRESERVEDP rp-state-old res-rp-state))
+  (implies (rp-state-preservedp rp-state-old rp-state)
+           (rp-state-preservedp rp-state-old res-rp-state))
   :fn post-backchain-ops
   :hints (("Goal"
            :expand ((RP-STATE-PRESERVEDP-SK RP-STATE-OLD
-                         (UPDATE-NTH *BACKCHAINING-JUST-STARTED*
-                                     NIL RP-STATE))
-                    (RP-STATE-PRESERVEDP-SK
-                     RP-STATE-OLD
-                     (UPDATE-NTH *RW-LIMIT-THROWS-ERROR*
-                                 OLD-LIMIT-ERROR-SETTING
-                                 (UPDATE-NTH *BACKCHAINING-RULE* NIL
-                                             (UPDATE-NTH *BACKCHAINING-JUST-STARTED*
-                                                         NIL RP-STATE)))))
+                             (UPDATE-NTH *BACKCHAINING-RULE* NIL RP-STATE)))
            :use ((:instance rp-statep-of-post-backchain-ops)
                  (:instance
                   RP-STATE-PRESERVEDP-SK-necc
                   (key
                    (RP-STATE-PRESERVEDP-SK-WITNESS RP-STATE-OLD
-                                      (UPDATE-NTH *BACKCHAINING-JUST-STARTED*
-                                                  NIL RP-STATE)))
+                                                   (UPDATE-NTH *BACKCHAINING-RULE* NIL RP-STATE)))
                   (old-rp-state rp-state-old)
                   (new-rp-state rp-state))
-                 (:instance
+                 #|(:instance
                   RP-STATE-PRESERVEDP-SK-necc
                   (key
                    (RP-STATE-PRESERVEDP-SK-WITNESS
@@ -914,7 +936,7 @@
                                             (UPDATE-NTH *BACKCHAINING-JUST-STARTED*
                                                         NIL RP-STATE)))))
                   (old-rp-state rp-state-old)
-                  (new-rp-state rp-state)))
+                  (new-rp-state rp-state))|#)
            :in-theory (e/d (post-backchain-ops
                             RP-STATE-PRESERVEDP                        
                             UPDATE-RW-LIMIT-THROWS-ERROR
@@ -928,52 +950,49 @@
 
 
 
-(defret rp-statep-of-get-limit-for-hyp-rw
+(defret rp-statep-of-try-to-update-backchaining-rule
   (implies (and (rp-statep rp-state))
            (rp-statep res-rp-state))
-  :fn get-limit-for-hyp-rw
+  :fn try-to-update-backchaining-rule
   :hints (("Goal"
-           :in-theory (e/d (get-limit-for-hyp-rw
+           :in-theory (e/d (try-to-update-backchaining-rule
                             rp-statep)
                            ()))))
 
-(defret valid-rp-statep-of-get-limit-for-hyp-rw
+(defret valid-rp-statep-of-try-to-update-backchaining-rule
   (implies (valid-rp-statep rp-state)
            (valid-rp-statep res-rp-state))
-  :fn get-limit-for-hyp-rw
-  :hints (("Goal"
+  :fn try-to-update-backchaining-rule
+  :hints (("goal"
            :use ((:instance
                   valid-rp-statep-necc
                   (key
                    (valid-rp-statep-witness
-                    (mv-nth 3 (GET-LIMIT-FOR-HYP-RW limit rule
-                                        RP-STATE))))))
-           :in-theory (e/d (get-limit-for-hyp-rw
-                            RULES-ALIST-OUTSIDE-IN-GET
-                            RULES-ALIST-INSIDE-OUT-GET
+                    (mv-nth 1 (try-to-update-backchaining-rule rule
+                                                               rp-state))))))
+           :in-theory (e/d (try-to-update-backchaining-rule
+                            rules-alist-outside-in-get
+                            rules-alist-inside-out-get
                             valid-rp-statep)
                            (rp-statep)))))
 
-(defret valid-rp-state-syntaxp-of-get-limit-for-hyp-rw
-  (implies (and (valid-rp-state-syntaxp rp-state)
-                (booleanp old-limit-error-setting))
+(defret valid-rp-state-syntaxp-of-try-to-update-backchaining-rule
+  (implies (and (valid-rp-state-syntaxp rp-state))
            (valid-rp-state-syntaxp res-rp-state))
-  :fn get-limit-for-hyp-rw
+  :fn try-to-update-backchaining-rule
   :hints (("Goal"
-           :use ((:instance rp-statep-of-get-limit-for-hyp-rw)
+           :use ((:instance rp-statep-of-try-to-update-backchaining-rule)
                  (:instance
                   valid-rp-state-syntaxp-aux-necc
                   (key
                    (valid-rp-state-syntaxp-aux-witness
-                    (GET-LIMIT-FOR-HYP-RW BACKCHAIN-ENDS OLD-LIMIT-ERROR-SETTING
+                    (try-to-update-backchaining-rule rule
                                         RP-STATE)))))
-           :in-theory (e/d (get-limit-for-hyp-rw
+           :in-theory (e/d (try-to-update-backchaining-rule
                             valid-rp-state-syntaxp                        
                             rp-statep)
                            (valid-rp-statep
                             rp-statep)))))
-
-
 
 
 (defret rp-statep-of-INCREMENT-RW-STACK-SIZE
@@ -1177,12 +1196,7 @@
 
 
 (progn
-  (defthm rp-statep-of-UPDATE-RULE-FRAME-CNTS
-    (implies (and (rp-statep rp-state)
-                  (alistp v))
-             (rp-statep (UPDATE-RULE-FRAME-CNTS v rp-state)))
-    :hints (("Goal"
-             :in-theory (e/d (rp-statep) ()))))
+  
 
   (defthm valid-rp-state-syntaxp-UPDATE-RULE-FRAME-CNTS
     (implies (and (valid-rp-state-syntaxp rp-state)
@@ -1230,17 +1244,9 @@
   (in-theory (disable UPDATE-RULE-FRAME-CNTS)))
 
 
-(defthm ALISTP-of-RULE-FRAME-CNTS
-  (implies (rp-statep rp-state)
-           (alistp (RULE-FRAME-CNTS RP-STATE)))
-  :hints (("Goal"
-           :in-theory (e/d (rp-statep) ()))))
 
-(defthm ALISTP-of-rw-stack
-  (implies (rp-statep rp-state)
-           (alistp (RW-STACK RP-STATE)))
-  :hints (("Goal"
-           :in-theory (e/d (rp-statep) ()))))
+
+
 
 (defthm RP-STATE-PRESERVEDP-of-rp-state-push-to-result-to-rw-stack
   (implies (and (rp-state-preservedp rp-state-old rp-state))
