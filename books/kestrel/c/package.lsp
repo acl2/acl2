@@ -175,6 +175,7 @@
                symbol-fix
                symbol-list
                symbol-list-fix
+               symbol-pseudoterm-alist
                symbol-pseudoterm-alistp
                symbol-pseudoterm-alist-fix
                symbol-symbol-alistp
