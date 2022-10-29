@@ -260,7 +260,7 @@
     (b* (((repetition rep) rep)
          ((repeat-range range) rep.range)
          ((when (and (equal range.min 1)
-                     (equal range.max (nati-infinity))))
+                     (equal range.max (nati-finite 1))))
           (def-parse-print-element rep.element))
          ((when (equal range.max
                        (nati-finite range.min)))
