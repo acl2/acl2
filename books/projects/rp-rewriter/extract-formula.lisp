@@ -396,6 +396,15 @@
             (sc-list (if-to-and-list q))
             (rule-rhs (rp-rhs rule))
             (rhs-updated (attach-sc-list-to-rhs rule-rhs sc-list))
+            (- (or (not (equal rule-rhs rhs-updated))
+                   (hard-error
+                    'side-condition-check
+                    "Given side condition did not change the rhs of the ~
+  rule. If the rule is defined with :lambda-opt t, please try to disable ~
+  it. Rune-name: ~p0. Rule-rhs: ~p1. sc-formula: ~p2 ~%"
+                    (list (cons #\0 (rp-rune rule))
+                          (cons #\1 (rp-rhs rule))
+                          (cons #\2 sc-formula)))))
             (rule (change custom-rewrite-rule rule
                           :rhs/meta-fnc rhs-updated)))
          rule))
@@ -785,13 +794,26 @@
   `(make-event
     (if (sc-rule-p (meta-extract-formula ',rule-name state)
                    (meta-extract-formula ',sc-rule-name state))
-        (b* ((sc-alist (table-alist 'rp-sc (w state)))
+        (b* ((- (or
+                 (not (hons-assoc-equal ',rule-name
+                                        (table-alist 'corresponding-rp-rule (w  state))))
+                 (hard-error 'rp-attach-sc
+                             "Rules defined with :lambda-opt t or :lambda-opt :max are not supported ~
+  to have a side condition. Please define the rule with :lambda-opt nil ~
+  instead. rule-name: ~p0. sc-rule-name: ~p1 ~%"
+                             (list (cons #\0 ',rule-name)
+                                   (cons #\1 ',sc-rule-name)))))
+             (sc-alist (table-alist 'rp-sc (w state)))
              (entry (assoc-eq ',rule-name sc-alist))
              (val (if entry
                       (cons ',sc-rule-name (cdr entry))
                     (cons ',sc-rule-name nil)))
              (?sc-alist (put-assoc ',rule-name val sc-alist)))
-          `(table rp-sc ',',rule-name ',val))
+          `(progn
+             (table rp-sc ',',rule-name ',val)
+             (value-triple (progn$ (get-rules (list ',',rule-name) state
+                                              :warning :err)
+                                   :rule-attached))))
       (value-triple :rule-attaching-failed))))
 
 
