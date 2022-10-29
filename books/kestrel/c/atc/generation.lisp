@@ -1003,7 +1003,7 @@
 
 (fty::defprod expr-gin
   :short "Inputs for @(tsee atc-gen-expr)."
-  ((var-term-alist acl2::symbol-pseudoterm-alist)
+  ((var-term-alist symbol-pseudoterm-alist)
    (inscope atc-symbol-type-alist-list)
    (fn symbol)
    (prec-fns atc-symbol-fninfo-alist)
@@ -1534,14 +1534,15 @@
 
 (fty::defprod stmt-gin
   :short "Inputs for @(tsee atc-gen-stmt)."
-  ((var-term-alist symbol-pseudoterm-alistp)
-   (inscope atc-symbol-type-alist-listp)
+  ((var-term-alist symbol-pseudoterm-alist)
+   (typed-formals atc-symbol-type-alist)
+   (inscope atc-symbol-type-alist-list)
    (loop-flag booleanp)
-   (affect symbol-listp)
+   (affect symbol-list)
    (fn symbolp)
-   (prec-fns atc-symbol-fninfo-alistp)
-   (prec-tags atc-string-taginfo-alistp)
-   (prec-objs atc-string-objinfo-alistp)
+   (prec-fns atc-symbol-fninfo-alist)
+   (prec-tags atc-string-taginfo-alist)
+   (prec-objs atc-string-objinfo-alist)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -1551,9 +1552,9 @@
 
 (fty::defprod stmt-gout
   :short "Outputs for @(tsee atc-gen-stmt)."
-  ((items block-item-listp)
-   (type typep)
-   (limit pseudo-termp)
+  ((items block-item-list)
+   (type type)
+   (limit pseudo-term)
    (events pseudo-event-form-list)
    (thm-index pos)
    (names-to-avoid symbol-list)
@@ -1925,16 +1926,10 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val-term var vars init.affect))
-                   ((er typed-formals :iferr (irr))
-                    (atc-typed-formals gin.fn
-                                       gin.prec-tags
-                                       gin.prec-objs
-                                       ctx
-                                       state))
                    ((er & :iferr (irr))
                     (atc-ensure-formals-not-lost vars
                                                  gin.affect
-                                                 typed-formals
+                                                 gin.typed-formals
                                                  gin.fn
                                                  ctx
                                                  state))
@@ -2015,16 +2010,10 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val-term var vars rhs.affect))
-                   ((er typed-formals :iferr (irr))
-                    (atc-typed-formals gin.fn
-                                       gin.prec-tags
-                                       gin.prec-objs
-                                       ctx
-                                       state))
                    ((er & :iferr (irr))
                     (atc-ensure-formals-not-lost vars
                                                  gin.affect
-                                                 typed-formals
+                                                 gin.typed-formals
                                                  gin.fn
                                                  ctx
                                                  state))
@@ -2091,12 +2080,10 @@
                          whose term ~x1 to which the variables are bound ~
                          does not have the required form."
                         gin.fn val-term))
-             ((er typed-formals :iferr (irr))
-              (atc-typed-formals gin.fn gin.prec-tags gin.prec-objs ctx state))
              ((er & :iferr (irr))
               (atc-ensure-formals-not-lost vars
                                            gin.affect
-                                           typed-formals
+                                           gin.typed-formals
                                            gin.fn
                                            ctx
                                            state))
@@ -2637,16 +2624,10 @@
                          and that is neither an IF or a loop function call. ~
                          This is disallowed."
                         gin.fn val-term))
-             ((er typed-formals :iferr (irr))
-              (atc-typed-formals gin.fn
-                                 gin.prec-tags
-                                 gin.prec-objs
-                                 ctx
-                                 state))
              ((er & :iferr (irr))
               (atc-ensure-formals-not-lost (list var)
                                            gin.affect
-                                           typed-formals
+                                           gin.typed-formals
                                            gin.fn
                                            ctx
                                            state))
@@ -2953,16 +2934,17 @@
 
 (fty::defprod lstmt-gin
   :short "Inputs for @(tsee atc-gen-loop-stmt)."
-  ((inscope atc-symbol-type-alist-listp)
-   (fn symbolp)
-   (measure-for-fn symbolp)
-   (measure-formals symbol-listp)
-   (prec-fns atc-symbol-fninfo-alistp)
-   (prec-tags atc-string-taginfo-alistp)
-   (prec-objs atc-string-objinfo-alistp)
+  ((typed-formals atc-symbol-type-alist)
+   (inscope atc-symbol-type-alist-list)
+   (fn symbol)
+   (measure-for-fn symbol)
+   (measure-formals symbol-list)
+   (prec-fns atc-symbol-fninfo-alist)
+   (prec-tags atc-string-taginfo-alist)
+   (prec-objs atc-string-objinfo-alist)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs booleanp))
+   (proofs bool))
   :pred lstmt-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2970,15 +2952,15 @@
 (fty::defprod lstmt-gout
   :short "Outputs for @(tsee atc-gen-loop-stmt)."
   ((stmt stmtp)
-   (test-term pseudo-termp)
-   (body-term pseudo-termp)
-   (affect symbol-listp)
-   (limit-body pseudo-termp)
-   (limit-all pseudo-termp)
+   (test-term pseudo-term)
+   (body-term pseudo-term)
+   (affect symbol-list)
+   (limit-body pseudo-term)
+   (limit-all pseudo-term)
    (events pseudo-event-form-list)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs booleanp))
+   (proofs bool))
   :pred lstmt-goutp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3086,6 +3068,7 @@
         (atc-gen-stmt then-term
                       (make-stmt-gin
                        :var-term-alist nil
+                       :typed-formals gin.typed-formals
                        :inscope (cons nil gin.inscope)
                        :loop-flag t
                        :affect affect
@@ -4481,6 +4464,7 @@
         (atc-gen-stmt body
                       (make-stmt-gin
                        :var-term-alist nil
+                       :typed-formals typed-formals
                        :inscope (list typed-formals)
                        :loop-flag nil
                        :affect affect
@@ -5739,7 +5723,8 @@
        (body (ubody+ fn wrld))
        ((er (lstmt-gout loop) :iferr (irr))
         (atc-gen-loop-stmt body
-                           (make-lstmt-gin :inscope (list typed-formals)
+                           (make-lstmt-gin :typed-formals typed-formals
+                                           :inscope (list typed-formals)
                                            :fn fn
                                            :measure-for-fn measure-of-fn
                                            :measure-formals measure-formals
