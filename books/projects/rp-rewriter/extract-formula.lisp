@@ -184,13 +184,17 @@
        (list formula)
      (case-match formula
        (('implies p q)
-        (b* ((new-terms (if-to-and-list q))
+        (b* ((p (light-remove-return-last p))
+             (q (light-remove-return-last q))
+             (new-terms (if-to-and-list q))
              (new-terms (not-to-equal-nil-list new-terms))
              (new-terms (if (> (len new-terms) 1)
                             (make-formula-better-lst new-terms (1- limit))
                           new-terms))
              (formulas (make-rule-better-aux1 p new-terms)))
           formulas))
+       (('return-last & & last)
+        (make-formula-better last (1- limit)))
        (&
         (b* ((new-terms (if-to-and-list formula))
              (new-terms (not-to-equal-nil-list new-terms))
@@ -302,7 +306,7 @@
                     (list (cons #\0 rule-name))))
        (formula (beta-search-reduce formula *big-number*))
 
-       (formula (light-remove-return-last formula))
+       ;;(formula (light-remove-return-last formula))
        
        (formulas (make-formula-better formula *big-number*))
        
