@@ -19,15 +19,21 @@
 (defttag nil)
 (program)
 
-(defun td-book-alist (rev-wrld path system-books-dir acc)
+(defun remove-lisp-suffix-book-name (book-name)
+  (cond ((sysfile-p book-name)
+         (make-sysfile (sysfile-key book-name)
+                       (remove-lisp-suffix (sysfile-filename book-name)
+                                           t)))
+        (t (remove-lisp-suffix book-name t))))
+
+(defun td-book-alist (rev-wrld path acc)
 
 ; Rev-wrld is a reversed ACL2 world; thus, we are traversing it in the original
 ; chronological order.  Path is nil at the top level, and otherwise is the
 ; value of world global 'include-book-path at the current point of our
-; traversal.  System-books-dir is a directory, intended to be a value of
-; (system-books-dir state).  We accumulate into acc an alist that
-; associates each function symbol with the book in which it was introduced.
-; Finally we return the accumulated alist as a fast-alist.
+; traversal.  We accumulate into acc an alist that associates each function
+; symbol with the book in which it was introduced.  Finally we return the
+; accumulated alist as a fast-alist.
 
 ; At one point during development, calling this function up front cut almost
 ; 3/4 of the time from td-init.
@@ -40,24 +46,23 @@
         (cond
          ((and (eq (car trip) 'include-book-path)
                (eq (cadr trip) 'global-value))
-          (td-book-alist (cdr rev-wrld) (cddr trip) system-books-dir acc))
+          (td-book-alist (cdr rev-wrld) (cddr trip) acc))
          ((eq (cadr trip) 'formals)
           (td-book-alist (cdr rev-wrld)
                          path
-                         system-books-dir
-                         (let ((sysfile (and (consp path)
-                                             (filename-to-book-name-1
-                                              (remove-lisp-suffix (car path) t)
-                                              system-books-dir))))
+                         (let* ((book-name (car path)) ; nil if path is nil
+                                (sysfile (and book-name
+                                              (remove-lisp-suffix-book-name
+                                               book-name))))
                            (acons (car trip)
 
-; We store normed strings, anticipating their use as keys in a fast-alist.
-; Probably this isn't necessary, since the call of make-fast-alist at the end
+; We store normed values, anticipating their use as keys in a fast-alist.  This
+; isn't acctually necessary, since the call of make-fast-alist at the end
 ; should take care of that.
 
-                                  (hons-copy sysfile)
+                                  sysfile
                                   acc))))
-         (t (td-book-alist (cdr rev-wrld) path system-books-dir acc)))))))
+         (t (td-book-alist (cdr rev-wrld) path acc)))))))
 
 (defconst *fns-length-shift*
 
@@ -586,7 +591,7 @@
                    (t (td-init-fn-1
                        (cdr fns) wrld td fns-limit clause-size-limit)))))))
 
-(defun td-init-fn (world system-books-dir td fns-limit clause-size-limit)
+(defun td-init-fn (world td fns-limit clause-size-limit)
 
 ; World is an installed world.  It needs to be the variable, world, since we
 ; call function-theory below.
@@ -595,8 +600,7 @@
   (let* ((td (td-reset td))
          (td (maybe-update-fns-length-shifted world td))
          (td (update-book-alist (make-fast-alist
-                                 (td-book-alist (reverse world)
-                                                nil system-books-dir nil))
+                                 (td-book-alist (reverse world) nil nil))
                                 td))
          (old-fns (strip-cadrs
 
@@ -609,7 +613,6 @@
 
 (defmacro td-init (&key fns-limit clause-size-limit)
   `(time$ (td-init-fn (w state)
-                      (system-books-dir state)
                       td ,fns-limit ,clause-size-limit)))
 
 (defun write-td-cands (n td wrld acc)
@@ -647,7 +650,7 @@
 ;   (value :q)
 ;   (let ((doc-top-book
 ;          (concatenate 'string
-;                       (system-books-dir *the-live-state*)
+;                       (project-dir-alist *the-live-state*)
 ;                       "top.lisp")))
 ;     (loop for x in (known-package-alist *the-live-state*)
 ;           when (equal (car (package-entry-book-path x))
@@ -672,31 +675,29 @@
 ; \"SV\" -- already included
 " chan state))
 
-(defun pkg-books-1 (pkg-entries system-books-dir)
-  (cond ((endp pkg-entries) nil)
-        (t
-         (let* ((entry (car pkg-entries))
-                (full-book-name (car (package-entry-book-path entry)))
-                (full-book (and full-book-name ; nil for built-ins
-                                (remove-lisp-suffix full-book-name t)))
-                (sysfile (and full-book
-                              (filename-to-book-name-1 full-book
-                                                       system-books-dir))))
-           (cond ((and sysfile
-                       (if (sysfile-p sysfile)
-                           (not (equal (sysfile-filename sysfile)
-                                       "top"))
-                         t))
-                  (cons sysfile
-                        (pkg-books-1 (cdr pkg-entries) system-books-dir)))
-                 (t
-                  (pkg-books-1 (cdr pkg-entries) system-books-dir)))))))
+(defconst *top-sysfile*
+  (make-sysfile :system "top"))
+
+(defun pkg-books-1 (pkg-entries)
+  (cond
+   ((endp pkg-entries) nil)
+   (t
+    (let* ((entry (car pkg-entries))
+           (full-book-name (car (package-entry-book-path entry)))
+           (sysfile (and full-book-name ; nil for built-ins
+                         (remove-lisp-suffix-book-name full-book-name))))
+      (cond ((if (sysfile-p sysfile)
+                 (not (equal sysfile *top-sysfile*))
+               sysfile)
+             (cons sysfile
+                   (pkg-books-1 (cdr pkg-entries))))
+            (t
+             (pkg-books-1 (cdr pkg-entries))))))))
 
 (defun pkg-books (state)
   (declare (xargs :stobjs state))
   (remove-duplicates-equal
-   (pkg-books-1 (known-package-alist state)
-                (system-books-dir state))))
+   (pkg-books-1 (known-package-alist state))))
 
 (defun map-include-book (sysfile-lst acc)
   (cond ((endp sysfile-lst) (reverse acc)) ; reverse is optional
@@ -734,16 +735,16 @@
                                (t (let ((sysfile (td-book rel td)))
                                     (hons-acons rel sysfile acc)))))))))
 
-(defun write-td-fn (book-name form td state)
+(defun write-td-fn (book-string form td state)
   (declare (xargs :stobjs (td state)))
   (mv-let (erp val state)
     (state-global-let*
      ((fmt-hard-right-margin 100000 set-fmt-hard-right-margin)
       (fmt-soft-right-margin 100000 set-fmt-soft-right-margin))
      (pprogn
-; Write book-name.acl2.
+; Write book-string.acl2.
       (mv-let (chan state)
-        (open-output-channel (concatenate 'string book-name ".acl2")
+        (open-output-channel (concatenate 'string book-string ".acl2")
                              :character
                              state)
         (pprogn (princ$ *td-fn-header* chan state)
@@ -759,10 +760,14 @@
                      (list (cons #\0 '(known-package-alist state)))
                      chan state nil)
                 (write-td-fn-include-books-extra chan state)
+                (fms "; We have seen \"acl2s/doc\" require ttags:"
+                     nil chan state nil)
+                (fms "; cert-flags: ? t :ttags :all~%"
+                     nil chan state nil)
                 (close-output-channel chan state)))
-; Write book-name.lisp.
+; Write book-string.lisp.
       (mv-let (chan state)
-        (open-output-channel (concatenate 'string book-name ".lisp")
+        (open-output-channel (concatenate 'string book-string ".lisp")
                              :character state)
         (let* ((wrld (w state))
                (td-candidate-lst (write-td-cands (next-index td) td wrld nil))
@@ -785,13 +790,13 @@
     state))
 
 (defmacro write-td (&whole form
-                           book-name
+                           book-string
                            &key
                            (fns-limit ':none)
                            clause-size-limit)
   (cond ((not (eq fns-limit :none))
          `(let* ((td (td-init :fns-limit ,fns-limit
                               :clause-size-limit ,clause-size-limit))
-                 (state (write-td-fn ,book-name ',form td state)))
+                 (state (write-td-fn ,book-string ',form td state)))
             (mv td state)))
-        (t `(write-td-fn ,book-name ',form td state))))
+        (t `(write-td-fn ,book-string ',form td state))))
