@@ -5,8 +5,11 @@
 ; The following books are included to provide the packages that are
 ; defined after including system book "top".
 
+(INCLUDE-BOOK "acl2s/doc" :DIR :SYSTEM)
+(INCLUDE-BOOK "acl2s/interface/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "coi/quantification/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/syntheto/portcullis" :DIR :SYSTEM)
+(INCLUDE-BOOK "kestrel/htclient/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/blake/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/kdf/portcullis" :DIR :SYSTEM)
 (INCLUDE-BOOK "kestrel/crypto/padding/portcullis" :DIR :SYSTEM)
@@ -108,3 +111,6 @@
 ; "BED"
 (include-book "centaur/bed/portcullis" :dir :system)
 ; "SV" -- already included
+
+; We have seen "acl2s/doc" require ttags:
+; cert-flags: ? t :ttags :all
