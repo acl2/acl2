@@ -32,4 +32,8 @@
               ''t)
 
 (assert-equal (term-guard-obligation '(< (len x) '17) :limited state)
-              '(rationalp (len x)))
+              #+:non-standard-analysis
+              '(realp (len x))
+              #-:non-standard-analysis
+              '(rationalp (len x))
+              )
