@@ -479,7 +479,8 @@
        but the resulting C code may not compile.
        The additional type checking we do here should ensure that
        all the code satisfies the C static semantics."))
-    (b* (((acl2::fun (irr)) (ec-call (pexpr-gout-fix :irrelevant)))
+    (b* (((acl2::fun (irr))
+          (with-guard-checking :none (ec-call (pexpr-gout-fix :irrelevant))))
          ((pexpr-gin gin) gin)
          ((when (pseudo-term-case term :var))
           (b* ((var (pseudo-term-var->name term))
@@ -831,7 +832,8 @@
       "As in @(tsee atc-gen-expr-pure),
        we perform C type checks on the ACL2 terms.
        See  @(tsee atc-gen-expr-pure) for an explanation."))
-    (b* (((acl2::fun (irr)) (ec-call (bexpr-gout-fix :irrelevant)))
+    (b* (((acl2::fun (irr))
+          (with-guard-checking :none (ec-call (bexpr-gout-fix :irrelevant))))
          ((bexpr-gin gin) gin)
          ((mv okp arg-term) (fty-check-not-call term))
          ((when okp)
@@ -961,7 +963,8 @@
    (xdoc::p
     "This lifts @(tsee atc-gen-expr-pure) to lists.
      However, we do not return the C types of the expressions."))
-  (b* (((acl2::fun (irr)) (ec-call (pexprs-gout-fix :irrelevant)))
+  (b* (((acl2::fun (irr))
+        (with-guard-checking :none (ec-call (pexprs-gout-fix :irrelevant))))
        ((pexprs-gin gin) gin)
        ((when (endp terms))
         (acl2::value (make-pexprs-gout :exprs nil
@@ -1065,7 +1068,8 @@
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
-  (b* (((acl2::fun (irr)) (ec-call (expr-gout-fix :irrelevant)))
+  (b* (((acl2::fun (irr))
+        (with-guard-checking :none (ec-call (expr-gout-fix :irrelevant))))
        ((expr-gin gin) gin)
        ((mv okp called-fn arg-terms in-types out-type affect limit)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns (w state)))
@@ -1786,7 +1790,8 @@
      another 1 to go from there to the @(':return') case
      and @(tsee exec-expr-call-or-pure),
      for which we use the recursively calculated limit."))
-  (b* (((acl2::fun (irr)) (ec-call (stmt-gout-fix :irrelevant)))
+  (b* (((acl2::fun (irr))
+        (with-guard-checking :none (ec-call (stmt-gout-fix :irrelevant))))
        (wrld (w state))
        ((stmt-gin gin) gin)
        ((mv okp test-term then-term else-term) (fty-check-if-call term))
@@ -3035,7 +3040,8 @@
      which is the limit for the whole loop,
      we also return @('limit-body'), which is just for the loop body;
      this is in support for more modular proofs. "))
-  (b* (((acl2::fun (irr)) (ec-call (lstmt-gout-fix :irrelevant)))
+  (b* (((acl2::fun (irr))
+        (with-guard-checking :none (ec-call (lstmt-gout-fix :irrelevant))))
        ((lstmt-gin gin) gin)
        (wrld (w state))
        ((mv okp test-term then-term else-term) (fty-check-if-call term))
@@ -4460,7 +4466,11 @@
      in the @(':compound') case,
      and then we use the limit for the block."))
   (b* (((acl2::fun (irr))
-        (list (ec-call (fundef-fix :irrelevant)) nil nil nil nil))
+        (list (with-guard-checking :none (ec-call (fundef-fix :irrelevant)))
+              nil
+              nil
+              nil
+              nil))
        (name (symbol-name fn))
        ((unless (paident-stringp name))
         (er-soft+ ctx t (irr)
@@ -7369,7 +7379,11 @@
      and then we generate the theorem;
      however, in the generated events,
      we put that theorem before the ones for the functions."))
-  (b* (((acl2::fun (irr)) (list (ec-call (file-fix :irrelevant)) nil nil nil))
+  (b* (((acl2::fun (irr))
+        (list (with-guard-checking :none (ec-call (file-fix :irrelevant)))
+              nil
+              nil
+              nil))
        ((mv appcond-local-events fn-appconds appcond-thms names-to-avoid)
         (if proofs
             (b* (((mv appconds fn-appconds)
