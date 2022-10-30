@@ -13,7 +13,6 @@
 (include-book "std/io/read-string-light" :dir :system) ; avoids error below
 (include-book "kestrel/htclient/post" :dir :system) ; avoids error below
 (include-book "tools/with-supporters" :dir :system)
-(set-state-ok t) ; avoids error below
 
 (with-supporters
  (local (include-book "advice"))
