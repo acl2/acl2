@@ -9181,21 +9181,38 @@
              (rst (translate-measures (cdr terms) logic-modep ctx wrld state)))
             (value (cons term rst))))))
 
-(defun redundant-predefined-error-msg (name)
+(defun redundant-predefined-error-msg (name wrld)
   (let ((pkg-name (and (symbolp name) ; probably always true
                        (symbol-package-name name))))
     (msg "ACL2 is processing a redundant definition of the name ~s0 (package ~
           ~s1), which is ~#2~[already defined using special raw Lisp ~
-          code~/predefined in the ~x3 package~].  For technical reasons, we ~
-          disallow non-LOCAL redundant definitions in such cases; see :DOC ~
+          code~/predefined in the ~x3 package~].  We disallow non-LOCAL ~
+          redundant definitions in such cases; for explanation, see :DOC ~
           redundant-events.  Consider wrapping this definition inside a call ~
-          of LOCAL."
+          of LOCAL.~@4"
          (symbol-name name)
          (symbol-package-name name)
          (if (equal pkg-name *main-lisp-package-name*)
              1
            0)
-         *main-lisp-package-name*)))
+         *main-lisp-package-name*
+         (if (not (symbolp name))
+             ""
+           (let* ((wrld (decode-logical-name name wrld))
+                  (path (global-val 'include-book-path wrld))
+                  (book-name (car path)))
+             (cond
+              ((null book-name) "")
+              (t (msg "  Alteratively, include the book that introduces the ~
+                       proposed redundant definition:~|~x0."
+                      (cond
+                       ((sysfile-p book-name)
+                        `(include-book
+                          ,(remove-lisp-suffix (sysfile-filename book-name)
+                                               t)
+                          :dir ,(sysfile-key book-name)))
+                       (t `(include-book ,(remove-lisp-suffix book-name
+                                                              t))))))))))))
 
 (defun chk-acceptable-defuns-redundancy (names ctx wrld state)
 
@@ -9288,7 +9305,7 @@
                   (member-eq (car names) bad-fns))))
          (er soft ctx
              "~@0"
-             (redundant-predefined-error-msg (car names))))
+             (redundant-predefined-error-msg (car names) wrld)))
         (t (value 'redundant))))
 
 (defun chk-acceptable-defuns-verify-guards-er (names ctx wrld state)

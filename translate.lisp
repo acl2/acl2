@@ -5688,7 +5688,6 @@
 ; the warrant for fn.
 
            (warrants-for-suitably-tamep-listp
-            (access apply$-badge bdg :arity)
             ilks
             (fargs x)
             wrld
@@ -5704,7 +5703,6 @@
            (mv-let (warrants1 unwarranteds1)
              (warrants-for-tamep-lambdap fn wrld warrants unwarranteds)
              (warrants-for-suitably-tamep-listp
-              (length (cadr fn))
 ; Given (tamep-lambdap fn), (cadr fn) = (lambda-object-formals fn).
               nil
               (cdr x)
@@ -5728,12 +5726,12 @@
                 unwarranteds)))
       (warrants-for-tamep-lambdap fn wrld warrants unwarranteds)))
 
-(defun warrants-for-suitably-tamep-listp (n flags args wrld warrants unwarranteds)
+(defun warrants-for-suitably-tamep-listp (flags args wrld warrants unwarranteds)
 ; We assume (executable-suitably-tamep-listp n flags args wrld).  See the
 ; discussion above about the ``warrants-for-tamep'' family of functions.
   (declare (xargs :mode :program))
   (cond
-   ((zp n) (mv warrants unwarranteds))
+   ((endp args) (mv warrants unwarranteds))
    (t (mv-let (warrants1 unwarranteds1)
         (let ((arg (car args)))
           (case (car flags)
@@ -5745,8 +5743,7 @@
                                  wrld warrants unwarranteds))
             (otherwise
              (warrants-for-tamep arg wrld warrants unwarranteds))))
-        (warrants-for-suitably-tamep-listp (- n 1)
-                                           (cdr flags)
+        (warrants-for-suitably-tamep-listp (cdr flags)
                                            (cdr args)
                                            wrld
                                            warrants1
