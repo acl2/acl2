@@ -87,6 +87,28 @@
     (cons (untranslate (car lst) iff-flg world)
           (untranslate-lst (cdr lst) iff-flg world))))
 
+(progn
+  (define hidden-constant (x)
+    x)
+  (define hide/unhide-constants-for-translate (hide term)
+    :mode :program
+    (cond ((atom term)
+           (if (and hide
+                    (symbolp term)
+                    (b* ((chars (explode (symbol-name term))))
+                      (and (> (len chars) 2)
+                           (equal (first chars) #\*)
+                           (equal (last chars) '(#\*)))))
+               `(hidden-constant ',term)
+             term))
+          ((quotep term)
+           term)
+          ((and (not hide)
+                (case-match term (('hidden-constant ('quote &)) t)))
+           (cadr (cadr term)))
+          (t (cons (hide/unhide-constants-for-translate hide (car term))
+                   (hide/unhide-constants-for-translate hide (cdr term)))))))
+
 (encapsulate
   nil
 
@@ -698,7 +720,7 @@ nothing to bump!" nil)))
                      :in-theory (union-theories
                                  '(hard-error hons-copy return-last ,@(strip-cars fnc-names))
                                  (theory 'minimal-theory)))
-                    (AND Stable-under-simplificationp
+                    (and Stable-under-simplificationp
                          '(:in-theory (e/d () ())))))
 
           (defthmd ,rule-name-for-rp
@@ -1098,7 +1120,9 @@ RP-Rewriter will throw an eligible error.</p>"
         args)
        (world (w state))
        ((acl2::er translated-term)
-        (acl2::translate term t t nil 'defthmrp-fn world state))
+        (acl2::translate (hide/unhide-constants-for-translate t term)
+                         t t nil 'defthmrp-fn world state))
+       (translated-term (hide/unhide-constants-for-translate nil translated-term))
        ((acl2::er cases)
         (translate-lst cases t t nil 'defthmrp-fn world state))
        #|((acl2::er new-synps) ;; I guess new-synps should be an alist...
@@ -1117,7 +1141,13 @@ RP-Rewriter will throw an eligible error.</p>"
                ((mv ?sigs fncs ?fnc-names ?openers reduced-body &) (search-lambda-to-fnc name 0 translated-term))
                (- (or (and sigs fncs openers)
                       (and (or sigs fncs openers)
-                           (hard-error 'defthmrp-fn "something unexpected happened.... contact Mertcan Temel<temelmertcan@gmail.com>~%" nil)))))
+                           (hard-error 'defthmrp-fn "something unexpected happened.... contact Mertcan Temel<temelmertcan@gmail.com>~%" nil))))
+               ((when (not sigs))
+                `(,(if (or disabled disabled-for-ACL2) 'defthmd 'defthm)
+                  ,name
+                  ,term
+                  :rule-classes ,rule-classes
+                  ,@hints)))
             `(encapsulate nil
                ;;,sigs
                (local
@@ -1135,12 +1165,14 @@ RP-Rewriter will throw an eligible error.</p>"
                          :in-theory (union-theories
                                      '(hard-error hons-copy return-last ,@(strip-cars fnc-names))
                                      (theory 'minimal-theory)))
-                        (and Stable-under-simplificationp
+                        (and stable-under-simplificationp
                              '(:in-theory (e/d () ()))))))))
-         (t `(defthm ,name
-               ,term
-               :rule-classes ,rule-classes
-               ,@hints)))))
+         (t `(,(if (or disabled disabled-for-ACL2) 'defthmd 'defthm)
+              ,name
+              ,term
+              :rule-classes ,rule-classes
+              ,@hints))))
+       (body `(with-output :stack :pop ,body)))
     (value
      (if (or disable-meta-rules
              enable-meta-rules
@@ -1148,7 +1180,9 @@ RP-Rewriter will throw an eligible error.</p>"
              disable-rules
              add-rp-rule)
          `(with-output
-            :off :all :on (error ,@(and (not supress-warnings) '(comment)))
+            :off :all :on (error 
+                           ,@(and (not supress-warnings) '(comment)))
+            :stack :push
             ;;:stack :push
             (encapsulate
               nil
@@ -1341,7 +1375,7 @@ RP-Rewriter will throw an eligible error.</p>"
                ((when (equal (meta-extract-formula extra-name state) ''t))
                 nil))
             (list extra-name)))
-         (rules (get-rules (cons name extra-names) state))
+         (rules (get-rules (cons name extra-names) state :warning :err))
          ((unless rules)
           nil)
          (rules (acl2::flatten (strip-cdrs rules))))
