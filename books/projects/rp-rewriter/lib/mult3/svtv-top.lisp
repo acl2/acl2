@@ -47,8 +47,8 @@
 ;;(include-book "centaur/svl/svexl/svtv-run-with-svexl" :dir :system)
 
 (set-ignore-ok t)
-(add-rp-rule acl2::svtv-run-fn
-             :lambda-opt t)
+(add-rp-rule acl2::svtv-run
+             :lambda-opt :max)
 
 ;; (enable-rules '(svl::svexl-alist-correct
 ;;                 svl::svexllist-correct
