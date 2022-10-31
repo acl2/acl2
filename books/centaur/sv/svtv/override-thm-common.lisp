@@ -49,6 +49,8 @@
    lemma-args
    no-lemmas
    no-integerp
+   final-defthm
+   final-args
    hints
    constlist-hyp
    rule-classes

@@ -146,7 +146,7 @@
 
 (defun svtv-genthm-final-thm (x)
   (b* (((svtv-generalized-thm x))
-       (template '(defthm <name>
+       (template '(<defthm> <name>
                     (b* (((svassocs <input-var-svassocs>) env)
                          (run (svtv-run (<svtv>) env))
                          ((svassocs <override-svassocs>) run))
@@ -156,9 +156,10 @@
                                      (svar-override-triplelist->testvars (<triples>)) env))
                                (b* (((svassocs <outputs>) run))
                                  <concl>)))
-                    :hints (:@ :no-lemmas <hints>)
+                    <args>
+                    (:@ :no-lemmas <hints-hints>)
                     (:@ (not :no-lemmas)
-                     (("goal" :use (<name>-<<=-lemma
+                     :hints (("goal" :use (<name>-<<=-lemma
                                     (:instance <name>-override-lemma
                                      <override-var-instantiation>
                                      <input-var-instantiation>))
@@ -177,7 +178,8 @@
                                     (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
                                     (:TYPE-PRESCRIPTION SVEX-ENV-LOOKUP)
                                     <enable>))
-                      . <hints>)))))
+                      . <hints>))
+                    <rule-classes>)))
     (acl2::template-subst
      template
      :atom-alist
@@ -185,7 +187,8 @@
        (<concl> . ,x.concl)
        (<svtv> . ,x.svtv)
        (<triples> . ,x.triples-name)
-       (<hints> . ,x.hints))
+       (<hints> . ,x.hints)
+       (<defthm> . ,x.final-defthm))
      :splice-alist
      `((<input-var-svassocs> . ,(append x.input-vars (strip-cars x.input-var-bindings)))
        (<override-svassocs> . ,(svtv-genthm-override-svassocs x.override-vars x.triple-val-alist x.triples-name))
@@ -193,7 +196,10 @@
        (<override-var-instantiation> . ,(svtv-genthm-override-var-instantiation x.override-vars x.svtv))
        (<input-var-instantiation> . ,(svtv-genthm-input-var-instantiation x.input-vars))
        (<outputs> . ,x.output-vars)
-       (<enable> . ,x.enable))
+       (<enable> . ,x.enable)
+       (<args> . ,x.final-args)
+       (<hints-hints> . ,(and x.hints `(:hints ,x.hints)))
+       (<rule-classes> . ,(if (eq x.rule-classes :rewrite) nil `(:rule-classes ,x.rule-classes))))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
      :features (and x.no-lemmas '(:no-lemmas))
      :pkg-sym x.pkg-sym)))
@@ -233,8 +239,10 @@
          lemma-args
          no-lemmas
          no-integerp
+         (final-defthm 'defthm)
+         final-args
          hints
-         rule-classes
+         (rule-classes ':rewrite)
          (pkg-sym name))
         args)
        (triples (acl2::template-subst
@@ -291,6 +299,8 @@
        :no-lemmas no-lemmas
        :no-integerp no-integerp
        :rule-classes rule-classes
+       :final-defthm final-defthm
+       :final-args final-args
        :pkg-sym pkg-sym)))))
 
 (defmacro def-svtv-generalized-thm (name &rest args)
