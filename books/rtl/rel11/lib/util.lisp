@@ -16,24 +16,7 @@
 
 (local (include-book "../support/top"))
 
-;;These macros facilitate localization of events:
-
-(defmacro local-defun (&rest body)
-  (list 'local (cons 'defun body)))
-
-(defmacro local-defund (&rest body)
-  (list 'local (cons 'defund body)))
-
-(defmacro local-defthm (&rest body)
-  (list 'local (cons 'defthm body)))
-
-(defmacro local-defthmd (&rest body)
-  (list 'local (cons 'defthmd body)))
-
-(defmacro local-in-theory (&rest body)
-  (cons 'local
-	(cons (cons 'in-theory (append body 'nil))
-	      'nil)))
+(include-book "../localize-macros")
 
 (defmacro defbvecp (name formals width &key thm-name hyp hints)
   (let* ((thm-name

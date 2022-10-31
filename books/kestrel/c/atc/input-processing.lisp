@@ -836,7 +836,8 @@
   (b* (((acl2::fun (irr))
         (list nil
               ""
-              (ec-call (pprint-options-fix :irrelevant))
+              (with-guard-checking :none
+                                   (ec-call (pprint-options-fix :irrelevant)))
               nil
               nil
               nil

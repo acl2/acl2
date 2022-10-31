@@ -930,7 +930,7 @@
 
                            (er soft ctx
                                "~@0"
-                               (redundant-predefined-error-msg name)))
+                               (redundant-predefined-error-msg name wrld1)))
                           (t (stop-redundant-event ctx state))))
                    (t
                     (enforce-redundancy

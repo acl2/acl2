@@ -267,11 +267,12 @@
 
 (fty::defprod pexpr-gin
   :short "Inputs for @(tsee atc-gen-expr-pure)."
-  ((inscope atc-symbol-type-alist-list)
+  ((inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
    (thm-index pos)
-   (names-to-avoid symbol-list))
+   (names-to-avoid symbol-list)
+   (proofs bool))
   :pred pexpr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -282,18 +283,20 @@
    (type type)
    (events pseudo-event-form-list)
    (thm-index pos)
-   (names-to-avoid symbol-list))
+   (names-to-avoid symbol-list)
+   (proofs bool))
   :pred pexpr-goutp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod bexpr-gin
   :short "Inputs for @(tsee atc-gen-expr-bool)."
-  ((inscope atc-symbol-type-alist-list)
+  ((inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
    (thm-index pos)
-   (names-to-avoid symbol-list))
+   (names-to-avoid symbol-list)
+   (proofs bool))
   :pred bexpr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -303,7 +306,8 @@
   ((expr expr)
    (events pseudo-event-form-list)
    (thm-index pos)
-   (names-to-avoid symbol-list))
+   (names-to-avoid symbol-list)
+   (proofs bool))
   :pred bexpr-goutp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -475,22 +479,25 @@
        but the resulting C code may not compile.
        The additional type checking we do here should ensure that
        all the code satisfies the C static semantics."))
-    (b* (((acl2::fun (irr)) (ec-call (pexpr-gout-fix :irrelevant)))
+    (b* (((acl2::fun (irr))
+          (with-guard-checking :none (ec-call (pexpr-gout-fix :irrelevant))))
          ((pexpr-gin gin) gin)
          ((when (pseudo-term-case term :var))
           (b* ((var (pseudo-term-var->name term))
-               (type (atc-get-var var gin.inscope))
-               ((when (not type))
+               (info (atc-get-var var gin.inscope))
+               ((when (not info))
                 (raise "Internal error: the variable ~x0 in function ~x1 ~
-                        has no associated type." var gin.fn)
-                (acl2::value (irr))))
+                        has no associated information." var gin.fn)
+                (acl2::value (irr)))
+               (type (atc-var-info->type info)))
             (acl2::value
              (make-pexpr-gout
               :expr (expr-ident (make-ident :name (symbol-name var)))
               :type type
               :events nil
               :thm-index gin.thm-index
-              :names-to-avoid gin.names-to-avoid))))
+              :names-to-avoid gin.names-to-avoid
+              :proofs nil))))
          ((er (list okp const out-type) :iferr (irr))
           (atc-check-iconst term ctx state))
          ((when okp)
@@ -507,7 +514,8 @@
                               :type out-type
                               :events (list event)
                               :thm-index (1+ gin.thm-index)
-                              :names-to-avoid names-to-avoid))))
+                              :names-to-avoid names-to-avoid
+                              :proofs nil))))
          ((mv okp op arg-term in-type out-type) (atc-check-unop term))
          ((when okp)
           (b* (((er (pexpr-gout arg))
@@ -526,7 +534,8 @@
                           :type out-type
                           :events arg.events
                           :thm-index arg.thm-index
-                          :names-to-avoid arg.names-to-avoid))))
+                          :names-to-avoid arg.names-to-avoid
+                          :proofs nil))))
          ((mv okp op arg1-term arg2-term in-type1 in-type2 out-type)
           (atc-check-binop term))
          ((when okp)
@@ -558,7 +567,8 @@
                           :type out-type
                           :events (append arg1.events arg2.events)
                           :thm-index arg2.thm-index
-                          :names-to-avoid arg2.names-to-avoid))))
+                          :names-to-avoid arg2.names-to-avoid
+                          :proofs nil))))
          ((mv okp tyname arg-term in-type out-type) (atc-check-conv term))
          ((when okp)
           (b* (((er (pexpr-gout arg))
@@ -577,7 +587,8 @@
                           :type out-type
                           :events arg.events
                           :thm-index arg.thm-index
-                          :names-to-avoid arg.names-to-avoid))))
+                          :names-to-avoid arg.names-to-avoid
+                          :proofs nil))))
          ((mv okp arr-term sub-term in-type1 in-type2 out-type)
           (atc-check-array-read term))
          ((when okp)
@@ -609,7 +620,8 @@
                           :type out-type
                           :events (append arr.events sub.events)
                           :thm-index sub.thm-index
-                          :names-to-avoid sub.names-to-avoid))))
+                          :names-to-avoid sub.names-to-avoid
+                          :proofs nil))))
          ((mv okp arg-term tag member mem-type)
           (atc-check-struct-read-scalar term gin.prec-tags))
          ((when okp)
@@ -622,7 +634,8 @@
                                  :type mem-type
                                  :events arg.events
                                  :thm-index arg.thm-index
-                                 :names-to-avoid arg.names-to-avoid)))
+                                 :names-to-avoid arg.names-to-avoid
+                                 :proofs nil)))
                   ((equal arg.type (type-pointer (type-struct tag)))
                    (acl2::value (make-pexpr-gout
                                  :expr (make-expr-memberp :target arg.expr
@@ -630,7 +643,8 @@
                                  :type mem-type
                                  :events arg.events
                                  :thm-index arg.thm-index
-                                 :names-to-avoid arg.names-to-avoid)))
+                                 :names-to-avoid arg.names-to-avoid
+                                 :proofs nil)))
                   (t (er-soft+ ctx t (irr)
                                "The reading of a ~x0 structure with member ~x1 ~
                                 is applied to ~
@@ -681,7 +695,8 @@
                                  :type elem-type
                                  :events (append index.events struct.events)
                                  :thm-index struct.thm-index
-                                 :names-to-avoid struct.names-to-avoid)))
+                                 :names-to-avoid struct.names-to-avoid
+                                 :proofs nil)))
                   ((equal struct.type (type-pointer (type-struct tag)))
                    (acl2::value (make-pexpr-gout
                                  :expr (make-expr-arrsub
@@ -692,7 +707,8 @@
                                  :type elem-type
                                  :events (append index.events struct.events)
                                  :thm-index struct.thm-index
-                                 :names-to-avoid struct.names-to-avoid)))
+                                 :names-to-avoid struct.names-to-avoid
+                                 :proofs nil)))
                   (t (er-soft+ ctx t (irr)
                                "The reading of ~x0 structure with member ~x1 ~
                                 is applied to ~
@@ -716,14 +732,16 @@
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
                                     :thm-index gin.thm-index
-                                    :names-to-avoid gin.names-to-avoid)
+                                    :names-to-avoid gin.names-to-avoid
+                                    :proofs nil)
                                    ctx
                                    state)))
             (acl2::value (make-pexpr-gout :expr arg.expr
                                           :type (type-sint)
                                           :events arg.events
                                           :thm-index arg.thm-index
-                                          :names-to-avoid arg.names-to-avoid))))
+                                          :names-to-avoid arg.names-to-avoid
+                                          :proofs nil))))
          ((mv okp test-term then-term else-term) (atc-check-condexpr term))
          ((when okp)
           (b* (((er (bexpr-gout test) :iferr (irr))
@@ -733,7 +751,8 @@
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
                                     :thm-index gin.thm-index
-                                    :names-to-avoid gin.names-to-avoid)
+                                    :names-to-avoid gin.names-to-avoid
+                                    :proofs nil)
                                    ctx
                                    state))
                ((er (pexpr-gout then))
@@ -768,7 +787,8 @@
               :type then.type
               :events (append test.events then.events else.events)
               :thm-index else.thm-index
-              :names-to-avoid else.names-to-avoid)))))
+              :names-to-avoid else.names-to-avoid
+              :proofs nil)))))
       (er-soft+ ctx t (irr)
                 "When generating C code for the function ~x0, ~
                  at a point where ~
@@ -812,7 +832,8 @@
       "As in @(tsee atc-gen-expr-pure),
        we perform C type checks on the ACL2 terms.
        See  @(tsee atc-gen-expr-pure) for an explanation."))
-    (b* (((acl2::fun (irr)) (ec-call (bexpr-gout-fix :irrelevant)))
+    (b* (((acl2::fun (irr))
+          (with-guard-checking :none (ec-call (bexpr-gout-fix :irrelevant))))
          ((bexpr-gin gin) gin)
          ((mv okp arg-term) (fty-check-not-call term))
          ((when okp)
@@ -823,7 +844,8 @@
                                                  :arg arg.expr)
                           :events arg.events
                           :thm-index arg.thm-index
-                          :names-to-avoid arg.names-to-avoid))))
+                          :names-to-avoid arg.names-to-avoid
+                          :proofs nil))))
          ((mv okp arg1-term arg2-term) (fty-check-and-call term))
          ((when okp)
           (b* (((er (bexpr-gout arg1))
@@ -842,7 +864,8 @@
                                                   :arg2 arg2.expr)
                           :events (append arg1.events arg2.events)
                           :thm-index arg2.thm-index
-                          :names-to-avoid arg2.names-to-avoid))))
+                          :names-to-avoid arg2.names-to-avoid
+                          :proofs nil))))
          ((mv okp arg1-term arg2-term) (fty-check-or-call term))
          ((when okp)
           (b* (((er (bexpr-gout arg1))
@@ -861,7 +884,8 @@
                                                   :arg2 arg2.expr)
                           :events (append arg1.events arg2.events)
                           :thm-index arg2.thm-index
-                          :names-to-avoid arg2.names-to-avoid))))
+                          :names-to-avoid arg2.names-to-avoid
+                          :proofs nil))))
          ((mv okp arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)
           (b* (((er (pexpr-gout arg) :iferr (irr))
@@ -871,7 +895,8 @@
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
                                     :thm-index gin.thm-index
-                                    :names-to-avoid gin.names-to-avoid)
+                                    :names-to-avoid gin.names-to-avoid
+                                    :proofs nil)
                                    ctx
                                    state))
                ((unless (equal arg.type in-type))
@@ -886,7 +911,8 @@
              (make-bexpr-gout :expr arg.expr
                               :events arg.events
                               :thm-index arg.thm-index
-                              :names-to-avoid arg.names-to-avoid)))))
+                              :names-to-avoid arg.names-to-avoid
+                              :proofs nil)))))
       (er-soft+ ctx t (irr)
                 "When generating C code for the function ~x0, ~
                  at a point where ~
@@ -903,11 +929,12 @@
 
 (fty::defprod pexprs-gin
   :short "Inputs for @(tsee atc-gen-expr-pure-list)."
-  ((inscope atc-symbol-type-alist-list)
+  ((inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
    (thm-index pos)
-   (names-to-avoid symbol-list))
+   (names-to-avoid symbol-list)
+   (proofs bool))
   :pred pexprs-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -918,7 +945,8 @@
    (types type-list)
    (events pseudo-event-form-list)
    (thm-index pos)
-   (names-to-avoid symbol-list))
+   (names-to-avoid symbol-list)
+   (proofs bool))
   :pred pexprs-goutp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -935,14 +963,16 @@
    (xdoc::p
     "This lifts @(tsee atc-gen-expr-pure) to lists.
      However, we do not return the C types of the expressions."))
-  (b* (((acl2::fun (irr)) (ec-call (pexprs-gout-fix :irrelevant)))
+  (b* (((acl2::fun (irr))
+        (with-guard-checking :none (ec-call (pexprs-gout-fix :irrelevant))))
        ((pexprs-gin gin) gin)
        ((when (endp terms))
         (acl2::value (make-pexprs-gout :exprs nil
                                        :types nil
                                        :events nil
                                        :thm-index gin.thm-index
-                                       :names-to-avoid gin.names-to-avoid)))
+                                       :names-to-avoid gin.names-to-avoid
+                                       :proofs nil)))
        ((er (pexpr-gout first) :iferr (irr))
         (atc-gen-expr-pure (car terms)
                            (make-pexpr-gin
@@ -950,7 +980,8 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :thm-index gin.thm-index
-                            :names-to-avoid gin.names-to-avoid)
+                            :names-to-avoid gin.names-to-avoid
+                            :proofs nil)
                            ctx
                            state))
        ((er (pexprs-gout rest))
@@ -966,7 +997,8 @@
                   :types (cons first.type rest.types)
                   :events (append first.events rest.events)
                   :thm-index rest.thm-index
-                  :names-to-avoid rest.names-to-avoid)))
+                  :names-to-avoid rest.names-to-avoid
+                  :proofs nil)))
   :verify-guards nil ; done below
   ///
   (verify-guards atc-gen-expr-pure-list))
@@ -975,13 +1007,14 @@
 
 (fty::defprod expr-gin
   :short "Inputs for @(tsee atc-gen-expr)."
-  ((var-term-alist acl2::symbol-pseudoterm-alist)
-   (inscope atc-symbol-type-alist-list)
+  ((var-term-alist symbol-pseudoterm-alist)
+   (inscope atc-symbol-varinfo-alist-list)
    (fn symbol)
    (prec-fns atc-symbol-fninfo-alist)
    (prec-tags atc-string-taginfo-alist)
    (thm-index pos)
-   (names-to-avoid symbol-list))
+   (names-to-avoid symbol-list)
+   (proofs bool))
   :pred expr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -994,7 +1027,8 @@
    (limit pseudo-termp)
    (events pseudo-event-form-list)
    (thm-index pos)
-   (names-to-avoid symbol-list))
+   (names-to-avoid symbol-list)
+   (proofs bool))
   :pred expr-goutp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1034,7 +1068,8 @@
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
-  (b* (((acl2::fun (irr)) (ec-call (expr-gout-fix :irrelevant)))
+  (b* (((acl2::fun (irr))
+        (with-guard-checking :none (ec-call (expr-gout-fix :irrelevant))))
        ((expr-gin gin) gin)
        ((mv okp called-fn arg-terms in-types out-type affect limit)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns (w state)))
@@ -1060,7 +1095,8 @@
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn
                                        :thm-index gin.thm-index
-                                       :names-to-avoid gin.names-to-avoid)
+                                       :names-to-avoid gin.names-to-avoid
+                                       :proofs nil)
                                       ctx
                                       state))
              ((unless (equal args.types in-types))
@@ -1080,14 +1116,16 @@
             :limit `(binary-+ '2 ,limit)
             :events args.events
             :thm-index args.thm-index
-            :names-to-avoid args.names-to-avoid)))))
+            :names-to-avoid args.names-to-avoid
+            :proofs nil)))))
     (b* (((er (pexpr-gout pure) :iferr (irr))
           (atc-gen-expr-pure term
                              (make-pexpr-gin :inscope gin.inscope
                                              :prec-tags gin.prec-tags
                                              :fn gin.fn
                                              :thm-index gin.thm-index
-                                             :names-to-avoid gin.names-to-avoid)
+                                             :names-to-avoid gin.names-to-avoid
+                                             :proofs nil)
                              ctx
                              state)))
       (acl2::value (make-expr-gout :expr pure.expr
@@ -1096,7 +1134,8 @@
                                    :limit '(quote 1)
                                    :events pure.events
                                    :thm-index pure.thm-index
-                                   :names-to-avoid pure.names-to-avoid)))))
+                                   :names-to-avoid pure.names-to-avoid
+                                   :proofs nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1192,7 +1231,7 @@
 
 (define atc-ensure-formals-not-lost ((bind-affect symbol-listp)
                                      (fn-affect symbol-listp)
-                                     (fn-typed-formals atc-symbol-type-alistp)
+                                     (fn-typed-formals atc-symbol-varinfo-alistp)
                                      (fn symbolp)
                                      (ctx ctxp)
                                      state)
@@ -1229,10 +1268,10 @@
      taking into account the types and whether @('fn') is recursive."))
   (b* (((when (endp bind-affect)) (acl2::value nil))
        (var (car bind-affect))
-       (type (cdr (assoc-eq var fn-typed-formals)))
-       ((when (and type
+       (info (cdr (assoc-eq var fn-typed-formals)))
+       ((when (and info
                    (or (irecursivep+ fn (w state))
-                       (type-case type :pointer))
+                       (type-case (atc-var-info->type info) :pointer))
                    (not (member-eq var fn-affect))))
         (er-soft+ ctx t nil
                   "When generating C code for the function ~x0, ~
@@ -1364,7 +1403,7 @@
                            (ctx ctxp)
                            state)
   :returns (mv erp
-               (typed-formals atc-symbol-type-alistp)
+               (typed-formals atc-symbol-varinfo-alistp)
                state)
   :short "Calculate the C types of the formal parameters of a target function."
   :long
@@ -1411,17 +1450,17 @@
                                            (formals symbol-listp)
                                            (guard pseudo-termp)
                                            (guard-conjuncts pseudo-term-listp)
-                                           (prelim-alist atc-symbol-type-alistp)
+                                           (prelim-alist atc-symbol-varinfo-alistp)
                                            (prec-tags atc-string-taginfo-alistp)
                                            (prec-objs atc-string-objinfo-alistp)
                                            (ctx ctxp)
                                            state)
      :returns (mv erp
-                  (prelim-alist-final atc-symbol-type-alistp)
+                  (prelim-alist-final atc-symbol-varinfo-alistp)
                   state)
      :parents nil
      (b* (((when (endp guard-conjuncts))
-           (acl2::value (atc-symbol-type-alist-fix prelim-alist)))
+           (acl2::value (atc-symbol-varinfo-alist-fix prelim-alist)))
           (conjunct (car guard-conjuncts))
           ((mv type arg) (atc-check-guard-conjunct conjunct
                                                    prec-tags
@@ -1455,7 +1494,8 @@
                       must have exactly one type predicate in the guard, ~
                       even when the multiple predicates are the same."
                      guard fn arg))
-          (prelim-alist (acons arg type prelim-alist)))
+          (info (make-atc-var-info :type type :thm nil))
+          (prelim-alist (acons arg info prelim-alist)))
        (atc-typed-formals-prelim-alist fn
                                        formals
                                        guard
@@ -1469,60 +1509,62 @@
    (define atc-typed-formals-final-alist ((fn symbolp)
                                           (formals symbol-listp)
                                           (guard pseudo-termp)
-                                          (prelim-alist atc-symbol-type-alistp)
+                                          (prelim-alist atc-symbol-varinfo-alistp)
                                           (ctx ctxp)
                                           state)
      :returns (mv erp
-                  (typed-formals atc-symbol-type-alistp)
+                  (typed-formals atc-symbol-varinfo-alistp)
                   state)
      :parents nil
      (b* (((when (endp formals)) (acl2::value nil))
           (formal (symbol-fix (car formals)))
-          (formal+type (assoc-eq formal
-                                 (atc-symbol-type-alist-fix prelim-alist)))
-          ((when (not (consp formal+type)))
+          (formal+info (assoc-eq formal
+                                 (atc-symbol-varinfo-alist-fix prelim-alist)))
+          ((when (not (consp formal+info)))
            (er-soft+ ctx t nil
                      "The guard ~x0 of the target function ~x1 ~
                       has no type predicate for the formal parameter ~x2. ~
                       Every formal parameter must have a type predicate."
                      guard fn formal))
-          (type (cdr formal+type))
+          (info (cdr formal+info))
           ((er typed-formals) (atc-typed-formals-final-alist fn
                                                              (cdr formals)
                                                              guard
                                                              prelim-alist
                                                              ctx
                                                              state)))
-       (acl2::value (acons formal type typed-formals)))
+       (acl2::value (acons formal info typed-formals)))
      :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod stmt-gin
   :short "Inputs for @(tsee atc-gen-stmt)."
-  ((var-term-alist symbol-pseudoterm-alistp)
-   (inscope atc-symbol-type-alist-listp)
+  ((var-term-alist symbol-pseudoterm-alist)
+   (typed-formals atc-symbol-varinfo-alist)
+   (inscope atc-symbol-varinfo-alist-list)
    (loop-flag booleanp)
-   (affect symbol-listp)
+   (affect symbol-list)
    (fn symbolp)
-   (prec-fns atc-symbol-fninfo-alistp)
-   (prec-tags atc-string-taginfo-alistp)
-   (prec-objs atc-string-objinfo-alistp)
-   (proofs booleanp)
+   (prec-fns atc-symbol-fninfo-alist)
+   (prec-tags atc-string-taginfo-alist)
+   (prec-objs atc-string-objinfo-alist)
    (thm-index pos)
-   (names-to-avoid symbol-list))
+   (names-to-avoid symbol-list)
+   (proofs bool))
   :pred stmt-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod stmt-gout
   :short "Outputs for @(tsee atc-gen-stmt)."
-  ((items block-item-listp)
-   (type typep)
-   (limit pseudo-termp)
+  ((items block-item-list)
+   (type type)
+   (limit pseudo-term)
    (events pseudo-event-form-list)
    (thm-index pos)
-   (names-to-avoid symbol-list))
+   (names-to-avoid symbol-list)
+   (proofs bool))
   :pred stmt-goutp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1748,7 +1790,8 @@
      another 1 to go from there to the @(':return') case
      and @(tsee exec-expr-call-or-pure),
      for which we use the recursively calculated limit."))
-  (b* (((acl2::fun (irr)) (ec-call (stmt-gout-fix :irrelevant)))
+  (b* (((acl2::fun (irr))
+        (with-guard-checking :none (ec-call (stmt-gout-fix :irrelevant))))
        (wrld (w state))
        ((stmt-gin gin) gin)
        ((mv okp test-term then-term else-term) (fty-check-if-call term))
@@ -1764,7 +1807,8 @@
                                   :prec-tags gin.prec-tags
                                   :fn gin.fn
                                   :thm-index gin.thm-index
-                                  :names-to-avoid gin.names-to-avoid)
+                                  :names-to-avoid gin.names-to-avoid
+                                  :proofs nil)
                                  ctx
                                  state))
              ((er (stmt-gout then))
@@ -1813,7 +1857,8 @@
             :limit limit
             :events (append test.events then.events else.events)
             :thm-index else.thm-index
-            :names-to-avoid else.names-to-avoid))))
+            :names-to-avoid else.names-to-avoid
+            :proofs nil))))
        ((mv okp var? vars indices val-term body-term wrapper?)
         (atc-check-mv-let term))
        ((when okp)
@@ -1824,7 +1869,7 @@
               (atc-update-var-term-alist all-vars vals gin.var-term-alist))
              ((when (eq wrapper? 'declar))
               (b* ((var var?)
-                   ((mv type? & errorp) (atc-check-var var gin.inscope))
+                   ((mv info? & errorp) (atc-check-var var gin.inscope))
                    ((when errorp)
                     (er-soft+ ctx t (irr)
                               "When generating C code for the function ~x0, ~
@@ -1834,7 +1879,7 @@
                                a variable already in scope. ~
                                This is disallowed."
                               gin.fn var))
-                   ((when type?)
+                   ((when info?)
                     (er-soft+ ctx t (irr)
                               "The variable ~x0 in the function ~x1 ~
                                is already in scope and cannot be re-declared."
@@ -1846,9 +1891,9 @@
                                must be a portable ASCII C identifier, ~
                                but it is not."
                               (symbol-name var) var gin.fn))
-                   ((mv type?-list innermostp-list)
+                   ((mv info?-list innermostp-list)
                     (atc-get-vars-check-innermost vars gin.inscope))
-                   ((when (member-eq nil type?-list))
+                   ((when (member-eq nil info?-list))
                     (er-soft+ ctx t (irr)
                               "When generating C code for the function ~x0, ~
                                an attempt is made to modify the variables ~x1, ~
@@ -1870,7 +1915,8 @@
                                    :prec-fns gin.prec-fns
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
-                                   :names-to-avoid gin.names-to-avoid)
+                                   :names-to-avoid gin.names-to-avoid
+                                   :proofs nil)
                                   ctx
                                   state))
                    ((when (type-case init.type :pointer))
@@ -1887,16 +1933,10 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val-term var vars init.affect))
-                   ((er typed-formals :iferr (irr))
-                    (atc-typed-formals gin.fn
-                                       gin.prec-tags
-                                       gin.prec-objs
-                                       ctx
-                                       state))
                    ((er & :iferr (irr))
                     (atc-ensure-formals-not-lost vars
                                                  gin.affect
-                                                 typed-formals
+                                                 gin.typed-formals
                                                  gin.fn
                                                  ctx
                                                  state))
@@ -1907,7 +1947,8 @@
                                             :declor declor
                                             :init? (initer-single init.expr)))
                    (item (block-item-declon declon))
-                   (inscope-body (atc-add-var var init.type gin.inscope))
+                   (varinfo (make-atc-var-info :type init.type :thm nil))
+                   (inscope-body (atc-add-var var varinfo gin.inscope))
                    ((er (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
@@ -1915,7 +1956,8 @@
                                    :var-term-alist var-term-alist-body
                                    :inscope inscope-body
                                    :thm-index init.thm-index
-                                   :names-to-avoid init.names-to-avoid)
+                                   :names-to-avoid init.names-to-avoid
+                                   :proofs nil)
                                   ctx
                                   state))
                    (type body.type)
@@ -1931,11 +1973,12 @@
                               :limit limit
                               :events (append init.events body.events)
                               :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid))))
+                              :names-to-avoid body.names-to-avoid
+                              :proofs nil))))
              ((when (eq wrapper? 'assign))
               (b* ((var var?)
-                   ((mv type? innermostp &) (atc-check-var var gin.inscope))
-                   ((unless type?)
+                   ((mv info? innermostp &) (atc-check-var var gin.inscope))
+                   ((unless info?)
                     (er-soft+ ctx t (irr)
                               "When generating C code for the function ~x0, ~
                                an attempt is being made ~
@@ -1947,7 +1990,7 @@
                                an attempt is being made ~
                                to modify a non-assignable variable ~x1."
                               gin.fn var))
-                   (prev-type type?)
+                   (prev-type (atc-var-info->type info?))
                    ((er (expr-gout rhs) :iferr (irr))
                     (atc-gen-expr val-term
                                   (make-expr-gin
@@ -1957,7 +2000,8 @@
                                    :prec-fns gin.prec-fns
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
-                                   :names-to-avoid gin.names-to-avoid)
+                                   :names-to-avoid gin.names-to-avoid
+                                   :proofs nil)
                                   ctx
                                   state))
                    ((unless (equal prev-type rhs.type))
@@ -1974,16 +2018,10 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val-term var vars rhs.affect))
-                   ((er typed-formals :iferr (irr))
-                    (atc-typed-formals gin.fn
-                                       gin.prec-tags
-                                       gin.prec-objs
-                                       ctx
-                                       state))
                    ((er & :iferr (irr))
                     (atc-ensure-formals-not-lost vars
                                                  gin.affect
-                                                 typed-formals
+                                                 gin.typed-formals
                                                  gin.fn
                                                  ctx
                                                  state))
@@ -2024,13 +2062,14 @@
                               :limit limit
                               :events (append rhs.events body.events)
                               :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid))))
+                              :names-to-avoid body.names-to-avoid
+                              :proofs nil))))
              ((unless (eq wrapper? nil))
               (prog2$ (raise "Internal error: MV-LET wrapper is ~x0." wrapper?)
                       (acl2::value (irr))))
-             ((mv type?-list innermostp-list)
+             ((mv info?-list innermostp-list)
               (atc-get-vars-check-innermost vars gin.inscope))
-             ((when (member-eq nil type?-list))
+             ((when (member-eq nil info?-list))
               (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          an attempt is made to modify the variables ~x1, ~
@@ -2049,12 +2088,10 @@
                          whose term ~x1 to which the variables are bound ~
                          does not have the required form."
                         gin.fn val-term))
-             ((er typed-formals :iferr (irr))
-              (atc-typed-formals gin.fn gin.prec-tags gin.prec-objs ctx state))
              ((er & :iferr (irr))
               (atc-ensure-formals-not-lost vars
                                            gin.affect
-                                           typed-formals
+                                           gin.typed-formals
                                            gin.fn
                                            ctx
                                            state))
@@ -2094,7 +2131,8 @@
                         :limit limit
                         :events (append xform.events body.events)
                         :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid))))
+                        :names-to-avoid body.names-to-avoid
+                        :proofs nil))))
        ((mv okp var val-term body-term wrapper?) (atc-check-let term))
        ((when okp)
         (b* ((val-instance (fty-fsublis-var gin.var-term-alist val-term))
@@ -2123,7 +2161,8 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :thm-index gin.thm-index
-                                        :names-to-avoid gin.names-to-avoid)
+                                        :names-to-avoid gin.names-to-avoid
+                                        :proofs nil)
                                        ctx
                                        state))
                    ((er (pexpr-gout sub) :iferr (irr))
@@ -2133,7 +2172,8 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :thm-index arr.thm-index
-                                        :names-to-avoid arr.names-to-avoid)
+                                        :names-to-avoid arr.names-to-avoid
+                                        :proofs nil)
                                        ctx
                                        state))
                    ((er (pexpr-gout elem) :iferr (irr))
@@ -2143,7 +2183,8 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :thm-index sub.thm-index
-                                        :names-to-avoid sub.names-to-avoid)
+                                        :names-to-avoid sub.names-to-avoid
+                                        :proofs nil)
                                        ctx
                                        state))
                    ((unless (equal arr.type (type-pointer elem-type)))
@@ -2202,7 +2243,8 @@
                                               elem.events
                                               body.events)
                               :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid))))
+                              :names-to-avoid body.names-to-avoid
+                              :proofs nil))))
              ((mv okp member-term tag member-name member-type)
               (atc-check-struct-write-scalar var val-term gin.prec-tags))
              ((when okp)
@@ -2219,7 +2261,8 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :thm-index gin.thm-index
-                                        :names-to-avoid gin.names-to-avoid)
+                                        :names-to-avoid gin.names-to-avoid
+                                        :proofs nil)
                                        ctx
                                        state))
                    ((er pointerp)
@@ -2253,7 +2296,8 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :thm-index struct.thm-index
-                                        :names-to-avoid struct.names-to-avoid)
+                                        :names-to-avoid struct.names-to-avoid
+                                        :proofs nil)
                                        ctx
                                        state))
                    ((unless (equal member.type member-type))
@@ -2296,7 +2340,8 @@
                               :events (append struct.events
                                               member.events)
                               :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid))))
+                              :names-to-avoid body.names-to-avoid
+                              :proofs nil))))
              ((mv okp index-term elem-term tag member index-type elem-type)
               (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)
@@ -2313,7 +2358,8 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :thm-index gin.thm-index
-                                        :names-to-avoid gin.names-to-avoid)
+                                        :names-to-avoid gin.names-to-avoid
+                                        :proofs nil)
                                        ctx
                                        state))
                    ((er pointerp)
@@ -2347,7 +2393,8 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :thm-index struct.thm-index
-                                        :names-to-avoid struct.names-to-avoid)
+                                        :names-to-avoid struct.names-to-avoid
+                                        :proofs nil)
                                        ctx
                                        state))
                    ((unless (equal index.type index-type))
@@ -2367,7 +2414,8 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :thm-index index.thm-index
-                                        :names-to-avoid index.names-to-avoid)
+                                        :names-to-avoid index.names-to-avoid
+                                        :proofs nil)
                                        ctx
                                        state))
                    ((unless (equal elem.type elem-type))
@@ -2413,8 +2461,9 @@
                                               elem.events
                                               body.events)
                               :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid))))
-             ((mv type? innermostp errorp) (atc-check-var var gin.inscope))
+                              :names-to-avoid body.names-to-avoid
+                              :proofs nil))))
+             ((mv info? innermostp errorp) (atc-check-var var gin.inscope))
              ((when errorp)
               (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
@@ -2425,7 +2474,7 @@
                          This is disallowed."
                         gin.fn var))
              ((when (eq wrapper? 'declar))
-              (b* (((when type?)
+              (b* (((when info?)
                     (er-soft+ ctx t (irr)
                               "The variable ~x0 in the function ~x1 ~
                                is already in scope and cannot be re-declared."
@@ -2446,7 +2495,8 @@
                                    :prec-fns gin.prec-fns
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
-                                   :names-to-avoid gin.names-to-avoid)
+                                   :names-to-avoid gin.names-to-avoid
+                                   :proofs nil)
                                   ctx
                                   state))
                    ((when (type-case init.type :pointer))
@@ -2470,7 +2520,8 @@
                                             :declor declor
                                             :init? (initer-single init.expr)))
                    (item (block-item-declon declon))
-                   (inscope-body (atc-add-var var init.type gin.inscope))
+                   (varinfo (make-atc-var-info :type init.type :thm nil))
+                   (inscope-body (atc-add-var var varinfo gin.inscope))
                    ((er (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
@@ -2494,7 +2545,8 @@
                               :limit limit
                               :events (append init.events body.events)
                               :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid))))
+                              :names-to-avoid body.names-to-avoid
+                              :proofs nil))))
              ((unless (atc-var-assignablep var innermostp gin.affect))
               (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
@@ -2502,7 +2554,11 @@
                          to modify a non-assignable variable ~x1."
                         gin.fn var))
              ((when (eq wrapper? 'assign))
-              (b* ((prev-type type?)
+              (b* (((unless info?)
+                    (raise "Internal error: no information for variable ~x0."
+                           var)
+                    (acl2::value (irr)))
+                   (prev-type (atc-var-info->type info?))
                    ((er (expr-gout rhs) :iferr (irr))
                     (atc-gen-expr val-term
                                   (make-expr-gin
@@ -2512,7 +2568,8 @@
                                    :prec-fns gin.prec-fns
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
-                                   :names-to-avoid gin.names-to-avoid)
+                                   :names-to-avoid gin.names-to-avoid
+                                   :proofs nil)
                                   ctx
                                   state))
                    ((unless (equal prev-type rhs.type))
@@ -2566,7 +2623,8 @@
                               :limit limit
                               :events (append rhs.events body.events)
                               :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid))))
+                              :names-to-avoid body.names-to-avoid
+                              :proofs nil))))
              ((unless (eq wrapper? nil))
               (prog2$ (raise "Internal error: LET wrapper is ~x0." wrapper?)
                       (acl2::value (irr))))
@@ -2579,16 +2637,10 @@
                          and that is neither an IF or a loop function call. ~
                          This is disallowed."
                         gin.fn val-term))
-             ((er typed-formals :iferr (irr))
-              (atc-typed-formals gin.fn
-                                 gin.prec-tags
-                                 gin.prec-objs
-                                 ctx
-                                 state))
              ((er & :iferr (irr))
               (atc-ensure-formals-not-lost (list var)
                                            gin.affect
-                                           typed-formals
+                                           gin.typed-formals
                                            gin.fn
                                            ctx
                                            state))
@@ -2628,7 +2680,8 @@
                         :limit limit
                         :events (append xform.events body.events)
                         :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid))))
+                        :names-to-avoid body.names-to-avoid
+                        :proofs nil))))
        ((when (and (pseudo-term-case term :var)
                    (equal gin.affect
                           (list (pseudo-term-var->name term)))))
@@ -2644,7 +2697,8 @@
                         :limit (pseudo-term-quote 1)
                         :events nil
                         :thm-index gin.thm-index
-                        :names-to-avoid gin.names-to-avoid))))
+                        :names-to-avoid gin.names-to-avoid
+                        :proofs nil))))
        ((mv okp terms) (fty-check-list-call term))
        ((when okp)
         (b* (((unless (>= (len terms) 2))
@@ -2664,7 +2718,8 @@
                                          :limit (pseudo-term-quote 1)
                                          :events nil
                                          :thm-index gin.thm-index
-                                         :names-to-avoid gin.names-to-avoid)))
+                                         :names-to-avoid gin.names-to-avoid
+                                         :proofs nil)))
            ((equal (cdr terms) gin.affect)
             (b* (((er (expr-gout first) :iferr (irr))
                   (atc-gen-expr (car terms)
@@ -2675,7 +2730,8 @@
                                  :prec-fns gin.prec-fns
                                  :prec-tags gin.prec-tags
                                  :thm-index gin.thm-index
-                                 :names-to-avoid gin.names-to-avoid)
+                                 :names-to-avoid gin.names-to-avoid
+                                 :proofs nil)
                                 ctx
                                 state))
                  ((when (consp first.affect))
@@ -2695,7 +2751,8 @@
                             :limit limit
                             :events first.events
                             :thm-index first.thm-index
-                            :names-to-avoid first.names-to-avoid))))
+                            :names-to-avoid first.names-to-avoid
+                            :proofs nil))))
            (t (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
                          a term ~x0 has been encountered, ~
@@ -2729,11 +2786,12 @@
                          which differs from the variables ~x3 ~
                          being affected here."
                         gin.fn loop-fn loop-affect gin.affect))
-             (types (atc-get-vars formals gin.inscope))
-             ((when (member-eq nil types))
-              (raise "Internal error: not all formals ~x0 have types ~x1."
-                     formals types)
+             (infos (atc-get-vars formals gin.inscope))
+             ((unless (atc-var-info-listp infos))
+              (raise "Internal error: not all formals ~x0 have information ~x1."
+                     formals infos)
               (acl2::value (irr)))
+             (types (atc-var-info-list->type-list infos))
              ((unless (equal types in-types))
               (er-soft+ ctx t (irr)
                         "The loop function ~x0 with input types ~x1 ~
@@ -2751,7 +2809,8 @@
                         :limit limit
                         :events nil
                         :thm-index gin.thm-index
-                        :names-to-avoid gin.names-to-avoid))))
+                        :names-to-avoid gin.names-to-avoid
+                        :proofs nil))))
        ((when (equal term `(,gin.fn ,@(formals+ gin.fn wrld))))
         (if gin.loop-flag
             (acl2::value (make-stmt-gout
@@ -2760,7 +2819,8 @@
                           :limit (pseudo-term-quote 1)
                           :events nil
                           :thm-index gin.thm-index
-                          :names-to-avoid gin.names-to-avoid))
+                          :names-to-avoid gin.names-to-avoid
+                          :proofs nil))
           (er-soft+ ctx t (irr)
                     "When generating code for the recursive function ~x0, ~
                      a recursive call to the loop function occurs ~
@@ -2798,7 +2858,8 @@
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn
                                        :thm-index gin.thm-index
-                                       :names-to-avoid gin.names-to-avoid)
+                                       :names-to-avoid gin.names-to-avoid
+                                       :proofs nil)
                                       ctx
                                       state))
              ((unless (equal args.types in-types))
@@ -2817,7 +2878,8 @@
                         :limit `(binary-+ '5 ,limit)
                         :events args.events
                         :thm-index args.thm-index
-                        :names-to-avoid args.names-to-avoid))))
+                        :names-to-avoid args.names-to-avoid
+                        :proofs nil))))
        ((er (expr-gout term) :iferr (irr))
         (atc-gen-expr term
                       (make-expr-gin :var-term-alist gin.var-term-alist
@@ -2826,7 +2888,8 @@
                                      :prec-fns gin.prec-fns
                                      :prec-tags gin.prec-tags
                                      :thm-index gin.thm-index
-                                     :names-to-avoid gin.names-to-avoid)
+                                     :names-to-avoid gin.names-to-avoid
+                                     :proofs nil)
                       ctx
                       state))
        ((when gin.loop-flag)
@@ -2865,7 +2928,8 @@
                   :limit limit
                   :events term.events
                   :thm-index term.thm-index
-                  :names-to-avoid term.names-to-avoid)))
+                  :names-to-avoid term.names-to-avoid
+                  :proofs nil)))
 
   :measure (pseudo-term-count term)
 
@@ -2884,16 +2948,17 @@
 
 (fty::defprod lstmt-gin
   :short "Inputs for @(tsee atc-gen-loop-stmt)."
-  ((inscope atc-symbol-type-alist-listp)
-   (fn symbolp)
-   (measure-for-fn symbolp)
-   (measure-formals symbol-listp)
-   (prec-fns atc-symbol-fninfo-alistp)
-   (prec-tags atc-string-taginfo-alistp)
-   (prec-objs atc-string-objinfo-alistp)
-   (proofs booleanp)
+  ((typed-formals atc-symbol-varinfo-alist)
+   (inscope atc-symbol-varinfo-alist-list)
+   (fn symbol)
+   (measure-for-fn symbol)
+   (measure-formals symbol-list)
+   (prec-fns atc-symbol-fninfo-alist)
+   (prec-tags atc-string-taginfo-alist)
+   (prec-objs atc-string-objinfo-alist)
    (thm-index pos)
-   (names-to-avoid symbol-list))
+   (names-to-avoid symbol-list)
+   (proofs bool))
   :pred lstmt-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2901,14 +2966,15 @@
 (fty::defprod lstmt-gout
   :short "Outputs for @(tsee atc-gen-loop-stmt)."
   ((stmt stmtp)
-   (test-term pseudo-termp)
-   (body-term pseudo-termp)
-   (affect symbol-listp)
-   (limit-body pseudo-termp)
-   (limit-all pseudo-termp)
+   (test-term pseudo-term)
+   (body-term pseudo-term)
+   (affect symbol-list)
+   (limit-body pseudo-term)
+   (limit-all pseudo-term)
    (events pseudo-event-form-list)
    (thm-index pos)
-   (names-to-avoid symbol-list))
+   (names-to-avoid symbol-list)
+   (proofs bool))
   :pred lstmt-goutp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2974,7 +3040,8 @@
      which is the limit for the whole loop,
      we also return @('limit-body'), which is just for the loop body;
      this is in support for more modular proofs. "))
-  (b* (((acl2::fun (irr)) (ec-call (lstmt-gout-fix :irrelevant)))
+  (b* (((acl2::fun (irr))
+        (with-guard-checking :none (ec-call (lstmt-gout-fix :irrelevant))))
        ((lstmt-gin gin) gin)
        (wrld (w state))
        ((mv okp test-term then-term else-term) (fty-check-if-call term))
@@ -2994,7 +3061,8 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :thm-index gin.thm-index
-                            :names-to-avoid gin.names-to-avoid)
+                            :names-to-avoid gin.names-to-avoid
+                            :proofs nil)
                            ctx
                            state))
        (formals (formals+ gin.fn wrld))
@@ -3015,6 +3083,7 @@
         (atc-gen-stmt then-term
                       (make-stmt-gin
                        :var-term-alist nil
+                       :typed-formals gin.typed-formals
                        :inscope (cons nil gin.inscope)
                        :loop-flag t
                        :affect affect
@@ -3022,9 +3091,9 @@
                        :prec-fns gin.prec-fns
                        :prec-tags gin.prec-tags
                        :prec-objs gin.prec-objs
-                       :proofs gin.proofs
                        :thm-index test.thm-index
-                       :names-to-avoid test.names-to-avoid)
+                       :names-to-avoid test.names-to-avoid
+                       :proofs nil)
                       ctx
                       state))
        ((unless (type-case body.type :void))
@@ -3047,7 +3116,8 @@
                                   :limit-body body.limit
                                   :limit-all limit
                                   :thm-index body.thm-index
-                                  :names-to-avoid body.names-to-avoid)))
+                                  :names-to-avoid body.names-to-avoid
+                                  :proofs nil)))
   :measure (pseudo-term-count term)
   :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))
   ///
@@ -3059,7 +3129,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-param-declon-list ((typed-formals atc-symbol-type-alistp)
+(define atc-gen-param-declon-list ((typed-formals atc-symbol-varinfo-alistp)
                                    (fn symbolp)
                                    (prec-objs atc-string-objinfo-alistp)
                                    (ctx ctxp)
@@ -3082,7 +3152,8 @@
     "If a parameter represents an access to an external object,
      we skip it, i.e. we do not generate a declaration for it."))
   (b* (((when (endp typed-formals)) (acl2::value nil))
-       ((cons formal type) (car typed-formals))
+       ((cons formal info) (car typed-formals))
+       (type (atc-var-info->type info))
        (name (symbol-name formal))
        ((unless (paident-stringp name))
         (er-soft+ ctx t nil
@@ -3117,7 +3188,7 @@
   :prepwork ((local
               (in-theory
                (e/d
-                (symbol-listp-of-strip-cars-when-atc-symbol-type-alistp)
+                (symbol-listp-of-strip-cars-when-atc-symbol-varinfo-alistp)
                 ;; for speed:
                 (always$
                  member-equal
@@ -3201,7 +3272,7 @@
 (define atc-gen-fn-result-thm ((fn symbolp)
                                (type? type-optionp)
                                (affect symbol-listp)
-                               (typed-formals atc-symbol-type-alistp)
+                               (typed-formals atc-symbol-varinfo-alistp)
                                (prec-fns atc-symbol-fninfo-alistp)
                                (prec-tags atc-string-taginfo-alistp)
                                (prec-objs atc-string-objinfo-alistp)
@@ -3344,7 +3415,9 @@
   (b* ((wrld (w state))
        (results1 (and type?
                       (not (type-case type? :void))
-                      (list (cons nil type?))))
+                      (list (cons nil
+                                  (make-atc-var-info :type type?
+                                                     :thm nil)))))
        (results2 (atc-gen-fn-result-thm-aux1 affect typed-formals))
        (results (append results1 results2))
        ((unless (consp results))
@@ -3444,21 +3517,21 @@
   :prepwork
 
   ((define atc-gen-fn-result-thm-aux1 ((affect symbol-listp)
-                                       (typed-formals atc-symbol-type-alistp))
-     :returns (results atc-symbol-type-alistp :hyp (symbol-listp affect))
+                                       (typed-formals atc-symbol-varinfo-alistp))
+     :returns (results atc-symbol-varinfo-alistp :hyp (symbol-listp affect))
      :parents nil
      (cond ((endp affect) nil)
-           (t (b* ((type (cdr (assoc-eq (car affect)
+           (t (b* ((info (cdr (assoc-eq (car affect)
                                         typed-formals))))
-                (if (typep type)
+                (if (atc-var-infop info)
                     (acons (car affect)
-                           type
+                           info
                            (atc-gen-fn-result-thm-aux1 (cdr affect)
                                                        typed-formals))
                   (raise "Internal error: variable ~x0 not found in ~x1."
                          (car affect) typed-formals))))))
 
-   (define atc-gen-fn-result-thm-aux2 ((results atc-symbol-type-alistp)
+   (define atc-gen-fn-result-thm-aux2 ((results atc-symbol-varinfo-alistp)
                                        (index? maybe-natp)
                                        (fn-call pseudo-termp)
                                        (wrld plist-worldp))
@@ -3468,7 +3541,8 @@
           (theresult (if index?
                          `(mv-nth ,index? ,fn-call)
                        fn-call))
-          ((cons name type) (car results))
+          ((cons name info) (car results))
+          (type (atc-var-info->type info))
           (type-conjunct `(,(atc-type-to-recognizer type wrld) ,theresult))
           (nonnil-conjunct? (and index? (list theresult)))
           (arraylength-conjunct?
@@ -3489,16 +3563,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-outer-bindings-and-hyps ((typed-formals atc-symbol-type-alistp)
+(define atc-gen-outer-bindings-and-hyps ((typed-formals atc-symbol-varinfo-alistp)
                                          (compst-var symbolp)
                                          (fn-recursivep booleanp)
                                          (prec-objs atc-string-objinfo-alistp))
   :returns (mv (bindings doublet-listp)
                (hyps true-listp)
                (subst symbol-symbol-alistp
-                      :hyp (atc-symbol-type-alistp typed-formals))
+                      :hyp (atc-symbol-varinfo-alistp typed-formals))
                (instantiation symbol-pseudoterm-alistp
-                              :hyp (and (atc-symbol-type-alistp typed-formals)
+                              :hyp (and (atc-symbol-varinfo-alistp typed-formals)
                                         (symbolp compst-var))))
   :short "Generate the outer bindings,
           pointer hypotheses,
@@ -3676,7 +3750,8 @@
      The reason is the approximate, but correct in our C subset,
      treatment of arrays and pointers discussed in @(tsee exec-arrsub)."))
   (b* (((when (endp typed-formals)) (mv nil nil nil nil))
-       ((cons formal type) (car typed-formals))
+       ((cons formal info) (car typed-formals))
+       (type (atc-var-info->type info))
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
        (formal-objdes `(value-pointer->designator ,formal-ptr))
        (formal-id `(ident ',(symbol-name formal)))
@@ -3815,7 +3890,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-cfun-final-compustate ((affect symbol-listp)
-                                       (typed-formals atc-symbol-type-alistp)
+                                       (typed-formals atc-symbol-varinfo-alistp)
                                        (subst symbol-symbol-alistp)
                                        (compst-var symbolp)
                                        (prec-objs atc-string-objinfo-alistp))
@@ -3868,9 +3943,10 @@
      because the names of the formals must be portable C identifiers."))
   (b* (((when (endp affect)) compst-var)
        (formal (car affect))
-       (type (cdr (assoc-eq formal typed-formals)))
-       ((when (not type))
+       (info (cdr (assoc-eq formal typed-formals)))
+       ((when (not info))
         (raise "Internal error: formal ~x0 not found." formal))
+       (type (atc-var-info->type info))
        ((unless (type-case type :pointer))
         (raise "Internal error: affected formal ~x0 has type ~x1."
                formal type)))
@@ -3897,7 +3973,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-cfun-correct-thm ((fn symbolp)
-                                  (typed-formals atc-symbol-type-alistp)
+                                  (typed-formals atc-symbol-varinfo-alistp)
                                   (type typep)
                                   (affect symbol-listp)
                                   (prec-fns atc-symbol-fninfo-alistp)
@@ -4193,20 +4269,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-formal-pointerp ((formal symbolp)
-                             (typed-formals atc-symbol-type-alistp))
+                             (typed-formals atc-symbol-varinfo-alistp))
   :returns (yes/no booleanp)
   :short "Check if a formal parameter has a C pointer type."
   (b* ((pair (assoc-eq (symbol-fix formal)
-                       (atc-symbol-type-alist-fix typed-formals))))
+                       (atc-symbol-varinfo-alist-fix typed-formals))))
     (and (consp pair)
-         (type-case (cdr pair) :pointer)))
+         (type-case (atc-var-info->type (cdr pair)) :pointer)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist atc-formal-pointer-listp (x typed-formals)
   :guard (and (symbol-listp x)
-              (atc-symbol-type-alistp typed-formals))
+              (atc-symbol-varinfo-alistp typed-formals))
   :short "Lift @(tsee atc-formal-pointerp) to lists."
   (atc-formal-pointerp x typed-formals)
   :true-listp t)
@@ -4215,13 +4291,13 @@
 
 (define atc-find-affected ((fn symbolp)
                            (term pseudo-termp)
-                           (typed-formals atc-symbol-type-alistp)
+                           (typed-formals atc-symbol-varinfo-alistp)
                            (prec-fns atc-symbol-fninfo-alistp)
                            (ctx ctxp)
                            state)
   :returns (mv erp
                (affected symbol-listp
-                         :hyp (atc-symbol-type-alistp typed-formals))
+                         :hyp (atc-symbol-varinfo-alistp typed-formals))
                state)
   :short "Find the variables affected by a term."
   :long
@@ -4345,7 +4421,7 @@
   :measure (pseudo-term-count term)
   :prepwork
   ((local (in-theory
-           (enable symbol-listp-of-strip-cars-when-atc-symbol-type-alistp)))))
+           (enable symbol-listp-of-strip-cars-when-atc-symbol-varinfo-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4390,7 +4466,11 @@
      in the @(':compound') case,
      and then we use the limit for the block."))
   (b* (((acl2::fun (irr))
-        (list (ec-call (fundef-fix :irrelevant)) nil nil nil nil))
+        (list (with-guard-checking :none (ec-call (fundef-fix :irrelevant)))
+              nil
+              nil
+              nil
+              nil))
        (name (symbol-name fn))
        ((unless (paident-stringp name))
         (er-soft+ ctx t (irr)
@@ -4409,6 +4489,7 @@
         (atc-gen-stmt body
                       (make-stmt-gin
                        :var-term-alist nil
+                       :typed-formals typed-formals
                        :inscope (list typed-formals)
                        :loop-flag nil
                        :affect affect
@@ -4416,9 +4497,9 @@
                        :prec-fns prec-fns
                        :prec-tags prec-tags
                        :prec-objs prec-objs
-                       :proofs proofs
                        :thm-index 1
-                       :names-to-avoid names-to-avoid)
+                       :names-to-avoid names-to-avoid
+                       :proofs proofs)
                       ctx
                       state))
        ((when (and (type-case body.type :void)
@@ -4511,7 +4592,8 @@
           (mv nil nil nil nil nil names-to-avoid)))
        (info (make-atc-fn-info
               :out-type body.type
-              :in-types (strip-cdrs typed-formals)
+              :in-types (atc-var-info-list->type-list
+                         (strip-cdrs typed-formals))
               :loop? nil
               :affect affect
               :result-thm fn-result-thm
@@ -5027,7 +5109,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-test-correct-thm ((fn symbolp)
-                                       (typed-formals atc-symbol-type-alistp)
+                                       (typed-formals atc-symbol-varinfo-alistp)
                                        (loop-test exprp)
                                        (test-term pseudo-termp)
                                        (fn-thms symbol-symbol-alistp)
@@ -5121,7 +5203,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-final-compustate ((mod-vars symbol-listp)
-                                       (typed-formals atc-symbol-type-alistp)
+                                       (typed-formals atc-symbol-varinfo-alistp)
                                        (subst symbol-symbol-alistp)
                                        (compst-var symbolp)
                                        (prec-objs atc-string-objinfo-alistp))
@@ -5155,9 +5237,10 @@
      because the names of the formals must be portable C identifiers."))
   (b* (((when (endp mod-vars)) compst-var)
        (mod-var (car mod-vars))
-       (type (cdr (assoc-eq mod-var typed-formals)))
-       ((when (not type))
+       (info (cdr (assoc-eq mod-var typed-formals)))
+       ((when (not info))
         (raise "Internal error: formal ~x0 not found." mod-var))
+       (type (atc-var-info->type info))
        (ptrp (type-case type :pointer))
        (ptr (cdr (assoc-eq mod-var subst))))
     (if ptrp
@@ -5187,7 +5270,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-body-correct-thm ((fn symbolp)
-                                       (typed-formals atc-symbol-type-alistp)
+                                       (typed-formals atc-symbol-varinfo-alistp)
                                        (affect symbol-listp)
                                        (loop-body stmtp)
                                        (test-term pseudo-termp)
@@ -5317,7 +5400,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-correct-thm ((fn symbolp)
-                                  (typed-formals atc-symbol-type-alistp)
+                                  (typed-formals atc-symbol-varinfo-alistp)
                                   (affect symbol-listp)
                                   (loop-test exprp)
                                   (loop-body stmtp)
@@ -5667,16 +5750,17 @@
        (body (ubody+ fn wrld))
        ((er (lstmt-gout loop) :iferr (irr))
         (atc-gen-loop-stmt body
-                           (make-lstmt-gin :inscope (list typed-formals)
+                           (make-lstmt-gin :typed-formals typed-formals
+                                           :inscope (list typed-formals)
                                            :fn fn
                                            :measure-for-fn measure-of-fn
                                            :measure-formals measure-formals
                                            :prec-fns prec-fns
                                            :prec-tags prec-tags
                                            :prec-objs prec-objs
-                                           :proofs proofs
                                            :thm-index 1
-                                           :names-to-avoid names-to-avoid)
+                                           :names-to-avoid names-to-avoid
+                                           :proofs proofs)
                            ctx
                            state))
        (names-to-avoid loop.names-to-avoid)
@@ -5821,7 +5905,8 @@
                      names-to-avoid)))
           (acl2::value (list nil nil nil nil nil names-to-avoid))))
        (info (make-atc-fn-info :out-type nil
-                               :in-types (strip-cdrs typed-formals)
+                               :in-types (atc-var-info-list->type-list
+                                          (strip-cdrs typed-formals))
                                :loop? loop.stmt
                                :affect loop.affect
                                :result-thm fn-result-thm
@@ -7294,7 +7379,11 @@
      and then we generate the theorem;
      however, in the generated events,
      we put that theorem before the ones for the functions."))
-  (b* (((acl2::fun (irr)) (list (ec-call (file-fix :irrelevant)) nil nil nil))
+  (b* (((acl2::fun (irr))
+        (list (with-guard-checking :none (ec-call (file-fix :irrelevant)))
+              nil
+              nil
+              nil))
        ((mv appcond-local-events fn-appconds appcond-thms names-to-avoid)
         (if proofs
             (b* (((mv appconds fn-appconds)
