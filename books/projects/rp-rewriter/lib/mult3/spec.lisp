@@ -1849,7 +1849,7 @@
                                      c))))
   ///
   (set-ignore-ok t)
-  (add-rp-rule 2vec-subtract :beta-reduce t))
+  (add-rp-rule 2vec-subtract :lambda-opt :max))
 
 (local
  (defthm 4vec-cons-equivalance

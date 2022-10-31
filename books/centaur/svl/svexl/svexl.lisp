@@ -1025,7 +1025,7 @@
                              ()))))
 
   (set-ignore-ok t)
-  (add-rp-rule svexl-eval-wog :beta-reduce t))
+  (add-rp-rule svexl-eval-wog :lambda-opt :max))
 
 (define svexllist-eval-wog ((x)
                             (env))
@@ -1052,7 +1052,7 @@
                               SVEXL-EVAL-AUX-IS-SVEXL-EVAL-AUX-WOG)
                              ()))))
   (set-ignore-ok t)
-  (add-rp-rule svexllist-eval-wog :beta-reduce t))
+  (add-rp-rule svexllist-eval-wog :lambda-opt :max))
 
 (define svexl-alist-eval-wog ((x)
                               (env))
@@ -1080,7 +1080,7 @@
                               SVEXL-EVAL-AUX-IS-SVEXL-EVAL-AUX-WOG)
                              ()))))
   (set-ignore-ok t)
-  (add-rp-rule svexl-alist-eval-wog :beta-reduce t))
+  (add-rp-rule svexl-alist-eval-wog :lambda-opt :max))
 
 (memoize 'svexl-alist-p)
 (memoize 'svexllist-p)

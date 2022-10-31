@@ -293,8 +293,7 @@
                              (acl2::logcar x)
                            (svl::4vec-bitnot$ 1 (acl2::logcar x)))
                          (-- (sv::4vec-symwildeq (acl2::logcdr x)
-                                                 (acl2::logcdr
-                                                  y)))))))
+                                                 (acl2::logcdr y)))))))
     :hints (("Goal"
              :use ((:instance svl::4VEC-SYMWILDEQ-with-constant
                               (svl::x x)

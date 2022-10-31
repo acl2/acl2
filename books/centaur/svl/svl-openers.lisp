@@ -812,6 +812,7 @@ because guards might be executed too many times during such proofs.</p>"
                                  mod-delayed-env
                                  rest-delayed-env)
                    rest-delayed-env))))
+    ;;:beta-reduce nil
     :hints (("Goal"
              :expand (svl-run-phase-occs-wog
                       (cons (cons occ-name (cons ':module cdr-occ)) rest)

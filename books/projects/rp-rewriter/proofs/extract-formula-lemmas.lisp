@@ -262,6 +262,12 @@
                 (eval-and-all-nt y a)))
     :hints (("Goal"
              :in-theory (e/d (eval-and-all-nt) ()))))
+
+  (defthm rp-evl-of-light-remove-return-last
+  (equal (rp-evl (light-remove-return-last term) a)
+         (rp-evl term a))
+  :hints (("Goal"
+           :in-theory (e/d (light-remove-return-last) ()))))
   
   (make-flag make-formula-better :defthm-macro-name defthm-make-formula-better)
 
@@ -471,6 +477,9 @@
                                (:definition falist-consistent-aux)
                                ;;                               (:rewrite acl2::o-p-o-infp-car)
                                (:type-prescription insert-iff-to-force))))))))
+
+
+
 
 (encapsulate
   nil

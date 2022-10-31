@@ -58,6 +58,16 @@
 (local
  (set-induction-depth-limit 1))
 
+#!RP
+(local
+ (defthm integerp-of-*RW-BACKCHAIN-LIMIT*
+   (implies (rp-statep rp-state)
+            (integerp
+             (nth
+              *rw-backchain-limit* rp-state)))
+   :hints (("Goal"
+            :in-theory (e/d (rp-statep) ())))))
+
 (define unpack-booth-for-pp-lst ((pp-lst rp-term-listp))
   :returns (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
   :verify-guards :after-returns
@@ -81,7 +91,6 @@
                                                  (list (cons #\0 (car pp-lst))))
                                      (list (car pp-lst)))))
                       (unpack-booth-for-pp-lst (cdr pp-lst)))))
-
 
 
 (define include-binary-fnc-p (term)
@@ -406,7 +415,6 @@
             (('s hash pp-arg c-arg)
              (b* ((- hash)
                   (& (cw "Unpack-booth-meta: s hash ~p0 ~%" hash))
-
 
                   ;; first lest unpack these pp args
                   ((mv s-arg-lst0 pp-arg-lst c-arg-lst0)
@@ -735,21 +743,20 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
  :condition nil)
 
 #|(define good-s-chain ((term))
-  :measure (cons-count term)
-  :hints (("Goal"
-           :in-theory (e/d (measure-lemmas) ())))
-  (b* ((term (ex-from-rp term)))
-    (case-match term
-      (('s & & ('list single-c))
-       (good-s-chain single-c))
-      (('s & & ''nil)
-       t)
-      (('c & & & ('list single-c))
-       (good-s-chain single-c))
-      (('c & & & ''nil)
-       t)
-      (& nil))))|#
-
+:measure (cons-count term)
+:hints (("Goal"
+:in-theory (e/d (measure-lemmas) ())))
+(b* ((term (ex-from-rp term)))
+(case-match term
+(('s & & ('list single-c))
+(good-s-chain single-c))
+(('s & & ''nil)
+t)
+(('c & & & ('list single-c))
+(good-s-chain single-c))
+(('c & & & ''nil)
+t)
+(& nil))))|#
 
 (progn
   (define hons-copy2 ((term))
@@ -760,7 +767,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
              term)))
 
   (profile 'hons-copy2)
-  
+
   (encapsulate
     (((unpack-booth-later-hons-copy-enabled) => *))
     (local
@@ -773,8 +780,6 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
       `(defattach  unpack-booth-later-hons-copy-enabled return-nil)))
 
   (enable-unpack-booth-later-hons-copy nil))
-
-
 
 
 
@@ -791,7 +796,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
 (local
  (defthm rp-termp-list-lemma
    (iff (RP-TERMP (LIST 'LIST x))
-          (RP-TERMP x))
+        (RP-TERMP x))
    :hints (("Goal"
             :in-theory (e/d (rp-termp) ())))))
 
@@ -820,13 +825,13 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
 
        (subterm-orig subterm)
        (subterm (ex-from-rp subterm))
-       
+
        (has-bitp (or* (has-bitp-rp subterm-orig)
                       (binary-fnc-p subterm)
                       (single-s-p subterm)))
-       
+
        #|((when (binary-fnc-p subterm))
-        (mv term nil))|#
+       (mv term nil))|#
        ((when (or (bit-of-p subterm)
                   (and (has-bitp-rp subterm-orig)
                        (atom subterm))))
@@ -848,7 +853,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
           (unpack-booth-for-s* subterm-orig))
          ((single-c-p subterm)
           (unpack-booth-for-c* subterm-orig))
-         ((single-s-c-res-p subterm) 
+         ((single-s-c-res-p subterm)
           (b* (((mv s-arg pp-arg c-arg)
                 (mv (cadr subterm) (caddr subterm) (cadddr subterm)))
                ((mv s-res-lst0 pp-res-lst0 c-res-lst0)
@@ -867,7 +872,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
             (mv s-res-lst pp-res-lst c-res-lst)))
          ((binary-fnc-p subterm)
           (unpack-booth-process-pp-arg* `(list ,subterm)))
-         (t 
+         (t
           (progn$ (hard-error 'unpack-booth-meta
                               "Unrecognized term ~p0 ~%"
                               (list (cons #\0 subterm-orig)))
@@ -879,7 +884,6 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
                      (binary-fnc-p subterm)))
         ;; same conditions as above the case statement.
         (mv term nil))
-       
 
        ;; (& (or (ordered-s/c-p-lst c-res-lst)
        ;;                  (hard-error 'unpack-booth-meta
@@ -896,7 +900,6 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
        ;;                              "unordered pp-res-lst
        ;; input:~p0~%output:~p1~%" (list (cons #\0 subterm)
        ;;                                (cons #\1 pp-res-lst)))))
-
 
        (res (create-s-c-res-instance s-res-lst pp-res-lst c-res-lst
                                      has-bitp))
@@ -916,17 +919,17 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
     (mv res t)))
 
 #|(local
- (defthm is-rp-lemma
-   (implies (and (rp-termp term)
-                 (equal (car term) 'rp))
-            (and (quotep (cadr term))
-                 (consp (cdr term))
-                 (implies (and (equal (car other) (cadr term))
-                               (CONSP (CDR OTHER))
-                               (NOT (CDDR OTHER)))
-                          (is-rp (cons 'rp other)))))
-   :hints (("Goal"
-            :in-theory (e/d (rp-termp is-rp) ())))))|#
+(defthm is-rp-lemma
+(implies (and (rp-termp term)
+(equal (car term) 'rp))
+(and (quotep (cadr term))
+(consp (cdr term))
+(implies (and (equal (car other) (cadr term))
+(CONSP (CDR OTHER))
+(NOT (CDDR OTHER)))
+(is-rp (cons 'rp other)))))
+:hints (("Goal"
+:in-theory (e/d (rp-termp is-rp) ())))))|#
 
 (acl2::defines unpack-booth-general-meta
   :flag-local nil
@@ -976,7 +979,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
              ;;((quotep res) (mv res t changed))
              (changed (mv `(rp ,(cadr term) ,res) `(nil t ,dont-rw) t))
              (t (mv term t nil)))))
-         
+
          ((mv args args-dont-rw changed)
           (unpack-booth-general-meta-lst (cdr term)))
          ((unless changed)
@@ -1010,7 +1013,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
               (is-rp (list 'rp (cadr term) other)))
      :hints (("goal"
               :in-theory (e/d (is-rp) ())))))
-  
+
   (defret-mutual rp-termp-of<fn>
     (defret rp-termp-<fn>
       (implies (rp-termp term)
@@ -1041,6 +1044,8 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
   ((local
     (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system)))
   :guard (and (VALID-RP-STATE-SYNTAXP RP-STATE))
+  :guard-hints (("goal"
+                 :in-theory (e/d () (nth-of-constant))))
   :returns (mv (res-term rp-termp
                          :hyp (and (rp-termp term)
                                    (valid-rp-state-syntaxp rp-state)))
@@ -1051,5 +1056,5 @@ input:~p0~%output:~p1~%" (list (cons #\0 c-term)
     (if (and changed
              (or (rp-meta-fnc-formula-checks state) ;; expected to return t
                  (acl2::raise "rp-meta-fnc-formula-checks didn't return t!`~%")))
-        (rp-rw term dont-rw nil t (expt 2 15) rp-state state)
+        (rp-rw term dont-rw nil t (rp::rw-backchain-limit rp::rp-state) (expt 2 15) rp-state state)
       (mv term rp-state))))

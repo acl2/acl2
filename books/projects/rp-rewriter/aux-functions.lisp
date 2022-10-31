@@ -970,11 +970,23 @@
      (cons (remove-return-last (car subterms))
            (remove-return-last-subterms (cdr subterms))))))
 
-(defund is-hide (term)
+(defund light-remove-return-last (term)
+  (declare (xargs :guard t))
+  (if (is-return-last term)
+      (light-remove-return-last (cadddr term))
+    term))
+
+(define is-hide (term)
   (declare (xargs :guard t))
   (case-match term
     (('hide &) t)
-    (& nil)))
+    (& nil))
+  ///
+  (defthm is-hide-implies
+    (implies (is-hide x)
+             (case-match x
+               (('hide &) t)))
+    :rule-classes :forward-chaining))
 
 (in-theory (disable extract-from-rp-with-context))
 
@@ -1785,7 +1797,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
   (rw-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be used
   ;; only internally.
   (backchaining-rule :type t :initially nil)
-  (backchaining-just-started :type t :initially nil)
+  ;;(backchaining-just-started :type t :initially nil)
   (rw-context-disabled :type (satisfies booleanp) :initially nil) 
 
   (not-simplified-action :type (satisfies symbolp) :initially :error)

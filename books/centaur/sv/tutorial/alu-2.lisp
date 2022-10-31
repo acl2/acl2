@@ -1,10 +1,10 @@
-(ld; Centaur SV Hardware Verification Tutorial
-; Copyright (C) 2012-2015 Centaur Technology
+
+; (ld "alu-2.lisp" :ld-pre-eval-print t)
+
+; Updated in September, 2022, by Warren A. Hunt, Jr. and Mihir Metha
 ;
 ; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+;   Sol Swords, Warren A. Hunt, Jr., Mihir Metha -- all of Intel Corp.
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -30,9 +30,10 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 
-; This is the first example in the tutorial.  We are going to try to verify a
-; basic 16-bit ALU module that implements 8 opcodes.  We will discover that
-; there is a bug in its COUNT operation.
+; WAHJr.  This version of Sol's tutorial has a more complicated
+; implementation because it has been altered from it original form so
+; it takes two cycles to complete the multiply operation; the product
+; is returned through a second output port.
 
 (in-package "SV")
 
@@ -65,15 +66,12 @@
 
 (make-event
 
-; Disabling waterfall parallelism.
+; Disable waterfall parallelism.
 
  (if (f-get-global 'acl2::parallel-execution-enabled state)
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))
-
-
-
 
 ; The PLEV (print level) tool lets you control how much output ACL2 prints when
 ; it tries to print an object.  It is very important to be able to control the
@@ -100,8 +98,6 @@
 (value-triple (acl2::set-max-mem (* 3 (expt 2 30))))
 
 
-
-
 ; -----------------------------------------------------------------------------
 ;
 ;                        LOADING THE ALU16 MODULE
@@ -111,24 +107,23 @@
 ; The file alu16.v contains a very simple ALU module that we will verify.  You
 ; should probably look at it now, and then come back.
 
+; We note that DEF-SAVED-EVENT saves the event provided (and
+; submitted) in the ACL2 table SAVED-FORMS-TABLE.
 
-; First, we read that module into a VL design.  This form does that.
+; First, we read that module into a VL design.
+
 (def-saved-event alu-design-form
   (defconsts (*alu-vl-design* state)
     (b* (((mv loadresult state)
           (vl::vl-load (vl::make-vl-loadconfig
-                        :start-files '("alu16.v")
+                        :start-files '("alu16-2.v")
                         :search-path '("lib")))))
       (mv (vl::vl-loadresult->design loadresult) state))))
 
-
 (def-saved-nonevent alu-print-reportcard
-  ;; Silent (meaning a NIL result) if there are no problems.
   (vl::cw-unformatted
-   (vl::vl-reportcard-to-string
-    (vl::vl-design-reportcard *alu-vl-design*))))
+   (vl::vl-reportcard-to-string (vl::vl-design-reportcard *alu-vl-design*))))
 
-; Next, we will flatten the VL design into a SVEX form.
 (def-saved-event alu->svex-form
   (defconsts (*alu-svex-design*
               *alu-simplified-good*
@@ -243,20 +238,18 @@ full:</p>
 
 ;;     :parents (stvs-and-testing)
 ;;     :short "A simple test of the alu16 module."
-;;     :labels  '(dat1  dat2  op1   op2   out1  out2)  !!! Misleading, possibly wrong !!!
+;;     :labels  '(dat1  dat2  op1   op2   out1  out2)
 
 ;;     :inputs
 ;;       ;; verilog name --> sequence of inputs to supply
-;;     '(("clk"    0     1     0     1     0     1)
+;;     '(("clk"    0     1     0     1     0     1     0     1)
 ;;       ("opcode" _     _     _     op    _)
 ;;       ("abus"   _     a     _)
 ;;       ("bbus"   _     b     _))
 
 ;;     :outputs                  ;; verilog name --> variable names we will use
 ;;     '(("out"    _     _     _     _     _    res))))
-;;     '(("out2"   _     _     _     _     _    _    _   res2))))
-
-:i-am-here
+;;     '(("out2"   _     _     _     _     _    _     _    res2))))
 
 (def-saved-event alu-svtv
   (defsvtv$ alu-test-vector        ;; name for this test vector
@@ -269,20 +262,16 @@ full:</p>
                        ("abus" a)
                        ("bbus" b)))
              (:label op
-              :delay 2                      ;WAHJr:  worries me!!!
+              :delay 2
               :inputs (("opcode" op)))
 
              (:label out
               :delay 2
               :outputs (("out" res)))
 
-#|
              (:label out2
               :delay 2
-              :outputs (("out2" res2)))
-|#
-             )))
-
+              :outputs (("out2" res2))))))
 
 
 ; This DEFSTV command introduces several things, but among them is a 0-ary
@@ -315,13 +304,21 @@ full:</p>
 ; input alists need to give values for the input variables of the vector, i.e.,
 ; OP, A, and B.
 
-; Should there be an SVTV-run$ command?
-
 (def-saved-nonevent alu-example-1
   (svtv-run (alu-test-vector)
             `((op . ,*op-plus*)
               (a  . 5)
               (b  . 3))))
+
+; As you can see, the output is provided as an ALIST of values for the STV's
+; output variables.  In this case we see that RES has value 8, so the circuit
+; added 5 and 3 correctly.
+
+(def-saved-nonevent alu-example-2
+  (svtv-run (alu-test-vector)
+            `((op . ,*op-mult*)
+              (a  . 5)
+              (b  . 7))))
 
 ; As you can see, the output is provided as an ALIST of values for the STV's
 ; output variables.  In this case we see that RES has value 8, so the circuit
@@ -336,6 +333,21 @@ full:</p>
             `((op . ,*op-mult*)
               (a  . 5)
               (b  . 3))
+
+; Now the output is provided as an ALIST of values for the STV's
+; output variables.  In this case we see that RES2 has value 35, so
+; the circuit multiplied 5 and 7 correctly.
+;
+; By default STV-RUN prints lots of debugging info.  We'll see below
+; that this is very useful in theorems.  But when we're just doing
+; concrete runs, this output can be irritating.  You can turn it off
+; by adding :quiet t, like this:
+
+(def-saved-nonevent alu-example-2-quiet
+  (svtv-run (alu-test-vector)
+            `((op . ,*op-mult*)
+              (a  . 5)
+              (b  . 7))
             :quiet t))
 
 (defttag write-ok)
@@ -351,7 +363,7 @@ full:</p>
    (svtv-debug$ (alu-test-vector)
                 `((op . ,*op-mult*)
                   (a  . 5)
-                  (b  . 3))
+                  (b  . 7))
                 :filename "alu-min-debug.vcd")
    :return (mv vcd-wiremap vcd-vals svtv-data state)
    :writep t))
@@ -408,37 +420,33 @@ It also says that the \"abus\" and \"bbus\" inputs should be set to
 symbolic variables @('a') and @('b') at that time.  That phase is also
 labeled @('dat') for documentation purposes.</p>
 
-<p>The next entry in the phases is labeled @('op').  It has a
-@(':delay') argument, which says how many time steps after the
-previous entry the current entry should happen; the default delay is 1
-and the delay must be positive. In this design everything of
-importance happens on the clock-low phase of a clock cycle, which is
-standard for designs that use positive edge-triggered flip-flops. So
-the delay on each phase after the first is 2 because on the skipped
-phases the clock is high and nothing much happens. In this phase
-another input signal, \"opcode\", is set to another symbolic variable,
-@('op').</p>
+<p>The next entry in the phases is labeled @('op').  It has a @(':delay')
+argument, which says how many time steps after the previous entry the current
+entry should happen; the default delay is 1 and the delay must be positive. In
+this design everything of importance happens on the clock-low phase of a clock
+cycle, which is standard for designs that use positive edge-triggered
+flip-flops. So the delay on each phase after the first is 2 because on the
+skipped phases the clock is high and nothing much happens. In this phase
+another input signal, \"opcode\", is set to another symbolic variable, @('op').</p>
 
-<p>Finally, in the third entry, labelled @('out'), we read an output
-signal \"out\" into a symbolic variable called @('res').  Again, this
-happens 2 phases after the last one, so on the next clock-low
-phase.</p>
+<p>Finally, in the third entry, labelled @('out'), we read an output signal
+\"out\" into a symbolic variable called @('res').  Again, this happens 2 phases
+after the last one, so on the next clock-low phase.</p>
 
 <p>The main effect of this @(see defsvtv$) form is to create a
-constant (accessed via a 0-ary function, @('(alu-test-vector)') that
-encapsulates the given simulation pattern in a set of svex
-expressions, one for each output variable, expressed in terms of the
-input variables.  So the resulting @('(alu-test-vector)') from the
-@('defsvtv$') above contains an svex expression for @('res') as a
-combinational function in terms of @('a'), @('b'), and @('op').  You
-can examine this function by looking at the @('outexprs') field of the
-SVTV structure:</p>
+constant (accessed via a 0-ary function, @('(alu-test-vector)') that encapsulates
+the given simulation pattern in a set of svex expressions, one for each output
+variable, expressed in terms of the input variables.  So the resulting
+@('(alu-test-vector)') from the @('defsvtv$') above contains an svex expression for
+@('res') as a combinational function in terms of @('a'), @('b'), and @('op').
+You can examine this function by looking at the @('outexprs') field of the SVTV
+structure:</p>
 
 @(`(:code ($ alu-function-examine))`)
 
-<p>Warning: This prints a lot of output -- around 11,000 lines.  We
-get a somewhat nicer result if we apply some @(see rewriting) before
-displaying it:</p>
+<p>Warning: This  prints a  lot of  output --  around 11,000  lines.  We  get a
+somewhat nicer result if we  apply some @(see rewriting) before displaying
+it:</p>
 
 @(`(:code ($ alu-function-examine-rw))`)
 
@@ -527,6 +535,26 @@ gtkwave:</p>
     :concl (equal (cdr (assoc 'res (svtv-run (alu-test-vector)
                                              (alu-test-vector-autoins))))
                   (loghead 16 (+ a b)))))
+
+(def-saved-event alu-simple-proof-that-might-succeed
+  (fgl::def-fgl-thm alu16-adds-but-look-at-res2
+    :hyp (and (alu-test-vector-autohyps)
+              (equal op *op-plus*))
+    ;; We are looking for the sum on the multiplier output!
+    :concl (equal (cdr (assoc 'res2 (svtv-run (alu-test-vector)
+                                              (alu-test-vector-autoins))))
+                  ;; but it's not there; the next expression means 16 X bits.
+                  (cons #uxFFFF #ux0))))
+
+
+(def-saved-event alu-simple-proof-mult
+  (fgl::def-fgl-thm alu16-multiplies
+    :hyp (and (alu-test-vector-autohyps)
+              (equal op *op-mult*))
+    :concl (equal (cdr (assoc 'res2 (svtv-run (alu-test-vector)
+                                              (alu-test-vector-autoins))))
+                  (loghead 16 (* a b)))))
+
 
 (def-saved-event alu-simple-proof-opt
   (fgl::def-fgl-thm alu16-adds-opt
@@ -623,15 +651,16 @@ SAT solver, we can try some proofs about it.  Here is a simple example:</p>
 <p>In addition to defining the STV @('(alu-test-vector)') itself, the @('defsvtv$')
 form from the previous section also defines  the following macros/functions:</p>
 
-<ul>
-<li>@('(alu-test-vector-autohyps)') expands to a function that checks type hypotheses for the input variables -- in this case,</li>
+<ul> <li>@('(alu-test-vector-autohyps)') expands to a function that
+checks type hypotheses for the input variables -- in this case,</li>
 @({
  (and (unsigned-byte-p 16 b)
       (unsigned-byte-p 16 a)
       (unsigned-byte-p 3 op))
  })
-<li>@('(alu-test-vector-autoins)') expands to a function that takes the input variables as inputs and outputs an alist binding the variable symbols to their corresponding values, i.e.,</li>
-@({
+<li>@('(alu-test-vector-autoins)') expands to a function that takes
+the input variables as inputs and outputs an alist binding the
+variable symbols to their corresponding values, i.e.,</li> @({
  (list (cons 'A a)
        (cons 'B b)
        (cons 'OP op))

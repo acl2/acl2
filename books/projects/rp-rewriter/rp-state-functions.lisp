@@ -239,9 +239,10 @@ which submits an event.
                      (:lhs ,(rp-lhs rule))
                      (:rhs ,(rp-rhs rule))
                      (:hyp ,(rp-hyp rule))
-                     ,@(if (weak-custom-rewrite-rule-p (backchaining-rule rp-state)) ;; for guards
-                           `((:backchaining-rule ,(rp-rune (backchaining-rule rp-state))))
-                         nil)
+                     ,@(cond ((weak-custom-rewrite-rule-p (backchaining-rule rp-state)) ;; for guards
+                              `((:backchaining-rule ,(rp-rune (backchaining-rule rp-state)))))
+                             ((backchaining-rule rp-state)
+                              `((:backchaining-rule ,(backchaining-rule rp-state)))))
                      (:context ,rp-context)
                      (:var-bindings ,var-bindings))
                    old-rw-stack))
@@ -257,23 +258,24 @@ which submits an event.
   (if (rp-brr rp-state)
       (b* ((old-rw-stack (rw-stack rp-state))
            (index (rw-stack-size rp-state))
-           (new-rw-stack (acons index
-                                (list
-                                 (list ':type ':meta-applied)
-                                 (list ':meta-fnc (rp-rule-meta-fnc meta-rule))
-                                 (list ':trig-fnc (rp-rule-trig-fnc meta-rule))
-                                 (list ':new-term new-term)
-                                 (list ':old-term old-term))
+           (new-rw-stack (acons :result
+                                `((:meta-applied)
+                                  (:index ,index)
+                                  (:meta-fnc ,(rp-rule-meta-fnc meta-rule))
+                                  (:trig-fnc ,(rp-rule-trig-fnc meta-rule))
+                                  (:new-term ,new-term)
+                                  (:old-term ,old-term))
                                 old-rw-stack))
            (rp-state (update-rw-stack new-rw-stack rp-state))
            (rp-state (update-rw-stack-size (1+ index) rp-state)))
         rp-state)
     rp-state))
 
-(defund rp-state-push-to-result-to-rw-stack (rule index failed old-term new-term rp-state)
+(define rp-state-push-to-result-to-rw-stack (rule index failed old-term new-term rp-state)
   (declare (xargs :stobjs (rp-state)
                   :guard (and (WEAK-CUSTOM-REWRITE-RULE-P RULE)
                               (integerp index))))
+  :returns res-rp-state
   (if (rp-brr rp-state)
       (b* ((rune (rp-rune rule))
            ;;; Add the caused frame count.
@@ -288,14 +290,17 @@ which submits an event.
                        rp-state))
            ;;; push the failed to the stack
            (old-rw-stack (rw-stack rp-state))
-           (new-rw-stack (acons index
-                                (list*
-                                 (list ':type failed)
-                                 (list ':rune rune)
-                                 (list ':frames-caused frames)
-                                 (if new-term (list (list ':new-term new-term)
-                                                    (list ':old-term old-term))
-                                   nil))
+           (new-rw-stack (acons :result
+                                `((,failed)
+                                  ,@(and (not (equal index -1)) `((:from-index ,index)))
+                                  (:rune ,rune)
+                                  (:frames-caused ,frames)
+                                  ,@(and old-term (if (equal failed :success)
+                                                      `((:old-term ,old-term))
+                                                    `((:culprit-hyp-term ,old-term))))
+                                  ,@(and new-term (if (equal failed :success)
+                                                      `((:new-term ,new-term))
+                                                    `((:culprit-after-rewriting ,new-term)))))
                                 old-rw-stack)))
         (update-rw-stack new-rw-stack rp-state))
     rp-state))

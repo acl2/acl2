@@ -60,24 +60,22 @@
 
 
 
-
 #|(mutual-recursion
- (defun force-to-force$ (term rule-name)
-   (cond ((or (atom term)
-              (quotep term))
-          term)
-         ((case-match term (('force &) t))
-          `(force$ ,(cadr term) ',rule-name ',(cadr term)))
-         (t (cons-with-hint (car term)
-                            (force-to-force$ (cdr term) rule-name)
-                            term))))
- (defun force-to-force$-lst (lst rule-name)
-   (if (atom lst)
-       nil
-     (cons-with-hint (force-to-force$ (car lst) rule-name hyp)
-                     (force-to-force$-lst (cdr lst) rule-name hyp)
-                     lst))))||#
-       
+(defun force-to-force$ (term rule-name)
+(cond ((or (atom term)
+(quotep term))
+term)
+((case-match term (('force &) t))
+`(force$ ,(cadr term) ',rule-name ',(cadr term)))
+(t (cons-with-hint (car term)
+(force-to-force$ (cdr term) rule-name)
+term))))
+(defun force-to-force$-lst (lst rule-name)
+(if (atom lst)
+nil
+(cons-with-hint (force-to-force$ (car lst) rule-name hyp)
+(force-to-force$-lst (cdr lst) rule-name hyp)
+lst))))||#
 
 (defund if-to-and-list (if-form)
   (declare (xargs :guard t))
@@ -171,7 +169,7 @@
             (case-match q
               (('implies qp qq)
                `(implies (if ,p ,qp 'nil) ,qq))
-              (& `(implies ,p ,q)))) 
+              (& `(implies ,p ,q))))
           (make-rule-better-aux1 p (cdr qs)))))
 
 (mutual-recursion
@@ -184,13 +182,17 @@
        (list formula)
      (case-match formula
        (('implies p q)
-        (b* ((new-terms (if-to-and-list q))
+        (b* ((p (light-remove-return-last p))
+             (q (light-remove-return-last q))
+             (new-terms (if-to-and-list q))
              (new-terms (not-to-equal-nil-list new-terms))
              (new-terms (if (> (len new-terms) 1)
                             (make-formula-better-lst new-terms (1- limit))
                           new-terms))
              (formulas (make-rule-better-aux1 p new-terms)))
           formulas))
+       (('return-last & & last)
+        (make-formula-better last (1- limit)))
        (&
         (b* ((new-terms (if-to-and-list formula))
              (new-terms (not-to-equal-nil-list new-terms))
@@ -251,13 +253,12 @@
                      lst))))
 
 
-
 (defund formulas-to-rules (rune rule-new-synp warning formulas)
   (declare (xargs :guard t))
   (if (atom formulas)
       nil
     (b* ((formula (car formulas))
-         
+
          ((mv flg hyp lhs rhs)
           (custom-rewrite-from-formula formula))
          (hyp (if rule-new-synp
@@ -269,7 +270,7 @@
                        (not (atom (cadddr lhs))))
                   (remove-return-last lhs)
                 lhs))
-         
+
          (rule (make custom-rewrite-rule
                      :rune rune
                      :hyp (if-to-and-list hyp)
@@ -285,28 +286,29 @@
           (cons rule rest)
         rest))))
 
+
 (defun custom-rewrite-with-meta-extract (rule-name rule-new-synp warning state)
   (declare (xargs :guard (and (symbolp rule-name))
                   :stobjs (state)
                   :verify-guards t))
   (b* ((formula (meta-extract-formula rule-name state))
-       
-       
+
        #|((when (equal formula ''t))
-        nil)||#
+       nil)||#
        ((when (not (pseudo-termp formula)))
         (hard-error 'custom-rewrite-with-meta-extract
                     "Rule ~p0 does not seem to be pseudo-termp ~%"
                     (list (cons #\0 rule-name))))
        (formula (beta-search-reduce formula *big-number*))
-       
+
+       ;;(formula (light-remove-return-last formula))
+
        (formulas (make-formula-better formula *big-number*))
-       
+
        (formulas (insert-iff-to-force-lst formulas rule-name nil))
-       
+
        (rune (get-rune-name rule-name state)))
     (formulas-to-rules rune rule-new-synp warning formulas)))
-
 
 
 (defun attach-sc-list-to-rhs (rhs sc-list)
@@ -329,8 +331,6 @@
                 "WARNING! Properties in the side-condition should be unary ~
   functions. This happened for ~p0. Skipping this one. ~%" (car sc-list))
                (attach-sc-list-to-rhs rhs (cdr sc-list))))))))
-
-
 
 
 
@@ -360,13 +360,13 @@
             (extract-from-force-lst (cdr lst))))))
 
 #|(local
- (defthm true-listp-of-extract-from-force-lst
-   (equal (true-listp (extract-from-force-lst lst))
-          (true-listp lst))
-   :hints (("Goal"
-            :induct (extract-from-force-lst lst)
-            :do-not-induct t
-            :in-theory (e/d (extract-from-force-lst) ())))))||#
+(defthm true-listp-of-extract-from-force-lst
+(equal (true-listp (extract-from-force-lst lst))
+(true-listp lst))
+:hints (("Goal"
+:induct (extract-from-force-lst lst)
+:do-not-induct t
+:in-theory (e/d (extract-from-force-lst) ())))))||#
 
 (defun attach-sc-to-rule (rule sc-formula)
   (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
@@ -388,6 +388,15 @@
             (sc-list (if-to-and-list q))
             (rule-rhs (rp-rhs rule))
             (rhs-updated (attach-sc-list-to-rhs rule-rhs sc-list))
+            (- (or (not (equal rule-rhs rhs-updated))
+                   (hard-error
+                    'side-condition-check
+                    "Given side condition did not change the rhs of the ~
+  rule. If the rule is defined with :lambda-opt t, please try to disable ~
+  it. Rune-name: ~p0. Rule-rhs: ~p1. sc-formula: ~p2 ~%"
+                    (list (cons #\0 (rp-rune rule))
+                          (cons #\1 (rp-rhs rule))
+                          (cons #\2 sc-formula)))))
             (rule (change custom-rewrite-rule rule
                           :rhs/meta-fnc rhs-updated)))
          rule))
@@ -431,7 +440,7 @@
    (implies (and (rule-syntaxp rule)
                  (not (rp-rule-metap rule)))
             (and (weak-custom-rewrite-rule-p (attach-sc-to-rule rule sc-formula))
-                 (not (rp-rule-metap (attach-sc-to-rule rule sc-formula))))))) 
+                 (not (rp-rule-metap (attach-sc-to-rule rule sc-formula)))))))
 
 (local
  (defthm rule-syntaxp-implies-weak-custom-rw-rule
@@ -478,7 +487,6 @@
        (sc-rule-names (cdr (assoc-eq rule-name sc-alist))))
     (update-rule-with-sc-aux rule sc-rule-names state)))
 
-
 (verify-guards update-rule-with-sc
   :otf-flg t
   :hints (("Goal"
@@ -501,19 +509,18 @@
                             (:REWRITE DEFAULT-CDR)
                             (:REWRITE DEFAULT-CAR)
                             (:DEFINITION STATE-P)
-                            (:DEFINITION RP-HYP$INLINE)   
+                            (:DEFINITION RP-HYP$INLINE)
                             (:DEFINITION RP-LHS$INLINE)
                             (:DEFINITION RP-RHS$INLINE)
                             (:DEFINITION RP-RUNE$INLINE)
                             (:TYPE-PRESCRIPTION EQLABLE-ALISTP))))))
-
 
 (local
  (defthm rule-list-syntaxp-implies-WEAK-CUSTOM-REWRITE-RULE-LISTP
    (implies (rule-list-syntaxp rules)
             (WEAK-CUSTOM-REWRITE-RULE-LISTP rules))
    :hints (("Goal"
-            :induct (rule-list-syntaxp rules) 
+            :induct (rule-list-syntaxp rules)
             :in-theory (e/d () (RULE-SYNTAXP
                                 WEAK-CUSTOM-REWRITE-RULE-P))))))
 
@@ -594,22 +601,21 @@
            :in-theory (e/d () (rule-syntaxp)))))
 
 #|(define try-to-add-rule-fnc (rules rule-fnc-alist)
-  :guard-hints (("Goal"
-           :in-theory (e/d (weak-custom-rewrite-rule-p) ())))
-  (if (and (equal (len rules) 1)
-           (weak-custom-rewrite-rule-p (car rules)))
-      (b* ((rune (rp-rune (car rules)))
-           (rule-name (case-match rune ((& n) n)))
-           ((Unless rule-name) rules)
-           (entry (hons-get rule-name rule-fnc-alist)))
-        (if (consp entry)
-            (list (change custom-rewrite-rule
-                          (car rules)
-                          :rule-fnc
-                          (cdr entry)))
-          rules))
-    rules))||#
-
+:guard-hints (("Goal"
+:in-theory (e/d (weak-custom-rewrite-rule-p) ())))
+(if (and (equal (len rules) 1)
+(weak-custom-rewrite-rule-p (car rules)))
+(b* ((rune (rp-rune (car rules)))
+(rule-name (case-match rune ((& n) n)))
+((Unless rule-name) rules)
+(entry (hons-get rule-name rule-fnc-alist)))
+(if (consp entry)
+(list (change custom-rewrite-rule
+(car rules)
+:rule-fnc
+(cdr entry)))
+rules))
+rules))||#
 
 
 (defun meta-rune-p (rune)
@@ -624,13 +630,12 @@
 (defund make-custom-rule-for-meta (rune)
   (declare (xargs :guard (meta-rune-p rune)))
   (make custom-rewrite-rule
-                      :meta-rulep t
-                      :hyp (list ''nil) ;; hyp nil will make the rule always correct without
-                      ;; having to identify it as a special meta rule.
-                      :rune rune
-                      :lhs/trig-fnc (cddr rune)  
-                      :rhs/meta-fnc (cadr rune)))
-
+        :meta-rulep t
+        :hyp (list ''nil) ;; hyp nil will make the rule always correct without
+        ;; having to identify it as a special meta rule.
+        :rune rune
+        :lhs/trig-fnc (cddr rune)
+        :rhs/meta-fnc (cadr rune)))
 
 (local
  (in-theory (disable RULE-SYNTAXP)))
@@ -663,14 +668,14 @@
   (if (atom runes)
       nil
     (b* ((rest (get-rule-list (cdr runes) sc-alist new-synps warning
-                               state))
+                              state))
 
          (rune (car runes))
          ((mv rule-name given-rule-type)
           (case-match rune
             ((type name . &) (mv name type))
             (& (mv rune nil))))
-         
+
          ;; Check if the rule has a corresponding for-rp rule
          (corresponding-rp-rule (hons-assoc-equal rule-name
                                                   (table-alist 'corresponding-rp-rule (w state))))
@@ -683,24 +688,23 @@
                rune)
            rest))
 
-         
          ;; if the current rune is just a name, then treat that as a rewrite
-         ;; rule for only the following tests. 
+         ;; rule for only the following tests.
          (rule-type (mv-nth 0 (get-rune-name rule-name state)))
          (rule-type (if (or (equal given-rule-type ':executable-counterpart)
                             (equal given-rule-type ':e))
                         :executable-counterpart
                       rule-type))
          #|((when (and (equal rule-type ':definition)
-                     given-rule-type
-                     (or ;(str::strsuffixp "P" (symbol-name rule-name))
-                         (acl2::recursivep rule-name nil (w state)))))
-          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))||#
+         given-rule-type
+         (or ;(str::strsuffixp "P" (symbol-name rule-name))
+         (acl2::recursivep rule-name nil (w state)))))
+         (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))||#
          #|((when (and (equal given-rule-type ':type-prescription)
-                     (or (equal rule-type ':definition))))
-          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist
+         (or (equal rule-type ':definition))))
+         (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist
          state))||#
-         
+
          ((when (meta-rune-p rune)) ;; meta runes are (:meta meta-fncs . trig-fncs)
           (cons (make-custom-rule-for-meta rune);; let rhs be the name of the meta function.
                 rest))
@@ -722,12 +726,12 @@
 (defun to-fast-alist (alist)
   (declare (xargs :guard t))
   (make-fast-alist alist))
-  ;;get a regular alist and convert it to a fast-alist
-  #|(if (or (atom alist)
-          (atom (car alist)))
-      alist
-    (hons-acons (caar alist) (cdar alist)
-                (to-fast-alist (cdr alist))))||#
+;;get a regular alist and convert it to a fast-alist
+#|(if (or (atom alist)
+(atom (car alist)))
+alist
+(hons-acons (caar alist) (cdar alist)
+(to-fast-alist (cdr alist))))||#
 
 (defun rule-list-to-alist (rules)
   (declare (xargs :guard (weak-custom-rewrite-rule-listp rules)
@@ -742,7 +746,6 @@
   (alistp (rule-list-to-alist rules)))
 
 (verify-guards rule-list-to-alist)
-
 
 (define get-rules (runes state &key new-synps warning)
   (declare (xargs :guard (alistp new-synps)
@@ -777,19 +780,32 @@
   `(make-event
     (if (sc-rule-p (meta-extract-formula ',rule-name state)
                    (meta-extract-formula ',sc-rule-name state))
-        (b* ((sc-alist (table-alist 'rp-sc (w state)))
+        (b* ((- (or
+                 (not (hons-assoc-equal ',rule-name
+                                        (table-alist 'corresponding-rp-rule (w  state))))
+                 (hard-error 'rp-attach-sc
+                             "Rules defined with :lambda-opt t or :lambda-opt :max are not supported ~
+  to have a side condition. Please define the rule with :lambda-opt nil ~
+  instead. rule-name: ~p0. sc-rule-name: ~p1 ~%"
+                             (list (cons #\0 ',rule-name)
+                                   (cons #\1 ',sc-rule-name)))))
+             (sc-alist (table-alist 'rp-sc (w state)))
              (entry (assoc-eq ',rule-name sc-alist))
              (val (if entry
                       (cons ',sc-rule-name (cdr entry))
                     (cons ',sc-rule-name nil)))
              (?sc-alist (put-assoc ',rule-name val sc-alist)))
-          `(table rp-sc ',',rule-name ',val))
+          `(progn
+             (table rp-sc ',',rule-name ',val)
+             (value-triple (progn$ (get-rules (list ',',rule-name) state
+                                              :warning :err)
+                                   :rule-attached))))
       (value-triple :rule-attaching-failed))))
-
 
 (progn
   (defund e/d-rp-rules-fn (rules ruleset state e/d)
     (declare (xargs :stobjs (state)
+                    :mode :program
                     :guard (symbolp ruleset)))
     (if (atom rules)
         nil
@@ -797,11 +813,13 @@
            (rest (e/d-rp-rules-fn (cdr rules) ruleset state e/d))
            ((mv given-type name)
             (case-match rule ((type name . &) (mv type name)) (& (mv nil rule))))
+
            ((unless (symbolp name))
             (hard-error 'e/d-rp-rules-fn
                         "Rule name from ~p0 is not a symbolp ~%"
                         (list (cons #\0 rule))))
-
+           (name (if given-type name (acl2::deref-macro-name name (macro-aliases (w state)))))
+           
 
            (corresponding-rule (hons-assoc-equal
                                 name
@@ -811,7 +829,7 @@
                      (symbolp (cdr corresponding-rule)))
                 (mv nil (cdr corresponding-rule))
               (mv given-type name)))
-           
+
            (rune (if given-type rule (get-rune-name name state)))
 
            ((when (case-match rune ((':executable-counterpart &) t)))
@@ -822,8 +840,7 @@
 
            (rune-entry (hons-assoc-equal rune (table-alist ruleset (w state))))
 
-           
-           
+
            ((when (not (consp rune-entry)))
             (progn$
              (cw
@@ -832,11 +849,11 @@ Warning: ~p0 does not seem to be registered with ~
 rp::add-rp-rule. Will do that now, but beware that it will have a higher ~
 priority.
 ------------------------------------------------------------------~%"
-                 rune)
+              rune)
              (cons `(table ,ruleset ',rune '(:inside-out . ,e/d)) rest)))
 
            (rune-entry-value (cdr rune-entry))
-           
+
            (both (case-match rune-entry-value
                    ((':both . &) t)
                    (& nil)))
@@ -857,7 +874,7 @@ priority.
          (progn ,@(e/d-rp-rules-fn ,rules ',ruleset state t)))))
 
   (defmacro disable-rules (rules &key
-                                (ruleset 'rp-rules))
+                                 (ruleset 'rp-rules))
     `(make-event
       `(with-output
          :off :all
@@ -885,19 +902,18 @@ priority.
     `(table rp-exc-rules ',fnc t)))
 
 
-
 (xdoc::defxdoc
- rp-ruleset
- :parents (rp-rewriter)
- :short "Functions to manage RP-Rewriter's ruleset"
- :long
- "<p>Users can use 
+  rp-ruleset
+  :parents (rp-rewriter)
+  :short "Functions to manage RP-Rewriter's ruleset"
+  :long
+  "<p>Users can use
 the functions below to register rules to RP-Rewriter's
  ruleset:</p>
 
 <p>ADD-RP-RULE</p>
-<code> 
-@('(rp::add-rp-rule <rule-name> 
+<code>
+@('(rp::add-rp-rule <rule-name>
                  &key (disabled 'nil)
                       (beta-reduce 'nil)
                       (hints 'nil)
@@ -939,7 +955,6 @@ outside-in.</p>
  then defthm-lambda translates  to defthm. It also submits  a add-rp-rule event
  to save the rule in the rule-set.  </p>
 
-
 <p> ENABLING/DISABLING RULES </p>
 
 <p> To enable rewrite, definition or meta rules: </p>
@@ -955,7 +970,7 @@ rules, their trigger function should be passed as well. For example:
 
 <p>To disable them:</p>
 
-<code> 
+<code>
 @('(rp::disable-rules <rules>)')
 </code>
 
@@ -978,7 +993,6 @@ the meta rules for all of their trigger functions. </p>
 @('(rp::disable-meta-rules meta-fnc1 meta-fnc2 ...)')
 </code>
 
-
 <p> All executable counterparts are enabled by default even if the user does not
 add the functions to RP-Rewriter's ruleset. They can be disabled and enabled
 with the macro calls below. The given function name should be unquoted. </p>
@@ -989,7 +1003,6 @@ with the macro calls below. The given function name should be unquoted. </p>
 
 <code> @('(rp::enable-exc-counterpart <fnc-name>)') </code>
 
-
 <p> Preprocessors and postprocessors can be enabled/disabled with the macros
 below. </p>
 
@@ -997,7 +1010,6 @@ below. </p>
 <code> @('(rp::disable-preprocessor <fnc-name>)') </code>
 <code> @('(rp::enable-postprocessor <fnc-name>)') </code>
 <code> @('(rp::disable-postprocessor <fnc-name>)') </code>
-
 
 <p> CHANGING RULE PRIORITIES </p>
 
@@ -1024,84 +1036,82 @@ making it the least prioritized rule. </p>
 
 <code> @('(rp::bump-rules rule-name/rune1 rule-name/rune2 ...)') </code>
 
-
 <p> Users can bump all the meta rules with the macro below: </p>
 
 <code> @('(rp::bump-all-meta-rules)') </code>
 
 "
- )
+  )
 
 (xdoc::defxdoc
- enable-preprocessor
- :parents (rp-other-utilities)
- :short "@(see rp::rp-ruleset)")
+  enable-preprocessor
+  :parents (rp-other-utilities)
+  :short "@(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
- enable-postprocessor
- :parents (rp-other-utilities)
- :short "@(see rp::rp-ruleset)")
+  enable-postprocessor
+  :parents (rp-other-utilities)
+  :short "@(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
- disable-preprocessor
- :parents (rp-other-utilities)
- :short "@(see rp::rp-ruleset)")
+  disable-preprocessor
+  :parents (rp-other-utilities)
+  :short "@(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
- disable-postprocessor
- :parents (rp-other-utilities)
- :short "@(see rp::rp-ruleset)")
+  disable-postprocessor
+  :parents (rp-other-utilities)
+  :short "@(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
- bump-rule
- :parents (rp-other-utilities)
- :short "@(see rp::rp-ruleset)")
+  bump-rule
+  :parents (rp-other-utilities)
+  :short "@(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
- bump-down-rule
- :parents (rp-other-utilities)
- :short "@(see rp::rp-ruleset)")
+  bump-down-rule
+  :parents (rp-other-utilities)
+  :short "@(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
- rp::bump-rules
- :parents (rp-other-utilities)
- :short "@(see rp::rp-ruleset)")
+  rp::bump-rules
+  :parents (rp-other-utilities)
+  :short "@(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
- rp::bump-all-meta-rules
- :parents (rp-other-utilities)
- :short "@(see rp::rp-ruleset)")
+  rp::bump-all-meta-rules
+  :parents (rp-other-utilities)
+  :short "@(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
- rp::def-rp-rule
- :parents (rp-other-utilities)
- :short "Documentation under @(see rp::rp-ruleset).")
+  rp::def-rp-rule
+  :parents (rp-other-utilities)
+  :short "Documentation under @(see rp::rp-ruleset).")
 
 (xdoc::defxdoc
- rp::disable-rules
- :parents (rp-other-utilities)
- :short "Documentation under @(see rp::rp-ruleset)")
+  rp::disable-rules
+  :parents (rp-other-utilities)
+  :short "Documentation under @(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
- rp::enable-rules
- :parents (rp-other-utilities)
- :short "Documentation under @(see rp::rp-ruleset)")
+  rp::enable-rules
+  :parents (rp-other-utilities)
+  :short "Documentation under @(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
- disable-all-rules
- :parents (rp-other-utilities)
- :short "Documentation under @(see rp::rp-ruleset)")
+  disable-all-rules
+  :parents (rp-other-utilities)
+  :short "Documentation under @(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
- rp::disable-exc-counterpart
- :parents (rp-other-utilities)
- :short "Documentation under @(see rp::rp-ruleset)")
+  rp::disable-exc-counterpart
+  :parents (rp-other-utilities)
+  :short "Documentation under @(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
- rp::enable-exc-counterpart
- :parents (rp-other-utilities)
- :short "Documentation under @(see rp::rp-ruleset)")
-
+  rp::enable-exc-counterpart
+  :parents (rp-other-utilities)
+  :short "Documentation under @(see rp::rp-ruleset)")
 
 (progn
 
@@ -1116,7 +1126,6 @@ making it the least prioritized rule. </p>
             (cons (caar rp-exc-rules)
                   rest)
           rest))))
-
 
 
   (defund get-enabled-rules-from-table-aux (rp-rules)
@@ -1148,27 +1157,26 @@ making it the least prioritized rule. </p>
                (if outside-in
                    (cons rule rest-outside-in)
                  rest-outside-in)))))))
-  
-  
+
   #|(defund get-enabled-rules-from-table-aux (rp-rules-inorder)
-    (declare (xargs :guard t))
-    (if (atom rp-rules-inorder)
-        (mv nil #|nil||# nil)
-      (b* ((rule (and (consp (car rp-rules-inorder)) (caar rp-rules-inorder)))
-           (rule-enabled (and (consp (car rp-rules-inorder)) (cdar rp-rules-inorder)))
-           ((mv rest-rw rest-def)
-            (get-enabled-rules-from-table-aux (cdr rp-rules-inorder))))
-        (case-match rule
-          ((:executable-counterpart &)
-           (mv rest-rw rest-def))
-          ((:definition . &)
-           (if rule-enabled ;;(cdr (hons-get rule rp-rules))
-               (mv rest-rw #|rest-ex||# (cons rule rest-def))
-             (mv rest-rw #|rest-ex||# rest-def)))
-          (& 
-           (if rule-enabled ;;(cdr (hons-get rule rp-rules))
-               (mv (cons rule rest-rw) #|rest-ex||# rest-def)
-             (mv rest-rw #|rest-ex||# rest-def)))))))||#
+  (declare (xargs :guard t))
+  (if (atom rp-rules-inorder)
+  (mv nil #|nil||# nil)
+  (b* ((rule (and (consp (car rp-rules-inorder)) (caar rp-rules-inorder)))
+  (rule-enabled (and (consp (car rp-rules-inorder)) (cdar rp-rules-inorder)))
+  ((mv rest-rw rest-def)
+  (get-enabled-rules-from-table-aux (cdr rp-rules-inorder))))
+  (case-match rule
+  ((:executable-counterpart &)
+  (mv rest-rw rest-def))
+  ((:definition . &)
+  (if rule-enabled ;;(cdr (hons-get rule rp-rules))
+  (mv rest-rw #|rest-ex||# (cons rule rest-def))
+  (mv rest-rw #|rest-ex||# rest-def)))
+  (&
+  (if rule-enabled ;;(cdr (hons-get rule rp-rules))
+  (mv (cons rule rest-rw) #|rest-ex||# rest-def)
+  (mv rest-rw #|rest-ex||# rest-def)))))))||#
 
   (local
    (defthm true-listp-get-enabled-rules-from-table-aux-for-guards
@@ -1180,7 +1188,6 @@ making it the least prioritized rule. </p>
             (true-listp rules-def)))
      :hints (("Goal"
               :in-theory (e/d (get-enabled-rules-from-table-aux) ())))))
-
 
   (define get-enabled-rules-from-table (state &key
                                               (ruleset ''rp-rules))
@@ -1197,22 +1204,20 @@ making it the least prioritized rule. </p>
           rules-ex)))
 
   #|(define get-enabled-rules-from-table (state)
-    (declare (xargs :stobjs (state)
-                    :guard t))
-    (b* ((world (w state))
-         (rp-rules (table-alist 'rp-rules world))
-         (rp-rules-outside-in (table-alist 'rp-rules-outside-in world))
-         ((mv rules-rw rules-def)
-          (get-enabled-rules-from-table-aux rp-rules))
-         ((mv rules-rw-oi rules-def-oi)
-          (get-enabled-rules-from-table-aux rp-rules-outside-in))
-         (rp-exc-rules (table-alist 'rp-exc-rules world))
-         (rules-ex (get-disabled-exc-rules-from-table rp-exc-rules)))
-      (mv (append rules-rw rules-def)
-          (append rules-rw-oi rules-def-oi)
-          rules-ex)))||#)
-
-
+  (declare (xargs :stobjs (state)
+  :guard t))
+  (b* ((world (w state))
+  (rp-rules (table-alist 'rp-rules world))
+  (rp-rules-outside-in (table-alist 'rp-rules-outside-in world))
+  ((mv rules-rw rules-def)
+  (get-enabled-rules-from-table-aux rp-rules))
+  ((mv rules-rw-oi rules-def-oi)
+  (get-enabled-rules-from-table-aux rp-rules-outside-in))
+  (rp-exc-rules (table-alist 'rp-exc-rules world))
+  (rules-ex (get-disabled-exc-rules-from-table rp-exc-rules)))
+  (mv (append rules-rw rules-def)
+  (append rules-rw-oi rules-def-oi)
+  rules-ex)))||#)
 
 
 
@@ -1253,18 +1258,17 @@ making it the least prioritized rule. </p>
   :guard (symbolp ruleset)
   :verify-guards nil
   (b* ((- (and runes-outside-in (not runes-inside-out)
-                   (cw "WARNING: You passed some values for runes-outside-in
+               (cw "WARNING: You passed some values for runes-outside-in
 but did not pass anything for runes. Assigning values to any one of those
 values will cause runes to be not retrieved from the table.~%")))
 
-
        ((mv runes-inside-out runes-outside-in disabled-exc-rules)
-            (if (or runes-inside-out runes-outside-in)
-                (mv runes-inside-out runes-outside-in
-                    (get-disabled-exc-rules-from-table
-                     (table-alist 'rp-exc-rules (w state))))
-              (get-enabled-rules-from-table state :ruleset ruleset)))
-       
+        (if (or runes-inside-out runes-outside-in)
+            (mv runes-inside-out runes-outside-in
+                (get-disabled-exc-rules-from-table
+                 (table-alist 'rp-exc-rules (w state))))
+          (get-enabled-rules-from-table state :ruleset ruleset)))
+
        (rules-alist-inside-out (get-rules runes-inside-out state :new-synps new-synps))
        (rules-alist-outside-in (get-rules runes-outside-in state :new-synps
                                           new-synps))
@@ -1272,7 +1276,7 @@ values will cause runes to be not retrieved from the table.~%")))
        (len-disabled-exc-rules (len disabled-exc-rules))
        (rp-state (disabled-exc-rules-init len-disabled-exc-rules
                                           nil nil
-                                          rp-state))       
+                                          rp-state))
        (len-rules-alist-inside-out (len rules-alist-inside-out))
        (rp-state (rules-alist-inside-out-init len-rules-alist-inside-out
                                               nil
@@ -1283,7 +1287,7 @@ values will cause runes to be not retrieved from the table.~%")))
                                               nil
                                               nil
                                               rp-state))
-       
+
        (rule-alist-inside-out (get-rules runes-inside-out state
                                          :new-synps new-synps))
        (rule-alist-outside-in (get-rules runes-outside-in state
@@ -1293,15 +1297,12 @@ values will cause runes to be not retrieved from the table.~%")))
                                           :inside-out
                                           rp-state))
        (rp-state (rp-state-init-rules-aux rule-alist-outside-in
-                                          :outside-in 
+                                          :outside-in
                                           rp-state))
        (rp-state (rp-state-init-rules-aux disabled-exc-rules
-                                          :exc 
+                                          :exc
                                           rp-state))
 
        (- (fast-alist-clean rule-alist-inside-out))
        (- (fast-alist-clean rule-alist-outside-in)))
     rp-state))
-       
-
-       
