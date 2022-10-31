@@ -21,7 +21,7 @@
 
 ;; A valuation is a map (alist) from vars to values that are field elements.
 (defund r1cs-valuationp (valuation prime)
-  (declare (xargs :guard (rtl::primep prime)))
+  (declare (xargs :guard (acl2::primep prime)))
   (and (alistp valuation)
        (var-listp (strip-cars valuation))
        (fe-listp (strip-cdrs valuation) prime)))

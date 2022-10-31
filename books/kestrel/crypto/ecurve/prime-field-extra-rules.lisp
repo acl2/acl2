@@ -39,7 +39,7 @@
 
 ;; x^2 = y^2 <==> x = y \/ x = - y
 (defrule equal-of-square-and-square
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep x p)
                 (fep y p))
            (equal (equal (mul x x p)
@@ -59,7 +59,7 @@
 
   (;; x^2 = y^2 <==> (x + y) * (x - y) = 0
    (defruled step1
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (fep x p)
                    (fep y p))
               (equal (equal (mul x x p)
@@ -71,7 +71,7 @@
 
    ;; (x + y) * (x - y) = 0 <==> x = y \/ x = - y
    (defruled step2
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (fep x p)
                    (fep y p))
               (equal (equal 0 (mul (add x y p)
@@ -86,7 +86,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule equal-of-mul-same-and-1 ; square roots of 1
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep x p))
            (equal (equal (mul x x p) 1)
                   (or (equal x 1)
@@ -98,7 +98,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule equal-of-div-and-0
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal b 0)))
@@ -109,7 +109,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule mul-of-div-same-arg1-arg2
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal b 0)))
@@ -120,7 +120,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule equal-of-div-and-div-same-arg2
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep a p)
                 (fep b p)
                 (fep c p)
@@ -136,7 +136,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule equal-of-1-and-div
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal b 0)))
@@ -146,7 +146,7 @@
   :use lemma2
   :prep-lemmas
   ((defrule lemma1
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (fep a p)
                    (fep b p)
                    (not (equal b 0)))
@@ -155,7 +155,7 @@
                        (equal a b)))
      :rule-classes nil)
    (defrule lemma2
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (fep a p)
                    (fep b p)
                    (not (equal b 0)))
@@ -167,7 +167,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule equal-of-x-and-neg-x
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (> p 2)
                 (fep x p))
            (equal (equal x (neg x p))
@@ -182,7 +182,7 @@
                 (fep x p)
                 (fep y p)
                 (integerp z)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal (mul x y p) (mod z p))
                   (if (equal x 0)
                       (equal (mod z p) 0)
@@ -206,7 +206,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule equal-of-minus1-and-div
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal b 0)))
@@ -215,7 +215,7 @@
   :use (lemma3 lemma4)
   :prep-lemmas
   ((defrule lemma1
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (fep a p)
                    (fep b p)
                    (not (equal b 0)))
@@ -224,7 +224,7 @@
                        (equal a (neg b p))))
      :rule-classes nil)
    (defrule lemma2
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (fep a p)
                    (fep b p)
                    (not (equal b 0)))
@@ -233,7 +233,7 @@
      :rule-classes nil
      :use lemma1)
    (defrule lemma3
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (fep a p)
                    (fep b p)
                    (not (equal b 0)))
@@ -243,7 +243,7 @@
      :enable div
      :use lemma2)
    (defrule lemma4
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (fep a p)
                    (fep b p)
                    (not (equal b 0)))
@@ -256,7 +256,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule div-of-neg-and-neg
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal b 0)))
@@ -268,7 +268,7 @@
 
 ;; (a / b) * c + d = (a * c + b * d) / b
 (defruled extend-fraction-to-sum
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep a p)
                 (fep b p)
                 (fep c p)

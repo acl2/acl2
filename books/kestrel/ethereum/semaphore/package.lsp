@@ -45,7 +45,7 @@
             pfield::inv
             pfield::div
             pfield::fep
-            rtl::primep
+            acl2::primep
             acl2::getbit
             acl2::slice
             acl2::bvchop

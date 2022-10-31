@@ -52,7 +52,7 @@
                 (valuation-bindsp valuation y)
                 (valuation-bindsp valuation z)
                 (bitp (lookup-eq b valuation))
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (r1cs-constraint-holdsp (make-selection-constraint b x y z) valuation p)
                   (equal (lookup-eq z valuation)
                          (if (equal 1 (lookup-eq b valuation))

@@ -62,7 +62,7 @@
   (implies (and (fep x p)
                 (fep v p)
                 (not (equal v 1))
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal x (add '1 (add v (mul x v p) p) p))
                   (equal x (div (add 1 v p)
                                 (sub 1 v p)
@@ -81,7 +81,7 @@
                 (fep w p)
                 (fep z p)
                 (not (equal w 0))
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal x (mul y (mul z (inv w p) p) p))
                   (equal (mul x w p) (mul y z p)))))
 

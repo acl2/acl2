@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "ACL2")
 
 (include-book "projects/quadratic-reciprocity/pratt" :dir :system)
 (local (include-book "projects/quadratic-reciprocity/support/pratt" :dir :system))
@@ -74,13 +74,13 @@
   (implies (and (integerp a) (integerp b))
            (equal (mod (+ (mod a (p)) b) (p))
                   (mod (+ a b) (p))))
-  :hints (("Goal" :in-theory (enable mod-sum))))
+  :hints (("Goal" :in-theory (enable rtl::mod-sum))))
 
 (defthm mod+rewrite-2
   (implies (and (integerp a) (integerp b))
            (equal (mod (+ a (mod b (p))) (p))
                   (mod (+ a b) (p))))
-  :hints (("Goal" :in-theory (enable mod-sum))))
+  :hints (("Goal" :in-theory (enable rtl::mod-sum))))
 
 (defthm mod+rewrite-3
   (implies (and (integerp a) (integerp b) (integerp c))
@@ -96,13 +96,13 @@
   (implies (and (integerp a) (integerp b))
            (equal (mod (* (mod a (p)) b) (p))
                   (mod (* a b) (p))))
-  :hints (("Goal" :use ((:instance mod-mod-times (n (p)))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (n (p)))))))
 
 (defthm mod*rewrite-2
   (implies (and (integerp a) (integerp b))
            (equal (mod (* a (mod b (p))) (p))
                   (mod (* a b) (p))))
-  :hints (("Goal" :use ((:instance mod-mod-times (n (p)) (a b) (b a))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (n (p)) (a b) (b a))))))
 
 (defthm mod*rewrite-3
   (implies (and (integerp a) (integerp b) (integerp c))
@@ -138,13 +138,13 @@
   (implies (and (integerp a) (integerp b))
            (equal (mod (- (mod a (p)) b) (p))
                   (mod (- a b) (p))))
-  :hints (("Goal" :use ((:instance mod-sum (a (- b)) (b a) (n (p)))))))
+  :hints (("Goal" :use ((:instance rtl::mod-sum (a (- b)) (b a) (n (p)))))))
 
 (defthm mod-rewrite-2
   (implies (and (integerp a) (integerp b))
            (equal (mod (- a (mod b (p))) (p))
                   (mod (- a b) (p))))
-  :hints (("Goal" :in-theory (enable mod-diff))))
+  :hints (("Goal" :in-theory (enable rtl::mod-diff))))
 
 (defthm mod-expt-rewrite-1
   (implies (and (integerp n)
@@ -195,8 +195,8 @@
            (iff (= (mod a n) (mod b n))
                 (= (mod (- a b) n) 0)))
   :rule-classes ()
-  :hints (("Goal" :use (mod-equal-int-reverse mod-equal-int
-                        (:instance mod-0-int (m (- a b)))))))
+  :hints (("Goal" :use (rtl::mod-equal-int-reverse rtl::mod-equal-int
+                        (:instance rtl::mod-0-int (m (- a b)))))))
 
 (defthm natp-frcp
   (implies (integerp n)
@@ -460,7 +460,7 @@
                   (mod (* (expt (1- (expt x 2)) 2) (frcp (expt x 2))) (p))))
   :hints (("Goal" :in-theory (theory 'minimal-theory)
                   :use (ec-x-0-8
-                        (:instance mod-times-mod (a (* (expt x 2) (- (expt (a) 2) 4)))
+                        (:instance rtl::mod-times-mod (a (* (expt x 2) (- (expt (a) 2) 4)))
                                                  (b (expt (1- (expt x 2)) 2))
                                                  (c (frcp (expt x 2)))
                                                  (n (p)))))))
@@ -871,7 +871,7 @@
              (equal (mod (expt (* (y1) (x1) (frcp (x1))) 2) (p))
                     (mod (* (expt (x1) 2) (+ (a) (x1))) (p)))))
   :hints (("goal" :use (p0+p1<>p0-9
-                        (:instance mod-times-mod (a (expt (* (y1) (frcp (x1))) 2))
+                        (:instance rtl::mod-times-mod (a (expt (* (y1) (frcp (x1))) 2))
                                                  (b (+ (a) (x1)))
                                                  (c (expt (x1) 2))
                                                  (n (p)))))))
@@ -1031,7 +1031,7 @@
                   (mod (expt (ec+slope (p0) (ec- (p1))) 2) (p))))
   :hints (("Goal" :in-theory (disable integerp-ec+slope)
                   :use (p0+p1=p0-p1-12 ecp-assumption p0+p1=p0-p1-14 p0+p1=p0-p1-15
-                        (:instance mod-plus-mod (n (p))
+                        (:instance rtl::mod-plus-mod (n (p))
                                                 (a (- (expt (ec+slope (p0) (p1)) 2) (+ (a) (x0) (x1))))
                                                 (b (- (expt (ec+slope (p0) (ec- (p1))) 2) (+ (a) (x0) (x1))))
                                                 (c (+ (a) (x0) (x1))))))))
@@ -1067,7 +1067,7 @@
                        (mod (* a2 (expt (frcp b) 2)) (p))))
            (equal (mod (* a1 (expt (frcp b) 2) (expt b 2)) (p))
                   (mod (* a2 (expt (frcp b) 2) (expt b 2)) (p))))
-  :hints (("Goal" :use ((:instance mod-times-mod (a (* a1 (expt (frcp b) 2)))
+  :hints (("Goal" :use ((:instance rtl::mod-times-mod (a (* a1 (expt (frcp b) 2)))
                                                   (b (* a2 (expt (frcp b) 2)))
                                                   (c (expt b 2))
                                                   (n (p)))))))

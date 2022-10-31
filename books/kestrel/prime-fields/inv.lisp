@@ -55,7 +55,7 @@
 
 ;was called inv-correct
 (defthm mul-of-inv-arg2
-  (implies (rtl::primep p)
+  (implies (acl2::primep p)
            (equal (mul x (inv x p) p)
                   (if (equal 0 (fep-fix x p))
                       0
@@ -88,8 +88,8 @@
   :hints (("Goal" :in-theory (enable inv))))
 
 (defthm inv-of--1
-  (implies (rtl::primep p)
+  (implies (acl2::primep p)
            (equal (inv -1 p)
                   (+ -1 p)))
   :hints (("Goal" :in-theory (enable inv minus1
-                                     rtl::primep))))
+                                     acl2::primep))))

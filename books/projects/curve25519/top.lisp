@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "ACL2")
 
 (set-enforce-redundancy t)
 
@@ -645,7 +645,7 @@
         (* (expt ,(zsum$ p1 p2) 3)
            ,y))))
 
-(defun sum$ (p1 p2)
+(defun sums$ (p1 p2)
   (list (usum$ p1 p2)
         (vsum$ p1 p2)
         (zsum$ p1 p2)))
@@ -679,14 +679,14 @@
                 (tripp$ p2)
                 (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
-           (tripp$ (sum$ p1 p2))))
+           (tripp$ (sums$ p1 p2))))
 
-(defthmd sum$-formula
+(defthmd sums$-formula
   (implies (and (tripp$ p1)
                 (tripp$ p2)
                 (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
-           (equal (decode3$ (sum$ p1 p2))
+           (equal (decode3$ (sums$ p1 p2))
                   (ec+ (decode3$ p1) (decode3$ p2)))))
 
 ;; Negation:
@@ -754,7 +754,7 @@
 
 (defthm comp-1
   (and (ecp$ (dbl$ (p0$)))
-       (ecp$ (sum$ (p0$) (p1$))))
+       (ecp$ (sums$ (p0$) (p1$))))
   :rule-classes ())
 
 ;; [0.02 seconds]
@@ -764,8 +764,8 @@
            (ecp (ec+ p q))))
 
 (defthm comp-2
-  (eq$ (sum$ (p0$) (p1$))
-       (sum$ (p1$) (p0$)))
+  (eq$ (sums$ (p0$) (p1$))
+       (sums$ (p1$) (p0$)))
   :rule-classes ())
 
 ;; [0.01 seconds]
@@ -787,8 +787,8 @@
 ;; (-P0) + (-P1) = -(P0 + P1)
 
 (defthm comp-4
-  (eq$ (sum$ (neg$ (p0$)) (neg$ (p1$)))
-       (neg$ (sum$ (p0$) (p1$))))
+  (eq$ (sums$ (neg$ (p0$)) (neg$ (p1$)))
+       (neg$ (sums$ (p0$) (p1$))))
   :rule-classes ())
 
 ;; [0.01 seconds]
@@ -802,7 +802,7 @@
 ;; P0 + P0 <> -P0 => (-P0) + (P0 + P0) = P0
 
 (defthm comp-5
-  (eq$ (sum$ (neg$ (p0$))
+  (eq$ (sums$ (neg$ (p0$))
              (dbl$ (p0$)))
        (p0$))
   :rule-classes ())
@@ -812,8 +812,8 @@
 ;; P0 <> +-P1 and P0 + P1 <> -P0 => (-P0) + (P0 + P1) = P1
 
 (defthm comp-6
-  (eq$ (sum$ (neg$ (p0$))
-             (sum$ (p0$) (p1$)))
+  (eq$ (sums$ (neg$ (p0$))
+             (sums$ (p0$) (p1$)))
        (p1$))
   :rule-classes ())
 
@@ -829,8 +829,8 @@
 ;; P0 <> +-P1 and P0 + P1 <> +-P2 and P0 <> +-P2 and P0 + P2 <> +-P1 => P2 + (P0 + P1) = P1 + (P0 + P2)
 
 (defthm comp-7
-  (eq$ (sum$ (p2$) (sum$ (p0$) (p1$)))             
-       (sum$ (p1$) (sum$ (p0$) (p2$))))
+  (eq$ (sums$ (p2$) (sums$ (p0$) (p1$)))             
+       (sums$ (p1$) (sums$ (p0$) (p2$))))
   :rule-classes ())
 
 ;; [3.94 seconds]
@@ -838,8 +838,8 @@
 ;; P0 <> +-P1 and P0 + P0 <> +-P1 and P0 + P1 <> -P0 => P1 + (P0 + P0) = P0 + (P0 + P1)
 
 (defthm comp-8
-  (eq$ (sum$ (p1$) (dbl$ (p0$)))
-       (sum$ (p0$) (sum$ (p0$) (p1$))))
+  (eq$ (sums$ (p1$) (dbl$ (p0$)))
+       (sums$ (p0$) (sums$ (p0$) (p1$))))
   :rule-classes ())
 
 (defthm lemma-17
@@ -856,7 +856,7 @@
 
 (defthm comp-9
   (eq$ (dbl$ (dbl$ (p0$)))
-       (sum$ (p0$) (sum$ (p0$) (dbl$ (p0$)))))
+       (sums$ (p0$) (sums$ (p0$) (dbl$ (p0$)))))
   :rule-classes ())
 
 ;; [0.22 seconds]
@@ -864,8 +864,8 @@
 ;; P0 <> +-P1 and (P0 + P1 <> -P0 and (P0 + P1) + P0 <> +-P1 => (P0 + P1) + (P0 + P1) = P0 + (P1 + (P0 + P1))
 
 (defthm comp-10
-  (eq$ (dbl$ (sum$ (p0$) (p1$)))
-       (sum$ (p0$) (sum$ (p1$) (sum$ (p0$) (p1$)))))
+  (eq$ (dbl$ (sums$ (p0$) (p1$)))
+       (sums$ (p0$) (sums$ (p1$) (sums$ (p0$) (p1$)))))
   :rule-classes ())
 
 ;; [26.23 seconds}
@@ -882,7 +882,7 @@
 ;; P0 + P1 = -P0 => P1 = -(P0 + P0)
 
 (defun phi ()
-  (let* ((s (sum$ (p0$) (p1$)))
+  (let* ((s (sums$ (p0$) (p1$)))
          (u (car s))
          (z (caddr s)))
     `(- (expt (+ (- ,u (* x0 (expt ,z 2)))
@@ -891,7 +891,7 @@
         (expt (* 2 (* y0 y1)) 2))))
 
 (defun psi ()
-  (let* ((s (sum$ (p0$) (p1$)))
+  (let* ((s (sums$ (p0$) (p1$)))
          (d (dbl$ (p0$)))
          (zs (caddr s))
          (ud (car d))
@@ -928,7 +928,7 @@
 ;; (P0 + O) + (P0 + O) = P0 + P0 + P0
 
 (defthm comp-12
-  (eq$ (dbl$ (sum$ (p0$) (o$)))
+  (eq$ (dbl$ (sums$ (p0$) (o$)))
        (dbl$ (p0$)))
   :rule-classes ())
 
@@ -937,7 +937,7 @@
 ;; (O + (P0 + O) = P0
 
 (defthm comp-13
-  (eq$ (sum$ (o$) (sum$ (p0$) (o$)))
+  (eq$ (sums$ (o$) (sums$ (p0$) (o$)))
        (p0$))
   :rule-classes ())
 

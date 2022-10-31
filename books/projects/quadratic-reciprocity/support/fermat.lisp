@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "ACL2")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -11,10 +11,12 @@
 
 ;; We shall construct two lists of integers, each of which is a permutation of the other.
 
-(defun perm (a b)
+;; Conflicts with acl2::perm.
+;; Eric S renamed this.
+(defun permutationp (a b)
   (if (consp a)
       (if (member (car a) b)
-          (perm (cdr a) (remove1 (car a) b))
+          (permutationp (cdr a) (remove1 (car a) b))
 	())
     (not (consp b))))
 
@@ -39,8 +41,8 @@
     (implies (not (member x l))
 	     (not (member x (remove1 y l)))))
 
-(defthm perm-member
-  (implies (and (perm a b)
+(defthm permutationp-member
+  (implies (and (permutationp a b)
 		(member x a))
 	   (member x b)))
 
@@ -86,7 +88,7 @@
 
 (defthm pigeonhole-principle
     (implies (distinct-positives l (len l))
-	     (perm (positives (len l)) l))
+	     (permutationp (positives (len l)) l))
   :rule-classes ()
   :hints (("Goal" :induct (pigeonhole-induction l))))
 
@@ -119,8 +121,8 @@
   :hints (("Goal" :in-theory (enable divides)
 		  :use (mod-distinct-lemma
 			(:instance divides-leq (x p) (y (abs (- i j))))
-			(:instance mod-equal-int (a (* m i)) (b (* m j)) (n p))
-			(:instance mod-equal-int (a (* m j)) (b (* m i)) (n p))
+			(:instance rtl::mod-equal-int (a (* m i)) (b (* m j)) (n p))
+			(:instance rtl::mod-equal-int (a (* m j)) (b (* m i)) (n p))
 			(:instance euclid (a (abs (- i j))) (b m))))))
 
 (defthm mod-p-bnds
@@ -133,9 +135,9 @@
 		  (> p (mod (* m i) p))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable divides)
-		  :use ((:instance mod-bnd-1 (m (* m i)) (n p))
-			(:instance mod-0-int (m (* m i)) (n p))
-			(:instance natp-mod-2 (m (* m i)) (n p))
+		  :use ((:instance rtl::mod-bnd-1 (m (* m i)) (n p))
+			(:instance rtl::mod-0-int (m (* m i)) (n p))
+			(:instance rtl::natp-mod-2 (m (* m i)) (n p))
 			(:instance euclid (a i) (b m))))))
 
 (defthm mod-prods-distinct-positives-lemma
@@ -160,12 +162,12 @@
   :rule-classes ()
   :hints (("Subgoal *1/5.1" :use ((:instance mod-p-bnds (i n))))))
 
-(defthm perm-mod-prods
+(defthm permutationp-mod-prods
     (implies (and (primep p)
 		  (integerp m)
 		  (not (divides p m)))
-	     (perm (positives (1- p))
-		   (mod-prods (1- p) m p)))
+	     (permutationp (positives (1- p))
+                           (mod-prods (1- p) m p)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance mod-prods-distinct-positives (n (1- p)))
 			(:instance pigeonhole-principle (l (mod-prods (1- p) m p)))))))
@@ -185,8 +187,8 @@
 		    (* (ifix x) (times-list (remove1 x l)))))
   :rule-classes ())
 
-(defthm perm-times-list
-    (implies (perm l1 l2)
+(defthm permutationp-times-list
+    (implies (permutationp l1 l2)
 	     (equal (times-list l1)
 		    (times-list l2)))
   :rule-classes ()
@@ -199,9 +201,9 @@
 	 (fact n)))
 
 (defthm times-list-equal-fact
-    (implies (perm (positives n) l)
+    (implies (permutationp (positives n) l)
 	     (equal (times-list l) (fact n)))
-  :hints (("Goal" :use ((:instance perm-times-list (l1 (positives n)) (l2 l))))))
+  :hints (("Goal" :use ((:instance permutationp-times-list (l1 (positives n)) (l2 l))))))
 
 (defthm times-list-mod-prods
     (implies (and (primep p)
@@ -209,7 +211,7 @@
 		  (not (divides p m)))
 	     (equal (times-list (mod-prods (1- p) m p))
 		    (fact (1- p))))
-  :hints (("Goal" :use (perm-mod-prods))))
+  :hints (("Goal" :use (permutationp-mod-prods))))
 
 ;; On the other hand, the product modulo p may be computed as follows.
 
@@ -222,9 +224,9 @@
 	     (= (mod (* x (mod z n)) n)
 		(mod (* y z) n)))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance mod-mod-times (a z) (b x))
-			(:instance mod-mod-times (a x) (b z))
-			(:instance mod-mod-times (a y) (b z))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a z) (b x))
+			(:instance rtl::mod-mod-times (a x) (b z))
+			(:instance rtl::mod-mod-times (a y) (b z))))))
 
 (defthm mod-mod-prods-lemma-2
     (implies (and (not (zp p))
@@ -272,8 +274,8 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (enable divides)
 		  :use ((:instance euclid (b (- b c)))
-			(:instance mod-equal-int (n p) (a (* a b)) (b (* a c)))
-			(:instance mod-equal-int-reverse (n p) (a b) (b c))))))
+			(:instance rtl::mod-equal-int (n p) (a (* a b)) (b (* a c)))
+			(:instance rtl::mod-equal-int-reverse (n p) (a b) (b c))))))
 
 (defthm fermat
     (implies (and (primep p)
@@ -286,6 +288,4 @@
 			(:instance not-divides-p-fact (n (1- p)))
 			(:instance mod-mod-prods (n (1- p)))
 			(:instance mod-times-prime (a (fact (1- p))) (b 1) (c (expt m (1- p))))
-			(:instance mod-does-nothing (m 1) (n p))))))
-
-
+			(:instance rtl::mod-does-nothing (m 1) (n p))))))

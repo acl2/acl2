@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "ACL2")
 
 (include-book "terms")
 
@@ -22,7 +22,7 @@
 
 (in-theory (disable (p0$) (p1$) (p2$)))
 
-(in-theory (disable dbl$ sum$ neg$ eq$))
+(in-theory (disable dbl$ sums$ neg$ eq$))
 
 (in-theory (enable tripp$-dbl$))
 
@@ -68,7 +68,7 @@
           ("Subgoal 1" :expand ((neg$ p)) :in-theory (enable dy))
           ("Subgoal 1'" :use ((:instance mod-rewrite-2 (a 0) (b (* (EVALP$ (CADR P)) (FRCP (EXPT (EVALP$ (CADDR P)) 3)))))))))
 
-(in-theory (enable dbl$-formula sum$-formula neg$-formula))
+(in-theory (enable dbl$-formula sums$-formula neg$-formula))
 
 (in-theory (disable p0 p1 p2 (p0) (p1) (p2)))
 
@@ -223,9 +223,9 @@
 
 (defthm comp-1
   (and (ecp$ (dbl$ (p0$)))
-       (ecp$ (sum$ (p0$) (p1$))))
+       (ecp$ (sums$ (p0$) (p1$))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable ecp$ dbl$ sum$ p0$ p1$))))
+  :hints (("Goal" :in-theory (enable ecp$ dbl$ sums$ p0$ p1$))))
 
 ;; [0.02 seconds]
 
@@ -266,7 +266,7 @@
   (implies (not (equal (x (p0)) (x (p1))))
            (ecp (ec+ (p0) (p1))))
   :hints (("Goal" :use (comp-1
-                        (:instance ecp$ecp (p (sum$ (p0$) (p1$))))))))
+                        (:instance ecp$ecp (p (sums$ (p0$) (p1$))))))))
 
 (defthm closure-7
   (ecp (ec+ (p0) (p1)))
@@ -300,10 +300,10 @@
 ;;********************************************************************************
 
 (defthm comp-2
-  (eq$ (sum$ (p0$) (p1$))
-       (sum$ (p1$) (p0$)))
+  (eq$ (sums$ (p0$) (p1$))
+       (sums$ (p1$) (p0$)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable eq$ sum$ p0$ p1$))))
+  :hints (("Goal" :in-theory (enable eq$ sums$ p0$ p1$))))
 
 ;; [0.01 seconds]
 
@@ -312,7 +312,7 @@
            (equal (ec+ (p0) (p1))
                   (ec+ (p1) (p0))))
   :hints (("Goal" :use (comp-2
-                        (:instance eq$eq (p1 (sum$ (p0$) (p1$))) (p2 (sum$ (p1$) (p0$))))))))
+                        (:instance eq$eq (p1 (sums$ (p0$) (p1$))) (p2 (sums$ (p1$) (p0$))))))))
 
 (defthm commute-2
   (implies (equal (p0) (ec- (p1)))
@@ -369,14 +369,14 @@
 ;; [0.01 seconds]
 
 (defthm comp-4
-  (eq$ (sum$ (neg$ (p0$)) (neg$ (p1$)))
-       (neg$ (sum$ (p0$) (p1$))))
+  (eq$ (sums$ (neg$ (p0$)) (neg$ (p1$)))
+       (neg$ (sums$ (p0$) (p1$))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable eq$ sum$ neg$ p0$ p1$))))
+  :hints (("Goal" :in-theory (enable eq$ sums$ neg$ p0$ p1$))))
 
 ;; [0.01 seconds]
 
-(in-theory (enable dbl$-formula sum$-formula neg$-formula))
+(in-theory (enable dbl$-formula sums$-formula neg$-formula))
 
 (defthm lemma-15-1
   (implies (and (not (equal (p0) (o)))
@@ -396,8 +396,8 @@
            (equal (ec+ (ec- (p0)) (ec- (p1)))
                   (ec- (ec+ (p0) (p1)))))
   :hints (("Goal" :use (comp-4
-                        (:instance eq$eq (p1 (sum$ (neg$ (p0$)) (neg$ (p1$))))
-                                         (p2 (neg$ (sum$ (p0$) (p1$)))))))))
+                        (:instance eq$eq (p1 (sums$ (neg$ (p0$)) (neg$ (p1$))))
+                                         (p2 (neg$ (sums$ (p0$) (p1$)))))))))
 
 (defthmd lemma-15-4
   (implies (equal (ec- (p0)) (p1))
@@ -443,20 +443,20 @@
 ;; P0 <> +-P1 and P0 + P1 <> -P0 => (-P0) + (P0 + P1) = P1
 
 (defthm comp-5
-  (eq$ (sum$ (neg$ (p0$))
+  (eq$ (sums$ (neg$ (p0$))
              (dbl$ (p0$)))
        (p0$))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable eq$ dbl$ sum$ neg$ p0$))))
+  :hints (("Goal" :in-theory (enable eq$ dbl$ sums$ neg$ p0$))))
 
 ;; [0.01 seconds]
 
 (defthm comp-6
-  (eq$ (sum$ (neg$ (p0$))
-             (sum$ (p0$) (p1$)))
+  (eq$ (sums$ (neg$ (p0$))
+             (sums$ (p0$) (p1$)))
        (p1$))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable eq$ sum$ neg$ p0$ p1$))))
+  :hints (("Goal" :in-theory (enable eq$ sums$ neg$ p0$ p1$))))
 
 ;; [0.04 seconds]
 
@@ -466,7 +466,7 @@
            (equal (ec+ (ec- (p0)) (ec+ (p0) (p0)))
                   (p0)))
   :hints (("Goal" :use (comp-5
-                        (:instance eq$eq (p1 (sum$ (neg$ (p0$)) (dbl$ (p0$)))) (p2 (p0$)))))))
+                        (:instance eq$eq (p1 (sums$ (neg$ (p0$)) (dbl$ (p0$)))) (p2 (p0$)))))))
 
 (defthm lemma-16-2
   (implies (not (equal (ec+ (p0) (p0)) (ec- (p0))))
@@ -482,7 +482,7 @@
            (equal (ec+ (ec- (p0)) (ec+ (p0) (p1)))
                   (p1)))
   :hints (("Goal" :use (comp-6
-                        (:instance eq$eq (p1 (sum$ (neg$ (p0$)) (sum$ (p0$) (p1$)))) (p2 (p1$)))))))
+                        (:instance eq$eq (p1 (sums$ (neg$ (p0$)) (sums$ (p0$) (p1$)))) (p2 (p1$)))))))
 
 (defthmd lemma-16-4
   (implies (and (not (equal (p0) (p1)))
@@ -531,18 +531,18 @@
 ;; (P0 + O) + (P0 + O) = P0 + (O + (P0 + O))
 
 (defthm comp-12
-  (eq$ (dbl$ (sum$ (p0$) (o$)))
+  (eq$ (dbl$ (sums$ (p0$) (o$)))
        (dbl$ (p0$)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable eq$ dbl$ sum$ p0$ o$))))
+  :hints (("Goal" :in-theory (enable eq$ dbl$ sums$ p0$ o$))))
 
 ;; [0.01 seconds]
 
 (defthm comp-13
-  (eq$ (sum$ (o$) (sum$ (p0$) (o$)))
+  (eq$ (sums$ (o$) (sums$ (p0$) (o$)))
        (p0$))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable eq$ sum$ p0$ o$))))
+  :hints (("Goal" :in-theory (enable eq$ sums$ p0$ o$))))
 
 ;; [0.00 seconds]
 
@@ -575,7 +575,7 @@
                   :use (comp-12 lemma-17b-1 lemma-17b-3
                         (:instance ec-x-0 (x (car (p0))))
                         (:instance ecp-x-0 (p (p0)))
-                        (:instance eq$eq (p1 (dbl$ (sum$ (p0$) (o$))))
+                        (:instance eq$eq (p1 (dbl$ (sums$ (p0$) (o$))))
                                          (p2 (dbl$ (p0$))))))))
 
 (defthmd lemma-17b-5
@@ -606,7 +606,7 @@
          (p0))
   :hints (("Goal" :cases ((equal (p0) (o))) 
                   :use (comp-13 lemma-17b-1 lemma-17b-5 lemma-17b-8
-                        (:instance eq$eq (p1 (sum$ (o$) (sum$ (p0$) (o$))))
+                        (:instance eq$eq (p1 (sums$ (o$) (sums$ (p0$) (o$))))
                                          (p2 (p0$)))))))
 
 (defthm lemma-17b-10
@@ -659,10 +659,10 @@
 ;; P0 <> +-P1 and P0 + P1 <> +-P2 and P0 <> +-P2 and P0 + P2 <> +-P1 => P2 + (P0 + P1) = P1 + (P0 + P2)
 
 (defthm comp-7
-  (eq$ (sum$ (p2$) (sum$ (p0$) (p1$)))             
-       (sum$ (p1$) (sum$ (p0$) (p2$))))
+  (eq$ (sums$ (p2$) (sums$ (p0$) (p1$)))             
+       (sums$ (p1$) (sums$ (p0$) (p2$))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable eq$ sum$ p0$ p1$ p2$))))
+  :hints (("Goal" :in-theory (enable eq$ sums$ p0$ p1$ p2$))))
 
 ;; [3.94 seconds]
 
@@ -674,8 +674,8 @@
            (equal (ec+ (p2) (ec+ (p0) (p1)))
                   (ec+ (p1) (ec+ (p0) (p2)))))
   :hints (("Goal" :use (comp-7
-                        (:instance eq$eq (p1 (sum$ (p2$) (sum$ (p0$) (p1$))))
-                                         (p2 (sum$ (p1$) (sum$ (p0$) (p2$)))))))))
+                        (:instance eq$eq (p1 (sums$ (p2$) (sums$ (p0$) (p1$))))
+                                         (p2 (sums$ (p1$) (sums$ (p0$) (p2$)))))))))
 
 (defthmd lemma-17-2
   (implies (and (not (equal (p0) (p1)))
@@ -769,10 +769,10 @@
 ;; P0 <> +-P1 and P0 + P0 <> +-P1 and P0 + P1 <> -P0 => P1 + (P0 + P0) = P0 + (P0 + P1)
 
 (defthm comp-8
-  (eq$ (sum$ (p1$) (dbl$ (p0$)))
-       (sum$ (p0$) (sum$ (p0$) (p1$))))
+  (eq$ (sums$ (p1$) (dbl$ (p0$)))
+       (sums$ (p0$) (sums$ (p0$) (p1$))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable eq$ dbl$ sum$ p0$ p1$))))
+  :hints (("Goal" :in-theory (enable eq$ dbl$ sums$ p0$ p1$))))
 
 ;; [0.36 seconds}
 
@@ -784,8 +784,8 @@
            (equal (ec+ (p1) (ec+ (p0) (p0)))
                   (ec+ (p0) (ec+ (p0) (p1)))))
   :hints (("Goal" :use (comp-8
-                        (:instance eq$eq (p1 (sum$ (p1$) (dbl$ (p0$))))
-                                         (p2 (sum$ (p0$) (sum$ (p0$) (p1$)))))))))
+                        (:instance eq$eq (p1 (sums$ (p1$) (dbl$ (p0$))))
+                                         (p2 (sums$ (p0$) (sums$ (p0$) (p1$)))))))))
 
 (defthmd lemma-17-9
   (implies (and (not (equal (p0) (p1)))
@@ -896,9 +896,9 @@
 
 (defthm comp-9
   (eq$ (dbl$ (dbl$ (p0$)))
-       (sum$ (p0$) (sum$ (p0$) (dbl$ (p0$)))))
+       (sums$ (p0$) (sums$ (p0$) (dbl$ (p0$)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable eq$ dbl$ sum$ p0$ p1$))))
+  :hints (("Goal" :in-theory (enable eq$ dbl$ sums$ p0$ p1$))))
 
 ;; [0.22 seconds]
 
@@ -911,16 +911,16 @@
   :hints (("Goal" :cases ((equal (p0) (o)))
                   :use (comp-9
                         (:instance eq$eq (p1 (dbl$ (dbl$ (p0$))))
-                                         (p2 (sum$ (p0$) (sum$ (p0$) (dbl$ (p0$))))))))))
+                                         (p2 (sums$ (p0$) (sums$ (p0$) (dbl$ (p0$))))))))))
 
 
 ;; P0 <> +-P1 and (P0 + P1 <> -P0 and (P0 + P1) + P0 <> +-P1 => (P0 + P1) + (P0 + P1) = P0 + (P1 + (P0 + P1))
 
 (defthm comp-10
-  (eq$ (dbl$ (sum$ (p0$) (p1$)))
-       (sum$ (p0$) (sum$ (p1$) (sum$ (p0$) (p1$)))))
+  (eq$ (dbl$ (sums$ (p0$) (p1$)))
+       (sums$ (p0$) (sums$ (p1$) (sums$ (p0$) (p1$)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable eq$ dbl$ sum$ p0$ p1$))))
+  :hints (("Goal" :in-theory (enable eq$ dbl$ sums$ p0$ p1$))))
 
 ;; [26.23 seconds}
 
@@ -932,8 +932,8 @@
            (equal (ec+ (ec+ (p0) (p1)) (ec+ (p0) (p1)))
                   (ec+ (p0) (ec+ (p1) (ec+ (p0) (p1))))))
   :hints (("Goal" :use (comp-10
-                        (:instance eq$eq (p1 (dbl$ (sum$ (p0$) (p1$))))
-                                         (p2 (sum$ (p0$) (sum$ (p1$) (sum$ (p0$) (p1$))))))))))
+                        (:instance eq$eq (p1 (dbl$ (sums$ (p0$) (p1$))))
+                                         (p2 (sums$ (p0$) (sums$ (p1$) (sums$ (p0$) (p1$))))))))))
 
 (defthmd lemma-18-3
   (equal (ec+ (ec+ (p0) (ec- (p0))) (ec+ (p0) (ec- (p0))))
@@ -1088,7 +1088,7 @@
 ;; P0 + P1 = -P0 => P1 = -(P0 + P0)
 
 (defun phi ()
-  (let* ((s (sum$ (p0$) (p1$)))
+  (let* ((s (sums$ (p0$) (p1$)))
          (u (car s))
          (z (caddr s)))
     `(- (expt (+ (- ,u (* x0 (expt ,z 2)))
@@ -1097,7 +1097,7 @@
         (expt (* 2 (* y0 y1)) 2))))
 
 (defun psi ()
-  (let* ((s (sum$ (p0$) (p1$)))
+  (let* ((s (sums$ (p0$) (p1$)))
          (d (dbl$ (p0$)))
          (zs (caddr s))
          (ud (car d))
@@ -1109,7 +1109,7 @@
   (equal (reduce$ (phi))
          (reduce$ (psi)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable dbl$ sum$ p0$ p1$))))
+  :hints (("Goal" :in-theory (enable dbl$ sums$ p0$ p1$))))
 
 ;; [0.01 seconds}
 
@@ -1158,9 +1158,9 @@
                   :use (lemma-19-3 lemma-19-5 lemma-19-6
                         (:instance x= (r2 (p1)) (r1 (p0)))))))
 
-(defun us$ () (car (sum$ (p0$) (p1$))))
-(defun vs$ () (cadr (sum$ (p0$) (p1$))))
-(defun zs$ () (caddr (sum$ (p0$) (p1$))))
+(defun us$ () (car (sums$ (p0$) (p1$))))
+(defun vs$ () (cadr (sums$ (p0$) (p1$))))
+(defun zs$ () (caddr (sums$ (p0$) (p1$))))
 (defun ud$ () (car (dbl$ (p0$))))
 (defun vd$ () (cadr (dbl$ (p0$))))
 (defun zd$ () (caddr (dbl$ (p0$))))
@@ -1205,28 +1205,28 @@
 (defthmd lemma-19-9
   (implies (and (equal (ec+ (p0) (p1)) (ec- (p0)))
                 (not (equal (p0) (p1))))
-           (tripp$ (sum$ (p0$) (p1$))))
+           (tripp$ (sums$ (p0$) (p1$))))
   :hints (("Goal" :use (lemma-19-8))))
 
 (defthmd lemma-19-10
   (implies (and (equal (ec+ (p0) (p1)) (ec- (p0)))
                 (not (equal (p0) (p1))))
-           (equal (decode3$ (sum$ (p0$) (p1$)))
+           (equal (decode3$ (sums$ (p0$) (p1$)))
                   (ec- (p0))))
   :hints (("Goal" :use (lemma-19-8))))
 
 (defthmd lemma-19-11
   (implies (and (equal (ec+ (p0) (p1)) (ec- (p0)))
                 (not (equal (p0) (p1))))
-           (equal (car (decode3$ (sum$ (p0$) (p1$))))
+           (equal (car (decode3$ (sums$ (p0$) (p1$))))
                   (x0)))
   :hints (("Goal" :in-theory (enable ec- p0) :use (lemma-19-10))))
 
 (in-theory (disable (us$) (vs$) (zs$) (ud$) (vd$) (zd$)))
 
 (defthmd lemma-19-12
-  (implies (tripp$ (sum$ (p0$) (p1$)))
-           (equal (car (decode3$ (sum$ (p0$) (p1$))))
+  (implies (tripp$ (sums$ (p0$) (p1$)))
+           (equal (car (decode3$ (sums$ (p0$) (p1$))))
                   (f/ (ms) (expt (zs) 2))))
   :hints (("Goal" :in-theory (enable tripp$ decode3$ decode3 dx))))
 
@@ -1238,17 +1238,17 @@
   :hints (("Goal" :use (lemma-19-11 lemma-19-12 lemma-19-9))))
 
 (defthmd lemma-19-14
-  (implies (and (tripp$ (sum$ (p0$) (p1$)))
+  (implies (and (tripp$ (sums$ (p0$) (p1$)))
                 (equal (ec+ (p0) (p1)) (ec- (p0)))
                 (not (equal (p0) (p1))))
            (equal (mod (* (ms) (frcp (expt (zs) 2)) (expt (zs) 2)) (p))
                   (mod (* (x0) (expt (zs) 2)) (p))))
   :hints (("Goal" :in-theory (enable tripp$)
                   :use (lemma-19-13
-                        (:instance mod-times-mod (a (* (ms) (frcp (expt (zs) 2)))) (b (x0)) (c (expt (zs) 2)) (n (p)))))))
+                        (:instance rtl::mod-times-mod (a (* (ms) (frcp (expt (zs) 2)))) (b (x0)) (c (expt (zs) 2)) (n (p)))))))
 
 (defthmd lemma-19-15
-  (implies (and (tripp$ (sum$ (p0$) (p1$)))
+  (implies (and (tripp$ (sums$ (p0$) (p1$)))
                 (equal (ec+ (p0) (p1)) (ec- (p0)))
                 (not (equal (p0) (p1))))
            (equal (mod (* (ms) (frcp (expt (zs) 2)) (expt (zs) 2)) (p))
@@ -1284,7 +1284,7 @@
 (in-theory (disable (phi) phi))
 
 (defthmd lemma-19-20
-  (implies (and (tripp$ (sum$ (p0$) (p1$)))
+  (implies (and (tripp$ (sums$ (p0$) (p1$)))
                 (equal (ec+ (p0) (p1)) (ec- (p0)))
                 (not (equal (p0) (p1))))
            (equal (mod (evalp$ (phi)) (p))
@@ -1294,12 +1294,12 @@
                   :in-theory (enable tripp$))))
 
 (defthm lemma-19-21
-  (implies (tripp$ (sum$ (p0$) (p1$)))
+  (implies (tripp$ (sums$ (p0$) (p1$)))
            (polyp$ (phi)))
   :hints (("Goal" :in-theory (enable tripp$ phi) :expand (:free (x) (polyp$ x)))))
 
 (defthm lemma-19-22
-  (implies (tripp$ (sum$ (p0$) (p1$)))
+  (implies (tripp$ (sums$ (p0$) (p1$)))
            (polyp$ (psi)))
   :hints (("Goal" :in-theory (enable tripp$ psi) :expand (:free (x) (polyp$ x)))))
 
@@ -1362,7 +1362,7 @@
            (= (mod (* (md) (frcp (expt (zd) 2))) (p))
               (mod (* (x1) (expt (zd) 2) (frcp (expt (zd) 2))) (p))))
   :hints (("Goal" :use (lemma-19-9 lemma-19-28 lemma-19-26
-                        (:instance mod-times-mod (a (md)) (b (* (x1) (expt (zd) 2))) (c (frcp (expt (zd) 2))) (n (p))))
+                        (:instance rtl::mod-times-mod (a (md)) (b (* (x1) (expt (zd) 2))) (c (frcp (expt (zd) 2))) (n (p))))
                   :in-theory (enable tripp$))))
 
 (defthmd lemma-19-30

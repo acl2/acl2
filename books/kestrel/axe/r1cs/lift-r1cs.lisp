@@ -85,7 +85,7 @@
                               (symbol-listp vars)
                               (r1cs-constraint-listp constraints)
                               ;;(r1csp r1cs)
-                              (natp prime) ;;(rtl::primep prime) ;todo, slow!
+                              (natp prime) ;;(acl2::primep prime) ;todo, slow!
                               (or (eq :auto package)
                                   (and (stringp package)
                                        (not (equal "" package))))

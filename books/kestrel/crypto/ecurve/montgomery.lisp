@@ -77,23 +77,23 @@
    (xdoc::p
     "To fix the three components to satisfy the requirements above,
      we pick 3 for @($p$), 0 for @($A$), and 1 for @($B$)."))
-  ((p :reqfix (if (and (rtl::primep p)
+  ((p :reqfix (if (and (acl2::primep p)
                        (> p 2))
                   p
                 3))
-   (a :reqfix (if (and (rtl::primep p)
+   (a :reqfix (if (and (acl2::primep p)
                        (> p 2)
                        (fep a p)
                        (not (equal a 2))
                        (not (equal a (mod -2 p))))
                   a
                 0))
-   (b :reqfix (if (and (rtl::primep p)
+   (b :reqfix (if (and (acl2::primep p)
                        (fep b p)
                        (not (equal b 0)))
                   b
                 1)))
-  :require (and (rtl::primep p)
+  :require (and (acl2::primep p)
                 (> p 2)
                 (fep a p)
                 (fep b p)
@@ -103,7 +103,7 @@
   :pred montgomery-curvep
   :prepwork
   ((local (include-book "arithmetic-3/top" :dir :system))
-   (defrulel primep-of-3 (rtl::primep 3) :enable rtl::primep))
+   (defrulel primep-of-3 (acl2::primep 3) :enable acl2::primep))
   ///
 
   (defrule posp-of-montgomery-curve->p
@@ -653,7 +653,7 @@
     :prep-lemmas
     ;; being each other's inverse is symmetric:
     ((defrule lemma
-       (implies (and (rtl::primep p)
+       (implies (and (acl2::primep p)
                      (fep x p)
                      (fep y p))
                 (equal (equal x (neg y p))
@@ -669,7 +669,7 @@
 
   ;; commutativity of lambda:
   (defrulel l-comm
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (fep x1 p)
                   (fep x2 p)
                   (fep y1 p)
@@ -696,7 +696,7 @@
 
   ;; commutativity of x3:
   (defrulel x3-comm
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (fep x1 p)
                   (fep x2 p)
                   (fep y1 p)
@@ -727,7 +727,7 @@
 
   ;; alternative definition of y3, as - lambda * x3 + y3-rest (see above):
   (defruledl y3-alt-def
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (fep x1 p)
                   (fep x2 p)
                   (fep y1 p)
@@ -744,7 +744,7 @@
 
   ;; alternative definition of y3 that extends the fraction and simplifies:
   (defruledl y3-rest-alt-def
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (fep x1 p)
                   (fep x2 p)
                   (fep y1 p)
@@ -766,7 +766,7 @@
 
   ;; commutativity of y3-rest:
   (defrulel y3-rest-comm
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (fep x1 p)
                   (fep x2 p)
                   (fep y1 p)
@@ -786,7 +786,7 @@
 
   ;; commutativity of y3:
   (defrulel y3-comm
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (fep x1 p)
                   (fep x2 p)
                   (fep y1 p)

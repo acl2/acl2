@@ -15,7 +15,7 @@
 
 (include-book "kestrel/crypto/ecurve/twisted-edwards" :dir :system)
 (acl2::merge-io-pairs
- rtl::primep
+ acl2::primep
  (include-book "kestrel/crypto/primes/baby-jubjub-subgroup-prime" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -209,7 +209,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define baby-jubjub-order/8 ()
-  :returns (order/8 rtl::primep)
+  :returns (order/8 acl2::primep)
   :short "The prime that is 1/8th of the order of BabyJubjub."
   :long
   (xdoc::topstring

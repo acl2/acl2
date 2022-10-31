@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "ACL2")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -203,7 +203,7 @@
   :rule-classes ()
   :hints (("Goal" :use ((:instance second-supplement (p (1+ (* 2 p))))
 			(:instance euler-criterion (m 2) (p (1+ (* 2 p))))
-			(:instance mod-sum (a 1) (b (* 2 p)) (n 8))
+			(:instance rtl::mod-sum (a 1) (b (* 2 p)) (n 8))
 			(:instance mod-prod (k 2) (m p) (n 4))
 			(:instance divides-leq (x (1+ (* 2 p))) (y 2))
 			(:instance divides-mod-equal (a (expt 2 p)) (b 1) (n (1+ (* 2 p))))))))
@@ -264,8 +264,8 @@
 ;; primep and m.  We must also re-enable the executable counterpart
 ;; of primep to allow the computation of primep(p) and primep(2*p+1):
 
-(local-in-theory (disable primep m (m)))
-(local-in-theory (enable (primep)))
+(local (in-theory (disable primep m (m))))
+(local (in-theory (enable (primep))))
 
 (defthm mersenne-23-revisited
     (not (primep (m 23))))
@@ -283,4 +283,3 @@
 )
 
 ;;[Time: 27 seconds]
-

@@ -45,7 +45,7 @@
   (implies (and (r1cs-valuationp valuation p)
                 (valuation-bindsp valuation a)
                 (valuation-bindsp valuation a-inverse)
-                (rtl::primep p))
+                (acl2::primep p))
            (implies (r1cs-constraint-holdsp (make-nonzero-constraint a a-inverse) valuation p)
                     (not (equal 0 (lookup-eq a valuation)))))
   :hints (("Goal" :in-theory (enable make-nonzero-constraint
@@ -67,7 +67,7 @@
                             (lookup-eq a-inverse valuation)
                             p)
                        1)
-                (rtl::primep p))
+                (acl2::primep p))
            (r1cs-constraint-holdsp (make-nonzero-constraint a a-inverse) valuation p))
   :hints (("Goal" :in-theory (enable make-nonzero-constraint
                                      r1cs-constraint-holdsp
@@ -83,7 +83,7 @@
                 (not (equal 0 (lookup-eq a valuation)))
                 (symbolp a-inverse)
                 (not (valuation-bindsp valuation a-inverse)) ; the new var should be fresh
-                (rtl::primep p))
+                (acl2::primep p))
            (r1cs-constraint-holdsp (make-nonzero-constraint a a-inverse)
                                    ;; bind the new var A-INVERSE to 1/A:
                                    (acons a-inverse (inv (lookup-eq a valuation) p) valuation)

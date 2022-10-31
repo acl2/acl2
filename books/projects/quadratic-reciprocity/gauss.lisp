@@ -2,12 +2,12 @@
 ;; david@russinoff.com
 ;; http://www.russinoff.com
 
-(in-package "RTL")
+(in-package "ACL2")
 
 (local (include-book "support/gauss"))
 
 ;; Also defined in the RTL library.
-(defund fl (x)
+(defund rtl::fl (x)
   (declare (xargs :guard (real/rationalp x)))
   (floor x 1))
 
@@ -75,13 +75,13 @@
 ;; This result allows us to compute the product of the elements of
 ;; reflections((p-1)/2,m,p):
 
-(defthm perm-reflections
-    (implies (and (primep p)
-		  (not (= p 2))
-		  (integerp m)
-		  (not (divides p m)))
-	     (perm (positives (/ (1- p) 2))
-		   (reflections (/ (1- p) 2) m p)))
+(defthm permutationp-reflections
+  (implies (and (primep p)
+                (not (= p 2))
+                (integerp m)
+                (not (divides p m)))
+           (permutationp (positives (/ (1- p) 2))
+                         (reflections (/ (1- p) 2) m p)))
   :rule-classes ())
 
 (defthm times-list-reflections
@@ -160,7 +160,7 @@
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (equal (mu (+ -1/2 (* 1/2 p)) 2 p)
-		    (- (/ (1- p) 2) (fl (/ (1- p) 4))))))
+		    (- (/ (1- p) 2) (rtl::fl (/ (1- p) 4))))))
 
 ;; Let k = fl(p/8) and m = mod(p,8).  Then p = 8*k + m.  It follows that
 ;;   mu((p-1)/2,2,p) = 2*k + (m-1)/2 - fl((m-1)/4):
@@ -169,13 +169,13 @@
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (equal (mod p 8)
-		    (- p (* 8 (fl (/ p 8)))))))
+		    (- p (* 8 (rtl::fl (/ p 8)))))))
 
 (defthm mu-rewrite
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (equal (mu (+ -1/2 (* 1/2 p)) 2 p)
-		    (+ (* 2 (fl (/ p 8))) (- (/ (1- (mod p 8)) 2) (fl (/ (1- (mod p 8)) 4)))))))
+		    (+ (* 2 (rtl::fl (/ p 8))) (- (/ (1- (mod p 8)) 2) (rtl::fl (/ (1- (mod p 8)) 4)))))))
 
 ;; The desired result now follows by a simple case analysis:
 

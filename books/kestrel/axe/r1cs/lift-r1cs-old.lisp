@@ -41,7 +41,7 @@
                               (acl2::keyword-listp vars)
                               (booleanp produce-function)
                               (booleanp produce-theorem)
-                              (natp prime) ;;(rtl::primep prime) ;todo, slow!
+                              (natp prime) ;;(acl2::primep prime) ;todo, slow!
                               )
                   :mode :program
                   :stobjs state))

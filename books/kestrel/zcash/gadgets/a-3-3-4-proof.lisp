@@ -42,7 +42,7 @@
 ;; (acl2::get-conjuncts-of-term2 (acl2::dag-to-term *A-3-3-4-SIMP-LIFTED*)))
 
 (defthm solve-for-xprime
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (FEP XPRIME/NUM P)
                 (fep x2/num p)
                 (fep x1/num p))
@@ -56,7 +56,7 @@
 
 
 (defthm solve-for-lambda
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep x2/num p)
                 (fep x1/num p)
                 (fep lambda/num p)
@@ -74,7 +74,7 @@
                                       )))))
 
 (defthmd solve-for-yprime
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep yprime/num p)
                 (fep b p)
                 (fep a p))

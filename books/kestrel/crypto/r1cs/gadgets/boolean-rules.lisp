@@ -17,7 +17,7 @@
 
 (defthmd introduce-bitp-1
   (implies (and (fep x p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal 0 (mul x (sub x 1 p) p))
                   (bitp x)))
   :hints (("Goal" :in-theory (disable sub))))
@@ -26,7 +26,7 @@
 ;; want to simplfy.
 (defthmd introduce-bitp-2
   (implies (and (fep x p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal 0 (mul x (add -1 x p) p))
                   (bitp x)))
   :hints (("Goal" :use introduce-bitp-1
@@ -35,7 +35,7 @@
 ;; This version has the MUL commuted
 (defthmd introduce-bitp-1-alt
   (implies (and (fep x p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal 0 (mul (sub x 1 p) x p))
                   (bitp x)))
   :hints (("Goal" :in-theory (disable sub))))
@@ -43,7 +43,7 @@
 ;; This version has the MUL commuted
 (defthmd introduce-bitp-2-alt
   (implies (and (fep x p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal 0 (mul (add -1 x p) x p))
                   (bitp x)))
   :hints (("Goal" :use introduce-bitp-1

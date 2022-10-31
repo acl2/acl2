@@ -1,11 +1,10 @@
-(in-package "RTL")
+(in-package "ACL2")
 
 (include-book "reduce")
 
 ;; [Jared] These rules were causing some proofs to be really slow.
 
 (local (deftheory jared-disables
-         #!acl2
          '((:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
            (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)
@@ -60,7 +59,7 @@
            |(mod (if a b c) x)|
            rtl::mod-bnd-1
            rtl::mod-bnd-2
-           (:type-prescription rtl::natp-dx)
+           (:type-prescription natp-dx)
            rtl::mod-does-nothing
            )))
 
@@ -186,7 +185,8 @@
         (* (expt ,(zsum$ p1 p2) 3)
            ,y))))
 
-(defun sum$ (p1 p2)
+;; Eric S: Avoids name clash with built-in sum$.
+(defun sums$ (p1 p2)
   (list (usum$ p1 p2)
         (vsum$ p1 p2)
         (zsum$ p1 p2)))
@@ -346,10 +346,10 @@
                   :use (dbl$-formula-3
                         (:instance dbl$-formula-4 (p (decode3$ p)))))))
 
-(local-defthmd sum$-sum
+(local-defthmd sums$-sum
   (implies (and (tripp$ p1)
                 (tripp$ p2))
-           (equal (decode3$ (sum$ p1 p2))
+           (equal (decode3$ (sums$ p1 p2))
                   (decode3 (sum (eval3$ p1) (eval3$ p2)))))
   :hints (("Goal" :in-theory (enable sum))))
 
@@ -400,7 +400,7 @@
            (not (= (mod (* (evalp$ (car p1)) (expt (evalp$ (caddr p2)) 2)) (p))
                    (mod (evalp$ (car p2)) (p)))))
   :hints (("Goal" :use (tripp$-sum$-3
-                        (:instance mod-times-mod (a (evalp$ (car p2)))
+                        (:instance rtl::mod-times-mod (a (evalp$ (car p2)))
                                                  (b (* (evalp$ (car p1)) (expt (evalp$ (caddr p2)) 2)))
                                                  (c (frcp (expt (evalp$ (caddr p2)) 2)))
                                                  (n (p))))
@@ -448,19 +448,19 @@
                 (tripp$ p2)
                 (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
-           (tripp$ (sum$ p1 p2)))
+           (tripp$ (sums$ p1 p2)))
   :hints (("Goal" :in-theory (enable tripp$ sum)
                   :use (tripp$-sum$-6 tripp$-sum$-7))))
 
-(defthmd sum$-formula
+(defthmd sums$-formula
   (implies (and (tripp$ p1)
                 (tripp$ p2)
                 (not (= (x (decode3$ p1)) (x (decode3$ p2))))
                 (= (caddr p1) 1))
-           (equal (decode3$ (sum$ p1 p2))
+           (equal (decode3$ (sums$ p1 p2))
                   (ec+ (decode3$ p1) (decode3$ p2))))
   :hints (("Goal" :in-theory '(eval3$ decode3$ evalp$)
-                  :use (sum$-sum
+                  :use (sums$-sum
                         eval3$cadr
                         (:instance caddr-decode3$ (p p1))
                         (:instance decode3$dx (p p1))
@@ -748,11 +748,11 @@
                             (p)))))
   :hints (("Goal" :in-theory (enable tripp$)
                   :use (eq$eq-2
-                        (:instance mod-times-mod (a (* (evalp$ (car p1)) (expt (evalp$ (caddr p2)) 2)))
+                        (:instance rtl::mod-times-mod (a (* (evalp$ (car p1)) (expt (evalp$ (caddr p2)) 2)))
                                                  (b (* (evalp$ (car p2)) (expt (evalp$ (caddr p1)) 2)))
                                                  (c (* (frcp (expt (evalp$ (caddr p1)) 2)) (frcp (expt (evalp$ (caddr p2)) 2))))
                                                  (n (p)))
-                        (:instance mod-times-mod (a (* (evalp$ (cadr p1)) (expt (evalp$ (caddr p2)) 3)))
+                        (:instance rtl::mod-times-mod (a (* (evalp$ (cadr p1)) (expt (evalp$ (caddr p2)) 3)))
                                                  (b (* (evalp$ (cadr p2)) (expt (evalp$ (caddr p1)) 3)))
                                                  (c (* (frcp (expt (evalp$ (caddr p1)) 3)) (frcp (expt (evalp$ (caddr p2)) 3))))
                                                  (n (p)))))))

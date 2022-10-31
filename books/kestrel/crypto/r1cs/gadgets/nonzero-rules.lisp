@@ -18,11 +18,11 @@
 (defthmd use-nonzero-constraint-1
   (implies (and (equal 1 (mul a a-inverse p))
                 (fep a p)
-                (rtl::primep p))
+                (acl2::primep p))
            (not (equal a 0))))
 
 (defthmd use-nonzero-constraint-2
   (implies (and (equal 1 (mul a-inverse a p))
                 (fep a p)
-                (rtl::primep p))
+                (acl2::primep p))
            (not (equal a 0))))

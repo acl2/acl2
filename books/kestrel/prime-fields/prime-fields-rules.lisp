@@ -92,9 +92,9 @@
 (defthm divides-of-prime-means-0
   (implies (and (fep x p)
                 (integerp p))
-           (equal (rtl::divides p x)
+           (equal (acl2::divides p x)
                   (equal 0 x)))
-  :hints (("Goal" :in-theory (enable ;rtl::divides
+  :hints (("Goal" :in-theory (enable ;acl2::divides
                               fep))))
 
 ;move?
@@ -107,11 +107,11 @@
                       (equal y 0))))
   :hints (("Goal"
            :use (;primep-of-prime
-                 (:instance rtl::euclid
+                 (:instance acl2::euclid
                             (p p)
                             (a x)
                             (b y)))
-           :in-theory (enable mul rtl::divides acl2::equal-of-0-and-mod))))
+           :in-theory (enable mul acl2::divides acl2::equal-of-0-and-mod))))
 
 (defthm equal-of-0-and-mul-gen
   (implies (primep p)
@@ -539,14 +539,14 @@
                 (< x1 p)
                 (not (equal x1 0))
                 (< 2 p)
-                (rtl::primep p))
+                (acl2::primep p))
            (not (equal (add x1 x1 p) 0)))
   :hints (("Goal" :in-theory (enable add-same fep))))
 
 (defthm not-equal-of-inv-and-0
   (implies (and (fep a p)
                 (not (equal 0 a))
-                (rtl::primep p))
+                (acl2::primep p))
            (not (equal 0 (inv a p))))
   :hints (("Goal" :use (:instance mul-of-inv-arg2
                                   (x (mod a p))
@@ -558,7 +558,7 @@
 (defthm equal-of-inv
   (implies (and (not (equal 0 a))
                 (fep a p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal (inv a p) b)
                   (and (equal 1 (mul a b p))
                        (fep b p))))
@@ -570,7 +570,7 @@
 
 (defthm inv-of-inv
   (implies (and (fep a p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (inv (inv a p) p)
                   a))
   :hints (("Goal" :cases ((equal 0 a)))))
@@ -603,7 +603,7 @@
                               (quotep y)))
                 (fep y p)
                 (fep z p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal x (mul y z p))
                   (and (fep x p)
                        (if (equal 0 y)
@@ -616,7 +616,7 @@
                               (quotep y)))
                 (fep y p)
                 (fep z p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal (mul y z p) x)
                   (and (fep x p)
                        (if (equal 0 y)
@@ -634,7 +634,7 @@
   (implies (and (syntaxp (not (equal z ''0))) ;prevent loops
                 (fep z p)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal x (div y z p))
                   (if (equal 0 z)
                       ;; odd case:
@@ -650,7 +650,7 @@
   (implies (and (not (equal 0 z)) ;exclude odd case
                 (fep z p)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal x (div y z p))
                   (and (fep x p)
                        (equal (mul x z p)
@@ -661,7 +661,7 @@
   (implies (and (syntaxp (not (equal z ''0))) ;prevent loops
                 (fep z p)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal 0 (div y z p))
                   (if (equal 0 z)
                       ;; odd case (usually t unless p=2):
@@ -681,7 +681,7 @@
 (defthmd equal-of-0-and-div-special
   (implies (and (fep z p)
                 (fep y p)
-                (rtl::primep p)
+                (acl2::primep p)
                 (< 2 p))
            (equal (equal 0 (div y z p))
                   (or (equal 0 z)
@@ -721,7 +721,7 @@
 (defthm equal-of-mul-same-arg1
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal x (mul x y p))
                   (if (equal 0 x)
                       t
@@ -739,7 +739,7 @@
 (defthm equal-of-mul-same-arg2
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal x (mul y x p))
                   (if (equal 0 x)
                       t
@@ -751,7 +751,7 @@
 (defthmd equal-of-mul-cancel
   (implies (and (fep y p)
                 (fep z p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal x (mul y z p))
                   (and (fep x p)
                        (if (equal 0 z)
@@ -1066,7 +1066,7 @@
   :hints (("Goal" :in-theory (e/d (pow) (PFIELD::EQUAL-OF-NEG)))))
 
 (defthm inv-of-neg
-  (implies (rtl::primep p)
+  (implies (acl2::primep p)
            (equal (inv (neg x p) p)
                   (neg (inv x p) p)))
   :hints (("Goal" :in-theory (enable inv pfield::minus1))))
@@ -1075,7 +1075,7 @@
 (defthm mul-of-div-same-arg2
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (mul x (div y x p) p)
                   (if (equal x 0)
                       0
@@ -1086,7 +1086,7 @@
 (defthm div-of-div-same-arg1
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p)
+                (acl2::primep p)
                 (< 2 p) ;gen?
                 )
            (equal (div x (div x y p) p)
@@ -1099,7 +1099,7 @@
 (defthm div-of-mul-same-arg1-arg2
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (div (mul x y p) y p)
                   (if (equal y 0)
                       0
@@ -1110,7 +1110,7 @@
 (defthm div-of-mul-same-arg1-arg1
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (div (mul y x p) y p)
                   (if (equal y 0)
                       0
@@ -1122,7 +1122,7 @@
 (defthmd div-of-neg-arg1-move-to-arg2
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (div (neg x p) y p)
                   (div x (neg y p) p)))
   :hints (("Goal" :in-theory (enable div))))

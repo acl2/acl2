@@ -35,7 +35,7 @@
                 (force (valuation-bindsp valuation b))
                 (force (bitp (lookup-equal b valuation)))
                 (force (valuation-bindsp valuation c))
-                (rtl::primep prime))
+                (acl2::primep prime))
            (equal (r1cs-constraint-holdsp (make-bitand-constraint a b c) valuation prime)
                   (equal (acl2::bitand (lookup-equal a valuation)
                                        (lookup-equal b valuation))

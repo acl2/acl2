@@ -30,7 +30,7 @@
 ;; bits are in the field
 (defthm bitp-in-field
   (implies (and (bitp x)
-                (rtl::primep prime))
+                (acl2::primep prime))
            (fep x prime))
   :hints (("Goal" :in-theory (enable fep bitp))))
 
@@ -46,7 +46,7 @@
 
 (defthm nonzero-constraint-correct-1
   ;; (implies (and (fep a prime)
-  ;;               (rtl::primep prime)
+  ;;               (acl2::primep prime)
   ;;               )
   (implies (nonzero-constraint a prime)
            (not (equal a 0)))
@@ -55,7 +55,7 @@
 
 (defthm nonzero-constraint-correct-2
   (implies (and (fep a prime)
-                (rtl::primep prime))
+                (acl2::primep prime))
            (implies (not (equal a 0))
                     (nonzero-constraint a prime)))
   :hints (("Goal" :use (:instance nonzero-constraint-suff
@@ -63,7 +63,7 @@
 
 (defthm nonzero-constraint-correct
   (implies (and (fep a prime)
-                (rtl::primep prime))
+                (acl2::primep prime))
            (iff (nonzero-constraint a prime)
                 (not (equal a 0))))
   :hints (("Goal" :use (nonzero-constraint-correct-1
@@ -79,7 +79,7 @@
 
 ;; ;; c = a+b-2ab becomes c=bitxor(a,b)
 ;; (defun xor-constraint (a b c prime)
-;;   (declare (xargs :guard (and (rtl::primep prime)
+;;   (declare (xargs :guard (and (acl2::primep prime)
 ;;                               ;; (fep a prime)
 ;;                               (bitp a)
 ;;                               ;; (fep b prime)
@@ -97,7 +97,7 @@
 ;;                 (bitp b)
 ;;                 (fep c prime)
 ;;                 (not (equal 2 prime))
-;;                 (rtl::primep prime))
+;;                 (acl2::primep prime))
 ;;            (iff (xor-constraint a b c prime)
 ;;                 (equal c (acl2::bitxor a b))))
 ;;   :hints (("Goal" :in-theory (e/d (bitp)

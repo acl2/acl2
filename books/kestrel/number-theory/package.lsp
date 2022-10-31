@@ -14,7 +14,8 @@
 (include-book "rtl/rel11/portcullis" :dir :system)
 
 (defpkg "PRIMES"
-  (append '(assert!
+  (append '(acl2::primep ; was rtl::primep
+            assert!
             b*
             define
             defret
@@ -34,6 +35,5 @@
             pfield::inv
             pfield::neg
             pfield::pow
-            ///
-            )
+            ///)
           *acl2-exports*))

@@ -122,16 +122,16 @@
        :prep-books ((include-book "arithmetic-5/top" :dir :system)))))
 
   (defruledl weak-euler-criterion-contrapositive-general-3
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (> p 2)
                   (integerp a)
                   (not (mod-= a 0 p))
                   (not (mod-= (expt a (/ (- p 1) 2)) 1 p)))
              (non-square-general a p))
-    :enable rtl::primep
+    :enable acl2::primep
     :use ((:functional-instance
            weak-euler-criterion-contrapositive-general-2
-           (prime (lambda () (if (and (rtl::primep p)
+           (prime (lambda () (if (and (acl2::primep p)
                                       (> p 2))
                                  p
                                3))))))
@@ -140,7 +140,7 @@
   ;; so that we can reformulate the criterion for pfield-squarep.
 
   (defruledl pfield-squarep-to-not-non-square-general
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (fep x p))
              (iff (pfield-squarep x p)
                   (not (non-square-general x p))))
@@ -156,7 +156,7 @@
   ;; This is the final reformulation.
 
   (defruledl weak-euler-criterion-contrapositive
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (> p 2)
                   (fep a p)
                   (not (equal a 0))
@@ -172,7 +172,7 @@
   ;; This is the one that can be used to show that a number is not a square.
 
   (defruled weak-euler-criterion-contrapositive
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (> p 2)
                   (fep a p)
                   (not (equal a 0))

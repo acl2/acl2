@@ -46,11 +46,11 @@
 
  ;; proof of primality:
  (defthm primep-of-my97-prime-constant
-   (rtl::primep *my97-prime*))
+   (primep *my97-prime*))
 
  ;; lift primality proof to the 0-ary function:
  (defthm primep-of-my97-prime
-   (rtl::primep (my97-prime)))
+   (primep (my97-prime)))
 
  ;; strong linear rule about the 0-ary function:
  (defthm my97-prime-linear
@@ -78,11 +78,11 @@
 
  ;; proof of primality:
  (defthm primep-of-my97-prime-alias-constant
-   (rtl::primep *my97-prime-alias*))
+   (primep *my97-prime-alias*))
 
  ;; lift primality proof to the 0-ary function:
  (defthm primep-of-my97-prime-alias
-   (rtl::primep (my97-prime-alias)))
+   (primep (my97-prime-alias)))
 
  ;; strong linear rule about the 0-ary function:
  (defthm my97-prime-alias-linear

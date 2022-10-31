@@ -89,7 +89,7 @@
      (1+ (natural-induction (1- n))))))
 
 (defthmd pow-of-inv
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
 		(fep x p)
 		(not (equal x 0))
 		)
@@ -123,7 +123,7 @@
 		(< 1 p)
 		(< i j)
 		(< j p)
-		(rtl::primep p)
+		(acl2::primep p)
 		(equal (pow x i p) (pow x j p))
 		)
 	   (equal (mul (pow x j p) (pow (inv x p) i p) p) 1))
@@ -139,7 +139,7 @@
   )
 
 (defthm mul-cancel-left
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
 		(fep x p)
 		(< 0 x)
 		(fep y p)
@@ -168,7 +168,7 @@
 		(< 1 p)
 		(< i j)
 		(< j p)
-		(rtl::primep p)
+		(acl2::primep p)
 		(equal (pow x i p) (pow x j p))
 		)
 	   (equal (pow x (- j i) p) 1))
@@ -203,7 +203,7 @@
 		(< 1 p)
 		(< i j)
 		(< j (order x p))
-		(rtl::primep p))
+		(acl2::primep p))
 	   (not (equal (nth i (all-powers x p))
 		       (nth j (all-powers x p)))))
   :hints (("Goal"
@@ -246,11 +246,11 @@
 		  (first (last l)))))
 
 (defthm consp-all-powers-aux
-  (implies (and (rtl::primep p))
+  (implies (and (acl2::primep p))
 	   (consp (all-powers-aux x 1 p)))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal"
-	   :in-theory (enable rtl::primep
+	   :in-theory (enable acl2::primep
 			      all-powers-aux)))
   )
 
@@ -268,7 +268,7 @@
 		(< i p)
 		(posp x)
 		(< x p)
-		(rtl::primep p)
+		(acl2::primep p)
 		(equal (len (all-powers-aux x 1 p)) (- p 1)))
 	   (equal (car (last (all-powers-aux x 1 p))) 1))
   :hints (("Goal"
@@ -287,7 +287,7 @@
 (defthm pow-order
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p))
+		(acl2::primep p))
 	   (equal (pow x (order x p) p) 1))
   :hints (("Goal" :cases ((equal (order x p) (- p 1)))
 	   :in-theory (enable order all-powers))
@@ -316,7 +316,7 @@
 (defthm pow-<-order
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p)
+		(acl2::primep p)
 		(posp n)
 		(< n (order x p)))
 	   (not (equal (pow x n p) 1)))
@@ -349,7 +349,7 @@
   )
 
 (defthm posp-order
-  (implies (rtl::primep p)
+  (implies (acl2::primep p)
 	   (< 0 (order x p)))
   :hints (("Goal"
 	   :use ((:instance consp-all-powers-aux)
@@ -361,7 +361,7 @@
 (defthmd smallest-pow-eq-1-is-order
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p)
+		(acl2::primep p)
 		(posp n)
 		(equal (pow x n p) 1)
 		(not (exists-smaller-power-eq-1 x p n)))
@@ -404,7 +404,7 @@
 (defthmd pow-multiples-of-order
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p)
+		(acl2::primep p)
 		(natp k))
 	   (equal (pow x (* k (order x p)) p) 1))
   :hints (("Goal"
@@ -418,7 +418,7 @@
 (defthmd pow-mod-order
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p)
+		(acl2::primep p)
 		(natp n))
 	   (equal (pow x (mod n (order x p)) p)
 		  (pow x n p)))
@@ -442,7 +442,7 @@
 (defthmd pow-is-1->-exponent-mod-order-zero
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p)
+		(acl2::primep p)
 		(natp n)
 		(equal (pow x n p) 1))
 	   (equal (mod n (order x p))
@@ -458,21 +458,21 @@
 (defthmd pow-is-1->-order-divides-exponent
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p)
+		(acl2::primep p)
 		(natp n)
 		(equal (pow x n p) 1))
-	   (rtl::divides (order x p) n))
+	   (acl2::divides (order x p) n))
   :hints (("Goal"
 	   :use ((:instance pow-is-1->-exponent-mod-order-zero)
-		 (:instance rtl::divides-mod-0
+		 (:instance acl2::divides-mod-0
 			    (a n)
 			    (n (order x p)))))))
 
 (defthmd order-divides-p-minus1
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p))
-	   (rtl::divides (order x p) (1- p)))
+		(acl2::primep p))
+	   (acl2::divides (order x p) (1- p)))
   :hints (("Goal"
 	   :use ((:instance pow-is-1->-order-divides-exponent
 			    (x x)
@@ -486,7 +486,7 @@
 (defthm inv-not-0
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p))
+		(acl2::primep p))
 	   (not (equal (inv x p) 0)))
   :hints (("Goal"
 	   :use ((:instance mul-of-inv-arg2))
@@ -495,7 +495,7 @@
 (defthmd order-inv-part1
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p))
+		(acl2::primep p))
 	   (equal (pow (inv x p) (order x p) p) 1))
   :hints (("Goal"
 	   :use ((:instance pow-of-inv
@@ -506,7 +506,7 @@
 (defthmd order-inv-part2
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p))
+		(acl2::primep p))
 	   (<= (order (inv x p) p) (order x p)))
   :hints (("Goal"
 	   :use ((:instance order-inv-part1)
@@ -518,7 +518,7 @@
 (defthmd order-inv-part3
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p))
+		(acl2::primep p))
 	   (<= (order (inv (inv x p) p) p) (order (inv x p) p)))
   :hints (("Goal"
 	   :use ((:instance order-inv-part2
@@ -527,7 +527,7 @@
 (defthmd mul-inv-x-x-y
   (implies (and (fep x p) (fep y p)
                 (not (equal 0 x))
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (mul (inv x p) (mul x y p) p)
                   y))
   :hints (("Goal"
@@ -547,14 +547,14 @@
   (implies (and (fep x p)
                 (fep y p)
                 (equal (mul x y p) 1)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (inv x p) y))
   :rule-classes nil
   :hints (("Goal"
            :use ((:instance
                   (:theorem (implies (and (fep x p) (fep y1 p)
                                           (equal y1 y2)
-                                          (rtl::primep p))
+                                          (acl2::primep p))
                                      (equal (mul x y1 p) (mul x y2 p))))
                   (y1 (mul x y p))
                   (y2 1)
@@ -568,7 +568,7 @@
 (defthm inv-inv
   (implies (and (fep x p)
                 (not (equal 0 x))
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (inv (inv x p) p) x))
   :rule-classes nil
   :hints (("Goal"
@@ -586,7 +586,7 @@
 (defthmd order-inv-part4
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p))
+		(acl2::primep p))
 	   (<= (order x p) (order (inv x p) p)))
   :hints (("Goal"
 	   :use ((:instance order-inv-part3)
@@ -595,7 +595,7 @@
 (defthmd order-inv
   (implies (and (fep x p)
 		(not (equal 0 x))
-		(rtl::primep p))
+		(acl2::primep p))
 	   (equal (order (inv x p) p) (order x p)))
   :hints (("Goal"
 	   :use ((:instance order-inv-part2)

@@ -75,11 +75,11 @@
    (xdoc::p
     "To fix the three components to satisfy the requirements above,
      we pick 3 for @($p$), 1 for @($a$), and 2 for @($d$)."))
-  ((p nat :reqfix (if (and (rtl::primep p)
+  ((p nat :reqfix (if (and (acl2::primep p)
                            (> p 2))
                       p
                     3))
-   (a :reqfix (if (and (rtl::primep p)
+   (a :reqfix (if (and (acl2::primep p)
                        (> p 2)
                        (fep a p)
                        (fep d p)
@@ -88,7 +88,7 @@
                        (not (equal d 0)))
                   a
                 1))
-   (d :reqfix (if (and (rtl::primep p)
+   (d :reqfix (if (and (acl2::primep p)
                        (> p 2)
                        (fep a p)
                        (fep d p)
@@ -97,7 +97,7 @@
                        (not (equal d 0)))
                   d
                 2)))
-  :require (and (rtl::primep p)
+  :require (and (acl2::primep p)
                 (> p 2)
                 (fep a p)
                 (fep d p)
@@ -465,7 +465,7 @@
   ;; they still have b as an explicit root of a.
 
   (defruledl d.x1.x2.y1.y2-not-one-explicit-root
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (> p 2)
                   (fep a p)
                   (fep d p)
@@ -483,14 +483,14 @@
              (not (equal (mul d (mul x1 (mul x2 (mul y1 y2 p) p) p) p)
                          1)))
     :use (:functional-instance d.x1.x2.y1.y2-not-one-constrained-prime
-          (prime (lambda () (if (and (rtl::primep p) (> p 2)) p 3))))
+          (prime (lambda () (if (and (acl2::primep p) (> p 2)) p 3))))
     :prep-lemmas
     ((defrule primep-of-3
-       (rtl::primep 3)
-       :enable rtl::primep)))
+       (acl2::primep 3)
+       :enable acl2::primep)))
 
   (defruledl d.x1.x2.y1.y2-not-minus-one-explicit-root
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (> p 2)
                   (fep a p)
                   (fep d p)
@@ -508,11 +508,11 @@
              (not (equal (mul d (mul x1 (mul x2 (mul y1 y2 p) p) p) p)
                          (1- p))))
     :use (:functional-instance d.x1.x2.y1.y2-not-minus-one-constrained-prime
-          (prime (lambda () (if (and (rtl::primep p) (> p 2)) p 3))))
+          (prime (lambda () (if (and (acl2::primep p) (> p 2)) p 3))))
     :prep-lemmas
     ((defrule primep-of-3
-       (rtl::primep 3)
-       :enable rtl::primep)))
+       (acl2::primep 3)
+       :enable acl2::primep)))
 
   ;; By instantiating b with the the witness square root of a,
   ;; we eliminate b and instead use (pfield-squarep a p) as hypothesis.
@@ -521,7 +521,7 @@
   ;; they are over the individual components of the curve and points.
 
   (defruledl d.x1.x2.y1.y2-not-one-on-components
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (fep a p)
                   (fep d p)
                   (fep x1 p)
@@ -541,7 +541,7 @@
     :enable pfield-squarep)
 
   (defruledl d.x1.x2.y1.y2-not-minus-one-on-components
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (fep a p)
                   (fep d p)
                   (fep x1 p)
@@ -635,7 +635,7 @@
   ;; which backchain to the conclusions of the two theorems above.
 
   (defruledl verify-guards-lemma1
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (fep x p)
                   (not (equal x (1- p))))
              (not (equal 0 (add 1 x p))))
@@ -644,7 +644,7 @@
      (include-book "arithmetic-3/top" :dir :system)))
 
   (defruledl verify-guards-lemma2
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (fep x p)
                   (not (equal x 1)))
              (not (equal 0 (add 1 (neg x p) p))))
@@ -701,7 +701,7 @@
     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
     :prep-lemmas
     ((defrule lemma
-       (implies (rtl::primep p)
+       (implies (acl2::primep p)
                 (equal (mod -1 p)
                        (- p 1)))
        :prep-books ((include-book "arithmetic-3/top" :dir :system)))))
@@ -994,7 +994,7 @@
                   (non-square-general d p)
                   (mod-= (sq sqrt{a}) a p)
                   (integerp sqrt{a})
-                  (rtl::primep p)
+                  (acl2::primep p)
                   (> p 2)
                   (pointp pt1)
                   (pointp pt2)
@@ -1009,21 +1009,21 @@
               point-on-curve-p
               curve-add)
     :use ((:functional-instance closure-constrained-prime
-           (prime (lambda () (if (and (rtl::primep p)
+           (prime (lambda () (if (and (acl2::primep p)
                                       (> p 2))
                                  p
                                3)))))
     :prep-lemmas
     ((defrule primep-of-3
-       (rtl::primep 3)
-       :enable rtl::primep)))
+       (acl2::primep 3)
+       :enable acl2::primep)))
 
   ;; While the theorem just above references non-square-general,
   ;; the completeness predicate references pfield-squarep.
   ;; The following rewrite rule shows their equivalence.
 
   (defruledl pfield-squarep-to-not-non-square-general
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (fep x p))
              (iff (pfield-squarep x p)
                   (not (non-square-general x p))))
@@ -1042,7 +1042,7 @@
   ;; as conveyed by the theorem name.
 
   (defruledl closure-explicit-root
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (> p 2)
                   (fep a p)
                   (fep d p)
@@ -1071,7 +1071,7 @@
   ;; of the curve, as conveyed by the name.
 
   (defruledl closure-on-components
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (> p 2)
                   (fep a p)
                   (fep d p)

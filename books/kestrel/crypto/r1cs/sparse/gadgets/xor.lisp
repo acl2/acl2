@@ -48,7 +48,7 @@
                 (valuation-bindsp valuation c)
                 (bitp (lookup-eq a valuation))
                 (bitp (lookup-eq b valuation))
-                (rtl::primep p)
+                (acl2::primep p)
                 (< 2 p))
            (equal (r1cs-constraint-holdsp (make-bitxor-constraint a b c) valuation p)
                   (equal (lookup-eq c valuation)

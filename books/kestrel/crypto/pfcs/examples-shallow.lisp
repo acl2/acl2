@@ -49,7 +49,7 @@
 (make-event (sesem-definition (make-rel-boolean) 'p))
 
 (defruled rel-boolean-to-spec
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (pfield::fep b p))
            (equal (rel-boolean b p)
                   (or (equal b 0)
@@ -76,7 +76,7 @@
 (make-event (sesem-definition (make-rel-condeq) 'p))
 
 (defruled rel-condeq-to-spec
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (pfield::fep a p)
                 (pfield::fep b p)
                 (pfield::fep c p))
@@ -106,7 +106,7 @@
 (make-event (sesem-definition (make-rel-select) 'p))
 
 (defruled rel-select-to-spec
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (pfield::fep b p)
                 (pfield::fep x p)
                 (pfield::fep y p)
@@ -139,7 +139,7 @@
 (make-event (sesem-definition (make-rel-nonzero) 'p))
 
 (defruled rel-nonzero-to-spec
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (pfield::fep a p))
            (equal (rel-nonzero a p)
                   (not (equal a 0))))
@@ -148,14 +148,14 @@
   :prep-lemmas
 
   ((defruled left-implies-right
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (pfield::fep a p))
               (implies (rel-nonzero a p)
                        (not (equal a 0))))
      :enable rel-nonzero)
 
    (defrule right-implies-left
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (pfield::fep a p))
               (implies (not (equal a 0))
                        (rel-nonzero a p)))
@@ -183,7 +183,7 @@
 (make-event (sesem-definition (make-rel-xor) 'p))
 
 (defruled rel-xor-to-spec
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (pfield::fep a p)
                 (pfield::fep b p)
                 (pfield::fep c p)

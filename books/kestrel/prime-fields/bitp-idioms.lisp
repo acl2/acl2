@@ -22,7 +22,7 @@
                               (quotep p)))
                 (equal p-1 (+ -1 p))
                 (fep x p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal 0 (mul x (add p-1 x p) p))
                   (bitp x)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p)
@@ -34,7 +34,7 @@
                               (quotep p)))
                 (equal p-1 (+ -1 p))
                 (fep x p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal 0 (mul (add p-1 x p) x p))
                   (bitp x)))
   :hints (("Goal" :use bitp-idiom-1
@@ -43,7 +43,7 @@
 ;; Recognizes 0 = x*(1 + -x)
 (defthm bitp-idiom-2
   (implies (and (fep x p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal 0 (mul x (add 1 (neg x p) p) p))
                   (bitp x)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p)
@@ -52,7 +52,7 @@
 ;; Just commutes the MUL in the lhs
 (defthm bitp-idiom-2-alt
   (implies (and (fep x p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal 0 (mul (add 1 (neg x p) p) x p))
                   (bitp x)))
   :hints (("Goal" :use bitp-idiom-2
@@ -65,7 +65,7 @@
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
                 (equal k2 (sub k1 1 p))
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal 0 (mul (add k1 x p) (add k2 x p) p))
                   (bitp (add k1 x p))))
   :hints (("Goal" :use (:instance bitp-idiom-1
@@ -84,7 +84,7 @@
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
                 (equal k2 (sub k1 1 p))
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal 0 (mul (add k2 x p) (add k1 x p) p))
                   (bitp (add k1 x p))))
   :hints (("Goal" :use (:instance bitp-idiom-1-with-added-constant)
@@ -92,7 +92,7 @@
 
 ;; Or pull the neg out of the mul, or TODO drop the neg: 0=x*-y iif 0=x*y
 (defthm bitp-idiom
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep x p))
            (equal (equal 0 (mul (add 1 (neg x p) p)
                                 (neg x p)

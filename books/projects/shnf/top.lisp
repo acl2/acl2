@@ -2,7 +2,7 @@
 ;; david@russinoff.com
 ;; http://www.russinoff.com
 
-(in-package "RTL")
+(in-package "ACL2")
 
 (include-book "rtl/rel11/lib/basic" :dir :system)
 

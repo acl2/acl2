@@ -28,7 +28,7 @@
 (local (include-book "projects/quadratic-reciprocity/eisenstein" :dir :system))
 (local (include-book "kestrel/number-theory/mod-expt-fast" :dir :system))
 
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;rtl::primep
+(include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;primep
 
 
 (in-theory (disable acl2::mod-expt-fast))
@@ -232,7 +232,7 @@
   (declare (xargs :measure (nfix m)
                   :guard (and (posp m) (natp c) (natp tt)
                               (natp r)
-                              (rtl::primep p) (< 2 p))
+                              (primep p) (< 2 p))
                   :hints (("Goal"
                            :use (:instance least-repeated-square-aux (i 1) (tt^2^i tt) (m m) (p p))
                            :in-theory (e/d (least-repeated-square least-repeated-square-aux) ())))))
@@ -300,14 +300,14 @@
 
 (defun tonelli-shanks-sqrt-aux (n p z)
   (declare (xargs :guard (and (natp n) (natp p) (natp z) (> p 2) (< z p)
-                              (rtl::primep p) (< n p)
+                              (primep p) (< n p)
                               (not (has-square-root? z p)))
                   :guard-hints (("Goal"
                                  :use ((:instance posp-q*2^s-n-is-even (n (- p 1))))
                                  :in-theory (e/d (acl2::integerp-of-*-of-1/2-becomes-evenp
                                                   acl2::not-evenp-when-oddp
                                                   acl2::mod-expt-fast
-                                                  rtl::oddp-odd-prime)
+                                                  acl2::oddp-odd-prime)
                                                  (oddp))))))
   (if (has-square-root? n p)
       (if (= n 0)
@@ -342,7 +342,7 @@
 ;; The argument p must be a prime greater than 2.
 
 (define tonelli-shanks-lesser-sqrt ((n natp) (p natp) (z natp))
-  :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
+  :guard (and (> p 2) (< z p) (primep p) (< n p) (not (has-square-root? z p)))
   :short "Tonelli-Shanks modular square root. Finds least square root if a square root exists."
   :long "Finds the lesser square root of the two square roots of n modulo p if
          a square root exists. Otherwise returns 0.  p must be an odd prime.
@@ -361,11 +361,11 @@
                  :in-theory (e/d (tonelli-shanks-sqrt-aux
 				  extra-info
 				  acl2::mod-expt-fast natp
-				  rtl::oddp-odd-prime)
+				  acl2::oddp-odd-prime)
                                  (has-square-root?)))))
 
 (define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))
-  :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
+  :guard (and (> p 2) (< z p) (primep p) (< n p) (not (has-square-root? z p)))
   :short "Tonelli-Shanks modular square root. Finds the least square root."
   :long "Finds the lesser square root of the two square roots of n modulo p if
          a square root exists. Otherwise returns 0. p must be an odd prime. z
@@ -375,7 +375,7 @@
   (tonelli-shanks-lesser-sqrt n p z))
 
 (define tonelli-shanks-either-sqrt ((n natp) (p natp) (z natp))
-  :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
+  :guard (and (> p 2) (< z p) (primep p) (< n p) (not (has-square-root? z p)))
   :short "Tonelli-Shanks modular square root. Finds a square root if a square root exists."
   :long "Finds a square root of n modulo p if it exists, else returns 0.
          p must be an odd prime. z is a quadratic nonresidue in p."
@@ -384,7 +384,7 @@
   (tonelli-shanks-sqrt-aux n p z))
 
 (define tonelli-shanks-greater-sqrt ((n natp) (p natp) (z natp))
-  :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
+  :guard (and (> p 2) (< z p) (primep p) (< n p) (not (has-square-root? z p)))
   :short "Tonelli-Shanks modular square root. Finds the greater square root."
   :long "Finds the greater square root of the two square roots of n modulo p if
          a square root exists, otherwise returns 0. p must be an odd prime.
@@ -422,7 +422,7 @@
                    (not (has-square-root? z p))
                    (< 2 p)
                    (< z p)
-                   (rtl::primep p)
+                   (primep p)
                    (< n p)
                    (has-square-root? n p)
                    (< 0 n)
@@ -463,7 +463,7 @@
                    (< r p)
                    (natp p)
                    (< n p)
-                   (rtl::primep p)
+                   (primep p)
                    (< 2 p)
                    (< 0 (least-repeated-square tt m p)))
               (let ((b (repeated-square c (- (- m (least-repeated-square tt m p)) 1) p)))
@@ -499,7 +499,7 @@
                  (< r p)
                  (natp p)
                  (< n p)
-                 (rtl::primep p)
+                 (primep p)
                  (< 2 p))
             (and (posp (t-s-aux m c tt r p))
                  (< (t-s-aux m c tt r p) p)))
@@ -515,7 +515,7 @@
                 (has-square-root? n p)
                 (< n p)
                 (< z p)
-                (rtl::primep p)
+                (primep p)
                 (not (has-square-root? z p))
                 (equal (tonelli-shanks-sqrt-aux n p z) y))
            (and (posp y)
@@ -544,7 +544,7 @@
   (local (include-book "arithmetic-3/top" :dir :system))
 
   (define tonelli-shanks-even-sqrt ((n natp) (p natp) (z natp))
-    :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
+    :guard (and (> p 2) (< z p) (primep p) (< n p) (not (has-square-root? z p)))
     :short "Tonelli-Shanks modular square root. Finds the even square root."
     :long "Finds the even square root of the two square roots of n modulo p if
            a square root exists, otherwise returns 0.
@@ -585,7 +585,7 @@
   (local (include-book "arithmetic-3/top" :dir :system))
 
   (define tonelli-shanks-odd-sqrt ((n natp) (p natp) (z natp))
-    :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
+    :guard (and (> p 2) (< z p) (primep p) (< n p) (not (has-square-root? z p)))
     :short "Tonelli-Shanks modular square root. Finds the odd square root."
     :long "Finds the odd square root of the two square roots of n modulo p if a
            square root exists. Otherwise returns 0. z is a quadratic nonresidue

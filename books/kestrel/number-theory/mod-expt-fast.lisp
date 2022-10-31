@@ -20,7 +20,7 @@
 ;; mod-and-expt but not with primality.
 
 (defthm equal-of-0-and-mod-expt-fast-when-primep
-  (implies (and (rtl::primep n)
+  (implies (and (primep n)
                 (natp i)
                 (integerp a))
            (equal (equal 0 (acl2::mod-expt-fast a i n))
@@ -30,7 +30,7 @@
                           (< 0 (mod a n))))))
 
 (defthm <-of-0-and-mod-expt-fast-when-primep
-  (implies (and (rtl::primep n)
+  (implies (and (primep n)
                 (natp i)
                 (integerp a))
            (equal (< 0 (acl2::mod-expt-fast a i n))

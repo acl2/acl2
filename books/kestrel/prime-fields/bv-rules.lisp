@@ -679,7 +679,7 @@
 
 ;; (defthm equal-of-0-and-mul-of-add-of-1-and-neg-same-gen
 ;;   (implies (and ;(fep x prime)
-;;                 (rtl::primep prime))
+;;                 (acl2::primep prime))
 ;;            (equal (equal 0 (mul x (add 1 (neg x prime) prime) prime))
 ;;                   (bitp (mod (ifix x) p))))
 ;;   :hints (("Goal" :use (:instance constrain-to-be-bit-correct)
@@ -1190,7 +1190,7 @@
                             )
                            (add-of-mul-and-mul-when-bitps-and-adjacent-coeffs
                             MUL-OF-NEG-ARG1
-                            rtl::primep
+                            acl2::primep
                             )))))
 
 ;; starts out the process of creating a bvcat

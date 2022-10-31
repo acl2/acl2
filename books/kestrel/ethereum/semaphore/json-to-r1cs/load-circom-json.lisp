@@ -85,7 +85,7 @@
     `(encapsulate ()
        ;; Currently required for the guard proof, and having this separate makes failure more clear:
        (local (defthm ,primality-theorem
-                (rtl::primep ,prime-form)))
+                (primep ,prime-form)))
        (cw-event "Created local primality theorem, ~x0.~%" ',primality-theorem)
        (defund ,defun-vars-name () (declare (xargs :guard t)) ',vars)
        (cw-event "Created vars defun, ~x0.~%" ',defun-vars-name)

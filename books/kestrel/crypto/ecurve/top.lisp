@@ -29,7 +29,7 @@
 (include-book "points-fty")
 
 (acl2::merge-io-pairs
- rtl::primep
+ acl2::primep
  (include-book "bls12-377-domain-parameters"))
 
 (include-book "edwards-bls12")

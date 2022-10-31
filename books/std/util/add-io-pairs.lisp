@@ -71,7 +71,7 @@
  (add-io-pair (g 3 4) (mv 30 40))
 
  (add-io-pair
-  (rtl::primep (primes::bn-254-group-prime)) t
+  (primep (primes::bn-254-group-prime)) t
   :test eql
   :hints ((\"Goal\"
            :in-theory
@@ -117,9 +117,9 @@
                 ((g (/ 40 10) (/ 50 10)) (mv 40 50))))
 
  (add-io-pairs
-  (((rtl::primep (primes::secp256k1-field-prime)) t)
-   ((rtl::primep (primes::bn-254-group-prime)) t)
-   ((rtl::primep (primes::baby-jubjub-subgroup-prime)) t))
+  (((primep (primes::secp256k1-field-prime)) t)
+   ((primep (primes::bn-254-group-prime)) t)
+   ((primep (primes::baby-jubjub-subgroup-prime)) t))
   :debug t
   :hints ((\"Goal\"
            :in-theory

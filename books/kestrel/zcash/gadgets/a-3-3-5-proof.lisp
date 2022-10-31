@@ -72,7 +72,7 @@
   :hints (("Goal" :in-theory (enable PFIELD::MUL-OF-ADD-ARG2))))
 
 (defthmd solve-for-u3
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep a p)
                 (fep b p)
                 (fep u3/num p))
@@ -87,7 +87,7 @@
   (implies (and (syntaxp (quotep y))
                 (fep z p)
                 (fep y p)
-                (rtl::primep p)
+                (acl2::primep p)
                 (< 2 p))
            (equal (equal x (div y z p))
                   (if (equal 0 z)
@@ -226,7 +226,7 @@
                 (fep c p)
                 (fep v3/num p)
                 (not (equal 0 c))
-                (RTL::PRIMEP P))
+                (ACL2::PRIMEP P))
            (equal (equal '0 (add a (add b (mul v3/num c p) p) p))
                   (equal v3/num (div (neg (add a b p) p) c p))))
   :hints (("Goal" :in-theory (enable PFIELD::EQUAL-OF-DIV-ALT))))
@@ -237,7 +237,7 @@
 (defthmd collect-mults
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (add x (mul k (mul x y p) p) p)
                   (mul x (add 1 (mul k y p) p) p))))
 
@@ -246,7 +246,7 @@
   (implies (and (fep x p)
                 (fep a p)
                 (fep b p)
-                (rtl::primep p)
+                (acl2::primep p)
                 (< 2 p)
                 (not (equal a 0)))
            (equal (equal a (div b x p))

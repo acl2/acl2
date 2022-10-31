@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;for rtl::primep
+(include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;for primep
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
@@ -20,22 +20,22 @@
 ;; not with primality.
 
 (defthm equal-of-0-and-mod-of-*-when-primep
-  (implies (and (rtl::primep p)
+  (implies (and (primep p)
                 (integerp x)
                 (integerp y))
            (equal (equal 0 (mod (* x y) p))
                   (or (equal 0 (mod x p))
                       (equal 0 (mod y p)))))
-  :hints (("Goal" :use (:instance rtl::euclid
+  :hints (("Goal" :use (:instance acl2::euclid
                                   (a x)
                                   (b y)
                                   (p p))
-           :in-theory (enable rtl::divides
+           :in-theory (enable acl2::divides
                               acl2::integerp-of-*-of-/-becomes-equal-of-0-and-mod))))
 
 ;; Another way to phrase equal-of-0-and-mod-of-*-when-primep
 (defthm <-of-0-and-mod-of-*-when-primep
-  (implies (and (rtl::primep p)
+  (implies (and (primep p)
                 (integerp x)
                 (integerp y))
            (equal (< 0 (mod (* x y) p))
@@ -46,7 +46,7 @@
 
 
 (defthm equal-of-0-and-mod-of-expt-when-primep
-  (implies (and (rtl::primep n)
+  (implies (and (primep n)
                 (natp i)
                 (integerp a))
            (equal (equal 0 (acl2::mod (expt a i) n))
@@ -56,7 +56,7 @@
 
 ;; Another way to phrase equal-of-0-and-mod-of-expt-when-primep
 (defthm <-of-0-and-mod-of-expt-when-primep
-  (implies (and (rtl::primep n)
+  (implies (and (primep n)
                 (natp i)
                 (integerp a))
            (equal (< 0 (acl2::mod (expt a i) n))

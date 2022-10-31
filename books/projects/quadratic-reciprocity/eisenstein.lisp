@@ -2,7 +2,7 @@
 ;; david@russinoff.com
 ;; http://www.russinoff.com
 
-(in-package "RTL")
+(in-package "ACL2")
 
 (local (include-book "support/eisenstein"))
 
@@ -95,8 +95,8 @@
 ;; positives((p-1)/2).  It follows that these two lists have the same
 ;; sum:
 
-(defthm perm-plus-list
-  (implies (perm l m)
+(defthm permutationp-plus-list
+  (implies (permutationp l m)
 	   (equal (plus-list l) (plus-list m)))
   :rule-classes ())
 
@@ -129,7 +129,7 @@
 (defun fl-prods (n m p)
   (if (zp n)
       ()
-      (cons (fl (/ (* m n) p))
+      (cons (rtl::fl (/ (* m n) p))
             (fl-prods (1- n) m p))))
 
 (defthm fl-mod-plus-list
@@ -310,7 +310,7 @@
 (defthm wins1-upper-bnd
     (implies (and (not (zp p))
 		  (natp a))
-	     (<= (wins1 a (mults i p)) (fl (/ a p))))
+	     (<= (wins1 a (mults i p)) (rtl::fl (/ a p))))
   :rule-classes ())
 
 (defthm monotone-wins1
@@ -325,8 +325,8 @@
 		(integerp n)
 		(integerp a)
 		(not (divides p a))
-                (<= (fl (/ a p)) n))
-           (<= (fl (/ a p)) (wins1 a (mults n p))))
+                (<= (rtl::fl (/ a p)) n))
+           (<= (rtl::fl (/ a p)) (wins1 a (mults n p))))
   :rule-classes ())
 
 (defthm leq-times-fl
@@ -335,7 +335,7 @@
 		  (not (zp d))
 		  (not (zp b))
 		  (<= (* a b) (* c d)))
-	     (<= (fl (/ a d)) (fl (/ c b))))
+	     (<= (rtl::fl (/ a d)) (rtl::fl (/ c b))))
   :rule-classes ())
 
 (defthm leq-fl-times
@@ -346,7 +346,7 @@
 		  (oddp p)
 		  (oddp q)
 		  (<= j (/ (1- p) 2)))
-	     (<= (fl (/ (* j q) p)) (/ (1- q) 2))))
+	     (<= (rtl::fl (/ (* j q) p)) (/ (1- q) 2))))
 
 (defthm wins1-lower-bnd
     (implies (and (not (zp j))
@@ -357,7 +357,7 @@
 		  (oddp p)
 		  (oddp q)
 		  (<= j (/ (1- p) 2)))
-	     (<= (fl (/ (* j q) p))
+	     (<= (rtl::fl (/ (* j q) p))
 		 (wins1 (* j q) (mults (/ (1- q) 2) p)))))
 
 (defthm equal-fl-wins1
@@ -370,7 +370,7 @@
 		(oddp q)
 		(<= j (/ (1- p) 2)))
            (equal (wins1 (* j q) (mults (+ -1/2 (* 1/2 q)) p))
-                  (fl (/ (* j q) p)))))
+                  (rtl::fl (/ (* j q) p)))))
 
 (defthm equal-wins-plus-list
   (implies (and (not (zp j))

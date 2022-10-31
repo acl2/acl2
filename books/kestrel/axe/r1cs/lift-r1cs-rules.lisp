@@ -523,7 +523,7 @@
   (implies (and (bitp x)
                 (bitp z)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal (mul 2 (mul x z p) p) (add z (add (neg y p) x p) p))
                   (equal y (acl2::bitxor x z)))))
 
@@ -531,7 +531,7 @@
   (implies (and (bitp x)
                 (bitp z)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal (mul 2 (mul z x p) p)
                          (add z (add (neg y p) x p) p))
                   (equal y (acl2::bitxor x z)))))
@@ -540,7 +540,7 @@
   (implies (and (bitp x)
                 (bitp z)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal (mul 2 (mul x z p) p) (add (neg y p) (add z x p) p))
                   (equal y (acl2::bitxor x z)))))
 
@@ -548,7 +548,7 @@
   (implies (and (bitp x)
                 (bitp z)
                 (fep y p)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (equal (mul 2 (mul z x p) p) (add (neg y p) (add z x p) p))
                   (equal y (acl2::bitxor x z)))))
 

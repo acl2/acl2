@@ -70,7 +70,7 @@
                            (acl2::eval-polynomial-*)))))
 
 (defthm fep-euclidean
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -78,26 +78,26 @@
            (not (equal (mul a b p) 0)))
   :rule-classes nil
   :hints (("Goal"
-           :use ((:instance rtl::euclid
-                            (rtl::p p)
-                            (rtl::a a)
-                            (rtl::b b))
-                 (:instance rtl::divides-mod-0
-                            (rtl::n p)
-                            (rtl::a a))
-                 (:instance rtl::divides-mod-0
-                            (rtl::n p)
-                            (rtl::a b))
-                 (:instance rtl::divides-mod-0
-                            (rtl::n p)
-                            (rtl::a (* a b)))
+           :use ((:instance acl2::euclid
+                            (acl2::p p)
+                            (acl2::a a)
+                            (acl2::b b))
+                 (:instance acl2::divides-mod-0
+                            (acl2::n p)
+                            (acl2::a a))
+                 (:instance acl2::divides-mod-0
+                            (acl2::n p)
+                            (acl2::a b))
+                 (:instance acl2::divides-mod-0
+                            (acl2::n p)
+                            (acl2::a (* a b)))
                  )
            :in-theory (enable mul))))
 
 (defthm pfield-polynomial-root-of-product
   (implies (and (acl2::integer-polynomial-p poly1)
                 (acl2::integer-polynomial-p poly2)
-                (rtl::primep p)
+                (acl2::primep p)
                 (fep x p))
            (equal (pfield-polynomial-root-p (acl2::polynomial-* poly1 poly2) x p)
                   (or (pfield-polynomial-root-p poly1 x p)
@@ -132,7 +132,7 @@
 (defthm pfield-polynbomial-num-roots-aux-of-product
   (implies (and (acl2::integer-polynomial-p poly1)
                 (acl2::integer-polynomial-p poly2)
-                (rtl::primep p)
+                (acl2::primep p)
                 (fep x p))
            (<= (pfield-polynomial-num-roots-aux (acl2::polynomial-* poly1 poly2) x p)
                (+ (pfield-polynomial-num-roots-aux poly1 x p)
@@ -150,7 +150,7 @@
 (defthm pfield-polynbomial-num-roots-of-product
   (implies (and (acl2::integer-polynomial-p poly1)
                 (acl2::integer-polynomial-p poly2)
-                (rtl::primep p))
+                (acl2::primep p))
            (<= (pfield-polynomial-num-roots (acl2::polynomial-* poly1 poly2) p)
                (+ (pfield-polynomial-num-roots poly1 p)
                   (pfield-polynomial-num-roots poly2 p))))
@@ -202,7 +202,7 @@
            :in-theory (enable fep add neg))))
 
 (defthm cancel-mul-arg2
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep y p)
                 (fep z p)
                 (integerp x)
@@ -238,7 +238,7 @@
            (equal (car (last poly)) (cadr poly))))
 
 (defthm root-of-linear-pfield-polynomial
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (non-trivial-pfield-polynomial-p poly p)
                 (equal (len poly) 2)
                 (fep x p))
@@ -272,7 +272,7 @@
   )
 
 (defthm num-roots-aux-of-linear-pfield-polynomial-part1
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (non-trivial-pfield-polynomial-p poly p)
                 (equal (len poly) 2)
                 (fep x p)
@@ -313,7 +313,7 @@
             :in-theory (enable fep neg)))))
 
 (defthm num-roots-aux-of-linear-pfield-polynomial-part2
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (non-trivial-pfield-polynomial-p poly p)
                 (equal (len poly) 2)
                 (fep x p)
@@ -342,7 +342,7 @@
            :in-theory (enable pfield-polynomial-num-roots-aux))))
 
 (defthm num-roots-aux-of-linear-pfield-polynomial-part3a
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (non-trivial-pfield-polynomial-p poly p)
                 (equal (len poly) 2)
                 (fep x p)
@@ -368,7 +368,7 @@
 
 (local
  (defthm num-roots-zero-when-root-is-zero
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (non-trivial-pfield-polynomial-p poly p)
                 (equal (len poly) 2)
                 (fep x p)
@@ -396,7 +396,7 @@
               :in-theory (enable fep)))))
 
   (defthm num-roots-aux-of-linear-pfield-polynomial-part3
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (non-trivial-pfield-polynomial-p poly p)
                   (equal (len poly) 2)
                   (fep x p)
@@ -445,7 +445,7 @@
   )
 
 (defthm num-roots-aux-of-linear-pfield-polynomial-upper-bound
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (non-trivial-pfield-polynomial-p poly p)
                 (equal (len poly) 2)
                 (fep x p))
@@ -458,7 +458,7 @@
                  (:instance num-roots-aux-of-linear-pfield-polynomial-part3)))))
 
 (defthm num-roots-of-linear-pfield-polynomial-upper-bound
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (non-trivial-pfield-polynomial-p poly p)
                 (equal (len poly) 2))
            (<= (pfield-polynomial-num-roots poly p)
@@ -572,7 +572,7 @@
 (defthm root-remainder
   (implies (and (acl2::integer-polynomial-p poly)
                 (integerp a)
-                (rtl::primep p)
+                (acl2::primep p)
                 (pfield-polynomial-root-p poly a p))
            (equal (mod (car (divide-polynomial-with-remainder-by-x+a poly (- a)))
                        p)
@@ -628,7 +628,7 @@
      (implies (and (acl2::integer-polynomial-p poly)
                    (integerp a)
                    (integerp x)
-                   (rtl::primep p)
+                   (acl2::primep p)
                    (pfield-polynomial-root-p poly a p))
               (equal (eval-pfield-polynomial poly x p)
                      (eval-pfield-polynomial
@@ -667,7 +667,7 @@
 
   (defthm eval-poly-with-root
     (implies (and (acl2::integer-polynomial-p poly)
-                  (rtl::primep p)
+                  (acl2::primep p)
                   (integerp a)
                   (fep x p)
                   (pfield-polynomial-root-p poly a p))
@@ -709,7 +709,7 @@
 
 
 ;; (defthm roots-of-x-a
-;;   (implies (and (rtl::primep p)
+;;   (implies (and (acl2::primep p)
 ;;                 (fep a p)
 ;;                 (fep b p))
 ;;            (equal (pfield-polynomial-root-p `(,(- a) 1) b p)
@@ -722,7 +722,7 @@
 ;;   )
 
 ;; (defthm num-roots-aux-of-x-a-part1
-;;   (implies (and (rtl::primep p)
+;;   (implies (and (acl2::primep p)
 ;;                 (fep a p)
 ;;                 (fep b p)
 ;;                 (< b a))
@@ -741,7 +741,7 @@
 
 
 ;; (defthm num-roots-aux-of-x-a-part2
-;;   (implies (and (rtl::primep p)
+;;   (implies (and (acl2::primep p)
 ;;                 (fep a p)
 ;;                 (not (= 0 a))
 ;;                 (fep b p))
@@ -767,7 +767,7 @@
 ;;   )
 
 ;; (defthm num-roots-aux-of-x-a-part3
-;;   (implies (and (rtl::primep p)
+;;   (implies (and (acl2::primep p)
 ;;                 (fep a p)
 ;;                 (= 0 a)
 ;;                 (fep b p))
@@ -784,7 +784,7 @@
 ;;           ))
 
 ;; (defthm num-roots-aux-of-x-a
-;;   (implies (and (rtl::primep p)
+;;   (implies (and (acl2::primep p)
 ;;                 (fep a p)
 ;;                 (fep b p))
 ;;            (equal (pfield-polynomial-num-roots-aux `(,(- a) 1) b p)
@@ -799,7 +799,7 @@
 
 
 ;; (defthm num-roots-of-x-a-upper-bound
-;;   (implies (and (rtl::primep p)
+;;   (implies (and (acl2::primep p)
 ;;                 (fep a p))
 ;;            (<= (pfield-polynomial-num-roots `(,(- a) 1) p) 1))
 ;;   :rule-classes nil
@@ -868,7 +868,7 @@
 
 (defthmd find-polynomial-root-is-largest-root
   (implies (and (< (find-polynomial-root poly p) y)
-                (rtl::primep p)
+                (acl2::primep p)
                 (fep y p))
            (not (pfield-polynomial-root-p poly y p)))
   :hints (("Goal"
@@ -944,7 +944,7 @@
 ;; (defthm zero-of-remainder-when-zero-polynomials
 ;;   (implies (and (acl2::integer-polynomial-p poly)
 ;;                 (consp poly)
-;;                 (rtl::primep p)
+;;                 (acl2::primep p)
 ;;                 (zero-pfield-polynomial-p poly P)
 ;;                 (acl2::integer-polynomial-p poly2)
 ;;                 (consp poly2)
@@ -973,7 +973,7 @@
 
 ;; (defthm zero-polynomial-divide-zero-polynomial
 ;;   (implies (and (acl2::integer-polynomial-p poly)
-;;                 (rtl::primep p)
+;;                 (acl2::primep p)
 ;;                 (zero-pfield-polynomial-p poly P)
 ;;                 (integerp a))
 ;;            (zero-pfield-polynomial-p
@@ -1010,7 +1010,7 @@
 ;;            :in-theory (enable zero-pfield-polynomial-p))))
 
 ;; (defthm not-zero-pfield-polynomia-len1-has-non-zero-coeffs
-;;   (implies (and (rtl::primep p)
+;;   (implies (and (acl2::primep p)
 ;;                 (acl2::integer-polynomial-p poly)
 ;;                 (not (zero-pfield-polynomial-p poly p))
 ;;                 (= 1 (len poly)))
@@ -1024,7 +1024,7 @@
 ;;            :in-theory (enable zero-pfield-polynomial-p))))
 
 ;; (defthm not-zero-pfield-linear-polynomia-has-non-zero-coeffs
-;;   (implies (and (rtl::primep p)
+;;   (implies (and (acl2::primep p)
 ;;                 (acl2::integer-polynomial-p poly)
 ;;                 (not (zero-pfield-polynomial-p poly p))
 ;;                 (= 2 (len poly)))
@@ -1054,7 +1054,7 @@
 ;;            )))
 
 ;; (defthm non-zero-divide-polynomial-with-remainder-by-x+a-base
-;;   (implies (and (rtl::primep p)
+;;   (implies (and (acl2::primep p)
 ;;                 (acl2::integer-polynomial-p poly)
 ;;                 (not (zero-pfield-polynomial-p poly p))
 ;;                 (= 2 (len poly))
@@ -1089,7 +1089,7 @@
 
 
 (defthm non-trivial-divide-polynomial-with-remainder-by-x+a
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (non-trivial-pfield-polynomial-p poly p)
                 (<= 2 (len poly))
                 (consp poly)
@@ -1136,7 +1136,7 @@
                               acl2::eval-polynomial))))
 
 (defthm root-of-x-a
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep a p)
                 (fep x p))
            (iff (equal 0 (eval-pfield-polynomial (list (- a) 1) x p))
@@ -1157,7 +1157,7 @@
 
 (defthm roots-of-divide-polynomial-with-remainder-by-x+a
   (implies (and (acl2::integer-polynomial-p poly)
-                (rtl::primep p)
+                (acl2::primep p)
                 (integerp a)
                 (fep x p)
                 (pfield-polynomial-root-p poly a p))
@@ -1195,7 +1195,7 @@
 
 (defthm num-roots-aux-of-divide-polynomial-with-remainder-by-x+a-part1
   (implies (and (acl2::integer-polynomial-p poly)
-                (rtl::primep p)
+                (acl2::primep p)
                 (integerp a)
                 (pfield-polynomial-root-p poly a p)
                 (fep x p)
@@ -1221,7 +1221,7 @@
 
 (defthm num-roots-aux-of-divide-polynomial-with-remainder-by-x+a-part2
   (implies (and (acl2::integer-polynomial-p poly)
-                (rtl::primep p)
+                (acl2::primep p)
                 (integerp a)
                 (pfield-polynomial-root-p poly a p)
                 (fep x p)
@@ -1246,7 +1246,7 @@
 
 (defthm num-roots-aux-of-divide-polynomial-with-remainder-by-x+a-part3
   (implies (and (acl2::integer-polynomial-p poly)
-                (rtl::primep p)
+                (acl2::primep p)
                 (integerp a)
                 (pfield-polynomial-root-p poly a p)
                 (fep x p)
@@ -1278,7 +1278,7 @@
 
 (defthm num-roots-aux-of-divide-polynomial-with-remainder-by-x+a
   (implies (and (acl2::integer-polynomial-p poly)
-                (rtl::primep p)
+                (acl2::primep p)
                 (integerp a)
                 (pfield-polynomial-root-p poly a p)
                 (fep x p))
@@ -1302,7 +1302,7 @@
 
 (defthm num-roots-of-divide-polynomial-with-remainder-by-x+a
   (implies (and (acl2::integer-polynomial-p poly)
-                (rtl::primep p)
+                (acl2::primep p)
                 (integerp a)
                 (pfield-polynomial-root-p poly a p))
            (<= (pfield-polynomial-num-roots poly p)
@@ -1328,7 +1328,7 @@
            :in-theory (enable non-trivial-pfield-polynomial-p))))
 
 (defthm num-roots-of-poly-upper-bound
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (non-trivial-pfield-polynomial-p poly p)
                 (<= 2 (len poly))
                 )
@@ -1441,7 +1441,7 @@
                             sub)
                            (acl2::eval-polynomial)))))
 (defthm roots-of-x^k-1
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (x^k-1-polynomial-p poly)
                 (equal (len poly) p)
                 (fep x p)
@@ -1460,7 +1460,7 @@
                            (my-fermat-little)))))
 
 (defthm num-roots-aux-of-x^k-1
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (x^k-1-polynomial-p poly)
                 (equal (len poly) p)
                 (fep x p))
@@ -1476,7 +1476,7 @@
           ))
 
 (defthm num-roots-of-x^k-1
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (x^k-1-polynomial-p poly)
                 (equal (len poly) p))
            (equal (pfield-polynomial-num-roots poly p)
@@ -1491,7 +1491,7 @@
            :in-theory (enable pfield-polynomial-num-roots))))
 
 (defthm num-roots-of-fermat-poly
-  (implies (rtl::primep p)
+  (implies (acl2::primep p)
            (equal (pfield-polynomial-num-roots (fermat-poly (1- p)) p)
                   (1- p)))
   :rule-classes nil
@@ -1769,7 +1769,7 @@
 (defthm num-roots-fermat-poly-n*k
   (implies (and (posp n)
                 (posp k)
-                (rtl::primep p)
+                (acl2::primep p)
                 (equal (* n k) (1- p)))
            (equal (pfield-polynomial-num-roots (fermat-poly (* n k)) p)
                   (* n k)))
@@ -1780,7 +1780,7 @@
 (defthm num-roots-fermat-poly-product
   (implies (and (posp n)
                 (posp k)
-                (rtl::primep p)
+                (acl2::primep p)
                 (equal (* n k) (1- p)))
            (<= (* n k)
                (+ (pfield-polynomial-num-roots (fermat-poly n) p)
@@ -1809,7 +1809,7 @@
   )
 
 (defthm num-roots-fermat-poly-upper-bound
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (posp n))
            (<= (pfield-polynomial-num-roots (fermat-poly n) p)
                n))
@@ -1873,7 +1873,7 @@
                     (:instance lemma-1))))))
 
   (defthm num-roots-fermat-poly-aux-k-times+1-upper-bound
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (posp k)
                   (<= 2 k)
                   (posp n))
@@ -1899,7 +1899,7 @@
   (implies (and (posp n)
                 (posp k)
                 (<= 2 k)
-                (rtl::primep p)
+                (acl2::primep p)
                 (equal (* n k) (1- p)))
            (equal (pfield-polynomial-num-roots (fermat-poly n) p) n))
   :rule-classes nil
@@ -1912,7 +1912,7 @@
   (implies (and (posp n)
                 (posp k)
                 (= 1 k)
-                (rtl::primep p)
+                (acl2::primep p)
                 (equal (* n k) (1- p)))
            (equal (pfield-polynomial-num-roots (fermat-poly n) p) n))
   :rule-classes nil
@@ -1922,7 +1922,7 @@
 (defthm num-roots-fermat-poly-divisor
   (implies (and (posp n)
                 (posp k)
-                (rtl::primep p)
+                (acl2::primep p)
                 (equal (* n k) (1- p)))
            (equal (pfield-polynomial-num-roots (fermat-poly n) p) n))
   :rule-classes nil
@@ -1932,8 +1932,8 @@
 
 (defthm num-roots-fermat-poly-divisor-implicit
   (implies (and (posp n)
-                (rtl::primep p)
-                (rtl::divides n (1- p)))
+                (acl2::primep p)
+                (acl2::divides n (1- p)))
            (equal (pfield-polynomial-num-roots (fermat-poly n) p) n))
   :rule-classes nil
   :hints (("Goal"
@@ -1941,5 +1941,5 @@
                             (n n)
                             (k (/ (1- p) n))
                             (p p)))
-           :in-theory (enable rtl::divides)
+           :in-theory (enable acl2::divides)
            )))

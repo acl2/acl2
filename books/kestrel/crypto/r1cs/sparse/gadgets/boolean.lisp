@@ -37,7 +37,7 @@
 (defthm make-boolean-constraint-correct
   (implies (and (r1cs-valuationp valuation p)
                 (valuation-bindsp valuation var-name)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (r1cs-constraint-holdsp (make-boolean-constraint var-name) valuation p)
                   (bitp (lookup-eq var-name valuation))))
   :hints (("Goal" :in-theory (enable make-boolean-constraint

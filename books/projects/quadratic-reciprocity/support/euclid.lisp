@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "ACL2")
 
 ;; This book contains proofs of two theorems of Euclid:
 
@@ -85,7 +85,7 @@
                   (not (= n 0)))
 	     (iff (divides n (- a b))
 		  (= (mod a n) (mod b n))))
-  :use (mod-equal-int mod-equal-int-reverse)
+  :use (rtl::mod-equal-int rtl::mod-equal-int-reverse)
   :rule-classes ())
 
 (defthm divides-mod-0
@@ -400,4 +400,3 @@
 			(:instance divides-sum (x p) (y (* (r-int p a) p b)) (z (* (s-int p a) a b)))
 			(:instance divides-product (x p) (y (* a b)) (z (s-int p a)))
 			(:instance divides-product (x p) (y p) (z (* b (r-int p a))))))))
-

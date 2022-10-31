@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "ACL2")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -119,7 +119,7 @@
            (equal (mod (* (expt (mod r p) j) s) p)
                   (mod (* (expt r j) s) p)))
   :hints (("Goal" :induct (mod-power-induct j r s))
-          ("Subgoal *1/2" :use ((:instance mod-mod-times (n p) (a r) (b (* (expt (mod r p) (1- j)) s)))))))
+          ("Subgoal *1/2" :use ((:instance rtl::mod-mod-times (n p) (a r) (b (* (expt (mod r p) (1- j)) s)))))))
 
 ;; We shall show that if k is the (non-nil) order of r mod p, then for any natural m,
 ;; r^m mod p = 1 iff k divides m:
@@ -155,9 +155,9 @@
                   (mod (expt r (mod m (order r p))) p)))
   :hints (("Goal" :in-theory (enable divides)
                   :use (order-1 order-bounds 
-                        (:instance order-divides-1 (m (* (order r p) (fl (/ m (order r p))))))
-                        (:instance mod-def (x m) (y (order r p)))
-                        (:instance mod-mod-times (n p) (a (expt r (* (order r p) (fl (/ m (order r p)))))) (b (expt r (mod m (order r p)))))))))
+                        (:instance order-divides-1 (m (* (order r p) (rtl::fl (/ m (order r p))))))
+                        (:instance rtl::mod-def (x m) (y (order r p)))
+                        (:instance rtl::mod-mod-times (n p) (a (expt r (* (order r p) (rtl::fl (/ m (order r p)))))) (b (expt r (mod m (order r p)))))))))
 
 (local-defthmd order-divides-3
   (implies (and (not (zp p))
@@ -170,7 +170,7 @@
   :hints (("Goal" :in-theory (enable divides)
                   :use (order-bounds order-divides-2
                         (:instance order-minimal (j (mod m (order r p))))
-                        (:instance mod-0-int (n (order r p)))))))
+                        (:instance rtl::mod-0-int (n (order r p)))))))
 
 (defthmd order-divides
   (implies (and (natp p)
@@ -216,7 +216,7 @@
                   :cases ((= r 0))
                   :use (order-bounds
                         (:instance order-divides (m (* (order r p) j)))
-                        (:instance mod-mod-times (n p) (a (expt r (* (order r p) j))) (b (expt r (- i j))))))))
+                        (:instance rtl::mod-mod-times (n p) (a (expt r (* (order r p) j))) (b (expt r (- i j))))))))
 
 (in-theory (disable order))
 
@@ -244,7 +244,7 @@
            (equal (mod (expt r (+ i (* (1- (order r p)) j))) p)
                   (mod (* (mod (expt r j) p) (expt r (* (1- (order r p)) j))) p)))
   :hints (("Goal" :use (order-bounds powers-distinct-2
-                        (:instance mod-mod-times (n p) (a (expt r i)) (b (expt r (* (1- (order r p)) j))))))))
+                        (:instance rtl::mod-mod-times (n p) (a (expt r i)) (b (expt r (* (1- (order r p)) j))))))))
 
 (local-defthmd powers-distinct-4
   (implies (and (not (zp p))
@@ -262,7 +262,7 @@
   :hints (("Goal" :in-theory (enable divides)
                   :use (order-bounds powers-distinct-2
                         (:instance order-divides (m (* (order r p) j)))
-                        (:instance mod-mod-times (n p) (a (expt r j)) (b (expt r (* (1- (order r p)) j))))))))
+                        (:instance rtl::mod-mod-times (n p) (a (expt r j)) (b (expt r (* (1- (order r p)) j))))))))
 
 (local-defthmd powers-distinct-5
   (implies (and (not (zp p))
@@ -372,12 +372,12 @@
            (equal (len (mod-powers r p n))
                   n)))
 
-(defthmd perm-powers
+(defthmd permutationp-powers
   (implies (and (natp p)
                 (> p 1)
                 (max-order-p r p))
-           (perm (positives (1- p))
-                 (mod-powers r p (1- p))))                 
+           (permutationp (positives (1- p))
+                         (mod-powers r p (1- p))))                 
   :hints (("Goal" :use ((:instance powers-distinct (m (1- p)))
                         (:instance pigeonhole-principle (l (mod-powers r p (1- p))))))))
 
@@ -391,10 +391,10 @@
                 (divides q p)
                 (divides q a))
            (divides q (mod (* a b) p)))
-  :hints (("Goal" :use ((:instance mod-def (x (* a b)) (y p))
+  :hints (("Goal" :use ((:instance rtl::mod-def (x (* a b)) (y p))
                         (:instance divides-product (x q) (y a) (z b))
-                        (:instance divides-product (x q) (y p) (z (- (fl (/ (* a b) p)))))
-                        (:instance divides-sum (x q) (y (* a b)) (z (- (* p (fl (/ (* a b) p))))))))))
+                        (:instance divides-product (x q) (y p) (z (- (rtl::fl (/ (* a b) p)))))
+                        (:instance divides-sum (x q) (y (* a b)) (z (- (* p (rtl::fl (/ (* a b) p))))))))))
 
 (defthmd divides-mod-power
   (implies (and (not (zp p))
@@ -405,9 +405,9 @@
   :hints (("Goal" :induct (fact k))
           ("Subgoal *1/2" :cases ((= q p))
                           :use ((:instance divides-leq (x q) (y p))
-                                (:instance mod-def (x p) (y p))))
+                                (:instance rtl::mod-def (x p) (y p))))
           ("Subgoal *1/1" :use ((:instance divides-mod-prod (a (mod (expt q (1- k)) p)) (b q))
-                                (:instance mod-mod-times (a (expt q (1- k))) (b q) (n p))))))
+                                (:instance rtl::mod-mod-times (a (expt q (1- k))) (b q) (n p))))))
 
 ;; It follows that if q divides p and r has order p-1 mod p, 
 ;; then since q = r^j mod p, q must divide
@@ -487,7 +487,7 @@
                 (divides x p))
            (equal x 1))
   :rule-classes ()
-  :hints (("Goal" :use (mod-power-must-be-1 perm-powers (:instance perm-member (a (positives (1- p))) (b (mod-powers r p (1- p))))))))
+  :hints (("Goal" :use (mod-power-must-be-1 permutationp-powers (:instance permutationp-member (a (positives (1- p))) (b (mod-powers r p (1- p))))))))
 
 (defthm max-order-p-prime
   (implies (and (not (zp p))
@@ -725,8 +725,8 @@
   (if (zp e)
       r
     (if (zp (mod e 2))
-        (fast-mod-expt-mul (mod (* b b) n) (fl (/ e 2)) n r)
-      (fast-mod-expt-mul (mod (* b b) n) (fl (/ e 2)) n (mod (* r b) n)))))
+        (fast-mod-expt-mul (mod (* b b) n) (rtl::fl (/ e 2)) n r)
+      (fast-mod-expt-mul (mod (* b b) n) (rtl::fl (/ e 2)) n (mod (* r b) n)))))
 
 (defun fast-mod-expt (b e n) (fast-mod-expt-mul b e n 1))
 
@@ -738,7 +738,7 @@
                 (natp q))
            (equal (mod (* (expt (mod (* b b) n) q) r) n)
                   (mod (* (mod (expt (mod (* b b) n) q) n) r) n)))
-  :hints (("Goal" :use ((:instance mod-mod-times (a (expt (mod (* b b) n) q)) (b r))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a (expt (mod (* b b) n) q)) (b r))))))
 
 (local-defthmd emm-2
   (implies (and (natp n)
@@ -758,7 +758,7 @@
                 (natp q))
            (equal (mod (* (mod (expt b (* 2 q)) n) r) n)
                   (mod (* (expt b (* 2 q)) r) n)))
-  :hints (("Goal" :use ((:instance mod-mod-times (a (expt b (* 2 q))) (b r))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a (expt b (* 2 q))) (b r))))))
 
 (local-defthmd emm-4
   (implies (and (natp n)
@@ -778,7 +778,7 @@
                 (natp q))
            (equal (mod (* (expt (mod (* b b) n) q) (mod (* r b) n)) n)
                   (mod (* (expt (mod (* b b) n) q) r b) n)))
-  :hints (("Goal" :use ((:instance mod-mod-times (a (* r b)) (b (expt (mod (* b b) n) q)))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a (* r b)) (b (expt (mod (* b b) n) q)))))))
 
 (local-defthmd emm-6
   (implies (and (natp n)
@@ -788,7 +788,7 @@
                 (natp q))
            (equal (mod (* (expt (mod (* b b) n) q) r b) n)
                   (mod (* (mod (expt (mod (* b b) n) q) n) r b) n)))
-  :hints (("Goal" :use ((:instance mod-mod-times (a (expt (mod (* b b) n) q)) (b (* r b)))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a (expt (mod (* b b) n) q)) (b (* r b)))))))
 
 (local-defthmd emm-7
   (implies (and (natp n)
@@ -808,7 +808,7 @@
                 (natp q))
            (equal (mod (* (mod (expt b (* 2 q)) n) r b) n)
                   (mod (* (expt b (* 2 q)) r b) n)))
-  :hints (("Goal" :use ((:instance mod-mod-times (a (expt b (* 2 q))) (b (* r b)))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a (expt b (* 2 q))) (b (* r b)))))))
 
 (local-defthmd emm-9
   (implies (and (natp n)
@@ -832,14 +832,14 @@
   :hints (("Goal" :induct (fast-mod-expt-mul b e n r))
           ("Subgoal *1/3" :expand ((fast-mod-expt-mul b e n r))
                           :use (fast-mod-expt-mul 
-                                (:instance emm-9 (q (fl (/ e 2))))
-                                (:instance mod012 (m e))
-                                (:instance mod-def (x e) (y 2))))
+                                (:instance emm-9 (q (rtl::fl (/ e 2))))
+                                (:instance rtl::mod012 (m e))
+                                (:instance rtl::mod-def (x e) (y 2))))
           ("Subgoal *1/2" :expand ((fast-mod-expt-mul b e n r))
                           :use (fast-mod-expt-mul 
-                                (:instance emm-4 (q (fl (/ e 2))))
-                                (:instance mod012 (m e))
-                                (:instance mod-def (x e) (y 2))))))
+                                (:instance emm-4 (q (rtl::fl (/ e 2))))
+                                (:instance rtl::mod012 (m e))
+                                (:instance rtl::mod-def (x e) (y 2))))))
 
 (defthm fast-mod-expt-rewrite
   (implies (and (natp b)

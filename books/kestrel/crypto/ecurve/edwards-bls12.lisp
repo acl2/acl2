@@ -15,7 +15,7 @@
 
 (include-book "kestrel/crypto/ecurve/twisted-edwards" :dir :system)
 (acl2::merge-io-pairs
- rtl::primep
+ acl2::primep
  (include-book "kestrel/crypto/primes/bls12-377-prime" :dir :system)
  (include-book "kestrel/crypto/primes/edwards-bls12-377-subgroup-prime" :dir :system))
 (include-book "std/util/defval" :dir :system)
@@ -47,7 +47,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edwards-bls12-q ()
-  :returns (q rtl::primep)
+  :returns (q acl2::primep)
   :short "The edwards-bls12 base field prime @($F_q$)."
   :long
   (xdoc::topstring
@@ -328,7 +328,7 @@
   ///
 
   (defrule primep-of-edwards-bls12-r
-    (rtl::primep (edwards-bls12-r)))
+    (acl2::primep (edwards-bls12-r)))
 
   (in-theory (disable (:e edwards-bls12-r))))
 

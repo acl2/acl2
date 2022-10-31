@@ -34,7 +34,7 @@
                 (force (valuation-bindsp valuation a))
                 (force (valuation-bindsp valuation b))
                 (force (valuation-bindsp valuation c))
-                (rtl::primep prime))
+                (acl2::primep prime))
            (equal (r1cs-constraint-holdsp (make-product-constraint a b c) valuation prime)
                   (equal (mul (lookup-equal a valuation)
                               (lookup-equal b valuation)

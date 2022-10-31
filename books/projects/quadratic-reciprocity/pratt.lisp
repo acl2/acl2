@@ -2,7 +2,7 @@
 ;; david@russinoff.com
 ;; http://www.russinoff.com
 
-(in-package "RTL")
+(in-package "ACL2")
 
 (include-book "euclid")
 (include-book "fermat")
@@ -10,7 +10,7 @@
 (local (include-book "support/pratt"))
 
 ;; Also defined in the RTL library.
-(defund fl (x)
+(defund rtl::fl (x)
   (declare (xargs :guard (real/rationalp x)))
   (floor x 1))
 
@@ -90,12 +90,12 @@
                 (< m p))
            (distinct-positives (mod-powers r p m) (1- p))))
 
-(defthmd perm-powers
+(defthmd permutationp-powers
   (implies (and (natp p)
                 (> p 1)
                 (max-order-p r p))
-           (perm (positives (1- p))
-                 (mod-powers r p (1- p)))))
+           (permutationp (positives (1- p))
+                         (mod-powers r p (1- p)))))
 
 ;; If q divides p, then q divides q^k mod p:
 
@@ -128,8 +128,8 @@
   (if (zp e)
       r
     (if (zp (mod e 2))
-        (fast-mod-expt-mul (mod (* b b) n) (fl (/ e 2)) n r)
-      (fast-mod-expt-mul (mod (* b b) n) (fl (/ e 2)) n (mod (* r b) n)))))
+        (fast-mod-expt-mul (mod (* b b) n) (rtl::fl (/ e 2)) n r)
+      (fast-mod-expt-mul (mod (* b b) n) (rtl::fl (/ e 2)) n (mod (* r b) n)))))
 
 (defun fast-mod-expt (b e n) (fast-mod-expt-mul b e n 1))
 

@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "ACL2")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -102,13 +102,13 @@
 ;; This result allows us to compute the product of the elements of
 ;; reflections((p-1)/2,m,p):
 
-(defthm perm-reflections
+(defthm permutationp-reflections
     (implies (and (primep p)
 		  (not (= p 2))
 		  (integerp m)
 		  (not (divides p m)))
-	     (perm (positives (/ (1- p) 2))
-		   (reflections (/ (1- p) 2) m p)))
+	     (permutationp (positives (/ (1- p) 2))
+                           (reflections (/ (1- p) 2) m p)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance reflections-distinct-positives (n (/ (1- p) 2)))
 			(:instance pigeonhole-principle (l (reflections (/ (1- p) 2) m p)))))))
@@ -120,14 +120,14 @@
 		  (not (divides p m)))
            (equal (times-list (reflections (+ -1/2 (* 1/2 p)) m p))
                   (fact (/ (1- p) 2))))
-  :hints (("Goal" :use (perm-reflections
-			(:instance perm-times-list
+  :hints (("Goal" :use (permutationp-reflections
+			(:instance permutationp-times-list
 				   (l1 (positives (/ (1- p) 2)))
 				   (l2 (reflections (/ (1- p) 2) m p)))))))
 
 ;;  We have an alternative method for computing the same product:
 
-(defthm mod-mult-2
+(defthm mod-mult-2-alt ; name conflict with arithmtic-5
     (implies (and (integerp n)
 		  (integerp m)
 		  (integerp a))
@@ -144,23 +144,23 @@
 			(mod (times-list (mod-prods n m p)) p)
 		      (mod (- (times-list (mod-prods n m p))) p))))
   :rule-classes ()
-  :hints (("Subgoal *1/3" :use ((:instance mod-times-mod
+  :hints (("Subgoal *1/3" :use ((:instance rtl::mod-times-mod
 					   (a (times-list (reflections (1- n) m p)))
 					   (b (times-list (mod-prods (1- n) m p)))
 					   (c (mod (* m n) p))
 					   (n p))
-				(:instance mod-times-mod
+				(:instance rtl::mod-times-mod
 					   (a (times-list (reflections (1- n) m p)))
 					   (b (- (times-list (mod-prods (1- n) m p))))
 					   (c (mod (* m n) p))
 					   (n p))))
 	  ("Subgoal *1/2" :use ((:instance evenp-oddp (m (mu (1- n) m p)))
-				(:instance mod-times-mod
+				(:instance rtl::mod-times-mod
 					   (a (times-list (reflections (1- n) m p)))
 					   (b (times-list (mod-prods (1- n) m p)))
 					   (c (- (mod (* m n) p)))
 					   (n p))
-				(:instance mod-times-mod
+				(:instance rtl::mod-times-mod
 					   (a (times-list (reflections (1- n) m p)))
 					   (b (- (times-list (mod-prods (1- n) m p))))
 					   (c (- (mod (* m n) p)))
@@ -198,7 +198,7 @@
 				   (a (- (fact (/ (1- p) 2)))) (b (expt m (/ (1- p) 2))) (c -1))
 			(:instance mod-mult (m -1) (a 1) (n p))
 			(:instance divides-product (x p) (y (- (fact (/ (1- p) 2)))) (z -1))
-			(:instance mod-times-mod
+			(:instance rtl::mod-times-mod
 				   (a (times-list (mod-prods (/ (1- p) 2) m p)))
 				   (b (* (fact (/ (1- p) 2)) (expt m (/ (1- p) 2))))
 				   (c -1)
@@ -241,9 +241,9 @@
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (equal (mu (+ -1/2 (* 1/2 p)) 2 p)
-		    (- (/ (1- p) 2) (fl (/ (1- p) 4)))))
+		    (- (/ (1- p) 2) (rtl::fl (/ (1- p) 4)))))
   :hints (("Goal" :use ((:instance mu-rewrite-lemma-1
-				   (k (fl (/ (1- p) 4)))
+				   (k (rtl::fl (/ (1- p) 4)))
 				   (n (/ (1- p) 2)))))))
 
 ;; Let k = fl(p/8) and m = mod(p,8).  Then p = 8*k + m.  It follows that
@@ -253,14 +253,14 @@
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (equal (mod p 8)
-		    (- p (* 8 (fl (/ p 8))))))
-  :hints (("Goal" :use ((:instance mod-def (x p) (y 8))))))
+		    (- p (* 8 (rtl::fl (/ p 8))))))
+  :hints (("Goal" :use ((:instance rtl::mod-def (x p) (y 8))))))
 
 (defthm mu-rewrite
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (equal (mu (+ -1/2 (* 1/2 p)) 2 p)
-		    (+ (* 2 (fl (/ p 8))) (- (/ (1- (mod p 8)) 2) (fl (/ (1- (mod p 8)) 4))))))
+		    (+ (* 2 (rtl::fl (/ p 8))) (- (/ (1- (mod p 8)) 2) (rtl::fl (/ (1- (mod p 8)) 4))))))
   :hints (("Goal" :in-theory (enable mu-rewrite-lemma-3))))
 
 ;; The desired result now follows by a simple case analysis:
@@ -276,10 +276,10 @@
 	     (member (mod p 8) '(1 3 5 7)))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable divides)
-		  :use ((:instance mod-def (x p) (y 8))
+		  :use ((:instance rtl::mod-def (x p) (y 8))
 			(:instance primep-no-divisor (d 2))
 			(:instance primep-no-divisor (d 8))
-			(:instance mod-bnd-1 (m p) (n 8))
+			(:instance rtl::mod-bnd-1 (m p) (n 8))
 			(:instance member-positives (x (mod p 8)) (n 7))
 			(:instance divides-mod-0 (n 8) (a p))))))
 

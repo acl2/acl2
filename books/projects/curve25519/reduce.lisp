@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "ACL2")
 
 (include-book "projects/shnf/top" :dir :system)
 

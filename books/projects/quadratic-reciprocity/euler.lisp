@@ -2,7 +2,7 @@
 ;; david@russinoff.com
 ;; http://www.russinoff.com
 
-(in-package "RTL")
+(in-package "ACL2")
 
 (local (include-book "support/euler"))
 
@@ -287,28 +287,28 @@ between @('1') and @('p-1') with the following properties:
 
 "We shall require a variation of the pigeonhole principle.
 @(thm pigeonhole-principle-2)
-@(thm perm-associates-positives)"
+@(thm permutationp-associates-positives)"
 
 (defthm pigeonhole-principle-2
     (implies (and (natp n)
 		  (distinct-positives l n)
 		  (subsetp (positives n) l))
-	     (perm (positives n) l))
+	     (permutationp (positives n) l))
   :rule-classes ())
 
-(defthm perm-associates-positives
-    (implies (and (primep p)
-		  (not (= p 2))
-		  (integerp m)
-		  (not (divides p m)))
-	     (perm (positives (1- p))
-		   (associates (1- p) m p)))
+(defthm permutationp-associates-positives
+  (implies (and (primep p)
+                (not (= p 2))
+                (integerp m)
+                (not (divides p m)))
+           (permutationp (positives (1- p))
+                         (associates (1- p) m p)))
   :rule-classes ())
 
 "It follows that the product of @('associates(p-1,m,p)') is @('(p-1)!') and its
 length is @('p-1').
 @(thm times-list-associates-fact)
-@(thm perm-len)
+@(thm permutationp-len)
 @(thm len-positives)
 @(thm len-associates)
 @(thm len-associates-even)"
@@ -322,8 +322,8 @@ length is @('p-1').
 		    (fact (1- p))))
   :rule-classes ())
 
-(defthm perm-len
-    (implies (perm l1 l2)
+(defthm permutationp-len
+    (implies (permutationp l1 l2)
 	     (= (len l1) (len l2)))
   :rule-classes ())
 

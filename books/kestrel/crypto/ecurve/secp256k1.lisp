@@ -200,7 +200,7 @@ h = 01
 (encapsulate ()
 
   ;; It's easy to calculate that point-on-weierstrass-elliptic-curve-p holds on
-  ;; the generator, except that the rtl::primep guard of this function takes
+  ;; the generator, except that the acl2::primep guard of this function takes
   ;; too long to compute if the definition of secp256k1-field-prime is enabled.  So
   ;; we separate out the calculation of the body of
   ;; point-on-weierstrass-elliptic-curve-p in the lemma below (where we enable

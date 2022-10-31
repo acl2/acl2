@@ -142,7 +142,7 @@
    (xdoc::p
     "This is in a separate predicate
      for the reason explained in @(tsee short-weierstrass)."))
-  (rtl::primep (short-weierstrass->p curve))
+  (acl2::primep (short-weierstrass->p curve))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -164,7 +164,7 @@
          the Short Weierstrass curve defined by
          @('p'), @('a'), and @('b') is a valid elliptic curve."
   (defund weierstrass-elliptic-curve-p (p a b)
-    (and (rtl::primep p)
+    (and (acl2::primep p)
          (< 3 p)
          (fep a p)
          (fep b p)
@@ -189,7 +189,7 @@
          @('point') is either the infinity point @(':infinity'),
          or an ordered pair (a cons) of two integers in @('\{0,..,p-1\}')."
   (defund point-on-weierstrass-elliptic-curve-p (point p a b)
-    (declare (xargs :guard (and (rtl::primep p)
+    (declare (xargs :guard (and (acl2::primep p)
                                 (< 3 p)
                                 (fep a p)
                                 (fep b p)
@@ -248,7 +248,7 @@
          <p/>
          The result is a point on the elliptic curve."
   (defund curve-group-+ (point1 point2 p a b)
-    (declare (xargs :guard (and (rtl::primep p)
+    (declare (xargs :guard (and (acl2::primep p)
                                 (< 3 p)
                                 (fep a p)
                                 (fep b p)
@@ -467,8 +467,8 @@
 
   (local
    (defthm primep-of-5
-     (rtl::primep 5)
-     :hints (("Goal" :in-theory (enable (:e rtl::primep))))))
+     (acl2::primep 5)
+     :hints (("Goal" :in-theory (enable (:e acl2::primep))))))
 
   ;; Main closure theorem.
   ;; We now do a functional instantiation of PRIME.
@@ -477,7 +477,7 @@
   (defthm closure-of-curve-group-+
     (implies (and (natp a)
                   (natp b)
-                  (rtl::primep p)
+                  (acl2::primep p)
                   (< 3 p)
                   (pointp point1)
                   (pointp point2)
@@ -492,14 +492,14 @@
     :hints (("Goal" :use ((:functional-instance
                            point-on-weierstrass-elliptic-curve-p-of-curve-group-+-abstract
                            (prime (lambda ()
-                                    (if (not (and (rtl::primep p)
+                                    (if (not (and (acl2::primep p)
                                                   (> p 3)))
                                         5
                                       p))))
                           (:functional-instance
                            pointp-and-pointp-in-pxp-of-curve-group-+-abstract
                            (prime (lambda ()
-                                    (if (not (and (rtl::primep p)
+                                    (if (not (and (acl2::primep p)
                                                   (> p 3)))
                                         5
                                       p))))))))
@@ -540,7 +540,7 @@
          The result is a point on the elliptic curve."
   (defund curve-scalar-* (s point p a b)
     (declare (xargs :guard (and (natp s)
-                                (rtl::primep p)
+                                (acl2::primep p)
                                 (< 3 p)
                                 (fep a p)
                                 (fep b p)
@@ -564,7 +564,7 @@
 
 (defthm closure-of-curve-scalar-*
   (implies (and (natp s)
-                (rtl::primep p)
+                (acl2::primep p)
                 (< 3 p)
                 (natp a)
                 (natp b)
@@ -627,7 +627,7 @@
          Note that the curve parameters @('a') and @('b') are irrelevant to
          this operation, so they are not parameters of this function."
   (defund curve-negate (point p)
-    (declare (xargs :guard (and (rtl::primep p)
+    (declare (xargs :guard (and (acl2::primep p)
                                 (< 3 p)
                                 (pointp point)
                                 (point-in-pxp-p point p))
@@ -645,7 +645,7 @@
   (local (include-book "arithmetic-3/top" :dir :system))
 
   (defthm closure-of-curve-negate
-    (implies (and (rtl::primep p)
+    (implies (and (acl2::primep p)
                   (< 3 p)
                   (natp a)
                   (natp b)

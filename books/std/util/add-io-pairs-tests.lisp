@@ -115,22 +115,22 @@ ACL2 !>
                   #.primes::*baby-jubjub-subgroup-prime*
                   #.primes::*bn-254-group-prime*))
       t
-    (rtl::primep n)))
+    (primep n)))
 
 (defthm primep-is-primep-exec-1
-  (equal (rtl::primep n)
+  (equal (primep n)
          (primep-exec-1 n))
   :rule-classes nil)
 
-(memoize 'rtl::primep :invoke 'primep-exec-1)
+(memoize 'primep :invoke 'primep-exec-1)
 
 (local (in-theory (disable
                    primes::primep-of-baby-jubjub-subgroup-prime-constant
                    primes::primep-of-bn-254-group-prime-constant
                    primes::primep-of-secp256k1-field-prime-constant)))
 
-(thm (rtl::primep #.primes::*bn-254-group-prime*)
-     :hints (("Goal" :in-theory '((:e rtl::primep)))))
+(thm (primep #.primes::*bn-254-group-prime*)
+     :hints (("Goal" :in-theory '((:e primep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Continuing more complex example:
@@ -142,22 +142,22 @@ ACL2 !>
 ; Add io-pair for bn-254-group-prime.
 
 (add-io-pair
- (rtl::primep (primes::bn-254-group-prime)) t
+ (primep (primes::bn-254-group-prime)) t
  :test eql
  :hints (("Goal"
           :in-theory
           (enable primes::primep-of-bn-254-group-prime-constant))))
 
-(thm (rtl::primep (primes::bn-254-group-prime))
-     :hints (("Goal" :in-theory '((:e rtl::primep)
+(thm (primep (primes::bn-254-group-prime))
+     :hints (("Goal" :in-theory '((:e primep)
                                   (:e primes::bn-254-group-prime)))))
 
 ; Add io-pair for each of the other two primes under consideration.
 
 (add-io-pairs
- (((rtl::primep (primes::secp256k1-field-prime)) t)
-  ((rtl::primep (primes::bn-254-group-prime)) t) ; already above; that's OK
-  ((rtl::primep (primes::baby-jubjub-subgroup-prime)) t))
+ (((primep (primes::secp256k1-field-prime)) t)
+  ((primep (primes::bn-254-group-prime)) t) ; already above; that's OK
+  ((primep (primes::baby-jubjub-subgroup-prime)) t))
  :debug t
  :hints (("Goal"
           :in-theory
@@ -165,21 +165,21 @@ ACL2 !>
                   primes::primep-of-bn-254-group-prime-constant
                   primes::primep-of-secp256k1-field-prime-constant))))
 
-(thm (rtl::primep (primes::secp256k1-field-prime))
-     :hints (("Goal" :in-theory '((:e rtl::primep)
+(thm (primep (primes::secp256k1-field-prime))
+     :hints (("Goal" :in-theory '((:e primep)
                                   (:e primes::secp256k1-field-prime)))))
 
-(thm (rtl::primep (primes::bn-254-group-prime))
-     :hints (("Goal" :in-theory '((:e rtl::primep)
+(thm (primep (primes::bn-254-group-prime))
+     :hints (("Goal" :in-theory '((:e primep)
                                   (:e primes::bn-254-group-prime)))))
 
-(thm (rtl::primep (primes::baby-jubjub-subgroup-prime))
-     :hints (("Goal" :in-theory '((:e rtl::primep)
+(thm (primep (primes::baby-jubjub-subgroup-prime))
+     :hints (("Goal" :in-theory '((:e primep)
                                   (:e primes::baby-jubjub-subgroup-prime)))))
 
-; Trivial, without debug printing since the original rtl::primep is run:
-(thm (rtl::primep 7)
-     :hints (("Goal" :in-theory '((:e rtl::primep)))))
+; Trivial, without debug printing since the original primep is run:
+(thm (primep 7)
+     :hints (("Goal" :in-theory '((:e primep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Using ec-call to sidestep guard verification

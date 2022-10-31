@@ -107,7 +107,7 @@
 (defrule pfield-squarep-of-inv
   :parents (pfield-squarep)
   :short "The inverse of @('x') is a prime field square iff @('x') is."
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (fep x p))
            (equal (pfield-squarep (inv x p) p)
                   (pfield-squarep x p)))
@@ -119,7 +119,7 @@
   (;; 'only if' part:
 
    (defruled pfield-squarep-when-pfield-squarep-of-inv
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (fep x p)
                    (pfield-squarep (inv x p) p))
               (pfield-squarep x p))
@@ -128,7 +128,7 @@
      :prep-lemmas
 
      ((defruled equal-of-inv-swap
-        (implies (and (rtl::primep p)
+        (implies (and (acl2::primep p)
                       (fep x p)
                       (fep y p)
                       (not (equal x 0))
@@ -139,7 +139,7 @@
         ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
 
       (defruled inv-of-inv
-        (implies (and (rtl::primep p)
+        (implies (and (acl2::primep p)
                       (fep a p))
                  (equal (inv (inv a p) p)
                         a))
@@ -148,13 +148,13 @@
 
       (acl2::defisar
        pfield-squarep-when-pfield-squarep-of-inv-and-not-zero
-       (implies (and (rtl::primep p)
+       (implies (and (acl2::primep p)
                      (fep x p)
                      (not (equal x 0))
                      (pfield-squarep (inv x p) p))
                 (pfield-squarep x p))
        :proof
-       ((:assume (:prime (rtl::primep p)))
+       ((:assume (:prime (acl2::primep p)))
         (:assume (:fep (fep x p)))
         (:assume (:nonzero (not (equal x 0))))
         (:assume (:inv-square (pfield-squarep (inv x p) p)))
@@ -194,7 +194,7 @@
    ;; 'if' part:
 
    (defruled pfield-squarep-of-inv-when-pfield-squarep
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (fep x p)
                    (pfield-squarep x p))
               (pfield-squarep (inv x p) p))
@@ -203,7 +203,7 @@
      :prep-lemmas
 
      ((defrule pfield-squarep-of-inv-when-pfield-squarep-when-not-zero
-        (implies (and (rtl::primep p)
+        (implies (and (acl2::primep p)
                       (fep x p)
                       (not (equal x 0))
                       (pfield-squarep x p))
@@ -216,7 +216,7 @@
         ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
 
       (defrule pfield-squarep-of-inv-of-0
-        (implies (rtl::primep p)
+        (implies (acl2::primep p)
                  (pfield-squarep (inv 0 p) p))
         :cases ((equal p 2))
         :prep-books

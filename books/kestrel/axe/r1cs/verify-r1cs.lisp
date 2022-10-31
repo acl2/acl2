@@ -18,7 +18,7 @@
 (include-book "kestrel/axe/known-booleans" :dir :system)
 
 ;todo: not sure where these should go:
-(acl2::add-known-boolean rtl::primep)
+(acl2::add-known-boolean acl2::primep)
 (acl2::add-known-boolean pfield::fep)
 (acl2::add-known-boolean pfield::fe-listp)
 

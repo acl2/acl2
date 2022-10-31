@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "ACL2")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -27,7 +27,7 @@
 (defund associate (j m p)
   (mod (* m (expt j (- p 2))) p))
 
-(local-in-theory (disable acl2::floor-mod-elim acl2::mod-theorem-one-b))
+(local (in-theory (disable acl2::floor-mod-elim acl2::mod-theorem-one-b)))
 
 (defthm associate-property
     (implies (and (primep p)
@@ -39,8 +39,8 @@
 		    (mod m p)))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable associate)
-		  :use ((:instance mod-mod-times (n p) (a (* m (expt j (- p 2)))) (b j))
-			(:instance mod-mod-times (n p) (a (expt j (1- p))) (b m))
+		  :use ((:instance rtl::mod-mod-times (n p) (a (* m (expt j (- p 2)))) (b j))
+			(:instance rtl::mod-mod-times (n p) (a (expt j (1- p))) (b m))
 			(:instance divides-leq (x p) (y j))
 			(:instance fermat (m j))))))
 
@@ -57,7 +57,7 @@
 		  :use (associate-property
 			(:instance divides-mod-0 (a m) (n p))
 			(:instance divides-leq (x p) (y j))
-			(:instance natp-mod-2 (m (* m (expt j (- p 2)))) (n p))))))
+			(:instance rtl::natp-mod-2 (m (* m (expt j (- p 2)))) (n p))))))
 
 (defthm associate-is-unique
     (implies (and (primep p)
@@ -212,8 +212,8 @@
 		    (mod (- m) p)))
   :hints (("Goal" :use (res-root1
 			(:instance mod-mult (n p) (m (- (* (root1 m p) (root1 m p)))) (a (root1 m p)))
-			(:instance mod-mod-times (a (- (root1 m p))) (b (root1 m p)) (n p))
-			(:instance mod-times-mod (a (* (root1 m p) (root1 m p))) (b m) (c -1) (n p))))))
+			(:instance rtl::mod-mod-times (a (- (root1 m p))) (b (root1 m p)) (n p))
+			(:instance rtl::mod-times-mod (a (* (root1 m p) (root1 m p))) (b m) (c -1) (n p))))))
 
 (defthm associate-roots
     (implies (and (primep p)
@@ -284,7 +284,7 @@
 
 (in-theory (disable root2))
 
-;; For 0 <= n < p, we construct a list associates(n,m,p) of distinct integers 
+;; For 0 <= n < p, we construct a list associates(n,m,p) of distinct integers
 ;; between 1 and p-1 with the following properties:
 ;; (a) If 1 <= j <= n, then j is in associates(n,m,p).
 ;; (b) If j is in associates(n,m,p), then so is associate(j,m,p).
@@ -391,19 +391,19 @@
     (implies (and (natp n)
 		  (distinct-positives l n)
 		  (subsetp (positives n) l))
-	     (perm (positives n) l))
+	     (permutationp (positives n) l))
   :rule-classes ()
   :hints (("Goal" :use (pigeonhole-principle
 			len-subsetp-positives
 			len-distinct-positives-upper))))
 
-(defthm perm-associates-positives
+(defthm permutationp-associates-positives
     (implies (and (primep p)
 		  (not (= p 2))
 		  (integerp m)
 		  (not (divides p m)))
-	     (perm (positives (1- p))
-		   (associates (1- p) m p)))
+	     (permutationp (positives (1- p))
+                           (associates (1- p) m p)))
   :rule-classes ()
   :hints (("Goal" :use (distinct-positives-associates
 			(:instance pigeonhole-principle-2
@@ -421,13 +421,13 @@
 	     (equal (times-list (associates (1- p) m p))
 		    (fact (1- p))))
   :rule-classes ()
-  :hints (("Goal" :use (perm-associates-positives
-			(:instance perm-times-list
+  :hints (("Goal" :use (permutationp-associates-positives
+			(:instance permutationp-times-list
 				   (l2 (associates (1- p) m p))
 				   (l1 (positives (1- p))))))))
 
-(defthm perm-len
-    (implies (perm l1 l2)
+(defthm permutationp-len
+    (implies (permutationp l1 l2)
 	     (= (len l1) (len l2)))
   :rule-classes ())
 
@@ -442,8 +442,8 @@
 		  (not (divides p m)))
 	     (equal (len (associates (+ -1 p) m p))
 		    (1- p)))
-  :hints (("Goal" :use (perm-associates-positives
-			(:instance perm-len
+  :hints (("Goal" :use (permutationp-associates-positives
+			(:instance permutationp-len
 				   (l2 (associates (1- p) m p))
 				   (l1 (positives (1- p))))))))
 
@@ -474,10 +474,10 @@
 		  (= (mod b n) (mod m n)))
 	     (= (mod (* tl b) n) (mod (* s (expt m (1+ l))) n)))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance mod-mod-times (a tl))
-			(:instance mod-mod-times (a (* s (expt m l))))
-			(:instance mod-mod-times (a b) (b (* s (expt m l))))
-			(:instance mod-mod-times (a m) (b (* s (expt m l))))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a tl))
+			(:instance rtl::mod-mod-times (a (* s (expt m l))))
+			(:instance rtl::mod-mod-times (a b) (b (* s (expt m l))))
+			(:instance rtl::mod-mod-times (a m) (b (* s (expt m l))))))))
 
 (defthm times-list-associates-lemma-2
     (implies (and (primep p)
@@ -602,8 +602,8 @@
 	     (integerp (+ -1/2 (* 1/2 p))))
   :hints (("Goal" :use ((:instance primep-no-divisor (d 2))
 			(:instance divides-mod-0 (a p) (n 2))
-			(:instance mod012 (m p))
-			(:instance mod-equal-int (a p) (b 1) (n 2))))))
+			(:instance rtl::mod012 (m p))
+			(:instance rtl::mod-equal-int (a p) (b 1) (n 2))))))
 
 (defthm euler-criterion
     (implies (and (primep p)
@@ -619,7 +619,7 @@
 		  :use (euler-lemma
 			p-1-even
 			wilson
-			(:instance mod-times-mod
+			(:instance rtl::mod-times-mod
 				   (a (- (expt m (/ (1- p) 2)))) (b -1) (c -1) (n p))))))
 
 ;;  The "First Supplement" is the case a = 1:
@@ -629,9 +629,9 @@
 	     (iff (evenp m)
 		  (oddp (1+ m))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance mod012 (m (1+ m)))
-			(:instance mod-equal-int (a (1+ m)) (b 0) (n 2))
-			(:instance mod-equal-int (a (1+ m)) (b 1) (n 2))))))
+  :hints (("Goal" :use ((:instance rtl::mod012 (m (1+ m)))
+			(:instance rtl::mod-equal-int (a (1+ m)) (b 0) (n 2))
+			(:instance rtl::mod-equal-int (a (1+ m)) (b 1) (n 2))))))
 
 (defthm expt-minus-1
     (implies (natp n)
@@ -652,5 +652,5 @@
 			(:instance euler-criterion (m -1))
 			(:instance divides-leq (x p) (y 1))
 			(:instance divides-minus (x p) (y -1))
-			(:instance mod-equal-int (a p) (b 1) (n 4))
-			(:instance mod-equal-int-reverse (a p) (b 1) (n 4))))))
+			(:instance rtl::mod-equal-int (a p) (b 1) (n 4))
+			(:instance rtl::mod-equal-int-reverse (a p) (b 1) (n 4))))))

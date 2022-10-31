@@ -46,7 +46,7 @@
                 (valuation-bindsp valuation a)
                 (valuation-bindsp valuation b)
                 (valuation-bindsp valuation c)
-                (rtl::primep p))
+                (acl2::primep p))
            (equal (r1cs-constraint-holdsp (make-conditional-equality-constraint a b c) valuation p)
                   (or (equal (lookup-eq a valuation) 0)
                       (equal (lookup-eq b valuation)

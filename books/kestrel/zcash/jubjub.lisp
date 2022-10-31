@@ -15,7 +15,7 @@
 (include-book "kestrel/crypto/ecurve/twisted-edwards" :dir :system)
 (include-book "kestrel/crypto/primes/bls12-381-prime" :dir :system)
 (acl2::merge-io-pairs
- rtl::primep
+ acl2::primep
  (include-book "kestrel/crypto/primes/jubjub-subgroup-prime" :dir :system))
 (include-book "std/util/defval" :dir :system)
 
@@ -46,7 +46,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define jubjub-q ()
-  :returns (q rtl::primep)
+  :returns (q acl2::primep)
   :short "The Jubjub prime @($q_\\mathbb{J}$) [ZPS:5.4.9.3]."
   :long
   (xdoc::topstring
@@ -623,7 +623,7 @@
   ///
 
   (defrule primep-of-jubjub-r
-    (rtl::primep (jubjub-r)))
+    (acl2::primep (jubjub-r)))
 
   (in-theory (disable (:e jubjub-r))))
 

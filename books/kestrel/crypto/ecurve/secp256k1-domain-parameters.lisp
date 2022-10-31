@@ -14,7 +14,7 @@
 
 (include-book "kestrel/crypto/primes/secp256k1-field-prime" :dir :system)
 (acl2::merge-io-pairs
- rtl::primep
+ acl2::primep
  (include-book "kestrel/crypto/primes/secp256k1-group-prime" :dir :system))
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)

@@ -12,7 +12,7 @@
 
 (include-book "semantics-deep")
 
-(local (in-theory (disable rtl::primep)))
+(local (in-theory (disable acl2::primep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -39,15 +39,15 @@
     "@('pfield-squarep') is phrased as @('(mod (* ... ...) p)'), and enablement of"
     "@('fep') because some of the theorems used have @('natp') and @('< p') as hyps."))
   :parents (elliptic-curves)
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
 		(not (equal p 2))
 		(fep a p)
 		(primes::has-square-root? a p))
 	   (pfield-squarep a p))
   :cases ((equal a 0))
-  :enable (mul fep rtl::residue primes::residue-meaning-backwards)
-  :use ((:instance pfield-squarep-suff (r (rtl::find-root (- p 1) a p)) (x a))
-	(:instance rtl::res-root1-lemma (n (- p 1)) (m a) (p p))))
+  :enable (mul fep acl2::residue primes::residue-meaning-backwards)
+  :use ((:instance pfield-squarep-suff (r (acl2::find-root (- p 1) a p)) (x a))
+	(:instance acl2::res-root1-lemma (n (- p 1)) (m a) (p p))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -59,7 +59,7 @@
 ;; Let's make sure the other direction is proved first
 
 (defruled pfield-squarep-->has-square-root?
-  (implies (and (rtl::primep p)
+  (implies (and (acl2::primep p)
                 (not (equal p 2))
                 (fep a p)
                 (pfield-squarep a p))
@@ -71,7 +71,7 @@
  (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (defruled pfield-squarep<->has-square-root?
- (implies (and (rtl::primep p)
+ (implies (and (acl2::primep p)
                 (not (equal p 2))
                 (fep a p))
          (equal (pfield-squarep a p)
@@ -80,7 +80,7 @@
            has-square-root?-satisfies-pfield-squarep))
 
 (defruled has-square-root?<->pfield-squarep
- (implies (and (rtl::primep p)
+ (implies (and (acl2::primep p)
                 (not (equal p 2))
                 (fep a p))
          (equal (primes::has-square-root? a p)

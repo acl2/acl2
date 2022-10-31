@@ -11,7 +11,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RTL")
+(in-package "ACL2")
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
@@ -37,7 +37,7 @@
 		  :use (euler-lemma
 			p-1-even
 			wilson
-			(:instance mod-times-mod
+			(:instance rtl::mod-times-mod
 				   (a (- (expt m (/ (1- p) 2)))) (b -1) (c -1) (n p))))))
 
 
@@ -53,5 +53,5 @@
 		  :use (euler-lemma
 			p-1-even
 			wilson
-			(:instance mod-times-mod
+			(:instance rtl::mod-times-mod
 				   (a (- (expt m (/ (1- p) 2)))) (b -1) (c -1) (n p))))))

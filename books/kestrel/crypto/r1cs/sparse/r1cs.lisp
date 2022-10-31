@@ -32,7 +32,7 @@
 ;; ;; A coefficient is an element of the field.  TODO: Consider, for readability,
 ;; ;; allowing large coefficients to be represented by negative numbers.
 ;; (defun coefficientp (coeff prime)
-;;   (declare (xargs :guard (rtl::primep prime)))
+;;   (declare (xargs :guard (acl2::primep prime)))
 ;;   (fep coeff prime))
 
 ;; A "pseudo-variable" is either a variable or the constant 1.
@@ -268,7 +268,7 @@
 ;; intermediate vars, and output vars), and a list of constraints.  TODO:
 ;; Consider indicating which vars are inputs and which are outputs.
 (std::defaggregate r1cs
-  ((prime rtl::primep)
+  ((prime acl2::primep)
    (vars var-listp)
    (constraints r1cs-constraint-listp))
   :require ((constraints-ok (good-r1cs-constraint-listp constraints
@@ -287,7 +287,7 @@
 ;; corresponding products.
 (defund dot-product (vec valuation prime)
   (declare (xargs :guard (and (sparse-vectorp vec)
-                              (rtl::primep prime)
+                              (acl2::primep prime)
                               (r1cs-valuationp valuation prime)
                               (good-sparse-vectorp vec (strip-cars valuation)))
                   :verify-guards nil ;done below
@@ -307,7 +307,7 @@
 
 (defthm fep-of-dot-product
   (implies (and (sparse-vectorp vec)
-                (rtl::primep prime)
+                (acl2::primep prime)
                 (r1cs-valuationp valuation prime)
                 (good-sparse-vectorp vec (strip-cars valuation)) ;drop?
                 )
@@ -322,7 +322,7 @@
 
 ;; Check whether the VALUATION satisfies the CONSTRAINT.
 (defund r1cs-constraint-holdsp (constraint valuation prime)
-  (declare (xargs :guard (and (rtl::primep prime)
+  (declare (xargs :guard (and (acl2::primep prime)
                               (r1cs-constraintp constraint)
                               (r1cs-valuationp valuation prime)
                               (good-r1cs-constraintp constraint (strip-cars valuation)))))
@@ -342,7 +342,7 @@
 
 ;; Check whether the valuation satisfies all of the constraints.
 (defun r1cs-constraints-holdp (constraints valuation prime)
-  (declare (xargs :guard (and (rtl::primep prime)
+  (declare (xargs :guard (and (acl2::primep prime)
                               (r1cs-constraint-listp constraints)
                               (r1cs-valuationp valuation prime)
                               (good-r1cs-constraint-listp constraints (strip-cars valuation)))))

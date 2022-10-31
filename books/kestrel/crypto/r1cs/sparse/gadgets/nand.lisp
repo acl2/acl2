@@ -38,7 +38,7 @@
                 ;; inputs must be bits:
                 (bitp (lookup-equal var1 valuation))
                 (bitp (lookup-equal var2 valuation))
-                (rtl::primep prime))
+                (acl2::primep prime))
            (equal (r1cs-constraint-holdsp (make-nand-constraint var1 var2 var3) valuation prime)
                   (equal (lookup-equal var3 valuation)
                          (bitnand (lookup-equal var1 valuation)

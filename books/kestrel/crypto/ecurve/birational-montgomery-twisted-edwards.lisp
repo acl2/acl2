@@ -114,8 +114,8 @@
      :disable montgomery-curve-requirements
      :prep-lemmas
      ((defrule lemma
-        (not (rtl::primep 4))
-        :enable rtl::primep)))))
+        (not (acl2::primep 4))
+        :enable acl2::primep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,10 +160,10 @@
                      (equal p 4)))
      :prep-books ((include-book "arithmetic-5/top" :dir :system)))
    (defrulel verify-guards-lemma-2
-     (not (rtl::primep 4))
-     :enable rtl::primep)
+     (not (acl2::primep 4))
+     :enable acl2::primep)
    (defrulel verify-guards-3
-     (implies (and (rtl::primep p)
+     (implies (and (acl2::primep p)
                    (> p 2))
               (equal (div -2 2 p)
                      (pfield::minus1 p)))
@@ -174,7 +174,7 @@
      ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
      :prep-lemmas
      ((defruled lemma
-        (implies (rtl::primep p)
+        (implies (acl2::primep p)
                  (equal (mod -2 p)
                         (mul 2 (pfield::minus1 p) p)))
         :enable (mul pfield::minus1)
