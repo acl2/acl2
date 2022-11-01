@@ -1903,85 +1903,58 @@
                             (merge-recs-into-recs (reverse recs) acc)
                             state))))
 
-
-;; Returns (mv erp nil state).
-;; TODO: Support getting checkpoints from a defun, but then we'd have no body
-;; to fall back on when (equal untranslated-checkpoints '(<goal>)) (see
-;; below).
-(defun advice-fn (n ; number of recommendations from ML requested
-                  verbose
-                  server-url
-                  debug
-                  step-limit
-                  max-wins
-                  model
-                  state)
-  (declare (xargs :guard (and (natp n)
-                              (booleanp verbose)
-                              (acl2::checkpoint-list-guard t ;top-p
-                                                     state)
+;; Returns (mv erp successp state)
+(defun get-and-try-advice-for-checkpoints (checkpoint-clauses
+                                           theorem-name
+                                           theorem-body
+                                           theorem-hints
+                                           theorem-otf-flg
+                                           n ; number of recommendations from ML requested
+                                           ;; verbose
+                                           server-url
+                                           debug
+                                           step-limit
+                                           max-wins
+                                           model
+                                           state)
+  (declare (xargs :guard (and (pseudo-term-listp checkpoint-clauses)
+                              (symbolp theorem-name)
+                              (pseudo-termp theorem-body)
+                              ;; theorem-hints
+                              (booleanp theorem-otf-flg)
+                              (natp n)
+                              ;; (booleanp verbose)
+                              (or (null server-url) ; get url from environment variable
+                                  (stringp server-url))
                               (booleanp debug)
-                              (or (eq :auto step-limit)
+                              (or ;; (eq :auto step-limit)
                                   (eq nil step-limit)
                                   (natp step-limit))
-                              (or (eq :auto max-wins)
+                              (or ;; (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
                               (or (eq :all model)
                                   (rec-modelp model)))
                   :stobjs state
-                  :mode :program ; because we untranslate (for now)
+                  :mode :program
                   ))
   (b* ((wrld (w state))
-       ;; Elaborate options:
-       (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
-       (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
-       (models (if (eq model :all)
-                   '(:calpoly :leidos)
-                 (list model)))
        ;; Get server info:
        ((mv erp server-url state) (if server-url (mv nil server-url state) (getenv$ "ACL2_ADVICE_SERVER" state)))
        ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
        ((when (not (stringp server-url)))
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
         (mv :no-server nil state))
-       ;; Get most recent failed theorem:
-       (most-recent-failed-theorem (acl2::most-recent-failed-command acl2::*theorem-event-types* state))
-       ((mv theorem-name theorem-body theorem-hints theorem-otf-flg)
-        (if (member-eq (car most-recent-failed-theorem) '(thm acl2::rule))
-            (mv :thm ; no name
-                (cadr most-recent-failed-theorem)
-                (cadr (assoc-keyword :hints (cddr most-recent-failed-theorem)))
-                (cadr (assoc-keyword :otf-flg (cddr most-recent-failed-theorem))))
-          ;; Must be a defthm, etc:
-          (mv (cadr most-recent-failed-theorem)
-              (caddr most-recent-failed-theorem)
-              (cadr (assoc-keyword :hints (cdddr most-recent-failed-theorem)))
-              (cadr (assoc-keyword :otf-flg (cdddr most-recent-failed-theorem))))))
-       (- (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil))
-       (- (and verbose (cw "Original hints were:~%~X01:~%" theorem-hints nil)))
-       ;; Get the checkpoints from the failed attempt:
-       ;; TODO: Consider trying again with no hints, in case the user gave were wrongheaded.
-       (raw-checkpoint-clauses (acl2::checkpoint-list ;-pretty
-                                t               ; todo: consider non-top
-                                state))
-       ((when (eq :unavailable raw-checkpoint-clauses))
-        (er hard? 'advice-fn "No checkpoints are available (perhaps the most recent theorem succeeded).")
-        (mv :no-checkpoints nil state))
-       ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
-       ;; TODO: Or use :otf-flg to get the real checkpoints?
-       (checkpoint-clauses (if (equal raw-checkpoint-clauses '((acl2::<goal>)))
-                               (clausify-term (acl2::translate-term (acl2::most-recent-failed-theorem-goal state)
-                                                                    'advice-fn
-                                                                    wrld)
-                                              wrld)
-                             raw-checkpoint-clauses))
-       (- (and verbose (cw "Proof checkpoints to use: ~X01.)~%" checkpoint-clauses nil)))
+       ;; Elaborate options:
+       (models (if (eq model :all)
+                   '(:calpoly :leidos)
+                 (list model)))
+       ;; Get the recommendations:
        ((mv erp ml-recommendations state)
         (get-recs-from-models models n checkpoint-clauses server-url debug nil state))
+       ((when erp) (mv erp nil state))
        ;; Sort the whole list by confidence (hope the numbers are comparable):
        (ml-recommendations (merge-sort-recs-by-confidence ml-recommendations))
-       ((when erp) (mv erp nil state))
        ;; Make some other recs:
        (enable-recommendations (make-enable-recs theorem-body wrld))
        ((mv erp recs-from-history state) (make-recs-from-history state))
@@ -2023,7 +1996,93 @@
                                   (let ((state (show-successful-recommendations successful-recs-no-dupes state)))
                                     state)))
                 (prog2$ (cw "~%NO PROOF FOUND~%~%")
-                        state)))
+                        state))))
+    (mv nil ; no error
+        (posp num-successful-recs) ; whether we succeeded
+        state)))
+
+;; Returns (mv erp nil state).
+;; TODO: Support getting checkpoints from a defun, but then we'd have no body
+;; to fall back on when (equal untranslated-checkpoints '(<goal>)) (see
+;; below).
+(defun advice-fn (n ; number of recommendations from ML requested
+                  verbose
+                  server-url
+                  debug
+                  step-limit
+                  max-wins
+                  model
+                  state)
+  (declare (xargs :guard (and (natp n)
+                              (booleanp verbose)
+                              (or (null server-url)
+                                  (stringp server-url))
+                              (acl2::checkpoint-list-guard t ;top-p
+                                                     state)
+                              (booleanp debug)
+                              (or (eq :auto step-limit)
+                                  (eq nil step-limit)
+                                  (natp step-limit))
+                              (or (eq :auto max-wins)
+                                  (null max-wins)
+                                  (natp max-wins))
+                              (or (eq :all model)
+                                  (rec-modelp model)))
+                  :stobjs state
+                  :mode :program ; because we untranslate (for now)
+                  ))
+  (b* ((wrld (w state))
+       ;; Elaborate options:
+       (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
+       (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
+       ;; Get most recent failed theorem:
+       (most-recent-failed-theorem (acl2::most-recent-failed-command acl2::*theorem-event-types* state))
+       ((mv theorem-name theorem-body theorem-hints theorem-otf-flg)
+        (if (member-eq (car most-recent-failed-theorem) '(thm acl2::rule))
+            (mv :thm ; no name
+                (cadr most-recent-failed-theorem)
+                (cadr (assoc-keyword :hints (cddr most-recent-failed-theorem)))
+                (cadr (assoc-keyword :otf-flg (cddr most-recent-failed-theorem))))
+          ;; Must be a defthm, etc:
+          (mv (cadr most-recent-failed-theorem)
+              (caddr most-recent-failed-theorem)
+              (cadr (assoc-keyword :hints (cdddr most-recent-failed-theorem)))
+              (cadr (assoc-keyword :otf-flg (cdddr most-recent-failed-theorem))))))
+       (- (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil))
+       (- (and verbose (cw "Original hints were:~%~X01:~%" theorem-hints nil)))
+       ;; Get the checkpoints from the failed attempt:
+       ;; TODO: Consider trying again with no hints, in case the user gave were wrongheaded.
+       (raw-checkpoint-clauses (acl2::checkpoint-list ;-pretty
+                                t               ; todo: consider non-top
+                                state))
+       ((when (eq :unavailable raw-checkpoint-clauses))
+        (er hard? 'advice-fn "No checkpoints are available (perhaps the most recent theorem succeeded).")
+        (mv :no-checkpoints nil state))
+       ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
+       ;; TODO: Or use :otf-flg to get the real checkpoints?
+       (checkpoint-clauses (if (equal raw-checkpoint-clauses '((acl2::<goal>)))
+                               (clausify-term (acl2::translate-term (acl2::most-recent-failed-theorem-goal state)
+                                                                    'advice-fn
+                                                                    wrld)
+                                              wrld)
+                             raw-checkpoint-clauses))
+       (- (and verbose (cw "Proof checkpoints to use: ~X01.)~%" checkpoint-clauses nil)))
+       ((mv erp & ;; successp
+            state)
+        (get-and-try-advice-for-checkpoints checkpoint-clauses
+                                            theorem-name
+                                            theorem-body
+                                            theorem-hints
+                                            theorem-otf-flg
+                                            n ; number of recommendations from ML requested
+                                            ;; verbose
+                                            server-url
+                                            debug
+                                            step-limit
+                                            max-wins
+                                            model
+                                            state))
+       ((when erp) (mv erp nil state))
        ;; Ensure there are no checkpoints left over from an attempt to use advice, in case the user calls the tool again.
        ;; TODO: Can we restore the old gag state saved?
        ;;(state (f-put-global 'gag-state-saved nil state))
