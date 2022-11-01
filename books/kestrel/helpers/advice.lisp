@@ -67,7 +67,7 @@
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
 (include-book "kestrel/utilities/read-string" :dir :system) ; todo: slowish
 (include-book "kestrel/utilities/defmergesort" :dir :system)
-(include-book "kestrel/utilities/pos-fix" :dir :system)
+(include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
@@ -88,8 +88,6 @@
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
-(local (include-book "kestrel/utilities/state" :dir :system))
-(local (include-book "kestrel/utilities/margins" :dir :system))
 
 (local (in-theory (disable member-equal len true-listp nth)))
 
@@ -122,33 +120,8 @@
                            global-table
                            put-global
                            get-global
-                           acl2::global-table-p
                            set-fmt-hard-right-margin
                            acl2::deref-macro-name)))
-
-(defund widen-margins (state)
-  (declare (xargs :stobjs state))
-  (let* ((old-fmt-hard-right-margin (f-get-global 'fmt-hard-right-margin state))
-         (old-fmt-soft-right-margin (f-get-global 'fmt-soft-right-margin state))
-         ;; save the old values for later restoration:
-         (state (f-put-global 'acl2::old-fmt-hard-right-margin old-fmt-hard-right-margin state))
-         (state (f-put-global 'acl2::old-fmt-soft-right-margin old-fmt-soft-right-margin state))
-         ;; Change the margins
-         (state (set-fmt-hard-right-margin 410 state))
-         (state (set-fmt-soft-right-margin 400 state)))
-    state))
-
-(defund unwiden-margins (state)
-  (declare (xargs :stobjs state
-                  :guard-hints (("Goal" :in-theory (enable boundp-global)))))
-  ;; Restore the margins:
-  (let* ((state (if (boundp-global 'acl2::old-fmt-hard-right-margin state)
-                    (set-fmt-hard-right-margin (acl2::pos-fix (f-get-global 'acl2::old-fmt-hard-right-margin state)) state)
-                  state))
-         (state (if (boundp-global 'acl2::old-fmt-soft-right-margin state)
-                    (set-fmt-soft-right-margin (acl2::pos-fix (f-get-global 'acl2::old-fmt-soft-right-margin state)) state)
-                  state)))
-    state))
 
 ;move
 ;; TODO: What kinds of things can ITEM be?  A runic-designator?  A theory?
@@ -569,9 +542,9 @@
 (defun show-recommendations (recs state)
   (declare (xargs :guard (recommendation-listp recs)
                   :stobjs state))
-  (let ((state (widen-margins state)))
+  (let ((state (acl2::widen-margins state)))
     (progn$ (show-recommendations-aux recs)
-            (let ((state (unwiden-margins state)))
+            (let ((state (acl2::unwiden-margins state)))
               state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -700,10 +673,10 @@
 (defun show-successful-recommendations (recs state)
   (declare (xargs :mode :program ;todo
                   :stobjs state))
-  (let ((state (widen-margins state)))
+  (let ((state (acl2::widen-margins state)))
     (progn$ (show-successful-recommendations-aux recs)
             (cw "~%")
-            (let ((state (unwiden-margins state)))
+            (let ((state (acl2::unwiden-margins state)))
               state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2024,12 +1997,12 @@
        (state (show-recommendations recommendations state))
        ;; Try the recommendations:
        (- (cw "~%TRYING RECOMMENDATIONS:~%"))
-       (state (widen-margins state))
+       (state (acl2::widen-margins state))
        ((mv erp
             successful-recs ; result-acc ; todo: use this, and make it richer
             state)
         (try-recommendations recommendations theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins nil state))
-       (state (unwiden-margins state))
+       (state (acl2::unwiden-margins state))
        ((when erp)
         (er hard? 'advice-fn "Error trying recommendations: ~x0" erp)
         (mv erp nil state))
