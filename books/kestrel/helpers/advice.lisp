@@ -67,6 +67,7 @@
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
 (include-book "kestrel/utilities/read-string" :dir :system) ; todo: slowish
 (include-book "kestrel/utilities/defmergesort" :dir :system)
+(include-book "kestrel/utilities/pos-fix" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
@@ -137,18 +138,15 @@
          (state (set-fmt-soft-right-margin 400 state)))
     state))
 
-;; Same as in centaur/fty.
-(defun pos-fix (x) (declare (xargs :guard t)) (if (posp x) x 1))
-
 (defund unwiden-margins (state)
   (declare (xargs :stobjs state
                   :guard-hints (("Goal" :in-theory (enable boundp-global)))))
   ;; Restore the margins:
   (let* ((state (if (boundp-global 'acl2::old-fmt-hard-right-margin state)
-                    (set-fmt-hard-right-margin (pos-fix (f-get-global 'acl2::old-fmt-hard-right-margin state)) state)
+                    (set-fmt-hard-right-margin (acl2::pos-fix (f-get-global 'acl2::old-fmt-hard-right-margin state)) state)
                   state))
          (state (if (boundp-global 'acl2::old-fmt-soft-right-margin state)
-                    (set-fmt-soft-right-margin (pos-fix (f-get-global 'acl2::old-fmt-soft-right-margin state)) state)
+                    (set-fmt-soft-right-margin (acl2::pos-fix (f-get-global 'acl2::old-fmt-soft-right-margin state)) state)
                   state)))
     state))
 
