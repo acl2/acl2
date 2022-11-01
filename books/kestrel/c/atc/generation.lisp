@@ -5862,6 +5862,10 @@
         (if proofs
             (atc-gen-loop-measure-fn fn names-to-avoid state)
           (mv '(_) nil nil names-to-avoid)))
+       ((mv fn-guard-event
+            & ; fn-guard
+            names-to-avoid)
+        (atc-gen-fn-guard fn names-to-avoid state))
        ((er (list typed-formals & &) :iferr (irr))
         (atc-typed-formals fn nil prec-tags prec-objs names-to-avoid ctx state))
        (body (ubody+ fn wrld))
@@ -6000,7 +6004,8 @@
                        `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
                  (progress-end? (and (evmac-input-print->= print :info)
                                      `((cw-event " done.~%"))))
-                 (local-events (append loop.events
+                 (local-events (append (list fn-guard-event)
+                                       loop.events
                                        progress-start?
                                        (and measure-of-fn
                                             (list measure-of-fn-event))
