@@ -106,7 +106,7 @@
   (declare (xargs :guard (plist-worldp wrld)))
   (if (not (symbolp name)) ; possible?
       name
-    (let* ((macro-aliases-table (table-alist 'macro-aliases-table wrld)))
+    (let* ((macro-aliases-table (table-alist 'acl2::macro-aliases-table wrld)))
       (if (not (alistp macro-aliases-table))
           (er hard? 'handle-macro-alias "Bad macro aliases table.")
         (let ((res (assoc-eq name macro-aliases-table)))
@@ -130,8 +130,8 @@
   (let* ((old-fmt-hard-right-margin (f-get-global 'fmt-hard-right-margin state))
          (old-fmt-soft-right-margin (f-get-global 'fmt-soft-right-margin state))
          ;; save the old values for later restoration:
-         (state (f-put-global 'old-fmt-hard-right-margin old-fmt-hard-right-margin state))
-         (state (f-put-global 'old-fmt-soft-right-margin old-fmt-soft-right-margin state))
+         (state (f-put-global 'acl2::old-fmt-hard-right-margin old-fmt-hard-right-margin state))
+         (state (f-put-global 'acl2::old-fmt-soft-right-margin old-fmt-soft-right-margin state))
          ;; Change the margins
          (state (set-fmt-hard-right-margin 410 state))
          (state (set-fmt-soft-right-margin 400 state)))
@@ -144,11 +144,11 @@
   (declare (xargs :stobjs state
                   :guard-hints (("Goal" :in-theory (enable boundp-global)))))
   ;; Restore the margins:
-  (let* ((state (if (boundp-global 'old-fmt-hard-right-margin state)
-                    (set-fmt-hard-right-margin (pos-fix (f-get-global 'old-fmt-hard-right-margin state)) state)
+  (let* ((state (if (boundp-global 'acl2::old-fmt-hard-right-margin state)
+                    (set-fmt-hard-right-margin (pos-fix (f-get-global 'acl2::old-fmt-hard-right-margin state)) state)
                   state))
-         (state (if (boundp-global 'old-fmt-soft-right-margin state)
-                    (set-fmt-soft-right-margin (pos-fix (f-get-global 'old-fmt-soft-right-margin state)) state)
+         (state (if (boundp-global 'acl2::old-fmt-soft-right-margin state)
+                    (set-fmt-soft-right-margin (pos-fix (f-get-global 'acl2::old-fmt-soft-right-margin state)) state)
                   state)))
     state))
 
@@ -162,7 +162,7 @@
                   ))
   (if (symbolp item)
       (let ((name (acl2::deref-macro-name item (macro-aliases wrld)))) ; no change if item is not a macro name
-        (if (getpropc name 'runic-mapping-pairs nil wrld)
+        (if (getpropc name 'acl2::runic-mapping-pairs nil wrld)
             t
           nil))
     (if (acl2::runep item wrld)
@@ -1049,7 +1049,7 @@
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name) ; todo: use to make a suggestion
            )
-  (b* (((when (eq 'other include-book-form)) ; todo: can this happen, or could it be (include-book other)?
+  (b* (((when (eq 'acl2::other include-book-form)) ; todo: can this happen, or could it be (include-book other)?
         (cw "skip (can't include catch-all library ~x0)~%" include-book-form)
         (mv nil nil state))
        ((when (not (consp include-book-form)))
@@ -1145,7 +1145,7 @@
                             rec
                             state)
   (declare (xargs :stobjs state :mode :program))
-  (b* (((when (eq rule 'other)) ;; "Other" is a catch-all for low-frequency classes
+  (b* (((when (eq rule 'acl2::other)) ;; "Other" is a catch-all for low-frequency classes
         (cw "skip (Not disabling catch-all: ~x0)~%" rule)
         (mv nil nil state))
        ((when (keywordp rule))
@@ -1190,7 +1190,7 @@
              (rec (update-rec-type :add-enable-hint rec))
              (- (cw-success-message rec)))
           (mv nil rec state))
-      (if (not (eq :no-body (getpropc rule 'theorem :no-body wrld))) ;todo: how to just check if the property is set?
+      (if (not (eq :no-body (getpropc rule 'acl2::theorem :no-body wrld))) ;todo: how to just check if the property is set?
           ;; It's a theorem in the current world:
           (b* ( ;; TODO: Consider whether to enable, say the :type-prescription rule
                (rune `(:rewrite ,rule))
@@ -1282,7 +1282,7 @@
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program))
-  (b* (((when (eq rule 'other)) ;; "Other" is a catch-all for low-frequency classes
+  (b* (((when (eq rule 'acl2::other)) ;; "Other" is a catch-all for low-frequency classes
         (cw "skip (Not disabling catch-all: ~x0)~%" rule)
         (mv nil nil state))
        ((when (keywordp rule))
@@ -1310,7 +1310,7 @@
 (defun try-add-use-hint (item book-map theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (((when (eq item 'other))
+  (b* (((when (eq item 'acl2::other))
         (cw "skip (skipping catch-all: ~x0)~%" item)
         (mv nil nil state))
        ((when (not (symbolp item))) ; for now
@@ -1395,7 +1395,7 @@
                             theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (((when (eq 'other item))
+  (b* (((when (eq 'acl2::other item))
         (cw "fail (ignoring recommendation to expand \"Other\")~%")
         (mv nil nil state))
        ((when (symbolp item)) ; todo: eventually remove this case
@@ -1427,14 +1427,14 @@
 (defun try-add-by-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec state)
   (declare (xargs :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (((when (eq 'other item))
+  (b* (((when (eq 'acl2::other item))
         (cw "fail (ignoring :by hint with catch-all \"Other\")~%")
         (mv nil nil state))
        ((when (not (symbolp item)))
         (cw "fail (unexpected :by hint: ~x0)~%" item)
         (mv nil nil state))
-       ((when (not (or (getpropc item 'unnormalized-body nil (w state))
-                       (getpropc item 'theorem nil (w state)))))
+       ((when (not (or (getpropc item 'acl2::unnormalized-body nil (w state))
+                       (getpropc item 'acl2::theorem nil (w state)))))
         (cw "skip (unknown name for :by hint: ~x0)~%" item)
         (mv nil nil state))
        ;; TTODO: Include any necessary books first
@@ -1977,7 +1977,7 @@
        ;; Get most recent failed theorem:
        (most-recent-failed-theorem (acl2::most-recent-failed-command acl2::*theorem-event-types* state))
        ((mv theorem-name theorem-body theorem-hints theorem-otf-flg)
-        (if (member-eq (car most-recent-failed-theorem) '(thm rule))
+        (if (member-eq (car most-recent-failed-theorem) '(thm acl2::rule))
             (mv :thm ; no name
                 (cadr most-recent-failed-theorem)
                 (cadr (assoc-keyword :hints (cddr most-recent-failed-theorem)))
@@ -1999,7 +1999,7 @@
         (mv :no-checkpoints nil state))
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
        ;; TODO: Or use :otf-flg to get the real checkpoints?
-       (checkpoint-clauses (if (equal raw-checkpoint-clauses '((<goal>)))
+       (checkpoint-clauses (if (equal raw-checkpoint-clauses '((acl2::<goal>)))
                                (clausify-term (acl2::translate-term (acl2::most-recent-failed-theorem-goal state)
                                                                     'advice-fn
                                                                     wrld)
