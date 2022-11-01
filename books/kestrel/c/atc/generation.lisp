@@ -4576,13 +4576,13 @@
               nil
               nil
               nil))
+       (wrld (w state))
        (name (symbol-name fn))
        ((unless (paident-stringp name))
         (er-soft+ ctx t (irr)
                   "The symbol name ~s0 of the function ~x1 ~
                    must be a portable ASCII C identifier, but it is not."
                   name fn))
-       (wrld (w state))
        ((mv fn-guard-event
             fn-guard
             names-to-avoid)
@@ -4612,6 +4612,7 @@
                        :proofs proofs)
                       ctx
                       state))
+       (names-to-avoid body.names-to-avoid)
        ((when (and (type-case body.type :void)
                    (not affect)))
         (raise "Internal error: ~
@@ -4647,7 +4648,7 @@
                                             prog-const
                                             finfo
                                             init-fun-env-thm
-                                            body.names-to-avoid
+                                            names-to-avoid
                                             wrld))
                  ((mv fn-result-events
                       fn-result-thm
@@ -5863,11 +5864,12 @@
             (atc-gen-loop-measure-fn fn names-to-avoid state)
           (mv '(_) nil nil names-to-avoid)))
        ((mv fn-guard-event
-            & ; fn-guard
+            fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
-       ((er (list typed-formals & &) :iferr (irr))
-        (atc-typed-formals fn nil prec-tags prec-objs names-to-avoid ctx state))
+       ((er (list typed-formals formals-events names-to-avoid) :iferr (irr))
+        (atc-typed-formals
+         fn fn-guard prec-tags prec-objs names-to-avoid ctx state))
        (body (ubody+ fn wrld))
        ((er (lstmt-gout loop) :iferr (irr))
         (atc-gen-loop-stmt body
@@ -6005,6 +6007,7 @@
                  (progress-end? (and (evmac-input-print->= print :info)
                                      `((cw-event " done.~%"))))
                  (local-events (append (list fn-guard-event)
+                                       formals-events
                                        loop.events
                                        progress-start?
                                        (and measure-of-fn
@@ -6043,7 +6046,8 @@
   :guard-hints
   (("Goal"
     :in-theory
-    (enable alistp-when-atc-symbol-varinfo-alistp-rewrite
+    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite
+            alistp-when-atc-symbol-varinfo-alistp-rewrite
             atc-var-info-listp-of-strip-cdrs-when-atc-symbol-varinfo-alistp)))
   ///
 
