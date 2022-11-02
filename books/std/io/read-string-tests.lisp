@@ -34,7 +34,7 @@
 
 (defmacro test-ok (str expect)
   `(make-event
-    (b* (((mv errmsg objects state) (read-string ',str))
+    (b* (((mv errmsg objects state) (read-string ',str nil))
          ((when (and (not errmsg)
                      (equal objects ',expect)))
           (value '(value-triple :success))))
@@ -44,7 +44,7 @@
 
 (defmacro test-fail (str)
   `(make-event
-    (b* (((mv errmsg objects state) (read-string ',str))
+    (b* (((mv errmsg objects state) (read-string ',str nil))
          ((when errmsg)
           (value '(value-triple :success))))
       (er soft 'test-fail "Test failed for ~s0: expect FAIL but got ~x1."

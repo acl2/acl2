@@ -29,6 +29,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 ; Supporting author: Eric Smith (eric.smith@kestrel.edu)
+; Package argument added by Matt Kaufmann
 
 (in-package "ACL2")
 
@@ -37,7 +38,7 @@
 
 (defparameter *read-string-light-should-check-bad-lisp-object* t)
 
-(defun read-string-light-fn (str state)
+(defun read-string-light-fn (str pkg state)
   (with-input-from-string
    (stream str)
    (handler-case
@@ -45,7 +46,26 @@
              (error "read-string-light requires a live state!"))
            (let ((acc         nil)
                  (*readtable* *acl2-readtable*)
-                 (*package*   (find-package (current-package state))))
+                 (*package*
+                  (let ((package
+                         (find-package (or pkg (current-package state)))))
+                    (when pkg ; error-checking on the specified package:
+                      (when (null package)
+                        (error "Package ~s does not exist." pkg))
+                      (let* ((entry
+                              (assoc-equal pkg (known-package-alist state)))
+                             (hidden
+                              (and entry
+                                   (package-entry-hidden-p entry))))
+                        (cond ((null entry)
+                               (error "Package ~s exists but is not known to ~
+                                       ACL2."
+                                      pkg))
+                              (hidden
+                               (error "Package ~s is a hidden package (see ~
+                                       :DOC hidden-defpkg)."
+                                      pkg)))))
+                    package)))
              (loop do
                    (let* ((eof-marker (cons nil nil))
                           (elem       (read stream nil eof-marker)))
