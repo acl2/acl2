@@ -151,7 +151,7 @@
                                                    :shl :shr
                                                    :lt :gt :le :ge
                                                    :eq :ne
-                                                   :bitand :bitxor))
+                                                   :bitand :bitxor :bitior))
                       `(,exec-binary-strict-pure-of-op-and-ltype
                         ,op-values
                         ,@(and op-arithmetic-values
@@ -165,7 +165,7 @@
                         ,@(and (member-eq op-kind '(:mul :div :rem :add :sub
                                                     :lt :gt :le :ge
                                                     :eq :ne
-                                                    :bitand :bitxor))
+                                                    :bitand :bitxor :bitior))
                                (or (not (equal type ltype))
                                    (not (equal type rtype)))
                                (list op-type-type))
@@ -297,7 +297,7 @@
                                                    :shl :shr
                                                    :lt :gt :le :ge
                                                    :eq :ne
-                                                   :bitand :bitxor))
+                                                   :bitand :bitxor :bitior))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op
@@ -345,7 +345,7 @@
                                                    :shl :shr
                                                    :lt :gt :le :ge
                                                    :eq :ne
-                                                   :bitand :bitxor))
+                                                   :bitand :bitxor :bitior))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op

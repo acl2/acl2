@@ -18,6 +18,7 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/bv/logand" :dir :system))
 (local (include-book "kestrel/bv/logxor" :dir :system))
+(local (include-book "kestrel/bv/logior" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1365,12 +1366,65 @@
      This operation is always well-defined,
      so it always returns a value (never an error).")
    (xdoc::p
-    "The guard Verification of this function
+    "The guard verification of this function
      is similar to @(tsee bitand-integer-values);
      see that function documentation for details on this."))
   (b* ((mathint1 (value-integer->get val1))
        (mathint2 (value-integer->get val2)))
     (value-integer (logxor mathint1 mathint2) (type-of-value val1)))
+  :guard-hints (("Goal"
+                 :in-theory (e/d (integer-type-rangep-to-signed-byte-p
+                                  integer-type-rangep-to-unsigned-byte-p
+                                  integer-type-bits
+                                  value-promoted-arithmeticp
+                                  value-arithmeticp
+                                  value-realp
+                                  value-integerp
+                                  value-unsigned-integerp
+                                  value-signed-integerp
+                                  value-integer->get
+                                  signed-byte-p-of-value-sint->get
+                                  signed-byte-p-of-value-slong->get
+                                  signed-byte-p-of-value-sllong->get
+                                  unsigned-byte-p-of-value-uint->get
+                                  unsigned-byte-p-of-value-ulong->get
+                                  unsigned-byte-p-of-value-ullong->get)
+                                 (signed-byte-p
+                                  unsigned-byte-p
+                                  type-kind-of-type-of-value))
+                 :use ((:instance type-kind-of-type-of-value (val val1))
+                       (:instance type-kind-of-type-of-value (val val2)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bitior-integer-values ((val1 valuep) (val2 valuep))
+  :guard (and (value-integerp val1)
+              (value-integerp val2)
+              (value-promoted-arithmeticp val1)
+              (value-promoted-arithmeticp val2)
+              (equal (type-of-value val1)
+                     (type-of-value val2)))
+  :returns (resval valuep)
+  :short "Apply @('|') to integer values [C:6.5.12/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By the time we reach this ACL2 function,
+     the values have already been subjected to the usual arithmetic conversions,
+     so they are promoted arithmetic value with the same type.
+     We put this condition in the guard.")
+   (xdoc::p
+    "The type of the result is the same as the operands [C:6.3.1.8/1].
+     This operation is always well-defined,
+     so it always returns a value (never an error).")
+   (xdoc::p
+    "The guard verification of this function
+     is similar to @(tsee bitand-integer-values);
+     see that function documentation for details on this."))
+  (b* ((mathint1 (value-integer->get val1))
+       (mathint2 (value-integer->get val2)))
+    (value-integer (logior mathint1 mathint2) (type-of-value val1)))
   :guard-hints (("Goal"
                  :in-theory (e/d (integer-type-rangep-to-signed-byte-p
                                   integer-type-rangep-to-unsigned-byte-p

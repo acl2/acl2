@@ -146,36 +146,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-bitior ((arg1 valuep) (arg2 valuep))
-  :returns (result value-resultp)
-  :short "Execute bitwise cojunction [C:6.5.12]."
-  (b* ((arg1 (value-fix arg1))
-       (arg2 (value-fix arg2))
-       ((unless (value-integerp arg1))
-        (error (list :mistype-bitior
-                     :required :integer
-                     :supplied arg1)))
-       ((unless (value-integerp arg2))
-        (error (list :mistype-bitior
-                     :required :integer
-                     :supplied arg2)))
-       ((mv val1 val2) (uaconvert-values arg1 arg2)))
-    (cond
-     ((uintp val1) (bitior-uint-uint val1 val2))
-     ((sintp val1) (bitior-sint-sint val1 val2))
-     ((ulongp val1) (bitior-ulong-ulong val1 val2))
-     ((slongp val1) (bitior-slong-slong val1 val2))
-     ((ullongp val1) (bitior-ullong-ullong val1 val2))
-     ((sllongp val1) (bitior-sllong-sllong val1 val2))
-     (t (error (impossible)))))
-  :guard-hints (("Goal"
-                 :use (:instance values-of-uaconvert-values
-                       (val1 arg1) (val2 arg2))
-                 :in-theory (enable value-arithmeticp value-realp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-binary-strict-pure ((op binopp)
                                  (arg1 value-resultp)
                                  (arg2 value-resultp))
@@ -212,7 +182,7 @@
       (:ne (ne-values arg1 arg2))
       (:bitand (bitand-values arg1 arg2))
       (:bitxor (bitxor-values arg1 arg2))
-      (:bitior (exec-bitior arg1 arg2))
+      (:bitior (bitior-values arg1 arg2))
       (t (error (impossible)))))
   :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
   :hooks (:fix))
