@@ -34,9 +34,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-binary-strict-pure ((op binopp)
-                                 (arg1 value-resultp)
-                                 (arg2 value-resultp))
+(define exec-binary-strict-pure ((op binopp) (arg1 valuep) (arg2 valuep))
   :guard (and (binop-strictp op)
               (binop-purep op))
   :returns (result value-resultp)
@@ -44,34 +42,26 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The arguments are the results of
-     recursively executing the operand expressions,
-     both of which must be considered because the operator is non-strict.")
-   (xdoc::p
     "These operators are pure,
      so we just return a value as result (if there is no error)."))
-  (b* ((arg1 (value-result-fix arg1))
-       (arg2 (value-result-fix arg2))
-       ((when (errorp arg1)) arg1)
-       ((when (errorp arg2)) arg2))
-    (case (binop-kind op)
-      (:mul (mul-values arg1 arg2))
-      (:div (div-values arg1 arg2))
-      (:rem (rem-values arg1 arg2))
-      (:add (add-values arg1 arg2))
-      (:sub (sub-values arg1 arg2))
-      (:shl (shl-values arg1 arg2))
-      (:shr (shr-values arg1 arg2))
-      (:lt (lt-values arg1 arg2))
-      (:gt (gt-values arg1 arg2))
-      (:le (le-values arg1 arg2))
-      (:ge (ge-values arg1 arg2))
-      (:eq (eq-values arg1 arg2))
-      (:ne (ne-values arg1 arg2))
-      (:bitand (bitand-values arg1 arg2))
-      (:bitxor (bitxor-values arg1 arg2))
-      (:bitior (bitior-values arg1 arg2))
-      (t (error (impossible)))))
+  (case (binop-kind op)
+    (:mul (mul-values arg1 arg2))
+    (:div (div-values arg1 arg2))
+    (:rem (rem-values arg1 arg2))
+    (:add (add-values arg1 arg2))
+    (:sub (sub-values arg1 arg2))
+    (:shl (shl-values arg1 arg2))
+    (:shr (shr-values arg1 arg2))
+    (:lt (lt-values arg1 arg2))
+    (:gt (gt-values arg1 arg2))
+    (:le (le-values arg1 arg2))
+    (:ge (ge-values arg1 arg2))
+    (:eq (eq-values arg1 arg2))
+    (:ne (ne-values arg1 arg2))
+    (:bitand (bitand-values arg1 arg2))
+    (:bitxor (bitxor-values arg1 arg2))
+    (:bitior (bitior-values arg1 arg2))
+    (t (error (impossible))))
   :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
   :hooks (:fix))
 
@@ -420,9 +410,11 @@
                        (test2 (test-value arg2))
                        ((when (errorp test2)) test2))
                     (if test2 (sint 1) (sint 0))))
-                 (t (exec-binary-strict-pure e.op
-                                             (exec-expr-pure e.arg1 compst)
-                                             (exec-expr-pure e.arg2 compst)))))
+                 (t (b* ((arg1 (exec-expr-pure e.arg1 compst))
+                         ((when (errorp arg1)) arg1)
+                         (arg2 (exec-expr-pure e.arg2 compst))
+                         ((when (errorp arg2)) arg2))
+                      (exec-binary-strict-pure e.op arg1 arg2)))))
      :cond (b* ((test (exec-expr-pure e.test compst))
                 ((when (errorp test)) test)
                 (test (test-value test))

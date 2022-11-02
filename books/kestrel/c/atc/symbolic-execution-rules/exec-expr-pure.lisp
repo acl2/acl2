@@ -129,13 +129,13 @@
                   (member-equal (binop-kind op)
                                 '(:mul :div :rem :add :sub :shl :shr
                                   :lt :gt :le :ge :eq :ne
-                                  :bitand :bitxor :bitior)))
+                                  :bitand :bitxor :bitior))
+                  (equal val1 (exec-expr-pure (expr-binary->arg1 e) compst))
+                  (equal val2 (exec-expr-pure (expr-binary->arg2 e) compst))
+                  (valuep val1)
+                  (valuep val2))
              (equal (exec-expr-pure e compst)
-                    (exec-binary-strict-pure op
-                                             (exec-expr-pure (expr-binary->arg1 e)
-                                                             compst)
-                                             (exec-expr-pure (expr-binary->arg2 e)
-                                                             compst))))
+                    (exec-binary-strict-pure op val1 val2)))
     :enable (exec-expr-pure binop-purep))
 
   (defund sint-from-boolean-with-error (test)

@@ -308,9 +308,7 @@
           (pack 'exec-binary-strict-pure-of- op-kind '-when- lfixtype))
          (fun-event
           `(defund ,exec-binary-strict-pure-of-op-and-ltype (x y)
-             (b* ((y (value-result-fix y))
-                  ((when (errorp y)) y))
-               (,exec-op (,ltype-fix x) y))))
+             (,exec-op (,ltype-fix x) y)))
          (thm-event
           `(defruled ,exec-binary-strict-pure-of-op-when-ltype
              (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
@@ -354,11 +352,7 @@
           (pack 'exec-binary-strict-pure-when- op-kind))
          (fun-event
           `(defund ,exec-binary-strict-pure-of-op (x y)
-             (b* ((x (value-result-fix x))
-                  (y (value-result-fix y))
-                  ((when (errorp x)) x)
-                  ((when (errorp y)) y))
-               (,exec-op x y))))
+             (,exec-op x y)))
          (thm-event
           `(defruled ,exec-binary-strict-pure-when-op
              (implies (and (equal op (,(pack 'binop- op-kind))))
