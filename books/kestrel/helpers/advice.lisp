@@ -726,7 +726,7 @@
 (defund parse-include-book (string state)
   (declare (xargs :guard (stringp string)
                   :stobjs state))
-  (b* (((mv erp form state) (acl2::read-string-as-single-item string state)) ; todo: what about packages?
+  (b* (((mv erp form state) (acl2::read-string-as-single-item string "ACL2" state))
        ((when erp) (mv :error-parsing-include-book nil state))
        ((when (not (include-book-formp form)))
         (mv :error-parsing-include-book nil state)))
@@ -822,7 +822,7 @@
          ((when (not (string-listp keys))) (mv :ill-formed-book-map nil state))
          (vals (strip-cdrs dict))
          ((when (not (acl2::parsed-json-array-listp vals))) (mv :ill-formed-book-map nil state))
-         ((mv erp syms state) (acl2::read-strings-as-single-symbols keys nil state))
+         ((mv erp syms state) (acl2::read-strings-as-single-symbols keys "ACL2" nil state))
          ((when erp) (mv erp nil state))
          ((mv erp lists) (json-arrays-to-lists vals nil))
          ((when erp) (mv erp nil state))
@@ -892,7 +892,7 @@
          ((when (not (stringp object)))
           (er hard? 'parse-recommendation "Non-string object: ~x0" object)
           (mv :bad-rec nil state))
-         ((mv erp parsed-object state) (acl2::read-string-as-single-item object state)) ; todo: what about packages?
+         ((mv erp parsed-object state) (acl2::read-string-as-single-item object "ACL2" state))
          ((when erp)
           (er hard? 'parse-recommendation "Error (~x0) parsing recommended action: ~x1." erp object)
           (mv :parse-error nil state))
