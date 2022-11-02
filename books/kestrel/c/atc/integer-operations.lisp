@@ -1099,8 +1099,8 @@
                           " [C:6.5.11].")
         :body
         ,(if samep
-             `(,(if signedp <type> <type>-mod) (logxor (,<type1>->get x)
-                                                       (,<type2>->get y)))
+             `(,<type> (logxor (,<type1>->get x)
+                               (,<type2>->get y)))
            `(,bitxor-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -1126,8 +1126,8 @@
                           " [C:6.5.12].")
         :body
         ,(if samep
-             `(,(if signedp <type> <type>-mod) (logior (,<type1>->get x)
-                                                       (,<type2>->get y)))
+             `(,<type> (logior (,<type1>->get x)
+                               (,<type2>->get y)))
            `(,bitior-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
