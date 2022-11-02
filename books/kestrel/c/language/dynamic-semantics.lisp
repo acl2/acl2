@@ -170,3 +170,36 @@
              :bitnot (bitnot-value arg)
              :lognot (lognot-value arg))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-binary-strict-pure ((op binopp) (arg1 valuep) (arg2 valuep))
+  :guard (and (binop-strictp op)
+              (binop-purep op))
+  :returns (result value-resultp)
+  :short "Execute a binary expression with a strict pure operator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These operators are pure,
+     so we just return a value as result (if there is no error)."))
+  (case (binop-kind op)
+    (:mul (mul-values arg1 arg2))
+    (:div (div-values arg1 arg2))
+    (:rem (rem-values arg1 arg2))
+    (:add (add-values arg1 arg2))
+    (:sub (sub-values arg1 arg2))
+    (:shl (shl-values arg1 arg2))
+    (:shr (shr-values arg1 arg2))
+    (:lt (lt-values arg1 arg2))
+    (:gt (gt-values arg1 arg2))
+    (:le (le-values arg1 arg2))
+    (:ge (ge-values arg1 arg2))
+    (:eq (eq-values arg1 arg2))
+    (:ne (ne-values arg1 arg2))
+    (:bitand (bitand-values arg1 arg2))
+    (:bitxor (bitxor-values arg1 arg2))
+    (:bitior (bitior-values arg1 arg2))
+    (t (error (impossible))))
+  :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
+  :hooks (:fix))
