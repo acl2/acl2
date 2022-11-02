@@ -18,7 +18,7 @@
   (declare (xargs :guard (stringp string)
                   :stobjs state))
   (mv-let (erp objects state)
-    (read-string-light-fn string state)
+    (read-string-light-fn string nil state)
     (if erp
         (mv erp nil state)
       (if (not (consp objects))

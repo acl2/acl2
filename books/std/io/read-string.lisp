@@ -28,6 +28,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Package argument added by Matt Kaufmann
 
 (in-package "ACL2")
 (include-book "std/util/define" :dir :system)
@@ -42,8 +43,12 @@
   :short "Parse a string into s-expressions, by using Common Lisp's @('read')
 under the hood. (requires a ttag)"
   ((str stringp "The string to parse.")
+   (pkg (or (null pkg)
+            (stringp pkg))
+        "The package in which to read the string, or NIL for the @(see current-package)")
    &key
    (state 'state))
+  (declare (ignore pkg))
   :returns (mv (errmsg  "An error @(see msg) on failure, e.g., parse errors;
                          or @('nil') on success.")
                (objects "The list of objects parsed from @('str').")
@@ -54,12 +59,16 @@ succeed or fail.  So you can never prove any relationship between the input
 @('str') and the resulting s-expressions that you get out.</p>
 
 <p>In the execution, we turn the string into a Common Lisp input stream and try
-to parse it using @('read'), so that full Common Lisp syntax is permitted.  If
-we are able to successfully parse objects until EOF is reached, we return
-success and the list of objects we read.</p>
+to parse it using @('read'), so that full Common Lisp syntax is permitted.  The
+read is done in the @(see current-package) if the @('pkg') argument is
+@('nil'); otherwise, the @('pkg') argument should be a known package name and
+the read is done in that package.  If we are able to successfully parse objects
+until EOF is reached, we return success and the list of objects we read.</p>
 
-<p>Jared thinks this may be sound.  See read-string-tests.lisp for some obvious
-attempts to cause unsoundness.</p>"
+<p>Jared thinks this may be sound.  (Matt K. has since added the @('pkg')
+argument but thinks this is still sound, because of the continued use of the
+oracle.)  See read-string-tests.lisp for some obvious attempts to cause
+unsoundness.</p>"
 
   (declare (ignorable str))
   (b* ((- (raise "Raw lisp definition not installed?"))

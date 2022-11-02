@@ -50,7 +50,7 @@
 (define sk-get-disassembly ((name stringp) state)
   :returns (mv json-props state)
   :mode :program
-  (b* (((mv errmsg objs state) (acl2::read-string name))
+  (b* (((mv errmsg objs state) (acl2::read-string name nil))
        ((when errmsg)
         (mv (sk-json-error "Error in disassemble: parsing failed: ~a: ~a~%" name errmsg)
             state))
