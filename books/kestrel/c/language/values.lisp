@@ -352,6 +352,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection signed/unsigned-byte-p-of-integer-values
+  :short "Theorems saying that the integer values
+          satisfy @(tsee signed-byte-p) and @(tsee unsigned-byte-p)."
+
+  (defruled signed-byte-p-of-value-schar->get
+    (signed-byte-p (char-bits) (value-schar->get val))
+    :enable (schar-min schar-max))
+
+  (defruled signed-byte-p-of-value-sshort->get
+    (signed-byte-p (short-bits) (value-sshort->get val))
+    :enable (sshort-min sshort-max))
+
+  (defruled signed-byte-p-of-value-sint->get
+    (signed-byte-p (int-bits) (value-sint->get val))
+    :enable (sint-min sint-max))
+
+  (defruled signed-byte-p-of-value-slong->get
+    (signed-byte-p (long-bits) (value-slong->get val))
+    :enable (slong-min slong-max))
+
+  (defruled signed-byte-p-of-value-sllong->get
+    (signed-byte-p (llong-bits) (value-sllong->get val))
+    :enable (sllong-min sllong-max))
+
+  (defruled unsigned-byte-p-of-value-uchar->get
+    (unsigned-byte-p (char-bits) (value-uchar->get val))
+    :enable (uchar-max))
+
+  (defruled unsigned-byte-p-of-value-ushort->get
+    (unsigned-byte-p (short-bits) (value-ushort->get val))
+    :enable (ushort-max))
+
+  (defruled unsigned-byte-p-of-value-uint->get
+    (unsigned-byte-p (int-bits) (value-uint->get val))
+    :enable (uint-max))
+
+  (defruled unsigned-byte-p-of-value-ulong->get
+    (unsigned-byte-p (long-bits) (value-ulong->get val))
+    :enable (ulong-max))
+
+  (defruled unsigned-byte-p-of-value-ullong->get
+    (unsigned-byte-p (llong-bits) (value-ullong->get val))
+    :enable (ullong-max)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum init-value
   :short "Fixtype of initializer values."
   :long
