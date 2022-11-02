@@ -365,3 +365,25 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bitxor-values ((val1 valuep) (val2 valuep))
+  :returns (resval value-resultp)
+  :short "Apply @('^') to values [C:6.5.11/2] [C:6.5.11/3] [C:6.5.11/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is an error if the values are not integers.
+     If they are integers, we perform the usual arithmetic conversions
+     and then we call the operation on integer values."))
+  (if (and (value-integerp val1)
+           (value-integerp val2))
+      (b* (((mv val1 val2) (uaconvert-values val1 val2)))
+        (bitxor-integer-values val1 val2))
+    (error (list :bitand-mistype
+                 :required :integer :integer
+                 :supplied (value-fix val1) (value-fix val2))))
+  :guard-hints (("Goal" :in-theory (enable value-arithmeticp
+                                           value-realp
+                                           type-of-value-of-uaconvert-values))))
