@@ -1072,8 +1072,8 @@
                           " [C:6.5.10].")
         :body
         ,(if samep
-             `(,(if signedp <type> <type>-mod) (logand (,<type1>->get x)
-                                                       (,<type2>->get y)))
+             `(,<type> (logand (,<type1>->get x)
+                               (,<type2>->get y)))
            `(,bitand-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
