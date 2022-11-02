@@ -150,7 +150,8 @@
          (enables (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub
                                                    :shl :shr
                                                    :lt :gt :le :ge
-                                                   :eq :ne))
+                                                   :eq :ne
+                                                   :bitand))
                       `(,exec-binary-strict-pure-of-op-and-ltype
                         ,op-values
                         ,@(and op-arithmetic-values
@@ -163,7 +164,8 @@
                                (list op-ltype))
                         ,@(and (member-eq op-kind '(:mul :div :rem :add :sub
                                                     :lt :gt :le :ge
-                                                    :eq :ne))
+                                                    :eq :ne
+                                                    :bitand))
                                (or (not (equal type ltype))
                                    (not (equal type rtype)))
                                (list op-type-type))
@@ -294,7 +296,8 @@
          (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub
                                                    :shl :shr
                                                    :lt :gt :le :ge
-                                                   :eq :ne))
+                                                   :eq :ne
+                                                   :bitand))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op
@@ -341,7 +344,8 @@
          (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub
                                                    :shl :shr
                                                    :lt :gt :le :ge
-                                                   :eq :ne))
+                                                   :eq :ne
+                                                   :bitand))
                       (pack op-kind '-values)
                     (pack 'exec- op-kind)))
          (exec-binary-strict-pure-of-op
