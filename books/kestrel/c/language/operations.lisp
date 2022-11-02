@@ -364,7 +364,8 @@
                  :supplied (value-fix val1) (value-fix val2))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
-                                           type-of-value-of-uaconvert-values))))
+                                           type-of-value-of-uaconvert-values)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -386,7 +387,8 @@
                  :supplied (value-fix val1) (value-fix val2))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
-                                           type-of-value-of-uaconvert-values))))
+                                           type-of-value-of-uaconvert-values)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -408,4 +410,5 @@
                  :supplied (value-fix val1) (value-fix val2))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
-                                           type-of-value-of-uaconvert-values))))
+                                           type-of-value-of-uaconvert-values)))
+  :hooks (:fix))
