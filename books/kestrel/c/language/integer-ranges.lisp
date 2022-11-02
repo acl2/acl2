@@ -629,4 +629,42 @@
      in anticipation for extending it to those two types."))
   (and (<= (integer-type-min type) (ifix mathint))
        (<= (ifix mathint) (integer-type-max type)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defruled integer-type-rangep-to-signed-byte-p
+    (implies (and (type-signed-integerp type)
+                  (integerp int))
+             (equal (integer-type-rangep int type)
+                    (signed-byte-p (integer-type-bits type) int)))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max
+             type-signed-integerp
+             integer-type-bits
+             schar-min
+             schar-max
+             sshort-min
+             sshort-max
+             sint-min
+             sint-max
+             slong-min
+             slong-max
+             sllong-min
+             sllong-max))
+
+  (defruled integer-type-rangep-to-unsigned-byte-p
+    (implies (and (type-unsigned-integerp type)
+                  (integerp int))
+             (equal (integer-type-rangep int type)
+                    (unsigned-byte-p (integer-type-bits type) int)))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max
+             type-unsigned-integerp
+             integer-type-bits
+             uchar-max
+             ushort-max
+             uint-max
+             ulong-max
+             ullong-max)))
