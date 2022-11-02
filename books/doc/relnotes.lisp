@@ -127,6 +127,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
+
+   (xdoc::p
+    "@(tsee Read-string) and @('read-string-light-fn') now take a required package
+     argument, which can be @('nil') to represent the @(see current-package),
+     thus providing the previous behavior.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
 
    (xdoc::p
