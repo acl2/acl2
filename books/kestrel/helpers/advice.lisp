@@ -1721,11 +1721,11 @@
        (make-recs-from-events (rest events) num acc)))))
 
 ;; Returns (mv erp val state).
-;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But there are :exact-hints.
+;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
 (defun make-recs-from-history (state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state))
+  (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state)) ; todo: how to get events, not commands (e.g., get what make-events expanded to)?
        ((when erp) (mv erp nil state)))
     (mv nil (make-recs-from-events events 1 nil) state)))
 
