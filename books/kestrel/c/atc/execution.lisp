@@ -34,9 +34,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-arrsub-of-memberp ((str value-resultp)
+(define exec-arrsub-of-memberp ((str valuep)
                                 (mem identp)
-                                (sub value-resultp)
+                                (sub valuep)
                                 (compst compustatep))
   :returns (result value-resultp)
   :short "Execute an array subscripting expression
@@ -56,9 +56,7 @@
      where @('s') is a pointer to a structure,
      @('m') is the name of a member of the structure of array type,
      and @('i') is an index into the array."))
-  (b* ((str (value-result-fix str))
-       ((when (errorp str)) str)
-       ((unless (value-case str :pointer))
+  (b* (((unless (value-case str :pointer))
         (error (list :mistype-arrsub-of-memberp
                      :required :pointer
                      :supplied (type-of-value str))))
@@ -67,9 +65,13 @@
        (reftype (value-pointer->reftype str))
        (struct (read-object objdes compst))
        ((when (errorp struct))
-        (error (list :struct-not-found str (compustate-fix compst))))
+        (error (list :struct-not-found
+                     (value-fix str)
+                     (compustate-fix compst))))
        ((unless (value-case struct :struct))
-        (error (list :not-struct str (compustate-fix compst))))
+        (error (list :not-struct
+                     (value-fix str)
+                     (compustate-fix compst))))
        ((unless (equal reftype
                        (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
@@ -79,8 +81,6 @@
        ((when (errorp arr)) arr)
        ((unless (value-case arr :array))
         (error (list :not-array arr)))
-       (sub (value-result-fix sub))
-       ((when (errorp sub)) sub)
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
                                              :required :integer
@@ -88,7 +88,7 @@
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
                                         :array arr
-                                        :index sub))))
+                                        :index (value-fix sub)))))
     (value-array-read index arr))
   :hooks (:fix))
 
@@ -136,11 +136,12 @@
                      ((when (errorp sub)) sub))
                   (exec-arrsub-of-member str e.arr.name sub)))
                (:memberp
-                (b* (((expr-memberp e.arr) e.arr))
-                  (exec-arrsub-of-memberp (exec-expr-pure e.arr.target compst)
-                                          e.arr.name
-                                          (exec-expr-pure e.sub compst)
-                                          compst)))
+                (b* (((expr-memberp e.arr) e.arr)
+                     (str (exec-expr-pure e.arr.target compst))
+                     ((when (errorp str)) str)
+                     (sub (exec-expr-pure e.sub compst))
+                     ((when (errorp sub)) sub))
+                  (exec-arrsub-of-memberp str e.arr.name sub compst)))
                (t (b* ((arr (exec-expr-pure e.arr compst))
                        ((when (errorp arr)) arr)
                        (sub (exec-expr-pure e.sub compst))

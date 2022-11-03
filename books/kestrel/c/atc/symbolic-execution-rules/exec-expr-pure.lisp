@@ -102,13 +102,18 @@
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :arrsub)
                   (equal arr (expr-arrsub->arr e))
-                  (expr-case arr :memberp))
+                  (expr-case arr :memberp)
+                  (equal valstr
+                         (exec-expr-pure (expr-memberp->target arr) compst))
+                  (valuep valstr)
+                  (equal valsub
+                         (exec-expr-pure (expr-arrsub->sub e) compst))
+                  (valuep valsub))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub-of-memberp
-                     (exec-expr-pure (expr-memberp->target arr) compst)
-                     (expr-memberp->name arr)
-                     (exec-expr-pure (expr-arrsub->sub e) compst)
-                     compst)))
+                    (exec-arrsub-of-memberp valstr
+                                            (expr-memberp->name arr)
+                                            valsub
+                                            compst)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-unary
