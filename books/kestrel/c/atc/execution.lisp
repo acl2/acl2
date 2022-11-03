@@ -34,40 +34,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-memberp ((str valuep) (mem identp) (compst compustatep))
-  :returns (result value-resultp)
-  :short "Execute a structure pointer member expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is for the @('->') operator.
-     The operand must be a non-null pointer to a structure
-     of type consistent with the structure.
-     The named member must be in the structure.
-     The value associated to the member is returned."))
-  (b* (((unless (value-case str :pointer))
-        (error (list :mistype-memberp
-                     :required :pointer
-                     :supplied (type-of-value str))))
-       ((when (value-pointer-nullp str)) (error (list :null-pointer)))
-       (objdes (value-pointer->designator str))
-       (reftype (value-pointer->reftype str))
-       (struct (read-object objdes compst))
-       ((when (errorp struct))
-        (error
-         (list :struct-not-found (value-fix str) (compustate-fix compst))))
-       ((unless (value-case struct :struct))
-        (error (list :not-struct (value-fix str) (compustate-fix compst))))
-       ((unless (equal reftype
-                       (type-struct (value-struct->tag struct))))
-        (error (list :mistype-struct-read
-                     :pointer reftype
-                     :array (type-struct (value-struct->tag struct))))))
-    (value-struct-read mem struct))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-arrsub-of-member ((str value-resultp)
                                (mem identp)
                                (sub value-resultp))
