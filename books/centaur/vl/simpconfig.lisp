@@ -200,7 +200,42 @@
      all and is omitted from the design after elaboration.  With the
      @(':include-toplevel') setting, top-level modules are built with their
      default parameter settings as well as whatever settings they appear with
-     in the user-paramsettings.")))
+     in the user-paramsettings.  Note that the top-level modules present at
+     elaboration time is influenced by the settings of @('pre-elab-topmods')
+     and @('pre-elab-filter').")
+
+   (pre-elab-topmods
+    string-listp
+    "List of module names to be preserved after annotation and before
+     elaboration.  When @('pre-elab-filter') is set, a pass of @(see
+     vl-remove-unnecessary-elements) will be used to omit from the design any
+     elements not used by one of these modules.  The module names in the
+     @('user-paramsettings') are automatically included in this list.")
+
+   (pre-elab-filter
+    booleanp :default t
+    "Filter out unnecessary elements (according to @('pre-elab-topmods') and
+     @('user-paramsettings')) before elaboration.")
+
+   (post-elab-topmods
+    string-listp
+    "List of module names to be preserved after elaboration.  When
+     @('post-elab-filter') is set, a pass of @(see
+     vl-remove-unnecessary-elements) will be used to omit from the design any
+     elements not used by one of these modules. Note that these names may need
+     to have parameter settings appended. The unparam-names included in the
+     @('user-paramsettings') are automatically included in this list.")
+
+   (post-elab-filter
+    booleanp :default t
+    "Filter out unnecessary elements (according to @('post-elab-topmods') and
+     @('user-paramsettings')) after elaboration.")
+
+   (allow-bad-topmods
+    booleanp
+    "In @(see vl-to-sv), return an error message after elaboration if any
+     modules required by @('post-elab-topmods') or @('user-paramsettings') had
+     fatal warnings.")))
 
 
 (defconst *vl-default-simpconfig*
