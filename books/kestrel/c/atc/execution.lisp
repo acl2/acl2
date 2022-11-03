@@ -34,7 +34,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-member ((str value-resultp) (mem identp))
+(define exec-member ((str valuep) (mem identp))
   :returns (result value-resultp)
   :short "Execute a structure member expression."
   :long
@@ -44,9 +44,7 @@
      The operand must be a structure.
      The named member must be in the structure.
      The value associated to the member is returned."))
-  (b* ((str (value-result-fix str))
-       ((when (errorp str)) str)
-       ((unless (value-case str :struct))
+  (b* (((unless (value-case str :struct))
         (error (list :mistype-member
                      :required :struct
                      :supplied (type-of-value str)))))
@@ -243,7 +241,9 @@
                        ((when (errorp sub)) sub))
                     (exec-arrsub arr sub compst))))
      :call (error (list :non-pure-expr e))
-     :member (exec-member (exec-expr-pure e.target compst) e.name)
+     :member (b* ((str (exec-expr-pure e.target compst))
+                  ((when (errorp str)) str))
+               (exec-member str e.name))
      :memberp (exec-memberp (exec-expr-pure e.target compst) e.name compst)
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))

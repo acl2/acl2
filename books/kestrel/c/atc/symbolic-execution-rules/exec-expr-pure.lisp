@@ -65,11 +65,11 @@
 
   (defruled exec-expr-pure-when-member
     (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :member))
+                  (equal (expr-kind e) :member)
+                  (equal val (exec-expr-pure (expr-member->target e) compst))
+                  (valuep val))
              (equal (exec-expr-pure e compst)
-                    (exec-member (exec-expr-pure (expr-member->target e)
-                                                 compst)
-                                 (expr-member->name e))))
+                    (exec-member val (expr-member->name e))))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-memberp
