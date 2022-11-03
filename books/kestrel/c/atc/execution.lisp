@@ -34,9 +34,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-arrsub ((arr value-resultp)
-                     (sub value-resultp)
-                     (compst compustatep))
+(define exec-arrsub ((arr valuep) (sub valuep) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute an array subscripting expression."
   :long
@@ -76,9 +74,7 @@
      as well as for string literals (currently not in our C subset),
      an array is always converted to a pointer to its first element
      [C:6.3.2.1/3]."))
-  (b* ((arr (value-result-fix arr))
-       ((when (errorp arr)) arr)
-       ((unless (value-case arr :pointer))
+  (b* (((unless (value-case arr :pointer))
         (error (list :mistype-arrsub
                      :required :pointer
                      :supplied (type-of-value arr))))
@@ -87,24 +83,22 @@
        (reftype (value-pointer->reftype arr))
        (array (read-object objdes compst))
        ((when (errorp array))
-        (error (list :array-not-found arr (compustate-fix compst))))
+        (error (list :array-not-found (value-fix arr) (compustate-fix compst))))
        ((unless (value-case array :array))
-        (error (list :not-array arr (compustate-fix compst))))
+        (error (list :not-array (value-fix arr) (compustate-fix compst))))
        ((unless (equal reftype (value-array->elemtype array)))
         (error (list :mistype-array-read
                      :pointer reftype
                      :array (value-array->elemtype array))))
-       (sub (value-result-fix sub))
-       ((when (errorp sub)) sub)
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
                                              :required :integer
                                              :supplied (type-of-value sub))))
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
-                                        :pointer arr
+                                        :pointer (value-fix arr)
                                         :array array
-                                        :index sub))))
+                                        :index (value-fix sub)))))
     (value-array-read index array))
   :hooks (:fix))
 
@@ -313,9 +307,11 @@
                                           e.arr.name
                                           (exec-expr-pure e.sub compst)
                                           compst)))
-               (t (exec-arrsub (exec-expr-pure e.arr compst)
-                               (exec-expr-pure e.sub compst)
-                               compst)))
+               (t (b* ((arr (exec-expr-pure e.arr compst))
+                       ((when (errorp arr)) arr)
+                       (sub (exec-expr-pure e.sub compst))
+                       ((when (errorp sub)) sub))
+                    (exec-arrsub arr sub compst))))
      :call (error (list :non-pure-expr e))
      :member (exec-member (exec-expr-pure e.target compst) e.name)
      :memberp (exec-memberp (exec-expr-pure e.target compst) e.name compst)

@@ -54,11 +54,13 @@
                   (equal (expr-kind e) :arrsub)
                   (equal arr (expr-arrsub->arr e))
                   (not (expr-case arr :member))
-                  (not (expr-case arr :memberp)))
+                  (not (expr-case arr :memberp))
+                  (equal valarr (exec-expr-pure arr compst))
+                  (equal valsub (exec-expr-pure (expr-arrsub->sub e) compst))
+                  (valuep valarr)
+                  (valuep valsub))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub (exec-expr-pure arr compst)
-                                 (exec-expr-pure (expr-arrsub->sub e) compst)
-                                 compst)))
+                    (exec-arrsub valarr valsub compst)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-member
