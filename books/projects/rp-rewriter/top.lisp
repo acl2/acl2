@@ -74,7 +74,7 @@
   fast-alist in the background for later fast search and access. It does that
  by triggering a special mechanism when it encounters @(see hons-acons) and
  @(see hons-get) in terms. </li>
-<li> Meta rules can return a @('dont-rw') structure to prevent repeated rewriting of large
+<li> Meta rules can return a @(see dont-rw) structure to prevent repeated rewriting of large
    returned terms, which can provide large performance (time and memory)
   benefits. </li>
 <li> It supports inside-out as well as outside-in rewriting in the same

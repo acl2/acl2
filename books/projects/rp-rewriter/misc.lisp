@@ -422,7 +422,7 @@
 
 (xdoc::defxdoc
   defthm-lambda
-  :parents (rp-utilities)
+  :parents (rp-other-utilities)
   :short "defthm-lambda is deprecated. Please see @(see defthmrp), @(see
   add-rp-rule), or @(see lambda-opt) for relevant topics."
   :long "<p>The defthm-lambda utility used to be used for @(see lambda-opt) in
@@ -1084,7 +1084,8 @@ RP-Rewriter will throw an eligible error.</p>"
                       (new-synps alistp)
                       rp-state state)
   (b* ((rp-state (rp-state-new-run rp-state))
-       (rp-state (rp-state-init-rules runes runes-outside-in new-synps rp-state state))
+       (rp-state (rp-state-init-rules runes runes-outside-in new-synps rp-state state
+                                      :suppress-not-simplified-error t))
        ((mv term rp-state)
         (preprocess-then-rp-rw term rp-state state)))
     (mv term rp-state)))
@@ -1100,7 +1101,7 @@ RP-Rewriter will throw an eligible error.</p>"
                        (runes 'nil)
                        (runes-outside-in 'nil)
                        (time 't)
-                       (not-simplified-action ':warning))
+                       #|(not-simplified-action ':warning)|#)
   `(encapsulate
      nil
 
@@ -1131,8 +1132,9 @@ RP-Rewriter will throw an eligible error.</p>"
            (- (if err (hard-error 'rp-thm "Error translating term ~%" nil) nil))
            (term (beta-search-reduce term 10000))
            ((mv new-synps state) (translate1-vals-in-alist ,new-synps state))
-           (old-not-simplified-action (not-simplified-action rp-state))
-           (rp-state (update-not-simplified-action ,not-simplified-action rp-state))
+           
+           #|(old-not-simplified-action (not-simplified-action rp-state))|#
+           #|(rp-state  (update-not-simplified-action ,not-simplified-action rp-state))|#
            ((mv rw rp-state)
             (if ,time
                 (time$
@@ -1143,14 +1145,15 @@ RP-Rewriter will throw an eligible error.</p>"
                        (list
                         (cons #\0 rw))
                        *standard-co* state (evisc-tuple 8 10 nil nil)))
-           (rp-state (update-not-simplified-action old-not-simplified-action rp-state)))
+           #|(rp-state (update-not-simplified-action old-not-simplified-action rp-state))|#)
         (mv nil `(value-triple :none) state rp-state)))))
 
 (defmacro rp-cl (&key (new-synps 'nil)
                       (runes 'nil)
                       (runes-outside-in 'nil)
                       (cases 'nil)
-                      (ruleset 'rp-rules)) ;
+                      (ruleset 'rp-rules)
+                      (suppress-not-simplified-error 'nil)) ;
   `(rp-rewriter
     clause
     (make rp-cl-args
@@ -1162,7 +1165,8 @@ RP-Rewriter will throw an eligible error.</p>"
           ,extra-rules)
           )||#
           :ruleset ',ruleset
-          :new-synps ',new-synps)
+          :new-synps ',new-synps
+          :suppress-not-simplified-error ,suppress-not-simplified-error)
     rp-state state))
 
 (defmacro def-rp-thm (&rest rest)
@@ -1424,18 +1428,15 @@ RP-Rewriter will throw an eligible error.</p>"
                                                 ;; of meta functions that users
                                                 ;; wants to enable. Default: nil
   :disable-meta-rules (meta-fnc1 meta-fnc2 ...) ;; same as above for disable
-  :enable-rules (append '(rule1 rule2)
-                        *rules3*
-                        ...)      ;;  List  of  rule-names  that  users  wants
-                                  ;; enabled  in  RP-Rewriter's  rule-set.  The
-                                  ;; macro will evaluate  the expressions first
-                                  ;; to generate the names.  Default: nil
-  :disable-rules <...>            ;; Same as above for disable 
+  :enable-rules (append '(rule1 rule2) ;; List  of  rule-names  to enable.  The
+                        *rules3*       ;; macro will evaluate  the expressions first
+                        ...)           ;; to generate the names.  Default: nil
+  :disable-rules <...>            ;; Same as above for disable
   :runes '(rule1 rule2  ...) ;; When  nil, the macro uses the existing rule-set
-                             ;; of      RP-rewriter      from      rp::rp-rules
-                             ;; table. Otherwise, it  will override everything
-                             ;; else  regarding rules  and use  only the  rules
-                             ;; given in this list. Default: nil
+                             ;; of RP-rewriter from the  table specified in the
+                             ;; ruleset argument.  Otherwise,  it will only use
+                             ;; the  inside-out rules  given in  this argument.
+                             ;; Default: nil
   :runes-outside-in '(rule1  rule2 ...) ;;  same as above  but for runes  to be
                                         ;; applied outside-in. Default: nil
   :cases (case1 case2 ...)    ;; casesplit the conjecture. Default: nil
@@ -1445,12 +1446,13 @@ RP-Rewriter will throw an eligible error.</p>"
   :disabled  <t-or-nil>          ;; Disables the resulting rule for both ACL2 and RP
   :disabled-for-rp <t-or-nil>    ;; Disables the resulting rule only for RP
   :disabled-for-ACL2 <t-or-nil>  ;; Disables the resulting rule only for ACL2
-  :rw-direction <...>            ;; Rewrite direction of the result for RP
-  :supress-warnings <t-or-nil>   ;; supress some warnings
+  :rw-direction <...>            ;; Rewrite direction of the resulting rule for
+                                 ;; RP. Default: :inside-out
+  :supress-warnings <t-or-nil>   ;; supress some warnings. Default: nil
   :add-rp-rule <t-or-nil>        ;; Whether or not the rule should be added as
-                                 ;; a rp rule.
+                                 ;; a rp rule. Default: t.
   :ruleset <...>                 ;; select which table to read and save
-                                 ;; rule names
+                                 ;; the rules. Default: rp-rules
   )
 ')
 </code>
@@ -1486,7 +1488,8 @@ be used to enable/disable specific meta rules.
 <p>
 <b>enable-rules</b> and <b>disable-rules</b> takes a term that will be
 translated and evaluated to a list of rune/rule names that will be locally
-disabled/enabled before the RP-Rewriter is called. See @(see rp-ruleset) to how
+disabled/enabled before the RP-Rewriter is called. See @(see rp-ruleset) for
+detauls about how
 the rules are managed. 
 </p>
 
@@ -1499,7 +1502,7 @@ default nil and we don't expect these options to be used often.
 <p> <b> cases </b> is a list of terms which are used as hints in the rewriter
 to casesplit. For each term in cases, the conjecture will be rewritten to
 @('(if case conjecture conjecture)'). So if you pass 3 cases, then the given
-conjecture will be rewritten 2^3=8 times for each case combination. The number
+conjecture will be repeated 2^3=8 times for each case combination. The number
 of such rewrites can be fewer if certain case combinations contradict each
 other as cases themselves will be rewritten as well. Given list of cases can be
 untranslated terms.
@@ -1543,7 +1546,7 @@ lambda-opt will be passed as is.</p>
 
 <p> <b> ruleset </b> is passed directly to add-rp-rule as well as used by the
 clause processor. It determines which
-table to read and save the rewrite rule. By default, it is rp-rules. If users
+table to read and save the rewrite rule. By default, it is @('rp-rules'). If users
 want to manage their own rewriting scheme in a custom table, then they may
 choose to collect rules in another table with this argument. </p>
 
@@ -1602,7 +1605,7 @@ choose to collect rules in another table with this argument. </p>
     (list 'rp-pr-fn (list 'quote name) 'state))
 
   (xdoc::defxdoc rp-pr
-    :parents (rp-ruleset)
+    :parents (rp-ruleset rp-rewriter/debugging)
     :short "Print the rules for RP-Rewriter (similar to @(see pr))"
     :long "<p>Please @(see rp-ruleset) for details.</p> ")
   

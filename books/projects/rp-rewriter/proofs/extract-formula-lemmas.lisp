@@ -77,7 +77,6 @@
            :induct (if-to-and-list term)
            :in-theory (e/d (if-to-and-list) ()))))
 
-
 (make-flag remove-return-last :defthm-macro-name defthm-remove-return-last)
 
 (defthm-remove-return-last
@@ -109,7 +108,6 @@
                             remove-return-last
                             remove-return-last-subterms)
                            ()))))
-
 
 (local
  ;;local funcitons for local lemmas
@@ -255,7 +253,6 @@
                     (acl2::beta-eval-list rp-evl-lst)))
              :in-theory (e/d (rp-evl-of-fncall-args) ()))))
 
-
   (defthm EVAL-AND-ALL-NT-of-append
     (equal (eval-and-all-nt (append x y) a)
            (and (eval-and-all-nt x a)
@@ -264,15 +261,14 @@
              :in-theory (e/d (eval-and-all-nt) ()))))
 
   (defthm rp-evl-of-light-remove-return-last
-  (equal (rp-evl (light-remove-return-last term) a)
-         (rp-evl term a))
-  :hints (("Goal"
-           :in-theory (e/d (light-remove-return-last) ()))))
-  
+    (equal (rp-evl (light-remove-return-last term) a)
+           (rp-evl term a))
+    :hints (("Goal"
+             :in-theory (e/d (light-remove-return-last) ()))))
+
   (make-flag make-formula-better :defthm-macro-name defthm-make-formula-better)
 
-  
-  
+
   (defthm-make-formula-better
 
     (defthm correctness-of-make-formula-better
@@ -477,7 +473,6 @@
                                (:definition falist-consistent-aux)
                                ;;                               (:rewrite acl2::o-p-o-infp-car)
                                (:type-prescription insert-iff-to-force))))))))
-
 
 
 
@@ -1191,8 +1186,8 @@
   (valid-sc SC-TERM A)
   (rp-termp SC-TERM)
   (NOT (EQUAL (CAR SC-TERM) 'IF))
-; (NOT (INCLUDE-FNC-SUBTERMS (CDR SC-TERM) ; ; ; ; ; ; ; ; ; ; ;
-;                           'IF)) ; ; ; ; ; ; ; ; ; ; ;
+; (NOT (INCLUDE-FNC-SUBTERMS (CDR SC-TERM) ; ; ; ; ; ; ; ; ; ; ; ;
+;                           'IF)) ; ; ; ; ; ; ; ; ; ; ; ;
   (not (is-rp sc-term))
   (IS-RP (LIST 'RP
   (LIST 'QUOTE SC-TYPE)
@@ -2424,17 +2419,29 @@ nil
                            (RULES-ALIST-INSIDE-OUT-PUT
                             RULES-ALIST-OUTSIDE-IN-PUT)))))
 
+(defthm |(RP-STATEP (UPDATE-SUPPRESS-NOT-SIMPLIFIED-ERROR val RP-STATE))|
+  (implies (and (rp-statep rp-state)
+                (booleanp val))
+           (RP-STATEP (UPDATE-SUPPRESS-NOT-SIMPLIFIED-ERROR val RP-STATE)))
+  :hints (("Goal"
+           :in-theory (e/d (rp-statep) ()))))
+
 (defthm rp-statep-of-rp-state-init-rules
-  (implies (rp-statep rp-state)
+  (implies (and (rp-statep rp-state)
+                (booleanp suppress-not-simplified-error))
            (and
             (rp-statep (rp-state-init-rules runes-inside-out
                                             runes-outside-in
                                             new-synps
                                             rp-state
                                             state
-                                            :ruleset ruleset))))
+                                            :ruleset ruleset
+                                            :suppress-not-simplified-error
+                                            suppress-not-simplified-error))))
   :hints (("Goal"
-           :in-theory (e/d (rp-state-init-rules) ()))))
+           :in-theory (e/d (rp-state-init-rules)
+                           (UPDATE-SUPPRESS-NOT-SIMPLIFIED-ERROR)))))
+
 
 (defthm rp-state-put-and-get
   (implies (rp-statep rp-state)
@@ -2793,17 +2800,21 @@ nil
 
 (defthm valid-rp-statep-rp-state-init-rules
   (implies (and (rp-statep rp-state)
+                (booleanp suppress-not-simplified-error)
                 (rp-evl-meta-extract-global-facts :state state))
            (valid-rp-statep (rp-state-init-rules runes-inside-out
                                                  runes-outside-in
                                                  new-synps
                                                  rp-state
                                                  state
-                                                 :ruleset ruleset)))
+                                                 :ruleset ruleset
+                                                 :suppress-not-simplified-error
+                                                 suppress-not-simplified-error)))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (rp-state-init-rules)
-                           (valid-rp-statep)))))
+                           (valid-rp-statep
+                            UPDATE-SUPPRESS-NOT-SIMPLIFIED-ERROR)))))
 
 (defun rules-alistp2 (alist)
   (if (atom alist)
@@ -2951,17 +2962,21 @@ nil
                            ()))))
 
 (defthm valid-rp-state-syntaxp-rp-state-init-rules
-  (implies (and (rp-statep rp-state))
+  (implies (and (rp-statep rp-state)
+                (booleanp suppress-not-simplified-error))
            (valid-rp-state-syntaxp (rp-state-init-rules runes-inside-out
                                                         runes-outside-in
                                                         new-synps
                                                         rp-state
                                                         state
-                                                        :ruleset ruleset)))
+                                                        :ruleset ruleset
+                                                        :suppress-not-simplified-error
+                                                        suppress-not-simplified-error)))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (rp-state-init-rules)
                            (valid-rp-state-syntaxp
+                            UPDATE-SUPPRESS-NOT-SIMPLIFIED-ERROR
                             (:DEFINITION VALID-RP-STATEP)
                             (:DEFINITION VALID-RULESP)
                             (:DEFINITION ACL2::APPLY$-BADGEP)

@@ -105,7 +105,7 @@ which submits an event.
  set-rp-backchain-limit-throws-error
  :parents (rp-utilities set-rp-backchain-limit)
  :short "Whether or not to throw an error when backchain-limit is reached"
- :long "<p> (@ see set-backchain-limit)
+ :long "<p> @(see set-rp-backchain-limit)
  </p>")
 
 (xdoc::defxdoc

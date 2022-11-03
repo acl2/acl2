@@ -49,15 +49,16 @@
 
 (include-book "proofs/guards")
 
-(encapsulate
-  nil
+(progn
   (defrec rp-cl-args
-    (runes runes-outside-in new-synps cases . ruleset)
+    (runes runes-outside-in new-synps cases ruleset
+           suppress-not-simplified-error)
     t)
   (defun rp-cl-args-p (cl-args)
     (declare (xargs :guard t))
     (and  (weak-rp-cl-args-p cl-args)
           (symbolp (access rp-cl-args cl-args :ruleset))
+          (booleanp (access rp-cl-args cl-args :suppress-not-simplified-error))   
           (or (alistp (access rp-cl-args cl-args :new-synps))
               (hard-error 'rp-cl-args-p
                           "The :new-synps hint should be an alist. ~%" nil)))))
@@ -126,7 +127,10 @@
                                       rp-state
                                       state
                                       :ruleset
-                                      (or (access rp-cl-args cl-args :ruleset) 'rp-rules)))
+                                      (or (access rp-cl-args cl-args :ruleset) 'rp-rules)
+                                      :suppress-not-simplified-error
+                                      (and (access rp-cl-args cl-args :suppress-not-simplified-error) t)))
+       
        ((mv rw rp-state)
         (if (and (rp-meta-fnc-formula-checks state)
                  (rp-proc-formula-checks state))

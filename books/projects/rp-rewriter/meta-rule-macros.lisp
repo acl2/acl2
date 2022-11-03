@@ -292,7 +292,7 @@ but instead you passed ~p0~%"
                               (returns 'term)
                               (rw-direction 'nil)
                               (valid-syntaxp 't)
-                              (disabledp 'nil)
+                              (disabled 'nil)
                               hints
                               (cl-name-prefix 'nil))
   `(make-event
@@ -304,7 +304,7 @@ but instead you passed ~p0~%"
                       ',valid-syntaxp
                       ',hints
                       ',cl-name-prefix
-                      ',disabledp
+                      ',disabled
                       state)))
 
 
@@ -553,19 +553,18 @@ with RP-Rewriter. ~%"
 
 (xdoc::defxdoc
  add-meta-rule
- :parents (rp-rewriter/meta-rules)
+ :parents (rp-rewriter/meta-rules rp-ruleset)
  :short "A macro to add created meta rules to RP-Rewriter"
  :long "<p>
 <code>
 @('
 (add-meta-rule :meta-fnc <meta-fnc-name> ;; mandatory
                :trig-fnc <trig-fnc-name> ;; mandatory
-               :formula-checks <formula-check-fnc-name> ;; nil by default,
- necessary for most cases.
+               :formula-checks <formula-check-fnc-name> ;; nil by default, necessary in most cases.
                :returns <return-signature>   ;; optional
-               :outside-in <nil-t-or-:both>  ;; optional, nil by default
+               :rw-directuon <:inside-out, :outside-in, or :both>  ;; optional, :inside-out by default
                :valid-syntaxp <t-or-nil>     ;; optional, t by default
-               :disabledp <t-or-nil>         ;; optional, t by default
+               :disabled <t-or-nil>          ;; optional, t by default
                :hints    <regular-ACL2-hints> ;; optional
                :cl-name-prefix <nil-or-a-unqiue-prefix> ;; optional, nil by default
                )
@@ -600,12 +599,10 @@ it accordingly. </li>
 <li> :valid-syntaxp  if you proved that your meta function returns rp-termp,
 then set this to t. Otherwise, RP-Rewriter will have to call rp-termp everytime
 the meta runction changes the term. </li>
-<li> :disabledp This macro will prove the necessary lemma to make sure that the
-meta function can be registered soundly (even though this lemma might be
-redundant). If you choose to keep this lemma disabled, then set this to t. It
-is, by default, set to t. </li>
-<li>:hints regular ACL2 hints passed to the defthm event of the aforementioned
-lemma to be proved.</li>
+<li> :disabled will cause the registered meta rule to be disabled by default,
+but it can be later enabled by the user. </li>
+<li>:hints regular ACL2 hints passed to the internal defthm event that checks
+the correctness of necessary lemmas mentioned in @(see Rp-rewriter/meta-rules).</li>
 <li> :cl-name-prefix Meta functions are attached to RP-Rewriter using a
 defattach mechanism. By default, add-meta-rule will not trigger this mechanism,
 and the user needs to call @(see attach-meta-fncs) once all the necessary meta
@@ -1128,8 +1125,8 @@ discussions for @(see valid-sc) and @(see rp-termp).
 </p>
 
 <p>
-If the meta function returns dont-rw, then you need to prove the same lemma for
-@('(mv-nth 0 (<meta-fnc> term))').
+If the meta function returns dont-rw, then you need to prove this lemma for
+@('(mv-nth 0 (<meta-fnc> term))') instead.
 </p>
 
 <p>
@@ -1149,8 +1146,8 @@ conditions are maintained.
 </p>
 
 <p>
-If the meta function returns dont-rw, then you need to prove the same lemma for
-@('(mv-nth 0 (<meta-fnc> term))').
+If the meta function returns dont-rw, then you need to prove this lemma for
+@('(mv-nth 0 (<meta-fnc> term))') instead.
 </p>
 
 <p>
@@ -1166,28 +1163,19 @@ your meta function. It prevents syntactic check on every term returned from
 meta function.
 </p>
 <p>
-If the meta function returns dont-rw, then you need to prove the same lemma for
-@('(mv-nth 0 (<meta-fnc> term))').
+If the meta function returns dont-rw, then you need to prove this lemma for
+@('(mv-nth 0 (<meta-fnc> term))') instead.
 </p>
 
 <p>
-6. If your function returns @(see rp::dont-rw), then you also need to prove
-that it is syntactically correct. Otherwise skip this step.
-<code>
-@('(defthm dont-rw-syntaxp-of-meta-fnc
-   (dont-rw-syntaxp (mv-nth 1 (<meta-fnc> term))))')
-</code>
-</p>
-
-<p>
-7. Save the meta rule in the rule-set of RP-Rewriter for meta rules.
+6. Save the meta rule in the rule-set of RP-Rewriter for meta rules.
 <code>
 @('
 (rp::add-meta-rule
  :meta-fnc <meta-fnc>
  :trig-fnc <trig-fnc>
  :returns <return-signature>
- :outside-in <t-if-the-meta-rule-should-apply-from-outside-in>
+ :rw-direction <:inside-out, :outside-in, or :both>
  :valid-syntaxp <t-if-rp-termp-of-meta-fnc-is-proved>)
 ')
 </code>
@@ -1197,7 +1185,7 @@ See @(see add-meta-rule) for further discussion of the options.
 </p>
 
 <p>
-8. Attach these newly created meta functions.
+7. Attach these newly created meta functions.
 <code>
 @('(rp::attach-meta-fncs <a-unique-name-for-updated-clause-processor>)')
 </code>
