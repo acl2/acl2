@@ -59,7 +59,8 @@
               (get-real-time state)
               (let ((time (/ (ceiling (* (- end-time start-time) 100) 1) 100)))
                 (progn$ (print-rounded-val time)
-                        (cw "s: ~x1~%" time (shorten-event event))
+                        ;; The "s:" here is to label the time just printed with "seconds".
+                        (cw "s: ~x0~%" (shorten-event event))
                         (submit-and-time-events (rest events) print state))))))))))
 
 ;; Reads and then submits all the events in FILENAME.
