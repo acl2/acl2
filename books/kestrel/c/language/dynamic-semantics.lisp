@@ -203,3 +203,27 @@
     (t (error (impossible))))
   :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-cast ((tyname tynamep) (arg valuep))
+  :returns (result value-resultp)
+  :short "Execute a cast expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support casts between integer types.
+     None involving pointers.")
+   (xdoc::p
+    "We reject casts to @('void'),
+     because a scalar type is required [C:6.5.4/2]."))
+  (b* ((type (tyname-to-type tyname))
+       ((unless (type-nonchar-integerp type))
+        (error (list :cast-not-supported :to type)))
+       ((unless (value-integerp arg))
+        (error (list :cast-not-supported :from (value-fix arg))))
+       (err (error (list :cast-undefined :from (value-fix arg) :to type)))
+       (val (convert-integer-value arg type))
+       ((when (errorp val)) err))
+    val)
+  :hooks (:fix))
