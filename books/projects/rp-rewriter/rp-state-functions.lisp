@@ -120,7 +120,13 @@ which submits an event.
  for meta-rules.  When set  to :cnt,  it also  attaches a  number to  each rune
  showing how many  times they are used,  and how many times they  failed due to
  unrelieved hypotheses.  These entries are  saved in rules-used field  of stobj
- rp::rp-state. </p>" )
+ rp::rp-state. </p>
+
+<p> Rules will be automatically printed in the most common cases of errors or
+when rewriter finishes rewriting. There might be cases, however, that an error
+might not print rules used such as when a meta function throws an error. In
+such cases, or for some other reason, you may use: @('(rp-state-print-rules-used rp-state)') to manually print
+saved rules. </p>" )
 
 
 (encapsulate

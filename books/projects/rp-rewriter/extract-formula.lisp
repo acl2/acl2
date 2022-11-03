@@ -902,8 +902,7 @@ priority.
     `(table rp-exc-rules ',fnc t)))
 
 
-(xdoc::defxdoc
-  rp-ruleset
+(xdoc::defxdoc rp-ruleset
   :parents (rp-rewriter)
   :short "Functions to manage RP-Rewriter's ruleset"
   :long
@@ -911,51 +910,92 @@ priority.
 the functions below to register rules to RP-Rewriter's
  ruleset:</p>
 
-<p>ADD-RP-RULE</p>
+<p><b>ADD-RP-RULE</b></p>
 <code>
-@('(rp::add-rp-rule <rule-name>
-                 &key (disabled 'nil)
-                      (beta-reduce 'nil)
-                      (hints 'nil)
-                      (outside-in 'nil))')  </code>
+@('
+(rp::add-rp-rule <rule-name>
+                 ;; optional args:
+                 :disabled <t-or-nil> ;; default: nil
+                 :lambda-opt <...>    ;; default: nil
+                 :hints <...>         ;; default: nil
+                 :rw-direction <...>  ;; default: :inside-out
+                 :ruleset <...>       ;; default: rp-rules
+                 )
+')
+</code>
 
 <p>This  macro  submits  a  table  event  that saves  the  given  rule  in  the
 RP-Rewriter's ruleset to be used later.   Application priority of the rule will
 depend on when this event is submitted  rather than when the rule is originally
 defined. </p>
 
-<p> :disabled key, when set, leaves the added rule disabled. </p>
+<p> :disabled key, when set, leaves the added rule disabled for RP-Rewriter. </p>
 
-<p> :beta-reduce key checks if the rule  has any lambda expressions. If that is
-the case, then it calls @(see rp::defthm-lambda)  to create a new rule and save
-that instead. The name of the new rule will be printed, and it will be disabled
-for ACL2. You need to use that new name while enabling/disabling the added rule
-for  RP-Rewriter.</p>
+<p> :lambda-opt key checks  if the rule has any lambda  expressions. If that is
+the case, then  it performs @(see lambda-opt)imization to create  a new rule and
+save that  instead. The name of  the new rule will  be printed, and it  will be
+disabled for ACL2. RP-Rewriter  will know that use that rule  when you refer to
+the original rule name, such as when enabling/disabling it.</p>
 
-<p> :hints  key  is   relevant  only when :beta-reduce is set and rp::defthm-lambda. </p>
+<p> :hints  key  will likely never be used but maybe necessary in some
+unforeseen cases when :lambda-opt is enabled</p>
 
-<p>  :outside-in  key can  be  set  to :inside-out,  :both,  t,  or nil.   This
-determines the rewrite direction when applying a  rule. If the key is set to t,
+<p>  :rw-direction  key can  be  set  to :inside-out,  :both,  or :outside-in.   This
+determines the rewrite direction when applying a  rule. If the key is set to :outside-in,
 then the rule will  be tried on a term before rewriting the  subterms. If it is
-set to nil,  then the rule will  be considered only an inside-out  rule and the
+set to :inside-out,  then the rule will  be considered only an inside-out  rule and the
 subterms will be rewritten first before applying the rewrite rule. If it is set
-to  :inside-out  or   :both,  then  it  is  treated  as   both  inside-out  and
+to :both,  then  it  is  treated  as   both  inside-out  and
 outside-in.</p>
 
-<p> DEF-RP-RULE </p>
+<p> :ruleset key select which table the rule should be saved in. By default, it
+is set to rp-rules. Should users 
+choose to collect their rules in some other table to manage a different
+rewriting scheme and don't want the possible interference from the existing set
+of rules, then they may choose to use a custom table to store and read the
+rule names.</p>
+
+</p>
+
+<p> <b>DEF-RP-RULE</b> </p>
 
 <code>
-@('(rp::def-rp-rule <rule-name> <conjecture>
-                 &rest
-                 <hints>)')
+@('
+(rp::def-rp-rule  <rule-name>
+  <conjecture>
+  ;;optional arguments:
+  :rule-classes <...>      ;; default: :rewrite, passed to defthm
+  :hints <...>             ;; default: nil. Passed to defthm
+  :otf-flg <t-or-nil>      ;; default: nil. Passed to defthm
+  :instructions <t-or-nil> ;; default: nil. Passed to defthm.
+  
+  :disabled <t-or-nil> ;; default: nil. Disable the rule for both ACL2 and RP
+  :disabled-for-rp <t-or-nil>   ;; default: nil. Disable the rule for RP
+  :disabled-for-ACL2 <t-or-nil> ;; default: nil. Disable the rule for ACL2
+
+  :rw-direction <...> ;; default: :inside-out. Passed to add-rp-rule
+  :lambda-opt <...>   ;; default: t. Passed to add-rp-rule.
+  :rule-set <...>     ;; default: rp-rules. Passed to add-rp-rule
+  )')
 </code>
 
-<p>  This  macro  has  the  same  signature  as  defthm.  It  submits  a  @(see
- rp::defthm-lambda) event  in the term has  a lambda expression. If  it doesn't
- then defthm-lambda translates  to defthm. It also submits  a add-rp-rule event
- to save the rule in the rule-set.  </p>
+<p>  This  macro  simply expands to consecutive calls of defthm and
+add-rp-rule. It provides a compact way to add rewrite rules intended to be used
+by RP-Rewriter. Note that the :lambda-opt argument is set to to by default. </p>
 
-<p> ENABLING/DISABLING RULES </p>
+<p> <b> PRINTING RULES </b> <p>
+
+<p> A given rule may be parsed differently in RP-Rewriter than how ACL2
+processes rules. Therefore, using @(see acl2::pr) to understand rhs, lhs, hyp
+etc. of a rule may be misleading. So RP-Rewriter has its of version of pr: </p>
+
+@({
+(rp-pr rule-name)
+})
+
+<p> This will show relevant information about a given rule. </p>
+
+<p> <b> ENABLING/DISABLING RULES </b> </p>
 
 <p> To enable rewrite, definition or meta rules: </p>
 
@@ -977,11 +1017,11 @@ rules, their trigger function should be passed as well. For example:
 <p> To disable all: </p>
 <code>@('(rp::disable-all-rules)')</code>
 
-<p> Meta rules can be  enabled/disabled without passing their trigger functions
-with  rp::enable-meta-rules and  rp::disable-meta-rules.  These  macros have  a
+<p> Alternatively, meta rules can be  enabled/disabled without passing their trigger functions
+using  rp::enable-meta-rules and  rp::disable-meta-rules.  These  macros have  a
 different signature than  rp::enable-rules. For example: (rp::enable-meta-rules
 mv-nth-meta hons-acons-meta hons-get-meta). These macros will enable/disable
-the meta rules for all of their trigger functions. </p>
+the meta rules for the given meta function names each of which may have multiple trigger functions. </p>
 
 <code>
 @('(rp::enable-meta-rules meta-fnc1 meta-fnc2 ...)')
@@ -1003,6 +1043,11 @@ with the macro calls below. The given function name should be unquoted. </p>
 
 <code> @('(rp::enable-exc-counterpart <fnc-name>)') </code>
 
+<p>Alternatively, passing the rune for executable counterpart to
+enable-rules/disable-rules can also work. For example: </p>
+
+<code> @('(rp::enable-rules '((:executable-counterpart mv-nth)))') </code>
+
 <p> Preprocessors and postprocessors can be enabled/disabled with the macros
 below. </p>
 
@@ -1011,11 +1056,11 @@ below. </p>
 <code> @('(rp::enable-postprocessor <fnc-name>)') </code>
 <code> @('(rp::disable-postprocessor <fnc-name>)') </code>
 
-<p> CHANGING RULE PRIORITIES </p>
+<p> <b> CHANGING RULE PRIORITIES </b> </p>
 
 <p>Users can 'bump'  or 'bump down' rules, effectively  changing their application
-priority.         For         example,        (bump-rp-rule        (:definition
-implies))   (alternatively,  (bump-rp-rule   implies))   will  priorities   the
+priority.         For         example,        @('(bump-rp-rule        (:definition
+implies))')   (alternatively,  @('(bump-rp-rule   implies)'))   will  priorities   the
 definition rule of  implies over any rewrite rule that  might have been defined
 prior to that  point. If user defines  a rewrite rule about  implies after this
 point, then that  rule will be tried/applied.  If it fails, then  the bumped up
@@ -1045,73 +1090,86 @@ making it the least prioritized rule. </p>
 
 (xdoc::defxdoc
   enable-preprocessor
-  :parents (rp-other-utilities)
-  :short "@(see rp::rp-ruleset)")
+  :parents (rp-ruleset)
+  :short "Enable a preprocessor for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (xdoc::defxdoc
   enable-postprocessor
-  :parents (rp-other-utilities)
-  :short "@(see rp::rp-ruleset)")
+  :parents (rp-ruleset)
+  :short "Enable a postprocessor for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (xdoc::defxdoc
   disable-preprocessor
-  :parents (rp-other-utilities)
-  :short "@(see rp::rp-ruleset)")
+  :parents (rp-ruleset)
+  :short "Disable a preprocessor for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (xdoc::defxdoc
   disable-postprocessor
-  :parents (rp-other-utilities)
-  :short "@(see rp::rp-ruleset)")
+  :parents (rp-ruleset)
+  :short "Disable a postprocessor for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (xdoc::defxdoc
   bump-rule
-  :parents (rp-other-utilities)
-  :short "@(see rp::rp-ruleset)")
+  :parents (rp-ruleset)
+  :short "Put the given rule at the top of the stack to prioritize them for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (xdoc::defxdoc
   bump-down-rule
-  :parents (rp-other-utilities)
-  :short "@(see rp::rp-ruleset)")
+  :parents (rp-ruleset)
+  :short "Push the given rule to the bottom of the stack to de-prioritize them for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (xdoc::defxdoc
   rp::bump-rules
-  :parents (rp-other-utilities)
-  :short "@(see rp::rp-ruleset)")
+  :parents (rp-ruleset)
+  :short "Put given rules at the top of the stack to prioritize them for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (xdoc::defxdoc
   rp::bump-all-meta-rules
-  :parents (rp-other-utilities)
-  :short "@(see rp::rp-ruleset)")
+  :parents (rp-ruleset)
+  :short "Put all the meta rules at the top of the stack to prioritize them for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (xdoc::defxdoc
   rp::def-rp-rule
-  :parents (rp-other-utilities)
-  :short "Documentation under @(see rp::rp-ruleset).")
+  :parents (rp-ruleset)
+  :short "A defthm macro that calls @(see add-rp-rule) after its defthm event."
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (xdoc::defxdoc
   rp::disable-rules
-  :parents (rp-other-utilities)
-  :short "Documentation under @(see rp::rp-ruleset)")
+  :parents (rp-ruleset)
+  :short "Disable rules for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (xdoc::defxdoc
   rp::enable-rules
-  :parents (rp-other-utilities)
-  :short "Documentation under @(see rp::rp-ruleset)")
+  :parents (rp-ruleset)
+  :short "Enable rules for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (xdoc::defxdoc
   disable-all-rules
-  :parents (rp-other-utilities)
-  :short "Documentation under @(see rp::rp-ruleset)")
+  :parents (rp-ruleset)
+  :short "Disable all rules for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (xdoc::defxdoc
   rp::disable-exc-counterpart
-  :parents (rp-other-utilities)
-  :short "Documentation under @(see rp::rp-ruleset)")
+  :parents (rp-ruleset)
+  :short "Disable executable-counterpart of a function for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
-(xdoc::defxdoc
-  rp::enable-exc-counterpart
-  :parents (rp-other-utilities)
-  :short "Documentation under @(see rp::rp-ruleset)")
+(xdoc::defxdoc rp::enable-exc-counterpart
+  :parents (rp-ruleset)
+  :short "Enable executable-counterpart of a function for RP-Rewriter"
+  :long "<p>Please @(see rp-ruleset) for details.</p> ")
 
 (progn
 

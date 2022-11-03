@@ -45,6 +45,7 @@
 (include-Book "extract-formula")
 (include-Book "proofs/guards")
 (include-book "centaur/meta/let-abs" :dir :system)
+(include-book "std/strings/substrp" :dir :system)
 
 (local
  (include-Book "proofs/extract-formula-lemmas"))
@@ -112,6 +113,8 @@
 (encapsulate
   nil
 
+  (defwarrant acl2::explode$inline)
+
   ;; Parse a rewrite rules and create functions for all the lambda expressions so
   ;; that they open up one at a time.
 
@@ -147,12 +150,27 @@
                 (eq (car term) 'quote))
             (mv nil nil nil nil term index))
            ((is-lambda term)
-            (b* (((mv fnc-name sigs fncs fnc-names openers new-index)
-                  (lambda-to-fnc base-name index (cadr (car term)) (caddr (car term)))))
+            (b* ((keys (cadr (car term)))
+                 (body (caddr (car term)))
+                 (exps (cdr term))
+
+                 (exps (loop$ for k in keys as e in exps
+                              when (b* ((chars (explode (symbol-name k))))
+                                     (and (not (equal (car chars) #\*))
+                                          (not (equal (last chars) '(#\*)))))
+                              collect e))
+                 (keys (loop$ for k in keys 
+                              when (b* ((chars (explode (symbol-name k))))
+                                     (and (not (equal (car chars) #\*))
+                                          (not (equal (last chars) '(#\*)))))
+                              collect k))
+                 
+                 ((mv fnc-name sigs fncs fnc-names openers new-index)
+                  (lambda-to-fnc base-name index keys body)))
               (mv sigs fncs
                   fnc-names
                   openers
-                  `(,fnc-name ,@(cdr term))
+                  `(,fnc-name ,@exps)
                   new-index)))
            (t
             (b* (((mv sigs fncs fnc-names openers rest new-index)
@@ -405,44 +423,104 @@
 (xdoc::defxdoc
   defthm-lambda
   :parents (rp-utilities)
-  :short "A useful utility to use rewrite rules that has lambda expression on
- RHS for RP-Rewriter."
-  :long "<p>RP-Rewriter does not work with terms that has lambda expressions. Every
- rewrite rule and conjectures are lambda-optd. However, for some cases, doing
- beta-reduction without rewriting subterms first can cause performance issues
- due to repetition.</p>
-<p> To mitigate this issue, we use a macro defthm-lambda that can retain the
- functionality of lambda expressions rewrite rules. defthm-lambda
- has the same signature as defthm. </p>
+  :short "defthm-lambda is deprecated. Please see @(see defthmrp), @(see
+  add-rp-rule), or @(see lambda-opt) for relevant topics."
+  :long "<p>The defthm-lambda utility used to be used for @(see lambda-opt) in
+  the calls of @(see defthmrp) and @(see add-rp-rule). After restructuring the
+  program, we deprecated the defthm-lambda utility. </p>")
 
-<p> Below is an example defthm-lambda event and what it translates to:</p>
+(xdoc::defxdoc lambda-opt
+  :parents (add-rp-rule defthmrp)
+  :short "A method to optimize lambda expression before RP-Rewriter attempts to
+  rewrite them."
+  :long "<p>RP-Rewriter does not internally work with terms that has lambda
+  expressions. Every term (conjecture and rules) that is passed to the rewriter
+  will be beta reduced. However, in some cases, doing
+ beta-reduction will cause repetitive
+  rewriting and this may result in significant proof-time and memory issues. </p>
+
+
+<p> To mitigate this issue, we use a lambda optimization mechanism when adding
+ rules to the RP-rewriter's ruleset with @(see add-rp-rule) and proving
+ conjectures with @(see defthmrp). This mechanism is
+ intended to imitate the
+ structure of lambda expressions to prevent repetitive rewriting. For every
+ level of lambda expression, we create a non-executable function so that values
+ of the lambda expressions are rewritten first, then they are bound to the
+ variables, and those variables are applied to the term. For example,
+ add-rp-rule with lambda-opt enabled will produce these events for the given rule:</p>
 <code>
-@('(defthm-lambda foo-redef
-    (implies (p x)
-             (equal (foo x)
-                    (let* ((a (f1 x))
-                           (b (f2 x)))
-                      (f4 a a b)))))
+@('
+(defthm foo-redef
+  (implies (p x)
+           (equal (foo x)
+                  (let* ((a (f1 x))
+                         (b (f2 x)))
+                    (f4 a a b)))))
 
-  ;; The above event is translated into this:
-  (encapsulate
-    (((foo-redef_lambda-fnc_1 * *) => *)
-     ((foo-redef_lambda-fnc_0 * *) => *))
-    (local (defun-nx foo-redef_lambda-fnc_1 (b a)
-             (f4 a a b)))
-    (local (defun-nx foo-redef_lambda-fnc_0 (a x)
-             (foo-redef_lambda-fnc_1 (f2 x) a)))
-    (def-rp-rule foo-redef_lambda-opener
-      (and (equal (foo-redef_lambda-fnc_1 b a)
-                  (f4 a a b))
-           (equal (foo-redef_lambda-fnc_0 a x)
-                  (foo-redef_lambda-fnc_1 (f2 x) a))))
-    (def-rp-rule foo-redef
-      (implies (p x)
-               (equal (foo x)
-                      (foo-redef_lambda-fnc_0 (f1 x) x)))))
+(add-rp-rule foo-redef
+             :lambda-opt t)
+
+;; The above event is translated into this:
+(encapsulate
+  (((foo-redef_lambda-fnc_1 * *) => *)
+   ((foo-redef_lambda-fnc_0 * *) => *))
+  (local (defun-nx foo-redef_lambda-fnc_1 (b a)
+           (f4 a a b)))
+  (disable-exc-counterpart foo-redef_lambda-fnc_1)
+  (local (add-rp-rule foo-redef_lambda-fnc_1))
+  (local (defun-nx foo-redef_lambda-fnc_0 (a x)
+           (foo-redef_lambda-fnc_1 (f2 x) a)))
+  (disable-exc-counterpart foo-redef_lambda-fnc_0)
+  (local (add-rp-rule foo-redef_lambda-fnc_0))
+  (def-rp-rule
+    foo-redef-for-rp-openers
+    (and (equal (foo-redef_lambda-fnc_1 b a)
+                (f4 a a b))
+         (equal (foo-redef_lambda-fnc_0 a x)
+                (foo-redef_lambda-fnc_1 (f2 x) a)))
+    :disabled-for-acl2 t
+    ...)
+  (defthmd
+    foo-redef-for-rp
+    (and (implies (p x)
+                  (equal (foo x)
+                         (foo-redef_lambda-fnc_0 (f1 x) x))))
+    :hints ...)
+  ... <some-table-events> ...)
 ')
 </code>
+
+<p> Here, add-rp-rule will generate another lemma called
+<tt>foo-redef-for-rp</tt> that is aimed to be used by RP-Rewriter
+in lieu of the original <tt>foo-redef</tt> rule. The right hand side of the
+original rule first binds @('a') to @('(f1 x')). After applying
+@('foo-redef-for-rp'), the rewriter will first work on the @('(f1 x)') term, then
+it will rewrite foo-redef_lambda-fnc_0 and bind @('a') to rewritten @('(f1 x)')
+which will mimic the behavior
+of the original lambda expression. Then, the program binds @('b') to @('(f2 x)') through
+foo-redef_lambda-fnc_1, and then finally get the result. This way, the repeated (had it been beta reduced)
+term @('(f1 x)')  is rewritten only once. </p>
+
+
+
+<p> Users will chiefly observe this lambda optimization behavior when using
+@(see def-rp-rule), @(see add-rp-rule), and @(see defthmrp). Def-rp-rule
+simply proves a given lemma using ACL2 and given hints, and then calls
+add-rp-rule to register the proved lemma with RP-Rewriter possibly with this
+lambda optimization. Add-rp-rule and defthmrp themselves implement their
+versions of the lambda optimization. Add-rp-rule parses the term of a given
+rule's formula and beta reduces left-hand-side (lhs) while retaining the lambda form of
+the hyps and right-hand-side (rhs). It pre-processes the term to push in the lambda
+expressions in order to extract the terms for rhs and hyp. When its :lambda-opt argument is set to
+:max, it tries to look for repeated terms in hyp and rhs separately that are not already bound in lambda
+expressions for further optimizations. On the other hand, defthmrp does not try
+to isolate rhs, hyp, and lhs during the optimization process and it works on the
+term as a whole. However, whatever lambda optimization defthmrp does and
+whatever events it creates in the process, they are made locally inside an
+encapsulate and it is only for the sake of RP-Rewriter at the time of its
+simplification of the given conjecture. Defthmrp still calls add-rp-rule when
+saving the lemma as a rewrite rule for it to use later. </p>
 ")
 
 (progn
@@ -528,8 +606,8 @@ nothing to bump!" nil)))
            ;; recollect into a lambda expression (rhs and hyp only) if there is
            ;; room for improvement
            ;;((list rhs-old hyp-old) (list rhs hyp)) 
-           (rhs (if (equal lambda-opt :max) (cmr::let-abstract-term rhs 'rhs-var) rhs))
-           (hyp (if (equal lambda-opt :max) (cmr::let-abstract-term hyp 'hyp-var) hyp))
+           (rhs (if (equal lambda-opt :max) (cmr::let-abstract-term rhs 'lambda-opt-max-rhs-var) rhs))
+           (hyp (if (equal lambda-opt :max) (cmr::let-abstract-term hyp 'lambda-opt-max-hyp-var) hyp))
            #|(- (or (equal rhs-old rhs)
                   (cw "changed rhs: rule: ~p0 ~%" rule-name)))|#
            #|(- (or (equal hyp-old hyp)
@@ -758,6 +836,11 @@ nothing to bump!" nil)))
        (make-event
         (add-rp-rule-fn ',rule ',args state))))
 
+  (defxdoc add-rp-rule
+    :parents (rp-other-utilities)
+    :short "Register a rule with RP-Rewriter"
+    :long "<p>Please @(see rp-ruleset) for details.</p> ")
+
   #|(defmacro add-rp-rule (rule-name &key
   (disabled 'nil)
   (lambda-opt 'nil)
@@ -834,6 +917,7 @@ nothing to bump!" nil)))
                                      (disabled-for-rp 'nil)
                                      (disabled-for-ACL2 'nil)
                                      (rw-direction ':inside-out)
+                                     (ruleset 'rp-rules)
                                      ;;(supress-warnings 'nil)
                                      (hints 'nil)
                                      (otf-flg 'nil)
@@ -850,7 +934,8 @@ nothing to bump!" nil)))
          (add-rp-rule ,rule-name
                       :lambda-opt ,lambda-opt
                       :disabled ,(or disabled disabled-for-rp)
-                      :rw-direction ,rw-direction)
+                      :rw-direction ,rw-direction
+                      :ruleset ,ruleset)
          #|(acl2::extend-pe-table ,rule-name
          (def-rp-rule ,rule-name ,rule ,@hints))|#
          ;;(value-triple ',rule-name)
@@ -1064,18 +1149,20 @@ RP-Rewriter will throw an eligible error.</p>"
 (defmacro rp-cl (&key (new-synps 'nil)
                       (runes 'nil)
                       (runes-outside-in 'nil)
-                      (cases 'nil)) ;
+                      (cases 'nil)
+                      (ruleset 'rp-rules)) ;
   `(rp-rewriter
     clause
-    (make rp-cl-hints
-          :cases ,cases
+    (make rp-cl-args
+          :cases ',cases
           :runes-outside-in ',runes-outside-in
           :runes ',runes #|,(if rules-override
           rules-override
           `(append (let ((world (w state))) (current-theory :here))
           ,extra-rules)
           )||#
-          :new-synps ,new-synps)
+          :ruleset ',ruleset
+          :new-synps ',new-synps)
     rp-state state))
 
 (defmacro def-rp-thm (&rest rest)
@@ -1116,7 +1203,8 @@ RP-Rewriter will throw an eligible error.</p>"
                                    (disabled-for-ACL2 'nil)
                                    (rw-direction ':inside-out)
                                    (supress-warnings 'nil)
-                                   (add-rp-rule 't))
+                                   (add-rp-rule 't)
+                                   (ruleset 'rp-rules))
         args)
        (world (w state))
        ((acl2::er translated-term)
@@ -1125,19 +1213,28 @@ RP-Rewriter will throw an eligible error.</p>"
        (translated-term (hide/unhide-constants-for-translate nil translated-term))
        ((acl2::er cases)
         (translate-lst cases t t nil 'defthmrp-fn world state))
-       #|((acl2::er new-synps) ;; I guess new-synps should be an alist...
-       (translate-lst new-synps t t nil 'defthmrp-fn world state))|#
+       ((unless (alistp new-synps))
+        (value (raise "Given new-synps should be an alist but instead got: ~p0" new-synps)))
+       ((acl2::er new-synps-vals) ;; new-synps is an alist...
+        (translate-lst (strip-cdrs new-synps) t t nil 'defthmrp-fn world state))
+       (new-synps (pairlis$ (strip-cars new-synps) new-synps-vals))
+       
        (hints  `(:hints (("goal"
                           :do-not-induct t :rw-cache-state nil :do-not '(preprocess generalize fertilize)
                           :clause-processor (rp-cl :runes ,runes
                                                    :runes-outside-in ,runes-outside-in
-                                                   :new-synps ',new-synps
-                                                   :cases ',cases)))))
+                                                   :new-synps ,new-synps
+                                                   :cases ,cases
+                                                   :ruleset ,ruleset)))))
        (body
         (cond
          (lambda-opt
-          (b* ((rule-name-for-rp (intern-in-package-of-symbol (str::cat (symbol-name name) "-FOR-RP") name))
+          (b* ((rule-name-for-rp (intern-in-package-of-symbol
+                                  (str::cat "LOCAL-" (symbol-name name) "-FOR-RP") name))
                #|(name-tmp (intern-in-package-of-symbol (str::cat (symbol-name name) "-TMP") name))|#
+               (translated-term (if (equal lambda-opt :max)
+                                    (cmr::let-abstract-term translated-term 'lambda-opt-max-var)
+                                  translated-term))
                ((mv ?sigs fncs ?fnc-names ?openers reduced-body &) (search-lambda-to-fnc name 0 translated-term))
                (- (or (and sigs fncs openers)
                       (and (or sigs fncs openers)
@@ -1148,8 +1245,8 @@ RP-Rewriter will throw an eligible error.</p>"
                   ,term
                   :rule-classes ,rule-classes
                   ,@hints)))
-            `(encapsulate nil
-               ;;,sigs
+            `(defsection ,name
+               ;;,sigs ;; no need to have the sigs here as we don't want to export the functions.
                (local
                 (progn
                   ,@fncs))
@@ -1179,32 +1276,34 @@ RP-Rewriter will throw an eligible error.</p>"
              enable-rules
              disable-rules
              add-rp-rule)
-         `(with-output
-            :off :all :on (error 
-                           ,@(and (not supress-warnings) '(comment)))
-            :stack :push
-            ;;:stack :push
-            (encapsulate
-              nil
-              ,@(and enable-meta-rules `((local
-                                          (enable-meta-rules ,@enable-meta-rules))))
+         `(defsection ,name
+            (with-output
+              :off :all :on (error 
+                             ,@(and (not supress-warnings) '(comment)))
+              :stack :push
+              ;;:stack :push
+              (progn
+              
+                ,@(and enable-meta-rules `((local
+                                            (enable-meta-rules ,@enable-meta-rules))))
 
-              ,@(and disable-meta-rules `((local
-                                           (disable-meta-rules ,@disable-meta-rules))))
+                ,@(and disable-meta-rules `((local
+                                             (disable-meta-rules ,@disable-meta-rules))))
 
-              ,@(and enable-rules  `((local
-                                      (enable-rules ,enable-rules))))
+                ,@(and enable-rules  `((local
+                                        (enable-rules ,enable-rules))))
 
-              ,@(and disable-rules `((local
-                                      (disable-rules ,disable-rules))))
-              ,body
+                ,@(and disable-rules `((local
+                                        (disable-rules ,disable-rules))))
+                ,body
 
-              ,@(and add-rp-rule
-                     `((add-rp-rule ,name
-                                    :lambda-opt ,lambda-opt
-                                    :disabled ,(or disabled disabled-for-rp)
-                                    :rw-direction ,rw-direction)))
-              ))
+                ,@(and add-rp-rule
+                       `((add-rp-rule ,name
+                                      :lambda-opt ,lambda-opt
+                                      :disabled ,(or disabled disabled-for-rp)
+                                      :rw-direction ,rw-direction
+                                      :ruleset ,ruleset)))
+                )))
        body))))
 
 (defmacro defthmrp (name term &rest args)
@@ -1303,13 +1402,14 @@ RP-Rewriter will throw an eligible error.</p>"
   :parents (rp-other-utilities)
   :short "Same as @(see rp::defthmrp)")
 
-(xdoc::defxdoc
-  defthmrp
-  :short "A defthm macro that calls RP-Rewriter as a clause processor with some
- capabilities."
+(xdoc::defxdoc defthmrp
+  :short "A defthm macro that calls RP-Rewriter as a clause processor with custom arguments."
   :parents (rp-utilities rp-rewriter)
-  :long "<p>RP::Defthmrp is a macro that calls defthm with RP-Rewriter as a
- clause-processor. It may also take some of the following parameters:
+  :long "<p>RP::Defthmrp is a macro that expands to defthm and other auxiliary events that uses RP-Rewriter as a
+ clause-processor to attempt a proof for the given conjecture.</p>
+
+
+<h4> Signature: </h4>
 
 <code>
 @('
@@ -1318,25 +1418,135 @@ RP-Rewriter will throw an eligible error.</p>"
   <conjecture>
   ;; optional keys:
   :rule-classes <...>   ;; default: :rewrite
-  :new-synps <...>      ;; for advanced users; can attach syntaxp to some existing
+  :new-synps <...>      ;; an alist to attach syntaxp to some existing
                         ;; rewrite rules. Default: nil
-  :enable-meta-rules (meta-fnc1 meta-fnc2 ...) ;; an unquoted list of names
-                                               ;; of meta functions that users
-                                               ;; wants to enable.
-  :disable-meta-rules (meta-fnc1 meta-fnc2 ...) ;; same as above
+  :enable-meta-rules (meta-fnc1 meta-fnc2 ...)  ;; an unquoted list of names
+                                                ;; of meta functions that users
+                                                ;; wants to enable. Default: nil
+  :disable-meta-rules (meta-fnc1 meta-fnc2 ...) ;; same as above for disable
   :enable-rules (append '(rule1 rule2)
                         *rules3*
-                        ...) ;; List of rule-names that users wants enabled in
-      ;; RP-Rewriter's rule-set. The macro will execute the expressions first to
-      ;; generate the names.
-  :disable-rules <...>      ;; Same as above
-  :runes '(rule1 rule2 ...) ;; When nil, the macro uses the existing rule-set of
-      ;; RP-rewriter. Otherwise, it will overrride everything else regarding rules
-      ;; and use only the rules given in this list.
+                        ...)      ;;  List  of  rule-names  that  users  wants
+                                  ;; enabled  in  RP-Rewriter's  rule-set.  The
+                                  ;; macro will evaluate  the expressions first
+                                  ;; to generate the names.  Default: nil
+  :disable-rules <...>            ;; Same as above for disable 
+  :runes '(rule1 rule2  ...) ;; When  nil, the macro uses the existing rule-set
+                             ;; of      RP-rewriter      from      rp::rp-rules
+                             ;; table. Otherwise, it  will override everything
+                             ;; else  regarding rules  and use  only the  rules
+                             ;; given in this list. Default: nil
+  :runes-outside-in '(rule1  rule2 ...) ;;  same as above  but for runes  to be
+                                        ;; applied outside-in. Default: nil
+  :cases (case1 case2 ...)    ;; casesplit the conjecture. Default: nil
+  :lambda-opt <...>           ;; perform lambda  optimization. Useful  if the
+                              ;; conjecture  has lambda  expressions.  
+                              ;; Default: t
+  :disabled  <t-or-nil>          ;; Disables the resulting rule for both ACL2 and RP
+  :disabled-for-rp <t-or-nil>    ;; Disables the resulting rule only for RP
+  :disabled-for-ACL2 <t-or-nil>  ;; Disables the resulting rule only for ACL2
+  :rw-direction <...>            ;; Rewrite direction of the result for RP
+  :supress-warnings <t-or-nil>   ;; supress some warnings
+  :add-rp-rule <t-or-nil>        ;; Whether or not the rule should be added as
+                                 ;; a rp rule.
+  :ruleset <...>                 ;; select which table to read and save
+                                 ;; rule names
   )
 ')
 </code>
+
+<h4> Parameters Explained </h4>
+
+<p><b> rule-classes</b> will be passed as is to defthm. See @(see acl2::RULE-CLASSES). </p> 
+
+<p><b> new-synps </b> can be used when users want to add new syntaxp hypothesis
+to existing rewrite rules. This argument should be an alist.
+Each key is a name of the rule (not its @(see acl2::rune)), e.g.,
+key should be natp-implies-integerp, and not (:rewrite natp-implies-integerp). Each value should
+be the desired additional syntaxp expression. When parsing every added rule,
+the program will look up each of their names on this new-synps alist and attach
+a translated @(see syntaxp) term at the beginning of existing hyps of the
+rule. The program uses @(see assoc-equal) for look ups therefore if you have
+repeated keys, then the first one will override the others.  The defthmrp macro
+will translate the given terms.
 </p>
+
+<p>
+<b>enable-meta-rules</b> and <b>disable-meta-rules</b> expect a list of meta
+function names to enable/disable. These are passed to local events (@(see
+enable-meta-rules) and @(see
+disable-meta-rules)) before the
+clause processor. The program will go through all the added
+meta rules and enable/disable them with matching meta function names. For
+example, if a meta function is used in two different rules with different
+trigger functions, they will both be affected. enable-rules/disable-rules may
+be used to enable/disable specific meta rules.  
+</p>
+
+<p>
+<b>enable-rules</b> and <b>disable-rules</b> takes a term that will be
+translated and evaluated to a list of rune/rule names that will be locally
+disabled/enabled before the RP-Rewriter is called. See @(see rp-ruleset) to how
+the rules are managed. 
+</p>
+
+<p>
+<b> runes </b> and <b> runes-outside-in </b> can be used to tell the rewriter to
+use a certain set of rules instead of reading them from the table. This is by
+default nil and we don't expect these options to be used often.
+</p>
+
+<p> <b> cases </b> is a list of terms which are used as hints in the rewriter
+to casesplit. For each term in cases, the conjecture will be rewritten to
+@('(if case conjecture conjecture)'). So if you pass 3 cases, then the given
+conjecture will be rewritten 2^3=8 times for each case combination. The number
+of such rewrites can be fewer if certain case combinations contradict each
+other as cases themselves will be rewritten as well. Given list of cases can be
+untranslated terms.
+</p>
+
+<p> <b> lambda-opt</b> stands for \"lambda optimization\". Due to the
+complexity of side-condition tracking, the rewriter does not internally
+support lambda expressions. If you pass a lambda expression to the clause
+processor, it is first @(see acl2::beta-reduce)d and then the rewriting
+starts. In case of repeated large terms, this can cause expensive repetitive
+rewriting. Therefore, we implement an additional mechanism to define some local
+auxiliary lemmas to split each step of lambda expressions to different rewrite
+rules. This helps to prevent the repeated rewriting problem. Please see @(see
+lambda-opt) for more details. The <b>lambda-opt</b> argument can take :max, t,
+or nil. When t, it retains the original lambda expression structure. When :max,
+it retains the original lambda structure and tries to search for repeated terms
+that are not lambda wrapped in the original term. When nil, the lambda
+optimization feature is disabled and the term is beta-reduced before rewriting. 
+</p>
+
+
+<p> <b> disabled </b>, <b> disabled-for-rp </b>, and <b> disabled-for-ACL2</b>
+controls if the rule derived from proved conjecture should be disabled for RP
+rewriter, ACL2 rewriter, or both. </p>
+
+<p> <b>rw-direction</b> RP-Rewriter can rewriter both from inside-out or from
+outside-in directions. This argument tells the rw direction the resulting rule
+should have. By default, it is set to :inside-out. It can be :inside-out,
+:outside-in, or :both.
+</p>
+
+<p><b> supress-warnings </b> can be used to turn off printing of some
+warnings. </p>
+
+<p> <b> add-rp-rule </b> tells the program whether or not to call the @(see
+add-rp-rule) event after proving the conjecture to register it in the
+rewriter's ruleset table. It is by default set to t. When set to nil, relevant
+arguments such as rw-direction, disabled-for-rp will be ignored. Some shared
+parameters between add-rp-rule and internal defthmrp functionality such as
+lambda-opt will be passed as is.</p>
+
+<p> <b> ruleset </b> is passed directly to add-rp-rule as well as used by the
+clause processor. It determines which
+table to read and save the rewrite rule. By default, it is rp-rules. If users
+want to manage their own rewriting scheme in a custom table, then they may
+choose to collect rules in another table with this argument. </p>
+
 "
   )
 
@@ -1372,9 +1582,16 @@ RP-Rewriter will throw an eligible error.</p>"
                 (raise "Unexpected name: ~p0" name))
                (extra-name (intern-in-package-of-symbol (str::cat (symbol-name name) "-FOR-RP-OPENERS")
                                                         name))
-               ((when (equal (meta-extract-formula extra-name state) ''t))
-                nil))
-            (list extra-name)))
+               (extra-names (or (equal (meta-extract-formula extra-name state) ''t)
+                                (list extra-name)))
+
+               (extra-name (intern-in-package-of-symbol (str::cat (symbol-name name) "-OPENERS")
+                                                        name))
+               (extra-names (if (or (equal (meta-extract-formula extra-name state) ''t)
+                                    (not (str::substrp "-FOR-RP" (symbol-name name))))
+                                extra-names
+                              (cons extra-name extra-names))))
+            extra-names))
          (rules (get-rules (cons name extra-names) state :warning :err))
          ((unless rules)
           nil)
@@ -1382,10 +1599,16 @@ RP-Rewriter will throw an eligible error.</p>"
       (pp-rw-rules rules (w state))))
 
   (defmacro rp-pr (name)
-    (list 'rp-pr-fn (list 'quote name) 'state)))
+    (list 'rp-pr-fn (list 'quote name) 'state))
 
-(xdoc::defxdoc
-  rp-other-utilities
+  (xdoc::defxdoc rp-pr
+    :parents (rp-ruleset)
+    :short "Print the rules for RP-Rewriter (similar to @(see pr))"
+    :long "<p>Please @(see rp-ruleset) for details.</p> ")
+  
+  )
+
+(xdoc::defxdoc rp-other-utilities
   :short "Some names that are aliases to other tools"
   :parents (rp-utilities)
   )
