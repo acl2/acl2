@@ -970,21 +970,27 @@ symbol for the updated meta-rule caller function. ~%"
            (meta-rules (strip-cars rp-rw-all-meta-rules)))
         `(enable-rules ',meta-rules))))
 
-  (defmacro disable-meta-rules (&rest args)
-    (if (not args)
-        `(value-triple :none)
-      `(make-event
-        (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state))))
-          `(progn
-             ,@(disable-meta-rules-fnc rp-rw-all-meta-rules ',args))))))
+  (defsection disable-meta-rules
+    :short "Disable meta rules with given meta function name list."
+    :long "See @(see rp-ruleset) for description."
+    (defmacro disable-meta-rules (&rest args)
+      (if (not args)
+          `(value-triple :none)
+        `(make-event
+          (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state))))
+            `(progn
+               ,@(disable-meta-rules-fnc rp-rw-all-meta-rules ',args)))))))
 
-  (defmacro enable-meta-rules (&rest args)
-    (if (not args)
-        `(value-triple :none)
-      `(make-event
-        (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state))))
-          `(progn
-             ,@(enable-meta-rules-fnc rp-rw-all-meta-rules ',args))))))
+  (defsection enable-meta-rules
+    :short "Enable meta rules with given meta function name list."
+    :long "See @(see rp-ruleset) for description."
+    (defmacro enable-meta-rules (&rest args)
+      (if (not args)
+          `(value-triple :none)
+        `(make-event
+          (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state))))
+            `(progn
+               ,@(enable-meta-rules-fnc rp-rw-all-meta-rules ',args)))))))
 
   (defmacro bump-all-meta-rules ()
     `(make-event

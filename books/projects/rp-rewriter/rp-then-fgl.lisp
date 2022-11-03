@@ -117,7 +117,7 @@
                          (rp-cl :runes ,,runes
                                 :runes-outside-in ,,runes-outside-in
                                 :new-synps ,',new-synps
-                                :cases ',',cases))
+                                :cases ,',cases))
                        '(:clause-processor (cmr::let-abstract-full-clause-proc-exclude-hyps
                                             clause 'var))
                        '(:clause-processor fgl::expand-an-implies-cp)
