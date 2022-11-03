@@ -543,6 +543,11 @@
               ;; theorem-hints
               (booleanp theorem-otf-flg)))))
 
+(defund successful-recommendationp-type (rec)
+  (declare (xargs :guard (successful-recommendationp rec)
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
+  (nth 1 rec))
+
 (local
  (defthm pre-commandsp-of-nth-3-when-successful-recommendationp
    (implies (successful-recommendationp rec)
@@ -2035,7 +2040,7 @@
                                            max-wins
                                            model
                                            state)
-  (declare (xargs :guard (and (pseudo-term-listp checkpoint-clauses)
+  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (symbolp theorem-name)
                               (pseudo-termp theorem-body)
                               ;; theorem-hints
