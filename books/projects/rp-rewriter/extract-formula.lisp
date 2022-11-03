@@ -955,8 +955,6 @@ rewriting scheme and don't want the possible interference from the existing set
 of rules, then they may choose to use a custom table to store and read the
 rule names.</p>
 
-</p>
-
 <p> <b>DEF-RP-RULE</b> </p>
 
 <code>
@@ -983,7 +981,7 @@ rule names.</p>
 add-rp-rule. It provides a compact way to add rewrite rules intended to be used
 by RP-Rewriter. Note that the :lambda-opt argument is set to to by default. </p>
 
-<p> <b> PRINTING RULES </b> <p>
+<p> <b> PRINTING RULES </b> </p>
 
 <p> A given rule may be parsed differently in RP-Rewriter than how ACL2
 processes rules. Therefore, using @(see acl2::pr) to understand rhs, lhs, hyp
