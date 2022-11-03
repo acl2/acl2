@@ -34,7 +34,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-cast ((tyname tynamep) (arg value-resultp))
+(define exec-cast ((tyname tynamep) (arg valuep))
   :returns (result value-resultp)
   :short "Execute a cast expression."
   :long
@@ -45,14 +45,12 @@
    (xdoc::p
     "We reject casts to @('void'),
      because a scalar type is required [C:6.5.4/2]."))
-  (b* ((arg (value-result-fix arg))
-       ((when (errorp arg)) arg)
-       (type (tyname-to-type tyname))
+  (b* ((type (tyname-to-type tyname))
        ((unless (type-nonchar-integerp type))
         (error (list :cast-not-supported :to type)))
        ((unless (value-integerp arg))
-        (error (list :cast-not-supported :from arg)))
-       (err (error (list :cast-undefined :from arg :to type)))
+        (error (list :cast-not-supported :from (value-fix arg))))
+       (err (error (list :cast-undefined :from (value-fix arg) :to type)))
        (val (convert-integer-value arg type))
        ((when (errorp val)) err))
     val)
@@ -352,7 +350,9 @@
      :unary (b* ((arg (exec-expr-pure e.arg compst))
                  ((when (errorp arg)) arg))
               (exec-unary e.op arg))
-     :cast (exec-cast e.type (exec-expr-pure e.arg compst))
+     :cast (b* ((arg (exec-expr-pure e.arg compst))
+                ((when (errorp arg)) arg))
+             (exec-cast e.type arg))
      :binary (b* (((unless (binop-purep e.op)) (error (list :non-pure-expr e))))
                (case (binop-kind e.op)
                  (:logand

@@ -116,10 +116,11 @@
 
   (defruled exec-expr-pure-when-cast
     (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :cast))
+                  (equal (expr-kind e) :cast)
+                  (equal val (exec-expr-pure (expr-cast->arg e) compst))
+                  (valuep val))
              (equal (exec-expr-pure e compst)
-                    (exec-cast (expr-cast->type e)
-                               (exec-expr-pure (expr-cast->arg e) compst))))
+                    (exec-cast (expr-cast->type e) val)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-strict-pure-binary
