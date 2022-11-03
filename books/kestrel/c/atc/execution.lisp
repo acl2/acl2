@@ -34,66 +34,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-arrsub-of-memberp ((str valuep)
-                                (mem identp)
-                                (sub valuep)
-                                (compst compustatep))
-  :returns (result value-resultp)
-  :short "Execute an array subscripting expression
-          of a structure pointer member expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is a combination of @(tsee exec-arrsub) and @(tsee exec-memberp),
-     but it is defined as a separate function because currently
-     those two functions are not really compositional.
-     Our current semantics of C is correct for the purposes of ATC,
-     but it is not full-fledged and compositional.
-     In particular, it should (and will) be extended so that
-     expression execution returns either a value or an object designator.")
-   (xdoc::p
-    "So here we formalize the execution of expressions of the form @('s->m[i]'),
-     where @('s') is a pointer to a structure,
-     @('m') is the name of a member of the structure of array type,
-     and @('i') is an index into the array."))
-  (b* (((unless (value-case str :pointer))
-        (error (list :mistype-arrsub-of-memberp
-                     :required :pointer
-                     :supplied (type-of-value str))))
-       ((when (value-pointer-nullp str)) (error (list :null-pointer)))
-       (objdes (value-pointer->designator str))
-       (reftype (value-pointer->reftype str))
-       (struct (read-object objdes compst))
-       ((when (errorp struct))
-        (error (list :struct-not-found
-                     (value-fix str)
-                     (compustate-fix compst))))
-       ((unless (value-case struct :struct))
-        (error (list :not-struct
-                     (value-fix str)
-                     (compustate-fix compst))))
-       ((unless (equal reftype
-                       (type-struct (value-struct->tag struct))))
-        (error (list :mistype-struct-read
-                     :pointer reftype
-                     :array (type-struct (value-struct->tag struct)))))
-       (arr (value-struct-read mem struct))
-       ((when (errorp arr)) arr)
-       ((unless (value-case arr :array))
-        (error (list :not-array arr)))
-       ((unless (value-integerp sub)) (error
-                                       (list :mistype-array :index
-                                             :required :integer
-                                             :supplied (type-of-value sub))))
-       (index (value-integer->get sub))
-       ((when (< index 0)) (error (list :negative-array-index
-                                        :array arr
-                                        :index (value-fix sub)))))
-    (value-array-read index arr))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define exec-expr-pure ((e exprp) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a pure expression."
