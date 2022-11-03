@@ -1,4 +1,4 @@
-(ld; Centaur SV Hardware Verification Tutorial
+; Centaur SV Hardware Verification Tutorial
 ; Copyright (C) 2012-2015 Centaur Technology
 ;
 ; Contact:
@@ -256,7 +256,6 @@ full:</p>
 ;;     '(("out"    _     _     _     _     _    res))))
 ;;     '(("out2"   _     _     _     _     _    _    _   res2))))
 
-:i-am-here
 
 (def-saved-event alu-svtv
   (defsvtv$ alu-test-vector        ;; name for this test vector
