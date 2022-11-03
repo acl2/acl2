@@ -34,7 +34,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-memberp ((str value-resultp) (mem identp) (compst compustatep))
+(define exec-memberp ((str valuep) (mem identp) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a structure pointer member expression."
   :long
@@ -45,9 +45,7 @@
      of type consistent with the structure.
      The named member must be in the structure.
      The value associated to the member is returned."))
-  (b* ((str (value-result-fix str))
-       ((when (errorp str)) str)
-       ((unless (value-case str :pointer))
+  (b* (((unless (value-case str :pointer))
         (error (list :mistype-memberp
                      :required :pointer
                      :supplied (type-of-value str))))
@@ -56,9 +54,10 @@
        (reftype (value-pointer->reftype str))
        (struct (read-object objdes compst))
        ((when (errorp struct))
-        (error (list :struct-not-found str (compustate-fix compst))))
+        (error
+         (list :struct-not-found (value-fix str) (compustate-fix compst))))
        ((unless (value-case struct :struct))
-        (error (list :not-struct str (compustate-fix compst))))
+        (error (list :not-struct (value-fix str) (compustate-fix compst))))
        ((unless (equal reftype
                        (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
@@ -225,7 +224,9 @@
      :member (b* ((str (exec-expr-pure e.target compst))
                   ((when (errorp str)) str))
                (exec-member str e.name))
-     :memberp (exec-memberp (exec-expr-pure e.target compst) e.name compst)
+     :memberp (b* ((str (exec-expr-pure e.target compst))
+                   ((when (errorp str)) str))
+                (exec-memberp str e.name compst))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))
