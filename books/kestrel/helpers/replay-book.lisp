@@ -12,6 +12,7 @@
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
+(include-book "kestrel/utilities/widen-margins" :dir :system)
 
 ;; Prints VAL, rounded to the hundredths place.
 ;; Returns nil
@@ -24,11 +25,14 @@
          )
     (cw "~c0.~c1~c2" (cons integer-part 10) (cons tenths 1) (cons hundredths 1))))
 
+;; Generate a short, printable thing that indicates an event (e.g., for a
+;; defthm, this returns its name).
+;; TODO: Handle more kinds of thing.
 (defun shorten-event (event)
   (if (not (consp event))
       event
     (case (car event)
-      ((defun defund defthm defthmd) (cadr event))
+      ((defun defund defun-nx define defun-sk define-sk defthm defthmd defrule defruled defrulel defruledl) (cadr event))
       (local `(local ,(shorten-event (cadr event))))
       (theory-invariant '(theory-invariant <elided>))
       (t event))))
@@ -61,19 +65,31 @@
 ;; Reads and then submits all the events in FILENAME.
 ;; Returns (mv erp state).
 ;; Example: (replay-book "helper.lisp" state)
-(defun replay-book-fn (bookname ; no extension
+(defun replay-book-fn (dir      ; no trailing slash
+                       bookname ; no extension
                        print state)
-  (declare (xargs :guard (and (stringp bookname)
+  (declare (xargs :guard (and (stringp dir)
+                              (stringp bookname)
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (mv-let (erp events state)
-    (read-objects-from-file (concatenate 'string bookname ".lisp") state)
+    (read-objects-from-file (concatenate 'string dir "/" bookname ".lisp") state)
     (if erp
         (mv erp state)
-      (submit-and-time-events events print state))))
+      (mv-let (erp val state)
+        (set-cbd-fn dir state)
+        (declare (ignore val))
+        (if erp
+            (mv erp state)
+          (let ((state (widen-margins state)))
+            (mv-let (erp state)
+              (submit-and-time-events events print state)
+              (let ((state (unwiden-margins state)))
+                (mv erp state)))))))))
 
-(defmacro replay-book (bookname ; no extension
-                        &key
-                        (print 'nil))
-  `(replay-book-fn ,bookname ,print state))
+(defmacro replay-book (dir ; no trailing slash
+                       bookname ; no extension
+                       &key
+                       (print 'nil))
+  `(replay-book-fn ,dir ,bookname ,print state))
