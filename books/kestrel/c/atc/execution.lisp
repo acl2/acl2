@@ -34,9 +34,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-arrsub-of-member ((str value-resultp)
-                               (mem identp)
-                               (sub value-resultp))
+(define exec-arrsub-of-member ((str valuep) (mem identp) (sub valuep))
   :returns (result value-resultp)
   :short "Execute an array subscripting expression
           of a structure member expression."
@@ -55,14 +53,11 @@
      where @('s') is a structure,
      @('m') is the name of a member of the structure of array type,
      and @('i') is an index into the array."))
-  (b* ((str (value-result-fix str))
-       ((when (errorp str)) str)
-       ((unless (value-case str :struct)) (error (list :not-struct str)))
+  (b* (((unless (value-case str :struct))
+        (error (list :not-struct (value-fix str))))
        (arr (value-struct-read mem str))
        ((when (errorp arr)) arr)
        ((unless (value-case arr :array)) (error (list :not-array arr)))
-       (sub (value-result-fix sub))
-       ((when (errorp sub)) sub)
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
                                              :required :integer
@@ -70,7 +65,7 @@
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
                                         :array arr
-                                        :index sub))))
+                                        :index (value-fix sub)))))
     (value-array-read index arr))
   :hooks (:fix))
 
@@ -171,10 +166,12 @@
      :const (exec-const e.get)
      :arrsub (case (expr-kind e.arr)
                (:member
-                (b* (((expr-member e.arr) e.arr))
-                  (exec-arrsub-of-member (exec-expr-pure e.arr.target compst)
-                                         e.arr.name
-                                         (exec-expr-pure e.sub compst))))
+                (b* (((expr-member e.arr) e.arr)
+                     (str (exec-expr-pure e.arr.target compst))
+                     ((when (errorp str)) str)
+                     (sub (exec-expr-pure e.sub compst))
+                     ((when (errorp sub)) sub))
+                  (exec-arrsub-of-member str e.arr.name sub)))
                (:memberp
                 (b* (((expr-memberp e.arr) e.arr))
                   (exec-arrsub-of-memberp (exec-expr-pure e.arr.target compst)

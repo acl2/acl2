@@ -56,8 +56,8 @@
                   (not (expr-case arr :member))
                   (not (expr-case arr :memberp))
                   (equal valarr (exec-expr-pure arr compst))
-                  (equal valsub (exec-expr-pure (expr-arrsub->sub e) compst))
                   (valuep valarr)
+                  (equal valsub (exec-expr-pure (expr-arrsub->sub e) compst))
                   (valuep valsub))
              (equal (exec-expr-pure e compst)
                     (exec-arrsub valarr valsub compst)))
@@ -85,12 +85,17 @@
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :arrsub)
                   (equal arr (expr-arrsub->arr e))
-                  (expr-case arr :member))
+                  (expr-case arr :member)
+                  (equal valstr
+                         (exec-expr-pure (expr-member->target arr) compst))
+                  (valuep valstr)
+                  (equal valsub
+                         (exec-expr-pure (expr-arrsub->sub e) compst))
+                  (valuep valsub))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub-of-member
-                     (exec-expr-pure (expr-member->target arr) compst)
-                     (expr-member->name arr)
-                     (exec-expr-pure (expr-arrsub->sub e) compst))))
+                    (exec-arrsub-of-member valstr
+                                           (expr-member->name arr)
+                                           valsub)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-arrsub-of-memberp
