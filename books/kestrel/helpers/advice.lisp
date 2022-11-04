@@ -575,7 +575,7 @@
               (booleanp theorem-otf-flg)))
   :hints (("Goal" :in-theory (enable make-successful-rec successful-recommendationp))))
 
-(defun successful-rec-to-simple-event (defthm-name rec)
+(defund successful-rec-to-simple-event (defthm-name rec rule-classes)
   (declare (xargs :guard (and (symbolp defthm-name)
                               (successful-recommendationp rec))
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
@@ -585,9 +585,12 @@
     `(defthm ,defthm-name
        ,theorem-body
        ,@(and theorem-hints `(:hints ,theorem-hints))
-       ,@(and theorem-otf-flg '(:otf-flg t)))))
+       ,@(and theorem-otf-flg '(:otf-flg t))
+       ,@(if (equal rule-classes '(:rewrite))
+             nil ; the default, so omit
+           `(:rule-classes ,rule-classes)))))
 
-(defun successful-rec-to-event (defthm-name rec)
+(defund successful-rec-to-event (defthm-name rec rule-classes)
   (declare (xargs :guard (and (symbolp defthm-name)
                               (successful-recommendationp rec))
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
@@ -597,8 +600,8 @@
     (if pre-commands
         `(encapsulate ()
            ,@(acl2::wrap-all 'local pre-commands)
-           ,(successful-rec-to-simple-event defthm-name rec))
-      (successful-rec-to-simple-event defthm-name rec))))
+           ,(successful-rec-to-simple-event defthm-name rec rule-classes))
+      (successful-rec-to-simple-event defthm-name rec rule-classes))))
 
 (defund successful-recommendation-listp (recs)
   (declare (xargs :guard t))
@@ -2215,6 +2218,7 @@
                          theorem-body ; an untranslated term
                          theorem-hints
                          theorem-otf-flg
+                         rule-classes
                          n ; number of recommendations from ML requested
                          ;; verbose
                          server-url
@@ -2227,6 +2231,7 @@
                               ;; theorem-body
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
+                              ;; rule-classes
                               (natp n)
                               ;; (booleanp verbose)
                               (or (null server-url) ; get url from environment variable
@@ -2262,7 +2267,7 @@
                                         state))
        ((when erp) (mv erp nil state)))
     (if successp
-        (let ((event (successful-rec-to-event theorem-name best-rec)))
+        (let ((event (successful-rec-to-event theorem-name best-rec rule-classes)))
           (prog2$ (cw "Submitting:~%~X01~%" event nil) ; todo: improve indenting when printing
                   (mv nil event state)))
       (mv :no-proof-found nil state))))
@@ -2280,9 +2285,11 @@
                          (debug 'nil)
                          (step-limit ':auto)
                          (max-wins ':auto)
-                         (model ':all))
+                         (model ':all)
+                         (rule-classes '(:rewrite))
+                         )
   `(acl2::make-event-quiet
-    (defthm-advice-fn ',name ',body ',hints ,otf-flg ,n ,server-url ,debug ,step-limit ,max-wins ,model state)))
+    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,server-url ,debug ,step-limit ,max-wins ,model state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::defthm-advice (&rest rest) `(defthm-advice ,@rest))
