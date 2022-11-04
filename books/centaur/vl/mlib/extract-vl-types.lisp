@@ -1165,6 +1165,7 @@ nil
 
 (define extract-vl-types-fn (design
                              (module acl2::maybe-stringp)
+                             (package acl2::maybe-stringp)
                              names-to-extract
                              all-names-to-extract
                              pkg-sym
@@ -1175,12 +1176,17 @@ nil
   (if (atom names-to-extract)
       (mv nil state)
     (b* ((ss (or ss
-                 (if module
-                     (b* ((ss (vl::vl-scopestack-init design))
-                          (mod (vl::vl-scopestack-find-definition module ss))
-                          (mod-ss (vl::vl-scopestack-push mod ss)))
-                       mod-ss)
-                   (vl::vl-scopestack-init design))))
+                 (cond (module
+                        (b* ((ss (vl::vl-scopestack-init design))
+                             (mod (vl::vl-scopestack-find-definition module ss))
+                             (mod-ss (vl::vl-scopestack-push mod ss)))
+                          mod-ss))
+                       (package
+                        (b* ((ss (vl::vl-scopestack-init design))
+                             (pkg (vl::vl-scopestack-find-package package ss))
+                             (pkg-ss (vl::vl-scopestack-push pkg ss)))
+                          pkg-ss))
+                       (t (vl::vl-scopestack-init design)))))
 
          (cur-name (car names-to-extract))
          (cur (vl::vl-scopestack-find-item cur-name ss))
@@ -1219,7 +1225,7 @@ nil
                        (raise "Given name was not found in the scopestack: ~p0" cur-name))
                      state))))
 
-         ((mv rest state) (extract-vl-types-fn design module (cdr names-to-extract) all-names-to-extract pkg-sym ss)))
+         ((mv rest state) (extract-vl-types-fn design module package (cdr names-to-extract) all-names-to-extract pkg-sym ss)))
       (mv (append events rest) state))))
 
 #!VL
@@ -1312,6 +1318,7 @@ nil
   (b* ((parents     (cdr (extract-keyword-from-args :parents args)))
        (design      (cdr (extract-keyword-from-args :design args)))
        (module      (cdr (extract-keyword-from-args :module args)))
+       (package     (cdr (extract-keyword-from-args :package args)))
        (pkg-sym     (cdr (extract-keyword-from-args :pkg-sym args)))
        (names-to-extract (throw-away-keyword-parts args)))
 
@@ -1321,7 +1328,7 @@ nil
          :on (error)
          (make-event
           (b* (((mv events state)
-                (extract-vl-types-fn ,design ,module ',names-to-extract ',names-to-extract
+                (extract-vl-types-fn ,design ,module ,package ',names-to-extract ',names-to-extract
                                      ;; to  prevent  conflicts when  the  same
                                      ;; type  is  extracted  across  different
                                      ;; books with different design constants:
