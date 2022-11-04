@@ -17,7 +17,7 @@
 (defstobj+ rewrite-stobj
   (known-booleans :type (satisfies symbol-listp) :initially nil)
   (monitored-symbols :type (satisfies symbol-listp) :initially nil)
-  (print :type (satisfies axe-print-levelp) :initially nil)
+  (print :type (satisfies print-levelp) :initially nil)
   (normalize-xors :type (satisfies booleanp) :initially nil)
   :inline t
   :renaming ((known-booleans get-known-booleans)
