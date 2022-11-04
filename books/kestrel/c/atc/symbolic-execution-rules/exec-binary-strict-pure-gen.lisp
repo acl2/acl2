@@ -104,7 +104,6 @@
          (rfixtype (integer-type-to-fixtype rtype))
          (rpred (pack rfixtype 'p))
          (op-kind (binop-kind op))
-         (exec-op (pack 'exec- op-kind))
          (op-values (pack op-kind '-values))
          (op-arithmetic-values (and (or (binop-case op :div)
                                         (binop-case op :mul)
@@ -147,90 +146,64 @@
                             (equal
                              (,exec-binary-strict-pure-of-op-and-ltype x y)
                              (,op-ltype-rtype x y))))
-         (enables (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub
-                                                   :shl :shr
-                                                   :lt :gt :le :ge
-                                                   :eq :ne
-                                                   :bitand :bitxor :bitior))
-                      `(,exec-binary-strict-pure-of-op-and-ltype
-                        ,op-values
-                        ,@(and op-arithmetic-values
-                               (list op-arithmetic-values))
-                        ,@(and op-real-values
-                               (list op-real-values))
-                        ,op-integer-values
-                        ,op-ltype-rtype
-                        ,@(and op-ltype
-                               (list op-ltype))
-                        ,@(and (member-eq op-kind '(:mul :div :rem :add :sub
-                                                    :lt :gt :le :ge
-                                                    :eq :ne
-                                                    :bitand :bitxor :bitior))
-                               (or (not (equal type ltype))
-                                   (not (equal type rtype)))
-                               (list op-type-type))
-                        ,@(and promotedp
-                               (list (pack op-kind '-sint)))
-                        ,@(and op-ltype-rtype-okp
-                               (list op-ltype-rtype-okp))
-                        ,@(and op-ltype-okp
-                               (list op-ltype-okp))
-                        ,@(and (member-eq op-kind '(:mul :div :rem :add :sub))
-                               op-ltype-rtype-okp
-                               (or (not (equal type ltype))
-                                   (not (equal type rtype)))
-                               (list op-type-type-okp))
-                        ,@(and promotedp
-                               (list (pack op-kind '-sint-okp)))
-                        ,@*atc-uaconvert-values-rules*
-                        ,@*atc-promote-value-rules*
-                        result-integer-value
-                        ,@*atc-value-integer->get-rules*
-                        ,@(and (member-eq op-kind '(:shl :shr))
-                               *atc-sint-get-rules*)
-                        ,@(and (member-eq op-kind '(:shl :shr))
-                               (list 'integer-type-bits))
-                        value-integer
-                        value-sint-to-sint
-                        value-uint-to-uint
-                        value-slong-to-slong
-                        value-ulong-to-ulong
-                        value-sllong-to-sllong
-                        value-ullong-to-ullong
-                        sint-integerp-alt-def
-                        uint-integerp-alt-def
-                        slong-integerp-alt-def
-                        ulong-integerp-alt-def
-                        sllong-integerp-alt-def
-                        ullong-integerp-alt-def
-                        uint-mod
-                        ulong-mod
-                        ullong-mod
-                        value-unsigned-integerp-alt-def
-                        integer-type-rangep
-                        integer-type-min
-                        integer-type-max)
-                    `(,exec-binary-strict-pure-of-op-and-ltype
-                      ,exec-op
-                      ,@(and (or (not (equal type ltype))
-                                 (not (equal type rtype))
-                                 (member-eq op-kind '(:shl :shr)))
-                             (list op-ltype-rtype))
-                      ,@(and op-ltype-rtype-okp
-                             (or (not (equal type ltype))
-                                 (not (equal type rtype))
-                                 (member-eq op-kind '(:shl :shr)))
-                             (list op-ltype-rtype-okp))
-                      ,@(and (member-eq op-kind '(:shl :shr))
-                             (not (equal ltype (promote-type ltype)))
-                             (list
-                              (pack op-kind '- lfixtype)
-                              (pack op-kind '- lfixtype '-okp)))
-                      ,@(and (member-eq op-kind '(:shl :shr))
-                             (append *atc-value-integer->get-rules*
-                                     *atc-sint-get-rules*))
-                      ,@*atc-uaconvert-values-rules*
-                      ,@*atc-promote-value-rules*)))
+         (enables `(,exec-binary-strict-pure-of-op-and-ltype
+                    ,op-values
+                    ,@(and op-arithmetic-values
+                           (list op-arithmetic-values))
+                    ,@(and op-real-values
+                           (list op-real-values))
+                    ,op-integer-values
+                    ,op-ltype-rtype
+                    ,@(and op-ltype
+                           (list op-ltype))
+                    ,@(and (member-eq op-kind '(:mul :div :rem :add :sub
+                                                :lt :gt :le :ge
+                                                :eq :ne
+                                                :bitand :bitxor :bitior))
+                           (or (not (equal type ltype))
+                               (not (equal type rtype)))
+                           (list op-type-type))
+                    ,@(and promotedp
+                           (list (pack op-kind '-sint)))
+                    ,@(and op-ltype-rtype-okp
+                           (list op-ltype-rtype-okp))
+                    ,@(and op-ltype-okp
+                           (list op-ltype-okp))
+                    ,@(and (member-eq op-kind '(:mul :div :rem :add :sub))
+                           op-ltype-rtype-okp
+                           (or (not (equal type ltype))
+                               (not (equal type rtype)))
+                           (list op-type-type-okp))
+                    ,@(and promotedp
+                           (list (pack op-kind '-sint-okp)))
+                    ,@*atc-uaconvert-values-rules*
+                    ,@*atc-promote-value-rules*
+                    result-integer-value
+                    ,@*atc-value-integer->get-rules*
+                    ,@(and (member-eq op-kind '(:shl :shr))
+                           *atc-sint-get-rules*)
+                    ,@(and (member-eq op-kind '(:shl :shr))
+                           (list 'integer-type-bits))
+                    value-integer
+                    value-sint-to-sint
+                    value-uint-to-uint
+                    value-slong-to-slong
+                    value-ulong-to-ulong
+                    value-sllong-to-sllong
+                    value-ullong-to-ullong
+                    sint-integerp-alt-def
+                    uint-integerp-alt-def
+                    slong-integerp-alt-def
+                    ulong-integerp-alt-def
+                    sllong-integerp-alt-def
+                    ullong-integerp-alt-def
+                    uint-mod
+                    ulong-mod
+                    ullong-mod
+                    value-unsigned-integerp-alt-def
+                    integer-type-rangep
+                    integer-type-min
+                    integer-type-max))
          (event `(defruled ,name
                    ,formula
                    :enable ,enables
@@ -293,13 +266,7 @@
          (lpred (pack lfixtype 'p))
          (ltype-fix (pack lfixtype '-fix))
          (op-kind (binop-kind op))
-         (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub
-                                                   :shl :shr
-                                                   :lt :gt :le :ge
-                                                   :eq :ne
-                                                   :bitand :bitxor :bitior))
-                      (pack op-kind '-values)
-                    (pack 'exec- op-kind)))
+         (op-values (pack op-kind '-values))
          (exec-binary-strict-pure-of-op
           (pack 'exec-binary-strict-pure-of- op-kind))
          (exec-binary-strict-pure-of-op-and-ltype
@@ -308,7 +275,7 @@
           (pack 'exec-binary-strict-pure-of- op-kind '-when- lfixtype))
          (fun-event
           `(defund ,exec-binary-strict-pure-of-op-and-ltype (x y)
-             (,exec-op (,ltype-fix x) y)))
+             (,op-values (,ltype-fix x) y)))
          (thm-event
           `(defruled ,exec-binary-strict-pure-of-op-when-ltype
              (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
@@ -339,20 +306,14 @@
     (b* (((when (endp ops)) (mv nil nil))
          (op (car ops))
          (op-kind (binop-kind op))
-         (exec-op (if (member-eq (binop-kind op) '(:mul :div :rem :add :sub
-                                                   :shl :shr
-                                                   :lt :gt :le :ge
-                                                   :eq :ne
-                                                   :bitand :bitxor :bitior))
-                      (pack op-kind '-values)
-                    (pack 'exec- op-kind)))
+         (op-values (pack op-kind '-values))
          (exec-binary-strict-pure-of-op
           (pack 'exec-binary-strict-pure-of- op-kind))
          (exec-binary-strict-pure-when-op
           (pack 'exec-binary-strict-pure-when- op-kind))
          (fun-event
           `(defund ,exec-binary-strict-pure-of-op (x y)
-             (,exec-op x y)))
+             (,op-values x y)))
          (thm-event
           `(defruled ,exec-binary-strict-pure-when-op
              (implies (and (equal op (,(pack 'binop- op-kind))))
