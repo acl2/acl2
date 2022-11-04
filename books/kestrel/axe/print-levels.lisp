@@ -14,9 +14,9 @@
 
 (defund axe-print-levelp (print-level)
   (declare (xargs :guard t))
-  (member-eq print-level '(nil
+  (member-eq print-level '(nil ; don't print
                            :brief
-                           t
+                           t ; print normally
                            :verbose
                            :verbose!
                            )))
