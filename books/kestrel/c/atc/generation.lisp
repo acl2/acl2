@@ -13,7 +13,6 @@
 
 (include-book "abstract-syntax")
 (include-book "pretty-printer" :ttags ((:open-output-channel!)))
-(include-book "dynamic-semantics")
 (include-book "shallow-embedding")
 (include-book "table")
 (include-book "variable-tables")
@@ -25,6 +24,7 @@
 (include-book "symbolic-execution-rules/top")
 
 (include-book "../language/static-semantics")
+(include-book "../language/dynamic-semantics")
 
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
