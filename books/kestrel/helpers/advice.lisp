@@ -575,7 +575,8 @@
               (booleanp theorem-otf-flg)))
   :hints (("Goal" :in-theory (enable make-successful-rec successful-recommendationp))))
 
-(defund successful-rec-to-simple-event (defthm-name rec rule-classes)
+;; Returns a defthm event.
+(defund successful-rec-to-simple-defthm (defthm-name rec rule-classes)
   (declare (xargs :guard (and (symbolp defthm-name)
                               (successful-recommendationp rec))
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
@@ -590,7 +591,8 @@
              nil ; the default, so omit
            `(:rule-classes ,rule-classes)))))
 
-(defund successful-rec-to-event (defthm-name rec rule-classes)
+;; Returns an event (a defthm or an encapsulate containing a defthm).
+(defund successful-rec-to-defthm (defthm-name rec rule-classes)
   (declare (xargs :guard (and (symbolp defthm-name)
                               (successful-recommendationp rec))
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
@@ -600,8 +602,35 @@
     (if pre-commands
         `(encapsulate ()
            ,@(acl2::wrap-all 'local pre-commands)
-           ,(successful-rec-to-simple-event defthm-name rec rule-classes))
-      (successful-rec-to-simple-event defthm-name rec rule-classes))))
+           ,(successful-rec-to-simple-defthm defthm-name rec rule-classes))
+      (successful-rec-to-simple-defthm defthm-name rec rule-classes))))
+
+;; Returns a thm event.
+(defund successful-rec-to-simple-thm (rec)
+  (declare (xargs :guard (successful-recommendationp rec)
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
+  (let* ((theorem-body (nth 4 rec))
+         (theorem-hints (nth 5 rec))
+         (theorem-otf-flg (nth 6 rec)))
+    `(thm
+      ,theorem-body
+      ,@(and theorem-hints `(:hints ,theorem-hints))
+      ,@(and theorem-otf-flg '(:otf-flg t)))))
+
+;; Returns an event (a thm or an encapsulate containing a thm).
+(defund successful-rec-to-thm (rec)
+  (declare (xargs :guard (successful-recommendationp rec)
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
+  (let* ( ;;(type (nth 1 rec))
+         ;; (object (nth 2 rec))
+         (pre-commands (nth 3 rec)))
+    (if pre-commands
+        `(encapsulate ()
+           ,@(acl2::wrap-all 'local pre-commands)
+           ,(successful-rec-to-simple-thm rec))
+      (successful-rec-to-simple-thm rec))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund successful-recommendation-listp (recs)
   (declare (xargs :guard t))
@@ -2267,12 +2296,15 @@
                                         state))
        ((when erp) (mv erp nil state)))
     (if successp
-        (let ((event (successful-rec-to-event theorem-name best-rec rule-classes)))
+        (let ((event (successful-rec-to-defthm theorem-name best-rec rule-classes)))
           (prog2$ (cw "Submitting:~%~X01~%" event nil) ; todo: improve indenting when printing
                   (mv nil event state)))
       (mv :no-proof-found nil state))))
 
-;; A replacement for defthm that uses advice to try to prove the theorem.
+;; A replacement for defthm that uses advice to try to prove the theorem.  Note
+;; that this may be slow (if many pieces of advice are tried), and it makes a
+;; call to the advice server over the Internet.  So it may be best not to leave
+;; calls of defthm-advice in your book, once suitable advice has been found.
 (defmacro defthm-advice (name
                          body
                          &key
@@ -2294,11 +2326,85 @@
 ;; Just a synonym in ACL2 package
 (defmacro acl2::defthm-advice (&rest rest) `(defthm-advice ,@rest))
 
-;;todo: avoid making a defthm with a fake name?
-(defmacro thm-advice (&rest rest) `(defthm-advice the-thm ,@rest))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp event state).
+(defun thm-advice-fn (theorem-body ; an untranslated term
+                      theorem-hints
+                      theorem-otf-flg
+                      n ; number of recommendations from ML requested
+                      ;; verbose
+                      server-url
+                      debug
+                      step-limit
+                      max-wins
+                      model
+                      state)
+  (declare (xargs :guard (and ;; theorem-body
+                          ;; theorem-hints
+                          (booleanp theorem-otf-flg)
+                          (natp n)
+                          ;; (booleanp verbose)
+                          (or (null server-url) ; get url from environment variable
+                              (stringp server-url))
+                          (booleanp debug)
+                          (or (eq :auto step-limit)   ; means use *step-limit*
+                              (eq nil step-limit)     ; means no limit
+                              (natp step-limit))
+                          (or (eq :auto max-wins)
+                              (null max-wins)
+                              (natp max-wins))
+                          (or (eq :all model)
+                              (rec-modelp model)))
+                  :stobjs state
+                  :mode :program))
+  (b* ((wrld (w state))
+       ;; Elaborate options:
+       (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
+       (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
+       (translated-theorem-body (acl2::translate-term theorem-body 'defthm-advice-fn wrld))
+       ((mv erp successp best-rec state)
+        (get-and-try-advice-for-theorem 'the-thm
+                                        translated-theorem-body
+                                        theorem-hints
+                                        theorem-otf-flg
+                                        n ; number of recommendations from ML requested
+                                        ;; verbose
+                                        server-url
+                                        debug
+                                        step-limit
+                                        max-wins
+                                        model
+                                        state))
+       ((when erp) (mv erp nil state)))
+    (if successp
+        (let ((event (successful-rec-to-thm best-rec)))
+          (prog2$ (cw "Submitting:~%~X01~%" event nil) ; todo: improve indenting when printing
+                  (mv nil event state)))
+      (mv :no-proof-found nil state))))
+
+(defmacro thm-advice ( ; no name
+                      body
+                      &key
+                      (hints 'nil)
+                      (otf-flg 'nil)
+                      ;; options for the advice:
+                      (n '10)
+                      ;; (verbose 'nil)
+                      (server-url 'nil)
+                      (debug 'nil)
+                      (step-limit ':auto)
+                      (max-wins ':auto)
+                      (model ':all)
+                      ;; no rule-classes
+                      )
+  `(acl2::make-event-quiet
+    (thm-advice-fn ',body ',hints ,otf-flg ,n ,server-url ,debug ,step-limit ,max-wins ,model state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::thm-advice (&rest rest) `(thm-advice ,@rest))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp nil state).
 ;; TODO: Support getting checkpoints from a defun, but then we'd have no body
