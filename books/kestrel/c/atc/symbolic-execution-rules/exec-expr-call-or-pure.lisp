@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "../execution")
+(include-book "../../language/dynamic-semantics")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 

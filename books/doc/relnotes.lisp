@@ -173,7 +173,9 @@
 
    (xdoc::p
     "Some parts of the formalization have been simplified
-     and moved out of ATC and into the C formalization proper.")
+     and moved out of ATC and into the C formalization proper,
+     i.e. into the deep embedding of C in ACL2,
+     which is now independent from the shallow embedding of C in ACL2.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
