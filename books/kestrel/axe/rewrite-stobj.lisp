@@ -12,7 +12,7 @@
 
 (include-book "kestrel/utilities/defstobj-plus" :dir :system)
 
-(include-book "print-levels")
+(include-book "kestrel/utilities/print-levels" :dir :system)
 
 (defstobj+ rewrite-stobj
   (known-booleans :type (satisfies symbol-listp) :initially nil)

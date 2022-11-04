@@ -36,7 +36,7 @@
 (include-book "../dag-info")
 (include-book "../prune")
 (include-book "../prune-dag")
-(include-book "../print-levels")
+(include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
 (include-book "kestrel/lists-light/append" :dir :system)

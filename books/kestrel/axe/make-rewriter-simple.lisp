@@ -46,7 +46,7 @@
 (include-book "refined-assumption-alists2")
 (include-book "rewriter-support") ;make local? but may be needed by the generated rewriters
 (include-book "tries")
-(include-book "print-levels")
+(include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "rule-limits")
 (include-book "rule-alists") ; for get-rules-for-fn
 (include-book "make-substitution-code-simple")
