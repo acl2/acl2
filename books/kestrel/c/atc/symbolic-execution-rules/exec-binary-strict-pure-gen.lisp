@@ -119,13 +119,12 @@
                                   (binop-case op :ge))
                               (pack op-kind '-real-values)))
          (op-integer-values (pack op-kind '-integer-values))
-         (exec-binary-strict-pure-of-op-and-ltype
-          (pack 'exec-binary-strict-pure-of- op-kind '-and- lfixtype))
+         (op-ltype-and-value (pack op-kind '- lfixtype '-and-value))
          (type (uaconvert-types ltype rtype))
          (promotedp (and (member-eq op-kind '(:shl :shr))
                          (member-eq (type-kind ltype)
                                     '(:schar :uchar :sshort :ushort))))
-         (name (pack exec-binary-strict-pure-of-op-and-ltype '-when- rfixtype))
+         (name (pack op-ltype-and-value '-when- rfixtype))
          (op-ltype-rtype (pack op-kind '- lfixtype '- rfixtype))
          (op-type-type (pack op-kind '- (type-kind type) '- (type-kind type)))
          (op-type-type-okp (pack op-type-type '-okp))
@@ -143,10 +142,9 @@
                                  (,rpred y)
                                  ,@(and op-ltype-rtype-okp
                                         `((,op-ltype-rtype-okp x y))))
-                            (equal
-                             (,exec-binary-strict-pure-of-op-and-ltype x y)
-                             (,op-ltype-rtype x y))))
-         (enables `(,exec-binary-strict-pure-of-op-and-ltype
+                            (equal (,op-ltype-and-value x y)
+                                   (,op-ltype-rtype x y))))
+         (enables `(,op-ltype-and-value
                     ,op-values
                     ,@(and op-arithmetic-values
                            (list op-arithmetic-values))
@@ -267,25 +265,23 @@
          (ltype-fix (pack lfixtype '-fix))
          (op-kind (binop-kind op))
          (op-values (pack op-kind '-values))
-         (exec-binary-strict-pure-of-op-and-ltype
-          (pack 'exec-binary-strict-pure-of- op-kind '-and- lfixtype))
-         (exec-binary-strict-pure-of-op-when-ltype
-          (pack 'exec-binary-strict-pure-of- op-kind '-when- lfixtype))
+         (op-ltype-and-value (pack op-kind '- lfixtype '-and-value))
+         (op-values-when-ltype (pack op-kind '-values-when- lfixtype))
          (fun-event
-          `(defund ,exec-binary-strict-pure-of-op-and-ltype (x y)
+          `(defund ,op-ltype-and-value (x y)
              (,op-values (,ltype-fix x) y)))
          (thm-event
-          `(defruled ,exec-binary-strict-pure-of-op-when-ltype
+          `(defruled ,op-values-when-ltype
              (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                            (,lpred x))
                       (equal (,op-values x y)
-                             (,exec-binary-strict-pure-of-op-and-ltype x y)))
-             :enable (,exec-binary-strict-pure-of-op-and-ltype)))
+                             (,op-ltype-and-value x y)))
+             :enable (,op-ltype-and-value)))
          ((mv names events)
           (atc-exec-binary-rules-gen-op-ltype op (car ltypes) rtypes))
          ((mv more-names more-events)
           (atc-exec-binary-rules-gen-op op (cdr ltypes) rtypes)))
-      (mv (append (list exec-binary-strict-pure-of-op-when-ltype)
+      (mv (append (list op-values-when-ltype)
                   names
                   more-names)
           (append (list fun-event thm-event)
@@ -394,14 +390,14 @@
 ;;                one per binary strict operator.")
 ;;              (xdoc::li
 ;;               "Next, we rewrite @('(op-values x y)')
-;;                to a call @('(exec-binary-strict-pure-of-op-and-type1 x y)'),
+;;                to a call @('(op-type1-and-value x y)'),
 ;;                under the hypothesis that @('x') has type @('type1'),
-;;                where @('exec-binary-strict-pure-of-op-and-type1')
+;;                where @('op-type1-and-value')
 ;;                is one of 10 functions,
 ;;                one per supported integer type.")
 ;;              (xdoc::li
 ;;               "Finally, we rewrite
-;;                @('(exec-binary-strict-pure-of-op-and-type1 x y)')
+;;                @('(op-type1-and-value x y)')
 ;;                to the call @('(op-type1-type2 x y)'),
 ;;                under the hypothesis the @('y') has type @('type2'),
 ;;                for each of the 10 supported integer types."))
