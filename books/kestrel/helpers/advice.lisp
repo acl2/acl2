@@ -612,7 +612,7 @@
 (defconst *option-names* '(:max-wins))
 
 ;; Returns (mv presentp val)
-(defund get-advice-option (option-name wrld)
+(defund get-advice-option-aux (option-name wrld)
   (declare (xargs :guard (and (symbolp option-name)
                               (plist-worldp wrld))
                   :verify-guards nil))
@@ -626,33 +626,37 @@
                               (plist-worldp wrld))
                   :verify-guards nil))
   (mv-let (presentp val)
-    (get-advice-option option-name wrld)
+    (get-advice-option-aux option-name wrld)
     (if (not presentp)
         (er hard? 'get-advice-option! "Option value not set: ~x0." option-name)
       val)))
 
-(defund advice-option-fn (option-name rest-args wrld)
+;; todo: Or return a table event?
+(defund get-advice-option-fn (option-name wrld)
   (declare (xargs :guard (and (symbolp option-name)
                               (plist-worldp wrld))
+                  :verify-guards nil ; todo
+                  ))
+  (if (not (member-eq option-name *option-names*))
+      (er hard? 'get-advice-option-fn "Unknown option: ~x0." option-name)
+    (let ((val (get-advice-option! option-name wrld)))
+      (prog2$ (cw "~x0~%" val)
+              '(value-triple :invisible)))))
+
+(defmacro get-advice-option (option-name)
+  `(acl2::make-event-quiet (get-advice-option-fn ,option-name (w state))))
+
+(defund set-advice-option-fn (option-name val)
+  (declare (xargs :guard (and (symbolp option-name))
                   :verify-guards nil))
   (if (not (member-eq option-name *option-names*))
-      (er hard? 'advice-option-fn "Unknown option: ~x0." option-name)
-    (if (consp rest-args)
-        ;; It's a set:
-        (let ((option-val (first rest-args)))
-          `(table advice-options ,option-name ,option-val))
-      ;; It's a get:
-      (let ((val (get-advice-option! option-name wrld)))
-        (prog2$ (cw "~x0~%" val)
-                '(value-triple :invisible))))))
+      (er hard? 'set-advice-option-fn "Unknown option: ~x0." option-name)
+    `(table advice-options ,option-name ,val)))
 
-;; Examples:
-;; (advice-option <name>) ;; print the value of the given option
-;; (advice-option <name> <val>) ;; set the value of the given option
-(defmacro advice-option (option-name &rest rest-args)
-  `(acl2::make-event-quiet (advice-option-fn ,option-name ',rest-args (w state))))
+(defmacro set-advice-option (option-name val)
+  `(acl2::make-event-quiet (set-advice-option-fn ,option-name ,val)))
 
-(advice-option :max-wins nil) ; don't limit the number of successes before we stop trying recs
+(set-advice-option :max-wins nil) ; don't limit the number of successes before we stop trying recs
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2026,7 +2030,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp successp best-rec state)
+;; Returns (mv erp successp best-rec state).
 (defun get-and-try-advice-for-checkpoints (checkpoint-clauses
                                            theorem-name
                                            theorem-body
@@ -2050,8 +2054,7 @@
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
                               (booleanp debug)
-                              (or ;; (eq :auto step-limit)
-                                  (eq nil step-limit)
+                              (or (null step-limit)
                                   (natp step-limit))
                               (or ;; (eq :auto max-wins)
                                   (null max-wins)
@@ -2077,8 +2080,9 @@
        ((when erp) (mv erp nil nil state))
        ;; Sort the whole list by confidence (hope the numbers are comparable):
        (ml-recommendations (merge-sort-recs-by-confidence ml-recommendations))
-       ;; Make some other recs:
+       ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
        (enable-recommendations (make-enable-recs theorem-body wrld))
+       ;; Make recs try to hints given to recent theorems:
        ((mv erp recs-from-history state) (make-recs-from-history state))
        ((when erp) (mv erp nil nil state))
        ;; todo: remove duplicate recs from multiple sources:
@@ -2149,8 +2153,7 @@
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
                               (booleanp debug)
-                              (or ;; (eq :auto step-limit)
-                                  (eq nil step-limit)
+                              (or (null step-limit)
                                   (natp step-limit))
                               (or ;; (eq :auto max-wins)
                                   (null max-wins)
@@ -2208,9 +2211,8 @@
                                         state)))
 
 ;; Returns (mv erp event state).
-;; FIXME: Have this submit the theorem if advice is found.
 (defun defthm-advice-fn (theorem-name
-                         theorem-body
+                         theorem-body ; an untranslated term
                          theorem-hints
                          theorem-otf-flg
                          n ; number of recommendations from ML requested
@@ -2222,7 +2224,7 @@
                          model
                          state)
   (declare (xargs :guard (and (symbolp theorem-name)
-                              ;; (pseudo-termp theorem-body)
+                              ;; theorem-body
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               (natp n)
@@ -2230,8 +2232,8 @@
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
                               (booleanp debug)
-                              (or (eq :auto step-limit)
-                                  (eq nil step-limit)
+                              (or (eq :auto step-limit) ; means use *step-limit*
+                                  (eq nil step-limit) ; means no limit
                                   (natp step-limit))
                               (or (eq :auto max-wins)
                                   (null max-wins)
@@ -2265,6 +2267,7 @@
                   (mv nil event state)))
       (mv :no-proof-found nil state))))
 
+;; A replacement for defthm that uses advice to try to prove the theorem.
 (defmacro defthm-advice (name
                          body
                          &key
@@ -2404,6 +2407,7 @@
        (mv nil ; no error
         '(value-triple :invisible) state)))
 
+;; Generate advice for the most recent failed theorem.
 (defmacro advice (&key (n '10) (verbose 'nil) (server-url 'nil) (debug 'nil) (step-limit ':auto) (max-wins ':auto) (model ':all))
   `(acl2::make-event-quiet (advice-fn ,n ,verbose ,server-url ,debug ,step-limit ,max-wins ,model state)))
 
