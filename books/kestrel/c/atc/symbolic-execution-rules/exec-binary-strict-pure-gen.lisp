@@ -267,8 +267,6 @@
          (ltype-fix (pack lfixtype '-fix))
          (op-kind (binop-kind op))
          (op-values (pack op-kind '-values))
-         (exec-binary-strict-pure-of-op
-          (pack 'exec-binary-strict-pure-of- op-kind))
          (exec-binary-strict-pure-of-op-and-ltype
           (pack 'exec-binary-strict-pure-of- op-kind '-and- lfixtype))
          (exec-binary-strict-pure-of-op-when-ltype
@@ -280,10 +278,9 @@
           `(defruled ,exec-binary-strict-pure-of-op-when-ltype
              (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                            (,lpred x))
-                      (equal (,exec-binary-strict-pure-of-op x y)
+                      (equal (,op-values x y)
                              (,exec-binary-strict-pure-of-op-and-ltype x y)))
-             :enable (,exec-binary-strict-pure-of-op
-                      ,exec-binary-strict-pure-of-op-and-ltype)))
+             :enable (,exec-binary-strict-pure-of-op-and-ltype)))
          ((mv names events)
           (atc-exec-binary-rules-gen-op-ltype op (car ltypes) rtypes))
          ((mv more-names more-events)
@@ -307,20 +304,14 @@
          (op (car ops))
          (op-kind (binop-kind op))
          (op-values (pack op-kind '-values))
-         (exec-binary-strict-pure-of-op
-          (pack 'exec-binary-strict-pure-of- op-kind))
          (exec-binary-strict-pure-when-op
           (pack 'exec-binary-strict-pure-when- op-kind))
-         (fun-event
-          `(defund ,exec-binary-strict-pure-of-op (x y)
-             (,op-values x y)))
          (thm-event
           `(defruled ,exec-binary-strict-pure-when-op
              (implies (and (equal op (,(pack 'binop- op-kind))))
                       (equal (exec-binary-strict-pure op x y)
-                             (,exec-binary-strict-pure-of-op x y)))
-             :enable (exec-binary-strict-pure
-                      ,exec-binary-strict-pure-of-op)))
+                             (,op-values x y)))
+             :enable (exec-binary-strict-pure)))
          ((mv names events)
           (atc-exec-binary-rules-gen-op op ltypes rtypes))
          ((mv more-names more-events)
@@ -328,7 +319,7 @@
       (mv (append (list exec-binary-strict-pure-when-op)
                   names
                   more-names)
-          (append (list fun-event thm-event)
+          (append (list thm-event)
                   events
                   more-events))))
 
@@ -397,12 +388,12 @@
 ;;             (xdoc::ul
 ;;              (xdoc::li
 ;;               "First, we rewrite @('(exec-binary-strict-pure op x y)')
-;;                to a call @('(exec-binary-strict-pure-of-op x y)'),
+;;                to a call @('(op-values x y)'),
 ;;                under the hypothesis that @('op') is a specific operator,
-;;                where @('exec-binary-strict-pure-of-op') is one of 16 functions,
+;;                where @('op-values') is one of 16 functions,
 ;;                one per binary strict operator.")
 ;;              (xdoc::li
-;;               "Next, we rewrite @('(exec-binary-strict-pure-of-op x y)')
+;;               "Next, we rewrite @('(op-values x y)')
 ;;                to a call @('(exec-binary-strict-pure-of-op-and-type1 x y)'),
 ;;                under the hypothesis that @('x') has type @('type1'),
 ;;                where @('exec-binary-strict-pure-of-op-and-type1')
