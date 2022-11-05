@@ -50,14 +50,18 @@
     "This ACL2 library provides:")
    (xdoc::ul
     (xdoc::li
-     "A formalization of the syntax and semantics of the ABNF notation.")
+     "A "
+     (xdoc::seetopic "notation" "formalization")
+     " of the syntax and semantics of the ABNF notation.")
     (xdoc::li
-     "A verified parser that turns ABNF grammar text
+     "A "
+     (xdoc::seetopic "grammar-parser" "verified parser")
+     " that turns ABNF grammar text
       (e.g. from the HTTP RFC)
       into a formal representation suitable for formal specification
       (e.g. for HTTP parsing).")
     (xdoc::li
-     "Executable operations on ABNF grammars,
+     "Executable @(see operations) on ABNF grammars,
       e.g. to check their well-formedness and to compose them.")
     (xdoc::li
      "A @(tsee defgrammar) tool
@@ -66,17 +70,23 @@
       and for automatically proving
       certain properties such as well-formedness.")
     (xdoc::li
-     "Some basic parsing primitives usable as part of larger parsers.")
+     "Some basic "
+     (xdoc::seetopic "parsing-primitives-defresult" "parsing primitives")
+     ", also available in "
+     (xdoc::seetopic "parsing-primitives-seq" "another variant")
+     ", usable as part of larger parsers.")
     (xdoc::li
-     "Some very preliminary tools to generate
+     "A @(tsee defdefparse) tool
+      for generating some very preliminary tools to generate
       parsing functions from grammar rules.")
     (xdoc::li
-     "Examples of use of @(tsee defgrammar) and some grammar operations
+     "Some @(see examples) of
+      use of @(tsee defgrammar) and some grammar @(see operations)
       on a few real-world ABNF grammars (e.g. for HTTP)."))
 
    (xdoc::p
     "Besides the aforementioned examples,
-     @(tsee defgrammar) and some grammar operations have been used on "
+     @(tsee defgrammar) and some grammar @(see operations) have been used on "
     (xdoc::seetopic "java::grammar" "an ABNF grammar of Java")
     ", "
     (xdoc::seetopic "yul::concrete-syntax" "two ABNF grammars of Yul")
