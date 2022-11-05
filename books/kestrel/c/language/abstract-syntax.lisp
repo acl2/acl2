@@ -1075,3 +1075,32 @@
   ((declons ext-declon-list))
   :tag :file
   :pred filep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod fileset
+  :short "Fixtype of file sets."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A file set is a collection of related files.
+     This is not an explicit notion in [C],
+     but it is a useful one in a language formalization:
+     a program, or a portion of a program,
+     is contained in a set of related files.
+     This notion is not quite the same as that of C program,
+     which, according to [C], is a complete executable application:
+     a library would not qualify as a program in this sense.")
+   (xdoc::p
+    "For now, a file set consists of just one file (see @(tsee file),
+     including a file path, which for now we model as an ACL2 string.
+     This ACL2 string must be a path to a @('.c') file,
+     including the name of the file and the extension;
+     we do not enforce this for now, but we may in the future.")
+   (xdoc::p
+    "In the future, we also plan to extend the notion of file set
+     to include more than one file."))
+  ((path string)
+   (file file))
+  :tag :fileset
+  :pred filesetp)
