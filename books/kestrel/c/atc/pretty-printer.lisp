@@ -1306,7 +1306,7 @@
   (b* (((file file) file))
     (pprint-ext-declon-list file.declons options)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprinted-lines-to-channel ((lines msg-listp) (channel symbolp) state)
   :returns state
@@ -1344,3 +1344,35 @@
      (acl2::value nil))))
 
 (defttag nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-file-to-filesystem ((file filep)
+                                   (options pprint-options-p)
+                                   (filepath stringp)
+                                   state)
+  :returns (mv erp val state)
+  :mode :program
+  :short "Pretty-print a file to the file system."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We pretty-print the lines and then we write them to the file path."))
+  (pprinted-lines-to-file (pprint-file file options) filepath state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-fileset ((fileset filesetp) (options pprint-options-p) state)
+  :returns (mv erp val state)
+  :mode :program
+  :short "Pretty-print a file set to the file system."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We pretty-print each file in the fileset, at the associated path.
+     For now a file set only contains a single file,
+     so we just generate a single file."))
+  (pprint-file-to-filesystem (fileset->file fileset)
+                             options
+                             (fileset->path fileset)
+                             state))
