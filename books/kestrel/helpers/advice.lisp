@@ -2236,7 +2236,9 @@
                          state))
        ;; TODO: What if the step-limit applied?
        ((when provedp)
-        (cw "WARNING: Proved ~x0 without needing advice.~%" theorem-name)
+        (if (not theorem-hints)
+            (cw "WARNING: Proved ~x0 without advice (no hints needed).~%" theorem-name)
+          (cw "WARNING: Proved ~x0 without advice.~%" theorem-name))
         (mv nil ; no error
             t   ; proved (with the original hints)
             (make-successful-rec "original"
