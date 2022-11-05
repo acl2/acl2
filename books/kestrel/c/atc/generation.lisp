@@ -7443,7 +7443,7 @@
   (xdoc::topstring
    (xdoc::p
     "The rationale for generating this theorem
-     is explained in @(tsee atc-gen-cfile)."))
+     is explained in @(tsee atc-gen-file)."))
   (b* (((unless proofs) nil)
        (tunit (preprocess file))
        ((when (errorp tunit))
@@ -7468,15 +7468,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-cfile ((targets symbol-listp)
-                       (proofs booleanp)
-                       (prog-const symbolp)
-                       (wf-thm symbolp)
-                       (fn-thms symbol-symbol-alistp)
-                       (print evmac-input-print-p)
-                       (names-to-avoid symbol-listp)
-                       (ctx ctxp)
-                       state)
+(define atc-gen-file ((targets symbol-listp)
+                      (proofs booleanp)
+                      (prog-const symbolp)
+                      (wf-thm symbolp)
+                      (fn-thms symbol-symbol-alistp)
+                      (print evmac-input-print-p)
+                      (names-to-avoid symbol-listp)
+                      (ctx ctxp)
+                      state)
   :returns (mv erp
                (val (tuple (file filep)
                            (local-events pseudo-event-form-listp)
@@ -7692,8 +7692,8 @@
      the formals that are not affected then become ignored."))
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((er (list file local-events exported-events &) :iferr '(_))
-        (atc-gen-cfile targets proofs prog-const wf-thm fn-thms
-                       print names-to-avoid ctx state))
+        (atc-gen-file targets proofs prog-const wf-thm fn-thms
+                      print names-to-avoid ctx state))
        ((er file-gen-event) (atc-gen-outfile-event file
                                                    output-file
                                                    pretty-printing
