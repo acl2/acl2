@@ -1094,7 +1094,7 @@
    "  (equal (check-file <constant>) :wellformed))")
   (xdoc::p
    "This asserts that
-    when @(tsee check-file) is applied
+    when @(tsee check-fileset) is applied
     to the named constant described above
     (i.e. the abstract syntax of the generated C program),
     the result is the value @(':wellformed').
@@ -1105,7 +1105,7 @@
 
   (xdoc::p
    "Since the program AST is a constant
-    and @(tsee check-file) is executable,
+    and @(tsee check-fileset) is executable,
     the theorem is proved easily by execution.")
 
   (xdoc::p

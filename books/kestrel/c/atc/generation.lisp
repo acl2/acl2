@@ -7369,12 +7369,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-prog-const ((prog-const symbolp)
-                            (file filep)
+                            (fileset filesetp)
                             (print evmac-input-print-p))
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
   :short "Generate the named constant for the abstract syntax tree
-          of the generated C code (i.e. C file)."
+          of the generated C code (i.e. C file set)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -7384,7 +7384,7 @@
              `((cw-event "~%Generating the named constant..."))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
-       (defconst-event `(defconst ,prog-const ',file))
+       (defconst-event `(defconst ,prog-const ',fileset))
        (local-event `(progn ,@progress-start?
                             (local ,defconst-event)
                             ,@progress-end?)))
@@ -7406,7 +7406,7 @@
    (xdoc::p
     "Since this is a ground theorem,
      we expect that it should be easily provable
-     using just the executable counterpart of @(tsee check-file),
+     using just the executable counterpart of @(tsee check-fileset),
      which is an executable function.")
    (xdoc::p
     "We generate singleton lists of events if @(':proofs') is @('t'),
@@ -7415,8 +7415,8 @@
        ((mv local-event exported-event)
         (evmac-generate-defthm
          wf-thm
-         :formula `(equal (check-file ,prog-const) :wellformed)
-         :hints '(("Goal" :in-theory '((:e check-file))))
+         :formula `(equal (check-fileset ,prog-const) :wellformed)
+         :hints '(("Goal" :in-theory '((:e check-fileset))))
          :enable nil))
        (progress-start?
         (and (evmac-input-print->= print :info)
@@ -7434,7 +7434,7 @@
 (define atc-gen-init-fun-env-thm ((init-fun-env-thm symbolp)
                                   (proofs booleanp)
                                   (prog-const symbolp)
-                                  (file filep))
+                                  (fileset filesetp))
   :returns (local-events pseudo-event-form-listp)
   :short "Generate the theorem asserting that
           applying @(tsee init-fun-env) to the translation unit
@@ -7443,12 +7443,12 @@
   (xdoc::topstring
    (xdoc::p
     "The rationale for generating this theorem
-     is explained in @(tsee atc-gen-cfile)."))
+     is explained in @(tsee atc-gen-fileset)."))
   (b* (((unless proofs) nil)
-       (tunit (preprocess file))
+       (tunit (preprocess fileset))
        ((when (errorp tunit))
         (raise "Internal error: preprocessing of ~x0 fails with error ~x1."
-               file tunit))
+               fileset tunit))
        (fenv (init-fun-env tunit))
        ((when (errorp fenv))
         (raise "Internal error: ~
@@ -7468,29 +7468,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-cfile ((targets symbol-listp)
-                       (proofs booleanp)
-                       (prog-const symbolp)
-                       (wf-thm symbolp)
-                       (fn-thms symbol-symbol-alistp)
-                       (print evmac-input-print-p)
-                       (names-to-avoid symbol-listp)
-                       (ctx ctxp)
-                       state)
+(define atc-gen-fileset ((targets symbol-listp)
+                         (output-file stringp)
+                         (proofs booleanp)
+                         (prog-const symbolp)
+                         (wf-thm symbolp)
+                         (fn-thms symbol-symbol-alistp)
+                         (print evmac-input-print-p)
+                         (names-to-avoid symbol-listp)
+                         (ctx ctxp)
+                         state)
   :returns (mv erp
-               (val (tuple (file filep)
+               (val (tuple (fileset filesetp)
                            (local-events pseudo-event-form-listp)
                            (exported-events pseudo-event-form-listp)
                            (updated-names-to-avoid symbol-listp)
                            val)
                     :hyp (symbol-listp names-to-avoid))
                state)
-  :short "Generate a C file from the ATC targets, and accompanying events."
+  :short "Generate a file set from the ATC targets, and accompanying events."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This does not yet generate an actual file in the file system;
-     it generates an abstract syntactic C file.")
+    "This does not generate actual files in the file system:
+     it generates an abstract syntactic C file set.")
    (xdoc::p
     "In order to speed up the proofs of
      the generated theorems for the function environment
@@ -7498,7 +7499,7 @@
      we generate a theorem to ``cache''
      the result of calling @(tsee init-fun-env)
      on the generated translation unit
-     (obtained by preprocessing the generated C file),
+     (obtained by preprocessing the generated C file set),
      to avoid recomputing that for every function environment theorem.
      We need to generate the name of this (local) theorem
      before generating the function environment theorems,
@@ -7511,7 +7512,7 @@
      however, in the generated events,
      we put that theorem before the ones for the functions."))
   (b* (((acl2::fun (irr))
-        (list (with-guard-checking :none (ec-call (file-fix :irrelevant)))
+        (list (with-guard-checking :none (ec-call (fileset-fix :irrelevant)))
               nil
               nil
               nil))
@@ -7542,13 +7543,14 @@
                                  fn-thms fn-appconds appcond-thms
                                  print names-to-avoid ctx state))
        (file (make-file :declons exts))
+       (fileset (make-fileset :path output-file :file file))
        (local-init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
                                                             proofs
                                                             prog-const
-                                                            file))
+                                                            fileset))
        ((mv local-const-event exported-const-event)
         (if proofs
-            (atc-gen-prog-const prog-const file print)
+            (atc-gen-prog-const prog-const fileset print)
           (mv nil nil)))
        (local-events (append appcond-local-events
                              (and proofs (list local-const-event))
@@ -7558,7 +7560,7 @@
        (exported-events (append (and proofs (list exported-const-event))
                                 wf-thm-exported-events
                                 fn-thm-exported-events)))
-    (acl2::value (list file
+    (acl2::value (list fileset
                        local-events
                        exported-events
                        names-to-avoid)))
@@ -7568,33 +7570,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-outfile ((file filep)
-                         (output-file stringp)
-                         (pretty-printing pprint-options-p)
-                         state)
-  :returns (mv erp val state)
-  :mode :program
-  :short "Pretty-print the generated C code (i.e. C file) to the output file."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This actually writes the file to disk, in the file system."))
-  (b* ((lines (pprint-file file pretty-printing)))
-    (pprinted-lines-to-file lines output-file state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-outfile-event ((file filep)
-                               (output-file stringp)
+(define atc-gen-fileset-event ((fileset filesetp)
                                (pretty-printing pprint-options-p)
                                (print evmac-input-print-p)
                                state)
   :returns (mv erp (event pseudo-event-formp) state)
-  :short "Event to pretty-print the generated C code to the output file."
+  :short "Event to pretty-print the generated C code to the file system."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This serves to run @(tsee atc-gen-outfile)
+    "This serves to run @(tsee pprint-fileset)
      after the constant and theorem events have been submitted.
      This function generates an event form
      that is put (by @(tsee atc-gen-everything))
@@ -7603,7 +7588,7 @@
      we get to this file generation event
      only if the previous events are successful.
      This is a sort of safety/security constraint:
-     do not even generate the output file, unless it is correct.")
+     do not even generate files, unless they are correct.")
    (xdoc::p
     "If @(':print') is @(':info') or @(':all'),
      we also generate events to print progress messages,
@@ -7616,23 +7601,21 @@
      so there is no extra screen output.
      This is a ``dummy'' event, which is not supposed to do anything:
      it is the execution of the @(tsee make-event) argument
-     that matters, because it generates the output file.
+     that matters, because it writes the file set to the file system.
      In essence, we use @(tsee make-event) to turn a computation
-     (the one that generates the output file)
+     (the one that writes the output files)
      into an event.
      But we cannot use just @(tsee value-triple)
      because our computation returns an error triple."))
   (b* ((progress-start?
         (and (evmac-input-print->= print :info)
-             `((cw-event "~%Generating the file..." ',output-file))))
+             `((cw-event "~%Generating the file ~s0..."
+                         ',(fileset->path fileset)))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
-          (b* (((er &) (atc-gen-outfile ',file
-                                        ,output-file
-                                        ',pretty-printing
-                                        state)))
+          (b* (((er &) (pprint-fileset ',fileset ',pretty-printing state)))
             (acl2::value '(value-triple :invisible))))))
     (acl2::value `(progn ,@progress-start?
                          ,file-gen-event
@@ -7691,14 +7674,14 @@
      if the call is the body of a @(tsee let),
      the formals that are not affected then become ignored."))
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
-       ((er (list file local-events exported-events &) :iferr '(_))
-        (atc-gen-cfile targets proofs prog-const wf-thm fn-thms
-                       print names-to-avoid ctx state))
-       ((er file-gen-event) (atc-gen-outfile-event file
-                                                   output-file
-                                                   pretty-printing
-                                                   print
-                                                   state))
+       ((er (list fileset local-events exported-events &) :iferr '(_))
+        (atc-gen-fileset targets output-file proofs
+                         prog-const wf-thm fn-thms
+                         print names-to-avoid ctx state))
+       ((er fileset-gen-event) (atc-gen-fileset-event fileset
+                                                      pretty-printing
+                                                      print
+                                                      state))
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
        (encapsulate
@@ -7708,7 +7691,7 @@
               (set-ignore-ok t)
               ,@local-events
               ,@exported-events
-              ,file-gen-event))
+              ,fileset-gen-event))
        (encapsulate+ (restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
        (table-event (atc-table-record-event call info)))
