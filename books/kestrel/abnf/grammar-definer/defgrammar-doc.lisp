@@ -41,7 +41,7 @@
       This provides an ACL2 representation of the grammar,
       which has a formal @(see semantics)
       and which is amenable to @(see operations), "
-     (xdoc::seetopic "parser-generators" "parser generators")
+     (xdoc::seetopic "defdefparse" "parser generation")
      ", etc.")
 
     (xdoc::p
