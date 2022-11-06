@@ -92,7 +92,7 @@
     (xdoc::seetopic "yul::concrete-syntax" "two ABNF grammars of Yul")
     ", and "
     (xdoc::seetopic "c::grammar" "an ABNF grammar of a subset of C")
-    ". The parsing generation tools have been used to generate part of "
+    ". The @(tsee defdefparse) tool has been used to generate part of "
     (xdoc::seetopic "yul::lexer" "a Yul lexer")
     ".")
 
