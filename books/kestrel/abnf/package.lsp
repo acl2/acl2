@@ -66,6 +66,7 @@
                           seq
                           seq-backtrack
                           string=>nats
+                          table-alist+
                           unsigned-byte-listp
                           fty::reserrf
                           fty::reserrf-push

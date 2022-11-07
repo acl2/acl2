@@ -245,11 +245,31 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 ; (enum-of-type 'integer (type-metadata-table (w state)))
 
-(defun base-val-of-type (type tbl)
-  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl))))
-  (get-alist :default-base-value (get-alist type tbl)))
+(defun trans1-cmp (form wrld)
+  (declare (xargs :mode :program))
+  (declare (xargs :guard (plist-worldp wrld)))
+  (acl2::translate1-cmp
+   form nil nil nil 'ctx wrld (default-state-vars nil)))
 
-; (base-val-of-type 'integer (type-metadata-table (w state)))
+(defun base-val-of-type (type tbl wrld)
+  (declare (xargs :mode :program))
+  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl) (plist-worldp wrld))))
+  (b* ((base-val (get-alist :default-base-value (get-alist type tbl)))
+       ((mv - trans-base-val -)
+        (if (and (symbolp base-val)
+                 (acl2::legal-variable-or-constant-namep base-val)
+                 (acl2::legal-constantp1 base-val))
+            (trans1-cmp base-val wrld)
+          (mv nil `',base-val nil))))
+    trans-base-val))
+
+; (defconst *x* 'x)
+; (defdata x *x*)
+; (defdata non-empty-true-list (cons all true-list))
+; (base-val-of-type 'x (type-metadata-table (w state)) (w state)) = 'x
+; (base-val-of-type 'integer (type-metadata-table (w state)) (w state)) = '0
+; (base-val-of-type 'non-empty-true-list (type-metadata-table (w state)) (w state)) = '(nil)
+; (base-val-of-type 'symbol (type-metadata-table (w state)) (w state)) = 'a
 
 (defun unalias-pred (pred ptbl)
   (declare (xargs :guard (and (symbolp pred) (sym-aalistp ptbl))))
@@ -1754,7 +1774,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (undefined-value? (assoc :undefined-value kwd-alist))
        (undefined-value (if undefined-value?
                             (get1 :undefined-value kwd-alist)
-                          `',(base-val-of-type type tbl)))
+                          (base-val-of-type type tbl w)))
        (base-val (and type typed-undef undefined-value))
        (defthm-d? `(defthm ,thm-name (,pred (,undef-name))
                      :rule-classes ((:type-prescription) (:rewrite))))

@@ -21,6 +21,7 @@
 (include-book "kestrel/fty/pos-list" :dir :system)
 (include-book "kestrel/std/system/constant-value" :dir :system)
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
+(include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
@@ -69,6 +70,52 @@
 
   "@('rules') is the list of rules that forms the ABNF grammar,
    i.e. the value of the constant specified by @(':grammar')."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ defdefparse-table
+  :short "Table of @(tsee defdefparse) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for detecting redundant calls."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection defdefparse-table-definition
+  :short "Definition of the table of @(tsee defdefparse) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the calls themselves as keys,
+     and nothing (i.e. @('nil')) as values.
+     We only need to check if
+     a call has already been successfully made or not;
+     the table is like a set of calls."))
+
+  (table defdefparse-table nil nil
+    :guard (and (pseudo-event-formp acl2::key)
+                (null acl2::val))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defdefparse-table-lookup ((call pseudo-event-formp) (wrld plist-worldp))
+  :returns (yes/no booleanp)
+  :short "Look up a @(tsee defdefparse) call in the table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Returns a boolean, saying whether the call is in the table or not."))
+  (consp (assoc-equal call (table-alist+ 'defdefparse-table wrld))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defdefparse-table-add ((call pseudo-event-formp))
+  :returns (event pseudo-event-formp)
+  :short "Event to record a @(tsee defdefparse) call in the table."
+  `(table defdefparse-table ',call nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -991,7 +1038,7 @@
       (or just the list @('(1 2 3 ...)') if there is no reordering.")
     (xdoc::li
      "A parsing function for a repetition.")))
-  (:rulename ((get acl2::stringp)
+  (:rulename ((get acl2::string)
               (order pos-list)))
   (:group ((get alternation)
            (order pos-list)))
@@ -1419,7 +1466,8 @@
 (define defdefparse-gen-everything ((name acl2::symbolp)
                                     (pkg-wit acl2::symbolp)
                                     (grammar acl2::symbolp)
-                                    (prefix acl2::symbolp))
+                                    (prefix acl2::symbolp)
+                                    (call pseudo-event-formp))
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
   (b* ((group-table-name (defdefparse-gen-group-table-name name pkg-wit))
@@ -1456,7 +1504,8 @@
                        name pkg-wit grammar prefix
                        group-table-name
                        option-table-name
-                       repetition-table-name)))
+                       repetition-table-name))
+       (table-event (defdefparse-table-add call)))
     `(progn
        ,group-table-macro
        ,option-table-macro
@@ -1465,19 +1514,25 @@
        ,*-rulename-macro
        ,group-macro
        ,*-group-macro
-       ,option-macro)))
+       ,option-macro
+       ,table-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defdefparse-fn ((args true-listp) (ctx ctxp) state)
+(define defdefparse-fn ((args true-listp)
+                        (call pseudo-event-formp)
+                        (ctx ctxp)
+                        state)
   :returns (mv erp
                (even pseudo-event-formp)
                state)
   :parents (defdefparse-implementation)
   :short "Process the inputs and generate the events."
-  (b* (((er (list name pkg-wit grammar prefix) :iferr '(_))
+  (b* (((when (defdefparse-table-lookup call (w state)))
+        (value '(value-triple :redundant)))
+       ((er (list name pkg-wit grammar prefix) :iferr '(_))
         (defdefparse-process-inputs args ctx state))
-       (event (defdefparse-gen-everything name pkg-wit grammar prefix)))
+       (event (defdefparse-gen-everything name pkg-wit grammar prefix call)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1486,5 +1541,5 @@
   :parents (defdefparse-implementation)
   :short "Definition of the @(tsee defdefparse) macro."
 
-  (defmacro defdefparse (&rest args)
-    `(make-event (defdefparse-fn ',args 'defdefparse state))))
+  (defmacro defdefparse (&whole call &rest args)
+    `(make-event (defdefparse-fn ',args ',call 'defdefparse state))))
