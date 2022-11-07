@@ -1038,7 +1038,7 @@
       (or just the list @('(1 2 3 ...)') if there is no reordering.")
     (xdoc::li
      "A parsing function for a repetition.")))
-  (:rulename ((get acl2::stringp)
+  (:rulename ((get acl2::string)
               (order pos-list)))
   (:group ((get alternation)
            (order pos-list)))
