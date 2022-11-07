@@ -301,7 +301,7 @@
            (& nil))))))
 
   (define falist-consistent (falist-term)
-    :parents (rp-utilities)
+    :parents (rp-other-utilities)
     :short "Given a falist term \(falist \* \*\), checks consistence of arguments."
     (case-match falist-term
       (('falist ('quote falist) term)
@@ -556,7 +556,7 @@
  (define include-fnc-subterms (subterms fnc)
    :guard (symbolp fnc)
    :enabled t
-   :parents (rp-utilities)
+   :parents (include-fnc)
    :short "Searches a list of terms for an instance of fnc. Returns t or nil."
    (if (atom subterms)
        nil
@@ -602,7 +602,7 @@
    (in-theory (enable IS-RP-LOOSE)))
 
   (define ex-from-rp-loose (term)
-    :parents (rp-utilities)
+    :parents (ex-from-rp)
     :short "Same as @(see rp::ex-from-rp) when term is @(see rp::rp-termp) but
     a little faster."
     (mbe :logic (if (is-rp-loose term)
@@ -675,8 +675,8 @@
            ',(cdr (unquote term))))
 
   (define context-from-rp (term context)
-    :short "Expands the context with the side-conditions from the term"
-    :parents (rp-utilities)
+    :short "Expands a given context list with the side-conditions from the term"
+    :parents (ex-from-rp)
     (if (is-rp term)
         (let ((type (car (cdr (car (cdr term)))))
               (x (car (cdr (cdr term)))))
@@ -1076,7 +1076,7 @@
 
   (acl2::defines
    rp-equal-cw
-   :parents (rp-utilities)
+   :parents (rp-equal)
    :short "Same as @(see rp::rp-equal) but prints a mismatch."
    (define rp-equal-cw (term1 term2)
      :enabled t
@@ -1141,7 +1141,7 @@
 
   (acl2::defines
    rp-equal-cnt
-   :parents (rp-utilities)
+   :parents (rp-equal)
    :short "Same as @(see rp::rp-equal) but when counts down from cnt and starts ~
    using 'equal' when it hits 0."
    ;; check if two terms are equivalent by discarding rp terms
@@ -1229,7 +1229,7 @@
     (in-theory (disable (:type-prescription no-free-variablep))))
 
   (define rule-syntaxp (rule &key warning)
-    :parents (rp-utilities)
+    :parents (rp-other-utilities)
     :short "Syntax check for a 'rule' defined with rp::custom-rewrite-rule. If
     warning key is set to non-nil, a warning is issued for failures. "
     (and
@@ -1345,7 +1345,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (acl2::defines
  ex-from-rp-all
- :parents (rp-utilities)
+ :parents (ex-from-rp)
  :short "Removes all instances of 'rp' from a term"
  (define ex-from-rp-all (term)
    :returns (res )
@@ -1369,8 +1369,9 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (acl2::defines
     ex-from-rp-all2
-    :parents (rp-utilities)
-    :short "Removes all instances of 'rp' from a term, including the stuff under falist"
+    :parents (ex-from-rp)
+    :short "Removes all instances of 'rp' from a term, and remove falist instances along
+    the way"
     :prepwork ((local
                 (in-theory (enable is-rp
                                    is-rp-loose))))
@@ -1794,13 +1795,13 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
   (rw-step-limit :type (unsigned-byte 58) :initially 100000)
   (rw-backchain-limit :type (unsigned-byte 58) :initially 1000)
   (rw-backchain-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be set outside and read internally when starting to rewrite a hyp.
-  (rw-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be used
-  ;; only internally.
+  (rw-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be used only internally.
   (backchaining-rule :type t :initially nil)
-  ;;(backchaining-just-started :type t :initially nil)
+  
   (rw-context-disabled :type (satisfies booleanp) :initially nil) 
 
   (not-simplified-action :type (satisfies symbolp) :initially :error)
+  (suppress-not-simplified-error :type (satisfies booleanp) :initially nil) ;; only used internally
 
   (casesplitter-cases :type (satisfies rp-term-listp) :initially nil)
 

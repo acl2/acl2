@@ -96,7 +96,6 @@
                                   (runes 'nil)
                                   (runes-outside-in 'nil) ;; when nil, runes will be read from
                                   ;; rp-rules table
-                                  (not-simplified-action ':none)
                                   (cases 'nil)
                                   )
   `(encapsulate
@@ -104,7 +103,7 @@
      (make-event
       (b* ((- (check-if-clause-processor-up-to-date (w state)))
            ;;(?old-not-simplified-action (not-simplified-action rp-state))
-           (rp-state (update-not-simplified-action ,not-simplified-action rp-state))
+           
            (body `(with-output
                     :stack :pop
                     :on (acl2::summary acl2::event acl2::error)
@@ -117,7 +116,8 @@
                          (rp-cl :runes ,,runes
                                 :runes-outside-in ,,runes-outside-in
                                 :new-synps ,',new-synps
-                                :cases ,',cases))
+                                :cases ,',cases
+                                :suppress-not-simplified-error t))
                        '(:clause-processor (cmr::let-abstract-full-clause-proc-exclude-hyps
                                             clause 'var))
                        '(:clause-processor fgl::expand-an-implies-cp)
@@ -161,8 +161,8 @@
                `body)))
         (mv nil event state rp-state)))
 
-     (make-event
+     #|(make-event
       (b* ((rp-state (update-not-simplified-action :error rp-state)))
-        (mv nil `(value-triple :none) state rp-state)))
+        (mv nil `(value-triple :none) state rp-state)))|#
      
      ))

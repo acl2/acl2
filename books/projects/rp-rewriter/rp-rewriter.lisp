@@ -2346,16 +2346,19 @@ relieving the hypothesis for ~x1! You can disable this error by running:
 
        (- (rp-state-print-rules-used rp-state))
        (- (if (not (nonnil-p res-))
-              (b* ((action (not-simplified-action rp-state)))
-                (cond ((equal action ':error)
+              (b* ((action (not-simplified-action rp-state))
+                   (suppress-not-simplified-error (suppress-not-simplified-error rp-state))) 
+                (cond ((or suppress-not-simplified-error
+                           (equal action ':none))
+                       nil)
+                      ((equal action ':error)
                        (hard-error
                         'preprocess-then-rp-rw
                         "Error! rp-rewriter did not reduce the term to t! To supress this error run:
 (set-not-simplified-action :warning) or (set-not-simplified-action :none)
 Resulting  term is:~% ~p0 ~%"
                         (list (cons #\0 res-))))
-                      ((equal action ':none)
-                       nil)
+                      
                       (t
                        (cw "--- WARNING! --- Term was not reduced to 't. To throw an error instead, run:
 (set-not-simplified-action :error) ~% ~%" ))))

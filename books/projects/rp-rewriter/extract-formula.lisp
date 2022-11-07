@@ -58,8 +58,6 @@
 (local
  (in-theory (enable rule-syntaxp)))
 
-
-
 #|(mutual-recursion
 (defun force-to-force$ (term rule-name)
 (cond ((or (atom term)
@@ -252,7 +250,6 @@ lst))))||#
                      (insert-iff-to-force-lst (cdr lst) rule-name in-hyps)
                      lst))))
 
-
 (defund formulas-to-rules (rune rule-new-synp warning formulas)
   (declare (xargs :guard t))
   (if (atom formulas)
@@ -286,7 +283,6 @@ lst))))||#
           (cons rule rest)
         rest))))
 
-
 (defun custom-rewrite-with-meta-extract (rule-name rule-new-synp warning state)
   (declare (xargs :guard (and (symbolp rule-name))
                   :stobjs (state)
@@ -310,7 +306,6 @@ lst))))||#
        (rune (get-rune-name rule-name state)))
     (formulas-to-rules rune rule-new-synp warning formulas)))
 
-
 (defun attach-sc-list-to-rhs (rhs sc-list)
   "input is rhs of the rule and a list of formulas representing the
     side-conditions, and they are expected to be unary functions each."
@@ -331,8 +326,6 @@ lst))))||#
                 "WARNING! Properties in the side-condition should be unary ~
   functions. This happened for ~p0. Skipping this one. ~%" (car sc-list))
                (attach-sc-list-to-rhs rhs (cdr sc-list))))))))
-
-
 
 (progn
   (defund extract-from-force (term)
@@ -617,7 +610,6 @@ lst))))||#
 rules))
 rules))||#
 
-
 (defun meta-rune-p (rune)
   (declare (xargs :guard t))
   (case-match rune
@@ -819,7 +811,6 @@ alist
                         "Rule name from ~p0 is not a symbolp ~%"
                         (list (cons #\0 rule))))
            (name (if given-type name (acl2::deref-macro-name name (macro-aliases (w state)))))
-           
 
            (corresponding-rule (hons-assoc-equal
                                 name
@@ -839,7 +830,6 @@ alist
                   rest))
 
            (rune-entry (hons-assoc-equal rune (table-alist ruleset (w state))))
-
 
            ((when (not (consp rune-entry)))
             (progn$
@@ -901,7 +891,6 @@ priority.
     (declare (xargs :guard (symbolp fnc)))
     `(table rp-exc-rules ',fnc t)))
 
-
 (xdoc::defxdoc rp-ruleset
   :parents (rp-rewriter)
   :short "Functions to manage RP-Rewriter's ruleset"
@@ -910,7 +899,7 @@ priority.
 the functions below to register rules to RP-Rewriter's
  ruleset:</p>
 
-<p><b>ADD-RP-RULE</b></p>
+<p><h4>ADD-RP-RULE</h4></p>
 <code>
 @('
 (rp::add-rp-rule <rule-name>
@@ -934,11 +923,11 @@ defined. </p>
 <p> :lambda-opt key checks  if the rule has any lambda  expressions. If that is
 the case, then  it performs @(see lambda-opt)imization to create  a new rule and
 save that  instead. The name of  the new rule will  be printed, and it  will be
-disabled for ACL2. RP-Rewriter  will know that use that rule  when you refer to
+disabled for ACL2. RP-Rewriter  will know to use that rule  when you refer to
 the original rule name, such as when enabling/disabling it.</p>
 
 <p> :hints  key  will likely never be used but maybe necessary in some
-unforeseen cases when :lambda-opt is enabled</p>
+unforeseen cases when :lambda-opt is enabled.</p>
 
 <p>  :rw-direction  key can  be  set  to :inside-out,  :both,  or :outside-in.   This
 determines the rewrite direction when applying a  rule. If the key is set to :outside-in,
@@ -949,13 +938,13 @@ to :both,  then  it  is  treated  as   both  inside-out  and
 outside-in.</p>
 
 <p> :ruleset key select which table the rule should be saved in. By default, it
-is set to rp-rules. Should users 
+is set to rp-rules. Should users
 choose to collect their rules in some other table to manage a different
 rewriting scheme and don't want the possible interference from the existing set
 of rules, then they may choose to use a custom table to store and read the
 rule names.</p>
 
-<p> <b>DEF-RP-RULE</b> </p>
+<p> <h4>DEF-RP-RULE</h4> </p>
 
 <code>
 @('
@@ -966,7 +955,7 @@ rule names.</p>
   :hints <...>             ;; default: nil. Passed to defthm
   :otf-flg <t-or-nil>      ;; default: nil. Passed to defthm
   :instructions <t-or-nil> ;; default: nil. Passed to defthm.
-  
+
   :disabled <t-or-nil> ;; default: nil. Disable the rule for both ACL2 and RP
   :disabled-for-rp <t-or-nil>   ;; default: nil. Disable the rule for RP
   :disabled-for-ACL2 <t-or-nil> ;; default: nil. Disable the rule for ACL2
@@ -979,9 +968,9 @@ rule names.</p>
 
 <p>  This  macro  simply expands to consecutive calls of defthm and
 add-rp-rule. It provides a compact way to add rewrite rules intended to be used
-by RP-Rewriter. Note that the :lambda-opt argument is set to to by default. </p>
+by RP-Rewriter. Note that the :lambda-opt argument is set to t by default. </p>
 
-<p> <b> PRINTING RULES </b> </p>
+<p> <h4> PRINTING RULES </h4> </p>
 
 <p> A given rule may be parsed differently in RP-Rewriter than how ACL2
 processes rules. Therefore, using @(see acl2::pr) to understand rhs, lhs, hyp
@@ -993,7 +982,7 @@ etc. of a rule may be misleading. So RP-Rewriter has its of version of pr: </p>
 
 <p> This will show relevant information about a given rule. </p>
 
-<p> <b> ENABLING/DISABLING RULES </b> </p>
+<p> <h4> ENABLING/DISABLING RULES </h4> </p>
 
 <p> To enable rewrite, definition or meta rules: </p>
 
@@ -1054,15 +1043,15 @@ below. </p>
 <code> @('(rp::enable-postprocessor <fnc-name>)') </code>
 <code> @('(rp::disable-postprocessor <fnc-name>)') </code>
 
-<p> <b> CHANGING RULE PRIORITIES </b> </p>
+<p> <h4> CHANGING RULE PRIORITIES </h4> </p>
 
 <p>Users can 'bump'  or 'bump down' rules, effectively  changing their application
 priority.         For         example,        @('(bump-rp-rule        (:definition
-implies))')   (alternatively,  @('(bump-rp-rule   implies)'))   will  priorities   the
-definition rule of  implies over any rewrite rule that  might have been defined
-prior to that  point. If user defines  a rewrite rule about  implies after this
-point, then that  rule will be tried/applied.  If it fails, then  the bumped up
-definition rule of implies will be applied.</p>
+implies))')   (alternatively:  @('(bump-rp-rule   implies)'))   will  prioritize   the
+definition rule of  implies over any rewrite rule that  might have been added
+prior to that  point. This simply moves the name of this rules at the top of
+the list in the table that the rules are stored. So if another rule about
+implies is added after this point, that that newer rule will have higher priority.</p>
 
 <code>
 @('(rp::bump-rule <rule-name/rune>)')
@@ -1183,7 +1172,6 @@ making it the least prioritized rule. </p>
                   rest)
           rest))))
 
-
   (defund get-enabled-rules-from-table-aux (rp-rules)
     (declare (xargs :guard t))
     (if (atom rp-rules)
@@ -1275,8 +1263,6 @@ making it the least prioritized rule. </p>
   (append rules-rw-oi rules-def-oi)
   rules-ex)))||#)
 
-
-
 (define rp-state-init-rules-aux (rules-alist
                                  flg
                                  rp-state)
@@ -1310,13 +1296,19 @@ making it the least prioritized rule. </p>
                              state
                              &key
                              (ruleset ''rp-rules)
+                             (suppress-not-simplified-error 'nil)
                              )
-  :guard (symbolp ruleset)
+  :guard (and (symbolp ruleset)
+              (booleanp suppress-not-simplified-error))
   :verify-guards nil
   (b* ((- (and runes-outside-in (not runes-inside-out)
                (cw "WARNING: You passed some values for runes-outside-in
 but did not pass anything for runes. Assigning values to any one of those
-values will cause runes to be not retrieved from the table.~%")))
+values will cause runes to be not retrieved from the table for all.")))
+
+       (rp-state (update-suppress-not-simplified-error
+                  (and suppress-not-simplified-error t)
+                  rp-state))
 
        ((mv runes-inside-out runes-outside-in disabled-exc-rules)
         (if (or runes-inside-out runes-outside-in)
