@@ -448,4 +448,14 @@
       Thus, if some parsing functions are hand-written,
       and called by generated parsing functions,
       the hand-written functions must include @(':hooks (:fix)')
-      in order for all the fixing theorems to be proved."))))
+      in order for all the fixing theorems to be proved."))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section
+    xdoc::*evmac-section-redundancy-title*
+
+    (xdoc::p
+     "A call of @('defdefparse') is redundant if and only if
+      it is identical to a previous successful call of @('defdefparse')
+      with the exact same arguments."))))
