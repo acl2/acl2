@@ -255,4 +255,14 @@
      "All these events are inside a @(tsee defsection)
       whose name is @('*name*')
       and whose parent list, short string, and long string
-      are the ones specified in the respective inputs."))))
+      are the ones specified in the respective inputs."))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section
+    xdoc::*evmac-section-redundancy-title*
+
+    (xdoc::p
+     "A call of @('defgrammar') is redundant if and only if
+      it is identical to a previous successful call of @('defgrammar')
+      with the exact same arguments."))))
