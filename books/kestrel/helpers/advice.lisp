@@ -544,10 +544,20 @@
               ;; theorem-hints
               (booleanp theorem-otf-flg)))))
 
+(defund successful-recommendationp-name (rec)
+  (declare (xargs :guard (successful-recommendationp rec)
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
+  (nth 0 rec))
+
 (defund successful-recommendationp-type (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 1 rec))
+
+(defund successful-recommendationp-object (rec)
+  (declare (xargs :guard (successful-recommendationp rec)
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
+  (nth 2 rec))
 
 (local
  (defthm pre-commandsp-of-nth-3-when-successful-recommendationp
@@ -2206,6 +2216,7 @@
                                        step-limit
                                        max-wins
                                        model
+                                       suppress-trivial-warningp
                                        state)
   (declare (xargs :guard (and (symbolp theorem-name)
                               (pseudo-termp theorem-body)
@@ -2222,7 +2233,8 @@
                                   (null max-wins)
                                   (natp max-wins))
                               (or (eq :all model)
-                                  (rec-modelp model)))
+                                  (rec-modelp model))
+                              (booleanp suppress-trivial-warningp))
                   :stobjs state
                   :mode :program))
   (b* ((wrld (w state))
@@ -2236,9 +2248,10 @@
                          state))
        ;; TODO: What if the step-limit applied?
        ((when provedp)
-        (if (not theorem-hints)
-            (cw "WARNING: Proved ~x0 without advice (no hints needed).~%" theorem-name)
-          (cw "WARNING: Proved ~x0 without advice.~%" theorem-name))
+        (and (not suppress-trivial-warningp)
+             (if (not theorem-hints)
+                 (cw "WARNING: Proved ~x0 without advice (no hints needed).~%" theorem-name)
+               (cw "WARNING: Proved ~x0 without advice.~%" theorem-name)))
         (mv nil ; no error
             t   ; proved (with the original hints)
             (make-successful-rec "original"
@@ -2325,6 +2338,7 @@
                                         step-limit
                                         max-wins
                                         model
+                                        nil
                                         state))
        ((when erp) (mv erp nil state)))
     (if successp
@@ -2407,6 +2421,7 @@
                                         step-limit
                                         max-wins
                                         model
+                                        nil
                                         state))
        ((when erp) (mv erp nil state)))
     (if successp
