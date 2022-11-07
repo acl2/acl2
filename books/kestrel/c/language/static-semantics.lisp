@@ -2352,8 +2352,13 @@
     "Starting from the initial (empty) function table,
      we check all the external declarations,
      threading the function table through,
-     and discarding the final one (it served its pupose)."))
+     and discarding the final one (it served its pupose).")
+   (xdoc::p
+    "We also ensure that there is at leaast one external declaration,
+     according to the grammatical requirement in [C:6.9/1]."))
   (b* (((transunit tunit) tunit)
+       ((unless (consp tunit.declons))
+        (error (list :transunit-empty)))
        (funtab (fun-table-init))
        (vartab (var-table-init))
        (tagenv (tag-env-init))
