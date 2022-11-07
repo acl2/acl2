@@ -144,7 +144,8 @@
      in the process of doing this refactoring.")
 
    (xdoc::p
-    "The parsing generation tools have been extended and improved.")
+    "The parsing generation tools
+     have been significantly extended and improved.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
