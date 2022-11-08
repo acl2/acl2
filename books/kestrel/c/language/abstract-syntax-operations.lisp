@@ -389,6 +389,7 @@
     (ext-declon-case ext
                      :fundef (cons (ext-declon-fundef->get ext)
                                    (ext-declon-list->fundef-list (cdr exts)))
+                     :fun-declon (ext-declon-list->fundef-list (cdr exts))
                      :obj-declon (ext-declon-list->fundef-list (cdr exts))
                      :tag-declon (ext-declon-list->fundef-list (cdr exts))))
   :hooks (:fix))

@@ -155,6 +155,7 @@
        (ext-declon-case
         declon
         :obj-declon (init-fun-env-aux (cdr declons) fenv)
+        :fun-declon (init-fun-env-aux (cdr declons) fenv)
         :tag-declon (init-fun-env-aux (cdr declons) fenv)
         :fundef (b* ((fenv (fun-env-extend declon.get fenv))
                      ((when (errorp fenv)) fenv))

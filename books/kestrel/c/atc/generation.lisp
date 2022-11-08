@@ -7404,10 +7404,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "The theorem asserts that
+     running the static semantics (i.e. @(tsee check-fileset))
+     on the C code succeeds.
+     We also include an assertion that the C code is a fileset
+     (i.e. that it satisfies @(tsee filesetp));
+     this does not directly follow from @(tsee check-fileset),
+     which fixes its argument to be a file set.")
+   (xdoc::p
     "Since this is a ground theorem,
      we expect that it should be easily provable
-     using just the executable counterpart of @(tsee check-fileset),
-     which is an executable function.")
+     using just the executable counterparts
+     of @(tsee check-fileset) and @(tsee filesetp),
+     which are executable functions.")
    (xdoc::p
     "We generate singleton lists of events if @(':proofs') is @('t'),
      empty lists otherwise."))
@@ -7415,8 +7424,10 @@
        ((mv local-event exported-event)
         (evmac-generate-defthm
          wf-thm
-         :formula `(equal (check-fileset ,prog-const) :wellformed)
-         :hints '(("Goal" :in-theory '((:e check-fileset))))
+         :formula `(and (filesetp ,prog-const)
+                        (equal (check-fileset ,prog-const) :wellformed))
+         :hints '(("Goal" :in-theory '((:e check-fileset)
+                                       (:e filesetp))))
          :enable nil))
        (progress-start?
         (and (evmac-input-print->= print :info)
