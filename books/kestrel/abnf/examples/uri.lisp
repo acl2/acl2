@@ -49,7 +49,8 @@
      to keep this constant unexpanded in output."))
   :file "uri.abnf"
   :untranslate t
-  :well-formed t)
+  :well-formed t
+  :matchers uri-cst)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
