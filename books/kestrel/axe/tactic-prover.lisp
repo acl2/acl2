@@ -233,7 +233,7 @@
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitor)
                               (booleanp normalize-xors)
-                              (axe-print-levelp print))
+                              (print-levelp print))
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (disable myquotep)))))
   (b* ((dag (first problem))

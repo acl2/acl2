@@ -12,12 +12,12 @@
 
 (include-book "kestrel/utilities/defstobj-plus" :dir :system)
 
-(include-book "print-levels")
+(include-book "kestrel/utilities/print-levels" :dir :system)
 
 (defstobj+ rewrite-stobj
   (known-booleans :type (satisfies symbol-listp) :initially nil)
   (monitored-symbols :type (satisfies symbol-listp) :initially nil)
-  (print :type (satisfies axe-print-levelp) :initially nil)
+  (print :type (satisfies print-levelp) :initially nil)
   (normalize-xors :type (satisfies booleanp) :initially nil)
   :inline t
   :renaming ((known-booleans get-known-booleans)
