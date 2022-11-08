@@ -535,7 +535,7 @@
       a valid path to an existing directory in the file system;
       the path may be absolute,
       or relative to
-      the " (xdoc::seetopic "cbd" "current working directory") ".")
+      the current working directory.")
     (xdoc::p
      "If the @(':java-package') input specifies an unnamed package,
       the generated Java files are written in that directory.
