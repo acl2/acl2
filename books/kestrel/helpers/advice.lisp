@@ -293,6 +293,25 @@
   (declare (xargs :guard t))
   (member-eq type *all-rec-types*))
 
+(defthm rec-typep-forward-to-symbolp
+  (implies (rec-typep type)
+           (symbolp type))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable rec-typep member-equal))))
+
+(defund rec-type-listp (types)
+  (declare (xargs :guard t))
+  (if (not (consp types))
+      (null types)
+    (and (rec-typep (first types))
+         (rec-type-listp (rest types)))))
+
+(defthm rec-type-listp-forward-to-symbol-listp
+  (implies (rec-type-listp types)
+           (symbol-listp types))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable rec-type-listp))))
+
 (defund include-book-formp (form)
   (declare (xargs :guard t))
   (and (consp form)
@@ -2097,6 +2116,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund remove-disallowed-recs (recs disallowed-rec-types acc)
+  (declare (xargs :guard (and (recommendation-listp recs)
+                              (rec-type-listp disallowed-rec-types)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
+  (if (endp recs)
+      (reverse acc)
+    (let* ((rec (first recs))
+           (type (nth 1 rec)))
+      (if (member-eq type disallowed-rec-types)
+          ;; Drop the rec:
+          (remove-disallowed-recs (rest recs) disallowed-rec-types acc)
+        ;; Keep the rec:
+        (remove-disallowed-recs (rest recs) disallowed-rec-types (cons rec acc))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp successp best-rec state).
 (defun get-and-try-advice-for-checkpoints (checkpoint-clauses
                                            theorem-name
@@ -2108,6 +2144,7 @@
                                            server-url
                                            debug
                                            step-limit
+                                           disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
                                            max-wins
                                            model
                                            state)
@@ -2126,6 +2163,7 @@
                               (or ;; (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
+                              (rec-type-listp disallowed-rec-types)
                               (or (eq :all model)
                                   (rec-modelp model)))
                   :stobjs state
@@ -2157,6 +2195,13 @@
        (recommendations (merge-recs-into-recs enable-recommendations
                                               (merge-recs-into-recs recs-from-history
                                                                     ml-recommendations)))
+       ;; Remove any recs whose types have been disallowed:
+       (rec-count-before-removal (len recommendations))
+       (recommendations (remove-disallowed-recs recommendations disallowed-rec-types nil))
+       (rec-count-after-removal (len recommendations))
+       (- (and (< rec-count-after-removal rec-count-before-removal)
+               (acl2::print-level-at-least-tp print)
+               (cw "NOTE: Removed ~x0 recommendations of disallowed tyes." (- rec-count-before-removal rec-count-after-removal))))
        ;; (num-recs (len recommendations))
        ;; Print the recommendations (for now):
        (- (and print (cw "~%RECOMMENDATIONS TO TRY:~%")))
@@ -2214,6 +2259,7 @@
                                        server-url
                                        debug
                                        step-limit
+                                       disallowed-rec-types
                                        max-wins
                                        model
                                        suppress-trivial-warningp
@@ -2229,6 +2275,7 @@
                               (booleanp debug)
                               (or (null step-limit)
                                   (natp step-limit))
+                              (rec-type-listp disallowed-rec-types)
                               (or ;; (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
@@ -2283,6 +2330,7 @@
                                         server-url
                                         debug
                                         step-limit
+                                        disallowed-rec-types
                                         max-wins
                                         model
                                         state)))
@@ -2298,6 +2346,7 @@
                          server-url
                          debug
                          step-limit
+                         disallowd-rec-types
                          max-wins
                          model
                          state)
@@ -2336,6 +2385,7 @@
                                         server-url
                                         debug
                                         step-limit
+                                        disallowd-rec-types
                                         max-wins
                                         model
                                         nil
@@ -2362,12 +2412,13 @@
                          (server-url 'nil)
                          (debug 'nil)
                          (step-limit ':auto)
+                         (disallowed-rec-types 'nil)
                          (max-wins ':auto)
                          (model ':all)
                          (rule-classes '(:rewrite))
                          )
   `(acl2::make-event-quiet
-    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,print ,server-url ,debug ,step-limit ,max-wins ,model state)))
+    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,model state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::defthm-advice (&rest rest) `(defthm-advice ,@rest))
@@ -2383,6 +2434,7 @@
                       server-url
                       debug
                       step-limit
+                      disallowd-rec-types
                       max-wins
                       model
                       state)
@@ -2419,6 +2471,7 @@
                                         server-url
                                         debug
                                         step-limit
+                                        disallowd-rec-types
                                         max-wins
                                         model
                                         nil
@@ -2441,12 +2494,13 @@
                       (server-url 'nil)
                       (debug 'nil)
                       (step-limit ':auto)
+                      (disallowed-rec-types 'nil)
                       (max-wins ':auto)
                       (model ':all)
                       ;; no rule-classes
                       )
   `(acl2::make-event-quiet
-    (thm-advice-fn ',body ',hints ,otf-flg ,n ,print ,server-url ,debug ,step-limit ,max-wins ,model state)))
+    (thm-advice-fn ',body ',hints ,otf-flg ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,model state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::thm-advice (&rest rest) `(thm-advice ,@rest))
@@ -2462,6 +2516,7 @@
                   server-url
                   debug
                   step-limit
+                  disallowed-rec-types
                   max-wins
                   model
                   state)
@@ -2475,6 +2530,7 @@
                               (or (eq :auto step-limit)
                                   (eq nil step-limit)
                                   (natp step-limit))
+                              (rec-type-listp disallowed-rec-types)
                               (or (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
@@ -2533,6 +2589,7 @@
                                             server-url
                                             debug
                                             step-limit
+                                            disallowed-rec-types
                                             max-wins
                                             model
                                             state))
@@ -2569,8 +2626,8 @@
         '(value-triple :invisible) state)))
 
 ;; Generate advice for the most recent failed theorem.
-(defmacro advice (&key (n '10) (print 't) (server-url 'nil) (debug 'nil) (step-limit ':auto) (max-wins ':auto) (model ':all))
-  `(acl2::make-event-quiet (advice-fn ,n ,print ,server-url ,debug ,step-limit ,max-wins ,model state)))
+(defmacro advice (&key (n '10) (print 't) (server-url 'nil) (debug 'nil) (step-limit ':auto) (disallowed-rec-types 'nil) (max-wins ':auto) (model ':all))
+  `(acl2::make-event-quiet (advice-fn ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,model state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::advice (&rest rest) `(advice ,@rest))
