@@ -2176,7 +2176,12 @@
                   :mode :program))
   (b* ((wrld (w state))
        ;; Get server info:
-       ((mv erp server-url state) (if server-url (mv nil server-url state) (getenv$ "ACL2_ADVICE_SERVER" state)))
+       ((mv erp server-url state)
+        (if (eq :none model)
+            (mv nil "NONE" state)
+          (if server-url
+              (mv nil server-url state)
+            (getenv$ "ACL2_ADVICE_SERVER" state))))
        ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil nil state))
        ((when (not (stringp server-url)))
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
