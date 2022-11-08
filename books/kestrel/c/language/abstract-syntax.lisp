@@ -552,7 +552,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum expr
-    :parents (atc-abstract-syntax expr-fixtypes)
+    :parents (abstract-syntax expr-fixtypes)
     :short "Fixtype of expressions [C:6.5]."
     :long
     (xdoc::topstring
@@ -640,6 +640,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist expr-list
+    :parents (abstract-syntax expr-fixtypes)
     :short "Fixtype of lists of expressions."
     :elt-type expr
     :true-listp t
@@ -1003,9 +1004,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We support declarations for objects
+    "Besides function definitions,
+     we support declarations of
+     functions,
+     objects,
      and tags (i.e. structure, union, and enumeration types."))
   (:fundef ((get fundef)))
+  (:fun-declon ((get fun-declon)))
   (:obj-declon ((get obj-declon)))
   (:tag-declon ((get tag-declon)))
   :pred ext-declonp)

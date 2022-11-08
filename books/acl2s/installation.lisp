@@ -424,6 +424,12 @@ reinstall Xming if you already have it installed.
   Terminal (e.g. by searching for it in Spotlight) and run @('java -version'). If
   a version number is printed, you have Java installed.
   </li>
+  <li><span class=\"question\">When I double click on the Eclipse application, an error window opens that includes the text @('Code Signature Invalid')!</span><br/>
+  This often occurs after applying a macOS update to a system that has Eclipse installed. The fix is to run the following command:
+  @({codesign --force --deep --sign - /Applications/Eclipse.app})
+  If you have installed Eclipse in a different location or with a different name, you should replace @('/Applications/Eclipse.app') with the path to the appropriate
+  @('.app') file. For more information about why this occurs, see <a href=\"https://bugs.eclipse.org/bugs/show_bug.cgi?id=494293\">this Eclipse issue</a>.
+  </li>
 </ul>
 
 ")
