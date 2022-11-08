@@ -322,19 +322,6 @@
 
 
 
-(define svarlist-change-override ((x svarlist-p)
-                                  (type svar-overridetype-p))
-  :returns (new-x svarlist-p)
-  (if (atom x)
-      nil
-    (cons (svar-change-override (car x) type)
-          (svarlist-change-override (cdr x) type)))
-  ///
-  (defret svarlist-override-p-of-<fn>
-    (iff (svarlist-override-p new-x other-type)
-         (or (atom x)
-             (svar-overridetype-equiv other-type type)))
-    :hints(("Goal" :in-theory (enable svarlist-override-p)))))
 
 
 
@@ -2940,13 +2927,7 @@
 
 
 
-(defcong set-equiv equal (svarlist-override-p x type) 1
-  :hints (("goal" :use ((:instance (:functional-instance acl2::element-list-p-set-equiv-congruence
-                                    (acl2::element-p (lambda (x) (svar-override-p x type)))
-                                    (acl2::element-list-final-cdr-p (lambda (x) t))
-                                    (acl2::element-list-p (lambda (x) (svarlist-override-p x type))))
-                         (x x) (y x-equiv)))
-           :in-theory (enable svarlist-override-p))))
+
              
 
 

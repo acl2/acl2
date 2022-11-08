@@ -890,7 +890,21 @@
            (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
                 '(:in-theory (enable b-and b-ite b-ior b-not)
-                  :do-not-induct t)))))
+                  :do-not-induct t))))
+
+  (defthm 4vec-override-mux-agrees-implies-muxes-agree-simple
+    (implies (and (4vec-override-mux-agrees impl-test impl-val spec-test spec-val spec-ref)
+                  (4vec-muxtest-subsetp spec-test impl-test))
+             (equal (equal (4vec-bit?! impl-test impl-val spec-ref)
+                           (4vec-bit?! spec-test spec-val spec-ref))
+                    t))
+    :hints (("goal" :use ((:instance 4vec-override-mux-agrees-implies-impl-mux-<<=-spec-mux
+                           (impl-in spec-ref))
+                          (:instance 4vec-override-mux-agrees-implies-spec-initial-mux-<<=-impl-initial-mux
+                           (impl-in spec-ref) (spec-in spec-ref)))
+             :in-theory (e/d (4vec-<<=-asymm)
+                             (4vec-override-mux-agrees-implies-spec-initial-mux-<<=-impl-initial-mux
+                              4vec-override-mux-agrees-implies-impl-mux-<<=-spec-mux))))))
 
 (define svar-override-triple-mux-agrees ((x svar-override-triple-p)
                                          (impl-env svex-env-p)
