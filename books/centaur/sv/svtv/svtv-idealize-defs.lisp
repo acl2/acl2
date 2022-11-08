@@ -382,14 +382,17 @@
 (define svtv-data-obj->ideal-spec ((x svtv-data-obj-p))
   :returns (spec svtv-spec-p)
   :non-executable t
-  :guard (non-exec (svtv-data$ap (svtv-data-obj-to-stobj-logic x)))
+  :guard (non-exec (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                        (svtv-data-obj->flatten-validp x)))
+  :guard-hints (("goal" :in-theory (enable design-flatten-okp)))
   (b* (((svtv-data-obj x))
        ((pipeline-setup x.pipeline-setup)))
-    (make-svtv-spec :fsm (design->ideal-fsm x.design)
+    (make-svtv-spec :fsm (design->ideal-fsm x.design x.phase-fsm-setup)
                     :cycle-phases x.cycle-phases
                     :namemap x.namemap
                     :probes x.pipeline-setup.probes
                     :in-alists x.pipeline-setup.inputs
                     :initst-alist x.pipeline-setup.initst)))
+
 
 

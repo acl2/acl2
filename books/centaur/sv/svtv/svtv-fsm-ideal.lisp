@@ -30,6 +30,7 @@
 (include-book "../svex/compose-theory-fixpoint")
 (include-book "../svex/compose-theory-monotonicity")
 (include-book "svtv-stobj-pipeline-monotonicity")
+(include-book "svtv-spec")
 
 (local (include-book "../svex/alist-thms"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :System))
@@ -936,7 +937,7 @@
            :in-theory (enable svarlist-override-p))))
 
 
-(include-book "svtv-spec")
+
 
 
 
