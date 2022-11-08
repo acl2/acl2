@@ -94,6 +94,11 @@
            (parsed-json-object-pairsp (revappend x acc)))
   :hints (("Goal" :in-theory (enable parsed-json-object-pairsp revappend))))
 
+(defthm parsed-json-valuesp-of-cdr
+  (implies (parsed-json-valuesp array-vals)
+           (parsed-json-valuesp (cdr array-vals)))
+  :hints (("Goal" :in-theory (enable parsed-json-valuesp))))
+
 (defthm parsed-json-valuesp-of-revappend
   (implies (and (parsed-json-valuesp x)
                 (parsed-json-valuesp acc))
@@ -109,10 +114,15 @@
   (cadr array) ; strip the :array
   )
 
+(defthm parsed-json-valuesp-of-parsed-json-array->values
+  (implies (parsed-json-arrayp array)
+           (parsed-json-valuesp (parsed-json-array->values array)))
+  :hints (("Goal" :in-theory (enable parsed-json-array->values
+                                     parsed-json-arrayp))))
+
 (defthm true-listp-of-parsed-json-array->values
-  (implies (and (state-p state)
-                (parsed-json-arrayp book-map))
-           (true-listp (parsed-json-array->values book-map)))
+  (implies (parsed-json-arrayp array)
+           (true-listp (parsed-json-array->values array)))
   :hints (("Goal" :in-theory (enable parsed-json-array->values
                                      parsed-json-arrayp))))
 
@@ -126,9 +136,8 @@
   )
 
 (defthm alistp-of-parsed-json-object->pairs
-  (implies (and (state-p state)
-                (parsed-json-objectp book-map))
-           (alistp (parsed-json-object->pairs book-map)))
+  (implies (parsed-json-objectp object)
+           (alistp (parsed-json-object->pairs object)))
   :hints (("Goal" :in-theory (enable parsed-json-object->pairs
                                      parsed-json-objectp))))
 
