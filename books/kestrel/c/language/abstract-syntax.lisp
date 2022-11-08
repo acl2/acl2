@@ -1003,9 +1003,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We support declarations for objects
+    "Besides function definitions,
+     we support declarations of
+     functions,
+     objects,
      and tags (i.e. structure, union, and enumeration types."))
   (:fundef ((get fundef)))
+  (:fun-declon ((get fun-declon)))
   (:obj-declon ((get obj-declon)))
   (:tag-declon ((get tag-declon)))
   :pred ext-declonp)

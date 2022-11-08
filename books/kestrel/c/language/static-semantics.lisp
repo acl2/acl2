@@ -2294,7 +2294,10 @@
      without requiring it to be present.")
    (xdoc::p
     "If successful, we return updated
-     function table, variable table, and tag environment."))
+     function table, variable table, and tag environment.")
+   (xdoc::p
+    "For now we reject function declarations.
+     We plan to add support soon."))
   (ext-declon-case
    ext
    :fundef (b* ((funtab (check-fundef ext.get funtab vartab tagenv))
@@ -2302,6 +2305,7 @@
              (make-funtab+vartab+tagenv :funs funtab
                                         :vars (var-table-fix vartab)
                                         :tags (tag-env-fix tagenv)))
+   :fun-declon (error :fun-declon-unsupported)
    :obj-declon (b* ((vartab
                      (check-obj-declon ext.get funtab vartab tagenv t nil))
                     ((when (errorp vartab)) vartab))
