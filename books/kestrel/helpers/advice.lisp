@@ -1501,7 +1501,7 @@
                                          theorem-otf-flg)
                   (make-successful-rec (nth 0 rec) ;name
                                        :add-use-hint
-                                       successful-include-book-form
+                                       item
                                        (list successful-include-book-form) ; pre-commands
                                        theorem-body
                                        new-hints
