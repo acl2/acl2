@@ -22,10 +22,12 @@
 
 ;; Determines whether the Proof Advice tool can find advice for DEFTHM.  Either way, this also submits the defthm.
 ;; Returns (mv erp result state) where result is :yes, :no, :maybe, or :trivial.
-(defun submit-defthm-event-with-advice (defthm n print state)
+(defun submit-defthm-event-with-advice (defthm n print server-url state)
   (declare (xargs :mode :program
                   :guard (and (natp n)
-                              (acl2::print-levelp print))
+                              (acl2::print-levelp print)
+                              (or (null server-url)
+                                  (stringp server-url)))
                   :stobjs state))
   (b* ((defthm-variant (car defthm))
        (theorem-name (cadr defthm))
@@ -43,7 +45,7 @@
                                               nil ; theorem-otf-flg
                                               n ; number of recommendations from ML requested
                                               print
-                                              nil ; server-url (get from environment var)
+                                              server-url
                                               nil ; debug
                                               100000 ; step-limit
                                               1      ; max-wins
@@ -69,7 +71,7 @@
                           (cw ")~%")))) ; close paren matches (ADVICE
              ((mv erp state)
               ;; We submit the event with the hints found by ML, to ensure it works:
-              ;; TODO: Instead, have th advice tool check the req and submit the original event here.
+              ;; TODO: Instead, have the advice tool check the rec and submit the original event here.
               (submit-event-helper-core (help::successful-rec-to-defthm defthm-variant theorem-name best-rec rule-classes) nil state))
              ((when erp)
               (er hard? 'submit-defthm-event-with-advice "The discovered advice for ~x0 did not work!" theorem-name)
@@ -79,10 +81,12 @@
 ;Returns (mv erp yes-count no-count maybe-count trivial-count state).
 ;throws an error if any event fails
 ; This uses :brief printing.
-(defun submit-events-with-advice (events n print yes-count no-count maybe-count trivial-count state)
+(defun submit-events-with-advice (events n print server-url yes-count no-count maybe-count trivial-count state)
   (declare (xargs :guard (and (true-listp events)
+                              (natp n)
                               (acl2::print-levelp print)
-                              (natp n))
+                              (or (null server-url)
+                                  (stringp server-url)))
                   :mode :program
                   :stobjs state))
   (if (endp events)
@@ -91,11 +95,11 @@
       (if (or (call-of 'defthm event) ; todo: maybe handle thms
               (call-of 'defthmd event))
           (b* (((mv erp result state)
-                (submit-defthm-event-with-advice event n print state))
+                (submit-defthm-event-with-advice event n print server-url state))
                ((when erp)
                 (er hard? 'submit-events-with-advice "ERROR (~x0) with advice attempt for event ~X12.~%" erp event nil)
                 (mv erp yes-count no-count maybe-count trivial-count state)))
-            (submit-events-with-advice (rest events) n print
+            (submit-events-with-advice (rest events) n print server-url
                                        (if (eq :yes result) (+ 1 yes-count) yes-count)
                                        (if (eq :no result) (+ 1 no-count) no-count)
                                        (if (eq :maybe result) (+ 1 maybe-count) maybe-count)
@@ -108,7 +112,7 @@
               (er hard? 'submit-events-with-advice "ERROR (~x0) with event ~X12.~%" erp event nil)
               (mv erp yes-count no-count maybe-count trivial-count state))
              (- (cw "~x0~%" (shorten-event event))))
-          (submit-events-with-advice (rest events) n print yes-count no-count maybe-count trivial-count state))))))
+          (submit-events-with-advice (rest events) n print server-url yes-count no-count maybe-count trivial-count state))))))
 
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
 ;; Returns (mv erp event state).
@@ -116,17 +120,21 @@
 (defun replay-book-with-advice-fn (dir      ; no trailing slash
                                    bookname ; no extension
                                    n
-                                   print state)
+                                   print
+                                   server-url
+                                   state)
   (declare (xargs :guard (and (stringp dir)
                               (stringp bookname)
                               (natp n)
-                              (acl2::print-levelp print))
+                              (acl2::print-levelp print)
+                              (or (null server-url)
+                                  (stringp server-url)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (b* ((- (cw "REPLAYING ~s0/~s1 with advice:~%~%" dir bookname))
        ;; Read all the forms from the file:
        ((mv erp events state)
-        (read-objects-from-file (concatenate 'string dir "/" bookname ".lisp") state))
+        (read-objects-from-book (concatenate 'string dir "/" bookname ".lisp") state))
        ((when erp) (cw "Error: ~x0.~%" erp) (mv erp nil state))
        ;; Ensure we are working in the same dir as the book:
        ((mv erp & state)
@@ -136,7 +144,7 @@
        (state (widen-margins state))
        ;; Submit all the events, trying advice for each defthm:
        ((mv erp yes-count no-count maybe-count trivial-count state)
-        (submit-events-with-advice events n print 0 0 0 0 state))
+        (submit-events-with-advice events n print server-url 0 0 0 0 state))
        ((when erp)
         (cw "Error: ~x0.~%" erp)
         (mv erp nil state))
@@ -156,5 +164,7 @@
                                    bookname ; no extension
                                    &key
                                    (n '10)
-                                   (print 'nil))
-  `(make-event-quiet (replay-book-with-advice-fn ,dir ,bookname ,n ,print state)))
+                                   (print 'nil)
+                                   (server-url 'nil) ; nil means get from environment var
+                                   )
+  `(make-event-quiet (replay-book-with-advice-fn ,dir ,bookname ,n ,print ,server-url state)))
