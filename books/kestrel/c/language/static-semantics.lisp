@@ -2366,36 +2366,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define preprocess ((file filep))
+(define preprocess ((fileset filesetp))
   :returns (tunit transunit-resultp)
-  :short "Preprocess a file [C:5.1.1.2/4]."
+  :short "Preprocess a file set [C:5.1.1.2/4]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a very simplified model of C preprocessing [C:6.10].
      In fact, for now it is essentially a no-op:
-     it turns a file into a translation unit,
+     it turns the only file in a fileset into a translation unit,
      which just amounts to unwrapping and re-wrapping.
-     However, we plan to extend this soon.
-     Even though currently this never fails,
+     Note that the file name is ignored currently,
+     since there is just one file.")
+   (xdoc::p
+    "However, we plan to extend this soon.
+     That is, there will be more files,
+     with @('#include') directives,
+     which will thus also reference file names.")
+   (xdoc::p
+    "Even though currently this operation never fails,
      we have this ACL2 function return a result type,
      to facilitate future extensions,
      where preprocessing may actually fail."))
-  (make-transunit :declons (file->declons file))
+  (make-transunit :declons (file->declons (fileset->file fileset)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-file ((file filep))
+(define check-fileset ((fileset filesetp))
   :returns (wf wellformed-resultp)
-  :short "Check a file."
+  :short "Check a file set."
   :long
   (xdoc::topstring
    (xdoc::p
-    "First we preprocess a file.
+    "First we preprocess the file set.
      If preprocessing is successful,
      we check the translation unit."))
-  (b* ((tunit (preprocess file))
+  (b* ((tunit (preprocess fileset))
        ((when (errorp tunit)) tunit))
     (check-transunit tunit))
   :hooks (:fix))

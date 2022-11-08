@@ -14,11 +14,12 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 ;; Returns (mv erp item state).
-(defund read-string-as-single-item (string state)
-  (declare (xargs :guard (stringp string)
+(defund read-string-as-single-item (string pkg state)
+  (declare (xargs :guard (and (stringp string)
+                              (stringp pkg))
                   :stobjs state))
   (mv-let (erp objects state)
-    (read-string-light-fn string state)
+    (read-string-light-fn string pkg state)
     (if erp
         (mv erp nil state)
       (if (not (consp objects))
@@ -28,11 +29,12 @@
           (mv nil (first objects) state))))))
 
 ;; Returns (mv erp sym state).
-(defund read-string-as-single-symbol (string state)
-  (declare (xargs :guard (stringp string)
+(defund read-string-as-single-symbol (string pkg state)
+  (declare (xargs :guard (and (stringp string)
+                              (stringp pkg))
                   :stobjs state))
   (mv-let (erp item state)
-    (read-string-as-single-item string state)
+    (read-string-as-single-item string pkg state)
     (if erp
         (mv erp nil state)
       (if (not (symbolp item))
@@ -40,32 +42,34 @@
         (mv nil item state)))))
 
 (defthm symbolp-of-mv-nth-1-of-read-string-as-single-symbol
-  (symbolp (mv-nth 1 (read-string-as-single-symbol string state)))
+  (symbolp (mv-nth 1 (read-string-as-single-symbol string pkg state)))
   :hints (("Goal" :in-theory (enable read-string-as-single-symbol))))
 
 ;; Returns (mv erp symbols state).
 ;; Each string must parse to a single symbol.
-(defund read-strings-as-single-symbols (strings acc state)
+(defund read-strings-as-single-symbols (strings pkg acc state)
   (declare (xargs :guard (and (string-listp strings)
+                              (stringp pkg)
                               (true-listp acc))
                   :stobjs state))
   (if (endp strings)
       (mv nil (reverse acc) state)
     (mv-let (erp symbol state)
-      (read-string-as-single-symbol (first strings) state)
+      (read-string-as-single-symbol (first strings) pkg state)
       (if erp
           (mv erp nil state)
         (read-strings-as-single-symbols (rest strings)
+                                        pkg
                                         (cons symbol acc)
                                         state)))))
 
 (defthm true-listp-of-mv-nth-1-of-read-strings-as-single-symbols
   (implies (true-listp acc)
-           (true-listp (mv-nth 1 (read-strings-as-single-symbols strings acc state))))
+           (true-listp (mv-nth 1 (read-strings-as-single-symbols strings pkg acc state))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable read-strings-as-single-symbols))))
 
 (defthm symbol-listp-of-mv-nth-1-of-read-strings-as-single-symbols
   (implies (symbol-listp acc)
-           (symbol-listp (mv-nth 1 (read-strings-as-single-symbols strings acc state))))
+           (symbol-listp (mv-nth 1 (read-strings-as-single-symbols strings pkg acc state))))
   :hints (("Goal" :in-theory (enable read-strings-as-single-symbols))))

@@ -200,7 +200,7 @@
      to the ACL2 code that represents it.
      In other words, it computes the same things as the ACL2 code.
      This is expressed via a "
-    (xdoc::seetopic "atc-dynamic-semantics"
+    (xdoc::seetopic "dynamic-semantics"
                     "formal dynamic semantics of C")
     ".")))
 
@@ -1094,7 +1094,7 @@
    "  (equal (check-file <constant>) :wellformed))")
   (xdoc::p
    "This asserts that
-    when @(tsee check-file) is applied
+    when @(tsee check-fileset) is applied
     to the named constant described above
     (i.e. the abstract syntax of the generated C program),
     the result is the value @(':wellformed').
@@ -1105,7 +1105,7 @@
 
   (xdoc::p
    "Since the program AST is a constant
-    and @(tsee check-file) is executable,
+    and @(tsee check-fileset) is executable,
     the theorem is proved easily by execution.")
 
   (xdoc::p
@@ -1121,8 +1121,8 @@
   (xdoc::p
    "ATC generates theorems asserting that
     the generated C program is dynamically correct,
-    according to "
-   (xdoc::seetopic "atc-dynamic-semantics" "ATC's dynamic semantics of C")
+    according to the "
+   (xdoc::seetopic "dynamic-semantics" "C dynamic semantics")
    ".")
 
   (xdoc::p
@@ -1151,7 +1151,7 @@
   (xdoc::p
    "The variable @('compst') represents the C computation state,
     described in the "
-   (xdoc::seetopic "atc-dynamic-semantics" "C dynamic semantics")
+   (xdoc::seetopic "dynamic-semantics" "C dynamic semantics")
    ": the theorem applies to execution in every possible computation state.")
 
   (xdoc::p
@@ -1163,7 +1163,7 @@
    "The variable @('limit') and the @('<number>') that provides a lower bound
     are motivated by the fact that the big-step execution functions
     take a limit value, as explained in the "
-   (xdoc::seetopic "atc-dynamic-semantics" "C dynamic semantics")
+   (xdoc::seetopic "dynamic-semantics" "C dynamic semantics")
    ". The number is calculated by ATC as sufficient to execute the function.
     The theorem asserts that, for any limit value at or above that limit,
     execution terminates and yields the same result as @('fn').")

@@ -29,6 +29,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 ; Supporting author: Eric Smith (eric.smith@kestrel.edu)
+; Package argument added by Matt Kaufmann
 
 ;; This book is just a lightweight copy of read-string.lisp, with minimal
 ;; dependencies.  It loads much faster and uses much less memory.
@@ -42,10 +43,12 @@
 ; cert_param: (ansi-only)
 
 ;; Similar to read-string-fn
-(defun read-string-light-fn (str state)
-  (declare (xargs :guard (stringp str)
+(defun read-string-light-fn (str pkg state)
+  (declare (xargs :guard (and (stringp str)
+                              (or (null pkg)
+                                  (stringp pkg)))
                   :stobjs (state))
-           (ignore str))
+           (ignore str pkg))
   (prog2$ (er hard? 'read-string-light "Raw lisp definition not installed?")
           (mv-let (err1 errmsg? state)
             (read-acl2-oracle state)

@@ -12,7 +12,6 @@
 
 (include-book "primitives-seq")
 (include-book "primitives-defresult")
-(include-book "generators")
 (include-book "defdefparse")
 (include-book "defdefparse-doc")
 

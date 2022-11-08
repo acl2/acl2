@@ -127,6 +127,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
+
+   (xdoc::p
+    "@(tsee Read-string) and @('read-string-light-fn') now take a required package
+     argument, which can be @('nil') to represent the @(see current-package),
+     thus providing the previous behavior.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
 
    (xdoc::p
@@ -135,7 +144,8 @@
      in the process of doing this refactoring.")
 
    (xdoc::p
-    "The parsing generation tools have been extended and improved.")
+    "The parsing generation tools
+     have been significantly extended and improved.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -164,7 +174,9 @@
 
    (xdoc::p
     "Some parts of the formalization have been simplified
-     and moved out of ATC and into the C formalization proper.")
+     and moved out of ATC and into the C formalization proper,
+     i.e. into the deep embedding of C in ACL2,
+     which is now independent from the shallow embedding of C in ACL2.")
 
    ;;;;;;;;;;;;;;;;;;;;
 

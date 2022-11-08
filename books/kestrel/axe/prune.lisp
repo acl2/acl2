@@ -681,7 +681,7 @@
                               (symbol-listp monitored-rules)
                               (or (booleanp call-stp)
                                   (natp call-stp))
-                              (axe-print-levelp print)
+                              (print-levelp print)
                               (ilks-plist-worldp (w state)))
                   :stobjs state))
   (let ((prune-branchesp (if (booleanp prune-branches)

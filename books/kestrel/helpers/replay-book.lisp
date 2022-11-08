@@ -10,8 +10,10 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/file-io-light/read-object-from-file" :dir :system)
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
+(include-book "kestrel/utilities/widen-margins" :dir :system)
 
 ;; Prints VAL, rounded to the hundredths place.
 ;; Returns nil
@@ -24,11 +26,14 @@
          )
     (cw "~c0.~c1~c2" (cons integer-part 10) (cons tenths 1) (cons hundredths 1))))
 
+;; Generate a short, printable thing that indicates an event (e.g., for a
+;; defthm, this returns its name).
+;; TODO: Handle more kinds of thing.
 (defun shorten-event (event)
   (if (not (consp event))
       event
     (case (car event)
-      ((defun defund defthm defthmd) (cadr event))
+      ((defun defund defun-nx define defun-sk define-sk defthm defthmd defrule defruled defrulel defruledl) (cadr event))
       (local `(local ,(shorten-event (cadr event))))
       (theory-invariant '(theory-invariant <elided>))
       (t event))))
@@ -55,25 +60,76 @@
               (get-real-time state)
               (let ((time (/ (ceiling (* (- end-time start-time) 100) 1) 100)))
                 (progn$ (print-rounded-val time)
-                        (cw "s: ~x1~%" time (shorten-event event))
+                        ;; The "s:" here is to label the time just printed with "seconds".
+                        (cw "s: ~x0~%" (shorten-event event))
                         (submit-and-time-events (rest events) print state))))))))))
+
+;; Read forms from FILENAME but require the first form to be an IN-PACKAGE form
+;; used for interpreting symbols in the rest of the forms.  Returns (mv erp
+;; forms state).
+(defund read-objects-from-book (filename state)
+  (declare (xargs :guard (stringp filename)
+                  :mode :program ; because of in-package-fn
+                  :stobjs state))
+  ;; First read just the in-package form:
+  (mv-let (erp first-form state)
+    (read-object-from-file filename state)
+    (if erp
+        (mv erp nil state)
+      (if (not (and (consp first-form)
+                    (eq 'in-package (car first-form))))
+          (prog2$ (er hard? 'read-objects-from-book "ERROR: Expected an in-package form but got ~x0." first-form)
+                  (mv :missing-in-package nil state))
+        (let ((original-package (current-package state))
+              (book-package (cadr first-form)))
+          ;; Temporarily set the package to the one for the book:
+          (mv-let (erp value state)
+            (in-package-fn book-package state)
+            (declare (ignore value))
+            (if erp
+                (mv erp nil state)
+              (mv-let (erp forms state)
+                ;; This read uses the current package (i.e., book-package) for the symbols:
+                (read-objects-from-file filename state)
+                (if erp
+                    (mv erp nil state)
+                  ;; Undo the temporary in-package:
+                  (mv-let (erp value state)
+                    (in-package-fn original-package state)
+                    (declare (ignore value))
+                    (if erp
+                        (mv erp nil state)
+                      ;; No error:
+                      (mv nil forms state))))))))))))
 
 ;; Reads and then submits all the events in FILENAME.
 ;; Returns (mv erp state).
 ;; Example: (replay-book "helper.lisp" state)
-(defun replay-book-fn (bookname ; no extension
+(defun replay-book-fn (dir      ; no trailing slash
+                       bookname ; no extension
                        print state)
-  (declare (xargs :guard (and (stringp bookname)
+  (declare (xargs :guard (and (stringp dir)
+                              (stringp bookname)
                               (member-eq print '(nil :brief :verbose)))
-                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :mode :program ; because this ultimately calls trans-eval-error-triple and in-package-fn
                   :stobjs state))
   (mv-let (erp events state)
-    (read-objects-from-file (concatenate 'string bookname ".lisp") state)
+    (read-objects-from-book (concatenate 'string dir "/" bookname ".lisp") state)
     (if erp
         (mv erp state)
-      (submit-and-time-events events print state))))
+      (mv-let (erp val state)
+        (set-cbd-fn dir state)
+        (declare (ignore val))
+        (if erp
+            (mv erp state)
+          (let ((state (widen-margins state)))
+            (mv-let (erp state)
+              (submit-and-time-events events print state)
+              (let ((state (unwiden-margins state)))
+                (mv erp state)))))))))
 
-(defmacro replay-book (bookname ; no extension
-                        &key
-                        (print 'nil))
-  `(replay-book-fn ,bookname ,print state))
+(defmacro replay-book (dir ; no trailing slash
+                       bookname ; no extension
+                       &key
+                       (print 'nil))
+  `(replay-book-fn ,dir ,bookname ,print state))

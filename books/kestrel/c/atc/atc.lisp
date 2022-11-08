@@ -113,6 +113,9 @@
    to the names of the generated respective correctness theorems.
    This is @('nil') if @('proofs') is @('nil')."
 
+  "@('fn-guard') is the name of a locally generated function
+   for the guard of @('fn')."
+
   "@('typed-formals') is an alist
    from the formal parameters of one of the functions in @('t1'), ..., @('tp')
    to their C types.

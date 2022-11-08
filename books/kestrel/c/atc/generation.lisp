@@ -13,7 +13,6 @@
 
 (include-book "abstract-syntax")
 (include-book "pretty-printer" :ttags ((:open-output-channel!)))
-(include-book "dynamic-semantics")
 (include-book "shallow-embedding")
 (include-book "table")
 (include-book "variable-tables")
@@ -25,6 +24,7 @@
 (include-book "symbolic-execution-rules/top")
 
 (include-book "../language/static-semantics")
+(include-book "../language/dynamic-semantics")
 
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
@@ -1397,13 +1397,79 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-formal-thm ((fn symbolp)
+                            (fn-guard symbolp)
+                            (fn-formals symbol-listp)
+                            (formal symbolp)
+                            (type typep)
+                            (names-to-avoid symbol-listp)
+                            (wrld plist-worldp))
+  :returns (mv (event pseudo-event-formp)
+               (name symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
+  :short "Generate the theorem about a formal parameter of a target function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem asserts various properties about the formal under the guard.
+     These properties are needed when
+     the formal is used in proofs that build on this theorem.")
+   (xdoc::p
+    "For now we only support integer types.
+     If we encounter a different kind of type,
+     we return @('nil') as the name and a dummy event;
+     the caller checks that the returned name is not @('nil')
+     before using the event."))
+  (b* (((unless (type-integerp type)) (mv '(_) nil names-to-avoid))
+       (name (pack fn '- formal))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name 'function names-to-avoid wrld))
+       (pred (atc-type-to-recognizer type wrld))
+       (formula `(implies (,fn-guard ,@fn-formals)
+                          (and (,pred ,formal)
+                               (valuep ,formal)
+                               (equal (type-of-value ,formal)
+                                      ',type)
+                               (equal (value-kind ,formal)
+                                      ,(type-kind type))
+                               (equal (value-fix ,formal)
+                                      ,formal)
+                               (not (flexible-array-member-p ,formal))
+                               (equal (remove-flexible-array-member ,formal)
+                                      ,formal))))
+       (hints
+        `(("Goal"
+           :in-theory
+           '(,fn-guard
+             ,(pack 'valuep-when- pred)
+             ,(pack 'type-of-value-when- pred)
+             ,(pack 'value-kind-when- pred)
+             value-fix-when-valuep
+             remove-flexible-array-member-when-absent
+             ,(pack 'not-flexible-array-member-p-when- pred)
+             (:e ,(pack 'type- (type-kind type)))))))
+       ((mv event &) (evmac-generate-defthm name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (mv event name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-typed-formals ((fn symbolp)
+                           (fn-guard symbolp)
                            (prec-tags atc-string-taginfo-alistp)
                            (prec-objs atc-string-objinfo-alistp)
+                           (names-to-avoid symbol-listp)
                            (ctx ctxp)
                            state)
   :returns (mv erp
-               (typed-formals atc-symbol-varinfo-alistp)
+               (val (tuple (typed-formals atc-symbol-varinfo-alistp)
+                           (events pseudo-event-form-listp)
+                           (updated-names-to-avoid symbol-listp)
+                           val)
+                    :hyp (symbol-listp names-to-avoid))
                state)
   :short "Calculate the C types of the formal parameters of a target function."
   :long
@@ -1414,8 +1480,11 @@
      types for the formals of @('fn').
      We ensure that there is exactly one such term for each formal.")
    (xdoc::p
+    "We also generate theorems about the formals.
+     For now this is only for formals with certain types.")
+   (xdoc::p
     "If this is successful,
-     we return an alist from the formals to their types.
+     we return an alist from the formals to their variable information.
      The alist has unique keys, in the order of the formals.")
    (xdoc::p
     "We first extract the guard's conjuncts,
@@ -1433,60 +1502,85 @@
        (formals (formals+ fn wrld))
        (guard (uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
-       ((er prelim-alist) (atc-typed-formals-prelim-alist fn
-                                                          formals
-                                                          guard
-                                                          guard-conjuncts
-                                                          nil
-                                                          prec-tags
-                                                          prec-objs
-                                                          ctx
-                                                          state)))
-    (atc-typed-formals-final-alist fn formals guard prelim-alist ctx state))
+       ((er (list prelim-alist events names-to-avoid))
+        (atc-typed-formals-prelim-alist fn
+                                        fn-guard
+                                        formals
+                                        guard
+                                        guard-conjuncts
+                                        prec-tags
+                                        prec-objs
+                                        names-to-avoid
+                                        ctx
+                                        state))
+       ((er typed-formals :iferr (list nil nil nil))
+        (atc-typed-formals-final-alist
+         fn formals guard prelim-alist ctx state)))
+    (acl2::value (list typed-formals events names-to-avoid)))
 
   :prepwork
 
-  ((define atc-typed-formals-prelim-alist ((fn symbolp)
-                                           (formals symbol-listp)
-                                           (guard pseudo-termp)
-                                           (guard-conjuncts pseudo-term-listp)
-                                           (prelim-alist atc-symbol-varinfo-alistp)
-                                           (prec-tags atc-string-taginfo-alistp)
-                                           (prec-objs atc-string-objinfo-alistp)
-                                           (ctx ctxp)
-                                           state)
+  ((define atc-typed-formals-prelim-alist
+     ((fn symbolp)
+      (fn-guard symbolp)
+      (formals symbol-listp)
+      (guard pseudo-termp)
+      (guard-conjuncts pseudo-term-listp)
+      (prec-tags atc-string-taginfo-alistp)
+      (prec-objs atc-string-objinfo-alistp)
+      (names-to-avoid symbol-listp)
+      (ctx ctxp)
+      state)
      :returns (mv erp
-                  (prelim-alist-final atc-symbol-varinfo-alistp)
+                  (val (tuple (prelim-alist-final atc-symbol-varinfo-alistp)
+                              (events pseudo-event-form-listp)
+                              (updated-names-to-avoid symbol-listp)
+                              val)
+                       :hyp (symbol-listp names-to-avoid))
                   state)
      :parents nil
-     (b* (((when (endp guard-conjuncts))
-           (acl2::value (atc-symbol-varinfo-alist-fix prelim-alist)))
+     (b* ((wrld (w state))
+          ((when (endp guard-conjuncts))
+           (acl2::value (list nil nil names-to-avoid)))
           (conjunct (car guard-conjuncts))
           ((mv type arg) (atc-check-guard-conjunct conjunct
                                                    prec-tags
                                                    prec-objs))
           ((unless type)
            (atc-typed-formals-prelim-alist fn
+                                           fn-guard
                                            formals
                                            guard
                                            (cdr guard-conjuncts)
-                                           prelim-alist
                                            prec-tags
                                            prec-objs
+                                           names-to-avoid
                                            ctx
                                            state))
           ((unless (member-eq arg formals))
            (atc-typed-formals-prelim-alist fn
+                                           fn-guard
                                            formals
                                            guard
                                            (cdr guard-conjuncts)
-                                           prelim-alist
                                            prec-tags
                                            prec-objs
+                                           names-to-avoid
+                                           ctx
+                                           state))
+          ((er (list prelim-alist events names-to-avoid))
+           (atc-typed-formals-prelim-alist fn
+                                           fn-guard
+                                           formals
+                                           guard
+                                           (cdr guard-conjuncts)
+                                           prec-tags
+                                           prec-objs
+                                           names-to-avoid
                                            ctx
                                            state))
           ((when (consp (assoc-eq arg prelim-alist)))
-           (er-soft+ ctx t nil
+           (er-soft+ ctx t (list nil nil nil)
                      "The guard ~x0 of the target function ~x1 ~
                       includes multiple type predicates ~
                       for the formal parameter ~x2. ~
@@ -1494,17 +1588,23 @@
                       must have exactly one type predicate in the guard, ~
                       even when the multiple predicates are the same."
                      guard fn arg))
-          (info (make-atc-var-info :type type :thm nil))
+           ((mv event name names-to-avoid)
+            (atc-gen-formal-thm fn fn-guard formals arg type
+                                names-to-avoid wrld))
+          (events (if name
+                      (cons event events)
+                    events))
+          (info (make-atc-var-info :type type :thm name))
           (prelim-alist (acons arg info prelim-alist)))
-       (atc-typed-formals-prelim-alist fn
-                                       formals
-                                       guard
-                                       (cdr guard-conjuncts)
-                                       prelim-alist
-                                       prec-tags
-                                       prec-objs
-                                       ctx
-                                       state)))
+       (acl2::value (list prelim-alist events names-to-avoid)))
+     :verify-guards nil ; done below
+     ///
+     (more-returns
+      (val true-listp :rule-classes :type-prescription))
+     (verify-guards atc-typed-formals-prelim-alist
+       :hints
+       (("Goal"
+         :in-theory (enable alistp-when-atc-symbol-varinfo-alistp-rewrite)))))
 
    (define atc-typed-formals-final-alist ((fn symbolp)
                                           (formals symbol-listp)
@@ -1534,7 +1634,12 @@
                                                              ctx
                                                              state)))
        (acl2::value (acons formal info typed-formals)))
-     :verify-guards :after-returns)))
+     :verify-guards :after-returns))
+
+  ///
+
+  (more-returns
+   (val true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4471,15 +4576,20 @@
               nil
               nil
               nil))
+       (wrld (w state))
        (name (symbol-name fn))
        ((unless (paident-stringp name))
         (er-soft+ ctx t (irr)
                   "The symbol name ~s0 of the function ~x1 ~
                    must be a portable ASCII C identifier, but it is not."
                   name fn))
-       (wrld (w state))
-       ((er typed-formals :iferr (irr))
-        (atc-typed-formals fn prec-tags prec-objs ctx state))
+       ((mv fn-guard-event
+            fn-guard
+            names-to-avoid)
+        (atc-gen-fn-guard fn names-to-avoid state))
+       ((er (list typed-formals formals-events names-to-avoid) :iferr (irr))
+        (atc-typed-formals
+         fn fn-guard prec-tags prec-objs names-to-avoid ctx state))
        ((er params :iferr (irr))
         (atc-gen-param-declon-list typed-formals fn prec-objs ctx state))
        (body (ubody+ fn wrld))
@@ -4502,6 +4612,7 @@
                        :proofs proofs)
                       ctx
                       state))
+       (names-to-avoid body.names-to-avoid)
        ((when (and (type-case body.type :void)
                    (not affect)))
         (raise "Internal error: ~
@@ -4530,11 +4641,7 @@
             fn-correct-thm
             names-to-avoid)
         (if proofs
-            (b* (((mv fn-guard-event
-                      & ; fn-guard
-                      names-to-avoid)
-                  (atc-gen-fn-guard fn body.names-to-avoid state))
-                 ((mv fn-fun-env-events
+            (b* (((mv fn-fun-env-events
                       fn-fun-env-thm
                       names-to-avoid)
                   (atc-gen-cfun-fun-env-thm fn
@@ -4575,9 +4682,10 @@
                        `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
                  (progress-end? (and (evmac-input-print->= print :info)
                                      `((cw-event " done.~%"))))
-                 (local-events (append body.events
+                 (local-events (append (list fn-guard-event)
+                                       formals-events
+                                       body.events
                                        progress-start?
-                                       (list fn-guard-event)
                                        fn-fun-env-events
                                        fn-result-events
                                        fn-correct-local-events
@@ -4606,6 +4714,12 @@
                        exported-events
                        (acons fn info prec-fns)
                        names-to-avoid)))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite
+            alistp-when-atc-symbol-varinfo-alistp-rewrite
+            atc-var-info-listp-of-strip-cdrs-when-atc-symbol-varinfo-alistp)))
   ///
 
   (more-returns
@@ -5735,7 +5849,11 @@
      See @(tsee atc-gen-loop-measure-fn).")
    (xdoc::p
     "No C external declaration is generated for this function,
-     because this function just represents a loop used in oher functions."))
+     because this function just represents a loop used in oher functions.")
+   (xdoc::p
+    "For now we do not generate a guard function for the guard of @('fn');
+     also, we do not generate theorems for the formal parameters for now.
+     We will change this soon."))
   (b* (((acl2::fun (irr)) (list nil nil nil nil))
        (wrld (w state))
        ((mv measure-of-fn-event
@@ -5745,8 +5863,13 @@
         (if proofs
             (atc-gen-loop-measure-fn fn names-to-avoid state)
           (mv '(_) nil nil names-to-avoid)))
-       ((er typed-formals :iferr (irr))
-        (atc-typed-formals fn prec-tags prec-objs ctx state))
+       ((mv fn-guard-event
+            fn-guard
+            names-to-avoid)
+        (atc-gen-fn-guard fn names-to-avoid state))
+       ((er (list typed-formals formals-events names-to-avoid) :iferr (irr))
+        (atc-typed-formals
+         fn fn-guard prec-tags prec-objs names-to-avoid ctx state))
        (body (ubody+ fn wrld))
        ((er (lstmt-gout loop) :iferr (irr))
         (atc-gen-loop-stmt body
@@ -5883,7 +6006,9 @@
                        `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
                  (progress-end? (and (evmac-input-print->= print :info)
                                      `((cw-event " done.~%"))))
-                 (local-events (append loop.events
+                 (local-events (append (list fn-guard-event)
+                                       formals-events
+                                       loop.events
                                        progress-start?
                                        (and measure-of-fn
                                             (list measure-of-fn-event))
@@ -5918,6 +6043,12 @@
                        exported-events
                        (acons fn info prec-fns)
                        names-to-avoid)))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite
+            alistp-when-atc-symbol-varinfo-alistp-rewrite
+            atc-var-info-listp-of-strip-cdrs-when-atc-symbol-varinfo-alistp)))
   ///
 
   (more-returns
@@ -7238,12 +7369,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-prog-const ((prog-const symbolp)
-                            (file filep)
+                            (fileset filesetp)
                             (print evmac-input-print-p))
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
   :short "Generate the named constant for the abstract syntax tree
-          of the generated C code (i.e. C file)."
+          of the generated C code (i.e. C file set)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -7253,7 +7384,7 @@
              `((cw-event "~%Generating the named constant..."))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
-       (defconst-event `(defconst ,prog-const ',file))
+       (defconst-event `(defconst ,prog-const ',fileset))
        (local-event `(progn ,@progress-start?
                             (local ,defconst-event)
                             ,@progress-end?)))
@@ -7275,7 +7406,7 @@
    (xdoc::p
     "Since this is a ground theorem,
      we expect that it should be easily provable
-     using just the executable counterpart of @(tsee check-file),
+     using just the executable counterpart of @(tsee check-fileset),
      which is an executable function.")
    (xdoc::p
     "We generate singleton lists of events if @(':proofs') is @('t'),
@@ -7284,8 +7415,8 @@
        ((mv local-event exported-event)
         (evmac-generate-defthm
          wf-thm
-         :formula `(equal (check-file ,prog-const) :wellformed)
-         :hints '(("Goal" :in-theory '((:e check-file))))
+         :formula `(equal (check-fileset ,prog-const) :wellformed)
+         :hints '(("Goal" :in-theory '((:e check-fileset))))
          :enable nil))
        (progress-start?
         (and (evmac-input-print->= print :info)
@@ -7303,7 +7434,7 @@
 (define atc-gen-init-fun-env-thm ((init-fun-env-thm symbolp)
                                   (proofs booleanp)
                                   (prog-const symbolp)
-                                  (file filep))
+                                  (fileset filesetp))
   :returns (local-events pseudo-event-form-listp)
   :short "Generate the theorem asserting that
           applying @(tsee init-fun-env) to the translation unit
@@ -7312,12 +7443,12 @@
   (xdoc::topstring
    (xdoc::p
     "The rationale for generating this theorem
-     is explained in @(tsee atc-gen-cfile)."))
+     is explained in @(tsee atc-gen-fileset)."))
   (b* (((unless proofs) nil)
-       (tunit (preprocess file))
+       (tunit (preprocess fileset))
        ((when (errorp tunit))
         (raise "Internal error: preprocessing of ~x0 fails with error ~x1."
-               file tunit))
+               fileset tunit))
        (fenv (init-fun-env tunit))
        ((when (errorp fenv))
         (raise "Internal error: ~
@@ -7337,29 +7468,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-cfile ((targets symbol-listp)
-                       (proofs booleanp)
-                       (prog-const symbolp)
-                       (wf-thm symbolp)
-                       (fn-thms symbol-symbol-alistp)
-                       (print evmac-input-print-p)
-                       (names-to-avoid symbol-listp)
-                       (ctx ctxp)
-                       state)
+(define atc-gen-fileset ((targets symbol-listp)
+                         (output-file stringp)
+                         (proofs booleanp)
+                         (prog-const symbolp)
+                         (wf-thm symbolp)
+                         (fn-thms symbol-symbol-alistp)
+                         (print evmac-input-print-p)
+                         (names-to-avoid symbol-listp)
+                         (ctx ctxp)
+                         state)
   :returns (mv erp
-               (val (tuple (file filep)
+               (val (tuple (fileset filesetp)
                            (local-events pseudo-event-form-listp)
                            (exported-events pseudo-event-form-listp)
                            (updated-names-to-avoid symbol-listp)
                            val)
                     :hyp (symbol-listp names-to-avoid))
                state)
-  :short "Generate a C file from the ATC targets, and accompanying events."
+  :short "Generate a file set from the ATC targets, and accompanying events."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This does not yet generate an actual file in the file system;
-     it generates an abstract syntactic C file.")
+    "This does not generate actual files in the file system:
+     it generates an abstract syntactic C file set.")
    (xdoc::p
     "In order to speed up the proofs of
      the generated theorems for the function environment
@@ -7367,7 +7499,7 @@
      we generate a theorem to ``cache''
      the result of calling @(tsee init-fun-env)
      on the generated translation unit
-     (obtained by preprocessing the generated C file),
+     (obtained by preprocessing the generated C file set),
      to avoid recomputing that for every function environment theorem.
      We need to generate the name of this (local) theorem
      before generating the function environment theorems,
@@ -7380,7 +7512,7 @@
      however, in the generated events,
      we put that theorem before the ones for the functions."))
   (b* (((acl2::fun (irr))
-        (list (with-guard-checking :none (ec-call (file-fix :irrelevant)))
+        (list (with-guard-checking :none (ec-call (fileset-fix :irrelevant)))
               nil
               nil
               nil))
@@ -7411,13 +7543,14 @@
                                  fn-thms fn-appconds appcond-thms
                                  print names-to-avoid ctx state))
        (file (make-file :declons exts))
+       (fileset (make-fileset :path output-file :file file))
        (local-init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
                                                             proofs
                                                             prog-const
-                                                            file))
+                                                            fileset))
        ((mv local-const-event exported-const-event)
         (if proofs
-            (atc-gen-prog-const prog-const file print)
+            (atc-gen-prog-const prog-const fileset print)
           (mv nil nil)))
        (local-events (append appcond-local-events
                              (and proofs (list local-const-event))
@@ -7427,7 +7560,7 @@
        (exported-events (append (and proofs (list exported-const-event))
                                 wf-thm-exported-events
                                 fn-thm-exported-events)))
-    (acl2::value (list file
+    (acl2::value (list fileset
                        local-events
                        exported-events
                        names-to-avoid)))
@@ -7437,33 +7570,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-outfile ((file filep)
-                         (output-file stringp)
-                         (pretty-printing pprint-options-p)
-                         state)
-  :returns (mv erp val state)
-  :mode :program
-  :short "Pretty-print the generated C code (i.e. C file) to the output file."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This actually writes the file to disk, in the file system."))
-  (b* ((lines (pprint-file file pretty-printing)))
-    (pprinted-lines-to-file lines output-file state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-outfile-event ((file filep)
-                               (output-file stringp)
+(define atc-gen-fileset-event ((fileset filesetp)
                                (pretty-printing pprint-options-p)
                                (print evmac-input-print-p)
                                state)
   :returns (mv erp (event pseudo-event-formp) state)
-  :short "Event to pretty-print the generated C code to the output file."
+  :short "Event to pretty-print the generated C code to the file system."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This serves to run @(tsee atc-gen-outfile)
+    "This serves to run @(tsee pprint-fileset)
      after the constant and theorem events have been submitted.
      This function generates an event form
      that is put (by @(tsee atc-gen-everything))
@@ -7472,7 +7588,7 @@
      we get to this file generation event
      only if the previous events are successful.
      This is a sort of safety/security constraint:
-     do not even generate the output file, unless it is correct.")
+     do not even generate files, unless they are correct.")
    (xdoc::p
     "If @(':print') is @(':info') or @(':all'),
      we also generate events to print progress messages,
@@ -7485,23 +7601,21 @@
      so there is no extra screen output.
      This is a ``dummy'' event, which is not supposed to do anything:
      it is the execution of the @(tsee make-event) argument
-     that matters, because it generates the output file.
+     that matters, because it writes the file set to the file system.
      In essence, we use @(tsee make-event) to turn a computation
-     (the one that generates the output file)
+     (the one that writes the output files)
      into an event.
      But we cannot use just @(tsee value-triple)
      because our computation returns an error triple."))
   (b* ((progress-start?
         (and (evmac-input-print->= print :info)
-             `((cw-event "~%Generating the file..." ',output-file))))
+             `((cw-event "~%Generating the file ~s0..."
+                         ',(fileset->path fileset)))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
-          (b* (((er &) (atc-gen-outfile ',file
-                                        ,output-file
-                                        ',pretty-printing
-                                        state)))
+          (b* (((er &) (pprint-fileset ',fileset ',pretty-printing state)))
             (acl2::value '(value-triple :invisible))))))
     (acl2::value `(progn ,@progress-start?
                          ,file-gen-event
@@ -7560,14 +7674,14 @@
      if the call is the body of a @(tsee let),
      the formals that are not affected then become ignored."))
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
-       ((er (list file local-events exported-events &) :iferr '(_))
-        (atc-gen-cfile targets proofs prog-const wf-thm fn-thms
-                       print names-to-avoid ctx state))
-       ((er file-gen-event) (atc-gen-outfile-event file
-                                                   output-file
-                                                   pretty-printing
-                                                   print
-                                                   state))
+       ((er (list fileset local-events exported-events &) :iferr '(_))
+        (atc-gen-fileset targets output-file proofs
+                         prog-const wf-thm fn-thms
+                         print names-to-avoid ctx state))
+       ((er fileset-gen-event) (atc-gen-fileset-event fileset
+                                                      pretty-printing
+                                                      print
+                                                      state))
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events output-file)))
        (encapsulate
@@ -7577,7 +7691,7 @@
               (set-ignore-ok t)
               ,@local-events
               ,@exported-events
-              ,file-gen-event))
+              ,fileset-gen-event))
        (encapsulate+ (restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
        (table-event (atc-table-record-event call info)))

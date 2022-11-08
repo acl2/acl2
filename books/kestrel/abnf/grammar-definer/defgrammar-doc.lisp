@@ -41,7 +41,7 @@
       This provides an ACL2 representation of the grammar,
       which has a formal @(see semantics)
       and which is amenable to @(see operations), "
-     (xdoc::seetopic "parser-generators" "parser generators")
+     (xdoc::seetopic "defdefparse" "parser generation")
      ", etc.")
 
     (xdoc::p
@@ -255,4 +255,14 @@
      "All these events are inside a @(tsee defsection)
       whose name is @('*name*')
       and whose parent list, short string, and long string
-      are the ones specified in the respective inputs."))))
+      are the ones specified in the respective inputs."))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section
+    xdoc::*evmac-section-redundancy-title*
+
+    (xdoc::p
+     "A call of @('defgrammar') is redundant if and only if
+      it is identical to a previous successful call of @('defgrammar')
+      with the exact same arguments."))))

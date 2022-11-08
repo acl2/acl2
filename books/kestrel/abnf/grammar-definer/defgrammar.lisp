@@ -19,6 +19,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/untranslate-preprocessing" :dir :system)
 
@@ -82,6 +83,52 @@
   (xdoc::evmac-topic-implementation-item-input "well-formed")
 
   (xdoc::evmac-topic-implementation-item-input "closed")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ defgrammar-table
+  :short "Table of @(tsee defgrammar) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for detecting redundant calls."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection defgrammar-table-definition
+  :short "Definition of the table of @(tsee defgrammar) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the calls themselves as keys,
+     and nothing (i.e. @('nil')) as values.
+     We only need to check if
+     a call has already been successfully made or not;
+     the table is like a set of calls."))
+
+  (table defgrammar-table nil nil
+    :guard (and (pseudo-event-formp acl2::key)
+                (null acl2::val))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defgrammar-table-lookup ((call pseudo-event-formp) (wrld plist-worldp))
+  :returns (yes/no booleanp)
+  :short "Look up a @(tsee defgrammar) call in the table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Returns a boolean, saying whether the call is in the table or not."))
+  (consp (assoc-equal call (table-alist+ 'defgrammar-table wrld))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defgrammar-table-add ((call pseudo-event-formp))
+  :returns (event pseudo-event-formp)
+  :short "Event to record a @(tsee defgrammar) call in the table."
+  `(table defgrammar-table ',call nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -237,6 +284,7 @@
                                    short
                                    long
                                    (other-events true-listp)
+                                   (call pseudo-event-formp)
                                    state)
   :returns (mv erp
                (event pseudo-event-formp :hyp (true-listp other-events))
@@ -262,31 +310,38 @@
              (list `(defthm ,(packn-pos (list 'rulelist-closedp-of- name) name)
                       (rulelist-closedp ,name)
                       :hints (("Goal" :in-theory '((:e rulelist-closedp))))))))
+       (table-event (defgrammar-table-add call))
        (event
-        `(defsection ,name
-           ,@(and (not (eq parents :absent))
-                  (list :parents parents))
-           ,@(and (not (eq short :absent))
-                  (list :short short))
-           ,@(and (not (eq long :absent))
-                  (list :long long))
-           ,defconst-event
-           ,@untranslate-event?
-           ,@well-formed-event?
-           ,@closed-event?
-           ,@other-events)))
-    (value event))
-  :guard-debug t)
+        `(progn
+           (defsection ,name
+             ,@(and (not (eq parents :absent))
+                    (list :parents parents))
+             ,@(and (not (eq short :absent))
+                    (list :short short))
+             ,@(and (not (eq long :absent))
+                    (list :long long))
+             ,defconst-event
+             ,@untranslate-event?
+             ,@well-formed-event?
+             ,@closed-event?
+             ,@other-events)
+           ,table-event)))
+    (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defgrammar-fn ((args true-listp) (ctx ctxp) state)
+(define defgrammar-fn ((args true-listp)
+                       (call pseudo-event-formp)
+                       (ctx ctxp)
+                       state)
   :returns (mv erp
                (event pseudo-event-formp :hyp (true-listp args))
                state)
   :parents (defgrammar-implementation)
   :short "Process the inputs and generate the events."
-  (b* (((er (list name
+  (b* (((when (defgrammar-table-lookup call (w state)))
+        (value '(value-triple :redundant)))
+       ((er (list name
                   file
                   untranslate
                   well-formed
@@ -307,6 +362,7 @@
       short
       long
       other-events
+      call
       state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -314,5 +370,5 @@
 (defsection defgrammar-macro-definition
   :parents (defgrammar-implementation)
   :short "Definition of the @(tsee defgrammar) macro."
-  (defmacro defgrammar (&rest args)
-    `(make-event (defgrammar-fn ',args 'defgrammar state))))
+  (defmacro defgrammar (&whole call &rest args)
+    `(make-event (defgrammar-fn ',args ',call 'defgrammar state))))

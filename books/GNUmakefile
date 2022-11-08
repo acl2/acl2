@@ -578,12 +578,11 @@ SLOW_BOOKS := \
   workshops/2009/sumners/support/examples.cert \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
-  workshops/2013/hardin-hardin/support/APSP.cert \
-  doc/top-slow.cert
+  workshops/2013/hardin-hardin/support/APSP.cert
 
 # The following could well be considered as slow books, too.
+# top.cert
 # doc/top.cert
-# doc/top-fast.cert
 # projects/include-doc.cert
 # projects/doc.cert
 # projects/top-doc.cert
@@ -593,6 +592,8 @@ SLOW_BOOKS := \
 
 X86ISA_BOOKS := $(filter projects/x86isa/%, $(OK_CERTS))
 SLOW_BOOKS += $(X86ISA_BOOKS)
+FILESYSTEM_BOOKS := $(filter projects/filesystems/%, $(OK_CERTS))
+SLOW_BOOKS += $(FILESYSTEM_BOOKS)
 
 SLOW_BOOK_TARGETS :=
 
