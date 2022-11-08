@@ -15,22 +15,22 @@
 		(natp b)
 		(relatively-primep a b)
 		(natp k)
-		(acl2::divides k a)
-		(acl2::divides k b))
+		(dm::divides k a)
+		(dm::divides k b))
 	   (equal k 1))
   :rule-classes nil
   :hints (("Goal"
-	   :use ((:instance acl2::divides-g-c-d
+	   :use ((:instance dm::divides-g-c-d
 			    (acl2::x a)
 			    (acl2::y b)
 			    (acl2::d k)))
-	   :in-theory (e/d (relatively-primep acl2::divides)
-			   (acl2::divides-g-c-d)))))
+	   :in-theory (e/d (relatively-primep dm::divides)
+			   (dm::divides-g-c-d)))))
 
 
 
 (defthmd pow-mul-order
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
 		(fep a p)
 		(fep b p)
 		(not (equal 0 a))
@@ -59,13 +59,13 @@
 
 
 (defthmd construct-product-order-part1
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
 		(fep a p)
 		(fep b p)
 		(not (equal 0 a))
 		(not (equal 0 b))
 		)
-	   (acl2::divides (order (mul a b p) p)
+	   (dm::divides (order (mul a b p) p)
 			 (* (order a p) (order b p))))
   :hints (("Goal"
 	   :use ((:instance pow-mul-order)
@@ -79,7 +79,7 @@
   )
 
 (defthm construct-product-order-part2a
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 ;; (not (equal 0 a))
@@ -102,7 +102,7 @@
                  ))))
 
 (defthm inv-pow
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (not (equal 0 a))
                 (natp k))
@@ -122,7 +122,7 @@
            )))
 
 (defthm construct-product-order-part2b
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -137,7 +137,7 @@
                  ))))
 
 (defthm construct-product-order-part2c
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -162,7 +162,7 @@
                  ))))
 
 (defthm construct-product-order-part2d
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -187,7 +187,7 @@
                            (pow-order)))))
 
 (defthm construct-product-order-part2e
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -207,7 +207,7 @@
                  ))))
 
 (defthm construct-product-order-part2f
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -231,7 +231,7 @@
                  ))))
 
 (defthm fep-euclidean
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -243,20 +243,20 @@
                             (acl2::p p)
                             (acl2::a a)
                             (acl2::b b))
-                 (:instance acl2::divides-mod-0
+                 (:instance dm::divides-mod-0
                             (acl2::n p)
                             (acl2::a a))
-                 (:instance acl2::divides-mod-0
+                 (:instance dm::divides-mod-0
                             (acl2::n p)
                             (acl2::a b))
-                 (:instance acl2::divides-mod-0
+                 (:instance dm::divides-mod-0
                             (acl2::n p)
                             (acl2::a (* a b)))
                  )
            :in-theory (enable mul))))
 
 (defthm pow-not-zero-for-non-zero-base
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (not (equal 0 a))
                 (natp n))
@@ -273,15 +273,15 @@
           ))
 
 (defthm construct-product-order-part2g
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
                 (not (equal 0 b))
                 (posp k)
                 (equal (pow (mul a b p) k p) 1))
-           (and (acl2::divides (order (pow a k p) p) (order a p))
-                (acl2::divides (order (pow a k p) p) (order b p))))
+           (and (dm::divides (order (pow a k p) p) (order a p))
+                (dm::divides (order (pow a k p) p) (order b p))))
   :rule-classes nil
   :hints (("Goal"
            :use ((:instance construct-product-order-part2e)
@@ -301,7 +301,7 @@
                  ))))
 
 (defthm construct-product-order-part2h
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -309,11 +309,11 @@
                 (posp k)
                 (equal (pow (mul a b p) k p) 1)
                 (relatively-primep (order a p) (order b p)))
-           (acl2::divides (order (pow a k p) p) 1))
+           (dm::divides (order (pow a k p) p) 1))
   :rule-classes nil
   :hints (("Goal"
            :use ((:instance construct-product-order-part2g)
-                 (:instance acl2::divides-g-c-d
+                 (:instance dm::divides-g-c-d
                             (acl2::x (order a p))
                             (acl2::y (order b p))
                             (acl2::d (order (pow a k p) p)))
@@ -322,16 +322,16 @@
 
 (defthm must-be-1-if-divides-1
   (implies (and (posp x)
-                (acl2::divides x 1))
+                (dm::divides x 1))
            (equal x 1))
   :rule-classes nil
   :hints (("Goal"
-           :use ((:instance acl2::divides-leq
+           :use ((:instance dm::divides-leq
                             (acl2::x x)
                             (acl2::y 1))))))
 
 (defthm construct-product-order-part2i
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -347,7 +347,7 @@
                             (x (order (pow a k p) p)))))))
 
 (defthm car-all-powers-aux
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p))
            (equal (car (all-powers-aux a 1 p))
                   a))
@@ -359,7 +359,7 @@
            (equal (car (last l)) (car l))))
 
 (defthm only-1-has-order-1
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (not (equal a 0))
                 (equal (order a p) 1))
@@ -380,7 +380,7 @@
                               ))))
 
 (defthm construct-product-order-part2j
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -402,7 +402,7 @@
                             (a (pow a k p)))))))
 
 (defthm construct-product-order-part2k
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -410,8 +410,8 @@
                 (posp k)
                 (equal (pow (mul a b p) k p) 1)
                 (relatively-primep (order a p) (order b p)))
-           (and (acl2::divides (order a p) k)
-                (acl2::divides (order b p) k)))
+           (and (dm::divides (order a p) k)
+                (dm::divides (order b p) k)))
   :rule-classes nil
   :hints (("Goal"
            :use ((:instance construct-product-order-part2j)
@@ -562,16 +562,16 @@
     (implies (and (natp x)
                   (natp y)
                   (posp z)
-                  (acl2::divides z (* x y))
+                  (dm::divides z (* x y))
                   (relatively-primep x z))
-             (acl2::divides z y))
+             (dm::divides z y))
     :rule-classes nil
     :hints (("Goal"
              :use ((:instance lemma-4)
-                   (:instance acl2::divides-mod-0
+                   (:instance dm::divides-mod-0
                               (acl2::n z)
                               (acl2::a y))
-                   (:instance acl2::divides-mod-0
+                   (:instance dm::divides-mod-0
                               (acl2::n z)
                               (acl2::a (* x y)))
                    ))))
@@ -580,11 +580,11 @@
 (defthm divides-floor-quotient
   (implies (and (posp x)
                 (natp z))
-           (iff (acl2::divides x z)
+           (iff (dm::divides x z)
                 (= (* (floor z x) x) z)))
   :rule-classes nil
   :hints (("Goal"
-           :use ((:instance acl2::divides-mod-0
+           :use ((:instance dm::divides-mod-0
                             (acl2::n x)
                             (acl2::a z))
                  )
@@ -596,21 +596,21 @@
                 (not (= 0 x))
                 (not (= 0 y))
                 (integerp z)
-                (acl2::divides y z))
-           (acl2::divides (* x y) (* x z)))
+                (dm::divides y z))
+           (dm::divides (* x y) (* x z)))
   :rule-classes nil
   :hints (("Goal"
-           :in-theory (enable acl2::divides)))
+           :in-theory (enable dm::divides)))
   )
 
 (defthmd divides-product-when-gcd-1
   (implies (and (posp x)
                 (posp y)
                 (natp z)
-                (acl2::divides x z)
-                (acl2::divides y z)
+                (dm::divides x z)
+                (dm::divides y z)
                 (relatively-primep x y))
-           (acl2::divides (* x y) z))
+           (dm::divides (* x y) z))
   :hints (("Goal"
            :use ((:instance divides-floor-quotient)
                  (:instance divides-floor-quotient
@@ -629,7 +629,7 @@
 
 
 (defthm construct-product-order-part2l
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -637,7 +637,7 @@
                 (posp k)
                 (equal (pow (mul a b p) k p) 1)
                 (relatively-primep (order a p) (order b p)))
-           (acl2::divides (* (order a p) (order b p)) k))
+           (dm::divides (* (order a p) (order b p)) k))
   :rule-classes nil
   :hints (("Goal"
            :use ((:instance construct-product-order-part2k)
@@ -647,7 +647,7 @@
                             (z k))))))
 
 ;; (defthm mul-by-same
-;;   (implies (and (acl2::primep p)
+;;   (implies (and (dm::primep p)
 ;;                 (fep a p)
 ;;                 (fep b p)
 ;;                 (fep c p)
@@ -656,7 +656,7 @@
 ;;   :rule-classes nil)
 
 (defthm mul-cancel-arg1
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (= 0 a)))
@@ -681,13 +681,13 @@
                                mul-commutative))))
 
 (defthm construct-product-order-part2
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
                 (not (equal 0 b))
                 (relatively-primep (order a p) (order b p)))
-           (acl2::divides (* (order a p) (order b p))
+           (dm::divides (* (order a p) (order b p))
                          (order (mul a b p) p)))
   :rule-classes nil
   :hints (("Goal"
@@ -706,7 +706,7 @@
 
 
 (defthm construct-product-order
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (fep b p)
                 (not (equal 0 a))
@@ -718,17 +718,17 @@
   :hints (("Goal"
            :use ((:instance construct-product-order-part1)
                  (:instance construct-product-order-part2)
-                 (:instance acl2::divides-leq
+                 (:instance dm::divides-leq
                             (x (order (mul a b p) p))
                             (y (* (order a p) (order b p))))
-                 (:instance acl2::divides-leq
+                 (:instance dm::divides-leq
                             (x (* (order a p) (order b p)))
                             (y (order (mul a b p) p)))))))
 
 ;;----------------------------------------------------------------------
 
 (defthm gcd-of-prime-either-1-or-p
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (posp x)
                 )
            (or (= (acl2::g-c-d p x) 1)
@@ -738,7 +738,7 @@
            :use ((:instance acl2::g-c-d-divides
                             (x p)
                             (y x))
-                 (:instance acl2::primep-no-divisor
+                 (:instance dm::primep-no-divisor
                             (p p)
                             (d (acl2::g-c-d p x)))
                  (:instance acl2::g-c-d-pos
@@ -754,21 +754,21 @@
 
 (defun number-of-powers (x p)
   (declare (xargs :hints (("Goal"
-                           :in-theory (enable acl2::divides)))))
+                           :in-theory (enable dm::divides)))))
   (if (and (integerp p)
            (<= 2 p))
       (if (or (zp x) (= 1 x))
           0
-        (if (acl2::divides p x)
+        (if (dm::divides p x)
             (1+ (number-of-powers (/ x p) p))
           0))
     0))
 
 (defthm factors-of-prime-powers-part1
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (posp x)
                 (natp n)
-                (acl2::divides x (expt p n))
+                (dm::divides x (expt p n))
                 (= (acl2::g-c-d p x) 1))
            (equal x (expt p (number-of-powers x p))))
   :rule-classes nil
@@ -788,12 +788,12 @@
 
 (defun factors-of-prime-powers-part2-induction-hint (x p n)
   (declare (xargs :hints (("Goal"
-                           :in-theory (enable acl2::divides)))))
+                           :in-theory (enable dm::divides)))))
   (if (and (integerp p)
            (<= 2 p))
       (if (or (zp x) (< x p))
           n
-        (if (acl2::divides p x)
+        (if (dm::divides p x)
             (1+ (factors-of-prime-powers-part2-induction-hint (/ x p)
                                                               p
                                                               (1- n)))
@@ -805,17 +805,17 @@
   (implies (and (natp x)
                 (natp y)
                 (posp z)
-                (acl2::divides (* x y) (* x z)))
-           (acl2::divides y z))
+                (dm::divides (* x y) (* x z)))
+           (dm::divides y z))
   :rule-classes nil
   :hints (("Goal"
-           :in-theory (enable acl2::divides))))
+           :in-theory (enable dm::divides))))
 
 (defthm factors-of-prime-powers-part2
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (posp x)
                 (natp n)
-                (acl2::divides x (expt p n))
+                (dm::divides x (expt p n))
                 (= (acl2::g-c-d p x) p))
            (equal x (expt p (number-of-powers x p))))
   :rule-classes nil
@@ -825,7 +825,7 @@
            :use ((:instance acl2::g-c-d-divides
                             (x p)
                             (y x)))
-           ;:in-theory (enable acl2::divides)
+           ;:in-theory (enable dm::divides)
            )
           ("Subgoal *1/2"
            :use ((:instance divides-cancel
@@ -844,14 +844,14 @@
                             (n (1- n))
                             (p p))
                  )
-           :in-theory (enable acl2::divides)
+           :in-theory (enable dm::divides)
            )
           ("Subgoal *1/1"
            :use ((:instance must-be-1-if-divides-1)
                  (:instance acl2::g-c-d-divides
                             (x p)
                             (y x))
-                 (:instance acl2::divides-leq
+                 (:instance dm::divides-leq
                             (x (acl2::g-c-d p x))
                             (y x))
                  )
@@ -859,10 +859,10 @@
           ))
 
 (defthm factors-of-prime-powers
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (posp x)
                 (natp n)
-                (acl2::divides x (expt p n)))
+                (dm::divides x (expt p n)))
            (equal x (expt p (number-of-powers x p))))
   :rule-classes nil
   :hints (("Goal"
@@ -871,22 +871,22 @@
                  (:instance gcd-of-prime-either-1-or-p)))))
 
 (defthm number-of-powers-when-x-divides-expt-p-n
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (posp x)
                 (natp n)
-                (acl2::divides x (expt p n)))
+                (dm::divides x (expt p n)))
            (<= (number-of-powers x p) n))
   :rule-classes nil
   :hints (("Goal"
            :use ((:instance factors-of-prime-powers)
-                 (:instance acl2::divides-leq
+                 (:instance dm::divides-leq
                             (x x)
                             (y (expt p n)))))))
 
 
 (defthm order-is-prime-power-when-prime-power-is-candidate
-  (implies (and (acl2::primep p)
-                (acl2::primep q)
+  (implies (and (dm::primep p)
+                (dm::primep q)
                 (<= q p)
                 (fep a p)
                 (not (= 0 a))
@@ -907,8 +907,8 @@
                             (p p))))))
 
 (defthm smaller-exponent-prime-power-is-1-then-largest-power-also-1
-  (implies (and (acl2::primep p)
-                (acl2::primep q)
+  (implies (and (dm::primep p)
+                (dm::primep q)
                 (<= q p)
                 (fep a p)
                 (not (= 0 a))
@@ -928,8 +928,8 @@
                  ))))
 
 (defthm smaller-exponent-prime-power-is-1-then-largest-power-also-1
-  (implies (and (acl2::primep p)
-                (acl2::primep q)
+  (implies (and (dm::primep p)
+                (dm::primep q)
                 (<= q p)
                 (fep a p)
                 (not (= 0 a))
@@ -949,8 +949,8 @@
                  ))))
 
 (defthm order-is-smaller-power-then-largest-power-also-1
-  (implies (and (acl2::primep p)
-                (acl2::primep q)
+  (implies (and (dm::primep p)
+                (dm::primep q)
                 (<= q p)
                 (fep a p)
                 (not (= 0 a))
@@ -983,8 +983,8 @@
                  ))))
 
 (defthm order-is-prime-power-lemma
-  (implies (and (acl2::primep p)
-                (acl2::primep q)
+  (implies (and (dm::primep p)
+                (dm::primep q)
                 (<= q p)
                 (fep a p)
                 (not (= 0 a))
@@ -1008,7 +1008,7 @@
                               ))))
 
 (defthm pow-root-equivalency
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (fep a p)
                 (natp n))
            (iff (= (pow a n p) 1)
@@ -1028,8 +1028,8 @@
            )))
 
 (defthm order-is-prime-power-lemma-2
-  (implies (and (acl2::primep p)
-                (acl2::primep q)
+  (implies (and (dm::primep p)
+                (dm::primep q)
                 (<= q p)
                 (fep a p)
                 (not (= 0 a))
@@ -1121,7 +1121,7 @@
 
 (local
  (defthm order-of-1
-   (implies (acl2::primep p)
+   (implies (dm::primep p)
             (equal (order 1 p) 1))
    :hints (("Goal"
             :in-theory (enable order all-powers-aux all-powers)
@@ -1131,29 +1131,29 @@
   (implies (and (natp x)
                 (natp q)
                 (posp n)
-                (acl2::divides (expt q n) x))
-           (acl2::divides (expt q (1- n)) x))
+                (dm::divides (expt q n) x))
+           (dm::divides (expt q (1- n)) x))
   :rule-classes nil
   :hints (("Goal"
-           :use ((:instance acl2::divides-transitive
+           :use ((:instance dm::divides-transitive
                             (x (expt q (1- n)))
                             (y (expt q n))
                             (z x)))
-           :in-theory (enable acl2::divides)
+           :in-theory (enable dm::divides)
            )))
 
 (defthmd expt-monotonic-prime-base
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (posp n))
            (< (expt p (1- n))
               (expt p n))))
 
 (defthm order-is-prime-power-lemma-3
-  (implies (and (acl2::primep p)
-                (acl2::primep q)
+  (implies (and (dm::primep p)
+                (dm::primep q)
                 (<= q p)
                 (posp n)
-                (acl2::divides (expt q n) (1- p))
+                (dm::divides (expt q n) (1- p))
                 )
            (and (fep (witness-with-order-q^n q n p) p)
                 (not (= 0 (witness-with-order-q^n q n p)))
@@ -1208,10 +1208,10 @@
            nil)))
 
 (defthm order-is-prime-power
-  (implies (and (acl2::primep p)
-                (acl2::primep q)
+  (implies (and (dm::primep p)
+                (dm::primep q)
                 (natp n)
-                (acl2::divides (expt q n) (1- p))
+                (dm::divides (expt q n) (1- p))
                 )
            (and (fep (witness-with-order-q^n q n p) p)
                 (not (= 0 (witness-with-order-q^n q n p)))
@@ -1224,14 +1224,14 @@
                             (p (1- p))
                             (q q)
                             (n n))
-                 (:instance acl2::divides-leq
+                 (:instance dm::divides-leq
                             (x (expt q n))
                             (y (1- p)))
                  ;; (:instance expt-monotonic-prime-base
                  ;;            (p q)
                  ;;            (n n))
                  )
-           :in-theory (e/d (acl2::divides)
+           :in-theory (e/d (dm::divides)
                            (witness-with-order-q^n)))))
 
 
@@ -1241,25 +1241,25 @@
   (implies (and (natp k)
                 (< 1 k)
                 (natp f)
-                (acl2::divides f k)
+                (dm::divides f k)
                 (< 1 f))
            (and (integerp (/ k f))
                 (< (/ k f) k)))
   :rule-classes nil
   :hints (("Goal"
-           :in-theory (enable acl2::divides))))
+           :in-theory (enable dm::divides))))
 
 (defthm divisor-num-powers
   (implies (and (natp k)
                 (< 1 k)
                 (natp f)
-                (acl2::divides f k))
-           (acl2::divides (expt f (number-of-powers k f)) k))
+                (dm::divides f k))
+           (dm::divides (expt f (number-of-powers k f)) k))
   :rule-classes nil
   :hints (("Goal"
            :do-not-induct t
            :induct (number-of-powers k f)
-           :in-theory (enable acl2::divides)
+           :in-theory (enable dm::divides)
            )
           ))
 
@@ -1268,7 +1268,7 @@
                 (< 1 k)
                 (natp f)
                 (< 1 f)
-                (acl2::divides f k)
+                (dm::divides f k)
                 )
            (< 0 (number-of-powers k f)))
   :rule-classes nil
@@ -1317,7 +1317,7 @@
                                             (k 2)
                                             (n k))))
                           ("Subgoal 4"
-                           :in-theory (enable acl2::divides))
+                           :in-theory (enable dm::divides))
                           ("Subgoal 3"
                            :use ((:instance expt-least-divisor-number-of-powers))
                            )
@@ -1360,21 +1360,21 @@
 (in-theory (disable witness-with-order-q^n))
 
 (defthm fep-primite-root-non-zero
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (natp k)
-                (acl2::divides k (1- p)))
+                (dm::divides k (1- p)))
            (not (= 0 (primitive-root-aux k p))))
   :rule-classes nil
  :INSTRUCTIONS
  ((:INDUCT (PRIMITIVE-ROOT-AUX K P))
   (:CHANGE-GOAL NIL T)
   :BASH :PROMOTE
-  (:USE (:INSTANCE ACL2::PRIMEP-LEAST-DIVISOR (N K)))
+  (:USE (:INSTANCE DM::PRIMEP-LEAST-DIVISOR (N K)))
   :PROMOTE (:FORWARDCHAIN 1)
   (:USE (:INSTANCE DIVISOR-NUM-POWERS (K K)
                    (F (ACL2::LEAST-DIVISOR 2 K))))
   :PRO (:FORWARDCHAIN 1)
-  (:USE (:INSTANCE ACL2::DIVIDES-TRANSITIVE
+  (:USE (:INSTANCE DM::DIVIDES-TRANSITIVE
                    (X (EXPT (ACL2::LEAST-DIVISOR 2 K)
                             (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))
                    (Y K)
@@ -1385,16 +1385,16 @@
                    (N (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))))
   :PRO (:FORWARDCHAIN 1)
   (:USE (:INSTANCE
-             ACL2::DIVIDES-TRANSITIVE
+             DM::DIVIDES-TRANSITIVE
              (X (* K
                    (/ (EXPT (ACL2::LEAST-DIVISOR 2 K)
                             (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))
              (Y K)
              (Z (1- P))))
-  :PRO (:IN-THEORY (ENABLE ACL2::DIVIDES))
+  :PRO (:IN-THEORY (ENABLE DM::DIVIDES))
   (:FORWARDCHAIN 1)
   (:FORWARDCHAIN 2)
-  (:IN-THEORY (DISABLE ACL2::DIVIDES))
+  (:IN-THEORY (DISABLE DM::DIVIDES))
   (:DV 1)
   (:DV 2)
   :X :TOP
@@ -1419,13 +1419,13 @@
            (K (* K
                  (EXPT (ACL2::LEAST-DIVISOR 2 K)
                        (- (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))))
-  :PRO (:IN-THEORY (ENABLE ACL2::DIVIDES))
+  :PRO (:IN-THEORY (ENABLE DM::DIVIDES))
   (:DEMOTE 1)
   (:DV 1)
   (:DV 1)
   :S :TOP
   (:USE (:INSTANCE
-             ACL2::DIVIDES-LEQ
+             DM::DIVIDES-LEQ
              (X (* K
                    (/ (EXPT (ACL2::LEAST-DIVISOR 2 K)
                             (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))
@@ -1436,9 +1436,9 @@
   (:DV 2)
   (:= T)
   :UP
-  :S (:IN-THEORY (ENABLE ACL2::DIVIDES))
+  :S (:IN-THEORY (ENABLE DM::DIVIDES))
   (:= T)
-  (:IN-THEORY (DISABLE ACL2::DIVIDES))
+  (:IN-THEORY (DISABLE DM::DIVIDES))
   :UP :S :UP :PRO (:FORWARDCHAIN 13)
   :S))
 
@@ -1446,21 +1446,21 @@
   ;;          :do-not-induct t
   ;;          :induct (primitive-root-aux k p))
   ;;         ("Subgoal *1/2"
-  ;;          :in-theory (enable acl2::divides)
+  ;;          :in-theory (enable dm::divides)
   ;;          :use ((:instance order-is-prime-power
   ;;                           (p p)
   ;;                           (q (acl2::least-divisor 2 k))
   ;;                           (n (number-of-powers k (acl2::least-divisor 2 k))))
-  ;;                (:instance acl2::primep-least-divisor (n k))
+  ;;                (:instance dm::primep-least-divisor (n k))
   ;;                (:instance divisor-num-powers
   ;;                           (k k)
   ;;                           (f (acl2::least-divisor 2 k)))
-  ;;                ;; (:instance acl2::divides-transitive
+  ;;                ;; (:instance dm::divides-transitive
   ;;                ;;            (x (expt (acl2::least-divisor 2 k)
   ;;                ;;                     (number-of-powers k (acl2::least-divisor 2 k))))
   ;;                ;;            (y k)
   ;;                ;;            (z (1- p)))
-  ;;                (:instance acl2::divides-transitive
+  ;;                (:instance dm::divides-transitive
   ;;                           (x (* K
   ;;                                 (/ (EXPT (ACL2::LEAST-DIVISOR 2 K)
   ;;                                          (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))
@@ -1481,7 +1481,7 @@
   ;;                                 (expt (acl2::least-divisor 2 k)
   ;;                                       (- (number-of-powers k
   ;;                                                            (acl2::least-divisor 2 k)))))))
-  ;;                (:instance acl2::divides-leq
+  ;;                (:instance dm::divides-leq
   ;;                           (x (* k
   ;;                                 (/ (expt (acl2::least-divisor 2 k)
   ;;                                          (number-of-powers k
@@ -1506,13 +1506,13 @@
 ;;; k|p-1 ==> primitive-root has order k
 
 (defthm prime-does-not-divide-x/p^n
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (posp k)
                 )
-           (not (acl2::divides p (/ k (expt p (number-of-powers k p))))))
+           (not (dm::divides p (/ k (expt p (number-of-powers k p))))))
   :rule-classes nil
   :hints (("Goal"
-           :in-theory (enable acl2::divides))
+           :in-theory (enable dm::divides))
           ("Subgoal *1/4"
            :use (:instance
                  (:theorem (implies (and (= x 1) (posp p) (< 1 p))
@@ -1523,12 +1523,12 @@
   )
 
 (defthm prime-divides-non-trivial-divisor-of-prime-power
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (natp x)
                 (< 1 x)
                 (natp n)
-                (acl2::divides x (expt p n)))
-           (acl2::divides p x))
+                (dm::divides x (expt p n)))
+           (dm::divides p x))
   :rule-classes nil
   :hints (("Goal"
            :use ((:instance factors-of-prime-powers)
@@ -1536,18 +1536,18 @@
   )
 
 (defthm prime-divides-divisor-of-prime-powers
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (posp x)
                 (posp n)
-                (acl2::divides x (expt p n)))
+                (dm::divides x (expt p n)))
            (or (= 1 x)
-               (acl2::divides p x)))
+               (dm::divides p x)))
   :rule-classes nil
   :hints (("Goal"
            :use ((:instance factors-of-prime-powers)))))
 
 (defthm gcd-after-dividing-by-prime-power
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (posp k)
                 (< 1 k)
                 )
@@ -1568,7 +1568,7 @@
                      (EXPT (ACL2::LEAST-DIVISOR 2 K)
                            (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))))))
    :PROMOTE
-   (:USE (:INSTANCE ACL2::PRIMEP-LEAST-DIVISOR (N K)))
+   (:USE (:INSTANCE DM::PRIMEP-LEAST-DIVISOR (N K)))
    :PROMOTE (:FORWARDCHAIN 1)
    (:USE (:INSTANCE PRIME-DOES-NOT-DIVIDE-X/P^N
                     (P (ACL2::LEAST-DIVISOR 2 K))
@@ -1581,9 +1581,9 @@
                     (N K)))
    :PROMOTE (:FORWARDCHAIN 1)
    (:FORWARDCHAIN 1)
-   (:IN-THEORY (ENABLE ACL2::DIVIDES))
+   (:IN-THEORY (ENABLE DM::DIVIDES))
    (:FORWARDCHAIN 1)
-   (:IN-THEORY (DISABLE ACL2::DIVIDES))
+   (:IN-THEORY (DISABLE DM::DIVIDES))
    (:DEMOTE 8)
    (:DV 1)
    :S :TOP :PROMOTE
@@ -1610,13 +1610,13 @@
    :PROMOTE (:DEMOTE 1)
    (:DV 1)
    (:DV 1)
-   :S (:IN-THEORY (ENABLE ACL2::DIVIDES))
+   :S (:IN-THEORY (ENABLE DM::DIVIDES))
    (:= T)
-   (:IN-THEORY (DISABLE ACL2::DIVIDES))
+   (:IN-THEORY (DISABLE DM::DIVIDES))
    :UP :S :TOP :PROMOTE (:FORWARDCHAIN 1)
    (:USE
     (:INSTANCE
-     ACL2::DIVIDES-TRANSITIVE
+     DM::DIVIDES-TRANSITIVE
      (X (ACL2::LEAST-DIVISOR 2 K))
      (Y (ACL2::G-C-D
          (EXPT (ACL2::LEAST-DIVISOR 2 K)
@@ -1630,10 +1630,10 @@
    :BASH))
   ;; :hints (("Goal"
   ;;          :do-not-induct t
-  ;;          :in-theory (e/d (acl2::divides)
+  ;;          :in-theory (e/d (dm::divides)
   ;;                          (acl2::|(/ (expt x n))|
   ;;                           ))
-  ;;          :use ((:instance acl2::primep-least-divisor
+  ;;          :use ((:instance dm::primep-least-divisor
   ;;                           (n k))
   ;;                (:instance acl2::g-c-d-divides
   ;;                           (x (expt (acl2::least-divisor 2 k)
@@ -1679,7 +1679,7 @@
   ;;                                 (/ (expt (acl2::least-divisor 2 k)
   ;;                                          (number-of-powers k
   ;;                                                            (acl2::least-divisor 2 k)))))))
-  ;;                (:instance acl2::divides-transitive
+  ;;                (:instance dm::divides-transitive
   ;;                           (x (acl2::least-divisor 2 k))
   ;;                           (y (acl2::g-c-d
   ;;                               (expt (acl2::least-divisor 2 k)
@@ -1696,32 +1696,32 @@
 
 
 (defthm new-divisor-still-divides
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (posp k)
                 (< 1 k)
-                (acl2::divides k (1- p))
+                (dm::divides k (1- p))
                 )
-           (acl2::divides (/ k (expt (acl2::least-divisor 2 k)
+           (dm::divides (/ k (expt (acl2::least-divisor 2 k)
                                     (number-of-powers k (acl2::least-divisor 2
                                                                             k))))
                          (1- p)))
   :rule-classes nil
   :hints (("Goal"
            :do-not-induct t
-           :use ((:instance acl2::divides-transitive
+           :use ((:instance dm::divides-transitive
                             (x (/ k (expt (acl2::least-divisor 2 k)
                                     (number-of-powers k (acl2::least-divisor 2
                                                                             k)))))
                             (y k)
                             (z (1- p)))
                  )
-           :in-theory (enable acl2::divides)
+           :in-theory (enable dm::divides)
            )))
 
 (defthm primes-have-primitive-roots-aux
-  (Implies (and (acl2::primep p)
+  (Implies (and (dm::primep p)
                 (natp k)
-                (acl2::divides k (1- p)))
+                (dm::divides k (1- p)))
            (equal (order (primitive-root-aux k p) p)
                   k))
   :rule-classes nil
@@ -1738,9 +1738,9 @@
   (:FORWARDCHAIN 1)
   (:USE (:INSTANCE NEW-DIVISOR-STILL-DIVIDES))
   :PRO (:FORWARDCHAIN 1)
-  (:IN-THEORY (ENABLE ACL2::DIVIDES))
+  (:IN-THEORY (ENABLE DM::DIVIDES))
   (:FORWARDCHAIN 2)
-  (:IN-THEORY (DISABLE ACL2::DIVIDES))
+  (:IN-THEORY (DISABLE DM::DIVIDES))
   (:DV 1)
   (:DV 1)
   :X :TOP
@@ -1749,9 +1749,9 @@
                    (N (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))
                    (P P)))
   :PRO
-  (:USE (:INSTANCE ACL2::PRIMEP-LEAST-DIVISOR (N K)))
+  (:USE (:INSTANCE DM::PRIMEP-LEAST-DIVISOR (N K)))
   :PROMOTE (:FORWARDCHAIN 1)
-  (:USE (:INSTANCE ACL2::DIVIDES-TRANSITIVE
+  (:USE (:INSTANCE DM::DIVIDES-TRANSITIVE
                    (X (EXPT (ACL2::LEAST-DIVISOR 2 K)
                             (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))
                    (Y K)
@@ -1781,13 +1781,13 @@
   (:DV 1)
   :S :TOP
   (:USE (:INSTANCE
-             ACL2::DIVIDES-LEQ
+             DM::DIVIDES-LEQ
              (X (* K
                    (EXPT (ACL2::LEAST-DIVISOR 2 K)
                          (- (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))
              (Y (1- P))))
   :PROMOTE (:FORWARDCHAIN 1)
-  (:IN-THEORY (ENABLE ACL2::DIVIDES))
+  (:IN-THEORY (ENABLE DM::DIVIDES))
   (:DV 1)
   (:DV 1)
   (:= T)
@@ -1807,7 +1807,7 @@
 
 
 (defthm primes-have-primitive-roots
-  (implies (acl2::primep p)
+  (implies (dm::primep p)
            (equal (order (primitive-root p) p)
                   (1- p)))
   :rule-classes nil

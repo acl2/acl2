@@ -1745,7 +1745,7 @@
 		(integerp b)
                 (oddp b))
 	   (oddp (* a b)))
-  :hints (("Goal" :in-theory (enable acl2::divides) :use ((:instance acl2::euclid (p 2))))))
+  :hints (("Goal" :in-theory (enable dm::divides) :use ((:instance dm::euclid (a a) (b b) (p 2))))))
 
 (local-defthm stk-12
   (implies (and (integerp x) (integerp y))

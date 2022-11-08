@@ -1,4 +1,4 @@
-(in-package "ACL2")
+(in-package "DM")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 

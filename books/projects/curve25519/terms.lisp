@@ -1,62 +1,62 @@
-(in-package "ACL2")
+(in-package "DM")
 
 (include-book "reduce")
 
 ;; [Jared] These rules were causing some proofs to be really slow.
 
 (local (deftheory jared-disables
-         '((:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
-           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
-           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)
-           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B)
-           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT)
-           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT)
-           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT)
-           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT)
-           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-RATIONALP-BASE)
-           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NON-0-BASE)
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-3B)
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B)
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B)
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-4E)
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-4B)
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-4B-EXPT)
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-3B-EXPT)
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B-EXPT)
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B-EXPT)
+         '((:TYPE-PRESCRIPTION acl2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
+           (:TYPE-PRESCRIPTION acl2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+           (:TYPE-PRESCRIPTION acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)
+           (:TYPE-PRESCRIPTION acl2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B)
+           (:TYPE-PRESCRIPTION acl2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT)
+           (:TYPE-PRESCRIPTION acl2::EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT)
+           (:TYPE-PRESCRIPTION acl2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT)
+           (:TYPE-PRESCRIPTION acl2::EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT)
+           (:TYPE-PRESCRIPTION acl2::EXPT-TYPE-PRESCRIPTION-RATIONALP-BASE)
+           (:TYPE-PRESCRIPTION acl2::EXPT-TYPE-PRESCRIPTION-NON-0-BASE)
+           (:TYPE-PRESCRIPTION acl2::NOT-INTEGERP-3B)
+           (:TYPE-PRESCRIPTION acl2::NOT-INTEGERP-1B)
+           (:TYPE-PRESCRIPTION acl2::NOT-INTEGERP-2B)
+           (:TYPE-PRESCRIPTION acl2::NOT-INTEGERP-4E)
+           (:TYPE-PRESCRIPTION acl2::NOT-INTEGERP-4B)
+           (:TYPE-PRESCRIPTION acl2::NOT-INTEGERP-4B-EXPT)
+           (:TYPE-PRESCRIPTION acl2::NOT-INTEGERP-3B-EXPT)
+           (:TYPE-PRESCRIPTION acl2::NOT-INTEGERP-2B-EXPT)
+           (:TYPE-PRESCRIPTION acl2::NOT-INTEGERP-1B-EXPT)
            (:TYPE-PRESCRIPTION RATIONALP-EXPT-TYPE-PRESCRIPTION)
-           not-integerp-1a-expt
-           not-integerp-2a-expt
-           not-integerp-3a-expt
-           not-integerp-4a-expt
-           not-integerp-1d-expt
-           not-integerp-2d-expt
-           not-integerp-3d-expt
-           not-integerp-4d-expt
-           not-integerp-1a
-           not-integerp-2a
-           not-integerp-3a
-           not-integerp-4a
-           not-integerp-1d
-           not-integerp-2d
-           not-integerp-3d
-           not-integerp-4d
-           not-integerp-1f
-           not-integerp-2f
-           not-integerp-3f
-           not-integerp-4f
-           default-plus-1
-           default-plus-2
-           default-times-1
-           default-times-2
-           default-less-than-1
-           default-less-than-2
-           default-expt-2
-           default-expt-1
-           default-minus
-           default-mod-ratio
-           mod-zero
-           |(mod (if a b c) x)|
+           acl2::not-integerp-1a-expt
+           acl2::not-integerp-2a-expt
+           acl2::not-integerp-3a-expt
+           acl2::not-integerp-4a-expt
+           acl2::not-integerp-1d-expt
+           acl2::not-integerp-2d-expt
+           acl2::not-integerp-3d-expt
+           acl2::not-integerp-4d-expt
+           acl2::not-integerp-1a
+           acl2::not-integerp-2a
+           acl2::not-integerp-3a
+           acl2::not-integerp-4a
+           acl2::not-integerp-1d
+           acl2::not-integerp-2d
+           acl2::not-integerp-3d
+           acl2::not-integerp-4d
+           acl2::not-integerp-1f
+           acl2::not-integerp-2f
+           acl2::not-integerp-3f
+           acl2::not-integerp-4f
+           acl2::default-plus-1
+           acl2::default-plus-2
+           acl2::default-times-1
+           acl2::default-times-2
+           acl2::default-less-than-1
+           acl2::default-less-than-2
+           acl2::default-expt-2
+           acl2::default-expt-1
+           acl2::default-minus
+           acl2::default-mod-ratio
+           acl2::mod-zero
+           acl2::|(mod (if a b c) x)|
            rtl::mod-bnd-1
            rtl::mod-bnd-2
            (:type-prescription natp-dx)

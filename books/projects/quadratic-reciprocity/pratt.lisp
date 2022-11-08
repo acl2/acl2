@@ -2,7 +2,7 @@
 ;; david@russinoff.com
 ;; http://www.russinoff.com
 
-(in-package "ACL2")
+(in-package "DM")
 
 (include-book "euclid")
 (include-book "fermat")
@@ -10,9 +10,9 @@
 (local (include-book "support/pratt"))
 
 ;; Also defined in the RTL library.
-(defund rtl::fl (x)
-  (declare (xargs :guard (real/rationalp x)))
-  (floor x 1))
+(defund rtl::fl (rtl::x)
+  (declare (xargs :guard (real/rationalp rtl::x)))
+  (floor rtl::x 1))
 
 (set-enforce-redundancy t)
 (set-inhibit-warnings "theory") ; avoid warning in the next event

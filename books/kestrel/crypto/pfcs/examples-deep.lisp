@@ -15,7 +15,7 @@
 
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 
-(local (in-theory (disable acl2::primep)))
+(local (in-theory (disable dm::primep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,14 +43,14 @@
           (expression-var b-var))
    :right (expression-const 0)))
 
-(define spec-boolean ((b (fep b p)) (p acl2::primep))
+(define spec-boolean ((b (fep b p)) (p dm::primep))
   :returns (yes/no booleanp)
   (declare (ignore p))
   (or (equal b 0)
       (equal b 1)))
 
 (defruled constraint-boolean-to-spec-boolean
-  (implies (and (acl2::primep p)
+  (implies (and (dm::primep p)
                 (symbolp b-var)
                 (fep b p))
            (iff (constraint-satp (omap::update b-var b nil)

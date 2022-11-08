@@ -18,15 +18,15 @@
 
 ;; TODO: Add xdoc.
 
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;for primep
+(include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;for dm::primep
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/strings-light/downcase" :dir :system)
 (include-book "std/util/add-io-pairs" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-;; Prevent very expensive calls to primep:
-(in-theory (disable (:e primep)))
+;; Prevent very expensive calls to dm::primep:
+(in-theory (disable (:e dm::primep)))
 
 (defund defprime-fn (name
                      number
@@ -96,8 +96,8 @@
        ,@(and (not existing-prime-name)
               '((local (include-book "projects/quadratic-reciprocity/pratt" :dir :system))))
 
-       ;; Prevent very expensive calls to primep.
-       (local (in-theory (disable (:e primep))))
+       ;; Prevent very expensive calls to dm::primep.
+       (local (in-theory (disable (:e dm::primep))))
 
        ;; A defconst representing the prime.
        (defconst ,defconst-name ,number)
@@ -138,18 +138,18 @@
        ;; Primality theorem for the constant.
        ;; Since primep may often be disabled and this cannot be efficiently executed.
        (defthm ,(acl2::pack-in-package-of-symbol name 'primep-of- name '-constant)
-         (primep ,defconst-name)
+         (dm::primep ,defconst-name)
          ,@(if existing-prime-name
                `(:hints (("Goal" :use (:instance ,(acl2::pack-in-package-of-symbol existing-prime-name 'primep-of- existing-prime-name '-constant))
                           :in-theory nil)))
-             `(:hints (("Goal" :in-theory (enable (:e acl2::certify-prime))
-                        :use (:instance acl2::certification-theorem
+             `(:hints (("Goal" :in-theory (enable (:e dm::certify-prime))
+                        :use (:instance dm::certification-theorem
                                         (p ,defconst-name)
                                         (c ,pratt-cert-defconst-name)))))))
 
        ;; Primality theorem for the 0-ary function.
        (defthm ,(acl2::pack-in-package-of-symbol name 'primep-of- name)
-         (primep (,name))
+         (dm::primep (,name))
          :hints (("Goal" :in-theory '(,name)
                   :use (:instance ,(acl2::pack-in-package-of-symbol name 'primep-of- name '-constant)))))
 
@@ -165,10 +165,10 @@
          :rule-classes ((:linear :trigger-terms ((,name))))
          :hints (("Goal" :in-theory (enable (:e ,name)))))
 
-       ;; Avoid expensive calls of primep by building in the fact that it is
+       ;; Avoid expensive calls of dm::primep by building in the fact that it is
        ;; true for this prime:
        ,@(and (not existing-prime-name)
-              `((acl2::add-io-pairs (((primep (,name)) t)))))
+              `((acl2::add-io-pairs (((dm::primep (,name)) t)))))
 
        ,@(and doc `((defxdoc ,name ,@parents ,@short ,@long)))
 

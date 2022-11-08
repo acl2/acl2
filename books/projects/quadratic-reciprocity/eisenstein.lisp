@@ -2,7 +2,7 @@
 ;; david@russinoff.com
 ;; http://www.russinoff.com
 
-(in-package "ACL2")
+(in-package "DM")
 
 (local (include-book "support/eisenstein"))
 

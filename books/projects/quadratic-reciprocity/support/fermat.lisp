@@ -1,4 +1,4 @@
-(in-package "ACL2")
+(in-package "DM")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -224,9 +224,9 @@
 	     (= (mod (* x (mod z n)) n)
 		(mod (* y z) n)))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a z) (b x))
-			(:instance rtl::mod-mod-times (a x) (b z))
-			(:instance rtl::mod-mod-times (a y) (b z))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a z) (b x) (n n))
+			(:instance rtl::mod-mod-times (a x) (b z) (n n))
+			(:instance rtl::mod-mod-times (a y) (b z) (n n))))))
 
 (defthm mod-mod-prods-lemma-2
     (implies (and (not (zp p))

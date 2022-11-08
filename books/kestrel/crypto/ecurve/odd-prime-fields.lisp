@@ -72,8 +72,8 @@
   (local (defun prime () 3))
 
   (defthm primep-of-prime
-    (acl2::primep (prime))
-    :hints (("Goal" :in-theory (enable acl2::primep))))
+    (dm::primep (prime))
+    :hints (("Goal" :in-theory (enable dm::primep))))
 
   ;; we need this because we divide (1- (prime)) by 2 later in this file
   (defthm prime-is-odd
@@ -181,9 +181,9 @@
   (local (include-book "arithmetic-5/top" :dir :system))
   (defthm prime-divides-iff-=p-0
     (implies (integerp x)
-             (iff (acl2::divides (prime) x)
+             (iff (dm::divides (prime) x)
                   (=p x 0)))
-    :hints (("Goal" :in-theory (enable =p acl2::divides modp)))))
+    :hints (("Goal" :in-theory (enable =p dm::divides modp)))))
 
 ; =p is (conditionally) a congruence for expt
 ; (used to prove congruence for division later)
@@ -252,14 +252,14 @@
            (=p (i* (/p x) x) 1))
   :hints (("Goal"
            :in-theory (enable =p modp /p i* expt)
-           :use (:instance acl2::fermat (p (prime)) (m x)))))
+           :use (:instance dm::fermat (p (prime)) (m x)))))
 
 (defthm /p-identity-right
   (implies (force (not (=p x 0)))
            (=p (i* x (/p x)) 1))
   :hints (("Goal"
            :in-theory (enable =p modp /p i* expt)
-           :use (:instance acl2::fermat (p (prime)) (m x)))))
+           :use (:instance dm::fermat (p (prime)) (m x)))))
 
 (defthm /p-cancellation-on-left
   (implies (force (not (=p x 0)))
@@ -470,7 +470,7 @@
   :rule-classes nil
   :hints (("Goal"
            :in-theory (enable =p modp)
-           :use (:instance acl2::fermat (m m) (p (prime))))))
+           :use (:instance dm::fermat (m m) (p (prime))))))
 
 ; the whole identity is shown in "projects/quadratic-reciprocity/euler"
 (defthmd weak-euler-criterion

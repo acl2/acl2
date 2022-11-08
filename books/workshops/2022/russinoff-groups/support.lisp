@@ -1,6 +1,7 @@
-(in-package "ACL2")
+(in-package "DM")
 
 (include-book "rtl/rel11/lib/top" :dir :system)
+(include-book "projects/quadratic-reciprocity/portcullis" :dir :system)
 
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system)
 
@@ -1337,8 +1338,8 @@
   :hints (("Goal" :use (member-ninit
                         (:instance member-ninit (x y))
 			(:instance member-ninit (x z))
-                        (:instance rtl::mod-sum (a x) (b (+ y z)))
-                        (:instance rtl::mod-sum (a z) (b (+ x y)))))))
+                        (:instance rtl::mod-sum (a x) (b (+ y z)) (n n))
+                        (:instance rtl::mod-sum (a z) (b (+ x y)) (n n))))))
 
 (defthm z+-inverse
   (implies (and (posp n)
@@ -1347,7 +1348,7 @@
 	        (equal (z+-op (z+-inv x n) x n) 0)))
   :hints (("Goal" :use (member-ninit
                         (:instance member-ninit (x (z+-inv x n)))
-			(:instance rtl::mod-sum (a x) (b (- x)))))))
+			(:instance rtl::mod-sum (a x) (b (- x)) (n n))))))
 
 (in-theory (disable z+-op z+-inv))
 
@@ -1560,8 +1561,8 @@
   :hints (("Goal" :use ((:instance member-rel-primes (k x))
                         (:instance member-rel-primes (k y))
                         (:instance member-rel-primes (k z))
-			(:instance rtl::mod-mod-times (b x) (a (* y z)))
-			(:instance rtl::mod-mod-times (b z) (a (* x y)))))))
+			(:instance rtl::mod-mod-times (b x) (a (* y z)) (n n))
+			(:instance rtl::mod-mod-times (b z) (a (* x y)) (n n))))))
 
 ;; The definition of z*-inv is based on the following lemma from books/projects/quadratic-reciprocity/euclid.lisp"
 
@@ -1590,8 +1591,8 @@
   :hints (("Goal" :use (hack
 		        (:instance g-c-d-linear-combination (y n))
                         (:instance member-rel-primes (k x))
-			(:instance rtl::mod-mod-times (a (r-int x n)) (b x))
-                        (:instance mod-mult (m 1) (a (- (s-int x n))))))))
+			(:instance rtl::mod-mod-times (a (r-int x n)) (b x) (n n))
+                        (:instance acl2::mod-mult (m 1) (a (- (s-int x n))) (n n))))))
 
 (local-defthmd z*-inverse-2
   (implies (and (posp n) (> n 1)
@@ -2907,7 +2908,7 @@
 	        (and (in x g) (equal (op a x g) (op x a g)))))
   :hints (("Goal" :in-theory (enable centizer-elts-iff))))
 
-(in-theory (disable centralizer-elts))
+(in-theory (disable acl2::centralizer-elts))
 
 (defthmd centralizer-conj-iff
   (implies (and (groupp g) (in a g))
@@ -4315,7 +4316,7 @@
       (cauchy-induction (centralizer (find-elt g p) g) p)
     t))
 
-(in-theory (disable center-elts find-elt))
+(in-theory (disable acl2::center-elts find-elt))
 
 (defthm cauchy-lemma
   (implies (and (groupp g)

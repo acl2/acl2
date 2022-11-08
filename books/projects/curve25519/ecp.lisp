@@ -1,4 +1,4 @@
-(in-package "ACL2")
+(in-package "DM")
 
 (include-book "projects/quadratic-reciprocity/pratt" :dir :system)
 (local (include-book "projects/quadratic-reciprocity/support/pratt" :dir :system))
@@ -196,7 +196,7 @@
                 (= (mod (- a b) n) 0)))
   :rule-classes ()
   :hints (("Goal" :use (rtl::mod-equal-int-reverse rtl::mod-equal-int
-                        (:instance rtl::mod-0-int (m (- a b)))))))
+                        (:instance rtl::mod-0-int (m (- a b)) (n n))))))
 
 (defthm natp-frcp
   (implies (integerp n)

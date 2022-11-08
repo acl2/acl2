@@ -80,7 +80,7 @@
           ))
    (implies (and (natp prime)
                  (< 1000000 prime)
-                 (acl2::primep prime)
+                 (dm::primep prime)
                  (r1cs-valuationp valuation prime)
                  (equal n (len avars))
                  (equal n (len pivars))

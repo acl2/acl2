@@ -10,7 +10,7 @@
 
 (in-package "PRIMES")
 
-(include-book "../../projects/quadratic-reciprocity/euclid") ;brings in acl2::divides
+(include-book "../../projects/quadratic-reciprocity/euclid") ;brings in dm::divides
 (local (include-book "../arithmetic-light/times"))
 
 ;; when x > y, x usually doesn't divide y.
@@ -18,10 +18,10 @@
   (implies (and (< y x) ; unusual
                 (natp y)
                 (natp x))
-           (equal (acl2::divides x y)
+           (equal (dm::divides x y)
                   (or (equal x 0)
                       (equal y 0))))
   :hints (("Goal"
            :cases ((equal 0 y)
                    (and (< 0 y) (equal 0 x)))
-           :in-theory (enable acl2::divides))))
+           :in-theory (enable dm::divides))))

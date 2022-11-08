@@ -1,4 +1,4 @@
-(in-package "ACL2")
+(in-package "DM")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -778,7 +778,7 @@
                 (natp q))
            (equal (mod (* (expt (mod (* b b) n) q) (mod (* r b) n)) n)
                   (mod (* (expt (mod (* b b) n) q) r b) n)))
-  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a (* r b)) (b (expt (mod (* b b) n) q)))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a (* r b)) (b (expt (mod (* b b) n) q)) (n n))))))
 
 (local-defthmd emm-6
   (implies (and (natp n)
@@ -788,7 +788,7 @@
                 (natp q))
            (equal (mod (* (expt (mod (* b b) n) q) r b) n)
                   (mod (* (mod (expt (mod (* b b) n) q) n) r b) n)))
-  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a (expt (mod (* b b) n) q)) (b (* r b)))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a (expt (mod (* b b) n) q)) (b (* r b)) (n n))))))
 
 (local-defthmd emm-7
   (implies (and (natp n)
@@ -808,7 +808,7 @@
                 (natp q))
            (equal (mod (* (mod (expt b (* 2 q)) n) r b) n)
                   (mod (* (expt b (* 2 q)) r b) n)))
-  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a (expt b (* 2 q))) (b (* r b)))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a (expt b (* 2 q))) (b (* r b)) (n n))))))
 
 (local-defthmd emm-9
   (implies (and (natp n)

@@ -26,7 +26,7 @@
   (implies (and (r1cs-valuationp valuation prime)
                 (valuation-bindsp valuation var1)
                 (valuation-bindsp valuation var2)
-                (acl2::primep prime))
+                (dm::primep prime))
            (equal (r1cs-constraint-holdsp (make-equality-constraint var1 var2) valuation prime)
                   (equal (lookup-equal var1 valuation)
                          (lookup-equal var2 valuation))))

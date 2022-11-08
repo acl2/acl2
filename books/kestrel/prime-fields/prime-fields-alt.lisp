@@ -20,7 +20,7 @@
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/mod"))
 
-(in-theory (disable (:e acl2::primep)))
+(in-theory (disable (:e dm::primep)))
 
 ;;;
 ;;; prime
@@ -30,16 +30,16 @@
 (encapsulate (((prime) => *))
   (local (defun prime () 3))
   (defthm primep-of-prime
-    (acl2::primep (prime))
-    :hints (("Goal" :in-theory (enable acl2::primep)))))
+    (dm::primep (prime))
+    :hints (("Goal" :in-theory (enable dm::primep)))))
 
 (defthm primep-forward-to-posp
-  (implies (acl2::primep x)
+  (implies (dm::primep x)
            (posp x))
   :rule-classes :forward-chaining)
 
 (defthm primep-forward-to-bound
-  (implies (acl2::primep x)
+  (implies (dm::primep x)
            (<= 2 x))
   :rule-classes :forward-chaining)
 
@@ -526,7 +526,7 @@
 ;move?
 (defthm divides-of-prime-means-0
   (implies (fep x)
-           (equal (acl2::divides (prime) x)
+           (equal (dm::divides (prime) x)
                   (equal 0 x)))
   :hints (("Goal" :in-theory (enable fep))))
 
@@ -539,13 +539,13 @@
                       (equal y 0))))
   :hints (("Goal"
            :use (primep-of-prime
-                 (:instance acl2::euclid
+                 (:instance dm::euclid
                             (p (prime))
                             (a x)
                             (b y)))
            :in-theory (enable mul
                               acl2::equal-of-0-and-mod
-                              acl2::divides))))
+                              dm::divides))))
 
 ;;Obtain an instance of Fermat's little theorem for the prime (prime).
 (encapsulate
@@ -559,12 +559,12 @@
              (equal (pow a (minus1))
                     1))
     :hints (("Goal" :use (primep-of-prime
-                          (:instance acl2::fermat
+                          (:instance dm::fermat
                                      (m a)
                                      (p (prime))))
              :cases ((equal 0 a))
              :in-theory (e/d (pow-rewrite fep minus1)
-                             (expt (:e expt) (:e acl2::primep)))))))
+                             (expt (:e expt) (:e dm::primep)))))))
 
 (defthm inv-correct
   (implies (and (fep a)

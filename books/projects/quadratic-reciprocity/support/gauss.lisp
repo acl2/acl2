@@ -1,4 +1,4 @@
-(in-package "ACL2")
+(in-package "DM")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -133,7 +133,7 @@
 		  (integerp a))
 	     (equal (mod (+ (* n a) m) n)
 		    (mod m n)))
-  :hints (("Goal" :use (mod-mult))))
+  :hints (("Goal" :use (acl2::mod-mult))))
 
 (defthm times-list-reflection-mod-prods
     (implies (and (not (zp p))
@@ -196,7 +196,7 @@
 			(:instance not-divides-p-fact (n (/ (1- p) 2)))
 			(:instance mod-times-prime
 				   (a (- (fact (/ (1- p) 2)))) (b (expt m (/ (1- p) 2))) (c -1))
-			(:instance mod-mult (m -1) (a 1) (n p))
+			(:instance acl2::mod-mult (m -1) (a 1) (n p))
 			(:instance divides-product (x p) (y (- (fact (/ (1- p) 2)))) (z -1))
 			(:instance rtl::mod-times-mod
 				   (a (times-list (mod-prods (/ (1- p) 2) m p)))

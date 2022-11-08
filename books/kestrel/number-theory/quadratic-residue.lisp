@@ -38,20 +38,20 @@
     "@('p') must be an odd prime.<br/>
      @('0') is considered to have a square root."))
   (declare (xargs :guard (and (natp a)
-                              (primep p)
+                              (dm::primep p)
                               (not (equal p 2))
                               (< a p))))
-  (and (primep p)
+  (and (dm::primep p)
        (or (= a 0)
            (equal (acl2::mod-expt-fast a (/ (- p 1) 2) p)
                   1))))
 
-;; acl2::residue considers 0 not to be a quadratic residue,
+;; dm::residue considers 0 not to be a quadratic residue,
 ;; but 0*0 = 0 so we consider it a square root.
 ;; This theorem helps prove things with case splits.
 ;;
 (defthm has-square-root-of-0?
-  (implies (primep p)
+  (implies (dm::primep p)
            (has-square-root? 0 p))
   :hints (("Goal" :in-theory (enable has-square-root?))))
 
@@ -70,7 +70,7 @@
 ;; (Note: this is no longer used here, but someone might want it.)
 
 (defthmd mod-expt-fast-instance-meaning
-  (implies (and (primep p)
+  (implies (and (dm::primep p)
                 (natp m) (< m p))
            (equal (acl2::mod-expt-fast m (/ (- p 1) 2) p)
                   (mod (expt m (/ (1- p) 2)) p)))
@@ -78,29 +78,29 @@
 
 
 ;; ----------------
-;; 2. prove that (not (has-square-root? m p)) implies (not (acl2::residue m p))
+;; 2. prove that (not (has-square-root? m p)) implies (not (dm::residue m p))
 ;; See acl2::euler-criterion
 
 (defthmd residue-meaning
-  (implies (and (primep p)
+  (implies (and (dm::primep p)
                 (not (equal p 2))
                 (natp m) (< m p)
-                (not (equal 0 m)) ; This is needed because acl2::residue
+                (not (equal 0 m)) ; This is needed because dm::residue
                                   ; returns false for m=0.
                 )
-           (equal (acl2::residue m p)
+           (equal (dm::residue m p)
                   (has-square-root? m p)))
-  :hints (("Goal" :in-theory (enable has-square-root? acl2::mod-expt-fast acl2::residue)
+  :hints (("Goal" :in-theory (enable has-square-root? acl2::mod-expt-fast dm::residue)
                   :use ((:instance acl2::euler-criterion-2a (acl2::p p) (acl2::m m))
                         (:instance acl2::euler-criterion-2b (acl2::p p) (acl2::m m))))))
 
 (defthmd residue-meaning-backwards
-  (implies (and (primep p)
+  (implies (and (dm::primep p)
                 (not (equal p 2))
                 (natp m) (< m p)
                 (not (equal 0 m)))
            (equal (has-square-root? m p)
-                  (acl2::residue m p)))
+                  (dm::residue m p)))
   :hints (("Goal" :in-theory (enable residue-meaning))))
 
 (theory-invariant (incompatible (:rewrite residue-meaning) (:rewrite residue-meaning-backwards)))
@@ -116,13 +116,13 @@
   (implies (and (not (has-square-root? x p))
                 (not (equal p 2))
                 (natp y) (< y p)
-                (primep p))
+                (dm::primep p))
            (not (equal x (mod (* y y) p)))
            )
   :hints (("Goal" :in-theory (e/d (residue-meaning-backwards)
                                   (residue-meaning has-square-root?))
                   :cases ((equal x 0))
-                  :use ((:instance acl2::not-res-no-root
+                  :use ((:instance dm::not-res-no-root
                                    (acl2::p p) (acl2::m x) (acl2::j y)))))
   )
 
@@ -130,7 +130,7 @@
 (defthm has-square-root?-suff
   (implies (and (equal x (mod (* y y) p))
                 (integerp y)
-                (primep p)
+                (dm::primep p)
                 (not (equal p 2)))
            (has-square-root? x p))
   :hints (("Goal" :use (:instance no-square-root-forall (y (mod y p))))))

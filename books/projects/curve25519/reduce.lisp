@@ -1,4 +1,4 @@
-(in-package "ACL2")
+(in-package "DM")
 
 (include-book "projects/shnf/top" :dir :system)
 

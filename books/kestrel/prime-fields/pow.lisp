@@ -161,10 +161,10 @@
   (defthm my-fermat-little
     (implies (and (fep a p)
                   (not (equal 0 a))
-                  (acl2::primep p))
+                  (dm::primep p))
              (equal (pow a (minus1 p) p)
                     1))
-    :hints (("Goal" :use ((:instance acl2::fermat
+    :hints (("Goal" :use ((:instance dm::fermat
                                      (m a)
                                      (p p)))
              :cases ((equal 0 a))

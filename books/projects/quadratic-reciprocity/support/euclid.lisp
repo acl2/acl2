@@ -1,4 +1,4 @@
-(in-package "ACL2")
+(in-package "DM")
 
 ;; This book contains proofs of two theorems of Euclid:
 
@@ -7,6 +7,7 @@
 ;;   (2) If p is a prime divisor of a*b, then p divides either a or b.
 
 (include-book "std/util/defrule" :dir :system)
+(include-book "../portcullis")
 
 (include-book "rtl/rel11/support/basic" :dir :system) ;; Properties of fl and mod
 (include-book "rtl/rel11/support/util" :dir :system)  ;; Utility macros

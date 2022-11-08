@@ -185,9 +185,9 @@
                    (integerp y)
                    (not (equal y 0))
                    (integerp (/ x y)))
-              (divides y x))
+              (dm::divides y x))
      :hints (("goal"
-              :in-theory (enable divides)
+              :in-theory (enable dm::divides)
               ))))
 
   (local
@@ -195,10 +195,10 @@
      (implies (and (integerp x)
                    (integerp y)
                    (not (equal y 0))
-                   (divides y x))
+                   (dm::divides y x))
               (integerp (/ x y)))
      :hints (("goal"
-              :in-theory (enable divides)
+              :in-theory (enable dm::divides)
               ))))
 
   (local
@@ -209,8 +209,8 @@
               (integerp (* 1/3 (expt 2 (+ -1 x)))))
      :hints (("goal"
               :use ((:instance integerp=>divides (x (expt 2 x)) (y 3))
-                    (:instance euclid (p 3) (a 2) (b (expt 2 (+ -1 x)))))
-              :in-theory (enable primep least-divisor divides)
+                    (:instance dm::euclid (p 3) (a 2) (b (expt 2 (+ -1 x)))))
+              :in-theory (enable dm::primep dm::least-divisor dm::divides)
               ))))
 
   (defthmd mod-2-x>0-sub1/3
@@ -233,8 +233,8 @@
               (integerp (* 1/2 (expt 3 (+ -1 y)))))
      :hints (("goal"
               :use ((:instance integerp=>divides (x (expt 3 y)) (y 2))
-                    (:instance euclid (p 2) (a 3) (b (expt 3 (+ -1 y)))))
-              :in-theory (enable primep least-divisor divides)
+                    (:instance dm::euclid (p 2) (a 3) (b (expt 3 (+ -1 y)))))
+              :in-theory (enable dm::primep dm::least-divisor dm::divides)
               ))))
 
   (defthmd mod-3-y>0-sub1/3

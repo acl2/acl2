@@ -1,4 +1,4 @@
-(in-package "ACL2")
+(in-package "DM")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -199,7 +199,7 @@
 		  (equal (mod (* (root2 m p) (root2 m p)) p) (mod m p))))
   :rule-classes ()
   :hints (("Goal" :use (res-root1
-			(:instance mod-mult
+			(:instance acl2::mod-mult
 				   (m (* (root1 m p) (root1 m p)))
 				   (a (- p (* 2 (root1 m p))))
 				   (n p))))))
@@ -211,7 +211,7 @@
 	     (equal (mod (* (root1 m p) (root2 m p)) p)
 		    (mod (- m) p)))
   :hints (("Goal" :use (res-root1
-			(:instance mod-mult (n p) (m (- (* (root1 m p) (root1 m p)))) (a (root1 m p)))
+			(:instance acl2::mod-mult (n p) (m (- (* (root1 m p) (root1 m p)))) (a (root1 m p)))
 			(:instance rtl::mod-mod-times (a (- (root1 m p))) (b (root1 m p)) (n p))
 			(:instance rtl::mod-times-mod (a (* (root1 m p) (root1 m p))) (b m) (c -1) (n p))))))
 
@@ -252,7 +252,7 @@
 		 (= j (- p r))))
   :rule-classes ()
   :hints (("Goal" :use (only-2-roots-lemma-1
-			(:instance mod-mult (n p) (m (- r)) (a 1))))))
+			(:instance acl2::mod-mult (n p) (m (- r)) (a 1))))))
 
 (defthm only-2-roots
     (implies (and (primep p)
@@ -474,10 +474,10 @@
 		  (= (mod b n) (mod m n)))
 	     (= (mod (* tl b) n) (mod (* s (expt m (1+ l))) n)))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a tl))
-			(:instance rtl::mod-mod-times (a (* s (expt m l))))
-			(:instance rtl::mod-mod-times (a b) (b (* s (expt m l))))
-			(:instance rtl::mod-mod-times (a m) (b (* s (expt m l))))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a tl) (b b) (n n))
+			(:instance rtl::mod-mod-times (a (* s (expt m l))) (b b) (n n))
+			(:instance rtl::mod-mod-times (a b) (b (* s (expt m l))) (n n))
+			(:instance rtl::mod-mod-times (a m) (b (* s (expt m l))) (n n))))))
 
 (defthm times-list-associates-lemma-2
     (implies (and (primep p)
@@ -586,7 +586,7 @@
 (defthm mod-minus-1
     (implies (not (zp n))
 	     (equal (mod -1 n) (- n 1)))
-  :hints (("Goal" :use ((:instance mod-mult (m -1) (a 1))))))
+  :hints (("Goal" :use ((:instance acl2::mod-mult (m -1) (a 1))))))
 
 (defthm wilson
   (implies (primep p)
