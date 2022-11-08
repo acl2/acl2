@@ -2355,7 +2355,12 @@
      and discarding the final one (it served its pupose).")
    (xdoc::p
     "We also ensure that there is at leaast one external declaration,
-     according to the grammatical requirement in [C:6.9/1]."))
+     according to the grammatical requirement in [C:6.9/1].")
+   (xdoc::p
+    "We also check that the external objects and the functions
+     have no overlap in their names (identifiers).
+     These are all ordinary identifiers [C:6.2.3/1],
+     and therefore must be distinct in the same (file) scope."))
   (b* (((transunit tunit) tunit)
        ((unless (consp tunit.declons))
         (error (list :transunit-empty)))
@@ -2365,7 +2370,13 @@
        (funtab+vartab+tagenv
         (check-ext-declon-list tunit.declons funtab vartab tagenv))
        ((when (errorp funtab+vartab+tagenv))
-        (error (list :transunit-error funtab+vartab+tagenv))))
+        (error (list :transunit-error funtab+vartab+tagenv)))
+       (funtab (funtab+vartab+tagenv->funs funtab+vartab+tagenv))
+       (vartab (funtab+vartab+tagenv->vars funtab+vartab+tagenv))
+       (overlap (set::intersect (omap::keys funtab)
+                                (omap::keys (car vartab))))
+       ((unless (set::empty overlap))
+        (error (list :transunit-fun-obj-overlap overlap))))
     :wellformed)
   :hooks (:fix))
 
