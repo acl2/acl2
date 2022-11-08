@@ -20,4 +20,10 @@
          help::advice-fn
          help::advice
          advice ; synonym in ACL2 package
+         help::thm-advice-fn
+         help::thm-advice
+         thm-advice ; synonym in ACL2 package
+         help::defthm-advice-fn
+         help::defthm-advice
+         defthm-advice ; synonym in ACL2 package
          ))

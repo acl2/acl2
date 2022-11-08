@@ -210,6 +210,9 @@
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
 
+(defconst *extra-rec-sources*
+  '(:enable :history))
+
 (defund rec-modelp (x)
   (declare (xargs :guard t))
   (or (stringp x) ; raw string to pass in the HTTP POST data
@@ -292,6 +295,25 @@
 (defund rec-typep (type)
   (declare (xargs :guard t))
   (member-eq type *all-rec-types*))
+
+(defthm rec-typep-forward-to-symbolp
+  (implies (rec-typep type)
+           (symbolp type))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable rec-typep member-equal))))
+
+(defund rec-type-listp (types)
+  (declare (xargs :guard t))
+  (if (not (consp types))
+      (null types)
+    (and (rec-typep (first types))
+         (rec-type-listp (rest types)))))
+
+(defthm rec-type-listp-forward-to-symbol-listp
+  (implies (rec-type-listp types)
+           (symbol-listp types))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable rec-type-listp))))
 
 (defund include-book-formp (form)
   (declare (xargs :guard t))
@@ -1714,7 +1736,7 @@
                               (posp num))))
   (if (endp names)
       nil
-    (cons (make-rec (concatenate 'string "E" (acl2::nat-to-string num))
+    (cons (make-rec (concatenate 'string "enable" (acl2::nat-to-string num))
                     :add-enable-hint
                     (first names) ; the name to enable
                     0             ; confidence percentage (TODO: allow unknown)
@@ -1761,15 +1783,15 @@
 (mutual-recursion
  ;; Look for hints in theorems in the history
  ;; Returns a list of recs.
- (defun make-recs-from-event (event num seen-recs)
+ (defun make-recs-from-history-event (event num seen-recs)
    (if (not (consp event))
-       (er hard? 'make-recs-from-event "Unexpected command (not a cons!): ~x0." event)
+       (er hard? 'make-recs-from-history-event "Unexpected command (not a cons!): ~x0." event)
      (if (eq 'local (acl2::ffn-symb event)) ; (local e1)
-         (make-recs-from-event (acl2::farg1 event) num seen-recs)
+         (make-recs-from-history-event (acl2::farg1 event) num seen-recs)
        (if (eq 'encapsulate (acl2::ffn-symb event)) ; (encapsulate <sigs> e1 e2 ...)
-           (make-recs-from-events (rest (acl2::fargs event)) num seen-recs)
+           (make-recs-from-history-events (rest (acl2::fargs event)) num seen-recs)
          (if (eq 'progn (acl2::ffn-symb event)) ; (progn e1 e2 ...)
-             (make-recs-from-events (acl2::fargs event) num seen-recs)
+             (make-recs-from-history-events (acl2::fargs event) num seen-recs)
            (and ;; todo: what else can we harvest hints from?
                 (member-eq (acl2::ffn-symb event) '(defthm defthmd))
                 (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
@@ -1778,20 +1800,20 @@
                          (and (not (rec-presentp :exact-hints hints seen-recs)) ; todo: also look for equivalent recs?
                               ;; make a new rec:
                               (list
-                               (make-rec (concatenate 'string "H" (acl2::nat-to-string num))
+                               (make-rec (concatenate 'string "history" (acl2::nat-to-string num))
                                          :exact-hints ; new kind of rec, to replace all hints (todo: if the rec is expressible as something simpler, use that)
                                          (cadr res)
                                          0
                                          nil))))))))))))
 
- (defun make-recs-from-events (events num acc)
+ (defun make-recs-from-history-events (events num acc)
    (if (endp events)
        (reverse acc)
      (let* ((event (first events))
-            (recs (make-recs-from-event event num acc))
+            (recs (make-recs-from-history-event event num acc))
             (acc (append recs acc))
             (num (+ (len recs) num)))
-       (make-recs-from-events (rest events) num acc)))))
+       (make-recs-from-history-events (rest events) num acc)))))
 
 ;; Returns (mv erp val state).
 ;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
@@ -1800,7 +1822,7 @@
                   :stobjs state))
   (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state)) ; todo: how to get events, not commands (e.g., get what make-events expanded to)?
        ((when erp) (mv erp nil state)))
-    (mv nil (make-recs-from-events events 1 nil) state)))
+    (mv nil (make-recs-from-history-events events 1 nil) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2097,6 +2119,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund remove-disallowed-recs (recs disallowed-rec-types acc)
+  (declare (xargs :guard (and (recommendation-listp recs)
+                              (rec-type-listp disallowed-rec-types)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
+  (if (endp recs)
+      (reverse acc)
+    (let* ((rec (first recs))
+           (type (nth 1 rec)))
+      (if (member-eq type disallowed-rec-types)
+          ;; Drop the rec:
+          (remove-disallowed-recs (rest recs) disallowed-rec-types acc)
+        ;; Keep the rec:
+        (remove-disallowed-recs (rest recs) disallowed-rec-types (cons rec acc))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp successp best-rec state).
 (defun get-and-try-advice-for-checkpoints (checkpoint-clauses
                                            theorem-name
@@ -2108,6 +2147,8 @@
                                            server-url
                                            debug
                                            step-limit
+                                           disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
+                                           disallowed-rec-sources
                                            max-wins
                                            model
                                            state)
@@ -2126,13 +2167,21 @@
                               (or ;; (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
+                              (rec-type-listp disallowed-rec-types)
+                              (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
                               (or (eq :all model)
+                                  (eq :none model)
                                   (rec-modelp model)))
                   :stobjs state
                   :mode :program))
   (b* ((wrld (w state))
        ;; Get server info:
-       ((mv erp server-url state) (if server-url (mv nil server-url state) (getenv$ "ACL2_ADVICE_SERVER" state)))
+       ((mv erp server-url state)
+        (if (eq :none model)
+            (mv nil "NONE" state)
+          (if server-url
+              (mv nil server-url state)
+            (getenv$ "ACL2_ADVICE_SERVER" state))))
        ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil nil state))
        ((when (not (stringp server-url)))
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
@@ -2140,7 +2189,9 @@
        ;; Elaborate options:
        (models (if (eq model :all)
                    '(:calpoly :leidos)
-                 (list model)))
+                 (if (eq model :none)
+                     nil
+                   (list model))))
        ;; Get the recommendations:
        ((mv erp ml-recommendations state)
         (get-recs-from-models models n checkpoint-clauses server-url debug print nil state))
@@ -2148,15 +2199,26 @@
        ;; Sort the whole list by confidence (hope the numbers are comparable):
        (ml-recommendations (merge-sort-recs-by-confidence ml-recommendations))
        ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
-       (enable-recommendations (make-enable-recs theorem-body wrld))
+       (enable-recommendations (if (member-equal :enable disallowed-rec-sources)
+                                   nil
+                                 (make-enable-recs theorem-body wrld)))
        ;; Make recs try to hints given to recent theorems:
-       ((mv erp recs-from-history state) (make-recs-from-history state))
+       ((mv erp recs-from-history state) (if (member-equal :history disallowed-rec-sources)
+                                             (mv nil nil state)
+                                           (make-recs-from-history state)))
        ((when erp) (mv erp nil nil state))
        ;; todo: remove duplicate recs from multiple sources:
        ;; TODO: Can any of these 3 lists contain dups?
        (recommendations (merge-recs-into-recs enable-recommendations
                                               (merge-recs-into-recs recs-from-history
                                                                     ml-recommendations)))
+       ;; Remove any recs whose types have been disallowed:
+       (rec-count-before-removal (len recommendations))
+       (recommendations (remove-disallowed-recs recommendations disallowed-rec-types nil))
+       (rec-count-after-removal (len recommendations))
+       (- (and (< rec-count-after-removal rec-count-before-removal)
+               (acl2::print-level-at-least-tp print)
+               (cw "NOTE: Removed ~x0 recommendations of disallowed tyes." (- rec-count-before-removal rec-count-after-removal))))
        ;; (num-recs (len recommendations))
        ;; Print the recommendations (for now):
        (- (and print (cw "~%RECOMMENDATIONS TO TRY:~%")))
@@ -2214,6 +2276,8 @@
                                        server-url
                                        debug
                                        step-limit
+                                       disallowed-rec-types
+                                       disallowed-rec-sources
                                        max-wins
                                        model
                                        suppress-trivial-warningp
@@ -2229,10 +2293,13 @@
                               (booleanp debug)
                               (or (null step-limit)
                                   (natp step-limit))
+                              (rec-type-listp disallowed-rec-types)
+                              (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
                               (or ;; (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
                               (or (eq :all model)
+                                  (eq :none model)
                                   (rec-modelp model))
                               (booleanp suppress-trivial-warningp))
                   :stobjs state
@@ -2283,6 +2350,8 @@
                                         server-url
                                         debug
                                         step-limit
+                                        disallowed-rec-types
+                                        disallowed-rec-sources
                                         max-wins
                                         model
                                         state)))
@@ -2298,6 +2367,8 @@
                          server-url
                          debug
                          step-limit
+                         disallowed-rec-types
+                         disallowed-rec-sources
                          max-wins
                          model
                          state)
@@ -2314,10 +2385,13 @@
                               (or (eq :auto step-limit) ; means use *step-limit*
                                   (eq nil step-limit) ; means no limit
                                   (natp step-limit))
+                              (rec-type-listp disallowed-rec-types)
+                              (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
                               (or (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
                               (or (eq :all model)
+                                  (eq :none model)
                                   (rec-modelp model)))
                   :stobjs state
                   :mode :program))
@@ -2336,6 +2410,8 @@
                                         server-url
                                         debug
                                         step-limit
+                                        disallowed-rec-types
+                                        disallowed-rec-sources
                                         max-wins
                                         model
                                         nil
@@ -2362,12 +2438,14 @@
                          (server-url 'nil)
                          (debug 'nil)
                          (step-limit ':auto)
+                         (disallowed-rec-types 'nil)
+                         (disallowed-rec-sources 'nil)
                          (max-wins ':auto)
                          (model ':all)
                          (rule-classes '(:rewrite))
                          )
   `(acl2::make-event-quiet
-    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,print ,server-url ,debug ,step-limit ,max-wins ,model state)))
+    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,model state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::defthm-advice (&rest rest) `(defthm-advice ,@rest))
@@ -2383,6 +2461,8 @@
                       server-url
                       debug
                       step-limit
+                      disallowed-rec-types
+                      disallowed-rec-sources
                       max-wins
                       model
                       state)
@@ -2397,10 +2477,13 @@
                           (or (eq :auto step-limit)   ; means use *step-limit*
                               (eq nil step-limit)     ; means no limit
                               (natp step-limit))
+                          (rec-type-listp disallowed-rec-types)
+                          (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
                           (or (eq :auto max-wins)
                               (null max-wins)
                               (natp max-wins))
                           (or (eq :all model)
+                              (eq :none model)
                               (rec-modelp model)))
                   :stobjs state
                   :mode :program))
@@ -2419,6 +2502,8 @@
                                         server-url
                                         debug
                                         step-limit
+                                        disallowed-rec-types
+                                        disallowed-rec-sources
                                         max-wins
                                         model
                                         nil
@@ -2437,16 +2522,18 @@
                       (otf-flg 'nil)
                       ;; options for the advice:
                       (n '10)
-                      (print 'nil)
+                      (print 't)
                       (server-url 'nil)
                       (debug 'nil)
                       (step-limit ':auto)
+                      (disallowed-rec-types 'nil)
+                      (disallowed-rec-sources 'nil)
                       (max-wins ':auto)
                       (model ':all)
                       ;; no rule-classes
                       )
   `(acl2::make-event-quiet
-    (thm-advice-fn ',body ',hints ,otf-flg ,n ,print ,server-url ,debug ,step-limit ,max-wins ,model state)))
+    (thm-advice-fn ',body ',hints ,otf-flg ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,model state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::thm-advice (&rest rest) `(thm-advice ,@rest))
@@ -2462,6 +2549,8 @@
                   server-url
                   debug
                   step-limit
+                  disallowed-rec-types
+                  disallowed-rec-sources
                   max-wins
                   model
                   state)
@@ -2475,10 +2564,13 @@
                               (or (eq :auto step-limit)
                                   (eq nil step-limit)
                                   (natp step-limit))
+                              (rec-type-listp disallowed-rec-types)
+                              (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
                               (or (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
                               (or (eq :all model)
+                                  (eq :none model)
                                   (rec-modelp model)))
                   :stobjs state
                   :mode :program ; because we untranslate (for now)
@@ -2533,6 +2625,8 @@
                                             server-url
                                             debug
                                             step-limit
+                                            disallowed-rec-types
+                                            disallowed-rec-sources
                                             max-wins
                                             model
                                             state))
@@ -2569,8 +2663,8 @@
         '(value-triple :invisible) state)))
 
 ;; Generate advice for the most recent failed theorem.
-(defmacro advice (&key (n '10) (print 't) (server-url 'nil) (debug 'nil) (step-limit ':auto) (max-wins ':auto) (model ':all))
-  `(acl2::make-event-quiet (advice-fn ,n ,print ,server-url ,debug ,step-limit ,max-wins ,model state)))
+(defmacro advice (&key (n '10) (print 't) (server-url 'nil) (debug 'nil) (step-limit ':auto) (disallowed-rec-types 'nil) (disallowed-rec-sources 'nil) (max-wins ':auto) (model ':all))
+  `(acl2::make-event-quiet (advice-fn ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,model state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::advice (&rest rest) `(advice ,@rest))
