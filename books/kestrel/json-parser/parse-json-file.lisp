@@ -45,3 +45,21 @@
   (b* (((mv erp parsed-value & state) ; ignore the chars
         (parse-file-as-json-aux filename state)))
     (mv erp parsed-value state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp event state).
+(defun defconst-from-json-file-fn (defconst-name filename state)
+  (declare (xargs :guard (and (symbolp defconst-name)
+                              (stringp filename))
+                  :stobjs state))
+  (mv-let (erp parsed-value state)
+    (parse-file-as-json filename state)
+    (if erp
+        (mv erp nil state)
+      (mv nil ; no error
+          `(defconst ,defconst-name ',parsed-value)
+          state))))
+
+(defmacro defconst-from-json-file (defconst-name filename)
+  `(make-event (defconst-from-json-file-fn ',defconst-name ',filename state)))
