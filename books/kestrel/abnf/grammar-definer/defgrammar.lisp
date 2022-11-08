@@ -27,8 +27,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(verify-termination std::split-///)
-
 (defrulel true-listp-of-split-///
   (b* (((mv pre-/// post-///) (std::split-/// ctx x)))
     (implies (true-listp x)
