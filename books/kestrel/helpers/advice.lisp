@@ -1733,7 +1733,7 @@
                               (posp num))))
   (if (endp names)
       nil
-    (cons (make-rec (concatenate 'string "E" (acl2::nat-to-string num))
+    (cons (make-rec (concatenate 'string "enable" (acl2::nat-to-string num))
                     :add-enable-hint
                     (first names) ; the name to enable
                     0             ; confidence percentage (TODO: allow unknown)
@@ -1780,15 +1780,15 @@
 (mutual-recursion
  ;; Look for hints in theorems in the history
  ;; Returns a list of recs.
- (defun make-recs-from-event (event num seen-recs)
+ (defun make-recs-from-history-event (event num seen-recs)
    (if (not (consp event))
-       (er hard? 'make-recs-from-event "Unexpected command (not a cons!): ~x0." event)
+       (er hard? 'make-recs-from-history-event "Unexpected command (not a cons!): ~x0." event)
      (if (eq 'local (acl2::ffn-symb event)) ; (local e1)
-         (make-recs-from-event (acl2::farg1 event) num seen-recs)
+         (make-recs-from-history-event (acl2::farg1 event) num seen-recs)
        (if (eq 'encapsulate (acl2::ffn-symb event)) ; (encapsulate <sigs> e1 e2 ...)
-           (make-recs-from-events (rest (acl2::fargs event)) num seen-recs)
+           (make-recs-from-history-events (rest (acl2::fargs event)) num seen-recs)
          (if (eq 'progn (acl2::ffn-symb event)) ; (progn e1 e2 ...)
-             (make-recs-from-events (acl2::fargs event) num seen-recs)
+             (make-recs-from-history-events (acl2::fargs event) num seen-recs)
            (and ;; todo: what else can we harvest hints from?
                 (member-eq (acl2::ffn-symb event) '(defthm defthmd))
                 (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
@@ -1797,20 +1797,20 @@
                          (and (not (rec-presentp :exact-hints hints seen-recs)) ; todo: also look for equivalent recs?
                               ;; make a new rec:
                               (list
-                               (make-rec (concatenate 'string "H" (acl2::nat-to-string num))
+                               (make-rec (concatenate 'string "history" (acl2::nat-to-string num))
                                          :exact-hints ; new kind of rec, to replace all hints (todo: if the rec is expressible as something simpler, use that)
                                          (cadr res)
                                          0
                                          nil))))))))))))
 
- (defun make-recs-from-events (events num acc)
+ (defun make-recs-from-history-events (events num acc)
    (if (endp events)
        (reverse acc)
      (let* ((event (first events))
-            (recs (make-recs-from-event event num acc))
+            (recs (make-recs-from-history-event event num acc))
             (acc (append recs acc))
             (num (+ (len recs) num)))
-       (make-recs-from-events (rest events) num acc)))))
+       (make-recs-from-history-events (rest events) num acc)))))
 
 ;; Returns (mv erp val state).
 ;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
@@ -1819,7 +1819,7 @@
                   :stobjs state))
   (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state)) ; todo: how to get events, not commands (e.g., get what make-events expanded to)?
        ((when erp) (mv erp nil state)))
-    (mv nil (make-recs-from-events events 1 nil) state)))
+    (mv nil (make-recs-from-history-events events 1 nil) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
