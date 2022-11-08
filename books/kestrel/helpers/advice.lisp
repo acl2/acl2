@@ -752,6 +752,7 @@
          (object (nth 2 rec))
          (pre-commands (nth 3 rec))
          (english-rec (case type
+                        (:add-by-hint (fms-to-string-one-line ":by ~x0" (acons #\0 object nil)))
                         (:add-cases-hint (fms-to-string-one-line ":cases ~x0" (acons #\0 object nil)))
                         (:add-disable-hint (fms-to-string-one-line "Disable ~x0" (acons #\0 object nil)))
                         (:add-do-not-hint (fms-to-string-one-line ":do-not ~x0" (acons #\0 object nil)))
