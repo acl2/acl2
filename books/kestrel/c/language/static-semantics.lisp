@@ -172,27 +172,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod fun-type
-  :short "Fixtype of function types."
+(fty::defprod fun-sinfo
+  :short "Fixtype of static information about functions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Function types are described in [C:6.2.5/20].
+    "This is the information about functions needed for the static semantics.")
+   (xdoc::p
+    "This static information includes the type of the function.
+     Function types are described in [C:6.2.5/20].
      Eventually these may be integrated into
      a broader formalized notion of C types,
-     but for now we introduce this fixtype here separately,
-     in order to use it in function tables.
-     A function type consists of zero or more input types and an output type."))
+     but for now we use
+     a list of zero or more input types and a single output type."))
   ((inputs type-list)
    (output type))
-  :pred fun-typep)
+  :pred fun-sinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption fun-type-option
-  fun-type
-  :short "Fixtype of optional function types."
-  :pred fun-type-optionp)
+(fty::defoption fun-sinfo-option
+  fun-sinfo
+  :short "Fixtype of optional static information about functions."
+  :pred fun-sinfo-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -203,7 +205,7 @@
    (xdoc::p
     "We associate a function type to the function name, in a finite map."))
   :key-type ident
-  :val-type fun-type
+  :val-type fun-sinfo
   :pred fun-tablep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -213,8 +215,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fun-table-lookup ((fun identp) (funtab fun-tablep))
-  :returns (fun-type fun-type-optionp
-                     :hints (("Goal" :in-theory (enable fun-type-optionp))))
+  :returns (info fun-sinfo-optionp
+                 :hints (("Goal" :in-theory (enable fun-sinfo-optionp))))
   :short "Look up a function in a function table."
   :long
   (xdoc::topstring
@@ -237,19 +239,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fun-table-add-fun ((fun identp) (type fun-typep) (funtab fun-tablep))
+(define fun-table-add-fun ((fun identp) (info fun-sinfop) (funtab fun-tablep))
   :returns (new-funtab fun-table-resultp)
-  :short "Add a function with a function type to a function table."
+  :short "Add static information about a function to a function table."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the table already has a function with that name, it is an error.
      Otherwise, we add the function and return the function table."))
   (b* ((fun (ident-fix fun))
-       (type (fun-type-fix type))
+       (info (fun-sinfo-fix info))
        (funtab (fun-table-fix funtab))
        ((when (omap::in fun funtab)) (error (list :duplicate-fun fun))))
-    (omap::update fun type funtab))
+    (omap::update fun info funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1472,15 +1474,15 @@
        ((when (errorp arg-types))
         (error (list :call-args-error fun args arg-types)))
        (arg-types (apconvert-type-list arg-types))
-       (ftype (fun-table-lookup fun funtab))
-       ((unless ftype) (error (list :fun-not-found fun)))
-       (param-types (fun-type->inputs ftype))
+       (info (fun-table-lookup fun funtab))
+       ((unless info) (error (list :fun-not-found fun)))
+       (param-types (fun-sinfo->inputs info))
        (param-types (apconvert-type-list param-types))
        ((unless (equal param-types arg-types))
         (error (list :call-args-mistype fun args
                      :required param-types
                      :supplied arg-types))))
-    (fun-type->output ftype))
+    (fun-sinfo->output info))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2153,8 +2155,8 @@
        ((mv & in-tynames) (param-declon-list-to-ident+tyname-lists params))
        (in-types (type-name-list-to-type-list in-tynames))
        (in-types (adjust-type-list in-types))
-       (ftype (make-fun-type :inputs in-types :output out-type))
-       (funtab (fun-table-add-fun name ftype funtab))
+       (info (make-fun-sinfo :inputs in-types :output out-type))
+       (funtab (fun-table-add-fun name info funtab))
        ((when (errorp funtab)) (error (list :fundef funtab)))
        (stype (check-block-item-list fundef.body funtab vartab tagenv))
        ((when (errorp stype)) (error (list :fundef-body-error stype)))
