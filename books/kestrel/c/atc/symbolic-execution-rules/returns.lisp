@@ -14,6 +14,9 @@
 (include-book "../integer-operations")
 (include-book "../arrays")
 
+(local (include-book "kestrel/typed-lists-light/true-list-listp" :dir :system))
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -464,6 +467,46 @@
                                                                  itypes)
                (atc-array-read-type-presc-rules-loop-array-types (cdr atypes)
                                                                  itypes)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-array-write-type-prescription-rules*
+  :short "List of type prescription rules for the
+          models of C array write operations."
+  (atc-array-write-type-presc-rules-loop-array-types
+   *nonchar-integer-types**
+   *nonchar-integer-types**)
+
+  :prepwork
+
+  ((define atc-array-write-type-presc-rules-loop-index-types
+     ((atype typep) (itypes type-listp))
+     :guard (and (type-nonchar-integerp atype)
+                 (type-nonchar-integer-listp itypes))
+     :returns (rules true-listp)
+     :parents nil
+     (cond
+      ((endp itypes) nil)
+      (t (b* ((afixtype (integer-type-to-fixtype atype))
+              (ifixtype (integer-type-to-fixtype (car itypes))))
+           (cons
+            (list :t (pack afixtype '-array-write- ifixtype))
+            (atc-array-write-type-presc-rules-loop-index-types
+             atype
+             (cdr itypes)))))))
+
+   (define atc-array-write-type-presc-rules-loop-array-types
+     ((atypes type-listp) (itypes type-listp))
+     :guard (and (type-nonchar-integer-listp atypes)
+                 (type-nonchar-integer-listp itypes))
+     :returns (rules true-listp)
+     :parents nil
+     (cond ((endp atypes) nil)
+           (t (append
+               (atc-array-write-type-presc-rules-loop-index-types (car atypes)
+                                                                  itypes)
+               (atc-array-write-type-presc-rules-loop-array-types (cdr atypes)
+                                                                  itypes)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

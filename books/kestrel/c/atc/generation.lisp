@@ -2736,12 +2736,11 @@
              ((unless (atc-affecting-term-for-let-p val-term gin.prec-fns))
               (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
-                         we encountered a term ~x1, ~
-                         to which a LET variable is bound, ~
-                         that is not wrapped by C::DECLAR or C::ASSIGN, ~
-                         and that is neither an IF or a loop function call. ~
-                         This is disallowed."
-                        gin.fn val-term))
+                         we encountered a LET binding ~
+                         of the variable ~x1 to the term ~x2 ~
+                         that does not have any of the allowed forms. ~
+                         See the user documentation."
+                        gin.fn var val-term))
              ((er & :iferr (irr))
               (atc-ensure-formals-not-lost (list var)
                                            gin.affect
@@ -3180,7 +3179,8 @@
           (mv nil nil)))
        ((unless okp)
         (er-soft+ ctx t (irr)
-                  "The non-recursive branch ~x0 of the function ~x1 ~
+                  "The 'else' branch ~x0 of the function ~x1, ~
+                   which should be the non-recursive branch, ~
                    does not have the required form. ~
                    See the user documentation."
                   else-term gin.fn))
@@ -3559,6 +3559,11 @@
                   *atc-integer-convs-return-rewrite-rules*
                   *atc-array-read-return-rewrite-rules*
                   *atc-array-write-return-rewrite-rules*
+                  *atc-integer-ops-1-type-prescription-rules*
+                  *atc-integer-ops-2-type-prescription-rules*
+                  *atc-integer-convs-type-prescription-rules*
+                  *atc-array-read-type-prescription-rules*
+                  *atc-array-write-type-prescription-rules*
                   *atc-array-length-write-rules*
                   *atc-wrapper-rules*
                   ',(atc-string-taginfo-alist-to-reader-return-thms prec-tags)
@@ -3585,6 +3590,24 @@
                     ullongp-of-ullong-dec-const
                     ullongp-of-ullong-oct-const
                     ullongp-of-ullong-hex-const
+                    (:t sint-dec-const)
+                    (:t sint-oct-const)
+                    (:t sint-hex-const)
+                    (:t uint-dec-const)
+                    (:t uint-oct-const)
+                    (:t uint-hex-const)
+                    (:t slong-dec-const)
+                    (:t slong-oct-const)
+                    (:t slong-hex-const)
+                    (:t ulong-dec-const)
+                    (:t ulong-oct-const)
+                    (:t ulong-hex-const)
+                    (:t sllong-dec-const)
+                    (:t sllong-oct-const)
+                    (:t sllong-hex-const)
+                    (:t ullong-dec-const)
+                    (:t ullong-oct-const)
+                    (:t ullong-hex-const)
                     sintp-of-sint-from-boolean
                     mv-nth-of-cons
                     (:e zp)
@@ -4558,6 +4581,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "We ensure that all the formals affected by the function body
+     have pointer types, as required in the user documentation.
+     This may change if we add support for passing integers by pointer.")
+   (xdoc::p
     "We return local and exported events for the theorems about
      the correctness of the C function definition.")
    (xdoc::p
@@ -4595,6 +4622,14 @@
        (body (ubody+ fn wrld))
        ((er affect :iferr (irr))
         (atc-find-affected fn body typed-formals prec-fns ctx state))
+       ((unless (atc-formal-pointer-listp affect typed-formals))
+        (er-soft+ ctx t (irr)
+                  "At least one of the formals of ~x0 ~
+                   that are affected by its body has a non-pointer type. ~
+                   This is currently disallowed: ~
+                   only pointer variables may be affected ~
+                   by a non-recursive target function."
+                  fn))
        ((er (stmt-gout body) :iferr (irr))
         (atc-gen-stmt body
                       (make-stmt-gin
