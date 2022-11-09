@@ -124,16 +124,16 @@
 ;; positives((p-1)/2).  It follows that these two lists have the same
 ;; sum:
 
-(defthm permutationp-plus-list-lemma
+(defthm perm-plus-list-lemma
   (implies (member x m)
 	   (equal (+ (ifix x) (plus-list (remove1 x m))) (plus-list m)))
   :rule-classes ())
 
-(defthm permutationp-plus-list
-  (implies (permutationp l m)
+(defthm perm-plus-list
+  (implies (perm l m)
 	   (equal (plus-list l) (plus-list m)))
   :rule-classes ()
-  :hints (("Subgoal *1/2" :use ((:instance permutationp-plus-list-lemma (x (car l)))))))
+  :hints (("Subgoal *1/2" :use ((:instance perm-plus-list-lemma (x (car l)))))))
 
 (defthm plus-list-reflections
   (implies (and (primep p)
@@ -143,8 +143,8 @@
 	   (equal (plus-list (positives (/ (1- p) 2)))
 		  (plus-list (reflections (/ (1- p) 2) m p))))
   :rule-classes ()
-  :hints (("Goal" :use (permutationp-reflections
-			(:instance permutationp-plus-list
+  :hints (("Goal" :use (perm-reflections
+			(:instance perm-plus-list
 				   (m (reflections (/ (1- p) 2) m p))
 				   (l (positives (/ (1- p) 2))))))))
 
@@ -171,7 +171,7 @@
 (defun fl-prods (n m p)
   (if (zp n)
       ()
-      (cons (rtl::fl (/ (* m n) p))
+      (cons (fl (/ (* m n) p))
             (fl-prods (1- n) m p))))
 
 (defthm fl-mod-plus-list
@@ -414,16 +414,16 @@
 (local-defthm hack-3
   (implies (and (not (zp p))
 		(rationalp a))
-           (< (* a p) (+ p (* p (rtl::fl a)))))
+           (< (* a p) (+ p (* p (fl a)))))
   :rule-classes ())
 
 (defthm wins1-upper-bnd
     (implies (and (not (zp p))
 		  (natp a))
-	     (<= (wins1 a (mults i p)) (rtl::fl (/ a p))))
+	     (<= (wins1 a (mults i p)) (fl (/ a p))))
   :rule-classes ()
   :hints (("Goal" :use ((:instance hack-3 (a (/ a p)))
-                        (:instance wins1-upper-bnd-lemma (n (1+ (rtl::fl (/ a p)))))))))
+                        (:instance wins1-upper-bnd-lemma (n (1+ (fl (/ a p)))))))))
 
 (defthm monotone-wins1
     (implies (and (integerp m)
@@ -446,7 +446,7 @@
   (implies (and (not (zp p))
                 (not (integerp a))
 		(rationalp a))
-           (> (* a p) (* p (rtl::fl a))))
+           (> (* a p) (* p (fl a))))
   :rule-classes ())
 
 (defthm leq-fl-wins1
@@ -454,13 +454,13 @@
 		(integerp n)
 		(integerp a)
 		(not (divides p a))
-                (<= (rtl::fl (/ a p)) n))
-           (<= (rtl::fl (/ a p)) (wins1 a (mults n p))))
+                (<= (fl (/ a p)) n))
+           (<= (fl (/ a p)) (wins1 a (mults n p))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable divides)
 		  :use ((:instance hack-4 (a (/ a p)))
-                        (:instance monotone-wins1 (m (rtl::fl (/ a p))))
-			(:instance leq-n-wins1 (n (rtl::fl (/ a p))))))))
+                        (:instance monotone-wins1 (m (fl (/ a p))))
+			(:instance leq-n-wins1 (n (fl (/ a p))))))))
 
 (local-defthm hack-5
   (implies (and (rationalp x)
@@ -487,11 +487,11 @@
 		  (not (zp d))
 		  (not (zp b))
 		  (<= (* a b) (* c d)))
-	     (<= (rtl::fl (/ a d)) (rtl::fl (/ c b))))
+	     (<= (fl (/ a d)) (fl (/ c b))))
   :rule-classes ()
   :hints (("Goal" :use (hack-6
                         (:instance rtl::fl-def (x (/ a d)))
-			(:instance rtl::n<=fl-linear (n (rtl::fl (/ a d))) (x (/ c b)))))))
+			(:instance rtl::n<=fl-linear (n (fl (/ a d))) (x (/ c b)))))))
 
 (defthm leq-fl-times
     (implies (and (integerp j)
@@ -501,7 +501,7 @@
 		  (oddp p)
 		  (oddp q)
 		  (<= j (/ (1- p) 2)))
-	     (<= (rtl::fl (/ (* j q) p)) (/ (1- q) 2)))
+	     (<= (fl (/ (* j q) p)) (/ (1- q) 2)))
   :hints (("Goal" :in-theory (enable evenp)
 		  :use ((:instance leq-times-fl (a (* j q)) (b 2) (c q) (d p))))))
 
@@ -514,7 +514,7 @@
 		  (oddp p)
 		  (oddp q)
 		  (<= j (/ (1- p) 2)))
-	     (<= (rtl::fl (/ (* j q) p))
+	     (<= (fl (/ (* j q) p))
 		 (wins1 (* j q) (mults (/ (1- q) 2) p))))
   :hints (("Goal" :in-theory (enable evenp)
                   :use (leq-fl-times
@@ -530,7 +530,7 @@
 		(oddp q)
 		(<= j (/ (1- p) 2)))
            (equal (wins1 (* j q) (mults (+ -1/2 (* 1/2 q)) p))
-                  (rtl::fl (/ (* j q) p))))
+                  (fl (/ (* j q) p))))
   :hints (("Goal" :use (wins1-lower-bnd
 			(:instance wins1-upper-bnd (a (* j q)) (i (/ (1- q) 2)))))))
 

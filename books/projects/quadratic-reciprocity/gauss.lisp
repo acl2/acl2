@@ -75,13 +75,13 @@
 ;; This result allows us to compute the product of the elements of
 ;; reflections((p-1)/2,m,p):
 
-(defthm permutationp-reflections
+(defthm perm-reflections
   (implies (and (primep p)
                 (not (= p 2))
                 (integerp m)
                 (not (divides p m)))
-           (permutationp (positives (/ (1- p) 2))
-                         (reflections (/ (1- p) 2) m p)))
+           (perm (positives (/ (1- p) 2))
+                 (reflections (/ (1- p) 2) m p)))
   :rule-classes ())
 
 (defthm times-list-reflections

@@ -21,14 +21,14 @@
   :long "The proof depends on Euclid's Theorem:"
 
 "We shall construct two lists of integers, each of which is a permutation of the other.
- @(def permutationp)"
+ @(def perm)"
 
 ;; Conflicts with acl2::perm.
 ;; Eric S renamed this
-(defun permutationp (a b)
+(defun perm (a b)
   (if (consp a)
       (if (member (car a) b)
-          (permutationp (cdr a) (remove1 (car a) b))
+          (perm (cdr a) (remove1 (car a) b))
 	())
     (not (consp b))))
 
@@ -51,7 +51,7 @@
 
 "The proof is based on the pigeonhole principle, as stated below.
  @(thm not-member-remove1)
- @(thm permutationp-member)
+ @(thm perm-member)
  @(def distinct-positives)
  @(thm member-positives)
  @(thm pigeonhole-principle)"
@@ -60,8 +60,8 @@
     (implies (not (member x l))
 	     (not (member x (remove1 y l)))))
 
-(defthm permutationp-member
-  (implies (and (permutationp a b)
+(defthm perm-member
+  (implies (and (perm a b)
 		(member x a))
 	   (member x b)))
 
@@ -82,7 +82,7 @@
 
 (defthm pigeonhole-principle
     (implies (distinct-positives l (len l))
-	     (permutationp (positives (len l)) l))
+	     (perm (positives (len l)) l))
   :rule-classes ())
 
 "We must show that @('mod-prods(p-1,m,p)') is a list of length @('p-1') of distinct
@@ -91,7 +91,7 @@
  @(thm mod-distinct)
  @(thm mod-p-bnds)
  @(thm mod-prods-distinct-positives)
- @(thm permutationp-mod-prods)"
+ @(thm perm-mod-prods)"
 
 (defthm len-mod-prods
     (implies (natp n)
@@ -127,17 +127,17 @@
 	     (distinct-positives (mod-prods n m p) (1- p)))
   :rule-classes ())
 
-(defthm permutationp-mod-prods
+(defthm perm-mod-prods
     (implies (and (primep p)
 		  (integerp m)
 		  (not (divides p m)))
-	     (permutationp (positives (1- p))
+	     (perm (positives (1- p))
 		   (mod-prods (1- p) m p)))
   :rule-classes ())
 
 "The product of the members of a list is invariant under permutation:
  @(def times-list)
- @(thm permutationp-times-list)"
+ @(thm perm-times-list)"
 
 (defun times-list (l)
   (if (consp l)
@@ -145,8 +145,8 @@
 	 (times-list (cdr l)))
     1))
 
-(defthm permutationp-times-list
-    (implies (permutationp l1 l2)
+(defthm perm-times-list
+    (implies (perm l1 l2)
 	     (equal (times-list l1)
 		    (times-list l2)))
   :rule-classes ())
@@ -161,7 +161,7 @@
 	 (fact n)))
 
 (defthm times-list-equal-fact
-    (implies (permutationp (positives n) l)
+    (implies (perm (positives n) l)
 	     (equal (times-list l) (fact n))))
 
 (defthm times-list-mod-prods

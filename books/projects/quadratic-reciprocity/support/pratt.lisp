@@ -155,9 +155,9 @@
                   (mod (expt r (mod m (order r p))) p)))
   :hints (("Goal" :in-theory (enable divides)
                   :use (order-1 order-bounds 
-                        (:instance order-divides-1 (m (* (order r p) (rtl::fl (/ m (order r p))))))
+                        (:instance order-divides-1 (m (* (order r p) (fl (/ m (order r p))))))
                         (:instance rtl::mod-def (x m) (y (order r p)))
-                        (:instance rtl::mod-mod-times (n p) (a (expt r (* (order r p) (rtl::fl (/ m (order r p)))))) (b (expt r (mod m (order r p)))))))))
+                        (:instance rtl::mod-mod-times (n p) (a (expt r (* (order r p) (fl (/ m (order r p)))))) (b (expt r (mod m (order r p)))))))))
 
 (local-defthmd order-divides-3
   (implies (and (not (zp p))
@@ -372,12 +372,12 @@
            (equal (len (mod-powers r p n))
                   n)))
 
-(defthmd permutationp-powers
+(defthmd perm-powers
   (implies (and (natp p)
                 (> p 1)
                 (max-order-p r p))
-           (permutationp (positives (1- p))
-                         (mod-powers r p (1- p))))                 
+           (perm (positives (1- p))
+                 (mod-powers r p (1- p))))                 
   :hints (("Goal" :use ((:instance powers-distinct (m (1- p)))
                         (:instance pigeonhole-principle (l (mod-powers r p (1- p))))))))
 
@@ -393,8 +393,8 @@
            (divides q (mod (* a b) p)))
   :hints (("Goal" :use ((:instance rtl::mod-def (x (* a b)) (y p))
                         (:instance divides-product (x q) (y a) (z b))
-                        (:instance divides-product (x q) (y p) (z (- (rtl::fl (/ (* a b) p)))))
-                        (:instance divides-sum (x q) (y (* a b)) (z (- (* p (rtl::fl (/ (* a b) p))))))))))
+                        (:instance divides-product (x q) (y p) (z (- (fl (/ (* a b) p)))))
+                        (:instance divides-sum (x q) (y (* a b)) (z (- (* p (fl (/ (* a b) p))))))))))
 
 (defthmd divides-mod-power
   (implies (and (not (zp p))
@@ -487,7 +487,7 @@
                 (divides x p))
            (equal x 1))
   :rule-classes ()
-  :hints (("Goal" :use (mod-power-must-be-1 permutationp-powers (:instance permutationp-member (a (positives (1- p))) (b (mod-powers r p (1- p))))))))
+  :hints (("Goal" :use (mod-power-must-be-1 perm-powers (:instance perm-member (a (positives (1- p))) (b (mod-powers r p (1- p))))))))
 
 (defthm max-order-p-prime
   (implies (and (not (zp p))
@@ -725,8 +725,8 @@
   (if (zp e)
       r
     (if (zp (mod e 2))
-        (fast-mod-expt-mul (mod (* b b) n) (rtl::fl (/ e 2)) n r)
-      (fast-mod-expt-mul (mod (* b b) n) (rtl::fl (/ e 2)) n (mod (* r b) n)))))
+        (fast-mod-expt-mul (mod (* b b) n) (fl (/ e 2)) n r)
+      (fast-mod-expt-mul (mod (* b b) n) (fl (/ e 2)) n (mod (* r b) n)))))
 
 (defun fast-mod-expt (b e n) (fast-mod-expt-mul b e n 1))
 
@@ -832,12 +832,12 @@
   :hints (("Goal" :induct (fast-mod-expt-mul b e n r))
           ("Subgoal *1/3" :expand ((fast-mod-expt-mul b e n r))
                           :use (fast-mod-expt-mul 
-                                (:instance emm-9 (q (rtl::fl (/ e 2))))
+                                (:instance emm-9 (q (fl (/ e 2))))
                                 (:instance rtl::mod012 (m e))
                                 (:instance rtl::mod-def (x e) (y 2))))
           ("Subgoal *1/2" :expand ((fast-mod-expt-mul b e n r))
                           :use (fast-mod-expt-mul 
-                                (:instance emm-4 (q (rtl::fl (/ e 2))))
+                                (:instance emm-4 (q (fl (/ e 2))))
                                 (:instance rtl::mod012 (m e))
                                 (:instance rtl::mod-def (x e) (y 2))))))
 

@@ -391,19 +391,19 @@
     (implies (and (natp n)
 		  (distinct-positives l n)
 		  (subsetp (positives n) l))
-	     (permutationp (positives n) l))
+	     (perm (positives n) l))
   :rule-classes ()
   :hints (("Goal" :use (pigeonhole-principle
 			len-subsetp-positives
 			len-distinct-positives-upper))))
 
-(defthm permutationp-associates-positives
+(defthm perm-associates-positives
     (implies (and (primep p)
 		  (not (= p 2))
 		  (integerp m)
 		  (not (divides p m)))
-	     (permutationp (positives (1- p))
-                           (associates (1- p) m p)))
+	     (perm (positives (1- p))
+                   (associates (1- p) m p)))
   :rule-classes ()
   :hints (("Goal" :use (distinct-positives-associates
 			(:instance pigeonhole-principle-2
@@ -421,13 +421,13 @@
 	     (equal (times-list (associates (1- p) m p))
 		    (fact (1- p))))
   :rule-classes ()
-  :hints (("Goal" :use (permutationp-associates-positives
-			(:instance permutationp-times-list
+  :hints (("Goal" :use (perm-associates-positives
+			(:instance perm-times-list
 				   (l2 (associates (1- p) m p))
 				   (l1 (positives (1- p))))))))
 
-(defthm permutationp-len
-    (implies (permutationp l1 l2)
+(defthm perm-len
+    (implies (perm l1 l2)
 	     (= (len l1) (len l2)))
   :rule-classes ())
 
@@ -442,8 +442,8 @@
 		  (not (divides p m)))
 	     (equal (len (associates (+ -1 p) m p))
 		    (1- p)))
-  :hints (("Goal" :use (permutationp-associates-positives
-			(:instance permutationp-len
+  :hints (("Goal" :use (perm-associates-positives
+			(:instance perm-len
 				   (l2 (associates (1- p) m p))
 				   (l1 (positives (1- p))))))))
 

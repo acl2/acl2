@@ -102,12 +102,12 @@
 ;; This result allows us to compute the product of the elements of
 ;; reflections((p-1)/2,m,p):
 
-(defthm permutationp-reflections
+(defthm perm-reflections
     (implies (and (primep p)
 		  (not (= p 2))
 		  (integerp m)
 		  (not (divides p m)))
-	     (permutationp (positives (/ (1- p) 2))
+	     (perm (positives (/ (1- p) 2))
                            (reflections (/ (1- p) 2) m p)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance reflections-distinct-positives (n (/ (1- p) 2)))
@@ -120,8 +120,8 @@
 		  (not (divides p m)))
            (equal (times-list (reflections (+ -1/2 (* 1/2 p)) m p))
                   (fact (/ (1- p) 2))))
-  :hints (("Goal" :use (permutationp-reflections
-			(:instance permutationp-times-list
+  :hints (("Goal" :use (perm-reflections
+			(:instance perm-times-list
 				   (l1 (positives (/ (1- p) 2)))
 				   (l2 (reflections (/ (1- p) 2) m p)))))))
 
@@ -241,9 +241,9 @@
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (equal (mu (+ -1/2 (* 1/2 p)) 2 p)
-		    (- (/ (1- p) 2) (rtl::fl (/ (1- p) 4)))))
+		    (- (/ (1- p) 2) (fl (/ (1- p) 4)))))
   :hints (("Goal" :use ((:instance mu-rewrite-lemma-1
-				   (k (rtl::fl (/ (1- p) 4)))
+				   (k (fl (/ (1- p) 4)))
 				   (n (/ (1- p) 2)))))))
 
 ;; Let k = fl(p/8) and m = mod(p,8).  Then p = 8*k + m.  It follows that
@@ -253,14 +253,14 @@
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (equal (mod p 8)
-		    (- p (* 8 (rtl::fl (/ p 8))))))
+		    (- p (* 8 (fl (/ p 8))))))
   :hints (("Goal" :use ((:instance rtl::mod-def (x p) (y 8))))))
 
 (defthm mu-rewrite
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (equal (mu (+ -1/2 (* 1/2 p)) 2 p)
-		    (+ (* 2 (rtl::fl (/ p 8))) (- (/ (1- (mod p 8)) 2) (rtl::fl (/ (1- (mod p 8)) 4))))))
+		    (+ (* 2 (fl (/ p 8))) (- (/ (1- (mod p 8)) 2) (fl (/ (1- (mod p 8)) 4))))))
   :hints (("Goal" :in-theory (enable mu-rewrite-lemma-3))))
 
 ;; The desired result now follows by a simple case analysis:

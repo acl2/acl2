@@ -22,59 +22,59 @@
   (implies (dlistp l)
            (true-listp l)))
 
-;; Sub-Lists:
+;; Sublists:
 
-(defun sub-listp (l m)
+(defun sublistp (l m)
   (if (consp l)
       (and (member-equal (car l) m)
-           (sub-listp (cdr l) m))
+           (sublistp (cdr l) m))
     t))
 
-(defthm member-sub-list
+(defthm member-sublist
   (implies (and (member-equal x l)
-                (sub-listp l m))
+                (sublistp l m))
 	   (member-equal x m)))
 
-(defthm sub-listp-cons
-  (implies (sub-listp l m)
-           (sub-listp l (cons x m))))
+(defthm sublistp-cons
+  (implies (sublistp l m)
+           (sublistp l (cons x m))))
 
-(defthm sub-listp-self
-  (sub-listp l l))
+(defthm sublistp-self
+  (sublistp l l))
 
-(defthm sub-listp-append
-  (implies (and (sub-listp l g)
-                (sub-listp m g))
-	   (sub-listp (append l m) g)))
+(defthm sublistp-append
+  (implies (and (sublistp l g)
+                (sublistp m g))
+	   (sublistp (append l m) g)))
 
-(defthmd sub-listp-<=-len
+(defthmd sublistp-<=-len
   (implies (and (dlistp l)
-		(sub-listp l m))
+		(sublistp l m))
 	   (<= (len l) (len m))))
 
-(defthmd sub-listp-equal-len
+(defthmd sublistp-equal-len
   (implies (and (dlistp l)
                 (dlistp m)
-		(sub-listp l m)
-		(sub-listp m l))
+		(sublistp l m)
+		(sublistp m l))
 	   (equal (len l) (len m))))
 
-(defthmd len-proper-sub-list
-  (implies (and (sub-listp l m)
+(defthmd len-proper-sublist
+  (implies (and (sublistp l m)
                 (dlistp l)
 		(member-equal x m)
 		(not (member-equal x l)))
 	   (< (len l) (len m))))
 
-(defthm sub-listp-remove1
-  (implies (and (sub-listp l m)
+(defthm sublistp-remove1
+  (implies (and (sublistp l m)
                 (not (member x l)))
-	   (sub-listp l (remove1-equal x m))))
+	   (sublistp l (remove1-equal x m))))
 
 ;; remove1-equal:
 
-(defthm remove1-sub-listp
-  (sub-listp (remove1-equal x l) l))
+(defthm remove1-sublistp
+  (sublistp (remove1-equal x l) l))
 
 (defthm dlistp-remove1
   (implies (dlistp l)
@@ -600,16 +600,16 @@
 (defun subgroupp (h g)
   (and (groupp g)
        (groupp h)
-       (sub-listp (elts h) (elts g))
+       (sublistp (elts h) (elts g))
        (not (subgroupp-cex h g))))
 
 (defthm subgroupp-groupp
   (implies (subgroupp h g)
            (and (groupp g) (groupp h))))
 
-(defthm subgroupp-sub-listp
+(defthm subgroupp-sublistp
   (implies (subgroupp h g)
-           (sub-listp (elts h) (elts g))))
+           (sublistp (elts h) (elts g))))
 
 (defthm subgroupp-subsetp
   (implies (and (subgroupp h g)
@@ -627,7 +627,7 @@
 (defthm not-subgroupp-cex
   (implies (and (groupp g)
 		(groupp h)
-		(sub-listp (elts h) (elts g))
+		(sublistp (elts h) (elts g))
 		(not (subgroupp h g)))
            (let* ((cex (subgroupp-cex h g))
                   (x (car cex))
@@ -754,13 +754,13 @@
 ;; be proved, as illustrated in the examples below.
 
 (defmacro defgroup (name args cond elts op inv)
-  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "ACL2"))
-        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "ACL2"))
-	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "ACL2"))
-	(groupp-name (intern$ (concatenate 'string "GROUPP-" (symbol-name name)) "ACL2"))
-	(name-elts (intern$ (concatenate 'string (symbol-name name) "-ELTS") "ACL2"))
-	(name-op-rewrite (intern$ (concatenate 'string (symbol-name name) "-OP-REWRITE") "ACL2"))
-	(name-inv-rewrite (intern$ (concatenate 'string (symbol-name name) "-INV-REWRITE") "ACL2")))
+  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "DM"))
+        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "DM"))
+	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "DM"))
+	(groupp-name (intern$ (concatenate 'string "GROUPP-" (symbol-name name)) "DM"))
+	(name-elts (intern$ (concatenate 'string (symbol-name name) "-ELTS") "DM"))
+	(name-op-rewrite (intern$ (concatenate 'string (symbol-name name) "-OP-REWRITE") "DM"))
+	(name-inv-rewrite (intern$ (concatenate 'string (symbol-name name) "-INV-REWRITE") "DM")))
     `(encapsulate ()
        (set-ignore-ok t)
        (set-irrelevant-formals-ok t)
@@ -828,9 +828,9 @@
 ;; A version of defgroup that defines a family of groups but does not prove anything:
 
 (defmacro defgroup-light (name args elts op)
-  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "ACL2"))
-        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "ACL2"))
-	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "ACL2")))
+  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "DM"))
+        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "DM"))
+	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "DM")))
     `(encapsulate ()
        (defun ,op-name (x y ,@args) ,op)
        (defun ,name-row (x m ,@args)
@@ -1254,8 +1254,8 @@
 (defthm ordp-equal
   (implies (and (ordp x g)
                 (ordp y g)
-		(sub-listp x y)
-		(sub-listp y x))
+		(sublistp x y)
+		(sublistp y x))
 	   (equal x y))
   :rule-classes ())
 
@@ -1289,10 +1289,10 @@
 
 ;; A coset is a list of group elements:
 
-(defthmd sub-listp-lcoset-g
+(defthmd sublistp-lcoset-g
   (implies (and (subgroupp h g)
 		(in x g))
-	   (sub-listp (lcoset x h g) (elts g))))
+	   (sublistp (lcoset x h g) (elts g))))
 
 (defthm member-lcoset-g
   (implies (and (subgroupp h g)
@@ -1353,12 +1353,12 @@
 		(member-equal b (lcoset x h g)))
 	   (member-equal b (lcoset y h g))))
 			
-(defthm sub-listp-lcoset
+(defthm sublistp-lcoset
   (implies (and (subgroupp h g)
 		(in x g)
 		(in y g)
 		(member-equal y (lcoset x h g)))
-	   (sub-listp (lcoset y h g) (lcoset x h g))))
+	   (sublistp (lcoset y h g) (lcoset x h g))))
 	   
 (defthmd equal-lcoset
   (implies (and (subgroupp h g)
@@ -1458,17 +1458,17 @@
   (implies (subgroupp h g)
 	   (dlistp (append-list (lcosets h g)))))
 
-;; elts(g) is a sub-list of (append-list (lcosets h g)):
+;; elts(g) is a sublist of (append-list (lcosets h g)):
 
-(defthm sub-listp-elts-lcosets
+(defthm sublistp-elts-lcosets
   (implies (subgroupp h g)
-	   (sub-listp (elts g) (append-list (lcosets h g)))))
+	   (sublistp (elts g) (append-list (lcosets h g)))))
 
-;; (append-list (lcosets h g)) is a sub-list of (elts g):
+;; (append-list (lcosets h g)) is a sublist of (elts g):
 
-(defthm sub-listp-lcosets-elts
+(defthm sublistp-lcosets-elts
   (implies (subgroupp h g)
-	   (sub-listp (append-list (lcosets h g))
+	   (sublistp (append-list (lcosets h g))
 	             (elts g))))
 
 ;; Thus, the two lists have the same length, and Lagrange's Theorem follows:
@@ -1715,7 +1715,7 @@
 ;; since they are always (op x y g) and (inv x g).  Before calling defsubgroup, the following rewrite
 ;; rule shoud be proved:
 ;;   `(implies ,cond (dlistp ,elts))
-;;   `(implies ,cond (sub-listp ,elts (elts ,(car (last args)))))
+;;   `(implies ,cond (sublistp ,elts (elts ,(car (last args)))))
 ;;   `(implies ,cond (consp ,elts))
 ;;   `(implies ,cond (equal (car ,elts) (e ,(car last args))))
 ;;   `(implies (and .cond (member-equal x ,elts) (member-equal y ,elts))
@@ -1726,15 +1726,15 @@
 
 (defmacro defsubgroup (name args cond elts)
   (let ((g (car (last args)))
-        (non-nil-name (intern$ (concatenate 'string (symbol-name name) "-NON-NIL") "ACL2"))
-        (identity-name (intern$ (concatenate 'string (symbol-name name) "-IDENTITY") "ACL2"))
-        (assoc-name (intern$ (concatenate 'string (symbol-name name) "-ASSOC") "ACL2"))
-        (inverse-name (intern$ (concatenate 'string (symbol-name name) "-INVERSE") "ACL2"))
-        (subgroupp-name (intern$ (concatenate 'string "SUBGROUPP-" (symbol-name name)) "ACL2")))
+        (non-nil-name (intern$ (concatenate 'string (symbol-name name) "-NON-NIL") "DM"))
+        (identity-name (intern$ (concatenate 'string (symbol-name name) "-IDENTITY") "DM"))
+        (assoc-name (intern$ (concatenate 'string (symbol-name name) "-ASSOC") "DM"))
+        (inverse-name (intern$ (concatenate 'string (symbol-name name) "-INVERSE") "DM"))
+        (subgroupp-name (intern$ (concatenate 'string "SUBGROUPP-" (symbol-name name)) "DM")))
     `(encapsulate ()
        (defthm ,non-nil-name
          (implies ,cond (not (member-equal () ,elts)))
-	 :hints (("Goal" :use ((:instance member-sub-list (x ()) (l ,elts) (m (elts ,g)))))))
+	 :hints (("Goal" :use ((:instance member-sublist (x ()) (l ,elts) (m (elts ,g)))))))
        (defthm ,identity-name
          (implies (and ,cond (member-equal x ,elts))
 	          (equal (op (car ,elts) x ,g) x)))
@@ -1771,9 +1771,9 @@
 
 (defund centizer-elts (a g) (centizer-elts-aux a (elts g) g))
 
-(defthm sub-listp-centizer-elts
+(defthm sublistp-centizer-elts
   (implies (and (groupp g) (in a g))
-           (sub-listp (centizer-elts a g) (elts g))))
+           (sublistp (centizer-elts a g) (elts g))))
 
 (defthm dlistp-centizer-elts
   (implies (and (groupp g) (in a g))
@@ -1854,8 +1854,8 @@
 
 (defund cent-elts (g) (cent-elts-aux (elts g) g))
 
-(defthm sub-listp-cent-elts
-  (sub-listp (cent-elts g) (elts g)))
+(defthm sublistp-cent-elts
+  (sublistp (cent-elts g) (elts g)))
 
 (defthm dlistp-cent-elts
   (implies (groupp g)
@@ -2074,9 +2074,9 @@
                 (member-equal x (powers a g)))
 	   (member-equal (inv x g) (powers a g))))
 
-(defthm sub-listp-powers
+(defthm sublistp-powers
   (implies (and (groupp g) (in a g))
-           (sub-listp (powers a g) (elts g))))
+           (sublistp (powers a g) (elts g))))
 
 (defsubgroup cyclic (a g)
   (and (groupp g) (in a g))
@@ -2254,12 +2254,12 @@
 
 ;; If two conjugacy classes intersect, then they are equal:
 
-(defthm sub-listp-conjs
+(defthm sublistp-conjs
   (implies (and (groupp g)
 		(in x g)
 		(in y g)
 		(member-equal y (conjs x g)))
-	   (sub-listp (conjs y g) (conjs x g))))
+	   (sublistp (conjs y g) (conjs x g))))
 	   
 (defthmd equal-conjs
   (implies (and (groupp g)
@@ -2396,22 +2396,22 @@
            (dlistp (append (elts (center g))
 	                   (append-list (conjs-list g))))))
 
-;; The two lists are sub-lists of each other:
+;; The two lists are sublists of each other:
 
-(defthm sub-listp-elts-big-list
+(defthm sublistp-elts-big-list
   (implies (groupp g)
-           (sub-listp (elts g)
+           (sublistp (elts g)
                      (append (elts (center g))
 	                     (append-list (conjs-list g))))))
 
-(defthm sub-listp-conjs-list-elts
+(defthm sublistp-conjs-list-elts
   (implies (groupp g)
-	   (sub-listp (append-list (conjs-list g))
+	   (sublistp (append-list (conjs-list g))
 	             (elts g))))
 
-(defthm sub-listp-big-list-elts
+(defthm sublistp-big-list-elts
   (implies (groupp g)
-	   (sub-listp (append (elts (center g))
+	   (sublistp (append (elts (center g))
 	                     (append-list (conjs-list g)))
 	             (elts g))))
 

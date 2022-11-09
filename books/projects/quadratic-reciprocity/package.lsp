@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "rtl/rel11/portcullis" :dir :system)
+
 (defpkg "DM" (append '(local-defun
                        local-defund
                        local-defthm
@@ -17,5 +19,8 @@
                        local-in-theory
                        defrule
                        defruled
-                       defsection)
+                       defsection
+                       rtl::fl
+                       rtl::cg
+                       rtl::congruent)
                      *acl2-exports*))

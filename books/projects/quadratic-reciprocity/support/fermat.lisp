@@ -13,10 +13,10 @@
 
 ;; Conflicts with acl2::perm.
 ;; Eric S renamed this.
-(defun permutationp (a b)
+(defun perm (a b)
   (if (consp a)
       (if (member (car a) b)
-          (permutationp (cdr a) (remove1 (car a) b))
+          (perm (cdr a) (remove1 (car a) b))
 	())
     (not (consp b))))
 
@@ -41,8 +41,8 @@
     (implies (not (member x l))
 	     (not (member x (remove1 y l)))))
 
-(defthm permutationp-member
-  (implies (and (permutationp a b)
+(defthm perm-member
+  (implies (and (perm a b)
 		(member x a))
 	   (member x b)))
 
@@ -88,7 +88,7 @@
 
 (defthm pigeonhole-principle
     (implies (distinct-positives l (len l))
-	     (permutationp (positives (len l)) l))
+	     (perm (positives (len l)) l))
   :rule-classes ()
   :hints (("Goal" :induct (pigeonhole-induction l))))
 
@@ -162,11 +162,11 @@
   :rule-classes ()
   :hints (("Subgoal *1/5.1" :use ((:instance mod-p-bnds (i n))))))
 
-(defthm permutationp-mod-prods
+(defthm perm-mod-prods
     (implies (and (primep p)
 		  (integerp m)
 		  (not (divides p m)))
-	     (permutationp (positives (1- p))
+	     (perm (positives (1- p))
                            (mod-prods (1- p) m p)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance mod-prods-distinct-positives (n (1- p)))
@@ -187,8 +187,8 @@
 		    (* (ifix x) (times-list (remove1 x l)))))
   :rule-classes ())
 
-(defthm permutationp-times-list
-    (implies (permutationp l1 l2)
+(defthm perm-times-list
+    (implies (perm l1 l2)
 	     (equal (times-list l1)
 		    (times-list l2)))
   :rule-classes ()
@@ -201,9 +201,9 @@
 	 (fact n)))
 
 (defthm times-list-equal-fact
-    (implies (permutationp (positives n) l)
+    (implies (perm (positives n) l)
 	     (equal (times-list l) (fact n)))
-  :hints (("Goal" :use ((:instance permutationp-times-list (l1 (positives n)) (l2 l))))))
+  :hints (("Goal" :use ((:instance perm-times-list (l1 (positives n)) (l2 l))))))
 
 (defthm times-list-mod-prods
     (implies (and (primep p)
@@ -211,7 +211,7 @@
 		  (not (divides p m)))
 	     (equal (times-list (mod-prods (1- p) m p))
 		    (fact (1- p))))
-  :hints (("Goal" :use (permutationp-mod-prods))))
+  :hints (("Goal" :use (perm-mod-prods))))
 
 ;; On the other hand, the product modulo p may be computed as follows.
 
