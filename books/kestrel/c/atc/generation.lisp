@@ -794,7 +794,7 @@
                  at a point where ~
                  a pure expression term returning a C type is expected, ~
                  the term ~x1 is encountered instead, ~
-                 which is not a C epxression term returning a C type; ~
+                 which is not a C expression term returning a C type; ~
                  see the ATC user documentation."
                 gin.fn term))
     :measure (pseudo-term-count term))
