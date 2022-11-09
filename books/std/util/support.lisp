@@ -392,13 +392,16 @@ saying whether the key was bound.  Returns (mv value boundp)."
           (split-/// ctx (cdr x))))
       (mv (cons (car x) pre) post)))
 
-  (defthmd true-listp-of-split-///
-    (b* (((mv pre-/// post-///) (std::split-/// ctx x)))
-      (implies (true-listp x)
-               (and (true-listp pre-///)
-                    (true-listp post-///)))))
+  (defthmd true-listp-of-split-///.pre-///
+    (true-listp (mv-nth 0 (split-/// ctx x))))
+
+  (defthm true-listp-of-split-///.post-///
+    (implies (true-listp x)
+             (true-listp (mv-nth 1 (split-/// ctx x)))))
 
   (in-theory (disable split-///)))
+
+
 
 (defsection ends-with-period-p
   :parents (support)
