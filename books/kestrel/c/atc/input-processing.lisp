@@ -25,10 +25,12 @@
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
+(include-book "kestrel/std/strings/letter-digit-uscore-dash-chars" :dir :system)
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
+(include-book "oslib/catpath" :dir :system)
 (include-book "oslib/dirname" :dir :system :ttags ((:quicklisp) :oslib))
 (include-book "oslib/file-types" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) :oslib))
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
@@ -542,86 +544,95 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-output-file (output-file
-                                 (output-file? booleanp)
-                                 (ctx ctxp)
-                                 state)
+(define atc-process-output-dir (output-dir (ctx ctxp) state)
   :returns (mv erp (nothing null) state)
-  :short "Process the @(':output-file') input."
-  (b* (((unless output-file?)
-        (er-soft+ ctx t nil
-                  "The :OUTPUT-FILE input must be present, ~
-                   but it is absent instead."))
-       ((er &) (ensure-value-is-string$ output-file
-                                        "The :OUTPUT-FILE input"
+  :short "Process the @(':output-dir') input."
+  (b* (((er &) (ensure-value-is-string$ output-dir
+                                        "The :OUTPUT-DIR input"
                                         t
                                         nil))
-       ((mv msg? dirname state) (oslib::dirname output-file))
+       ((mv msg? kind state) (oslib::file-kind output-dir))
        ((when msg?) (er-soft+ ctx t nil
-                              "No directory path can be obtained ~
-                               from the output file path ~x0. ~@1"
-                              output-file msg?))
-       ((er &)
-        (if (equal dirname "")
-            (acl2::value nil)
-          (b* (((mv msg? kind state) (oslib::file-kind dirname))
-               ((when msg?) (er-soft+ ctx t nil
-                                      "The kind of ~
-                                       the output directory path ~x0 ~
-                                       cannot be tested. ~@1"
-                                      dirname msg?))
-               ((unless (eq kind :directory))
-                (er-soft+ ctx t nil
-                          "The output directory path ~x0 ~
-                           is not a directory; it has kind ~x1 instead."
-                          dirname kind)))
-            (acl2::value nil))))
-       ((mv msg? basename state) (oslib::basename output-file))
-       ((when msg?) (er-soft+ ctx t nil
-                              "No file name can be obtained ~
-                               from the output file path ~x0. ~@1"
-                              output-file msg?))
-       ((unless (and (>= (length basename) 2)
-                     (equal (subseq basename
-                                    (- (length basename) 2)
-                                    (length basename))
-                            ".c")))
+                              "The kind of ~
+                               the output directory path ~x0 ~
+                               cannot be tested.  ~
+                               ~@1"
+                              output-dir msg?))
+       ((unless (eq kind :directory))
         (er-soft+ ctx t nil
-                  "The file name ~x0 of the output path ~x1 ~
-                   must have extension '.c', but it does not."
-                  basename output-file))
-       ((mv msg? existsp state) (oslib::path-exists-p output-file))
-       ((when msg?) (er-soft+ ctx t nil
-                              "The existence of the output path ~x0 ~
-                               cannot be tested. ~@1"
-                              output-file msg?))
-       ((when (not existsp)) (acl2::value nil))
-       ((mv msg? kind state) (oslib::file-kind output-file))
-       ((when msg?) (er-soft+ ctx t nil
-                              "The kind of output file path ~x0 ~
-                               cannot be tested. ~@1"
-                              output-file msg?))
-       ((unless (eq kind :regular-file))
-        (er-soft+ ctx t nil
-                  "The output file path ~x0 ~
-                   is not a regular file; it has kind ~x1 instead."
-                  output-file kind)))
+                  "The output directory path ~x0 ~
+                   is not a directory; it has kind ~x1 instead."
+                  output-dir kind)))
     (acl2::value nil))
   :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string)))
   ///
 
-  (defret stringp-when-atc-process-output-file
+  (defret stringp-when-atc-process-output-dir
     (implies (not erp)
-             (stringp output-file))
+             (stringp output-dir))
     :hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
 
-  (in-theory (disable stringp-when-atc-process-output-file))
+  (in-theory (disable stringp-when-atc-process-output-dir)))
 
-  (defret erp-of-atc-process-output-file-when-absent
-    (implies (not output-file?)
-             erp))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (in-theory (disable erp-of-atc-process-output-file-when-absent)))
+(define atc-process-file-name (file-name
+                               (file-name? booleanp)
+                               (output-dir stringp)
+                               (ctx ctxp)
+                               state)
+  :returns (mv erp
+               (file-path stringp)
+               state)
+  :short "Process the @(':file-name') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If successful, return the full path of the file,
+     consisting of the output directory and the extension.")
+   (xdoc::p
+    "We form the full path, and we make sure that
+     either does not exist in the file system
+     or is a path to a file and not a directory."))
+  (b* (((unless file-name?)
+        (er-soft+ ctx t ""
+                  "The :FILE-NAME input must be present, ~
+                   but it is absent instead."))
+       ((er &) (ensure-value-is-string$ file-name
+                                        "The :FILE-NAME input"
+                                        t
+                                        ""))
+       ((when (equal file-name ""))
+        (er-soft+ ctx t ""
+                  "The :FILE-NAME input must not be empty."))
+       ((unless (str::letter/digit/uscore/dash-charlist-p
+                 (str::explode file-name)))
+        (er-soft+ ctx t ""
+                  "The :FILE-NAME input must consists of only ~
+                   ASCII letters, digits, underscores, and dashes, ~
+                   but ~s0 violates this condition."
+                  file-name))
+       (file-path (oslib::catpath output-dir (str::cat file-name ".c")))
+       ((mv msg? existsp state) (oslib::path-exists-p file-path))
+       ((when msg?) (er-soft+ ctx t ""
+                              "The existence of the file path ~x0 ~
+                               cannot be tested.  ~
+                               ~@1"
+                              file-path msg?))
+       ((when (not existsp)) (acl2::value file-path))
+       ((mv msg? kind state) (oslib::file-kind file-path))
+       ((when msg?) (er-soft+ ctx t ""
+                              "The kind of the file path ~x0 ~
+                               cannot be tested.  ~
+                               ~@1"
+                              file-path msg?))
+       ((unless (eq kind :regular-file))
+        (er-soft+ ctx t ""
+                  "The file path ~x0 ~
+                   is not a regular file; it has kind ~x1 instead."
+                  file-name kind)))
+    (acl2::value file-path))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -794,7 +805,8 @@
 
 (defval *atc-allowed-options*
   :short "Keyword options accepted by @(tsee atc)."
-  (list :output-file
+  (list :output-dir
+        :file-name
         :pretty-printing
         :proofs
         :const-name
@@ -809,7 +821,7 @@
   :returns
   (mv erp
       (val (tuple (targets symbol-listp)
-                  (output-file stringp)
+                  (file-path stringp)
                   (pretty-printing pprint-options-p)
                   (proofs booleanp)
                   (prog-const symbolp)
@@ -820,10 +832,9 @@
            :hyp (true-listp args)
            :hints
            (("Goal"
-             :in-theory (enable stringp-when-atc-process-output-file
+             :in-theory (enable stringp-when-atc-process-output-dir
                                 evmac-process-input-print
-                                acl2::ensure-value-is-boolean
-                                erp-of-atc-process-output-file-when-absent)
+                                acl2::ensure-value-is-boolean)
              :use
              ((:instance symbol-listp-when-atc-process-targets
                          (targets
@@ -850,15 +861,18 @@
                               followed by the options ~&0."
                              *atc-allowed-options*))
        ((er target-fns :iferr (irr)) (atc-process-targets targets ctx state))
-       (output-file-option (assoc-eq :output-file options))
-       ((mv output-file output-file?)
-        (if output-file-option
-            (mv (cdr output-file-option) t)
+       (output-dir-option (assoc-eq :output-dir options))
+       (output-dir (if output-dir-option
+                       (cdr output-dir-option)
+                     "."))
+       ((er & :iferr (irr)) (atc-process-output-dir output-dir ctx state))
+       (file-name-option (assoc-eq :file-name options))
+       ((mv file-name file-name?)
+        (if file-name-option
+            (mv (cdr file-name-option) t)
           (mv :irrelevant nil)))
-       ((er & :iferr (irr)) (atc-process-output-file output-file
-                                                     output-file?
-                                                     ctx
-                                                     state))
+       ((er file-path :iferr (irr))
+        (atc-process-file-name file-name file-name? output-dir ctx state))
        (pretty-printing-option (assoc-eq :pretty-printing options))
        (pretty-printing (if pretty-printing-option
                             (cdr pretty-printing-option)
@@ -891,7 +905,7 @@
                 :result))
        ((er & :iferr (irr)) (evmac-process-input-print print ctx state)))
     (acl2::value (list targets
-                       output-file
+                       file-path
                        pretty-printing
                        proofs
                        prog-const
@@ -899,5 +913,6 @@
                        fn-thms
                        print)))
   :guard-hints
-  (("Goal" :in-theory (e/d (acl2::ensure-value-is-boolean)
+  (("Goal" :in-theory (e/d (acl2::ensure-value-is-boolean
+                            stringp-when-atc-process-output-dir)
                            (not))))) ; reduce case splits

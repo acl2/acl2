@@ -7519,7 +7519,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fileset ((targets symbol-listp)
-                         (output-file stringp)
+                         (file-path stringp)
                          (proofs booleanp)
                          (prog-const symbolp)
                          (wf-thm symbolp)
@@ -7593,7 +7593,7 @@
                                  fn-thms fn-appconds appcond-thms
                                  print names-to-avoid ctx state))
        (file (make-file :declons exts))
-       (fileset (make-fileset :path output-file :file file))
+       (fileset (make-fileset :path file-path :file file))
        (local-init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
                                                             proofs
                                                             prog-const
@@ -7674,7 +7674,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-print-result ((events pseudo-event-form-listp)
-                              (output-file stringp))
+                              (file-path stringp))
   :returns (events pseudo-event-form-listp)
   :short "Generate the events to print the results of ATC."
   :long
@@ -7682,7 +7682,7 @@
    (xdoc::p
     "This is used only if @(':print') is at least @(':result')."))
   (append (atc-gen-print-result-aux events)
-          (list `(cw-event "~%File ~s0.~%" ,output-file)))
+          (list `(cw-event "~%File ~s0.~%" ,file-path)))
   :prepwork
   ((define atc-gen-print-result-aux ((events pseudo-event-form-listp))
      :returns (events pseudo-event-form-listp)
@@ -7693,7 +7693,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-everything ((targets symbol-listp)
-                            (output-file stringp)
+                            (file-path stringp)
                             (pretty-printing pprint-options-p)
                             (proofs booleanp)
                             (prog-const symbolp)
@@ -7725,7 +7725,7 @@
      the formals that are not affected then become ignored."))
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((er (list fileset local-events exported-events &) :iferr '(_))
-        (atc-gen-fileset targets output-file proofs
+        (atc-gen-fileset targets file-path proofs
                          prog-const wf-thm fn-thms
                          print names-to-avoid ctx state))
        ((er fileset-gen-event) (atc-gen-fileset-event fileset
@@ -7733,7 +7733,7 @@
                                                       print
                                                       state))
        (print-events (and (evmac-input-print->= print :result)
-                          (atc-gen-print-result exported-events output-file)))
+                          (atc-gen-print-result exported-events file-path)))
        (encapsulate
            `(encapsulate ()
               (evmac-prepare-proofs)
