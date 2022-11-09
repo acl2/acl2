@@ -4558,6 +4558,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "We ensure that all the formals affected by the function body
+     have pointer types, as required in the user documentation.
+     This may change if we add support for passing integers by pointer.")
+   (xdoc::p
     "We return local and exported events for the theorems about
      the correctness of the C function definition.")
    (xdoc::p
@@ -4595,6 +4599,14 @@
        (body (ubody+ fn wrld))
        ((er affect :iferr (irr))
         (atc-find-affected fn body typed-formals prec-fns ctx state))
+       ((unless (atc-formal-pointer-listp affect typed-formals))
+        (er-soft+ ctx t (irr)
+                  "At least one of the formals of ~x0 ~
+                   that are affected by its body has a non-pointer type. ~
+                   This is currently disallowed: ~
+                   only pointer variables may be affected ~
+                   by a non-recursive target function."
+                  fn))
        ((er (stmt-gout body) :iferr (irr))
         (atc-gen-stmt body
                       (make-stmt-gin
