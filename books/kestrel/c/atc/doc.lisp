@@ -1416,7 +1416,8 @@
      (xdoc::p
       "where @('...') is the abstract syntax tree of the generated C file,
        which ATC also pretty-prints and writes
-       to the path specified by the @(':output-file') input.")
+       to the path specified by
+       the @(':output-dir') and @(':file-name') inputs.")
      (xdoc::p
       "If the @(':proofs') input is @('nil'),
        this constant is not generated."))
