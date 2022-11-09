@@ -3560,6 +3560,11 @@
                   *atc-integer-convs-return-rewrite-rules*
                   *atc-array-read-return-rewrite-rules*
                   *atc-array-write-return-rewrite-rules*
+                  *atc-integer-ops-1-type-prescription-rules*
+                  *atc-integer-ops-2-type-prescription-rules*
+                  *atc-integer-convs-type-prescription-rules*
+                  *atc-array-read-type-prescription-rules*
+                  *atc-array-write-type-prescription-rules*
                   *atc-array-length-write-rules*
                   *atc-wrapper-rules*
                   ',(atc-string-taginfo-alist-to-reader-return-thms prec-tags)
@@ -3586,6 +3591,24 @@
                     ullongp-of-ullong-dec-const
                     ullongp-of-ullong-oct-const
                     ullongp-of-ullong-hex-const
+                    (:t sint-dec-const)
+                    (:t sint-oct-const)
+                    (:t sint-hex-const)
+                    (:t uint-dec-const)
+                    (:t uint-oct-const)
+                    (:t uint-hex-const)
+                    (:t slong-dec-const)
+                    (:t slong-oct-const)
+                    (:t slong-hex-const)
+                    (:t ulong-dec-const)
+                    (:t ulong-oct-const)
+                    (:t ulong-hex-const)
+                    (:t sllong-dec-const)
+                    (:t sllong-oct-const)
+                    (:t sllong-hex-const)
+                    (:t ullong-dec-const)
+                    (:t ullong-oct-const)
+                    (:t ullong-hex-const)
                     sintp-of-sint-from-boolean
                     mv-nth-of-cons
                     (:e zp)
