@@ -352,7 +352,7 @@
        The @('<tag>') target must precede @('fn')
        in the list of targets @('(t1 ... tp)').")
      (xdoc::li
-      "@('object-<name>-p x)'),
+      "@('(object-<name>-p x)'),
        where @('<name>') is one of the @(tsee defobject) targets @('ti'),
        representing an access to the external object,
        which must be an explicit formal parameter in functional ACL2,
