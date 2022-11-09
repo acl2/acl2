@@ -48,4 +48,5 @@
      to keep this constant unexpanded in output."))
   :file "imap.abnf"
   :untranslate t
-  :well-formed t)
+  :well-formed t
+  :matchers imap-cst)

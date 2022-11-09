@@ -172,27 +172,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod fun-type
-  :short "Fixtype of function types."
+(fty::defprod fun-sinfo
+  :short "Fixtype of static information about functions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Function types are described in [C:6.2.5/20].
+    "This is the information about functions needed for the static semantics.")
+   (xdoc::p
+    "This static information includes the type of the function.
+     Function types are described in [C:6.2.5/20].
      Eventually these may be integrated into
      a broader formalized notion of C types,
-     but for now we introduce this fixtype here separately,
-     in order to use it in function tables.
-     A function type consists of zero or more input types and an output type."))
+     but for now we use
+     a list of zero or more input types and a single output type.")
+   (xdoc::p
+    "This static information also includes a flag that says
+     whether the function has been defined or not.
+     A function may be declared without being defined,
+     via a declaration [C:6.7].
+     A file may have multiple declarations of the same function,
+     via linkage [C:6.2.2/1],
+     and up to one definition of the function [C:6.9/3] [C:6.9/5].
+     The declarations and definition must have compatible types [C:6.7/4],
+     which in our C subset, for functions,
+     means identical input and output types.
+     In order to check all of these requirements,
+     as soon as we encounter the declaration or definition of a function,
+     we add it to the function table with the appropriate flag and types.
+     If we encounter more declarations of the same function after that,
+     we ensure that the types are the same, and we leave the flag unchanged.
+     If the function has one or more declarations before its definition,
+     the flag is initially @('nil'),
+     but we turn it to @('t') when we encounter the definition,
+     which must have the same input and output types already in the table.
+     If we encounter a second definition, i.e. if the flag is already set,
+     it is an error, because it means that there are multiple definitions
+     (which are disallowed in C, even if they are syntactically identical)."))
   ((inputs type-list)
-   (output type))
-  :pred fun-typep)
+   (output type)
+   (definedp bool))
+  :pred fun-sinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption fun-type-option
-  fun-type
-  :short "Fixtype of optional function types."
-  :pred fun-type-optionp)
+(fty::defoption fun-sinfo-option
+  fun-sinfo
+  :short "Fixtype of optional static information about functions."
+  :pred fun-sinfo-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -203,7 +229,7 @@
    (xdoc::p
     "We associate a function type to the function name, in a finite map."))
   :key-type ident
-  :val-type fun-type
+  :val-type fun-sinfo
   :pred fun-tablep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -213,8 +239,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fun-table-lookup ((fun identp) (funtab fun-tablep))
-  :returns (fun-type fun-type-optionp
-                     :hints (("Goal" :in-theory (enable fun-type-optionp))))
+  :returns (info fun-sinfo-optionp
+                 :hints (("Goal" :in-theory (enable fun-sinfo-optionp))))
   :short "Look up a function in a function table."
   :long
   (xdoc::topstring
@@ -237,19 +263,76 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fun-table-add-fun ((fun identp) (type fun-typep) (funtab fun-tablep))
+(define fun-table-add-fun ((fun identp)
+                           (inputs type-listp)
+                           (output typep)
+                           (definedp booleanp)
+                           (funtab fun-tablep))
   :returns (new-funtab fun-table-resultp)
-  :short "Add a function with a function type to a function table."
+  :short "Add static information about a function to a function table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the table already has a function with that name, it is an error.
-     Otherwise, we add the function and return the function table."))
+    "This is called when processing
+     a function declaration or a function definition.
+     Besides the name and the (input and output) types of the function,
+     we pass a flag saying whether we are processing
+     a function declaration or a function definition.
+     If there is no entry in the table for the function,
+     we add the information about the function.
+     If there is already an entry,
+     it must have the same input and output types [C:6.7/4]
+     (in our C subset, compatible types means equal types);
+     otherwise it is an error.
+     If the information in the table has the @('definedp') flag @('nil'),
+     it means that we have not encountered a definition yet;
+     if it is @('t'), we have encountered it already.
+     Thus, it is an error if the @('definedp') flag in the table
+     and the @('definedp') parameter of this ACL2 function are both @('t'),
+     because it means that there are two definitions.
+     For the other three combinations of the flags there is no error,
+     but if the flag in the table is @('nil')
+     while the parameter of this ACL2 function is @('t'),
+     then we update the flag in the table,
+     because now the function is defined."))
   (b* ((fun (ident-fix fun))
-       (type (fun-type-fix type))
        (funtab (fun-table-fix funtab))
-       ((when (omap::in fun funtab)) (error (list :duplicate-fun fun))))
-    (omap::update fun type funtab))
+       (info (fun-table-lookup fun funtab))
+       ((when (not info))
+        (omap::update fun
+                      (make-fun-sinfo :inputs inputs
+                                      :output output
+                                      :definedp definedp)
+                      funtab))
+       ((unless (and (type-list-equiv (fun-sinfo->inputs info)
+                                      inputs)
+                     (type-equiv (fun-sinfo->output info)
+                                 output)))
+        (error (list :fun-type-mismatch
+                     :old-inputs (fun-sinfo->inputs info)
+                     :new-inputs (type-list-fix inputs)
+                     :old-output (fun-sinfo->output info)
+                     :new-output (type-fix output))))
+       (already-definedp (fun-sinfo->definedp info))
+       ((when (and already-definedp definedp))
+        (error (list :fun-redefinition fun)))
+       ((when (and (not already-definedp) definedp))
+        (omap::update fun
+                      (change-fun-sinfo info :definedp t)
+                      funtab)))
+    funtab)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fun-table-all-definedp ((funtab fun-tablep))
+  :returns (yes/no booleanp)
+  :short "Check if all the functions in a table are defined."
+  (b* ((funtab (fun-table-fix funtab))
+       ((when (omap::empty funtab)) t)
+       ((mv & info) (omap::head funtab))
+       ((unless (fun-sinfo->definedp info)) nil))
+    (fun-table-all-definedp (omap::tail funtab)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1472,15 +1555,15 @@
        ((when (errorp arg-types))
         (error (list :call-args-error fun args arg-types)))
        (arg-types (apconvert-type-list arg-types))
-       (ftype (fun-table-lookup fun funtab))
-       ((unless ftype) (error (list :fun-not-found fun)))
-       (param-types (fun-type->inputs ftype))
+       (info (fun-table-lookup fun funtab))
+       ((unless info) (error (list :fun-not-found fun)))
+       (param-types (fun-sinfo->inputs info))
        (param-types (apconvert-type-list param-types))
        ((unless (equal param-types arg-types))
         (error (list :call-args-mistype fun args
                      :required param-types
                      :supplied arg-types))))
-    (fun-type->output ftype))
+    (fun-sinfo->output info))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2084,23 +2167,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-fun-declon ((declon fun-declonp)
+                          (funtab fun-tablep)
                           (vartab var-tablep)
                           (tagenv tag-envp))
-  :returns (wf wellformed-resultp)
+  :returns (new-funtab fun-table-resultp)
   :short "Check a function declaration."
   :long
   (xdoc::topstring
    (xdoc::p
     "We check the type specifier sequence and the declarator.
-     We do not return anything, because a function declaration,
-     unlike a function definition, does not have a body to check
-     (for which we need the variable table that contains the parameters)."))
+     We extend the function table with information about the new function."))
   (b* (((fun-declon declon) declon)
-       (type (check-tyspecseq declon.tyspec tagenv))
-       ((when (errorp type)) type)
+       ((mv name params out-tyname)
+        (tyspec+declor-to-ident+params+tyname declon.tyspec declon.declor))
+       (out-type (check-tyname out-tyname tagenv))
+       ((when (errorp out-type)) (error (list :bad-fun-out-type name out-type)))
        (vartab (check-fun-declor declon.declor vartab tagenv))
-       ((when (errorp vartab)) vartab))
-    :wellformed)
+       ((when (errorp vartab)) vartab)
+       ((mv & in-tynames) (param-declon-list-to-ident+tyname-lists params))
+       (in-types (type-name-list-to-type-list in-tynames))
+       (in-types (adjust-type-list in-types)))
+    (fun-table-add-fun name in-types out-type nil funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2153,8 +2240,7 @@
        ((mv & in-tynames) (param-declon-list-to-ident+tyname-lists params))
        (in-types (type-name-list-to-type-list in-tynames))
        (in-types (adjust-type-list in-types))
-       (ftype (make-fun-type :inputs in-types :output out-type))
-       (funtab (fun-table-add-fun name ftype funtab))
+       (funtab (fun-table-add-fun name in-types out-type t funtab))
        ((when (errorp funtab)) (error (list :fundef funtab)))
        (stype (check-block-item-list fundef.body funtab vartab tagenv))
        ((when (errorp stype)) (error (list :fundef-body-error stype)))
@@ -2294,7 +2380,10 @@
      without requiring it to be present.")
    (xdoc::p
     "If successful, we return updated
-     function table, variable table, and tag environment."))
+     function table, variable table, and tag environment.")
+   (xdoc::p
+    "For now we reject function declarations.
+     We plan to add support soon."))
   (ext-declon-case
    ext
    :fundef (b* ((funtab (check-fundef ext.get funtab vartab tagenv))
@@ -2302,6 +2391,11 @@
              (make-funtab+vartab+tagenv :funs funtab
                                         :vars (var-table-fix vartab)
                                         :tags (tag-env-fix tagenv)))
+   :fun-declon (b* ((funtab (check-fun-declon ext.get funtab vartab tagenv))
+                    ((when (errorp funtab)) funtab))
+                 (make-funtab+vartab+tagenv :funs funtab
+                                            :vars (var-table-fix vartab)
+                                            :tags (tag-env-fix tagenv)))
    :obj-declon (b* ((vartab
                      (check-obj-declon ext.get funtab vartab tagenv t nil))
                     ((when (errorp vartab)) vartab))
@@ -2352,15 +2446,43 @@
     "Starting from the initial (empty) function table,
      we check all the external declarations,
      threading the function table through,
-     and discarding the final one (it served its pupose)."))
+     and discarding the final one (it served its pupose).")
+   (xdoc::p
+    "We also ensure that there is at leaast one external declaration,
+     according to the grammatical requirement in [C:6.9/1].")
+   (xdoc::p
+    "We also check that the external objects and the functions
+     have no overlap in their names (identifiers).
+     These are all ordinary identifiers [C:6.2.3/1],
+     and therefore must be distinct in the same (file) scope.")
+   (xdoc::p
+    "We also check that all the functions are defined;
+     we perform this check on the function table
+     that results from checking the external declarations.
+     This is a little stricter than [C:6.9/5],
+     which allows a function to remain undefined
+     if it is not called in the rest of the program.
+     However, as we look at a translation unit in isolation here,
+     we do not have the rest of the program,
+     and thus we make the stricter check for now."))
   (b* (((transunit tunit) tunit)
+       ((unless (consp tunit.declons))
+        (error (list :transunit-empty)))
        (funtab (fun-table-init))
        (vartab (var-table-init))
        (tagenv (tag-env-init))
        (funtab+vartab+tagenv
         (check-ext-declon-list tunit.declons funtab vartab tagenv))
        ((when (errorp funtab+vartab+tagenv))
-        (error (list :transunit-error funtab+vartab+tagenv))))
+        (error (list :transunit-error funtab+vartab+tagenv)))
+       (funtab (funtab+vartab+tagenv->funs funtab+vartab+tagenv))
+       (vartab (funtab+vartab+tagenv->vars funtab+vartab+tagenv))
+       (overlap (set::intersect (omap::keys funtab)
+                                (omap::keys (car vartab))))
+       ((unless (set::empty overlap))
+        (error (list :transunit-fun-obj-overlap overlap)))
+       ((unless (fun-table-all-definedp funtab))
+        (error (list :transunit-has-undef-fun funtab))))
     :wellformed)
   :hooks (:fix))
 

@@ -48,6 +48,8 @@
                                               server-url
                                               nil ; debug
                                               100000 ; step-limit
+                                              '(:add-hyp) ; disallow :add-hyp, because no hyps are needed for these theorems
+                                              nil ; disallowed-rec-sources, todo: allow passing these in
                                               1      ; max-wins
                                               :all   ; model
                                               t ; suppress warning about trivial rec, because below we ask if "original" is the best rec and handle trivial recs there

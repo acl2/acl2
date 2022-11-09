@@ -462,7 +462,6 @@
        (type-arrayp (pack fixtype '-arrayp))
        (type-array-length (pack fixtype '-array-length))
        (type-array-of (pack fixtype '-array-of))
-       (type-dec-const (pack fixtype '-dec-const))
        (recognizer-event
         `(define ,recognizer-name (x)
            :returns (yes/no booleanp)
@@ -473,7 +472,7 @@
            :returns (object ,recognizer-name)
            (,type-array-of ,(if (consp init)
                                 `(list ,@init)
-                              `(repeat ,size (,type-dec-const 0))))))
+                              `(repeat ,size (,fixtype 0))))))
        (info (make-defobject-info :name-ident name-ident
                                   :name-symbol name
                                   :type type

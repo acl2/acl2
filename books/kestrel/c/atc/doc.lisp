@@ -352,11 +352,11 @@
        The @('<tag>') target must precede @('fn')
        in the list of targets @('(t1 ... tp)').")
      (xdoc::li
-      "@('object-<name>-p x)'),
+      "@('(object-<name>-p x)'),
        where @('<name>') is one of the @(tsee defobject) targets @('ti'),
        representing an access to the external object,
        which must be an explicit formal parameter in functional ACL2,
-       while the C function accesses directly.
+       while the C function accesses it directly.
        The @('<name>') target must precede @('fn')
        in the list of targets @('(t1 ... tp)')."))
     (xdoc::p
@@ -434,7 +434,7 @@
        returning @('T') and affecting no variables,
        @('L') is @('nil'),
        @('T') is a non-@('void') non-pointer type,
-       @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1.
+       @('vars') is the list @('(var1 ... varn)') with @('n') &ge; 1.
        This represents a C @('return') statement
        whose expression is represented by @('ret');
        the @(tsee mv) and the variables in @('vars') represent no actual C code:

@@ -48,7 +48,8 @@
      to keep this constant unexpanded in output."))
   :file "http.abnf"
   :untranslate t
-  :well-formed t)
+  :well-formed t
+  :matchers http-cst)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
