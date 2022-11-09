@@ -3180,7 +3180,8 @@
           (mv nil nil)))
        ((unless okp)
         (er-soft+ ctx t (irr)
-                  "The non-recursive branch ~x0 of the function ~x1 ~
+                  "The 'else' branch ~x0 of the function ~x1, ~
+                   which should be the non-recursive branch, ~
                    does not have the required form. ~
                    See the user documentation."
                   else-term gin.fn))
