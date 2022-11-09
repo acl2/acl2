@@ -1588,7 +1588,7 @@
                      "The guard ~x0 of the target function ~x1 ~
                       includes multiple type predicates ~
                       for the formal parameter ~x2. ~
-                      This is disallowed: every formal paramter ~
+                      This is disallowed: every formal parameter ~
                       must have exactly one type predicate in the guard, ~
                       even when the multiple predicates are the same."
                      guard fn arg))
