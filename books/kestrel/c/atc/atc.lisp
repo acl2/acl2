@@ -89,7 +89,12 @@
    furthermore, it makes it easier and more efficient
    to retrieve information about all the target @(tsee defobject)s of interest."
 
-  (xdoc::evmac-topic-implementation-item-input "output-file")
+  (xdoc::evmac-topic-implementation-item-input "output-dir")
+
+  (xdoc::evmac-topic-implementation-item-input "file-name")
+
+  "@('file-path') is the path of the generated C file,
+   obtained from @('output-dir') and @('file-name')."
 
   (xdoc::evmac-topic-implementation-item-input "proofs")
 
@@ -138,7 +143,7 @@
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
        ((er (list t1...tp
-                  output-file
+                  file-path
                   pretty-printing
                   proofs
                   prog-const
@@ -147,7 +152,7 @@
                   print))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything t1...tp
-                        output-file
+                        file-path
                         pretty-printing
                         proofs
                         prog-const
