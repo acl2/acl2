@@ -356,7 +356,7 @@
        where @('<name>') is one of the @(tsee defobject) targets @('ti'),
        representing an access to the external object,
        which must be an explicit formal parameter in functional ACL2,
-       while the C function accesses directly.
+       while the C function accesses it directly.
        The @('<name>') target must precede @('fn')
        in the list of targets @('(t1 ... tp)')."))
     (xdoc::p
