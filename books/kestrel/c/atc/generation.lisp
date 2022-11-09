@@ -2736,12 +2736,11 @@
              ((unless (atc-affecting-term-for-let-p val-term gin.prec-fns))
               (er-soft+ ctx t (irr)
                         "When generating C code for the function ~x0, ~
-                         we encountered a term ~x1, ~
-                         to which a LET variable is bound, ~
-                         that is not wrapped by C::DECLAR or C::ASSIGN, ~
-                         and that is neither an IF or a loop function call. ~
-                         This is disallowed."
-                        gin.fn val-term))
+                         we encountered a LET binding ~
+                         of the variable ~x1 to the term ~x2 ~
+                         that does not have any of the allowed forms. ~
+                         See the user documentation."
+                        gin.fn var val-term))
              ((er & :iferr (irr))
               (atc-ensure-formals-not-lost (list var)
                                            gin.affect
