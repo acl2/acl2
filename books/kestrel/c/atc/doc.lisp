@@ -434,7 +434,7 @@
        returning @('T') and affecting no variables,
        @('L') is @('nil'),
        @('T') is a non-@('void') non-pointer type,
-       @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1.
+       @('vars') is the list @('(var1 ... varn)') with @('n') &ge; 1.
        This represents a C @('return') statement
        whose expression is represented by @('ret');
        the @(tsee mv) and the variables in @('vars') represent no actual C code:
