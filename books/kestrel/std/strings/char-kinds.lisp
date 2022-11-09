@@ -15,6 +15,7 @@
 (include-book "letter-digit-dash-chars")
 (include-book "letter-digit-uscore-chars")
 (include-book "letter-digit-uscore-dollar-chars")
+(include-book "letter-digit-uscore-dash-chars")
 (include-book "letter-uscore-dollar-chars")
 (include-book "nondigit-chars")
 (include-book "printable-chars")
