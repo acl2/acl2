@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
@@ -372,7 +373,6 @@ saying whether the key was bound.  Returns (mv value boundp)."
 
 
 
-
 (defsection split-///
   :parents (support)
   :short "Split an argument list into pre- and post-@('///') contents."
@@ -390,7 +390,18 @@ saying whether the key was bound.  Returns (mv value boundp)."
           (mv nil (cdr x)))
          ((mv pre post)
           (split-/// ctx (cdr x))))
-      (mv (cons (car x) pre) post))))
+      (mv (cons (car x) pre) post)))
+
+  (defthmd true-listp-of-split-///.pre-///
+    (true-listp (mv-nth 0 (split-/// ctx x))))
+
+  (defthm true-listp-of-split-///.post-///
+    (implies (true-listp x)
+             (true-listp (mv-nth 1 (split-/// ctx x)))))
+
+  (in-theory (disable split-///)))
+
+
 
 (defsection ends-with-period-p
   :parents (support)
