@@ -793,7 +793,9 @@
                 "When generating C code for the function ~x0, ~
                  at a point where ~
                  a pure expression term returning a C type is expected, ~
-                 the term ~x1 is encountered instead."
+                 the term ~x1 is encountered instead, ~
+                 which is not a C epxression term returning a C type; ~
+                 see the ATC user documentation."
                 gin.fn term))
     :measure (pseudo-term-count term))
 
@@ -917,7 +919,9 @@
                 "When generating C code for the function ~x0, ~
                  at a point where ~
                  an expression term returning boolean is expected, ~
-                 the term ~x1 is encountered instead."
+                 the term ~x1 is encountered instead, ~
+                 which is not a C epxression term returning boolean; ~
+                 see the ATC user documentation."
                 gin.fn term))
     :measure (pseudo-term-count term))
 
