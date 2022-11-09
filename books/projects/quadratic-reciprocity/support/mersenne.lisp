@@ -264,8 +264,8 @@
 ;; primep and m.  We must also re-enable the executable counterpart
 ;; of primep to allow the computation of primep(p) and primep(2*p+1):
 
-(local (in-theory (disable primep m (m))))
-(local (in-theory (enable (primep))))
+(local-in-theory (disable primep m (m)))
+(local-in-theory (enable (primep)))
 
 (defthm mersenne-23-revisited
     (not (primep (m 23))))

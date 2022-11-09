@@ -7,7 +7,7 @@
 (local (include-book "support/gauss"))
 
 ;; Also defined in the RTL library.
-(defund rtl::fl (rtl::x)
+(defund fl (rtl::x)
   (declare (xargs :guard (real/rationalp rtl::x)))
   (floor rtl::x 1))
 
@@ -160,7 +160,7 @@
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (equal (mu (+ -1/2 (* 1/2 p)) 2 p)
-		    (- (/ (1- p) 2) (rtl::fl (/ (1- p) 4))))))
+		    (- (/ (1- p) 2) (fl (/ (1- p) 4))))))
 
 ;; Let k = fl(p/8) and m = mod(p,8).  Then p = 8*k + m.  It follows that
 ;;   mu((p-1)/2,2,p) = 2*k + (m-1)/2 - fl((m-1)/4):
@@ -169,13 +169,13 @@
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (equal (mod p 8)
-		    (- p (* 8 (rtl::fl (/ p 8)))))))
+		    (- p (* 8 (fl (/ p 8)))))))
 
 (defthm mu-rewrite
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (equal (mu (+ -1/2 (* 1/2 p)) 2 p)
-		    (+ (* 2 (rtl::fl (/ p 8))) (- (/ (1- (mod p 8)) 2) (rtl::fl (/ (1- (mod p 8)) 4)))))))
+		    (+ (* 2 (fl (/ p 8))) (- (/ (1- (mod p 8)) 2) (fl (/ (1- (mod p 8)) 4)))))))
 
 ;; The desired result now follows by a simple case analysis:
 

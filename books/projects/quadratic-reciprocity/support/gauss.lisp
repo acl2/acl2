@@ -108,7 +108,7 @@
 		  (integerp m)
 		  (not (divides p m)))
 	     (perm (positives (/ (1- p) 2))
-                           (reflections (/ (1- p) 2) m p)))
+                   (reflections (/ (1- p) 2) m p)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance reflections-distinct-positives (n (/ (1- p) 2)))
 			(:instance pigeonhole-principle (l (reflections (/ (1- p) 2) m p)))))))
@@ -127,7 +127,7 @@
 
 ;;  We have an alternative method for computing the same product:
 
-(defthm mod-mult-2-alt ; name conflict with arithmtic-5
+(defthm mod-mult-2
     (implies (and (integerp n)
 		  (integerp m)
 		  (integerp a))

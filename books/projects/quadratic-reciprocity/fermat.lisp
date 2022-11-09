@@ -23,8 +23,6 @@
 "We shall construct two lists of integers, each of which is a permutation of the other.
  @(def perm)"
 
-;; Conflicts with acl2::perm.
-;; Eric S renamed this
 (defun perm (a b)
   (if (consp a)
       (if (member (car a) b)

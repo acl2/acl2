@@ -11,8 +11,6 @@
 
 ;; We shall construct two lists of integers, each of which is a permutation of the other.
 
-;; Conflicts with acl2::perm.
-;; Eric S renamed this.
 (defun perm (a b)
   (if (consp a)
       (if (member (car a) b)
@@ -167,7 +165,7 @@
 		  (integerp m)
 		  (not (divides p m)))
 	     (perm (positives (1- p))
-                           (mod-prods (1- p) m p)))
+                   (mod-prods (1- p) m p)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance mod-prods-distinct-positives (n (1- p)))
 			(:instance pigeonhole-principle (l (mod-prods (1- p) m p)))))))

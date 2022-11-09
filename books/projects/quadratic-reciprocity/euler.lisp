@@ -302,7 +302,7 @@ between @('1') and @('p-1') with the following properties:
                 (integerp m)
                 (not (divides p m)))
            (perm (positives (1- p))
-                         (associates (1- p) m p)))
+                 (associates (1- p) m p)))
   :rule-classes ())
 
 "It follows that the product of @('associates(p-1,m,p)') is @('(p-1)!') and its

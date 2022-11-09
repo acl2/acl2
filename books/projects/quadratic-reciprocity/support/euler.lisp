@@ -27,7 +27,7 @@
 (defund associate (j m p)
   (mod (* m (expt j (- p 2))) p))
 
-(local (in-theory (disable acl2::floor-mod-elim acl2::mod-theorem-one-b)))
+(local-in-theory (disable acl2::floor-mod-elim acl2::mod-theorem-one-b))
 
 (defthm associate-property
     (implies (and (primep p)
