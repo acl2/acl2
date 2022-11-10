@@ -22,5 +22,7 @@
                        defsection
                        rtl::fl
                        rtl::cg
-                       rtl::congruent)
+                       rtl::congruent
+                       x ; for formals, e.g., of rtl::fl
+                       )
                      *acl2-exports*))
