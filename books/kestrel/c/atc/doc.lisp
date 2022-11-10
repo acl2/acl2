@@ -49,7 +49,8 @@
 
     (xdoc::codeblock
      "(atc t1 ... tp"
-     "     :output-file     ...  ; no default"
+     "     :output-dir      ...  ; default \".\""
+     "     :file-name       ...  ; no default"
      "     :pretty-printing ...  ; default nil"
      "     :proofs          ...  ; default t"
      "     :const-name      ...  ; default :auto"
@@ -101,19 +102,32 @@
        the section `Representation of C Code in ACL2'."))
 
     (xdoc::desc
-     "@(':output-file') &mdash; no default"
+     "@(':output-dir') &mdash; default \".\""
      (xdoc::p
-      "Path of the file where the generated C code goes.")
+      "Path of the directory where the generated C code goes.")
      (xdoc::p
-      "This must be an ACL2 string that is a file path.
-       The path may be absolute,
-       or relative to the current working directory.")
+      "This must be an ACL2 string that is
+       a valid path to an existing directory in the file system;
+       the path may be absolute,
+       or relative to
+       the current working directory.
+       The default is the current working directory."))
+
+    (xdoc::desc
+     "@(':file-name') &mdash; no default"
      (xdoc::p
-      "The directory must exist.
+      "Name of the file that contains the generated C code,
+       without file name extension.")
+     (xdoc::p
+      "This must be a non-empty ACL2 string that consists of
+       ASCII letters, digits, underscores, and dashes.
+       The name of the generated file is obtained
+       by appending the extension @('.c') to this string.")
+     (xdoc::p
+      "The file is generated in the directory specified by @(':output-dir').
        The file may or may not exist:
        if it does not exist, it is created;
-       if it exists, it is overwritten.
-       The file name must include a @('.c') extension."))
+       if it exists, it is overwritten."))
 
     (xdoc::desc
      "@(':pretty-printing') &mdash; default @('nil')"
@@ -1402,7 +1416,8 @@
      (xdoc::p
       "where @('...') is the abstract syntax tree of the generated C file,
        which ATC also pretty-prints and writes
-       to the path specified by the @(':output-file') input.")
+       to the path specified by
+       the @(':output-dir') and @(':file-name') inputs.")
      (xdoc::p
       "If the @(':proofs') input is @('nil'),
        this constant is not generated."))

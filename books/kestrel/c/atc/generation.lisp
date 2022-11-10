@@ -793,7 +793,9 @@
                 "When generating C code for the function ~x0, ~
                  at a point where ~
                  a pure expression term returning a C type is expected, ~
-                 the term ~x1 is encountered instead."
+                 the term ~x1 is encountered instead, ~
+                 which is not a C expression term returning a C type; ~
+                 see the ATC user documentation."
                 gin.fn term))
     :measure (pseudo-term-count term))
 
@@ -917,7 +919,9 @@
                 "When generating C code for the function ~x0, ~
                  at a point where ~
                  an expression term returning boolean is expected, ~
-                 the term ~x1 is encountered instead."
+                 the term ~x1 is encountered instead, ~
+                 which is not a C epxression term returning boolean; ~
+                 see the ATC user documentation."
                 gin.fn term))
     :measure (pseudo-term-count term))
 
@@ -1584,7 +1588,7 @@
                      "The guard ~x0 of the target function ~x1 ~
                       includes multiple type predicates ~
                       for the formal parameter ~x2. ~
-                      This is disallowed: every formal paramter ~
+                      This is disallowed: every formal parameter ~
                       must have exactly one type predicate in the guard, ~
                       even when the multiple predicates are the same."
                      guard fn arg))
@@ -4191,7 +4195,11 @@
      plust the type prescriptions of the functions called by @('fn'),
      plus the correctness theorems of the functions called by @('fn'),
      plus the theorems asserting that
-     the measures of the called recursive functions are naturals,
+     the measures of all the preceding recursive functions are naturals
+     (we take all the measures,
+     not just the ones of the directly called functions,
+     because the limit bound may include a measure
+     from an indirectly called function),
      plus the theorem about the current function in the function environment;
      here `called' means `directly called'.
      During symbolic execution, the initial limit for @('fn')
@@ -4322,7 +4330,8 @@
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
-        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
+        (atc-symbol-fninfo-alist-to-measure-nat-thms
+         prec-fns (strip-cars prec-fns)))
        (type-prescriptions-called
         (loop$ for called in (strip-cars prec-fns)
                collect `(:t ,called)))
@@ -5498,7 +5507,8 @@
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
-        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
+        (atc-symbol-fninfo-alist-to-measure-nat-thms
+         prec-fns (strip-cars prec-fns)))
        (type-prescriptions-called
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
@@ -5686,7 +5696,8 @@
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
-        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
+        (atc-symbol-fninfo-alist-to-measure-nat-thms
+         prec-fns (strip-cars prec-fns)))
        (type-prescriptions-called
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
@@ -7515,7 +7526,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fileset ((targets symbol-listp)
-                         (output-file stringp)
+                         (file-path stringp)
                          (proofs booleanp)
                          (prog-const symbolp)
                          (wf-thm symbolp)
@@ -7589,7 +7600,7 @@
                                  fn-thms fn-appconds appcond-thms
                                  print names-to-avoid ctx state))
        (file (make-file :declons exts))
-       (fileset (make-fileset :path output-file :file file))
+       (fileset (make-fileset :path file-path :file file))
        (local-init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
                                                             proofs
                                                             prog-const
@@ -7670,7 +7681,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-print-result ((events pseudo-event-form-listp)
-                              (output-file stringp))
+                              (file-path stringp))
   :returns (events pseudo-event-form-listp)
   :short "Generate the events to print the results of ATC."
   :long
@@ -7678,7 +7689,7 @@
    (xdoc::p
     "This is used only if @(':print') is at least @(':result')."))
   (append (atc-gen-print-result-aux events)
-          (list `(cw-event "~%File ~s0.~%" ,output-file)))
+          (list `(cw-event "~%File ~s0.~%" ,file-path)))
   :prepwork
   ((define atc-gen-print-result-aux ((events pseudo-event-form-listp))
      :returns (events pseudo-event-form-listp)
@@ -7689,7 +7700,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-everything ((targets symbol-listp)
-                            (output-file stringp)
+                            (file-path stringp)
                             (pretty-printing pprint-options-p)
                             (proofs booleanp)
                             (prog-const symbolp)
@@ -7721,7 +7732,7 @@
      the formals that are not affected then become ignored."))
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((er (list fileset local-events exported-events &) :iferr '(_))
-        (atc-gen-fileset targets output-file proofs
+        (atc-gen-fileset targets file-path proofs
                          prog-const wf-thm fn-thms
                          print names-to-avoid ctx state))
        ((er fileset-gen-event) (atc-gen-fileset-event fileset
@@ -7729,7 +7740,7 @@
                                                       print
                                                       state))
        (print-events (and (evmac-input-print->= print :result)
-                          (atc-gen-print-result exported-events output-file)))
+                          (atc-gen-print-result exported-events file-path)))
        (encapsulate
            `(encapsulate ()
               (evmac-prepare-proofs)
