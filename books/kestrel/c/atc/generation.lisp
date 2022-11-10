@@ -4195,7 +4195,11 @@
      plust the type prescriptions of the functions called by @('fn'),
      plus the correctness theorems of the functions called by @('fn'),
      plus the theorems asserting that
-     the measures of the called recursive functions are naturals,
+     the measures of all the preceding recursive functions are naturals
+     (we take all the measures,
+     not just the ones of the directly called functions,
+     because the limit bound may include a measure
+     from an indirectly called function),
      plus the theorem about the current function in the function environment;
      here `called' means `directly called'.
      During symbolic execution, the initial limit for @('fn')
@@ -4326,7 +4330,8 @@
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
-        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
+        (atc-symbol-fninfo-alist-to-measure-nat-thms
+         prec-fns (strip-cars prec-fns)))
        (type-prescriptions-called
         (loop$ for called in (strip-cars prec-fns)
                collect `(:t ,called)))
@@ -5502,7 +5507,8 @@
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
-        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
+        (atc-symbol-fninfo-alist-to-measure-nat-thms
+         prec-fns (strip-cars prec-fns)))
        (type-prescriptions-called
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
@@ -5690,7 +5696,8 @@
        (correct-thms
         (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
        (measure-thms
-        (atc-symbol-fninfo-alist-to-measure-nat-thms prec-fns called-fns))
+        (atc-symbol-fninfo-alist-to-measure-nat-thms
+         prec-fns (strip-cars prec-fns)))
        (type-prescriptions-called
         (loop$ for callable in (strip-cars prec-fns)
                collect `(:t ,callable)))
