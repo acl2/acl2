@@ -179,16 +179,16 @@
            (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoints)))))
 
 (defconst *rec-to-symbol-alist*
-  '(("add-by-hint" . :add-by-hint)
-    ("add-cases-hint" . :add-cases-hint)
+  '(("add-by-hint" . :add-by-hint) ; rare
+    ("add-cases-hint" . :add-cases-hint) ; rare
     ("add-disable-hint" . :add-disable-hint)
-    ("add-do-not-hint" . :add-do-not-hint)
+    ("add-do-not-hint" . :add-do-not-hint) ; very rare
     ("add-enable-hint" . :add-enable-hint)
     ("add-expand-hint" . :add-expand-hint)
     ("add-hyp" . :add-hyp)
     ("add-induct-hint" . :add-induct-hint)
     ("add-library" . :add-library)
-    ("add-nonlinearp-hint" . :add-nonlinearp-hint)
+    ("add-nonlinearp-hint" . :add-nonlinearp-hint) ; very rare
     ("add-use-hint" . :add-use-hint)
     ;; Confusingly named: Does not indicate a :use hint:
     ("use-lemma" . :use-lemma)))
