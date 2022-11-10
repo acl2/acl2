@@ -33,6 +33,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
+(local (std::add-default-post-define-hook :fix))
 
 ;; We want to show that if we insert override muxes in a network and evaluate its
 ;; fixpoint under an env for which for every override test variable, the corresponding
