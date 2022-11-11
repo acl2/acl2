@@ -31690,8 +31690,33 @@
                     (cons #\2 (term-evisc-tuple nil state)))
               (proofs-co state) state nil))))
 
-(defmacro do-proofs? (do-proofsp form)
-  `(if ,do-proofsp
+(defstub always-do-proofs-during-make-event-expansion () t)
+
+(defattach always-do-proofs-during-make-event-expansion
+  constant-nil-function-arity-0)
+
+(defmacro do-proofs? (do-proofsp use-always-do-proofs form)
+
+; Use-always-do-proofs should be t when make-event expansion is carried out,
+; meaning that we allow an attachable function to specify that proofs should be
+; done even when not normally the case.  But in other cases we expect
+; use-always-do-proofs to be nil -- we see no reason for the user to cause
+; proofs to be done with an attachment in those cases.
+
+  `(if ,(if use-always-do-proofs
+            `(or ,do-proofsp
+                 (let ((flg (always-do-proofs-during-make-event-expansion)))
+
+; The attachable function called just above is useful for causing expansions to
+; be done even when evaluating events with ld-skip-proofsp = t.  It may be a
+; bad idea for it to interfere with include-book unless that is deliberately
+; intended.
+
+                   (and flg ; normally false
+                        (or (eq flg :all)
+                            (not (eq (ld-skip-proofsp state)
+                                     'include-book))))))
+          do-proofsp)
        (state-global-let*
         ((ld-skip-proofsp nil))
         ,form)
@@ -31714,6 +31739,7 @@
 ; community book  books/make-event/read-from-file.lisp.
 
                 check-expansion
+                t ; use-always-do-proofs (part of expansion)
                 (chk-embedded-event-form
                  expansion0 whole-form wrld ctx state (primitive-event-macros)
                  (f-get-global 'in-local-flg state)
@@ -31729,6 +31755,7 @@
               (stobjs-out-and-raw-result
                (do-proofs?
                 do-proofsp
+                nil ; use-always-do-proofs (nil, as this is eval of expansion)
                 (trans-eval-default-warning
 
 ; Note that expansion1b is guaranteed to be an embedded event form, which (as
@@ -31949,6 +31976,7 @@
 ; move proofs from the Convert procedure to the Pcertify procedure.
 
                         (eq (cert-op state) :create-pcert))
+                    t ; use-always-do-proofs (for the main expansion here)
 
 ; Just below, the use of protected-eval ensures, among other things, that
 ; global cert-data won't be consulted.  To see why, imagine that a defun for

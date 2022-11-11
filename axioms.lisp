@@ -28832,6 +28832,10 @@ Lisp definition."
   (declare (xargs :mode :logic :guard t))
   nil)
 
+(defun constant-all-function-arity-0 ()
+  (declare (xargs :mode :logic :guard t))
+  :all)
+
 (encapsulate
   ()
 
