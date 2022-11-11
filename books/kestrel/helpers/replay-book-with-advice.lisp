@@ -12,6 +12,7 @@
 
 (include-book "replay-book")
 (include-book "advice")
+(include-book "kestrel/utilities/split-path" :dir :system)
 
 ;; TODO: Exclude theorems not in the testing set!
 ;; TODO: Don't take credit if the defthms needs no hints?
@@ -119,24 +120,23 @@
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
 ;; Returns (mv erp event state).
 ;; Example: (replay-book-with-advice "helper.lisp" state)
-(defun replay-book-with-advice-fn (dir      ; no trailing slash
-                                   bookname ; no extension
+(defun replay-book-with-advice-fn (filename ; the book, with .lisp extension
                                    n
                                    print
                                    server-url
                                    state)
-  (declare (xargs :guard (and (stringp dir)
-                              (stringp bookname)
+  (declare (xargs :guard (and (stringp filename)
                               (natp n)
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
-  (b* ((- (cw "REPLAYING ~s0/~s1 with advice:~%~%" dir bookname))
+  (b* (((mv dir &) (split-path filename))
+       (- (cw "REPLAYING ~s0 with advice:~%~%" filename))
        ;; Read all the forms from the file:
        ((mv erp events state)
-        (read-objects-from-book (concatenate 'string dir "/" bookname ".lisp") state))
+        (read-objects-from-book filename state))
        ((when erp) (cw "Error: ~x0.~%" erp) (mv erp nil state))
        ;; Ensure we are working in the same dir as the book:
        ((mv erp & state)
@@ -151,7 +151,7 @@
         (cw "Error: ~x0.~%" erp)
         (mv erp nil state))
        ;; Print stats:
-       (- (progn$ (cw "~%SUMMARY for book ~s0/~s1:~%" dir bookname)
+       (- (progn$ (cw "~%SUMMARY for book ~s0:~%" filename)
                   (cw "(Asked each model for ~x0 recommendations.)~%" n)
                   (cw "YES    : ~x0~%" yes-count)
                   (cw "NO     : ~x0~%" no-count)
@@ -162,11 +162,10 @@
     ;; No error:
     (mv nil '(value-triple :invisible) state)))
 
-(defmacro replay-book-with-advice (dir      ; no trailing slash
-                                   bookname ; no extension
+(defmacro replay-book-with-advice (filename ; the book, with .lisp extension
                                    &key
                                    (n '10)
                                    (print 'nil)
                                    (server-url 'nil) ; nil means get from environment var
                                    )
-  `(make-event-quiet (replay-book-with-advice-fn ,dir ,bookname ,n ,print ,server-url state)))
+  `(make-event-quiet (replay-book-with-advice-fn ,filename ,n ,print ,server-url state)))
