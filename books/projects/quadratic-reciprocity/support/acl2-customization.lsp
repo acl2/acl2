@@ -1,6 +1,6 @@
 ; ACL2 customization file
 ;
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2019-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -8,10 +8,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; load the user's acl2-customization.lsp, if any
+;; load the user's acl2-customization.lsp, if any:
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
-;(include-book "../primes/portcullis")
-(include-book "portcullis")
-(include-book "projects/quadratic-reciprocity/portcullis" :dir :system)
-(reset-prehistory)
-(in-package "PRIMES")
+(ld "../package.lsp")
+(include-book "rtl/rel11/portcullis" :dir :system)
+(in-package "DM")

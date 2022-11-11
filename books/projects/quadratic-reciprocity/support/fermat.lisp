@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "DM")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -119,8 +119,8 @@
   :hints (("Goal" :in-theory (enable divides)
 		  :use (mod-distinct-lemma
 			(:instance divides-leq (x p) (y (abs (- i j))))
-			(:instance mod-equal-int (a (* m i)) (b (* m j)) (n p))
-			(:instance mod-equal-int (a (* m j)) (b (* m i)) (n p))
+			(:instance rtl::mod-equal-int (a (* m i)) (b (* m j)) (n p))
+			(:instance rtl::mod-equal-int (a (* m j)) (b (* m i)) (n p))
 			(:instance euclid (a (abs (- i j))) (b m))))))
 
 (defthm mod-p-bnds
@@ -133,9 +133,9 @@
 		  (> p (mod (* m i) p))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable divides)
-		  :use ((:instance mod-bnd-1 (m (* m i)) (n p))
-			(:instance mod-0-int (m (* m i)) (n p))
-			(:instance natp-mod-2 (m (* m i)) (n p))
+		  :use ((:instance rtl::mod-bnd-1 (m (* m i)) (n p))
+			(:instance rtl::mod-0-int (m (* m i)) (n p))
+			(:instance rtl::natp-mod-2 (m (* m i)) (n p))
 			(:instance euclid (a i) (b m))))))
 
 (defthm mod-prods-distinct-positives-lemma
@@ -165,7 +165,7 @@
 		  (integerp m)
 		  (not (divides p m)))
 	     (perm (positives (1- p))
-		   (mod-prods (1- p) m p)))
+                   (mod-prods (1- p) m p)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance mod-prods-distinct-positives (n (1- p)))
 			(:instance pigeonhole-principle (l (mod-prods (1- p) m p)))))))
@@ -222,9 +222,9 @@
 	     (= (mod (* x (mod z n)) n)
 		(mod (* y z) n)))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance mod-mod-times (a z) (b x))
-			(:instance mod-mod-times (a x) (b z))
-			(:instance mod-mod-times (a y) (b z))))))
+  :hints (("Goal" :use ((:instance rtl::mod-mod-times (a z) (b x) (n n))
+			(:instance rtl::mod-mod-times (a x) (b z) (n n))
+			(:instance rtl::mod-mod-times (a y) (b z) (n n))))))
 
 (defthm mod-mod-prods-lemma-2
     (implies (and (not (zp p))
@@ -272,8 +272,8 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (enable divides)
 		  :use ((:instance euclid (b (- b c)))
-			(:instance mod-equal-int (n p) (a (* a b)) (b (* a c)))
-			(:instance mod-equal-int-reverse (n p) (a b) (b c))))))
+			(:instance rtl::mod-equal-int (n p) (a (* a b)) (b (* a c)))
+			(:instance rtl::mod-equal-int-reverse (n p) (a b) (b c))))))
 
 (defthm fermat
     (implies (and (primep p)
@@ -286,6 +286,4 @@
 			(:instance not-divides-p-fact (n (1- p)))
 			(:instance mod-mod-prods (n (1- p)))
 			(:instance mod-times-prime (a (fact (1- p))) (b 1) (c (expt m (1- p))))
-			(:instance mod-does-nothing (m 1) (n p))))))
-
-
+			(:instance rtl::mod-does-nothing (m 1) (n p))))))

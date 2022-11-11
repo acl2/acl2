@@ -2,7 +2,7 @@
 ;; david@russinoff.com
 ;; http://www.russinoff.com
 
-(in-package "RTL")
+(in-package "DM")
 
 (local (include-book "support/euler"))
 
@@ -297,12 +297,12 @@ between @('1') and @('p-1') with the following properties:
   :rule-classes ())
 
 (defthm perm-associates-positives
-    (implies (and (primep p)
-		  (not (= p 2))
-		  (integerp m)
-		  (not (divides p m)))
-	     (perm (positives (1- p))
-		   (associates (1- p) m p)))
+  (implies (and (primep p)
+                (not (= p 2))
+                (integerp m)
+                (not (divides p m)))
+           (perm (positives (1- p))
+                 (associates (1- p) m p)))
   :rule-classes ())
 
 "It follows that the product of @('associates(p-1,m,p)') is @('(p-1)!') and its

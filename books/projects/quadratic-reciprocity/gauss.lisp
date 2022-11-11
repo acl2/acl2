@@ -2,7 +2,7 @@
 ;; david@russinoff.com
 ;; http://www.russinoff.com
 
-(in-package "RTL")
+(in-package "DM")
 
 (local (include-book "support/gauss"))
 
@@ -76,12 +76,12 @@
 ;; reflections((p-1)/2,m,p):
 
 (defthm perm-reflections
-    (implies (and (primep p)
-		  (not (= p 2))
-		  (integerp m)
-		  (not (divides p m)))
-	     (perm (positives (/ (1- p) 2))
-		   (reflections (/ (1- p) 2) m p)))
+  (implies (and (primep p)
+                (not (= p 2))
+                (integerp m)
+                (not (divides p m)))
+           (perm (positives (/ (1- p) 2))
+                 (reflections (/ (1- p) 2) m p)))
   :rule-classes ())
 
 (defthm times-list-reflections

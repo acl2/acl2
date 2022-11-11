@@ -14,7 +14,7 @@
 
 ;; Recognize a true list of field elements.
 (defun fe-listp (elems prime)
-  (declare (xargs :guard (rtl::primep prime)))
+  (declare (xargs :guard (dm::primep prime)))
   (if (atom elems)
       (equal elems nil)
     (and (fep (first elems) prime)

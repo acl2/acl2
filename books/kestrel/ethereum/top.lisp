@@ -23,7 +23,7 @@
 
 ; Merge-io-pairs call added by Matt K. at the request of Alessandro C.:
 (acl2::merge-io-pairs
- rtl::primep
+ dm::primep
  (include-book "semaphore/top"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

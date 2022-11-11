@@ -21,7 +21,7 @@
 ;; of the operations.  See also prime-fields-alt.lisp, which uses a constrained
 ;; function for the prime.
 
-;(include-book "../../projects/quadratic-reciprocity/euclid") ;brings in rtl::primep
+;(include-book "../../projects/quadratic-reciprocity/euclid") ;brings in dm::primep
 (include-book "../utilities/pos-fix")
 (include-book "fep")
 (include-book "minus1")
@@ -37,6 +37,6 @@
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/mod"))
 
-(in-theory (disable (:e rtl::primep)))
+(in-theory (disable (:e dm::primep)))
 
-(defmacro primep (x) `(rtl::primep ,x))
+(defmacro primep (x) `(dm::primep ,x)) ; todo: instead, import dm::primep into the PFIELD package?

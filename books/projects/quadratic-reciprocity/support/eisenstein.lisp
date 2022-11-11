@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "DM")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -21,7 +21,7 @@
 		  1)))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable divides)
-		  :use ((:instance mod012 (m x))
+		  :use ((:instance rtl::mod012 (m x))
 			(:instance divides-mod-0 (a x) (n 2))))))
 
 (defthm evenp-iff-evenp-plus
@@ -33,7 +33,7 @@
   :hints (("Goal" :use (evenp-mod
 			(:instance evenp-mod (x y))
 			(:instance evenp-mod (x (+ x y)))
-			(:instance mod-sum (a x) (b y) (n 2))))))
+			(:instance rtl::mod-sum (a x) (b y) (n 2))))))
 
 (defthm evenp-minus
     (implies (integerp x)
@@ -181,7 +181,7 @@
 		    (+ (* p (plus-list (fl-prods n m p)))
 		       (plus-list (mod-prods n m p)))))
   :rule-classes ()
-  :hints (("Subgoal *1/2''" :use ((:instance mod-def (x (* m n)) (y p))))))
+  :hints (("Subgoal *1/2''" :use ((:instance rtl::mod-def (x (* m n)) (y p))))))
 
 ;; Reducing the above equation mod 2 yields the desired result::
 
@@ -490,8 +490,8 @@
 	     (<= (fl (/ a d)) (fl (/ c b))))
   :rule-classes ()
   :hints (("Goal" :use (hack-6
-                        (:instance fl-def (x (/ a d)))
-			(:instance n<=fl-linear (n (fl (/ a d))) (x (/ c b)))))))
+                        (:instance rtl::fl-def (x (/ a d)))
+			(:instance rtl::n<=fl-linear (n (fl (/ a d))) (x (/ c b)))))))
 
 (defthm leq-fl-times
     (implies (and (integerp j)
