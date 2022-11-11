@@ -1642,6 +1642,53 @@
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
+(defun try-add-nonlinearp-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name))
+  (b* (((when (not (booleanp item)))
+        (and print (cw "WARNING: Invalid value for :nonlinearp: ~x0.~%" item))
+        (mv nil nil state) ; or we could return erp=t here
+        )
+       ;; todo: ensure this is nice:
+       (new-hints (cons `("Goal" :nonlinearp ,item) theorem-hints))
+       ((mv provedp state) (prove$-no-error 'try-add-nonlinearp-hint
+                                            theorem-body
+                                            new-hints
+                                            theorem-otf-flg
+                                            step-limit
+                                            state))
+       (rec (make-successful-rec (nth 0 rec)
+                                 :add-nonlinearp-hint
+                                 item
+                                 nil
+                                 theorem-body new-hints theorem-otf-flg))
+       (- (and (acl2::print-level-at-least-tp print)
+               (if provedp (cw-success-message rec) (cw "fail (:nonlinearp hint didn't help)~%")))))
+    (mv nil (if provedp rec nil) state)))
+
+;; Returns (mv erp maybe-successful-rec state).
+(defun try-add-do-not-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+  (declare (xargs :stobjs state :mode :program)
+           (ignore theorem-name))
+  (b* (;; Can't easily check the :do-not hint syntactically...
+       ;; todo: ensure this is nice:
+       (new-hints (cons `("Goal" :do-not ,item) theorem-hints))
+       ((mv provedp state) (prove$-no-error 'try-add-do-not-hint
+                                            theorem-body
+                                            new-hints
+                                            theorem-otf-flg
+                                            step-limit
+                                            state))
+       (rec (make-successful-rec (nth 0 rec)
+                                 :add-do-not-hint
+                                 item
+                                 nil
+                                 theorem-body new-hints theorem-otf-flg))
+       (- (and (acl2::print-level-at-least-tp print)
+               (if provedp (cw-success-message rec) (cw "fail (:do-not hint didn't help)~%")))))
+    (mv nil (if provedp rec nil) state)))
+
+;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: We need more than a symbol
 (defun try-add-induct-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
   (declare (xargs :stobjs state :mode :program)
@@ -1710,13 +1757,13 @@
             (:add-by-hint (try-add-by-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
             (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
             (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            ;; todo: do-not
+            (:add-do-not-hint (try-add-do-not-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
             (:add-enable-hint (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
             (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
             (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
             (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
             (:add-library (try-add-library object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            ;; todo: nonlinearp
+            (:add-nonlinearp-hint (try-add-nonlinearp-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
             (:add-use-hint (try-add-use-hint object book-map theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
             ;; same as for try-add-enable-hint above:
             (:use-lemma (try-add-enable-hint object book-map theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
