@@ -26,4 +26,5 @@
 (include-book "add-prefix-to-strings")
 (include-book "strcar")
 (include-book "strcdr")
+(include-book "strnthcdr")
 (include-book "subseq")
