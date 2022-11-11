@@ -12,19 +12,22 @@
 
 (include-book "replay-book")
 (include-book "advice")
+(include-book "kestrel/utilities/split-path" :dir :system)
 
 ;; TODO: Exclude theorems not in the testing set!
-;; TODO: Don't take credit if the defthms needs no hints?
-;; TODO: Try advice on defthms inside encapsulates
+;; TODO: Try advice on defthms inside encapsulates (and perhaps other forms).
+;; TODO: Consider excluding advice that uses different version of the same library (e.g., rtl/rel9).
 
 ;; Example:
-;; (replay-book-with-advice "../lists-light" "append")
+;; (replay-book-with-advice "../lists-light/append")
 
 ;; Determines whether the Proof Advice tool can find advice for DEFTHM.  Either way, this also submits the defthm.
 ;; Returns (mv erp result state) where result is :yes, :no, :maybe, or :trivial.
-(defun submit-defthm-event-with-advice (defthm n print server-url state)
+(defun submit-defthm-event-with-advice (defthm n book-to-avoid-absolute-path print server-url state)
   (declare (xargs :mode :program
                   :guard (and (natp n)
+                              (or (null book-to-avoid-absolute-path)
+                                  (stringp book-to-avoid-absolute-path))
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url)))
@@ -44,6 +47,7 @@
                                               nil ; don't use any hints
                                               nil ; theorem-otf-flg
                                               n ; number of recommendations from ML requested
+                                              book-to-avoid-absolute-path
                                               print
                                               server-url
                                               nil ; debug
@@ -83,9 +87,11 @@
 ;Returns (mv erp yes-count no-count maybe-count trivial-count state).
 ;throws an error if any event fails
 ; This uses :brief printing.
-(defun submit-events-with-advice (events n print server-url yes-count no-count maybe-count trivial-count state)
+(defun submit-events-with-advice (events n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count state)
   (declare (xargs :guard (and (true-listp events)
                               (natp n)
+                              (or (null book-to-avoid-absolute-path)
+                                  (stringp book-to-avoid-absolute-path))
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url)))
@@ -97,11 +103,11 @@
       (if (or (call-of 'defthm event) ; todo: maybe handle thms
               (call-of 'defthmd event))
           (b* (((mv erp result state)
-                (submit-defthm-event-with-advice event n print server-url state))
+                (submit-defthm-event-with-advice event n book-to-avoid-absolute-path print server-url state))
                ((when erp)
                 (er hard? 'submit-events-with-advice "ERROR (~x0) with advice attempt for event ~X12.~%" erp event nil)
                 (mv erp yes-count no-count maybe-count trivial-count state)))
-            (submit-events-with-advice (rest events) n print server-url
+            (submit-events-with-advice (rest events) n book-to-avoid-absolute-path print server-url
                                        (if (eq :yes result) (+ 1 yes-count) yes-count)
                                        (if (eq :no result) (+ 1 no-count) no-count)
                                        (if (eq :maybe result) (+ 1 maybe-count) maybe-count)
@@ -114,29 +120,34 @@
               (er hard? 'submit-events-with-advice "ERROR (~x0) with event ~X12.~%" erp event nil)
               (mv erp yes-count no-count maybe-count trivial-count state))
              (- (cw "~x0~%" (shorten-event event))))
-          (submit-events-with-advice (rest events) n print server-url yes-count no-count maybe-count trivial-count state))))))
+          (submit-events-with-advice (rest events) n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count state))))))
 
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
 ;; Returns (mv erp event state).
 ;; Example: (replay-book-with-advice "helper.lisp" state)
-(defun replay-book-with-advice-fn (dir      ; no trailing slash
-                                   bookname ; no extension
+(defun replay-book-with-advice-fn (filename ; the book, with .lisp extension
                                    n
                                    print
                                    server-url
                                    state)
-  (declare (xargs :guard (and (stringp dir)
-                              (stringp bookname)
+  (declare (xargs :guard (and (stringp filename)
                               (natp n)
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
-  (b* ((- (cw "REPLAYING ~s0/~s1 with advice:~%~%" dir bookname))
+  (b* (;; We must avoid including the current book (or an other book that includes it) when trying to find advice:
+       (book-to-avoid-absolute-path (canonical-pathname filename nil state))
+       ((when (member-equal book-to-avoid-absolute-path
+                            (included-books-in-world (w state))))
+        (er hard? 'replay-book-with-advice-fn "Can't replay ~s0 because it is already included in the world." filename)
+        (mv t nil state))
+       ((mv dir &) (split-path filename))
+       (- (cw "REPLAYING ~s0 with advice:~%~%" filename))
        ;; Read all the forms from the file:
        ((mv erp events state)
-        (read-objects-from-book (concatenate 'string dir "/" bookname ".lisp") state))
+        (read-objects-from-book filename state))
        ((when erp) (cw "Error: ~x0.~%" erp) (mv erp nil state))
        ;; Ensure we are working in the same dir as the book:
        ((mv erp & state)
@@ -146,12 +157,12 @@
        (state (widen-margins state))
        ;; Submit all the events, trying advice for each defthm:
        ((mv erp yes-count no-count maybe-count trivial-count state)
-        (submit-events-with-advice events n print server-url 0 0 0 0 state))
+        (submit-events-with-advice events n book-to-avoid-absolute-path print server-url 0 0 0 0 state))
        ((when erp)
         (cw "Error: ~x0.~%" erp)
         (mv erp nil state))
        ;; Print stats:
-       (- (progn$ (cw "~%SUMMARY for book ~s0/~s1:~%" dir bookname)
+       (- (progn$ (cw "~%SUMMARY for book ~s0:~%" filename)
                   (cw "(Asked each model for ~x0 recommendations.)~%" n)
                   (cw "YES    : ~x0~%" yes-count)
                   (cw "NO     : ~x0~%" no-count)
@@ -162,11 +173,10 @@
     ;; No error:
     (mv nil '(value-triple :invisible) state)))
 
-(defmacro replay-book-with-advice (dir      ; no trailing slash
-                                   bookname ; no extension
+(defmacro replay-book-with-advice (filename ; the book, with .lisp extension
                                    &key
                                    (n '10)
                                    (print 'nil)
                                    (server-url 'nil) ; nil means get from environment var
                                    )
-  `(make-event-quiet (replay-book-with-advice-fn ,dir ,bookname ,n ,print ,server-url state)))
+  `(make-event-quiet (replay-book-with-advice-fn ,filename ,n ,print ,server-url state)))

@@ -1,7 +1,7 @@
 ; A utility to split a list of characters at a given char
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -60,10 +60,20 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable split-chars-aux))))
 
+(defthm true-listp-of-mv-nth-1-of-split-chars-aux
+  (implies (true-listp acc)
+           (true-listp (mv-nth 1 (split-chars-aux chars char acc))))
+  :hints (("Goal" :in-theory (enable split-chars-aux))))
+
 (defthm character-listp-of-mv-nth-1-of-split-chars-aux
   (implies (and (character-listp chars)
                 (character-listp acc))
            (character-listp (mv-nth 1 (split-chars-aux chars char acc))))
+  :hints (("Goal" :in-theory (enable split-chars-aux))))
+
+(defthm true-listp-of-mv-nth-2-of-split-chars-aux
+  (implies (true-listp chars)
+           (true-listp (mv-nth 2 (split-chars-aux chars char acc))))
   :hints (("Goal" :in-theory (enable split-chars-aux))))
 
 (defthm character-listp-of-mv-nth-2-of-split-chars-aux
@@ -101,9 +111,20 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable split-chars))))
 
+(defthm true-listp-of-mv-nth-1-of-split-chars-type
+  (true-listp (mv-nth 1 (split-chars chars char)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable split-chars))))
+
 (defthm character-listp-of-mv-nth-1-of-split-chars
   (implies (character-listp chars)
            (character-listp (mv-nth 1 (split-chars chars char))))
+  :hints (("Goal" :in-theory (enable split-chars))))
+
+(defthm true-listp-of-mv-nth-2-of-split-chars-type
+  (implies (true-listp chars)
+           (true-listp (mv-nth 2 (split-chars chars char))))
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable split-chars))))
 
 (defthm character-listp-of-mv-nth-2-of-split-chars
