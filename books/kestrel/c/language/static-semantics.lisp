@@ -2496,21 +2496,13 @@
    (xdoc::p
     "This is a very simplified model of C preprocessing [C:6.10].
      In fact, for now it is essentially a no-op:
-     it turns the only file in a fileset into a translation unit,
+     it operates on a file set,
+     requiring the header to be absent (but we will add support soon),
+     and turning the source file in a fileset into a translation unit,
      which just amounts to unwrapping and re-wrapping.
-     Note that the file name is ignored currently,
-     since there is just one file.")
-   (xdoc::p
-    "However, we plan to extend this soon.
-     That is, there will be more files,
-     with @('#include') directives,
-     which will thus also reference file names.")
-   (xdoc::p
-    "Even though currently this operation never fails,
-     we have this ACL2 function return a result type,
-     to facilitate future extensions,
-     where preprocessing may actually fail."))
-  (make-transunit :declons (file->declons (fileset->file fileset)))
+     Note that the file name is ignored currently."))
+  (b* (((when (fileset->dot-h fileset)) (error :header-not-supported)))
+    (make-transunit :declons (file->declons (fileset->dot-c fileset))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1063,9 +1063,9 @@
      (which may involve copying contents of included files).
      As discussed in @(see abstract-syntax),
      the purpose of this abstract syntax is to capture the content of files
-     neither before nor after preprocessing.
-     Thus, we use the more ``neutral'' term `file' here,
-     which can capture constructs from both before and after preprocessing.")
+     neither  before nor exactly after preprocessing,
+     but rather that includes construct
+     from both before and after preprocessing.")
    (xdoc::p
     "A file consists of a list of external declarations currently.
      This is actually the same as a translation unit (see @(tsee transunit)),
@@ -1080,6 +1080,13 @@
   ((declons ext-declon-list))
   :tag :file
   :pred filep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption file-option
+  file
+  :short "Fixtype of optional files."
+  :pred file-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1097,15 +1104,27 @@
      which, according to [C], is a complete executable application:
      a library would not qualify as a program in this sense.")
    (xdoc::p
-    "For now, a file set consists of just one file (see @(tsee file),
-     including a file path, which for now we model as an ACL2 string.
-     This ACL2 string must be a path to a @('.c') file,
-     including the name of the file and the extension;
-     we do not enforce this for now, but we may in the future.")
+    "For now, a file set consists of one or two files (see @(tsee file),
+     namely an optional header and a source file,
+     which have the same name except for the extension.
+     (The preceding sentence uses the terminology in [C:5.1.1/1],
+     which appears to call `headers' the @('.h') files
+     and `source files' the @('.c') files.)
+     The idea is that for now we model (portions of) programs
+     that consist of a single source file,
+     optionally with its own header that is @('#include')d in the source file.
+     We do not explicitly model the @('#include') directive: it is implicit.
+     The @('path-wo-ext') component of this fixtype
+     is the common path of both files without the extension.
+     The @('dot-h') and @('dot-c') components of this fixtype
+     are (the contents of) the @('.h') and @('.c') files,
+     where the first one is optional.")
    (xdoc::p
-    "In the future, we also plan to extend the notion of file set
-     to include more than one file."))
-  ((path string)
-   (file file))
+    "In the future, we may extend this notion of file ste
+     to be something like
+     a finite map from file system paths to (contents of) files."))
+  ((path-wo-ext string)
+   (dot-h file-option)
+   (dot-c file))
   :tag :fileset
   :pred filesetp)
