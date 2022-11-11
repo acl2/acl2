@@ -47,6 +47,7 @@
   :untranslate t
   :well-formed t
   :closed t
+  :matchers cst
   ///
 
   (defruled ascii-only-*grammar*
