@@ -15,11 +15,11 @@
 (include-book "kestrel/utilities/split-path" :dir :system)
 
 ;; TODO: Exclude theorems not in the testing set!
-;; TODO: Don't take credit if the defthms needs no hints?
-;; TODO: Try advice on defthms inside encapsulates
+;; TODO: Try advice on defthms inside encapsulates (and perhaps other forms).
+;; TODO: Consider excluding advice that uses different version of the same library (e.g., rtl/rel9).
 
 ;; Example:
-;; (replay-book-with-advice "../lists-light" "append")
+;; (replay-book-with-advice "../lists-light/append")
 
 ;; Determines whether the Proof Advice tool can find advice for DEFTHM.  Either way, this also submits the defthm.
 ;; Returns (mv erp result state) where result is :yes, :no, :maybe, or :trivial.
