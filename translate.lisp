@@ -357,14 +357,15 @@
 ; the domain in arg 3.  (do$ is handled differently: it takes three functional
 ; arguments!)
 
+; NOTE: As of 11/11/2022 it is not clear that the restriction described next
+; is necessary.  The bug below fails to be a bug even after redefining
+; *loop$-special-function-symbols* to be nil.  We may revisit this restriction.
+
 ; Because of all the Special Conjectures (see the Essay on Loop$) we have to be
 ; careful not to evaluate ground calls of the special function symbols
 ; listed below during guard clause generation.  If any of these functions were
 ; to be evaluated we would fail to recognize the need for some special
-; conjectures.  For example, (collect$ (lambda$ ...)  (tails '...))  is a
-; pattern that triggers Special Conjecture (c) because it represents ON
-; iteration, and that pattern would not be present if (tails '...) turned into
-; a constant.  See the call of eval-ground-subexpressions1 in guard-clauses+
+; conjectures.  See the call of eval-ground-subexpressions1 in guard-clauses+
 ; for where we use this list.
 
 ; Before we avoided evaluating ground calls of these symbols we saw the
@@ -396,18 +397,6 @@
          until$ until$+ when$ when$+
          loop$-as tails from-to-by do$))
 
-(defun for-loop$-operator-scionp (fn alist)
-
-; Note that this function is explicitly about FOR loop$s (see the name of the
-; function!) and does not consider do$ a ``FOR loop$ operator scion''.
-
-  (cond ((endp alist) nil)
-        ((and (car (car alist)) ; operator?
-              (or (eq (cadr (car alist)) fn)    ; :plain?
-                  (eq (caddr (car alist)) fn))) ; :fancy?
-         t)
-        (t (for-loop$-operator-scionp fn (cdr alist)))))
-
 (defun loop$-scion-style1 (fn alist)
 
 ; Fn is a symbol and alist is a tail of *for-loop$-keyword-info*.  We determine
@@ -423,6 +412,10 @@
    (t (loop$-scion-style1 fn (cdr alist)))))
 
 (defun loop$-scion-style (fn)
+
+; Changes made in November 2022 caused this function to be called no longer in
+; the ACL2 sources.  However, it is still called in community book
+; books/projects/apply/definductor.lisp, so we retain this definition.
 
 ; Fn is a function symbol and if it is a loop$-scion we return its ``style''
 ; otherwise we return nil.  The style of FOR loop$ scions is either :plain
@@ -12067,7 +12060,7 @@
 ; partly because it formed the abstract of a talk given to the ACL2 Seminar on
 ; 25 January, 2019, and we knew the audience wouldn't know what ``loop$'' was.
 ; Loop$ was added to the sources in late January, 2019.  DO loop$s were added
-; in October, 2021.]
+; in October, 2021.  Further revision has taken place since.]
 
 ; -----------------------------------------------------------------
 ; On ACL2 Support for LOOP
@@ -12197,7 +12190,7 @@
 ; eventually described below.
 
 ; But limitations (a) and (b) are currently insurmountable and directly cause a
-; practical restriction on the use of loop.  For example, the user may be
+; practical restriction on the use of loop$.  For example, the user may be
 ; tempted to type loop$ statements to interactively inspect aspects of the ACL2
 ; state or to print things, and this is generally impossible.
 
@@ -12301,7 +12294,7 @@
 ; means loop$ must translate the until, when, and loop body expressions.
 ; Macros can't call translate, so loop$ is built into translate.
 
-; (BTW: Since the until, when, and loop body expressions each become the body
+; (BTW: Since the UNTIL, WHEN, and loop body expressions each become the body
 ; of a lambda$ expression, it is confusing to call the ``loop body expression''
 ; simply the ``body.''  Instead, we call it the ``lobody expression.'')
 
@@ -12313,14 +12306,17 @@
 ;                   :verify-guards nil))
 ;   (mbe :logic (if (endp lst)
 ;                   0
-;                   (+ (fix (apply$ fn (list (car lst))))
+;                   (+ (ec-call (the-number (apply$ fn (list (car lst)))))
 ;                      (sum$ fn (cdr lst))))
 ;        :exec (sum$-ac fn lst 0)))
 
 ; Sum$'s guard just requires that fn be a function symbol or LAMBDA object of
 ; arity 1, and lst be a true-list.  Sum$ is guard verified, but first we have
 ; to prove that it returns a number so we can satisfy the guard on the +.  The
-; fix is necessary since we don't know fn returns a number.
+; fix is necessary since we don't know fn returns a number.  The somewhat
+; arcane way we fix the value v returned by apply$ allows both runtime
+; guard-checking that v is a number and a "Special Conjecture" described below
+; for guard verification.
 
 ; A ``loop$ scion'' is any scion used in the translation of loop$ statements.
 ; The plain ones are sum$, always$, thereis$, collect$, append$, until$, and
@@ -12334,7 +12330,7 @@
 ; The plain loop$ scions are informally described as follows, where the
 ; elements of lst are e1, ..., en:
 
-; (sum$ fn lst): sums all (fix (apply$ fn (list ei)))
+; (sum$ fn lst): sums all numeric fixes of (apply$ fn (list ei))
 
 ; (always$ fn lst): tests that all (apply$ fn (list ei)) are non-nil
 
@@ -12343,7 +12339,8 @@
 
 ; (collect$ fn lst): conses together all (apply$ fn (list ei))
 
-; (append$ fn lst): appends together all (true-list-fix (apply$ fn (list ei)))
+; (append$ fn lst): appends together all true-list fixes of
+;                   (apply$ fn (list ei)))
 
 ; (when$ fn lst): conses together all ei such that (apply$ fn (list ei))
 
@@ -12400,21 +12397,21 @@
 ; target, lst, is a true-listp.  So the actuals in [2] satisfy sum$'s guard.
 
 ; If this loop$ expression is typed at the top level of ACL2, *1* sum$ is
-; called, the guard successfully checked, and the fast raw Lisp sum$-ac is
-; called.  Sum$-ac calls the raw Lisp apply$-lambda on the LAMBDA object and
-; successive elements of the target.  Assuming, as we did, that the LAMBDA is
-; guard verified, each call of apply$-lambda checks whether the element under
-; consideration satisfies the guard of the LAMBDA object.  If so, the compiled
-; LAMBDA object is run; if not, either an guard violation is called or the
-; logical version of apply$-lambda is used to compute the value of the LAMBDA
-; object on the element (depending on set-guard-checking).  If a value is
-; computed, it is fixed and added to the running accumulator.  In no case is a
-; hard error caused: the guards of sum$ are satisfied by the actuals in [2].
+; called, the guard of sum$ is successfully checked, and the fast raw Lisp
+; sum$-ac is called.  Sum$-ac calls the raw Lisp apply$-lambda on the LAMBDA
+; object and successive elements of the target.  Assuming, as we did, that the
+; LAMBDA is guard verified, each call of apply$-lambda checks whether the
+; element under consideration satisfies the guard of the LAMBDA object.  If so,
+; the compiled LAMBDA object is run; if not, either a guard violation occurs or
+; the logical version of apply$-lambda is used to compute the value of the
+; LAMBDA object on the element (depending on set-guard-checking).  If a value
+; is computed, it is fixed and added to the running accumulator.  In no case is
+; a hard error caused: the guards of sum$ are satisfied by the actuals in [2].
 
-; On the other hand, if the loop$ expression is typed as part of a guard
-; verified defun, then the sum$ and the LAMBDA object are both guard verified
-; at defun-time.  Then, when the defun'd function is called, the loop$ is
-; executed as a raw Lisp loop:
+; On the other hand, suppose the loop$ expression is typed as part of a defun.
+; The sum$ and the LAMBDA object can both be guard verified.  If that suffices
+; for guard verification of the defun, then when defun'd function is called,
+; the loop$ will be executed as a raw Lisp loop:
 
 ; (loop for v of-type integer in '(1 2 3 IV) sum (foo 1 v))
 
@@ -12433,20 +12430,22 @@
 ; does not use apply$-lambda.
 
 ; Special Conjecture (b): The guard of (sum$ fn lst) does not include the test
-; that fn returns a number on every element of lst.  This is not necessary
-; for our sum$ because it wraps the apply$-lambda in a fix.  But the raw Lisp
-; loop expects the lobody to return a number and will cause a hard error
-; if it doesn't.  The root problem is that sum$ uses fix and loop doesn't.
+; that fn returns a number on every element of lst.  This is not necessary for
+; our sum$ because it wraps the apply$-lambda in a fixer.  But the raw Lisp
+; loop expects the lobody to return a number and will cause a hard error if it
+; doesn't.  The root problem is that sum$ uses fix and loop doesn't.
 
-; There is also a Special Conjecture (c).  Consider
+; There was formerly a Special Conjecture (c).  That has been replaced by a
+; type-check performed on the tails of the target as described in :DOC
+; for-loop$, but we describe the issue here.  Consider
 
 ; (loop for v of type type-spec on lst collect ...)
 
-; The semantics of this will be (collect$ (lambda$ ...) (tails lst)) where
-; tails collects the non-empty tails of lst.  The guard of collect$ will ensure
-; that lst is a true-listp.  But if you run this in Common Lisp you will find
-; that the type-spec is checked on EVERY tail of lst, including NIL, not just
-; the non-empty ones.  Here is an example, to be tried in raw CCL:
+; The logical semantics of this, ignoring guard checks, will be (collect$
+; (lambda$ ...) (tails lst)) where tails collects the non-empty tails of lst.
+; If you run this in Common Lisp you may find that the type-spec is checked on
+; EVERY tail of lst, including the final cdr (i.e., NIL if lst is a true list),
+; not just the non-empty ones.  Here is an example, to be tried in raw CCL:
 
 ; (declaim (optimize (safety 3))) ; to force CCL to test the type-spec
 ; (defun my-typep (x)             ; the type-spec we'll use
@@ -12482,8 +12481,8 @@
 ; Also, we see that the type-spec is called on iterations not seen by the
 ; operator expression (see [1]).
 
-; In addition, trying the same thing with a from-to-by shows that
-; special cases are considered:
+; In addition, trying the same thing with a from-to-by shows that special cases
+; are considered (again, here we use CCL).
 
 ; (defun test-type-spec (i j k)
 ;    (loop for x of-type (satisfies my-typep) from i to j by k
@@ -12522,6 +12521,11 @@
 ; books/system/apply/loop-scions.lisp where we show that (+ i (* k (floor (- j
 ; i) k))) is the last value at or below j.
 
+; Instead of generating Special Conjectures (c), we now replace the target by
+; an expression that forces suitable type checks; this is clear from the
+; definition of make-basic-loop$-target.  Let us return now to consideration of
+; the Special Conjectures for (a) and (b).
+
 ; The ``purist'' solution, at least to problems (a) and (b), is to strengthen
 ; the guard of sum$ to include Special Conjectures (a) and (b).  It is
 ; certainly possible to formalize (b): just define a scion that runs fn across
@@ -12548,13 +12552,6 @@
 ; of the guard check, so like the purist solution to conjecture (b), the purist
 ; solution to (a) further slows down guard checking.
 
-; But we don't see a purist solution to (c) because, for example, the guard on
-; (from-to-by i j k) can't express the idea that the arguments satisfy the
-; type-spec of the LAMBDA because (from-to-by i j k) doesn't contain the
-; LAMBDA.  And collect$ can't do it because by the time collect$ executes the
-; (from-to-by i j k) will have turned into a list of integers indistiguishable
-; from an IN iteration.
-
 ; We reject these purist solutions both for their logical complexity (or
 ; impossibility) (especially (a)) and the slowdown in execution in the ACL2
 ; loop.
@@ -12578,11 +12575,11 @@
 ; violates the whole goal of this project.  We want guard verified ACL2 loop$
 ; statements to execute at raw Lisp loop speeds.
 
-; We give our preferred solution in the next section but roughly put it
-; leaves the guard on sum$ unchanged so it is easy to check, it leaves the
-; fix in place so sum$ can be guard verified with that guard, but it changes
-; the guard conjecture generation routine, guard-clauses, to generate extra
-; guard conjectures for calls of sum$ on quoted function objects.
+; We give our preferred solution in the next section but roughly put it leaves
+; the guard on sum$ unchanged so it is easy to check, it leaves the fixing in
+; place so sum$ can be guard verified with that guard, but it changes the guard
+; conjecture generation routine, guard-clauses, to generate extra guard
+; conjectures for calls of sum$ on quoted function objects.
 
 ; One last note: It should be stressed that the above goal is limited to loop$
 ; statements in guard verified defuns.  While we want loop$ statements that are
@@ -12658,10 +12655,10 @@
 ; -----------------------------------------------------------------
 ; Section 3:  Our Solution to the Special Conjectures
 
-; The approach we advocate is to leave the guard of sum$ as is, with the fix in
-; the sum$, but we change guard generation so that in certain special cases we
-; generate (and thus have to prove) guard conjectures beyond those strictly
-; required by the scion's guard.
+; The approach we advocate is to leave the guard of sum$ as is, with the fixing
+; in the body of sum$, but we change guard generation so that in certain
+; special cases we generate (and thus have to prove) guard conjectures beyond
+; those strictly required by the scion's guard.
 
 ; The ACL2 system function guard-clauses is the basic function for generating
 ; guard conjectures for a term.  It is called in two situations in which the
@@ -12674,8 +12671,11 @@
 ; function symbol of the appropriate arity (depending on whether the loop$
 ; scion is plain or fancy) or is a quoted well-formed LAMBDA object of the
 ; appropriate arity, then guard-clauses adds possibly three guard conjectures
-; not actually required by the scion's guard.  These two conjectures formalize
-; Special Conjectures (a), (b) and (c) about the function object and target.
+; not actually required by the scion's guard.  These conjectures formalize
+; Special Conjectures (a) and (b) about the function object and target.  (As
+; noted above, there no longer are Special Conjectures (c), as the requisite
+; guards are generated by decorating the target term with type requirements
+; using function make-basic-loop$-target.)
 
 ;;; Possible Future Work on Loop$:
 
@@ -12691,15 +12691,11 @@
 ; produces a result of the right type, e.g., an acl2-number for SUM and a
 ; true-listp for APPEND.
 
-; Special Conjecture (c): For loops ON a target or over a FROM-TO-BY target
-; we also have to prove that the step AFTER the last one still satisfies the
-; type-spec.  This is illustrated below.
-
 ; Just focusing on a call of a plain loop$ scion, e.g., (sum$ 'fn target),
 ; where (i) there is one iteration variable, v, (ii) the quoted function
 ; object, fn, is a tame function symbol or LAMBDA object of arity 1, (iii) fn
 ; has a guard of guardexpr, and (iv) the loop$ scion expects a result of type
-; typep (e.g., acl2-numberp for sum$ and true-listp for append$), the two
+; typep (e.g., acl2-numberp for sum$ and true-listp for append$), the
 ; conjectures are:
 
 ; (a) (implies (and <hyps from clause>
@@ -12709,15 +12705,6 @@
 ; (b) (implies (and <hyps from clause>
 ;                   (member-equal newvar target))
 ;              (typep (apply$ 'fn (list newvar))))
-
-; (c1) (implies (and <hyps from clause>)        ; target (TAILS lst)
-;               type-spec-expr/{v <-- NIL})
-
-; (c2) (implies (and <hyps from clause>)        ; target (from-to-by i j k)
-;               (and type-spec-expr{v <-- i}
-;                    type-spec-expr{v <-- j}
-;                    type-spec-expr{v <-- k}
-;                    type-spec-expr{v <-- (+ i (* k (floor (- j i) k)) k)}))
 
 ; Here, <hyps from clause> are whatever guard and tests govern the occurrence
 ; of the call of the loop$ scion, and newvar is a completely new variable
@@ -12743,23 +12730,23 @@
 ; guard is satisfied by newvar and (b) says that fn applied to newvar returns a
 ; result of the right type.
 
-; These two special conjectures are only generated on terms that MIGHT HAVE
-; BEEN generated by loop$ statements, i.e., calls of loop$ scions on quoted
-; tame well-formed function objects.  Since the function object in question is
+; These special conjectures are only generated on terms that MIGHT HAVE BEEN
+; generated by loop$ statements, i.e., calls of loop$ scions on quoted tame
+; well-formed function objects.  Since the function object in question is
 ; quoted at guard generation time it is easy to extract the guard of the
 ; object.  (Note: the comparable problem in the so-called purist solution of
 ; Section 2 was practically daunting because we needed to express formula (a)
 ; for an unknown fn.)
 
 ; Since we generate the ``normal'' guard conjectures for the loop$ scion in
-; addition to these two, we know the loop$ scion can run in the ACL2 loop
-; without error.
+; addition to these, we know the loop$ scion can run in the ACL2 loop without
+; error.
 
 ; Since we generate (and have to prove) these guard conjectures for every
 ; term that might have been produced by a loop$ statement, we are assured that
 ; the corresponding loop can be executed without hard error in raw Lisp.
 
-; We generate (and thus must prove) conjectures (a) and (b) for all calls of
+; We generate (and thus must prove) the Special Conjectures for all calls of
 ; loop$ scions on quoted tame well-formed function objects even though the user
 ; might have entered them WITHOUT using loop$.  We rationalize this decision
 ; with the thought: the user will use loop$ statements when possible because
@@ -12789,17 +12776,21 @@
 ; To be utterly precise about what we mean by ``essentially'', the
 ; translation of (loop$ for v on lst sum (len v)) is actually
 
-; (sum$ '(lambda (v)
-;                (declare (ignorable v))
-;                (return-last 'progn
-;                             '(lambda$ (v)
-;                                       (declare (ignorable v))
-;                                       (len v))
-;                             (len v)))
-;       (tails lst))
+; (return-last
+;  'progn
+;  '(loop$ for v on lst sum (len v))
+;  (sum$ '(lambda (loop$-ivar)
+;           (declare (ignorable loop$-ivar))
+;           (return-last 'progn
+;                        '(lambda$ (loop$-ivar)
+;                                  (let ((v loop$-ivar))
+;                                    (declare (ignorable v))
+;                                    (len v)))
+;                        ((lambda (v) (len v)) loop$-ivar)))
+;        (tails lst)))
 
 ; where the (ignorable v) declaration is there just in case the body doesn't
-; use v, and the return-last is just the marker indicating that a lambda$
+; use v, and the inner return-last is just the marker indicating that a lambda$
 ; produced this quoted LAMBDA object.  But henceforth we will show
 ; ``translations'' that are just ``essentially translations,'' untranslating
 ; familiar terms like (binary-+ '1 x) and dropping parts that are irrelevant.
@@ -12817,7 +12808,7 @@
 ; the loop$ expression does not provide a BY k clause, BY 1 is understood.
 ; Unlike CLTL, we require that i, j, and k be integers.  CLTL already requires
 ; that k be positive.  This restriction makes it easier to admit from-to-by and
-; is tail-recursive counterpart.
+; its tail-recursive counterpart.
 
 ;;; Possible Future Work on Loop$: CLTL supports from/downfrom/upfrom and
 ;;; to/downto/upto/below/above.  Eventually we should change the parse-loop$ to
@@ -12862,17 +12853,22 @@
 ; -----------------------------------------------------------------
 ; Section 5:  Handling UNTIL and WHEN Clauses
 
-; Until and when clauses are handled in the same spirit as ON: copy the target
+; UNTIL and WHEN clauses are handled in the same spirit as ON: copy the target
 ; and select the relevant elements.
 
 ; Let's consider an example.  The constant *tenk-tenk* used below is the
 ; concatenation of the integers from 1 to 10,000, together with itself, i.e.,
 ; '(1 2 3 ... 10000 1 2 3 ... 10000).  However, in the translations below we
-; will show it as *tenk-tenk*.  This loop$
+; will show it as *tenk-tenk*.
+
+; (defconst *tenk* (from-to-by 1 10000 1))
+; (defconst *tenk-tenk* (append *tenk* *tenk*))
+
+; This loop$
 
 ; (loop$ for v on *tenk-tenk*
 ;        until (not (member (car v) (cdr v)))
-;        when (evenp (car v))
+;        when (and v (evenp (car v)))
 ;        collect (car v))
 
 ; collects the even elements of the target but stops as soon as the element no
@@ -12880,14 +12876,17 @@
 ; 10000 and the loop$ produces (2 4 6 ... 10000).  This, of course, is a silly
 ; way to collect the evens up to 10000 but stresses our evaluation mechanism.
 
-; The translation is
+; By using :tcp we come up with the following cleaned-up translation.
 
 ; (collect$
-;  (lambda$ (v) (car v))
+;  (lambda$ (loop$-ivar) (car loop$-ivar))
 ;  (when$
-;   (lambda$ (v) (evenp (car v)))
+;   (lambda$ (loop$-ivar)
+;            (and loop$-ivar (evenp (car loop$-ivar))))
 ;   (until$
-;    (lambda$ (v) (not (member (car v) (cdr v))))
+;    (lambda$ (loop$-ivar)
+;             (not (member-equal (car loop$-ivar)
+;                                (cdr loop$-ivar))))
 ;    (tails *tenk-tenk*))))
 
 ; That is, first we enumerate the tails of the target, then we cut it off at
@@ -12901,8 +12900,17 @@
 ; the ACL2 loop.  However, we're satisfied with the current top-level
 ; evaluation performance.
 
-; Let's put some numbers on that.  We start with an empty compiled LAMBDA
-; cache.
+; Let's put some numbers on that.  We first clear the cache by setting its size
+; in raw Lisp.  The default size is 1000, but we set the size below to 6.
+; There are three lambdas in in the translation above, but each one gets into
+; the cache twice, probably because of the slightly different versions of each
+; lambda being seen, some with the RETURN-LAST markers and some without those
+; markers.  So 6 is the minimal size to hold every lambda evaluation will see;
+; increasing the cache size seems unlikely to change anything.
+
+; (value :q)
+; (setq *cl-cache* 6)
+; (lp)
 
 ; The simplest version of our loop$, containing no declarations, is timed
 ; below.
@@ -12911,32 +12919,35 @@
 ;              (loop$ for v
 ;                     on *tenk-tenk*
 ;                     until (not (member (car v) (cdr v)))
-;                     when (evenp (car v))
+;                     when (and v (evenp (car v)))
 ;                     collect (car v))))
 
-; 2.48 seconds realtime, 2.48 seconds runtime
+; 1.66 seconds realtime, 1.66 seconds runtime
 
-; Printing the cache shows that each of the lambdas in the translation has
-; status :BAD because tau cannot prove the guard conjectures (e.g., on (car
-; v)), so the lambdas are interpreted.
+; Now print the cache:
+
+; (print-cl-cache)
+
+; This shows that each of the lambdas in the translation has status :BAD
+; because tau cannot prove the guard conjectures (e.g., on (car v)), so the
+; lambdas are interpreted.
 
 ; After clearing the cache, we try again, but this time with an appropriate
 ; OF-TYPE declaration:
 
+; (value :q)
+; (setq *cl-cache* 6)
+; (lp)
+
 ; ACL2 !>(len (time$
-;              (loop$ for v of-type (and cons (satisfies integer-listp))
+;              (loop$ for v of-type (satisfies integer-listp)
 ;                     on *tenk-tenk*
 ;                     until (not (member (car v) (cdr v)))
-;                     when (evenp (car v))
+;                     when (and v (evenp (car v)))
 ;                     collect (car v))))
 
-; 2.76 seconds realtime, 2.76 seconds runtime
-
-; The three lambdas in the translation of this loop$ each have a guard of (and
-; (consp v) (integer-listp v)).  Tau spends a little more time, proves the
-; guards on the outermost lambda, responsible for collecting (car v), but fails
-; on the other two (which involve the guards of member and evenp).  The total
-; time is a little more than the undeclared version.
+; 2.54 seconds realtime, 2.54 seconds runtime
+; Tau spends time trying to verify guards.
 
 ; [Note: Tau is weak and often fails in its role of verifying guards.  We
 ; live with it.  Perhaps we should worry more about strengthening guard
@@ -12947,12 +12958,15 @@
 ; After clearing the cache again, we define a function containing this same
 ; declared loop$ over a list of integers:
 
+; (value :q)
+; (setq *cl-cache* 6)
+; (lp)
 ; (defun bar (lst)
 ;   (declare (xargs :guard (integer-listp lst)))
-;   (loop$ for v of-type (and cons (satisfies integer-listp))
+;   (loop$ for v of-type (satisfies integer-listp)
 ;          on lst
 ;          until (not (member (car v) (cdr v)))
-;          when (evenp (car v))
+;          when (and v (evenp (car v)))
 ;          collect (car v)))
 
 ; This definition is guard verified, but the proofs of the special guard
@@ -12964,49 +12978,49 @@
 ; (i.e., they contain no fixers).  Here is conjecture (a) for the collect$
 ; term:
 
-; Special Conjecture (a) for the collect$ term:
+; Special Conjecture (a) for the collect$ term (cleaned up):
 ; (implies
 ;  (and (integer-listp lst)
 ;       (member-equal newv
-;                     (when$ (lambda$ (v) (evenp (car v)))
-;                            (until$ (lambda$ (v) (not (member (car v)
-;                                                              (cdr v))))
+;                     (when$ (lambda$ (loop$-ivar) (evenp (car loop$-ivar)))
+;                            (until$ (lambda$ (loop$-ivar)
+;                                             (not (member (car loop$-ivar)
+;                                                          (cdr loop$-ivar))))
 ;                                    (tails lst)))))
-;  (and (consp newv)
-;       (integer-listp newv)))
+;  (integer-listp newv))
 
 ; This requires showing that if lst is a list of integers and newv is a member
 ; of the target of the collect$, then newv is a non-empty list of integers.
 ; (This is true because the target of the collect$ is the list of non-empty
 ; tails of lst, filtered by the until$ and when$ lambdas.)
 
-; All the lambdas are added to the cache with status :GOOD and compiled.  But
-; that is irrelevant because executing bar on a list of integers will not
+; Now there are 3 lambdas in the cache and they're all GOOD and compiled.
+
+; (print-cl-cache)
+
+; But that is irrelevant because executing bar on a list of integers will not
 ; actually use apply$ or the lambdas but will run the raw Lisp loop instead.
 
-; ACL2 !>(len (time$ (bar *tenk-tenk*)))
-
-; 0.40 seconds realtime, 0.40 seconds runtime
+; (len (time$ (bar *tenk-tenk*)))
+; 0.24 seconds realtime, 0.24 seconds runtime
 
 ; Of course, this time includes checking the guard that *tenk-tenk* is a list
 ; of integers.  That however takes an insignificant amount of time; if we run
 ; bar in raw Lisp (which doesn't actually check the guard but just plows into
-; the compiled raw Lisp loop) the time is 0.38 seconds.
+; the compiled raw Lisp loop) the time is indistiguishable from the time in the
+; ACL2 read-eval-print loop.
 
-; One other fact of note: having verified the guards on the three lambdas and
-; entered them into the cache, we can expect
+; Running the loop$ in the loop is a little faster too, because all the lambdas
+; encountered by the top-level are :GOOD and compiled.  Recall that when guard
+; verification was left to tau alone we saw a time of 2.54 seconds.
 
-; ACL2 !>(len (time$
-;              (loop$ for v of-type (and cons (satisfies integer-listp))
-;                     on *tenk-tenk*
-;                     until (not (member (car v) (cdr v)))
-;                     when (evenp (car v))
-;                     collect (car v))))
-; 1.69 seconds realtime, 1.69 seconds runtime
-
-; to run faster because all the lambdas encountered by the top-level are :GOOD
-; and compiled.  Recall that when guard verification was left to tau alone
-; (which failed on two of the three) we saw a time of 2.48 seconds.
+; (len (time$
+;       (loop$ for v of-type (satisfies integer-listp)
+;          on *tenk-tenk*
+;          until (not (member (car v) (cdr v)))
+;          when (and v (evenp (car v)))
+;          collect (car v))))
+; 1.12 seconds realtime, 1.12 seconds runtime
 
 ; -----------------------------------------------------------------
 ; Section 6:  About Member-Equal and the Mempos Correspondence
@@ -13036,7 +13050,7 @@
 ; But the user might need the stronger fact that the value of x1, x2, x3, ...,
 ; are in correspondence with the elements of t1, t2, t3, ...
 
-; Books/projects/apply/mempos.lisp also includes a rewrite rule, named
+; File books/projects/apply/mempos.lisp also includes a rewrite rule, named
 ; mempos-correspondence, that rewrites the (member-equal newvar (loop$-as (list
 ; t1 ... ))) into the salient facts the components of newvar.  However, it only
 ; handles the first three cases, for (list t1), (list t1 t2), and (list t1 t2
@@ -13079,7 +13093,7 @@
 
 ; -----------------------------------------------------------------
 ; Section 7:  An Example Plain Loop$, the :Guard Clause,
-;            and Guard Conjectures
+;             and Guard Conjectures
 
 ; For this example we define three renamings of integerp: int1p, int2p, and
 ; int3p.  Each has a guard of t and just tests integerp.  We do this so we can
@@ -13129,7 +13143,7 @@
 ;          sum :guard (int3p v)
 ;              (isq v)))
 
-; We allow such :guard clauses immediately after the until, the when, and the
+; We allow such :guard clauses immediately after the UNTIL, the WHEN, and the
 ; loop$ operator symbols and before the corresponding expression.  The :guard
 ; term is inserted as an extra conjunct into the guard of the lambda$ generated
 ; for the corresponding expression.
@@ -13141,8 +13155,7 @@
 
 ; (sum$ (lambda$ (v)
 ;                (declare (type rational v)
-;                         (xargs :guard (and (rationalp v) (int3p v))
-;                                :split-types t))
+;                         (xargs :guard (int3p v)))
 ;                (isq v))
 ;       (when$ (lambda$ (v)
 ;                       (declare (type rational v))
@@ -13151,12 +13164,12 @@
 
 ; The two lambda$'s guards are different.  The first lambda$ retains the (type
 ; rationalp v) declaration from the of-type spec but its :guard now includes
-; (int3p v) as an extra conjunct from our added :guard clause in the body of
-; the loop$.  By allowing the user to extend the guards generated from the CLTL
-; type specs we allow the translation to produce verifiable lambda$
-; expressions.  (One could imagine producing this extra guard automatically
-; from the when clause, but as the when$ expression gets more complicated we
-; believe automatic guard inference will be inadequate.)
+; (int3p v) from our added :guard clause in the body of the loop$.  By allowing
+; the user to extend the guards generated from the CLTL type specs we allow the
+; translation to produce verifiable lambda$ expressions.  (One could imagine
+; producing this extra guard automatically from the when clause, but as the
+; when$ expression gets more complicated we believe automatic guard inference
+; will be inadequate.)
 
 ; The guard conjectures produced for sumsqints are enumerated below and then
 ; explained.  Both (when$ fn lst) and (sum$ fn lst) have the normal guard on
@@ -13176,23 +13189,29 @@
 ; (implies (and (rationalp v) (int3p v))                              ; [3]
 ;          (int1p v)))
 
-; (implies (and (rational-listp lst)                                  ; [4]
+; (implies (and (apply$-warrant-int2p)                                ; [4]
+;               (rational-listp lst)
 ;               (member-equal newv lst))
 ;          (rationalp newv))
 
 ; (implies                                                            ; [5]
-;  (and (rational-listp lst)
+;  (and (apply$-warrant-isq)
+;       (apply$-warrant-int2p)
+;       (rational-listp lst)
 ;       (member-equal newv
 ;                     (when$ (lambda$ (v) (int2p v))
 ;                            lst)))
 ;  (and (rationalp newv) (int3p newv)))
 
 ; (implies                                                            ; [6]
-;  (and (rational-listp lst)
+;  (and (apply$-warrant-isq)
+;       (apply$-warrant-int2p)
+;       (rational-listp lst)
 ;       (member-equal newv
 ;                     (when$ (lambda$ (v) (int2p v))
 ;                            lst)))
-;  (acl2-numberp (isq newv)))
+;  (acl2-numberp (apply$ (lambda$ (v) (isq newv))
+;                (list newv))
 
 ; Explanations:
 
@@ -13229,11 +13248,10 @@
 ; All of these must be proved in order to justify the use of the loop$ in
 ; sumsqints.
 
-; Unfortunately, [5] and [6] as written cannot be proved because a warrant on
-; int2p is needed to prove [5] and one on isq is needed for [6].  However,
-; since we only need that the guards hold in the evaluation theory, we can
-; assume the warrants.  Thus, as actually generated by the prover, guard
-; conjectures [5] and [6] provide warrant hypotheses.
+; Note the warrant hypotheses.  Neither [5] nor [6] as written can be proved
+; without warrant hypotheses, because a warrant on int2p is needed to prove [5]
+; and one on isq is needed for [6].  Since we only need that the guards hold in
+; the evaluation theory, we can assume the warrants.
 
 ; We don't need warrants for int1p and int3p because they are just used in
 ; guards.
@@ -13268,17 +13286,17 @@
 ;        as  i of-type integer from 1 to 10
 ;        collect :guard (stringp hdr) (list hdr x i))
 
-; The translation is
+; The (simplified) translation is
 
 ; (collect$+
 ;  (lambda$ (loop$-gvars loop$-ivars)
 ;           (declare (xargs :guard (and (true-listp loop$-gvars)
-;                                       (equal (len loop$-gvars) '1)
+;                                       (equal (len loop$-gvars) 1)
 ;                                       (true-listp loop$-ivars)
-;                                       (equal (len loop$-ivars) '2)
-;                                       (stringp (car loop$-gvars))
+;                                       (equal (len loop$-ivars) 2)
 ;                                       (symbolp (car loop$-ivars))
 ;                                       (integerp (car (cdr loop$-ivars)))
+;                                       (stringp (car loop$-gvars))
 ;                                       )))
 ;           (let ((hdr (car loop$-gvars))
 ;                 (x (car loop$-ivars))
@@ -13288,6 +13306,27 @@
 ;             (list hdr x i)))
 ;  (list hdr)
 ;  (loop$-as (list lst1 (from-to-by '1 '10 '1))))
+
+; Technical Note: the actual call of loop$-as is as follows.  This replaces
+; what used to be generated for this loop$ expression by the now-obsolete
+; Special Conjectures (c).  See make-basic-loop$-target.
+
+; (loop$-as
+;  (list
+;   lst1
+;   (let ((loop$-lo 1)
+;         (loop$-hi 10)
+;         (loop$-by 1))
+;     (declare (type integer loop$-lo loop$-hi loop$-by))
+;     (prog2$ (let ((loop$-final (+ loop$-lo loop$-by
+;                                   (* loop$-by
+;                                      (floor (+ loop$-hi (- loop$-lo))
+;                                             loop$-by)))))
+;               (declare (type integer loop$-final))
+;               loop$-final)
+;             (from-to-by loop$-lo loop$-hi loop$-by)))))
+
+; End of Technical Note.
 
 ; Collect$+ is the fancy version of collect$.  All fancy loop$ scions take
 ; three arguments, a function object of arity 2, a list of values for the
@@ -13370,14 +13409,14 @@
 ;          as i of-type integer in lst
 ;          sum (* (if (eq sign '+) +1 -1) i)))
 
-; The translation of the loop$ is
+; The (simplified) translation of the loop$ is
 
 ; (sum$+                                                              ; [2]
 ;  (lambda$ (loop$-gvars loop$-ivars)
 ;           (declare (xargs :guard (and (true-listp loop$-gvars)
-;                                       (equal (len loop$-gvars) '0)
+;                                       (equal (len loop$-gvars) 0)
 ;                                       (true-listp loop$-ivars)
-;                                       (equal (len loop$-ivars) '2)
+;                                       (equal (len loop$-ivars) 2)
 ;                                       (symbolp (car loop$-ivars))
 ;                                       (integerp (car (cdr loop$-ivars))))))
 ;           (let ((sign (car loop$-ivars))
@@ -13413,7 +13452,7 @@
 ;                     (let ((sign (car loop$-ivars))
 ;                           (i (cadr loop$-ivars)))
 ;                       (* (if (eq sign '+) 1 -1) i)))
-;            (list newv nil)))))
+;            (list nil newv)))))
 
 ; Conjecture [3] establishes the guard of the AS term in [2]: the hypothesis of
 ; [3] is the guard of sum-pos-or-neg, [1], and the conclusion is the guard of
@@ -13830,33 +13869,27 @@
 ; Appendix A:  An Oversight Requiring Additional Work
 
 ; Recall that for every for loop$ scion term that might have been generated by
-; a loop$ statement we generate three guard conjectures that are not required
+; a loop$ statement we may generate two guard conjectures that are not required
 ; by the guard of the scion.
 
 ; Special Conjecture (a): Every member of the target satisfies the guard of the
 ; function object.
 
 ; Special Conjecture (b): On every member of the target, the function object
-; produces a result of the right type, e.g., an acl2-number for SUM and a
+; produces a result of the right type, i.e., an acl2-number for SUM and a
 ; true-listp for APPEND.
 
-; Special Conjecture (c): the type-spec of each iteration var continues to hold
-; at the step BEYOND the last step!  For example, in
-
-; (LOOP$ FOR i OF-TYPE spec FROM 0 TO 23 BY 5 SUM ...)
-
-; Common Lisp requires that 25 satisfies the type spec.  This may seem
-; counterintuitive because the body of the loop only encounters the values 0,
-; 5, 10, 15, and 20.  But the compiler may add 5 to 20 to get 25, store that in
-; i and then test (> i 23) to terminate the loop.  Thus, conjecture (c) makes
-; sure the memory allocated for i will hold that unseen value.
+; (Special Conjectures (c) formerly said that the type-spec holds of specific
+; values, in particular at the step BEYOND the last step.  But as discussed
+; above, this is now handled by modifying the target; see
+; make-basic-loop$-target.)
 
 ; Suppose the user writes this at the top-level ACL2 loop:
 
 ; (loop$ for i of-type integer from 1 to 1000                         ; [1]
 ;        sum (loop$ for j of-type integer from 1 to i sum j))
 
-; This translates to
+; This (essentially) translates to
 
 ; (sum$                                                               ; [2]
 ;  '(lambda (i)
@@ -13923,10 +13956,9 @@
 
 ;;; Possible Future Work on Loop$: From time to time we've asked ourselves: is
 ;;; there a way to allow a loop$ written at the top-level to execute as a loop?
-;;; If apply$ could be used on program-mode functions, then perhaps the use of
-;;; loop$ could just signal a special error (from translate11), suggesting the
-;;; use of TOP-LEVEL.  Then we could avoid the more complicated ideas just
-;;; below.
+;;; Perhaps the use of loop$ could just signal a special error (from
+;;; translate11), suggesting the use of TOP-LEVEL.  Then we could avoid the
+;;; more complicated ideas just below.
 
 ;;; Alternatively, and this would be a fundamental change, we could somehow
 ;;; arrange to execute certain instances of loop$ scions as loops, perhaps by
@@ -17552,6 +17584,39 @@
                              (ignorable ,@ignorables)))
                 ,(excart :untranslated :body carton)))))
 
+(defun make-basic-loop$-target (spec target)
+
+; We use DECLARE rather than THE below simply to get a more informative error
+; message when there is a guard violation during evaluation in the top-level
+; loop.
+
+  (case (car target)
+    (IN (cadr target))
+    (ON `(tails ,(if (eq spec t)
+                     (cadr target)
+                   `(let ((loop$-on ,(cadr target)))
+                      (prog2$
+                       (let ((loop$-last-cdr (last-cdr loop$-on)))
+                         (declare (type ,spec loop$-last-cdr))
+                         loop$-last-cdr)
+                       loop$-on)))))
+    (FROM-TO-BY (if (eq spec t)
+                    target
+                  `(let ((loop$-lo ,(cadr target))
+                         (loop$-hi ,(caddr target))
+                         (loop$-by ,(cadddr target)))
+                     (declare (type ,spec loop$-lo loop$-hi loop$-by))
+                     (prog2$ (let ((loop$-final
+                                    (+ loop$-lo
+                                       loop$-by
+                                       (* loop$-by
+                                          (floor (- loop$-hi loop$-lo)
+                                                 loop$-by)))))
+                               (declare (type ,spec loop$-final))
+                               loop$-final)
+                             (from-to-by loop$-lo loop$-hi loop$-by)))))
+    (otherwise target)))
+
 (defun make-plain-loop$ (v spec target untilc whenc op lobodyc)
 
 ; This function handles plain loop$s, e.g., where there a single iteration
@@ -17563,10 +17628,7 @@
 ; Of course, spec may be t meaning none was provided, the untilc and/or whenc
 ; cartons may be nil meaning no such clause was provided.
 
-  (let* ((target1 (case (car target)
-                    (IN (cadr target))
-                    (ON `(tails ,(cadr target)))
-                    (otherwise target)))
+  (let* ((target1 (make-basic-loop$-target spec target))
          (target2 (if untilc
                       `(until$
                         ,(make-plain-loop$-lambda-object v spec untilc)
@@ -17587,11 +17649,8 @@
 
 (defun make-fancy-loop$-target (tvsts)
   (cond ((endp tvsts) nil)
-        (t (cons (let ((target (cadddr (car tvsts))))
-                   (case (car target)
-                     (IN (cadr target))
-                     (ON `(tails ,(cadr target)))
-                     (otherwise target)))
+        (t (cons (make-basic-loop$-target (cadr (car tvsts))
+                                          (cadddr (car tvsts)))
                  (make-fancy-loop$-target (cdr tvsts))))))
 
 (defun make-fancy-loop$ (tvsts untilc until-free-vars

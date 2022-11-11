@@ -182,17 +182,16 @@
 ; *system-verify-guards-alist-1*, defined below.
 
 (defun tails-ac (lst ac)
-  (declare (xargs :guard (and (true-listp lst)
-                              (true-listp ac))
+  (declare (xargs :guard (true-listp ac)
                   :mode :program))
-  (cond ((endp lst) (revappend ac nil))
+  (cond ((atom lst) (revappend ac nil))
         (t (tails-ac (cdr lst) (cons lst ac)))))
 
 (defun tails (lst)
-  (declare (xargs :guard (true-listp lst)
+  (declare (xargs :guard t
                   :mode :program))
   (mbe :logic
-       (cond ((endp lst) nil)
+       (cond ((atom lst) nil)
              (t (cons lst (tails (cdr lst)))))
        :exec (tails-ac lst nil)))
 
@@ -287,17 +286,6 @@
        :exec (if (< j i)
                  nil
                  (from-to-by-ac i (+ i (* k (floor (- j i) k))) k nil))))
-
-(defun revappend-true-list-fix (x ac)
-
-; This function is equivalent to (revappend (true-list-fix x) ac) but doesn't
-; copy x before reversing it onto ac.
-
-  (declare (xargs :guard t
-                  :mode :program))
-  (if (atom x)
-      ac
-      (revappend-true-list-fix (cdr x) (cons (car x) ac))))
 
 ; Handling the Primitives
 
@@ -581,7 +569,6 @@
     (REMOVE-LAMBDAS)
     (REMOVE-LAMBDAS-LST ACL2-COUNT TERMLIST)
     (REMOVE-LAMBDAS1 ACL2-COUNT TERM)
-    (REVAPPEND-TRUE-LIST-FIX ACL2-COUNT X)
     (RUNEP)
     (SAVED-OUTPUT-TOKEN-P)
     (SCAN-PAST-WHITESPACE NFIX (BINARY-+ MAXIMUM (UNARY-- I)))

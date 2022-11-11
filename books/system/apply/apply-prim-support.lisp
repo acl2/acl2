@@ -11,17 +11,16 @@
 
 #+acl2-devel ; else not redundant
 (defun tails-ac (lst ac)
-  (declare (xargs :guard (and (true-listp lst)
-                              (true-listp ac))))
-  (cond ((endp lst) (revappend ac nil))
+  (declare (xargs :guard (true-listp ac)))
+  (cond ((atom lst) (revappend ac nil))
         (t (tails-ac (cdr lst) (cons lst ac)))))
 
 #+acl2-devel ; else not redundant
 (defun tails (lst)
-  (declare (xargs :guard (true-listp lst)
+  (declare (xargs :guard t
                   :verify-guards nil))
   (mbe :logic
-       (cond ((endp lst) nil)
+       (cond ((atom lst) nil)
              (t (cons lst (tails (cdr lst)))))
        :exec (tails-ac lst nil)))
 
@@ -288,13 +287,6 @@
 (verify-guards from-to-by
   :hints (("Goal" :in-theory (disable floor)
                   :use from-to-by-ac=from-to-by-special-case)))
-
-#+acl2-devel ; else not redundant
-(defun revappend-true-list-fix (x ac)
-  (declare (xargs :guard t))
-  (if (atom x)
-      ac
-      (revappend-true-list-fix (cdr x) (cons (car x) ac))))
 
 #+acl2-devel
 (include-book "../top") ; includes ../meta-extract

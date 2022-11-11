@@ -6261,6 +6261,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       l
     (last (cdr l))))
 
+(defun last-cdr (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      x
+    (cdr (last x))))
+
+(defthm last-cdr-is-nil
+  (implies (true-listp x)
+           (equal (last-cdr x) nil)))
+
 (defun first-n-ac (i l ac)
   (declare (type (integer 0 *) i)
            (xargs :guard (and (true-listp l)
@@ -29255,3 +29265,13 @@ Lisp definition."
                              internal-time-units-per-second)
                           state))))
   (read-run-time state))
+
+(defun the-number (x)
+  (declare (xargs :guard (acl2-numberp x)))
+  (mbe :logic (fix x)
+       :exec x))
+
+(defun the-true-list (x)
+  (declare (xargs :guard (true-listp x)))
+  (mbe :logic (true-list-fix x)
+       :exec x))

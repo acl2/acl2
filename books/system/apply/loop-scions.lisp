@@ -39,17 +39,16 @@
 
 #+acl2-devel ; else not redundant
 (defun$ tails-ac (lst ac)
-  (declare (xargs :guard (and (true-listp lst)
-                              (true-listp ac))))
-  (cond ((endp lst) (revappend ac nil))
+  (declare (xargs :guard (true-listp ac)))
+  (cond ((atom lst) (revappend ac nil))
         (t (tails-ac (cdr lst) (cons lst ac)))))
 
 #+acl2-devel ; else not redundant
 (defun$ tails (lst)
-  (declare (xargs :guard (true-listp lst)
+  (declare (xargs :guard t
                   :verify-guards nil))
   (mbe :logic
-       (cond ((endp lst) nil)
+       (cond ((atom lst) nil)
              (t (cons lst (tails (cdr lst)))))
        :exec (tails-ac lst nil)))
 
@@ -469,7 +468,8 @@
       ac
       (sum$-ac fn
                (cdr lst)
-               (+ (fix (apply$ fn (list (car lst)))) ac))))
+               (+ (ec-call (the-number (apply$ fn (list (car lst)))))
+                  ac))))
 
 #+acl2-devel ; else not redundant
 (defun$ sum$ (fn lst)
@@ -480,7 +480,7 @@
   (mbe :logic
        (if (endp lst)
            0
-           (+ (fix (apply$ fn (list (car lst))))
+           (+ (ec-call (the-number (apply$ fn (list (car lst)))))
               (sum$ fn (cdr lst))))
        :exec (sum$-ac fn lst 0)))
 
@@ -502,7 +502,8 @@
       ac
       (sum$+-ac fn globals
                 (cdr lst)
-                (+ (fix (apply$ fn (list globals (car lst)))) ac))))
+                (+ (ec-call (the-number (apply$ fn (list globals (car lst)))))
+                   ac))))
 
 #+acl2-devel ; else not redundant
 (defun$ sum$+ (fn globals lst)
@@ -514,7 +515,7 @@
   (mbe :logic
        (if (endp lst)
            0
-           (+ (fix (apply$ fn (list globals (car lst))))
+           (+ (ec-call (the-number (apply$ fn (list globals (car lst)))))
               (sum$+ fn globals (cdr lst))))
        :exec (sum$+-ac fn globals lst 0)))
 
@@ -639,17 +640,6 @@
 ; Append$, Append$+, and Their Tail Recursive Counterparts
 
 #+acl2-devel ; else not redundant
-(defun$ revappend-true-list-fix (x ac)
-  (declare (xargs :guard t))
-  (if (atom x)
-      ac
-      (revappend-true-list-fix (cdr x) (cons (car x) ac))))
-
-(defthm true-listp-revappend-true-list-fix
-  (iff (true-listp (revappend-true-list-fix a b))
-       (true-listp b)))
-
-#+acl2-devel ; else not redundant
 (defun$ append$-ac (fn lst ac)
   (declare (xargs :guard (and (apply$-guard fn '(nil))
                               (true-listp lst)
@@ -657,9 +647,9 @@
   (cond ((endp lst) (revappend ac nil))
         (t (append$-ac fn
                        (cdr lst)
-                       (revappend-true-list-fix
-                        (apply$ fn (list (car lst)))
-                        ac)))))
+                       (ec-call (revappend
+                                 (apply$ fn (list (car lst)))
+                                 ac))))))
 
 #+acl2-devel ; else not redundant
 (defun$ append$ (fn lst)
@@ -670,7 +660,7 @@
        (if (endp lst)
            nil
            (append
-            (true-list-fix (apply$ fn (list (car lst))))
+            (ec-call (the-true-list (apply$ fn (list (car lst)))))
             (append$ fn (cdr lst))))
        :exec (append$-ac fn lst nil)))
 
@@ -690,8 +680,9 @@
         (t (append$+-ac fn
                         globals
                         (cdr lst)
-                        (revappend-true-list-fix
-                         (apply$ fn (list globals (car lst)))
+                        (revappend
+                         (ec-call
+                          (the-true-list (apply$ fn (list globals (car lst)))))
                          ac)))))
 
 #+acl2-devel ; else not redundant
@@ -704,7 +695,7 @@
        (if (endp lst)
            nil
            (append
-            (true-list-fix (apply$ fn (list globals (car lst))))
+            (ec-call (the-true-list (apply$ fn (list globals (car lst)))))
             (append$+ fn globals (cdr lst))))
        :exec (append$+-ac fn globals lst nil)))
 

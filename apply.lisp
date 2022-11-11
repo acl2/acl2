@@ -2906,16 +2906,19 @@
                   :mode :program))
   (if (endp lst)
       ac
-      (sum$-ac fn
-               (cdr lst)
-               (+ (fix (apply$ fn (list (car lst)))) ac))))
+    (sum$-ac fn
+             (cdr lst)
+             (+ (ec-call (the-number (apply$ fn (list (car lst)))))
+                ac))))
 
-; Note the fix in both sum$-ac and sum$.  Once upon a time we thought perhaps
-; we could avoid the fix in sum$-ac by arranging for sum$-ac to be treated as a
-; special loop$ scion, which would have imposed the guard conjecture that fn
-; returns a number on every newv in lst.  But that would impose the elaboration
-; of the :guard below on sum$, which would then require checking at runtime.
-; So the fix in sum$-ac is necessary if we're to avoid that expensive check.
+; Note the "fixing" in both sum$-ac and sum$.  Once upon a time we thought
+; perhaps we could avoid the fixing in sum$-ac by arranging for sum$-ac to be
+; treated as a special loop$ scion, which would have imposed the guard
+; conjecture that fn returns a number on every newv in lst.  But that would
+; require us to strengthen the :guard below on sum$ accordingly, with the
+; condition that (apply$ fn (list x)) is a number for every x in lst.  So the
+; fixing in sum$-ac is necessary if we're to avoid that additional
+; guard-checking expense for calls of sum$.
 
 (defun sum$ (fn lst)
   (declare (xargs :guard
@@ -2925,7 +2928,7 @@
   (mbe :logic
        (if (endp lst)
            0
-           (+ (fix (apply$ fn (list (car lst))))
+           (+ (ec-call (the-number (apply$ fn (list (car lst)))))
               (sum$ fn (cdr lst))))
        :exec (sum$-ac fn lst 0)))
 
@@ -2938,9 +2941,10 @@
                   :mode :program))
   (if (endp lst)
       ac
-      (sum$+-ac fn globals
-                (cdr lst)
-                (+ (fix (apply$ fn (list globals (car lst)))) ac))))
+    (sum$+-ac fn globals
+              (cdr lst)
+              (+ (ec-call (the-number (apply$ fn (list globals (car lst)))))
+                 ac))))
 
 (defun sum$+ (fn globals lst)
   (declare (xargs :guard
@@ -2951,7 +2955,7 @@
   (mbe :logic
        (if (endp lst)
            0
-           (+ (fix (apply$ fn (list globals (car lst))))
+           (+ (ec-call (the-number (apply$ fn (list globals (car lst)))))
               (sum$+ fn globals (cdr lst))))
        :exec (sum$+-ac fn globals lst 0)))
 
@@ -3074,11 +3078,9 @@
 
 ; Rather than try to model this behavior (which would complicate subsequent
 ; proofs about loop$ append) we just require all results to be true-listps.
-; Logically, we'll fix each result with true-list-fix.  But the special loop$
-; scion guard conjectures will require it to be proved because CLTL doesn't fix
-; the result.
-
-; See apply-prim.lisp for the definition of revappend-true-list-fix.
+; Logically, we'll fix each result with, essentially, fix-true-list.  But the
+; special loop$ scion guard conjectures will require it to be proved because
+; CLTL doesn't fix the result.
 
 (defun append$-ac (fn lst ac)
   (declare (xargs :guard (and (apply$-guard fn '(nil))
@@ -3088,9 +3090,17 @@
   (cond ((endp lst) (revappend ac nil))
         (t (append$-ac fn
                        (cdr lst)
-                       (revappend-true-list-fix
-                        (apply$ fn (list (car lst)))
-                        ac)))))
+
+; We could be more efficient by avoiding ec-call, instead using a version of
+; revappend that tests the end with atom instead of endp.  But this way, a
+; guard violation will mention the entire offending list, which is particularly
+; useful when it's encountered on behalf of (loop$ for ... append ...).  That
+; is the common use case, and if someone wants speed they should verify guards
+; so that loop$ becomes loop.
+
+                       (ec-call (revappend
+                                 (apply$ fn (list (car lst)))
+                                 ac))))))
 
 (defun append$ (fn lst)
   (declare (xargs :guard (and (apply$-guard fn '(nil))
@@ -3099,9 +3109,9 @@
   (mbe :logic
        (if (endp lst)
            nil
-           (append
-            (true-list-fix (apply$ fn (list (car lst))))
-            (append$ fn (cdr lst))))
+         (append
+          (ec-call (the-true-list (apply$ fn (list (car lst)))))
+          (append$ fn (cdr lst))))
        :exec (append$-ac fn lst nil)))
 
 (defun append$+-ac (fn globals lst ac)
@@ -3114,8 +3124,9 @@
         (t (append$+-ac fn
                         globals
                         (cdr lst)
-                        (revappend-true-list-fix
-                         (apply$ fn (list globals (car lst)))
+                        (revappend
+                         (ec-call
+                          (the-true-list (apply$ fn (list globals (car lst)))))
                          ac)))))
 
 (defun append$+ (fn globals lst)
@@ -3127,7 +3138,7 @@
        (if (endp lst)
            nil
            (append
-            (true-list-fix (apply$ fn (list globals (car lst))))
+            (ec-call (the-true-list (apply$ fn (list globals (car lst)))))
             (append$+ fn globals (cdr lst))))
        :exec (append$+-ac fn globals lst nil)))
 

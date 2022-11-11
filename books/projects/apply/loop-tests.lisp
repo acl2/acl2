@@ -304,7 +304,9 @@
                                                (DECLARE (IGNORABLE I))
                                                (SQUARE I)))
                                    ((LAMBDA (I) (SQUARE I)) LOOP$-IVAR)))
-             (FROM-TO-BY LOWER UPPER '1))))
+             ((LAMBDA (LOOP$-LO LOOP$-HI LOOP$-BY)
+                      (FROM-TO-BY LOOP$-LO LOOP$-HI LOOP$-BY))
+              LOWER UPPER '1))))
 
 (assert! ; may be able to use assert-event after a bug fix is in place
  (equal
@@ -312,11 +314,25 @@
    (cadr (cadr (mv-list 2 (guard-obligation 'f2 nil nil t 'top-level state))))
    nil
    (w state))
-  '((IMPLIES (AND (APPLY$-WARRANT-SQUARE)
-                  (INTEGERP LOWER)
-                  (INTEGERP UPPER)
-                  (MEMBER-EQUAL NEWV (FROM-TO-BY LOWER UPPER 1)))
-             (INTEGERP NEWV)))))
+  '((IMPLIES
+     (AND
+      (APPLY$-WARRANT-SQUARE)
+      (INTEGERP LOWER)
+      (INTEGERP UPPER)
+      (MEMBER-EQUAL
+       NEWV
+       (LET ((LOOP$-LO LOWER)
+             (LOOP$-HI UPPER)
+             (LOOP$-BY 1))
+            (DECLARE (TYPE INTEGER LOOP$-LO LOOP$-HI LOOP$-BY))
+            (PROG2$ (LET ((LOOP$-FINAL (+ LOOP$-LO LOOP$-BY
+                                          (* LOOP$-BY
+                                             (FLOOR (+ LOOP$-HI (- LOOP$-LO))
+                                                    LOOP$-BY)))))
+                         (DECLARE (TYPE INTEGER LOOP$-FINAL))
+                         LOOP$-FINAL)
+                    (FROM-TO-BY LOOP$-LO LOOP$-HI LOOP$-BY)))))
+     (INTEGERP NEWV)))))
 
 (must-fail
  (defun f2-alt (lower upper)
