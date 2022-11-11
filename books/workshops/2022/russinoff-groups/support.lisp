@@ -2908,7 +2908,7 @@
 	        (and (in x g) (equal (op a x g) (op x a g)))))
   :hints (("Goal" :in-theory (enable centizer-elts-iff))))
 
-(in-theory (disable dm::centralizer-elts))
+(in-theory (disable centralizer-elts))
 
 (defthmd centralizer-conj-iff
   (implies (and (groupp g) (in a g))
@@ -4316,7 +4316,7 @@
       (cauchy-induction (centralizer (find-elt g p) g) p)
     t))
 
-(in-theory (disable dm::center-elts find-elt))
+(in-theory (disable center-elts find-elt))
 
 (defthm cauchy-lemma
   (implies (and (groupp g)
