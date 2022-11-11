@@ -108,5 +108,5 @@
   (equal (equal x x)
          t))
 
-(acl2::add-known-boolean rtl::primep)
+(acl2::add-known-boolean dm::primep)
 (acl2::add-known-boolean fep)

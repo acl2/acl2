@@ -2,7 +2,7 @@
 ;; david@russinoff.com
 ;; http://www.russinoff.com
 
-(in-package "RTL")
+(in-package "DM")
 (include-book "xdoc/top" :dir :system)
 
 (local (include-book "support/euclid"))
