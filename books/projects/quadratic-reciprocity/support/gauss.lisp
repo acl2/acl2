@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "DM")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -108,7 +108,7 @@
 		  (integerp m)
 		  (not (divides p m)))
 	     (perm (positives (/ (1- p) 2))
-		   (reflections (/ (1- p) 2) m p)))
+                   (reflections (/ (1- p) 2) m p)))
   :rule-classes ()
   :hints (("Goal" :use ((:instance reflections-distinct-positives (n (/ (1- p) 2)))
 			(:instance pigeonhole-principle (l (reflections (/ (1- p) 2) m p)))))))
@@ -133,7 +133,7 @@
 		  (integerp a))
 	     (equal (mod (+ (* n a) m) n)
 		    (mod m n)))
-  :hints (("Goal" :use (mod-mult))))
+  :hints (("Goal" :use (acl2::mod-mult))))
 
 (defthm times-list-reflection-mod-prods
     (implies (and (not (zp p))
@@ -144,23 +144,23 @@
 			(mod (times-list (mod-prods n m p)) p)
 		      (mod (- (times-list (mod-prods n m p))) p))))
   :rule-classes ()
-  :hints (("Subgoal *1/3" :use ((:instance mod-times-mod
+  :hints (("Subgoal *1/3" :use ((:instance rtl::mod-times-mod
 					   (a (times-list (reflections (1- n) m p)))
 					   (b (times-list (mod-prods (1- n) m p)))
 					   (c (mod (* m n) p))
 					   (n p))
-				(:instance mod-times-mod
+				(:instance rtl::mod-times-mod
 					   (a (times-list (reflections (1- n) m p)))
 					   (b (- (times-list (mod-prods (1- n) m p))))
 					   (c (mod (* m n) p))
 					   (n p))))
 	  ("Subgoal *1/2" :use ((:instance evenp-oddp (m (mu (1- n) m p)))
-				(:instance mod-times-mod
+				(:instance rtl::mod-times-mod
 					   (a (times-list (reflections (1- n) m p)))
 					   (b (times-list (mod-prods (1- n) m p)))
 					   (c (- (mod (* m n) p)))
 					   (n p))
-				(:instance mod-times-mod
+				(:instance rtl::mod-times-mod
 					   (a (times-list (reflections (1- n) m p)))
 					   (b (- (times-list (mod-prods (1- n) m p))))
 					   (c (- (mod (* m n) p)))
@@ -196,9 +196,9 @@
 			(:instance not-divides-p-fact (n (/ (1- p) 2)))
 			(:instance mod-times-prime
 				   (a (- (fact (/ (1- p) 2)))) (b (expt m (/ (1- p) 2))) (c -1))
-			(:instance mod-mult (m -1) (a 1) (n p))
+			(:instance acl2::mod-mult (m -1) (a 1) (n p))
 			(:instance divides-product (x p) (y (- (fact (/ (1- p) 2)))) (z -1))
-			(:instance mod-times-mod
+			(:instance rtl::mod-times-mod
 				   (a (times-list (mod-prods (/ (1- p) 2) m p)))
 				   (b (* (fact (/ (1- p) 2)) (expt m (/ (1- p) 2))))
 				   (c -1)
@@ -254,7 +254,7 @@
 		  (not (= p 2)))
 	     (equal (mod p 8)
 		    (- p (* 8 (fl (/ p 8))))))
-  :hints (("Goal" :use ((:instance mod-def (x p) (y 8))))))
+  :hints (("Goal" :use ((:instance rtl::mod-def (x p) (y 8))))))
 
 (defthm mu-rewrite
     (implies (and (primep p)
@@ -276,10 +276,10 @@
 	     (member (mod p 8) '(1 3 5 7)))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable divides)
-		  :use ((:instance mod-def (x p) (y 8))
+		  :use ((:instance rtl::mod-def (x p) (y 8))
 			(:instance primep-no-divisor (d 2))
 			(:instance primep-no-divisor (d 8))
-			(:instance mod-bnd-1 (m p) (n 8))
+			(:instance rtl::mod-bnd-1 (m p) (n 8))
 			(:instance member-positives (x (mod p 8)) (n 7))
 			(:instance divides-mod-0 (n 8) (a p))))))
 

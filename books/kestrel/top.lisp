@@ -27,7 +27,7 @@
 ;; (include-book "built-in-theorems-doc")
 (include-book "c/top")
 (merge-io-pairs
- rtl::primep
+ dm::primep
  (include-book "crypto/top"))
 (include-book "error-checking/top")
 (include-book "evaluators/top")

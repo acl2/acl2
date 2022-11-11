@@ -1,10 +1,24 @@
-(IN-PACKAGE "RTL")
+(IN-PACKAGE "ACL2")
 
 (INCLUDE-BOOK "rtl/rel11/lib/rac" :DIR :SYSTEM)
 
 (SET-IGNORE-OK T)
 
 (SET-IRRELEVANT-FORMALS-OK T)
+
+;; Aliases in the ACL2 package of some RTL functions:
+(defmacro as (a v x) `(rtl::as ,a ,v ,x))
+(defmacro ag (a x) `(rtl::ag ,a ,x))
+(defmacro fl (x) `(rtl::fl ,x))
+(defmacro logior1 (x y) `(rtl::logior1 ,x ,y))
+(defmacro logand1 (x y) `(rtl::logand1 ,x ,y))
+(defmacro lognot1 (x) `(rtl::lognot1 ,x))
+(defmacro log< (x y) `(rtl::log< ,x ,y))
+(defmacro log<= (x y) `(rtl::log<= ,x ,y))
+(defmacro log= (x y) `(rtl::log= ,x ,y))
+(defmacro log>= (x y) `(rtl::log>= ,x ,y))
+(defmacro log<> (x y) `(rtl::log<> ,x ,y))
+(defmacro if1 (x y z) `(rtl::if1 ,x ,y ,z))
 
 (DEFUND LUNATION NIL
         (AS 'PART

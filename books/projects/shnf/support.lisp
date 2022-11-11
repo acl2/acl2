@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "DM")
 
 (include-book "std/util/defrule" :dir :system)
 

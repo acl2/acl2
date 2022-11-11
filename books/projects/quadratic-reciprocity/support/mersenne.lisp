@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "DM")
 
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
@@ -203,8 +203,8 @@
   :rule-classes ()
   :hints (("Goal" :use ((:instance second-supplement (p (1+ (* 2 p))))
 			(:instance euler-criterion (m 2) (p (1+ (* 2 p))))
-			(:instance mod-sum (a 1) (b (* 2 p)) (n 8))
-			(:instance mod-prod (k 2) (m p) (n 4))
+			(:instance rtl::mod-sum (a 1) (b (* 2 p)) (n 8))
+			(:instance acl2::mod-prod (k 2) (m p) (n 4))
 			(:instance divides-leq (x (1+ (* 2 p))) (y 2))
 			(:instance divides-mod-equal (a (expt 2 p)) (b 1) (n (1+ (* 2 p))))))))
 
@@ -283,4 +283,3 @@
 )
 
 ;;[Time: 27 seconds]
-

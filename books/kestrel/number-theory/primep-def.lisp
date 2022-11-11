@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "DM")
 
 ;; This book just cherry-picks the definition of primep (and two supporting
 ;; functions) from books/projects/quadratic-reciprocity/support/euclid.lisp.

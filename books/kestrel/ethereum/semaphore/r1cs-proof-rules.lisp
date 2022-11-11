@@ -111,7 +111,7 @@
 
 ;very odd
 (defthmd add-of-mul-normalize-coeffs
-  (implies (and (primep p)
+  (implies (and (dm::primep p)
                 (fep y p) ;drop?
                 (fep k p) ;drop?
                 (not (equal 0 k)))
@@ -140,7 +140,7 @@
 ;; specific to the prime because *-1/2^32* is
 ;can loop?
 (defthmd bitp-of-add-of-mul-normalize-coeffs
-  (implies (and (equal p PRIMES::*BN-254-GROUP-PRIME*) ; (primep p)
+  (implies (and (equal p PRIMES::*BN-254-GROUP-PRIME*) ; (dm::primep p)
                 (fep y p)
                 ;(< (expt 2 32) p)
                 )
@@ -285,7 +285,7 @@
 
 (defthm bitp-of-mul-of-1/2^32
   (implies (and                               ;(posp p)
-            (EQUAL P *BN-254-GROUP-PRIME*)    ;(PRIMEP P)
+            (EQUAL P *BN-254-GROUP-PRIME*)    ;(DM::PRIMEP P)
             (fep x p)
             ;(< (expt 2 33) p) ;needed?
             )
@@ -402,7 +402,7 @@
 
 ;fairly specific
 (DEFTHMd ADD-OF-MUL-NORMALIZE-based-on-second-coeff
-  (IMPLIES (AND (PRIMEP P)
+  (IMPLIES (AND (DM::PRIMEP P)
                 (FEP Y P)
                 (FEP Y0 P)
                 (FEP K P)
@@ -541,7 +541,7 @@
                 (bitp x)
                 (bitp y)
                 (< 2 p)
-                (primep p))
+                (dm::primep p))
            (equal (add (mul k (mul x y p) p)
                        (add x y p)
                        p)
@@ -555,7 +555,7 @@
                 (FEP z p)
                 (posp p)
                 (< 2 p)
-                (primep p))
+                (dm::primep p))
            (equal (equal (mul 2 (mul x (add y1 (add y2 y3 p) p) p) p)
                          (add (neg z p) (add y1 (add y2 (add x y3 p) p) p) p))
                   (equal z (bitxor x (add y1 (add y2 y3 p) p)))))
@@ -573,7 +573,7 @@
                 (fep z p)
                 (posp p)
                 (< 2 p)
-                (primep p))
+                (dm::primep p))
            (equal (equal (mul 2 (mul x (add y1 (add y2 (add y3 y4 p) p) p) p) p)
                          (add y1 (add y2 (add x (add y3 (add y4 (neg z p) p) p) p) p) p))
                   (equal z (bitxor x (add y1 (add y2 (add y3 y4 p) p) p)))))
@@ -598,7 +598,7 @@
                 (FEP z p)
                 (posp p)
                 (< 2 p)
-                (primep p))
+                (dm::primep p))
            (equal (equal (mul 2 (mul x (add y1 (add y2 y3 p) p) p) p)
                          (add x (add y1 (add y2 (add y3 (neg z p) p) p) p) p))
                   (equal z (bitxor x (add y1 (add y2 y3 p) p)))))

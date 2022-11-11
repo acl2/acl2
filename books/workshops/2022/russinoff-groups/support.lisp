@@ -1,6 +1,7 @@
-(in-package "RTL")
+(in-package "DM")
 
 (include-book "rtl/rel11/lib/top" :dir :system)
+(include-book "projects/quadratic-reciprocity/portcullis" :dir :system)
 
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system)
 
@@ -1178,13 +1179,13 @@
 ;; op: the product of group elements x and y as a function of args
 
 (defmacro defgroup (name args cond elts op inv)
-  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "RTL"))
-        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "RTL"))
-	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "RTL"))
-	(groupp-name (intern$ (concatenate 'string "GROUPP-" (symbol-name name)) "RTL"))
-	(name-elts (intern$ (concatenate 'string (symbol-name name) "-ELTS") "RTL"))
-	(name-op-rewrite (intern$ (concatenate 'string (symbol-name name) "-OP-REWRITE") "RTL"))
-	(name-inv-rewrite (intern$ (concatenate 'string (symbol-name name) "-INV-REWRITE") "RTL")))
+  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "DM"))
+        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "DM"))
+	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "DM"))
+	(groupp-name (intern$ (concatenate 'string "GROUPP-" (symbol-name name)) "DM"))
+	(name-elts (intern$ (concatenate 'string (symbol-name name) "-ELTS") "DM"))
+	(name-op-rewrite (intern$ (concatenate 'string (symbol-name name) "-OP-REWRITE") "DM"))
+	(name-inv-rewrite (intern$ (concatenate 'string (symbol-name name) "-INV-REWRITE") "DM")))
     `(encapsulate ()
        (set-ignore-ok t)
        (set-irrelevant-formals-ok t)
@@ -1252,9 +1253,9 @@
 ;; A version of defgroup that defines a family of groups but does not prove anything:
 
 (defmacro defgroup-light (name args elts op)
-  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "RTL"))
-        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "RTL"))
-	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "RTL")))
+  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "DM"))
+        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "DM"))
+	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "DM")))
     `(encapsulate ()
        (defun ,op-name (x y ,@args) ,op)
        (defun ,name-row (x m ,@args)
@@ -1337,8 +1338,8 @@
   :hints (("Goal" :use (member-ninit
                         (:instance member-ninit (x y))
 			(:instance member-ninit (x z))
-                        (:instance mod-sum (a x) (b (+ y z)))
-                        (:instance mod-sum (a z) (b (+ x y)))))))
+                        (:instance rtl::mod-sum (a x) (b (+ y z)) (n n))
+                        (:instance rtl::mod-sum (a z) (b (+ x y)) (n n))))))
 
 (defthm z+-inverse
   (implies (and (posp n)
@@ -1347,7 +1348,7 @@
 	        (equal (z+-op (z+-inv x n) x n) 0)))
   :hints (("Goal" :use (member-ninit
                         (:instance member-ninit (x (z+-inv x n)))
-			(:instance mod-sum (a x) (b (- x)))))))
+			(:instance rtl::mod-sum (a x) (b (- x)) (n n))))))
 
 (in-theory (disable z+-op z+-inv))
 
@@ -1396,7 +1397,7 @@
            (divides k m))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable divides)
-                  :use ((:instance mod-def (x m) (y n))))))
+                  :use ((:instance rtl::mod-def (x m) (y n))))))
 
 (local-defthmd mod-prod-rel-prime
   (implies (and (posp n)
@@ -1560,8 +1561,8 @@
   :hints (("Goal" :use ((:instance member-rel-primes (k x))
                         (:instance member-rel-primes (k y))
                         (:instance member-rel-primes (k z))
-			(:instance mod-mod-times (b x) (a (* y z)))
-			(:instance mod-mod-times (b z) (a (* x y)))))))
+			(:instance rtl::mod-mod-times (b x) (a (* y z)) (n n))
+			(:instance rtl::mod-mod-times (b z) (a (* x y)) (n n))))))
 
 ;; The definition of z*-inv is based on the following lemma from books/projects/quadratic-reciprocity/euclid.lisp"
 
@@ -1590,8 +1591,8 @@
   :hints (("Goal" :use (hack
 		        (:instance g-c-d-linear-combination (y n))
                         (:instance member-rel-primes (k x))
-			(:instance mod-mod-times (a (r-int x n)) (b x))
-                        (:instance mod-mult (m 1) (a (- (s-int x n))))))))
+			(:instance rtl::mod-mod-times (a (r-int x n)) (b x) (n n))
+                        (:instance acl2::mod-mult (m 1) (a (- (s-int x n))) (n n))))))
 
 (local-defthmd z*-inverse-2
   (implies (and (posp n) (> n 1)
@@ -2787,11 +2788,11 @@
 
 (defmacro defsubgroup (name args cond elts)
   (let ((g (car (last args)))
-        (non-nil-name (intern$ (concatenate 'string (symbol-name name) "-NON-NIL") "RTL"))
-        (identity-name (intern$ (concatenate 'string (symbol-name name) "-IDENTITY") "RTL"))
-        (assoc-name (intern$ (concatenate 'string (symbol-name name) "-ASSOC") "RTL"))
-        (inverse-name (intern$ (concatenate 'string (symbol-name name) "-INVERSE") "RTL"))
-        (subgroupp-name (intern$ (concatenate 'string "SUBGROUPP-" (symbol-name name)) "RTL")))
+        (non-nil-name (intern$ (concatenate 'string (symbol-name name) "-NON-NIL") "DM"))
+        (identity-name (intern$ (concatenate 'string (symbol-name name) "-IDENTITY") "DM"))
+        (assoc-name (intern$ (concatenate 'string (symbol-name name) "-ASSOC") "DM"))
+        (inverse-name (intern$ (concatenate 'string (symbol-name name) "-INVERSE") "DM"))
+        (subgroupp-name (intern$ (concatenate 'string "SUBGROUPP-" (symbol-name name)) "DM")))
     `(encapsulate ()
        (defthm ,non-nil-name
          (implies ,cond (not (member-equal () ,elts)))
@@ -3272,7 +3273,7 @@
   (implies (and (groupp g) (in a g) (natp n))
            (equal (power a n g) (power a (mod n (ord a g)) g)))
   :hints (("Goal" :use (ord<=order ord-power
-                        (:instance mod-def (x n) (y (ord a g)))
+                        (:instance rtl::mod-def (x n) (y (ord a g)))
 			(:instance power* (n (ord a g)) (m (fl (/ n (ord a g)))))
 			(:instance power+ (m (* (ord a g) (fl (/ n (ord a g))))) (n (mod n (ord a g))))))))
 
