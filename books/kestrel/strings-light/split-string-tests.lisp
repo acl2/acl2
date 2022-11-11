@@ -29,6 +29,7 @@
         (equal after ""))))
 
 ;; test where the given character appears multiple times
+;; note that we use the *last* occurrence.
 (assert-event
  (mv-let (foundp before after)
    (split-string "ABCDEDEFGH" #\D)
