@@ -582,18 +582,20 @@
                                (ctx ctxp)
                                state)
   :returns (mv erp
-               (file-path stringp)
+               (path-wo-ext stringp)
                state)
   :short "Process the @(':file-name') input."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If successful, return the full path of the file,
-     consisting of the output directory and the extension.")
+    "If successful, return the full path of the file(s),
+     without the @('.c') or @('.h') extension,
+     consisting of the output directory and
+     the file name without extension.")
    (xdoc::p
-    "We form the full path, and we make sure that
-     either does not exist in the file system
-     or is a path to a file and not a directory."))
+    "We make sure that, after adding the @('.c') extension,
+     either the file does not exist in the file system
+     or is a file and not a directory (i.e. has the right kind)."))
   (b* (((unless file-name?)
         (er-soft+ ctx t ""
                   "The :FILE-NAME input must be present, ~
@@ -612,26 +614,27 @@
                    ASCII letters, digits, underscores, and dashes, ~
                    but ~s0 violates this condition."
                   file-name))
-       (file-path (oslib::catpath output-dir (str::cat file-name ".c")))
-       ((mv msg? existsp state) (oslib::path-exists-p file-path))
+       (path-wo-ext (oslib::catpath output-dir file-name))
+       (path.c (str::cat path-wo-ext ".c"))
+       ((mv msg? existsp state) (oslib::path-exists-p path.c))
        ((when msg?) (er-soft+ ctx t ""
                               "The existence of the file path ~x0 ~
                                cannot be tested.  ~
                                ~@1"
-                              file-path msg?))
-       ((when (not existsp)) (acl2::value file-path))
-       ((mv msg? kind state) (oslib::file-kind file-path))
+                              path.c msg?))
+       ((when (not existsp)) (acl2::value path.c))
+       ((mv msg? kind state) (oslib::file-kind path.c))
        ((when msg?) (er-soft+ ctx t ""
                               "The kind of the file path ~x0 ~
                                cannot be tested.  ~
                                ~@1"
-                              file-path msg?))
+                              path.c msg?))
        ((unless (eq kind :regular-file))
         (er-soft+ ctx t ""
                   "The file path ~x0 ~
                    is not a regular file; it has kind ~x1 instead."
-                  file-name kind)))
-    (acl2::value file-path))
+                  path.c kind)))
+    (acl2::value path-wo-ext))
   :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -821,7 +824,7 @@
   :returns
   (mv erp
       (val (tuple (targets symbol-listp)
-                  (file-path stringp)
+                  (path-wo-ext stringp)
                   (pretty-printing pprint-options-p)
                   (proofs booleanp)
                   (prog-const symbolp)
@@ -871,7 +874,7 @@
         (if file-name-option
             (mv (cdr file-name-option) t)
           (mv :irrelevant nil)))
-       ((er file-path :iferr (irr))
+       ((er path-wo-ext :iferr (irr))
         (atc-process-file-name file-name file-name? output-dir ctx state))
        (pretty-printing-option (assoc-eq :pretty-printing options))
        (pretty-printing (if pretty-printing-option
@@ -905,7 +908,7 @@
                 :result))
        ((er & :iferr (irr)) (evmac-process-input-print print ctx state)))
     (acl2::value (list targets
-                       file-path
+                       path-wo-ext
                        pretty-printing
                        proofs
                        prog-const

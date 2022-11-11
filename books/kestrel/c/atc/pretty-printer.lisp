@@ -1372,9 +1372,11 @@
   (xdoc::topstring
    (xdoc::p
     "We pretty-print each file in the fileset, at the associated path.
-     For now a file set only contains a single file,
-     so we just generate a single file."))
-  (pprint-file-to-filesystem (fileset->file fileset)
-                             options
-                             (fileset->path fileset)
-                             state))
+     For now we cause an error if there is a header
+     (which should not be there, but we will add support soon),
+     and we just generate the source file,
+     by appending the @('.c') extension to the path without extension."))
+  (b* (((when (fileset->dot-h fileset))
+        (acl2::value (raise "Internal error: header present.")))
+       (path.c (str::cat (fileset->path-wo-ext fileset) ".c")))
+    (pprint-file-to-filesystem (fileset->dot-c fileset) options path.c state)))

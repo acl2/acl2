@@ -93,8 +93,9 @@
 
   (xdoc::evmac-topic-implementation-item-input "file-name")
 
-  "@('file-path') is the path of the generated C file,
-   obtained from @('output-dir') and @('file-name')."
+  "@('path-wo-ext') is the path of the generated file(s),
+   without the @('.c') or @('.h') extension.
+   This @('path-wo-ext') is obtained from @('output-dir') and @('file-name')."
 
   (xdoc::evmac-topic-implementation-item-input "proofs")
 
