@@ -144,7 +144,7 @@
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
        ((er (list t1...tp
-                  file-path
+                  path-wo-ext
                   pretty-printing
                   proofs
                   prog-const
@@ -153,7 +153,8 @@
                   print))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything t1...tp
-                        file-path
+                        path-wo-ext
+                        nil ; header
                         pretty-printing
                         proofs
                         prog-const

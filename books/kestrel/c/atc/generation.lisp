@@ -7237,22 +7237,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-ext-declon-list ((targets symbol-listp)
-                                 (prec-fns atc-symbol-fninfo-alistp)
-                                 (prec-tags atc-string-taginfo-alistp)
-                                 (prec-objs atc-string-objinfo-alistp)
-                                 (proofs booleanp)
-                                 (prog-const symbolp)
-                                 (init-fun-env-thm symbolp)
-                                 (fn-thms symbol-symbol-alistp)
-                                 (fn-appconds symbol-symbol-alistp)
-                                 (appcond-thms keyword-symbol-alistp)
-                                 (print evmac-input-print-p)
-                                 (names-to-avoid symbol-listp)
-                                 (ctx ctxp)
-                                 state)
+(define atc-gen-ext-declon-lists ((targets symbol-listp)
+                                  (prec-fns atc-symbol-fninfo-alistp)
+                                  (prec-tags atc-string-taginfo-alistp)
+                                  (prec-objs atc-string-objinfo-alistp)
+                                  (proofs booleanp)
+                                  (prog-const symbolp)
+                                  (init-fun-env-thm symbolp)
+                                  (fn-thms symbol-symbol-alistp)
+                                  (fn-appconds symbol-symbol-alistp)
+                                  (appcond-thms keyword-symbol-alistp)
+                                  (header booleanp)
+                                  (print evmac-input-print-p)
+                                  (names-to-avoid symbol-listp)
+                                  (ctx ctxp)
+                                  state)
   :returns (mv erp
-               (val (tuple (exts ext-declon-listp)
+               (val (tuple (exts-h ext-declon-listp)
+                           (exts-c ext-declon-listp)
                            (local-events pseudo-event-form-listp)
                            (exported-events pseudo-event-form-listp)
                            (updated-names-to-avoid symbol-listp)
@@ -7260,12 +7262,28 @@
                     :hyp (and (atc-symbol-fninfo-alistp prec-fns)
                               (symbol-listp names-to-avoid)))
                state)
-  :short "Generate a list of C external declarations from the targets,
+  :short "Generate two lists of C external declarations from the targets,
           including generating C loops from recursive ACL2 functions."
-  (b* (((acl2::fun (irr)) (list nil nil nil nil))
-       ((when (endp targets)) (acl2::value (list nil nil nil names-to-avoid)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first list, @('exts-h'), is for the generated header;
+     the second list, @('exts-c'), is for the generated source file.
+     The flag @('header') controls whether the header is generated or not:
+     if the flag is @('nil'), @('exts-h') is empty,
+     i.e. we only generate external declarations for the source file.")
+   (xdoc::p
+    "If the header is generated,
+     all the structs and external objects go there,
+     while only declarations for the functions go there;
+     the function definitions go into the source file.
+     If the header is not generated,
+     everything goes into the source file."))
+  (b* (((acl2::fun (irr)) (list nil nil nil nil nil))
+       ((when (endp targets)) (acl2::value (list nil nil nil nil names-to-avoid)))
        (target (car targets))
-       ((er (list exts
+       ((er (list exts-h
+                  exts-c
                   prec-fns
                   prec-tags
                   prec-objs
@@ -7281,23 +7299,25 @@
                    ((unless (logicp fn (w state)))
                     (raise "Internal error: ~x0 not in logic mode." fn)
                     (acl2::value (list nil nil nil nil nil nil nil)))
-                   ((er (list exts
+                   ((er (list exts-h
+                              exts-c
                               prec-fns
                               local-events
                               exported-events
                               names-to-avoid)
-                        :iferr (list nil nil nil nil nil))
+                        :iferr (list nil nil nil nil nil nil nil nil))
                     (if (irecursivep+ fn (w state))
                         (b* (((er (list local-events
                                         exported-events
                                         prec-fns
                                         names-to-avoid)
-                                  :iferr (list nil nil nil nil nil))
+                                  :iferr (list nil nil nil nil nil nil nil nil))
                               (atc-gen-loop fn prec-fns prec-tags prec-objs
                                             proofs prog-const
                                             fn-thms fn-appconds appcond-thms
                                             print names-to-avoid ctx state)))
                           (acl2::value (list nil
+                                             nil
                                              prec-fns
                                              local-events
                                              exported-events
@@ -7307,20 +7327,31 @@
                                       exported-events
                                       prec-fns
                                       names-to-avoid)
-                                :iferr (list nil nil nil nil nil))
+                                :iferr (list nil nil nil nil nil nil nil nil))
                             (atc-gen-fundef fn prec-fns prec-tags prec-objs
                                             proofs
                                             prog-const
                                             init-fun-env-thm fn-thms
                                             print names-to-avoid ctx state))
                            (ext (ext-declon-fundef fundef)))
-                        (acl2::value (list (list ext)
-                                           prec-fns
-                                           local-events
-                                           exported-events
-                                           names-to-avoid))))))
+                        (if header
+                            (acl2::value (list (list
+                                                (ext-declon-fun-declon
+                                                 (fundef-to-fun-declon fundef)))
+                                               (list ext)
+                                               prec-fns
+                                               local-events
+                                               exported-events
+                                               names-to-avoid))
+                          (acl2::value (list nil
+                                             (list ext)
+                                             prec-fns
+                                             local-events
+                                             exported-events
+                                             names-to-avoid)))))))
                 (acl2::value
-                 (list exts
+                 (list exts-h
+                       exts-c
                        prec-fns
                        prec-tags
                        prec-objs
@@ -7334,43 +7365,65 @@
                     (atc-gen-tag-declon name info prec-tags proofs
                                         names-to-avoid (w state)))
                    (ext (ext-declon-tag-declon tag-declon)))
-                (acl2::value
-                 (list (list ext)
-                       prec-fns
-                       prec-tags
-                       prec-objs
-                       tag-thms
-                       nil
-                       names-to-avoid))))
+                (if header
+                    (acl2::value (list (list ext)
+                                       nil
+                                       prec-fns
+                                       prec-tags
+                                       prec-objs
+                                       tag-thms
+                                       nil
+                                       names-to-avoid))
+                  (acl2::value (list nil
+                                     (list ext)
+                                     prec-fns
+                                     prec-tags
+                                     prec-objs
+                                     tag-thms
+                                     nil
+                                     names-to-avoid)))))
              (info (defobject-table-lookup name (w state)))
              ((when info)
               (b* (((mv obj-declon prec-objs)
                     (atc-gen-obj-declon name info prec-objs))
                    (ext (ext-declon-obj-declon obj-declon)))
-                (acl2::value
-                 (list (list ext)
-                       prec-fns
-                       prec-tags
-                       prec-objs
-                       nil
-                       nil
-                       names-to-avoid)))))
+                (if header
+                    (acl2::value (list (list ext)
+                                       nil
+                                       prec-fns
+                                       prec-tags
+                                       prec-objs
+                                       nil
+                                       nil
+                                       names-to-avoid))
+                  (acl2::value
+                   (list nil
+                         (list ext)
+                         prec-fns
+                         prec-tags
+                         prec-objs
+                         nil
+                         nil
+                         names-to-avoid))))))
           (acl2::value
            (prog2$ (raise "Internal error: ~
                            target ~x0 is not ~
                            a function or DEFSTRUCT or DEFOBJECT."
                           target)
-                   (list nil nil nil nil nil nil nil)))))
-       ((er (list more-exts
+                   (list nil nil nil nil nil nil nil nil)))))
+       ((er (list more-exts-h
+                  more-exts-c
                   more-local-events
                   more-exported-events
                   names-to-avoid))
-        (atc-gen-ext-declon-list (cdr targets) prec-fns prec-tags prec-objs
-                                 proofs prog-const
-                                 init-fun-env-thm fn-thms
-                                 fn-appconds appcond-thms
-                                 print names-to-avoid ctx state)))
-    (acl2::value (list (append exts more-exts)
+        (atc-gen-ext-declon-lists (cdr targets) prec-fns prec-tags prec-objs
+                                  proofs prog-const
+                                  init-fun-env-thm fn-thms
+                                  fn-appconds appcond-thms
+                                  header
+                                  print names-to-avoid ctx state)))
+    (acl2::value (list (append exts-h more-exts-h)
+                       (append exts-c more-exts-c)
                        (append local-events more-local-events)
                        (append exported-events more-exported-events)
                        names-to-avoid)))
@@ -7408,7 +7461,7 @@
   (more-returns
    (val true-listp :rule-classes :type-prescription))
 
-  (verify-guards atc-gen-ext-declon-list
+  (verify-guards atc-gen-ext-declon-lists
     :hints
     (("Goal"
       :in-theory
@@ -7533,6 +7586,7 @@
                          (prog-const symbolp)
                          (wf-thm symbolp)
                          (fn-thms symbol-symbol-alistp)
+                         (header booleanp)
                          (print evmac-input-print-p)
                          (names-to-avoid symbol-listp)
                          (ctx ctxp)
@@ -7592,19 +7646,21 @@
                                            nil
                                            names-to-avoid
                                            (w state)))
-       ((er (list exts
+       ((er (list exts-h
+                  exts-c
                   fn-thm-local-events
                   fn-thm-exported-events
                   names-to-avoid)
             :iferr (irr))
-        (atc-gen-ext-declon-list targets nil nil nil proofs
+        (atc-gen-ext-declon-lists targets nil nil nil proofs
                                  prog-const init-fun-env-thm
                                  fn-thms fn-appconds appcond-thms
-                                 print names-to-avoid ctx state))
-       (file (make-file :declons exts))
+                                 header print names-to-avoid ctx state))
+       (file-h (and header (make-file :declons exts-h)))
+       (file-c (make-file :declons exts-c))
        (fileset (make-fileset :path-wo-ext path-wo-ext
-                              :dot-h nil
-                              :dot-c file))
+                              :dot-h file-h
+                              :dot-c file-c))
        (local-init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
                                                             proofs
                                                             prog-const
@@ -7719,6 +7775,7 @@
 
 (define atc-gen-everything ((targets symbol-listp)
                             (path-wo-ext stringp)
+                            (header booleanp)
                             (pretty-printing pprint-options-p)
                             (proofs booleanp)
                             (prog-const symbolp)
@@ -7752,7 +7809,7 @@
        ((er (list fileset local-events exported-events &) :iferr '(_))
         (atc-gen-fileset targets path-wo-ext proofs
                          prog-const wf-thm fn-thms
-                         print names-to-avoid ctx state))
+                         header print names-to-avoid ctx state))
        ((er fileset-gen-event) (atc-gen-fileset-event fileset
                                                       pretty-printing
                                                       print
