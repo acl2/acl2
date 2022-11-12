@@ -97,6 +97,8 @@
    without the @('.c') or @('.h') extension.
    This @('path-wo-ext') is obtained from @('output-dir') and @('file-name')."
 
+  (xdoc::evmac-topic-implementation-item-input "header")
+
   (xdoc::evmac-topic-implementation-item-input "proofs")
 
   (xdoc::evmac-topic-implementation-item-input "const-name")
@@ -145,6 +147,7 @@
         (acl2::value '(value-triple :redundant)))
        ((er (list t1...tp
                   path-wo-ext
+                  header
                   pretty-printing
                   proofs
                   prog-const
@@ -154,7 +157,7 @@
         (atc-process-inputs args ctx state)))
     (atc-gen-everything t1...tp
                         path-wo-ext
-                        nil ; header
+                        header
                         pretty-printing
                         proofs
                         prog-const

@@ -825,6 +825,7 @@
   (mv erp
       (val (tuple (targets symbol-listp)
                   (path-wo-ext stringp)
+                  (header booleanp)
                   (pretty-printing pprint-options-p)
                   (proofs booleanp)
                   (prog-const symbolp)
@@ -850,6 +851,7 @@
   (b* (((acl2::fun (irr))
         (list nil
               ""
+              nil
               (with-guard-checking :none
                                    (ec-call (pprint-options-fix :irrelevant)))
               nil
@@ -876,6 +878,15 @@
           (mv :irrelevant nil)))
        ((er path-wo-ext :iferr (irr))
         (atc-process-file-name file-name file-name? output-dir ctx state))
+
+       (header-option (assoc-eq :header options))
+       (header (if header-option
+                   (cdr header-option)
+                 nil))
+       ((er & :iferr (irr)) (ensure-value-is-boolean$ header
+                                                      "The :HEADER input"
+                                                      t
+                                                      nil))
        (pretty-printing-option (assoc-eq :pretty-printing options))
        (pretty-printing (if pretty-printing-option
                             (cdr pretty-printing-option)
@@ -909,6 +920,7 @@
        ((er & :iferr (irr)) (evmac-process-input-print print ctx state)))
     (acl2::value (list targets
                        path-wo-ext
+                       header
                        pretty-printing
                        proofs
                        prog-const
