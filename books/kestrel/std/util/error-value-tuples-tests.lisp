@@ -335,8 +335,8 @@
     (retok)))
 
 (define e ((x consp))
-  :returns (mv erp (r rationalp))
-  (b* (((reterr) 1/3)
+  :returns (mv erp (c characterp))
+  (b* (((reterr) #\a)
        ((when (> (len x) 10)) (reterr 'large))
        ((erp) (f "abc")))
-    (retok 2/3)))
+    (retok #\G)))
