@@ -7668,8 +7668,14 @@
      because our computation returns an error triple."))
   (b* ((progress-start?
         (and (evmac-input-print->= print :info)
-             `((cw-event "~%Generating the file ~s0..."
-                         ',(str::cat (fileset->path-wo-ext fileset) ".c")))))
+             (b* ((path.h (str::cat (fileset->path-wo-ext fileset) ".h"))
+                  (path.c (str::cat (fileset->path-wo-ext fileset) ".c"))
+                  (cwev (if (fileset->dot-h fileset)
+                            `(cw-event "~%Generating the files ~s0 and ~s1..."
+                                       ,path.h ,path.c)
+                          `(cw-event "~%Generating the file ~s0..."
+                                     ,path.c))))
+               (list cwev))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (file-gen-event
