@@ -2495,14 +2495,24 @@
   (xdoc::topstring
    (xdoc::p
     "This is a very simplified model of C preprocessing [C:6.10].
-     In fact, for now it is essentially a no-op:
-     it operates on a file set,
-     requiring the header to be absent (but we will add support soon),
-     and turning the source file in a fileset into a translation unit,
-     which just amounts to unwrapping and re-wrapping.
-     Note that the file name is ignored currently."))
-  (b* (((when (fileset->dot-h fileset)) (error :header-not-supported)))
-    (make-transunit :declons (file->declons (fileset->dot-c fileset))))
+     If there is no header, this is essentially a no-op:
+     the external declarations are unwrapped from the source file
+     and re-wrapped into a translation unit.
+     If there is a header, as explained in @(tsee fileset),
+     it is implicitly included in the source file
+     (without an explicit representation of the @('#include') directive):
+     we concatenate the external declarations from the header
+     and the external declarations from the source file,
+     and wrap the concatenation into a translation unit.
+     This amounts to replacing the (implicit) @('#include')
+     with the included header,
+     which is assumed to be at the beginning of the source file.
+     The path without extension component of the file set
+     is currently ignored, because the @('#include') is implicit."))
+  (b* ((h-extdecls (and (fileset->dot-h fileset)
+                        (file->declons (fileset->dot-h fileset))))
+       (c-extdecls (file->declons (fileset->dot-c fileset))))
+    (make-transunit :declons (append h-extdecls c-extdecls)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
