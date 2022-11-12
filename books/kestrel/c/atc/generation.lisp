@@ -7688,6 +7688,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fileset-event ((fileset filesetp)
+                               (file-name stringp)
                                (pretty-printing pprint-options-p)
                                (print evmac-input-print-p)
                                state)
@@ -7731,7 +7732,8 @@
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
-          (b* (((er &) (pprint-fileset ',fileset ',pretty-printing state)))
+          (b* (((er &)
+                (pprint-fileset ',fileset ,file-name ',pretty-printing state)))
             (acl2::value '(value-triple :invisible))))))
     (acl2::value `(progn ,@progress-start?
                          ,file-gen-event
@@ -7774,6 +7776,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-everything ((targets symbol-listp)
+                            (file-name stringp)
                             (path-wo-ext stringp)
                             (header booleanp)
                             (pretty-printing pprint-options-p)
@@ -7811,6 +7814,7 @@
                          prog-const wf-thm fn-thms
                          header print names-to-avoid ctx state))
        ((er fileset-gen-event) (atc-gen-fileset-event fileset
+                                                      file-name
                                                       pretty-printing
                                                       print
                                                       state))

@@ -146,6 +146,7 @@
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
        ((er (list t1...tp
+                  file-name
                   path-wo-ext
                   header
                   pretty-printing
@@ -156,6 +157,7 @@
                   print))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything t1...tp
+                        file-name
                         path-wo-ext
                         header
                         pretty-printing

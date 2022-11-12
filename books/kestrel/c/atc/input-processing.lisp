@@ -635,7 +635,21 @@
                    is not a regular file; it has kind ~x1 instead."
                   path.c kind)))
     (acl2::value path-wo-ext))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string)))
+  ///
+
+  (defret stringp-when-atc-process-file-name
+    (implies (not erp)
+             (stringp file-name))
+    :hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
+
+  (in-theory (disable stringp-when-atc-process-file-name))
+
+  (defret erp-atc-process-file-name-when-absent
+    (implies (not file-name?)
+             erp))
+
+  (in-theory (disable erp-atc-process-file-name-when-absent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -824,6 +838,7 @@
   :returns
   (mv erp
       (val (tuple (targets symbol-listp)
+                  (file-name stringp)
                   (path-wo-ext stringp)
                   (header booleanp)
                   (pretty-printing pprint-options-p)
@@ -837,6 +852,8 @@
            :hints
            (("Goal"
              :in-theory (enable stringp-when-atc-process-output-dir
+                                stringp-when-atc-process-file-name
+                                erp-atc-process-file-name-when-absent
                                 evmac-process-input-print
                                 acl2::ensure-value-is-boolean)
              :use
@@ -850,6 +867,7 @@
   :short "Process all the inputs."
   (b* (((acl2::fun (irr))
         (list nil
+              ""
               ""
               nil
               (with-guard-checking :none
@@ -878,7 +896,6 @@
           (mv :irrelevant nil)))
        ((er path-wo-ext :iferr (irr))
         (atc-process-file-name file-name file-name? output-dir ctx state))
-
        (header-option (assoc-eq :header options))
        (header (if header-option
                    (cdr header-option)
@@ -919,6 +936,7 @@
                 :result))
        ((er & :iferr (irr)) (evmac-process-input-print print ctx state)))
     (acl2::value (list targets
+                       file-name
                        path-wo-ext
                        header
                        pretty-printing
