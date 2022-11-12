@@ -46,6 +46,7 @@
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
+(include-book "std/strings/strprefixp" :dir :system)
 (include-book "std/typed-alists/keyword-symbol-alistp" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
@@ -56,6 +57,7 @@
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -7668,14 +7670,7 @@
      because our computation returns an error triple."))
   (b* ((progress-start?
         (and (evmac-input-print->= print :info)
-             (b* ((path.h (str::cat (fileset->path-wo-ext fileset) ".h"))
-                  (path.c (str::cat (fileset->path-wo-ext fileset) ".c"))
-                  (cwev (if (fileset->dot-h fileset)
-                            `(cw-event "~%Generating the files ~s0 and ~s1..."
-                                       ,path.h ,path.c)
-                          `(cw-event "~%Generating the file ~s0..."
-                                     ,path.c))))
-               (list cwev))))
+             `((cw-event "~%Generating the file(s)..."))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (file-gen-event
@@ -7689,15 +7684,30 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-print-result ((events pseudo-event-form-listp)
-                              (path-wo-ext stringp))
+                              (fileset filesetp))
   :returns (events pseudo-event-form-listp)
   :short "Generate the events to print the results of ATC."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used only if @(':print') is at least @(':result')."))
+    "This is used only if @(':print') is at least @(':result').")
+   (xdoc::p
+    "If the path starts with @('./'), we omit that part,
+     since a file without a preceding directory is normally understood
+     as residing in the current directory."))
   (append (atc-gen-print-result-aux events)
-          (list `(cw-event "~%File ~s0.~%" ,path-wo-ext)))
+          (b* ((path-wo-ext (fileset->path-wo-ext fileset))
+               (path-wo-ext (if (str::strprefixp "./" path-wo-ext)
+                                (subseq path-wo-ext 2 (length path-wo-ext))
+                              path-wo-ext))
+               (path.h (str::cat path-wo-ext ".h"))
+               (path.c (str::cat path-wo-ext ".c"))
+               (event (if (fileset->dot-h fileset)
+                          `(cw-event "~%Files ~s0 and ~s1 generated.~%"
+                                     ,path.h ,path.c)
+                        `(cw-event "~%File ~s0 generated.~%"
+                                   ,path.c))))
+            (list event)))
   :prepwork
   ((define atc-gen-print-result-aux ((events pseudo-event-form-listp))
      :returns (events pseudo-event-form-listp)
@@ -7748,7 +7758,7 @@
                                                       print
                                                       state))
        (print-events (and (evmac-input-print->= print :result)
-                          (atc-gen-print-result exported-events path-wo-ext)))
+                          (atc-gen-print-result exported-events fileset)))
        (encapsulate
            `(encapsulate ()
               (evmac-prepare-proofs)
