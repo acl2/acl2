@@ -198,7 +198,8 @@ Beginning forcing round.
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (TRUE-LISTP X). 
+We will induct according to a scheme suggested by (TRUE-LISTP X).
+
 This suggestion was produced using the :induction rule TRUE-LISTP.
 If we let (:P X) denote *1 above then the induction scheme we'll use
 is

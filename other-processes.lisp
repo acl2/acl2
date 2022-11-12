@@ -1412,8 +1412,20 @@
          (tilde-*-elim-phrase1 lst 1 nil wrld)
          nil))
 
-(defun tilde-*-untranslate-lst-phrase (lst flg wrld)
-  (list* "" "~p*" "~p* and " "~p*, "
+(defun tilde-*-untranslate-lst-phrase (lst final-punct flg wrld)
+
+; Final-punct must be a character or nil and is the punctuation (if any) after
+; the last item in lst.  To save conses, we make special cases for when the
+; final-punct is period or comma.
+
+  (list* ""
+         (cond ((eql final-punct #\.) "~p*.")
+               ((eql final-punct #\,) "~p*,")
+               (final-punct (coerce (append '(#\~ #\p #\*) (list final-punct))
+                                    'string))
+               (t "~p*"))
+         "~p* and "
+         "~p*, "
          (untranslate-lst lst flg wrld)
          nil))
 
@@ -1434,7 +1446,7 @@
              the following ~n6 goals.~]~|"
             (list (cons #\p (nth 3 (car lst)))
                   (cons #\0 (tilde-*-untranslate-lst-phrase
-                             (strip-cars (nth 3 (car lst))) nil wrld))
+                             (strip-cars (nth 3 (car lst))) nil nil wrld))
                   (cons #\1 (base-symbol (nth 0 (car lst))))
                   (cons #\2 (nth 1 (car lst)))
                   (cons #\3 (untranslate (nth 2 (car lst)) nil wrld))
@@ -1457,7 +1469,7 @@
             (list (cons #\p (nth 3 (car lst)))
                   (cons #\0 (tilde-*-untranslate-lst-phrase
                              (strip-cars (nth 3 (car lst)))
-                             nil wrld))
+                             nil nil wrld))
                   (cons #\1 (length lst))
                   (cons #\2 (tilde-*-elim-phrase lst wrld))
                   (cons #\3 (zero-one-or-more n))

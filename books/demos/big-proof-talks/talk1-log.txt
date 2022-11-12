@@ -72,9 +72,10 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  We will choose arbitrarily among these.  
 
-We will induct according to a scheme suggested by (^ I J).  This suggestion
-was produced using the :induction rule ^.  If we let (:P I J K) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (^ I J).
+
+This suggestion was produced using the :induction rule ^.  If we let
+(:P I J K) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ZP J)) (:P I (+ -1 J) K))
               (:P I J K))
      (IMPLIES (ZP J) (:P I J K))).
@@ -320,10 +321,11 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  Subsumption reduces that number to one.
 
-We will induct according to a scheme suggested by (CLK I J K).  This
-suggestion was produced using the :induction rules CLK and ^.  If we
-let (:P I J K) denote *1 above then the induction scheme we'll use
-is
+We will induct according to a scheme suggested by (CLK I J K).
+
+This suggestion was produced using the :induction rules CLK and ^.
+If we let (:P I J K) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (AND (NOT (ZP J))
                    (:P I (+ -1 J) (* I K)))
               (:P I J K))
@@ -941,9 +943,11 @@ conjecture.  (See :DOC otf-flg.)
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (CLK I J K).  This
-suggestion was produced using the :induction rule CLK.  If we let (:P I J K)
-denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (CLK I J K).
+
+This suggestion was produced using the :induction rule CLK.  If we
+let (:P I J K) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (AND (NOT (ZP J))
                    (:P I (+ -1 J) (* I K)))
               (:P I J K))

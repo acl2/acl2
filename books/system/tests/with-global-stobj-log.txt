@@ -868,9 +868,11 @@ Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
 We will induct according to a scheme suggested by 
-(PUT-ASSOC-EQUAL KEY VAL ALIST).  This suggestion was produced using
-the :induction rule PUT-ASSOC-EQUAL.  If we let (:P ALIST KEY VAL)
-denote *1 above then the induction scheme we'll use is
+(PUT-ASSOC-EQUAL KEY VAL ALIST).
+
+This suggestion was produced using the :induction rule PUT-ASSOC-EQUAL.
+If we let (:P ALIST KEY VAL) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ENDP ALIST))
                    (NOT (EQUAL KEY (CAR (CAR ALIST))))
                    (:P (CDR ALIST) KEY VAL))
