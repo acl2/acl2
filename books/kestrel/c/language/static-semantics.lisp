@@ -422,13 +422,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod stmt-type
-  :short "Fixtype of statement types."
+(fty::defprod types+vartab
+  :short "Fixtype of pairs consisting of
+          a non-empty set of types and a variable table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Here we use the word ``type'' in a broad sense,
-     namely to describe the information inferred by the static semantics
+    "This captures the information inferred by the static semantics
      about a statement (or block item or block).
      The information consists of:")
    (xdoc::ul
@@ -447,7 +447,7 @@
       We actually only need to return possibly updated variable tables
       from the ACL2 function @(tsee check-block-item);
       the ACL2 functions @(tsee check-stmt) and @(tsee check-block-item-list)
-      could just return a set of optional types (see above).
+      could just return a set of types (see above).
       However, for uniformity we have all three functions
       return also a possibly updated variable table.")))
   ((return-types type-set :reqfix (if (set::empty return-types)
@@ -455,17 +455,19 @@
                                     return-types))
    (variables var-table))
   :require (not (set::empty return-types))
-  :pred stmt-typep)
+  :pred types+vartab-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult stmt-type "statement types")
+(defresult
+  types+vartab
+  "pairs consisting of a non-empty set of types and a variable table")
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule not-stmt-typep-of-error
-  (not (stmt-typep (error x)))
-  :enable (error stmt-typep))
+(defrule not-types+vartab-p-of-error
+  (not (types+vartab-p (error x)))
+  :enable (error types+vartab-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1168,49 +1170,49 @@
               (type-arithmeticp arg2-type))
          (uaconvert-types arg1-type arg2-type)
        (error (list :binary-mistype
-                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-                :required :arithmetic :arithmetic
-                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+                    (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                    :required :arithmetic :arithmetic
+                    :supplied (type-fix arg1-type) (type-fix arg2-type)))))
     ((:shl :shr)
      (if (and (type-integerp arg1-type)
               (type-integerp arg2-type))
          (promote-type arg1-type)
        (error (list :binary-mistype
-                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-                :required :integer :integer
-                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+                    (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                    :required :integer :integer
+                    :supplied (type-fix arg1-type) (type-fix arg2-type)))))
     ((:lt :gt :le :ge)
      (if (and (type-realp arg1-type)
               (type-realp arg2-type))
          (type-sint)
        (error (list :binary-mistype
-                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-                :required :real :real
-                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+                    (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                    :required :real :real
+                    :supplied (type-fix arg1-type) (type-fix arg2-type)))))
     ((:eq :ne)
      (if (and (type-arithmeticp arg1-type)
               (type-arithmeticp arg2-type))
          (type-sint)
        (error (list :binary-mistype
-                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-                :required :arithmetic :arithmetic
-                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+                    (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                    :required :arithmetic :arithmetic
+                    :supplied (type-fix arg1-type) (type-fix arg2-type)))))
     ((:bitand :bitxor :bitior)
      (if (and (type-integerp arg1-type)
               (type-integerp arg2-type))
          (uaconvert-types arg1-type arg2-type)
        (error (list :binary-mistype
-                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-                :required :integer :integer
-                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+                    (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                    :required :integer :integer
+                    :supplied (type-fix arg1-type) (type-fix arg2-type)))))
     ((:logand :logor)
      (if (and (type-scalarp arg1-type)
               (type-scalarp arg2-type))
          (type-sint)
        (error (list :binary-mistype
-                (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-                :required :integer :integer
-                :supplied (type-fix arg1-type) (type-fix arg2-type)))))
+                    (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+                    :required :integer :integer
+                    :supplied (type-fix arg1-type) (type-fix arg2-type)))))
     (t (error (impossible))))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp
                                            type-realp
@@ -1850,8 +1852,11 @@
      @('while') statements, and
      @('return') statements with expressions.")
    (xdoc::p
-    "These ACL2 functions return a statement type or an error;
-     see @(tsee stmt-type).")
+    "These ACL2 functions return
+     either a pair consisting of
+     a non-empty set of types and a variable table
+     (see @(tsee types+vartab-p)),
+     or an error.")
    (xdoc::p
     "For a compound statement,
      we add a block scope to the variable table
@@ -1938,7 +1943,7 @@
                       (funtab fun-tablep)
                       (vartab var-tablep)
                       (tagenv tag-envp))
-    :returns (stype stmt-type-resultp)
+    :returns (stype types+vartab-resultp)
     (stmt-case
      s
      :labeled (error (list :unsupported-labeled s.label s.body))
@@ -1949,11 +1954,11 @@
                                                   tagenv))
                     ((when (errorp stype))
                      (error (list :stmt-compound-error stype))))
-                 (change-stmt-type stype :variables vartab))
+                 (change-types+vartab stype :variables vartab))
      :expr (b* ((wf (check-expr-call-or-asg s.get funtab vartab tagenv))
                 ((when (errorp wf)) (error (list :expr-stmt-error wf))))
-             (make-stmt-type :return-types (set::insert (type-void) nil)
-                             :variables (var-table-fix vartab)))
+             (make-types+vartab :return-types (set::insert (type-void) nil)
+                                :variables (var-table-fix vartab)))
      :null (error :unsupported-null-stmt)
      :if (b* ((etype (check-expr-pure s.test vartab tagenv))
               ((when (errorp etype)) (error (list :if-test-error etype)))
@@ -1966,8 +1971,8 @@
               (stype-then (check-stmt s.then funtab vartab tagenv))
               ((when (errorp stype-then))
                (error (list :if-then-error stype-then))))
-           (make-stmt-type
-            :return-types (set::union (stmt-type->return-types stype-then)
+           (make-types+vartab
+            :return-types (set::union (types+vartab->return-types stype-then)
                                       (set::insert (type-void) nil))
             :variables vartab))
      :ifelse (b* ((etype (check-expr-pure s.test vartab tagenv))
@@ -1984,9 +1989,9 @@
                   (stype-else (check-stmt s.else funtab vartab tagenv))
                   ((when (errorp stype-else))
                    (error (list :if-else-error stype-else))))
-               (make-stmt-type
-                :return-types (set::union (stmt-type->return-types stype-then)
-                                          (stmt-type->return-types stype-else))
+               (make-types+vartab
+                :return-types (set::union (types+vartab->return-types stype-then)
+                                          (types+vartab->return-types stype-else))
                 :variables vartab))
      :switch (error (list :unsupported-switch s.ctrl s.body))
      :while (b* ((etype (check-expr-pure s.test vartab tagenv))
@@ -2000,9 +2005,9 @@
                  (stype-body (check-stmt s.body funtab vartab tagenv))
                  ((when (errorp stype-body))
                   (error (list :while-error stype-body))))
-              (make-stmt-type
+              (make-types+vartab
                :return-types (set::insert (type-void)
-                                          (stmt-type->return-types stype-body))
+                                          (types+vartab->return-types stype-body))
                :variables vartab))
      :dowhile (error (list :unsupported-dowhile s.body s.test))
      :for (error (list :unsupported-for s.init s.test s.next s.body))
@@ -2015,22 +2020,22 @@
                   (type (apconvert-type type))
                   ((when (type-case type :void))
                    (error (list :return-void-expression s.value))))
-               (make-stmt-type :return-types (set::insert type nil)
-                               :variables vartab)))
+               (make-types+vartab :return-types (set::insert type nil)
+                                  :variables vartab)))
     :measure (stmt-count s))
 
   (define check-block-item ((item block-itemp)
                             (funtab fun-tablep)
                             (vartab var-tablep)
                             (tagenv tag-envp))
-    :returns (stype stmt-type-resultp)
+    :returns (stype types+vartab-resultp)
     (block-item-case
      item
      :declon
      (b* ((vartab (check-obj-declon item.get funtab vartab tagenv nil t))
           ((when (errorp vartab)) (error (list :declon-error vartab))))
-       (make-stmt-type :return-types (set::insert (type-void) nil)
-                       :variables vartab))
+       (make-types+vartab :return-types (set::insert (type-void) nil)
+                          :variables vartab))
      :stmt (check-stmt item.get funtab vartab tagenv))
     :measure (block-item-count item))
 
@@ -2038,21 +2043,21 @@
                                  (funtab fun-tablep)
                                  (vartab var-tablep)
                                  (tagenv tag-envp))
-    :returns (stype stmt-type-resultp)
+    :returns (stype types+vartab-resultp)
     (b* (((when (endp items))
-          (make-stmt-type :return-types (set::insert (type-void) nil)
-                          :variables vartab))
+          (make-types+vartab :return-types (set::insert (type-void) nil)
+                             :variables vartab))
          (stype (check-block-item (car items) funtab vartab tagenv))
          ((when (errorp stype)) (error (list :block-item-error stype)))
          ((when (endp (cdr items))) stype)
-         (rtypes1 (set::delete (type-void) (stmt-type->return-types stype)))
-         (vartab (stmt-type->variables stype))
+         (rtypes1 (set::delete (type-void) (types+vartab->return-types stype)))
+         (vartab (types+vartab->variables stype))
          (stype (check-block-item-list (cdr items) funtab vartab tagenv))
          ((when (errorp stype)) (error (list :block-item-list-error stype)))
-         (rtypes2 (stmt-type->return-types stype))
-         (vartab (stmt-type->variables stype)))
-      (make-stmt-type :return-types (set::union rtypes1 rtypes2)
-                      :variables vartab))
+         (rtypes2 (types+vartab->return-types stype))
+         (vartab (types+vartab->variables stype)))
+      (make-types+vartab :return-types (set::union rtypes1 rtypes2)
+                         :variables vartab))
     :measure (block-item-list-count items))
 
   :verify-guards nil ; done below
@@ -2065,8 +2070,8 @@
    (defthm-check-stmt-flag
      (defthm check-stmt-var-table
        (b* ((result (check-stmt s funtab vartab tagenv)))
-         (implies (stmt-typep result)
-                  (equal (stmt-type->variables result)
+         (implies (types+vartab-p result)
+                  (equal (types+vartab->variables result)
                          (var-table-fix vartab))))
        :flag check-stmt)
      (defthm check-block-item-var-table
@@ -2081,8 +2086,8 @@
 
   (defrule check-stmt-var-table-no-change
     (b* ((result (check-stmt s funtab vartab tagenv)))
-      (implies (stmt-typep result)
-               (equal (stmt-type->variables result)
+      (implies (types+vartab-p result)
+               (equal (types+vartab->variables result)
                       (var-table-fix vartab))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2244,11 +2249,11 @@
        ((when (errorp funtab)) (error (list :fundef funtab)))
        (stype (check-block-item-list fundef.body funtab vartab tagenv))
        ((when (errorp stype)) (error (list :fundef-body-error stype)))
-       ((unless (equal (stmt-type->return-types stype)
+       ((unless (equal (types+vartab->return-types stype)
                        (set::insert out-type nil)))
         (error (list :fundef-return-mistype name
                      :required out-type
-                     :inferred (stmt-type->return-types stype)))))
+                     :inferred (types+vartab->return-types stype)))))
     funtab)
   :hooks (:fix))
 
