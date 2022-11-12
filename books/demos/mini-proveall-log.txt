@@ -26,10 +26,11 @@ However, one of these is flawed and so we are left with one viable
 candidate.  
 
 We will induct according to a scheme suggested by (REVAPPEND X Z),
-but modified to accommodate (APPEND X Y).  These suggestions were produced
-using the :induction rules BINARY-APPEND, REVAPPEND and TRUE-LISTP.
-If we let (:P X Y Z) denote *1 above then the induction scheme we'll
-use is
+but modified to accommodate (APPEND X Y).
+
+These suggestions were produced using the :induction rules BINARY-APPEND,
+REVAPPEND and TRUE-LISTP.  If we let (:P X Y Z) denote *1 above then
+the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP X))
                    (:P (CDR X) Y (CONS (CAR X) Z)))
               (:P X Y Z))
@@ -92,9 +93,11 @@ suggested by this conjecture.  Subsumption reduces that number to two.
 However, one of these is flawed and so we are left with one viable
 candidate.  
 
-We will induct according to a scheme suggested by (APP A B).  This
-suggestion was produced using the :induction rule APP.  If we let (:P A B C)
-denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (APP A B).
+
+This suggestion was produced using the :induction rule APP.  If we
+let (:P A B C) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (NOT (CONSP A)) (:P A B C))
      (IMPLIES (AND (CONSP A) (:P (CDR A) B C))
               (:P A B C))).
@@ -141,9 +144,10 @@ ACL2 !>>>(DEFTHM TRUE-LISTP-REV (TRUE-LISTP (REV X))
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (REV X).  This suggestion
-was produced using the :induction rule REV.  If we let (:P X) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (REV X).
+
+This suggestion was produced using the :induction rule REV.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP X)) (:P X))
      (IMPLIES (AND (CONSP X) (:P (CDR X)))
               (:P X))).
@@ -222,10 +226,11 @@ We have been told to use induction.  Three induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to two.  However,
 one of these is flawed and so we are left with one viable candidate.
 
-We will induct according to a scheme suggested by (APP A B).  This
-suggestion was produced using the :induction rules APP and REV.  If
-we let (:P A B) denote *1 above then the induction scheme we'll use
-is
+We will induct according to a scheme suggested by (APP A B).
+
+This suggestion was produced using the :induction rules APP and REV.
+If we let (:P A B) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (NOT (CONSP A)) (:P A B))
      (IMPLIES (AND (CONSP A) (:P (CDR A) B))
               (:P A B))).
@@ -302,9 +307,10 @@ Now proving ((MAIN . 1) . 1).
 We have been told to use induction.  Two induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (REV B).  This suggestion
-was produced using the :induction rule REV.  If we let (:P A B) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (REV B).
+
+This suggestion was produced using the :induction rule REV.  If we
+let (:P A B) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP B)) (:P A B))
      (IMPLIES (AND (CONSP B) (:P A (CDR B)))
               (:P A B))).
@@ -474,10 +480,11 @@ suggested by this conjecture.  Subsumption reduces that number to two.
 However, one of these is flawed and so we are left with one viable
 candidate.  
 
-We will induct according to a scheme suggested by (APP A B).  This
-suggestion was produced using the :induction rules APP and REV.  If
-we let (:P A B) denote *1 above then the induction scheme we'll use
-is
+We will induct according to a scheme suggested by (APP A B).
+
+This suggestion was produced using the :induction rules APP and REV.
+If we let (:P A B) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (NOT (CONSP A)) (:P A B))
      (IMPLIES (AND (CONSP A) (:P (CDR A) B))
               (:P A B))).
@@ -545,9 +552,11 @@ ACL2 !>>>(DEFTHM REV-REV
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (REV X).  This suggestion
-was produced using the :induction rules REV and TRUE-LISTP.  If we
-let (:P X) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (REV X).
+
+This suggestion was produced using the :induction rules REV and TRUE-LISTP.
+If we let (:P X) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (NOT (CONSP X)) (:P X))
      (IMPLIES (AND (CONSP X) (:P (CDR X)))
               (:P X))).
@@ -726,9 +735,10 @@ ACL2 !>>>(DEFTHM PERM-REFLEXIVE (PERM X X))
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (PERM X X).  This
-suggestion was produced using the :induction rule PERM.  If we let
-(:P X) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (PERM X X).
+
+This suggestion was produced using the :induction rule PERM.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (MEM (CAR X) X)))
               (:P X))
@@ -777,9 +787,11 @@ ACL2 !>>>(DEFTHM PERM-CONS
 We have been told to use induction.  One induction scheme is suggested
 by the induction hint.  
 
-We will induct according to a scheme suggested by (PERM X Y).  This
-suggestion was produced using the :induction rule PERM.  If we let
-(:P A X Y) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (PERM X Y).
+
+This suggestion was produced using the :induction rule PERM.  If we
+let (:P A X Y) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (MEM (CAR X) Y)))
               (:P A X Y))
@@ -837,9 +849,10 @@ ACL2 !>>>(DEFTHM PERM-SYMMETRIC
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  We will choose arbitrarily among these.  
 
-We will induct according to a scheme suggested by (PERM X Y).  This
-suggestion was produced using the :induction rule PERM.  If we let
-(:P X Y) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (PERM X Y).
+
+This suggestion was produced using the :induction rule PERM.  If we
+let (:P X Y) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (MEM (CAR X) Y)))
               (:P X Y))
@@ -893,9 +906,11 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (MEM A X), but modified
-to accommodate (DEL B X).  These suggestions were produced using the
-:induction rules DEL and MEM.  If we let (:P A B X) denote *1 above
-then the induction scheme we'll use is
+to accommodate (DEL B X).
+
+These suggestions were produced using the :induction rules DEL and
+MEM.  If we let (:P A B X) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (EQUAL A (CAR X)))
                    (:P A B (CDR X)))
@@ -950,9 +965,11 @@ schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
 We will induct according to a scheme suggested by (MEM A X), but modified
-to accommodate (PERM X Y).  These suggestions were produced using the
-:induction rules MEM and PERM.  If we let (:P A X Y) denote *1 above
-then the induction scheme we'll use is
+to accommodate (PERM X Y).
+
+These suggestions were produced using the :induction rules MEM and
+PERM.  If we let (:P A X Y) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (EQUAL A (CAR X)))
                    (:P A (CDR X) (DEL (CAR X) Y)))
@@ -1004,9 +1021,11 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (DEL B X), but modified
-to accommodate (MEM A X).  These suggestions were produced using the
-:induction rules DEL and MEM.  If we let (:P A B X) denote *1 above
-then the induction scheme we'll use is
+to accommodate (MEM A X).
+
+These suggestions were produced using the :induction rules DEL and
+MEM.  If we let (:P A B X) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (EQUAL B (CAR X)))
                    (:P A B (CDR X)))
@@ -1056,9 +1075,11 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (DEL A X), but modified
-to accommodate (DEL B X).  These suggestions were produced using the
-:induction rule DEL.  If we let (:P A B X) denote *1 above then the
-induction scheme we'll use is
+to accommodate (DEL B X).
+
+These suggestions were produced using the :induction rule DEL.  If
+we let (:P A B X) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (EQUAL A (CAR X)))
                    (:P A B (CDR X)))
@@ -1114,9 +1135,11 @@ schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
 We will induct according to a scheme suggested by (DEL A X), but modified
-to accommodate (PERM X Y).  These suggestions were produced using the
-:induction rules DEL and PERM.  If we let (:P A X Y) denote *1 above
-then the induction scheme we'll use is
+to accommodate (PERM X Y).
+
+These suggestions were produced using the :induction rules DEL and
+PERM.  If we let (:P A X Y) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (EQUAL A (CAR X)))
                    (:P A (CDR X) (DEL (CAR X) Y)))
@@ -1174,9 +1197,11 @@ schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
 We will induct according to a scheme suggested by (PERM X Z), but modified
-to accommodate (PERM X Y).  These suggestions were produced using the
-:induction rule PERM.  If we let (:P X Y Z) denote *1 above then the
-induction scheme we'll use is
+to accommodate (PERM X Y).
+
+These suggestions were produced using the :induction rule PERM.  If
+we let (:P X Y Z) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (MEM (CAR X) Z)))
               (:P X Y Z))
@@ -1341,9 +1366,11 @@ this issue.
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (INSERT A X).  This
-suggestion was produced using the :induction rule INSERT.  If we let
-(:P A X) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (INSERT A X).
+
+This suggestion was produced using the :induction rule INSERT.  If
+we let (:P A X) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (LT A (CAR X)))
                    (:P A (CDR X)))
@@ -1413,6 +1440,7 @@ Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
 We will induct according to a scheme suggested by (INSERT-SORT X).
+
 This suggestion was produced using the :induction rule INSERT-SORT.
 If we let (:P X) denote *1 above then the induction scheme we'll use
 is
@@ -1455,9 +1483,11 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (APP X Y-EQUIV),
-but modified to accommodate (APP X Y).  These suggestions were produced
-using the :induction rule APP.  If we let (:P X Y Y-EQUIV) denote *1
-above then the induction scheme we'll use is
+but modified to accommodate (APP X Y).
+
+These suggestions were produced using the :induction rule APP.  If
+we let (:P X Y Y-EQUIV) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (NOT (CONSP X))
               (:P X Y Y-EQUIV))
      (IMPLIES (AND (CONSP X) (:P (CDR X) Y Y-EQUIV))
@@ -1499,9 +1529,11 @@ ACL2 !>>>(DEFTHM APP-CONS
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (APP A C).  This
-suggestion was produced using the :induction rule APP.  If we let (:P A B C)
-denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (APP A C).
+
+This suggestion was produced using the :induction rule APP.  If we
+let (:P A B C) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (NOT (CONSP A)) (:P A B C))
      (IMPLIES (AND (CONSP A) (:P (CDR A) B C))
               (:P A B C))).
@@ -1554,9 +1586,10 @@ probably be applied whenever the old rule would have been.
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  We will choose arbitrarily among these.  
 
-We will induct according to a scheme suggested by (APP A B).  This
-suggestion was produced using the :induction rule APP.  If we let (:P A B)
-denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (APP A B).
+
+This suggestion was produced using the :induction rule APP.  If we
+let (:P A B) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP A)) (:P A B))
      (IMPLIES (AND (CONSP A) (:P (CDR A) B))
               (:P A B))).
@@ -1617,10 +1650,11 @@ ACL2 !>>>(DEFCONG PERM PERM (APP X Y)
 We have been told to use induction.  One induction scheme is suggested
 by the induction hint.  
 
-We will induct according to a scheme suggested by (APP Y X).  This
-suggestion was produced using the :induction rule APP.  If we let 
-(:P X X-EQUIV Y) denote *1 above then the induction scheme we'll use
-is
+We will induct according to a scheme suggested by (APP Y X).
+
+This suggestion was produced using the :induction rule APP.  If we
+let (:P X X-EQUIV Y) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (NOT (CONSP Y))
               (:P X X-EQUIV Y))
      (IMPLIES (AND (CONSP Y) (:P X X-EQUIV (CDR Y)))
@@ -1680,9 +1714,10 @@ rewrite for more information on this issue.
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (REV X).  This suggestion
-was produced using the :induction rule REV.  If we let (:P X) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (REV X).
+
+This suggestion was produced using the :induction rule REV.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP X)) (:P X))
      (IMPLIES (AND (CONSP X) (:P (CDR X)))
               (:P X))).
@@ -1738,9 +1773,10 @@ ACL2 !>>>(DEFTHM ==-SYMMETRIC (== X X))
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (== X X).  This suggestion
-was produced using the :induction rule ==.  If we let (:P X) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (== X X).
+
+This suggestion was produced using the :induction rule ==.  If we let
+(:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP X)) (:P X))
      (IMPLIES (AND (CONSP X)
                    (CONSP X)
@@ -1784,9 +1820,10 @@ ACL2 !>>>(DEFTHM ==-REFLEXIVE
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (== Y X).  This suggestion
-was produced using the :induction rule ==.  If we let (:P X Y) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (== Y X).
+
+This suggestion was produced using the :induction rule ==.  If we let
+(:P X Y) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP Y)) (:P X Y))
      (IMPLIES (AND (CONSP Y) (NOT (CONSP X)))
               (:P X Y))
@@ -1843,9 +1880,11 @@ suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
 We will induct according to a scheme suggested by (== X Z), but modified
-to accommodate (== Y Z) and (== X Y).  These suggestions were produced
-using the :induction rule ==.  If we let (:P X Y Z) denote *1 above
-then the induction scheme we'll use is
+to accommodate (== Y Z) and (== X Y).
+
+These suggestions were produced using the :induction rule ==.  If we
+let (:P X Y Z) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (NOT (CONSP X)) (:P X Y Z))
      (IMPLIES (AND (CONSP X) (NOT (CONSP Z)))
               (:P X Y Z))
@@ -1943,9 +1982,11 @@ schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
 We will induct according to a scheme suggested by (APP X Y-EQUIV),
-but modified to accommodate (APP X Y).  These suggestions were produced
-using the :induction rule APP.  If we let (:P X Y Y-EQUIV) denote *1
-above then the induction scheme we'll use is
+but modified to accommodate (APP X Y).
+
+These suggestions were produced using the :induction rule APP.  If
+we let (:P X Y Y-EQUIV) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (NOT (CONSP X))
               (:P X Y Y-EQUIV))
      (IMPLIES (AND (CONSP X) (:P (CDR X) Y Y-EQUIV))
@@ -1985,10 +2026,11 @@ suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
 We will induct according to a scheme suggested by (APP X-EQUIV Y),
-but modified to accommodate (APP X Y) and (== X X-EQUIV).  These suggestions
-were produced using the :induction rules == and APP.  If we let 
-(:P X X-EQUIV Y) denote *1 above then the induction scheme we'll use
-is
+but modified to accommodate (APP X Y) and (== X X-EQUIV).
+
+These suggestions were produced using the :induction rules == and APP.
+If we let (:P X X-EQUIV Y) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (NOT (CONSP X-EQUIV))
               (:P X X-EQUIV Y))
      (IMPLIES (AND (CONSP X-EQUIV)
@@ -2038,9 +2080,10 @@ See :doc double-rewrite for more information on this issue.
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (REV X).  This suggestion
-was produced using the :induction rule REV.  If we let (:P X) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (REV X).
+
+This suggestion was produced using the :induction rule REV.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP X)) (:P X))
      (IMPLIES (AND (CONSP X) (:P (CDR X)))
               (:P X))).
@@ -2226,9 +2269,10 @@ Subgoal 1
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (REV0 X2).  This
-suggestion was produced using the :induction rules ENDS-IN-A-0 and
-REV0.  If we let (:P X2) denote *1 above then the induction scheme
+We will induct according to a scheme suggested by (REV0 X2).
+
+This suggestion was produced using the :induction rules ENDS-IN-A-0
+and REV0.  If we let (:P X2) denote *1 above then the induction scheme
 we'll use is
 (AND (IMPLIES (NOT (ENDS-IN-A-0 X2)) (:P X2))
      (IMPLIES (AND (ENDS-IN-A-0 X2)
@@ -2321,8 +2365,9 @@ Goal'
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (APP0 X 0).  This
-suggestion was produced using the :induction rules APP0 and ENDS-IN-A-0.
+We will induct according to a scheme suggested by (APP0 X 0).
+
+This suggestion was produced using the :induction rules APP0 and ENDS-IN-A-0.
 If we let (:P X) denote *1 above then the induction scheme we'll use
 is
 (AND (IMPLIES (NOT (ENDS-IN-A-0 X)) (:P X))
@@ -2390,6 +2435,7 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (APP0 X (CONS Y 0)).
+
 This suggestion was produced using the :induction rules APP0 and ENDS-IN-A-0.
 If we let (:P X Y) denote *1 above then the induction scheme we'll
 use is
@@ -2512,9 +2558,11 @@ Perhaps we can prove [1]*1 by induction.  Two induction schemes are
 suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
-We will induct according to a scheme suggested by (REV0 Z).  This suggestion
-was produced using the :induction rules ENDS-IN-A-0 and REV0.  If we
-let (:P Z) denote [1]*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (REV0 Z).
+
+This suggestion was produced using the :induction rules ENDS-IN-A-0
+and REV0.  If we let (:P Z) denote [1]*1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (NOT (ENDS-IN-A-0 Z)) (:P Z))
      (IMPLIES (AND (ENDS-IN-A-0 Z)
                    (NOT (EQUAL Z 0))

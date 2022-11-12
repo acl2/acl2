@@ -111,9 +111,10 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  However, one of these is flawed and so we are
 left with one viable candidate.  
 
-We will induct according to a scheme suggested by (APPEND Y X).  This
-suggestion was produced using the :induction rule BINARY-APPEND.  If
-we let (:P A X Y Z) denote *1 above then the induction scheme we'll
+We will induct according to a scheme suggested by (APPEND Y X).
+
+This suggestion was produced using the :induction rule BINARY-APPEND.
+If we let (:P A X Y Z) denote *1 above then the induction scheme we'll
 use is
 (AND (IMPLIES (AND (NOT (ENDP Y)) (:P A X (CDR Y) Z))
               (:P A X Y Z))
@@ -519,10 +520,11 @@ Goal''
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  We will choose arbitrarily among these.  
 
-We will induct according to a scheme suggested by (APPEND X Y).  This
-suggestion was produced using the :induction rule BINARY-APPEND.  If
-we let (:P X Y) denote *1 above then the induction scheme we'll use
-is
+We will induct according to a scheme suggested by (APPEND X Y).
+
+This suggestion was produced using the :induction rule BINARY-APPEND.
+If we let (:P X Y) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X) Y))
               (:P X Y))
      (IMPLIES (ENDP X) (:P X Y))).
@@ -870,9 +872,10 @@ We now undertake Forcing Round 1.
 Perhaps we can prove [1]*1 by induction.  Two induction schemes are
 suggested by this conjecture.  We will choose arbitrarily among these.
 
-We will induct according to a scheme suggested by (APPEND X Y).  This
-suggestion was produced using the :induction rule BINARY-APPEND.  If
-we let (:P X Y) denote [1]*1 above then the induction scheme we'll
+We will induct according to a scheme suggested by (APPEND X Y).
+
+This suggestion was produced using the :induction rule BINARY-APPEND.
+If we let (:P X Y) denote [1]*1 above then the induction scheme we'll
 use is
 (AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X) Y))
               (:P X Y))

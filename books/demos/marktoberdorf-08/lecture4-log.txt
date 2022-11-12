@@ -1915,9 +1915,10 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (RUN SCHED S).  This
-suggestion was produced using the :induction rule RUN.  If we let 
-(:P A0 N0 S SCHED) denote *1 above then the induction scheme we'll
+We will induct according to a scheme suggested by (RUN SCHED S).
+
+This suggestion was produced using the :induction rule RUN.  If we
+let (:P A0 N0 S SCHED) denote *1 above then the induction scheme we'll
 use is
 (AND (IMPLIES (AND (NOT (ENDP SCHED))
                    (:P A0 N0 (STEP S) (CDR SCHED)))
@@ -4268,10 +4269,11 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (RUN SCHED S).  This
-suggestion was produced using the :induction rule RUN.  If we let 
-(:P N0 S SCHED) denote *1 above then the induction scheme we'll use
-is
+We will induct according to a scheme suggested by (RUN SCHED S).
+
+This suggestion was produced using the :induction rule RUN.  If we
+let (:P N0 S SCHED) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (AND (NOT (ENDP SCHED))
                    (:P N0 (STEP S) (CDR SCHED)))
               (:P N0 S SCHED))

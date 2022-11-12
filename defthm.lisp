@@ -1613,7 +1613,7 @@
                      (:rule-class ,token))
                    token name free-vars
                    inst-hyps
-                   (tilde-*-untranslate-lst-phrase inst-hyps t wrld))
+                   (tilde-*-untranslate-lst-phrase inst-hyps nil t wrld))
          (free-variable-error? token name ctx wrld state)))
        (t (value nil)))
       (pprogn
@@ -1642,8 +1642,8 @@
                     possibility that the free variables of this rewrite rule ~
                     were forced into the conjecture."
                    (if (null (cdr (forced-hyps inst-hyps))) 0 1)
-                   (tilde-*-untranslate-lst-phrase (forced-hyps inst-hyps) t
-                                                   wrld)))
+                   (tilde-*-untranslate-lst-phrase (forced-hyps inst-hyps)
+                                                   nil t wrld)))
         (t state))
        (cond
         ((set-difference-eq rhs-vars lhs-vars)
@@ -3354,7 +3354,7 @@
               ((and free-vars forced-hyps)
                (warning$ ctx "Free"
                          "Forward chaining rule ~x0 has forced (or ~
-                          case-split) ~#1~[hypothesis~/hypotheses~], ~*2, ~
+                          case-split) ~#1~[hypothesis~/hypotheses~], ~*2 ~
                           which will be used to instantiate one or more free ~
                           variables.  We will search for suitable ~
                           instantiations (of the term inside the FORCE or ~
@@ -3381,8 +3381,8 @@
                           were forced into the conjecture."
                          name
                          (if (null (cdr forced-hyps)) 0 1)
-                         (tilde-*-untranslate-lst-phrase forced-hyps t
-                                                         wrld)))
+                         (tilde-*-untranslate-lst-phrase forced-hyps
+                                                         #\, t wrld)))
               (t state))
              (cond
               (non-rec-fns

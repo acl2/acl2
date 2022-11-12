@@ -251,9 +251,10 @@ conjecture.  (See :DOC otf-flg.)
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (LEN X).  This suggestion
-was produced using the :induction rule LEN.  If we let (:P X) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (LEN X).
+
+This suggestion was produced using the :induction rule LEN.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP X)) (:P X))
      (IMPLIES (AND (CONSP X) (:P (CDR X)))
               (:P X))).

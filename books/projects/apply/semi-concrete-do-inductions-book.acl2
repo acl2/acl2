@@ -1,0 +1,7 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "semi-concrete-do-inductions")
+
+; Help dependency scanner.
+#||
+(include-book "projects/apply/top" :dir :system)
+||#
