@@ -88,6 +88,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ defgrammar-table
+  :parents (defgrammar-implementation)
   :short "Table of @(tsee defgrammar) calls."
   :long
   (xdoc::topstring
