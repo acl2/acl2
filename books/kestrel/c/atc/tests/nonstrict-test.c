@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "nonstrict.h"
+
 void and_test(int x, int y) {
   int r = and(x, y);
   printf("and(%d, %d) = %d\n", x, y, r);

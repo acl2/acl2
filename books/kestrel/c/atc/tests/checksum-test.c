@@ -1,8 +1,6 @@
 #include <stdio.h>
 
-int legacy(int current, int hibyte, int lobyte);
-
-unsigned int checksum(unsigned int current, unsigned char hibyte, unsigned char lobyte);
+#include "checksum.h"
 
 void test_legacy() {
   int current = 50000;

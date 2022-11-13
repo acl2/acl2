@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "operators.h"
+
 int main(void) {
   int ok = 1;
   ok &= plus_sint_test1();
