@@ -11,6 +11,7 @@
 (in-package "YUL")
 
 (include-book "kestrel/abnf/grammar-definer/defgrammar" :dir :system)
+(include-book "kestrel/abnf/grammar-definer/deftreeops" :dir :system)
 (include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)
 
 (local (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))
@@ -69,6 +70,10 @@
     :prep-books
     ((local
       (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::deftreeops *grammar-new* :prefix cst)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
