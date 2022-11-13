@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "kestrel/abnf/grammar-definer/defgrammar" :dir :system)
+(include-book "kestrel/abnf/grammar-definer/deftreeops" :dir :system)
 (include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)
 
 ; (depends-on "grammar.abnf")
@@ -47,8 +48,11 @@
   :untranslate t
   :well-formed t
   :closed t
-  :matchers cst
   ///
 
   (defruled ascii-only-*grammar*
     (abnf::rulelist-in-termset-p *grammar* (acl2::integers-from-to 0 127))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::deftreeops *grammar* :prefix cst)
