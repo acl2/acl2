@@ -824,6 +824,7 @@
   :short "Keyword options accepted by @(tsee atc)."
   (list :output-dir
         :file-name
+        :header
         :pretty-printing
         :proofs
         :const-name
