@@ -36,50 +36,12 @@
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 
+(local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 
 (local (in-theory (disable state-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local
- (defthm partition-rest-and-keyword-args1-results
-   (implies (true-listp x)
-            (mv-let (rest keypart)
-                (acl2::partition-rest-and-keyword-args1 x)
-              (and (true-listp rest)
-                   (true-listp keypart))))))
-
-(local
- (defthm partition-rest-and-keyword-arg2-results
-   (implies (symbol-alistp alist)
-            (let ((alist1
-                   (acl2::partition-rest-and-keyword-args2 keypart keys alist)))
-              (implies (not (equal alist1 t))
-                       (symbol-alistp alist1))))))
-
-(local
- (defthm true-listp-of-partition-rest-and-keyword.rest
-   (implies (true-listp x)
-            (mv-let (erp rest keypart)
-                (partition-rest-and-keyword-args x keys)
-              (declare (ignore keypart))
-              (implies (not erp)
-                       (true-listp rest))))
-   :rule-classes (:rewrite :type-prescription)))
-
-(local
- (defthm symbol-alistp-of-partition-rest-and-keyword.keypart
-   (implies (true-listp x)
-            (mv-let (erp rest keypart)
-                (partition-rest-and-keyword-args x keys)
-              (declare (ignore rest))
-              (implies (not erp)
-                       (symbol-alistp keypart))))))
-
-(local (in-theory (disable partition-rest-and-keyword-args)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrulel alistp-when-symbol-alistp
   (implies (symbol-alistp x)
