@@ -854,6 +854,13 @@
   :tag :obj-declon
   :pred obj-declonp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption obj-declon-option
+  obj-declon
+  :short "Fixtype of optional object declarations."
+  :pred obj-declon-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum label
