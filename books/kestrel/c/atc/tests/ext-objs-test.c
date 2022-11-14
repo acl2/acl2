@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-extern unsigned int arr2[8];
+#include "ext-objs.h"
 
 int main(void) {
   int a = f(2);

@@ -62,5 +62,6 @@ structs.h
 structs.c
 structs
 
+ext-objs.h
 ext-objs.c
 ext-objs

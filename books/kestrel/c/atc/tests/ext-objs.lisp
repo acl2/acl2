@@ -141,4 +141,5 @@
         |i|
         |perm|
         |no_init|
-        :file-name "ext-objs")
+        :file-name "ext-objs"
+        :header t)

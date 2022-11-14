@@ -40,4 +40,4 @@ gcc -o not not.c not-test.c
 gcc -Wno-logical-not-parentheses -o operators operators.c operators-test.c
 gcc -o ops-diff-types ops-diff-types.c ops-diff-types-test.c
 gcc -o structs structs.c structs-test.c
-gcc -Wno-implicit-function-declaration -o ext-objs ext-objs.c ext-objs-test.c
+gcc -o ext-objs ext-objs.c ext-objs-test.c
