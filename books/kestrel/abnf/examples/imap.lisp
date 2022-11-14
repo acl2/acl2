@@ -11,6 +11,7 @@
 (in-package "ABNF")
 
 (include-book "../grammar-definer/defgrammar")
+(include-book "../grammar-definer/deftreeops")
 (include-book "../operations/in-terminal-set")
 
 ; (depends-on "imap.abnf")
@@ -48,5 +49,8 @@
      to keep this constant unexpanded in output."))
   :file "imap.abnf"
   :untranslate t
-  :well-formed t
-  :matchers imap-cst)
+  :well-formed t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::deftreeops *imap-grammar-rules* :prefix imap-cst)

@@ -11,6 +11,7 @@
 (in-package "ABNF")
 
 (include-book "../grammar-definer/defgrammar")
+(include-book "../grammar-definer/deftreeops")
 (include-book "../operations/in-terminal-set")
 (include-book "../operations/plugging")
 
@@ -50,8 +51,7 @@
      to keep this constant unexpanded in output."))
   :file "json.abnf"
   :untranslate t
-  :well-formed t
-  :matchers json-cst)
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,3 +99,7 @@
              char-val-in-termset-p
              char-insensitive-in-termset-p)
     :disable ((:e integers-from-to))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::deftreeops *all-json-grammar-rules* :prefix json-cst)

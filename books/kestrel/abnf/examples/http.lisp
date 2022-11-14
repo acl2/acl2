@@ -48,8 +48,7 @@
      to keep this constant unexpanded in output."))
   :file "http.abnf"
   :untranslate t
-  :well-formed t
-  :matchers http-cst)
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,6 +113,10 @@
                                                 *rule_SP*
                                                 *rule_VCHAR*))))
     :rule-classes nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::deftreeops *all-http-grammar-rules* :prefix http-cst)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

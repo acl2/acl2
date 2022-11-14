@@ -41,6 +41,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod var-sinfo
+  :short "Fixtype of static information about variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the information about variables needed for the static semantics.")
+   (xdoc::p
+    "This static information includes the type of the variable, clearly.")
+   (xdoc::p
+    "This static information also includes a flag that says
+     whether the variable (i.e. object, in C terminology)
+     has been defined or not.
+     This is currently important only for variables with file scope:
+     it is @('nil') when the variable is declared without an initializer,
+     in which case it is a tentative definition [C:6.9.2/2];
+     it is @('t') when the variable is declared with an initializer.
+     See @(tsee var-table-add-var) for details."))
+  ((type type)
+   (definedp bool))
+  :pred var-sinfop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption var-sinfo-option
+  var-sinfo
+  :short "Fixtype of optional static information about variables."
+  :pred var-sinfo-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defomap var-table-scope
   :short "Fixtype of scopes of variable tables."
   :long
@@ -52,13 +82,13 @@
      This @('var-table-scope') fixtype
      contains information about such a scope.
      The information is organized as a finite map
-     from identifiers (variable names) to types.
+     from identifiers (variable names) to static information for variables.
      Using a map is adequate because
      all the variables declared in a scope must have different names
      [C:6.2.1/2].
      The scope may be a file scope or a block scope [C:6.2.1/4]."))
   :key-type ident
-  :val-type type
+  :val-type var-sinfo
   :pred var-table-scopep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -102,12 +132,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define var-table-lookup ((var identp) (vartab var-tablep))
-  :returns (type type-optionp)
+  :returns (info var-sinfo-optionp)
   :short "Look up a variable in a variable table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the variable is found, we return its type;
+    "If the variable is found, we return its information;
      otherwise, we return @('nil').
      We search for the variable in the sequence of scopes in order,
      i.e. from innermost to outermost block."))
@@ -128,7 +158,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This contains a single scope with no variables."))
+    "This contains a single (file) scope with no variables."))
   (list nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -152,21 +182,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-table-add-var ((var identp) (type typep) (vartab var-tablep))
+(define var-table-add-var ((var identp)
+                           (type typep)
+                           (initp booleanp)
+                           (vartab var-tablep))
   :returns (new-vartab var-table-resultp
                        :hints (("Goal" :in-theory (enable var-table-resultp))))
   :short "Add a variable to (the innermost scope of) a variable table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the scope already has a variable with that name, it is an error.
-     Otherwise, we add the variable and return the variable table."))
+    "Besides the type of the variable, we also pass a flag to this function,
+     which says whether the variable has an initializer or not.
+     This is used to check the requirements on file-scope variables:
+     it is @('t') when the file-scope variable has an initializer;
+     while it is @('nil') otherwise.
+     We look up the variable in the innermost scope.
+     If it is present, and it is already defined, it is an error;
+     this is a bit stronger than required by [C],
+     but it suffices for our purposes,
+     i.e. for the C programs that we are currently interested in,
+     which may have file-scope variable declarations without initializers
+     followed by declarations for the same variables with initilizers,
+     and then no more declarations for the same variables after that.
+     If the variable is present in the scope but it is not defined yet,
+     there are two cases:
+     if the current declaration has an initializer,
+     we update the information about the variable to be defined;
+     otherwise we leave the information unchanged
+     (i.e. the declaration is still just a tentative definition).
+     In both cases, if the variable is in the table,
+     its type must be the same as in the current declaration.
+     If the variable is not present in the scope, we add it.
+     All of this works uniformly not only for file-scope variables,
+     but also for block-scope variables:
+     in our C subset, the latter always have an initializer,
+     and thus they are defined as soon as they are added to the table,
+     i.e. they are never in the state of a tentative definition."))
   (b* ((var (ident-fix var))
        (type (type-fix type))
        (vartab (var-table-fix vartab))
        (varscope (car vartab))
-       ((when (omap::in var varscope)) (error (list :duplicate-var var)))
-       (new-varscope (omap::update var type varscope)))
+       (var-info (omap::in var varscope))
+       ((when (not (consp var-info)))
+        (b* ((info (make-var-sinfo :type type :definedp initp))
+             (new-varscope (omap::update var info varscope)))
+          (cons new-varscope (cdr vartab))))
+       (info (cdr var-info))
+       ((unless (type-equiv type
+                            (var-sinfo->type info)))
+        (error (list :different-type-var var)))
+       ((when (var-sinfo->definedp info)) (error (list :duplicate-var var)))
+       ((when (not initp)) vartab)
+       (new-info (change-var-sinfo info :definedp t))
+       (new-varscope (omap::update var new-info varscope)))
     (cons new-varscope (cdr vartab)))
   :hooks (:fix))
 
@@ -1369,9 +1438,9 @@
   (b* ((e (expr-fix e)))
     (expr-case
      e
-     :ident (b* ((type (var-table-lookup e.get vartab))
-                 ((unless type) (error (list :var-not-found e.get))))
-              (make-expr-type :type type :lvalue t))
+     :ident (b* ((info (var-table-lookup e.get vartab))
+                 ((unless info) (error (list :var-not-found e.get))))
+              (make-expr-type :type (var-sinfo->type info) :lvalue t))
      :const (b* ((type (check-const e.get))
                  ((when (errorp type)) type))
               (make-expr-type :type type :lvalue nil))
@@ -1828,14 +1897,14 @@
        ((when (not init?))
         (if initp
             (error (list :declon-initializer-required (obj-declon-fix declon)))
-          (var-table-add-var var type vartab)))
+          (var-table-add-var var type nil vartab)))
        (init init?)
        (init-type (check-initer init funtab vartab tagenv constp))
        ((when (errorp init-type))
         (error (list :declon-error-init init-type)))
        (wf? (init-type-matchp init-type type))
        ((when (errorp wf?)) wf?))
-    (var-table-add-var var type vartab))
+    (var-table-add-var var type t vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2105,6 +2174,8 @@
      We check the components of the parameter declaration
      and we check that the parameter can be added to the variable table;
      the latter check fails if there is a duplicate parameter.
+     Note that we regard each declaration as defining the variable,
+     because no multiple declarations of the same parameter are allowed.
      We also ensure that the type is complete [C:6.7.6.3/4].
      If all checks succeed, we return the variable table
      updated with the parameter."))
@@ -2115,7 +2186,7 @@
        ((when (errorp wf)) (error (list :param-error wf)))
        ((unless (type-completep type))
         (error (list :param-type-incomplete (param-declon-fix param)))))
-    (var-table-add-var var type vartab))
+    (var-table-add-var var type t vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2500,22 +2571,24 @@
   (xdoc::topstring
    (xdoc::p
     "This is a very simplified model of C preprocessing [C:6.10].
-     In fact, for now it is essentially a no-op:
-     it turns the only file in a fileset into a translation unit,
-     which just amounts to unwrapping and re-wrapping.
-     Note that the file name is ignored currently,
-     since there is just one file.")
-   (xdoc::p
-    "However, we plan to extend this soon.
-     That is, there will be more files,
-     with @('#include') directives,
-     which will thus also reference file names.")
-   (xdoc::p
-    "Even though currently this operation never fails,
-     we have this ACL2 function return a result type,
-     to facilitate future extensions,
-     where preprocessing may actually fail."))
-  (make-transunit :declons (file->declons (fileset->file fileset)))
+     If there is no header, this is essentially a no-op:
+     the external declarations are unwrapped from the source file
+     and re-wrapped into a translation unit.
+     If there is a header, as explained in @(tsee fileset),
+     it is implicitly included in the source file
+     (without an explicit representation of the @('#include') directive):
+     we concatenate the external declarations from the header
+     and the external declarations from the source file,
+     and wrap the concatenation into a translation unit.
+     This amounts to replacing the (implicit) @('#include')
+     with the included header,
+     which is assumed to be at the beginning of the source file.
+     The path without extension component of the file set
+     is currently ignored, because the @('#include') is implicit."))
+  (b* ((h-extdecls (and (fileset->dot-h fileset)
+                        (file->declons (fileset->dot-h fileset))))
+       (c-extdecls (file->declons (fileset->dot-c fileset))))
+    (make-transunit :declons (append h-extdecls c-extdecls)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
