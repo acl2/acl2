@@ -30,6 +30,7 @@
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
+(include-book "kestrel/std/util/error-value-tuples" :dir :system)
 (include-book "oslib/catpath" :dir :system)
 (include-book "oslib/dirname" :dir :system :ttags ((:quicklisp) :oslib))
 (include-book "oslib/file-types" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) :oslib))
@@ -73,17 +74,15 @@
 (define atc-process-function ((fn symbolp)
                               (previous-fns symbol-listp)
                               (uncalled-fns symbol-listp)
-                              (ctx ctxp)
-                              state)
-  :guard (function-symbolp fn (w state))
+                              (wrld plist-worldp))
+  :guard (function-symbolp fn wrld)
   :returns (mv erp
-               (val (tuple (new-previous-fns symbol-listp)
-                           (new-uncalled-fns symbol-listp)
-                           val)
-                    :hyp (and (symbolp fn)
-                              (symbol-listp previous-fns)
-                              (symbol-listp uncalled-fns)))
-               state)
+               (new-previous-fns symbol-listp
+                                 :hyp (and (symbolp fn)
+                                           (symbol-listp previous-fns)))
+               (new-uncalled-fns symbol-listp
+                                 :hyp (and (symbolp fn)
+                                           (symbol-listp uncalled-fns))))
   :short "Process a target function @('fn') among @('t1'), ..., @('tp')."
   :long
   (xdoc::topstring
@@ -121,62 +120,48 @@
     "When this input processing function is called,
      @('fn') is already known to be a function name.
      See @(tsee atc-process-target)."))
-  (b* ((irrelevant (list nil nil))
+  (b* (((reterr) nil nil)
        (previous-fns (cons fn previous-fns))
        (desc (msg "The target function ~x0" fn))
-       ((er &) (ensure-function-is-logic-mode$ fn desc t irrelevant))
-       ((er &) (ensure-function-is-guard-verified$ fn desc t irrelevant))
-       ((er &) (ensure-function-is-defined$ fn desc t irrelevant))
-       ((when (ffnnamep fn (uguard+ fn (w state))))
-        (er-soft+ ctx t irrelevant
-                  "The target function ~x0 is used in its own guard. ~
-                   This is currently not supported in ATC."
-                  fn))
-       (rec (irecursivep+ fn (w state)))
+       ((unless (logicp fn wrld))
+        (reterr (msg "~@0 must be in logic mode." desc)))
+       ((unless (acl2::guard-verified-p fn wrld))
+        (reterr (msg "~@0 must be guard-verified." desc)))
+       ((unless (acl2::definedp fn wrld))
+        (reterr (msg "~@0 must be defined." desc)))
+       ((when (ffnnamep fn (uguard+ fn wrld)))
+        (reterr (msg "The target function ~x0 is used in its own guard. ~
+                      This is currently not supported in ATC."
+                     fn)))
+       (rec (irecursivep+ fn wrld))
        ((when (and rec (> (len rec) 1)))
-        (er-soft+ ctx t irrelevant
-                  "The recursive target function ~x0 ~
-                   must be singly recursive, ~
-                   but it is mutually recursive with ~x1 instead."
-                  fn (remove-eq fn rec)))
+        (reterr (msg "The recursive target function ~x0 ~
+                      must be singly recursive, ~
+                      but it is mutually recursive with ~x1 instead."
+                     fn (remove-eq fn rec))))
        ((when (and rec
-                   (not (equal (well-founded-relation+ fn (w state))
+                   (not (equal (well-founded-relation+ fn wrld)
                                'o<))))
-        (er-soft+ ctx t irrelevant
-                  "The well-founded relation ~
-                   of the recursive target function ~x0 ~
-                   must be O<, but it ~x1 instead. ~
-                   Only recursive functions with well-founded relation O< ~
-                   are currently supported by ATC."
-                  fn (well-founded-relation+ fn (w state))))
-       (uncalled-fns (atc-remove-called-fns uncalled-fns (ubody+ fn (w state))))
+        (reterr (msg "The well-founded relation ~
+                      of the recursive target function ~x0 ~
+                      must be O<, but it ~x1 instead. ~
+                      Only recursive functions with well-founded relation O< ~
+                      are currently supported by ATC."
+                     fn (well-founded-relation+ fn wrld))))
+       (uncalled-fns (atc-remove-called-fns uncalled-fns (ubody+ fn wrld)))
        (uncalled-fns (if rec
                          (cons fn uncalled-fns)
                        uncalled-fns)))
-    (acl2::value (list previous-fns
-                       uncalled-fns)))
-  :guard-hints (("Goal" :in-theory (enable
-                                    acl2::ensure-function-is-guard-verified
-                                    acl2::ensure-function-is-logic-mode
-                                    acl2::ensure-function-is-defined)))
+    (retok previous-fns
+           uncalled-fns))
   ///
-
   (more-returns
-   (val true-listp
-        :rule-classes :type-prescription
-        :name true-listp-of-atc-process-function.val))
-
-  (defret true-listp-of-atc-process-function.new-previous-fns
-    (b* (((list new-previous-fns &) val))
-      (true-listp new-previous-fns))
-    :hyp (true-listp previous-fns)
-    :rule-classes :type-prescription)
-
-  (defret true-listp-of-atc-process-function.new-uncalled-fns
-    (b* (((list & new-uncalled-fns) val))
-      (true-listp new-uncalled-fns))
-    :hyp (true-listp uncalled-fns)
-    :rule-classes :type-prescription))
+   (new-previous-fns true-listp
+                     :hyp (true-listp previous-fns)
+                     :rule-classes :type-prescription)
+   (new-uncalled-fns true-listp
+                     :hyp (true-listp new-uncalled-fns)
+                     :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -273,12 +258,12 @@
                         "The target function ~x0 has the same name as ~
                          the target DEFOBJECT ~x1 that precedes it."
                         target (car previous-objs)))
-             ((er (list previous-fns uncalled-fns) :iferr irrelevant)
+             ((mv erp previous-fns uncalled-fns)
               (atc-process-function target
                                     previous-fns
                                     uncalled-fns
-                                    ctx
-                                    state)))
+                                    (w state)))
+             ((when erp) (er-soft+ ctx t irrelevant "~@0" erp)))
           (acl2::value (list previous-structs
                              previous-objs
                              previous-fns
