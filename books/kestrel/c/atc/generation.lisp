@@ -7217,23 +7217,40 @@
 
 (define atc-gen-obj-declon ((name stringp)
                             (info defobject-infop)
-                            (prec-objs atc-string-objinfo-alistp))
-  :returns (mv (declon obj-declonp)
+                            (prec-objs atc-string-objinfo-alistp)
+                            (header booleanp))
+  :returns (mv (declon-h obj-declon-optionp)
+               (declon-c obj-declonp)
                (updated-prec-objs atc-string-objinfo-alistp))
-  :short "Generate a C external object definition."
+  :short "Generate a C external object declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the @(':header') input is @('t'),
+     we generate two such declarations:
+     one for the header, without initializer;
+     and one for the source file,
+     with initializer if the @(tsee defobject) has an initializer."))
   (b* ((id (defobject-info->name-ident info))
        (type (defobject-info->type info))
        (exprs (defobject-info->init info))
        ((mv tyspec declor) (ident+type-to-tyspec+declor id type))
        (initer? (if (consp exprs) (initer-list exprs) nil))
-       (declon (make-obj-declon :tyspec tyspec
-                                :declor declor
-                                :init? initer?))
+       (declon-h (and header
+                      (make-obj-declon :tyspec tyspec
+                                       :declor declor
+                                       :init? nil)))
+       (declon-c (make-obj-declon :tyspec tyspec
+                                  :declor declor
+                                  :init? initer?))
        (info (atc-obj-info info))
        (prec-objs (acons (str-fix name)
                          info
                          (atc-string-objinfo-alist-fix prec-objs))))
-    (mv declon prec-objs)))
+    (mv declon-h declon-c prec-objs))
+  ///
+  (defret atc-gen-obj-declon-iff-header
+    (iff declon-h header)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -7384,21 +7401,21 @@
                                      names-to-avoid)))))
              (info (defobject-table-lookup name (w state)))
              ((when info)
-              (b* (((mv obj-declon prec-objs)
-                    (atc-gen-obj-declon name info prec-objs))
-                   (ext (ext-declon-obj-declon obj-declon)))
+              (b* (((mv obj-declon-h obj-declon-c prec-objs)
+                    (atc-gen-obj-declon name info prec-objs header)))
                 (if header
-                    (acl2::value (list (list ext)
-                                       nil
-                                       prec-fns
-                                       prec-tags
-                                       prec-objs
-                                       nil
-                                       nil
-                                       names-to-avoid))
+                    (acl2::value
+                     (list (list (ext-declon-obj-declon obj-declon-h))
+                           (list (ext-declon-obj-declon obj-declon-c))
+                           prec-fns
+                           prec-tags
+                           prec-objs
+                           nil
+                           nil
+                           names-to-avoid))
                   (acl2::value
                    (list nil
-                         (list ext)
+                         (list (ext-declon-obj-declon obj-declon-c))
                          prec-fns
                          prec-tags
                          prec-objs

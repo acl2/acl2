@@ -243,16 +243,20 @@
       If @(':header') is @('nil'),
       the source file consists of
       one or more C function definitions,
-      zero or more C external object definitions,
+      zero or more C external object declarations,
       and zero or more C structure type declarations.
       If @(':header') is @('t'),
       the header consists of
       one or more function declarations,
-      zero or more C external object definitions,
+      zero or more C external object declarations without initializers,
       and zero or more C structure type declarations,
       while the source file consists of
-      one or more function definitions,
-      corresponding to the function declarations in the header.")
+      one or more function definitions
+      and zero or more C external object declarations
+      (with or without initializers),
+      corresponding to
+      the function declarations and the external object declarations
+      in the header.")
 
     (xdoc::p
      "Each C structure type declaration is represented by a @(tsee defstruct),
@@ -263,7 +267,7 @@
       represents the tag of the C structure type.")
 
     (xdoc::p
-     "Each C external object definition is represented by a @(tsee defobject),
+     "Each C external object declaration is represented by a @(tsee defobject),
       whose name is passed as one of the target @('ti') to ATC.
       The symbol name, which is a "
      (xdoc::seetopic "portable-ascii-identifiers" "portable ASCII C identifier")
