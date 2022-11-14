@@ -12,3 +12,6 @@
 
 (include-book "defgrammar")
 (include-book "defgrammar-doc")
+
+(include-book "deftreeops")
+(include-book "deftreeops-doc")
