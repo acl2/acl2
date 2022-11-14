@@ -622,7 +622,7 @@
                                cannot be tested.  ~
                                ~@1"
                               path.c msg?))
-       ((when (not existsp)) (acl2::value path.c))
+       ((when (not existsp)) (acl2::value path-wo-ext))
        ((mv msg? kind state) (oslib::file-kind path.c))
        ((when msg?) (er-soft+ ctx t ""
                               "The kind of the file path ~x0 ~
