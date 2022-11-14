@@ -1053,11 +1053,24 @@
 (define pprint-fun-declor ((declor fun-declorp))
   :returns (part msgp)
   :short "Pretty-print a function declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the parameter list is empty,
+     we pretty-print @('void') for the parameters instead of nothing,
+     which more clearly say that the function takes no parameters
+     [C:6.7.6.3/10] [C:6.7.6.3/14].
+     If the declarator is part of a function definition,
+     it does not make a difference,
+     but otherwise it makes a difference;
+     see the references given just above."))
   (fun-declor-case
    declor
    :base (msg "~@0(~@1)"
               (pprint-ident declor.name)
-              (pprint-comma-sep (pprint-param-declon-list declor.params)))
+              (if (consp declor.params)
+                  (pprint-comma-sep (pprint-param-declon-list declor.params))
+                "void"))
    :pointer (msg "*~@0" (pprint-fun-declor declor.decl)))
   :measure (fun-declor-count declor)
   :hooks (:fix))
