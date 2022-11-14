@@ -170,19 +170,17 @@
                             (previous-objs symbol-listp)
                             (previous-fns symbol-listp)
                             (uncalled-fns symbol-listp)
-                            (ctx ctxp)
-                            state)
+                            (wrld plist-worldp))
   :returns (mv erp
-               (val (tuple (new-previous-structs symbol-listp)
-                           (new-previous-objs symbol-listp)
-                           (new-previous-fns symbol-listp)
-                           (new-uncalled-fns symbol-listp)
-                           val)
-                    :hyp (and (symbol-listp previous-structs)
-                              (symbol-listp previous-objs)
-                              (symbol-listp previous-fns)
-                              (symbol-listp uncalled-fns)))
-               state)
+               (target$ symbolp)
+               (new-previous-structs symbol-listp
+                                     :hyp (symbol-listp previous-structs))
+               (new-previous-objs symbol-listp
+                                  :hyp (symbol-listp previous-objs))
+               (new-previous-fns symbol-listp
+                                 :hyp (symbol-listp previous-fns))
+               (new-uncalled-fns symbol-listp
+                                 :hyp (symbol-listp uncalled-fns)))
   :short "Process a target among @('t1'), ..., @('tp')."
   :long
   (xdoc::topstring
@@ -207,163 +205,130 @@
      and it is processed here:
      we check that it is in the @(tsee defstruct) or @(tsee defobject) table;
      furthermore, if it is a @(tsee defobject) target,
-     we ensure that it differs from the preceding function targets."))
-  (b* ((irrelevant (list nil nil nil nil))
+     we ensure that it differs from the preceding function targets.")
+   (xdoc::p
+    "If all the checks are successful, we also return the target itself,
+     with a guaranteed @(tsee symbolp) type,
+     so that calling code has that fact readily available."))
+  (b* (((reterr) nil nil nil nil nil)
        ((unless (symbolp target))
-        (er-soft+ ctx t irrelevant
-                  "The target ~x0 is not a symbol."
-                  target))
-       (functionp (function-symbolp target (w state)))
-       (struct-info (defstruct-table-lookup (symbol-name target) (w state)))
-       (obj-info (defobject-table-lookup (symbol-name target) (w state)))
+        (reterr (msg "The target ~x0 is not a symbol." target)))
+       (functionp (function-symbolp target wrld))
+       (struct-info (defstruct-table-lookup (symbol-name target) wrld))
+       (obj-info (defobject-table-lookup (symbol-name target) wrld))
        ((when (and functionp struct-info obj-info))
-        (er-soft+ ctx t irrelevant
-                  "The target ~x0 ambiguously denotes ~
-                   a function, a DEFSTRUCT, and a DEFOBJECT."
-                  target))
+        (reterr (msg "The target ~x0 ambiguously denotes ~
+                      a function, a DEFSTRUCT, and a DEFOBJECT."
+                     target)))
        ((when (and functionp struct-info))
-        (er-soft+ ctx t irrelevant
-                  "The target ~x0 ambiguously denotes ~
-                   a function and a DEFSTRUCT."
-                  target))
+        (reterr (msg "The target ~x0 ambiguously denotes ~
+                      a function and a DEFSTRUCT."
+                     target)))
        ((when (and functionp obj-info))
-        (er-soft+ ctx t irrelevant
-                  "The target ~x0 ambiguously denotes ~
-                   a function and a DEFOBJECT"
-                  target))
+        (reterr (msg "The target ~x0 ambiguously denotes ~
+                      a function and a DEFOBJECT"
+                     target)))
        ((when (and struct-info obj-info))
-        (er-soft+ ctx t irrelevant
-                  "The target ~x0 ambiguously denotes ~
-                   a DEFSTRUCT and a DEFOBJECT."
-                  target))
+        (reterr (msg "The target ~x0 ambiguously denotes ~
+                      a DEFSTRUCT and a DEFOBJECT."
+                     target)))
        ((when functionp)
         (b* ((found (member-equal (symbol-name target)
                                   (symbol-name-lst previous-fns)))
              ((when found)
-              (er-soft+ ctx t irrelevant
-                        "The target function ~x0 has the same name as ~
-                         the target function ~x1 that precedes it."
-                        target (car previous-fns)))
+              (reterr (msg "The target function ~x0 has the same name as ~
+                            the target function ~x1 that precedes it."
+                           target (car previous-fns))))
              (found (member-equal (symbol-name target)
                                   (symbol-name-lst previous-structs)))
              ((when found)
-              (er-soft+ ctx t irrelevant
-                        "The target function ~x0 has the same name as ~
-                         the target DEFSTRUCT ~x1 that precedes it."
-                        target (car previous-structs)))
+              (reterr (msg "The target function ~x0 has the same name as ~
+                            the target DEFSTRUCT ~x1 that precedes it."
+                           target (car previous-structs))))
              (found (member-equal (symbol-name target)
                                   (symbol-name-lst previous-objs)))
              ((when found)
-              (er-soft+ ctx t irrelevant
-                        "The target function ~x0 has the same name as ~
-                         the target DEFOBJECT ~x1 that precedes it."
-                        target (car previous-objs)))
-             ((mv erp previous-fns uncalled-fns)
+              (reterr (msg "The target function ~x0 has the same name as ~
+                            the target DEFOBJECT ~x1 that precedes it."
+                           target (car previous-objs))))
+             ((erp previous-fns uncalled-fns)
               (atc-process-function target
                                     previous-fns
                                     uncalled-fns
-                                    (w state)))
-             ((when erp) (er-soft+ ctx t irrelevant "~@0" erp)))
-          (acl2::value (list previous-structs
-                             previous-objs
-                             previous-fns
-                             uncalled-fns))))
+                                    wrld)))
+          (retok target
+                 previous-structs
+                 previous-objs
+                 previous-fns
+                 uncalled-fns)))
        ((when struct-info)
         (b* ((found (member-equal (symbol-name target)
                                   (symbol-name-lst previous-fns)))
              ((when found)
-              (er-soft+ ctx t irrelevant
-                        "The target DEFSTRUCT ~x0 has the same name as ~
-                         the target function ~x1 that precedes it."
-                        target (car previous-fns)))
+              (reterr (msg "The target DEFSTRUCT ~x0 has the same name as ~
+                            the target function ~x1 that precedes it."
+                           target (car previous-fns))))
              (found (member-equal (symbol-name target)
                                   (symbol-name-lst previous-structs)))
              ((when found)
-              (er-soft+ ctx t irrelevant
-                        "The target DEFSTRUCT ~x0 has the same name as ~
-                         the target DEFSTRUCT ~x1 that precedes it."
-                        target (car previous-structs)))
+              (reterr (msg "The target DEFSTRUCT ~x0 has the same name as ~
+                            the target DEFSTRUCT ~x1 that precedes it."
+                           target (car previous-structs))))
              (found (member-equal (symbol-name target)
                                   (symbol-name-lst previous-objs)))
              ((when found)
-              (er-soft+ ctx t irrelevant
-                        "The target DEFSTRUCT ~x0 has the same name as ~
-                         the target DEFOBJECT ~x1 that precedes it."
-                        target (car previous-objs)))
+              (reterr (msg "The target DEFSTRUCT ~x0 has the same name as ~
+                            the target DEFOBJECT ~x1 that precedes it."
+                           target (car previous-objs))))
              (previous-structs (cons target previous-structs)))
-          (acl2::value (list previous-structs
-                             previous-objs
-                             previous-fns
-                             uncalled-fns))))
+          (retok target
+                 previous-structs
+                 previous-objs
+                 previous-fns
+                 uncalled-fns)))
        ((when obj-info)
         (b* ((found (member-equal (symbol-name target)
                                   (symbol-name-lst previous-fns)))
              ((when found)
-              (er-soft+ ctx t irrelevant
-                        "The target DEFOBJECT ~x0 has the same name as ~
-                         the target function ~x1 that precedes it."
-                        target (car previous-fns)))
+              (reterr (msg "The target DEFOBJECT ~x0 has the same name as ~
+                            the target function ~x1 that precedes it."
+                           target (car previous-fns))))
              (found (member-equal (symbol-name target)
                                   (symbol-name-lst previous-structs)))
              ((when found)
-              (er-soft+ ctx t irrelevant
-                        "The target DEFOBJECT ~x0 has the same name as ~
-                         the target DEFSTRUCT ~x1 that precedes it."
-                        target (car previous-structs)))
+              (reterr (msg "The target DEFOBJECT ~x0 has the same name as ~
+                            the target DEFSTRUCT ~x1 that precedes it."
+                           target (car previous-structs))))
              (found (member-equal (symbol-name target)
                                   (symbol-name-lst previous-objs)))
              ((when found)
-              (er-soft+ ctx t irrelevant
-                        "The target DEFOBJECT ~x0 has the same name as ~
-                         the target DEFOBJECT ~x1 that precedes it."
-                        target (car previous-objs)))
+              (reterr (msg "The target DEFOBJECT ~x0 has the same name as ~
+                            the target DEFOBJECT ~x1 that precedes it."
+                           target (car previous-objs))))
              (previous-objs (cons target previous-objs)))
-          (acl2::value (list previous-structs
-                             previous-objs
-                             previous-fns
-                             uncalled-fns)))))
-    (er-soft+ ctx t irrelevant
-              "The target ~x0 is a symbol that does not identify ~
-               any function or DEFSTRUCT or DEFOBJECT."
-              target))
+          (retok target
+                 previous-structs
+                 previous-objs
+                 previous-fns
+                 uncalled-fns))))
+    (reterr (msg "The target ~x0 is a symbol that does not identify ~
+                  any function or DEFSTRUCT or DEFOBJECT."
+                 target)))
   ///
 
   (more-returns
-   (val true-listp
-        :rule-classes :type-prescription))
-
-  (defret len-of-atc-process-target.val
-    (equal (len val) 4))
-
-  (defret true-listp-of-atc-process-target.new-previous-structs
-    (b* (((list new-previous-structs & & &) val))
-      (true-listp new-previous-structs))
-    :hyp (true-listp previous-structs)
-    :rule-classes :type-prescription)
-
-  (defret true-listp-of-atc-process-target.new-previous-objs
-    (b* (((list & new-previous-objs & &) val))
-      (true-listp new-previous-objs))
-    :hyp (true-listp previous-objs)
-    :rule-classes :type-prescription)
-
-  (defret true-listp-of-atc-process-target.new-previous-fns
-    (b* (((list & & new-previous-fns &) val))
-      (true-listp new-previous-fns))
-    :hyp (true-listp previous-fns)
-    :rule-classes :type-prescription)
-
-  (defret true-listp-of-atc-process-target.new-uncalled-fns
-    (b* (((list & & & new-uncalled-fns) val))
-      (true-listp new-uncalled-fns))
-    :hyp (true-listp uncalled-fns)
-    :rule-classes :type-prescription)
-
-  (defret symbolp-when-atc-process-target
-    (Implies (not erp)
-             (symbolp target)))
-
-  (in-theory (disable symbolp-when-atc-process-target)))
+   (new-previous-structs true-listp
+                         :hyp (true-listp previous-structs)
+                         :rule-classes :type-prescription)
+   (new-previous-objs true-listp
+                      :hyp (true-listp previous-objs)
+                      :rule-classes :type-prescription)
+   (new-previous-fns true-listp
+                     :hyp (true-listp previous-fns)
+                     :rule-classes :type-prescription)
+   (new-uncalled-fns true-listp
+                     :hyp (true-listp uncalled-fns)
+                     :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -372,88 +337,83 @@
                                  (previous-objs symbol-listp)
                                  (previous-fns symbol-listp)
                                  (uncalled-fns symbol-listp)
-                                 (ctx ctxp)
-                                 state)
+                                 (wrld plist-worldp))
   :returns (mv erp
-               (val (tuple (new-previous-structs symbol-listp)
-                           (new-previous-objs symbol-listp)
-                           (new-previous-fns symbol-listp)
-                           (new-uncalled-fns symbol-listp)
-                           val)
-                    :hyp (and (symbol-listp previous-structs)
-                              (symbol-listp previous-objs)
-                              (symbol-listp previous-fns)
-                              (symbol-listp uncalled-fns)))
-               state)
+               (targets symbol-listp)
+               (new-previous-structs symbol-listp
+                                     :hyp (symbol-listp previous-structs))
+               (new-previous-objs symbol-listp
+                                  :hyp (symbol-listp previous-objs))
+               (new-previous-fns symbol-listp
+                                 :hyp (symbol-listp previous-fns))
+               (new-uncalled-fns symbol-listp
+                                 :hyp (symbol-listp uncalled-fns)))
   :short "Lift @(tsee atc-process-function) to lists."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We thread the lists through."))
-  (b* (((when (endp targets)) (acl2::value (list previous-structs
-                                                 previous-objs
-                                                 previous-fns
-                                                 uncalled-fns)))
-       ((er (list previous-structs previous-objs previous-fns uncalled-fns))
+    "We thread the lists through.")
+   (xdoc::p
+    "If successful, we also return the target list itself,
+     with a guaranteed @(tsee symbol-listp) type,
+     so that calling code has that fact readily available."))
+  (b* (((reterr) nil nil nil nil nil)
+       ((when (endp targets)) (retok nil
+                                     previous-structs
+                                     previous-objs
+                                     previous-fns
+                                     uncalled-fns))
+       ((erp
+         target
+         previous-structs
+         previous-objs
+         previous-fns
+         uncalled-fns)
         (atc-process-target (car targets)
                             previous-structs
                             previous-objs
                             previous-fns
                             uncalled-fns
-                            ctx
-                            state)))
-    (atc-process-target-list (cdr targets)
-                             previous-structs
-                             previous-objs
-                             previous-fns
-                             uncalled-fns
-                             ctx
-                             state))
+                            wrld))
+       ((erp
+         targets
+         previous-structs
+         previous-objs
+         previous-fns
+         uncalled-fns)
+        (atc-process-target-list (cdr targets)
+                                 previous-structs
+                                 previous-objs
+                                 previous-fns
+                                 uncalled-fns
+                                 wrld)))
+    (retok (cons target targets)
+           previous-structs
+           previous-objs
+           previous-fns
+           uncalled-fns))
   ///
 
   (more-returns
-   (val true-listp
-        :rule-classes :type-prescription
-        :name true-listp-of-atc-process-target-list.val))
-
-  (defret true-listp-of-atc-process-target-list.new-previous-structs
-    (b* (((list new-previous-structs & & &) val))
-      (true-listp new-previous-structs))
-    :hyp (true-listp previous-structs)
-    :rule-classes :type-prescription)
-
-  (defret true-listp-of-atc-process-target-list.new-previous-objs
-    (b* (((list & new-previous-objs & & &) val))
-      (true-listp new-previous-objs))
-    :hyp (true-listp previous-objs)
-    :rule-classes :type-prescription)
-
-  (defret true-listp-of-atc-process-target-list.new-previous-fns
-    (b* (((list & & new-previous-fns &) val))
-      (true-listp new-previous-fns))
-    :hyp (true-listp previous-fns)
-    :rule-classes :type-prescription)
-
-  (defret true-listp-of-atc-process-target-list.new-uncalled-fns
-    (b* (((list & & & new-uncalled-fns) val))
-      (true-listp new-uncalled-fns))
-    :hyp (true-listp uncalled-fns)
-    :rule-classes :type-prescription)
-
-  (defret symbol-listp-when-atc-process-target-list
-    (implies (and (not erp)
-                  (true-listp targets))
-             (symbol-listp targets))
-    :hints (("Goal" :in-theory (enable symbolp-when-atc-process-target))))
-
-  (in-theory (disable symbol-listp-when-atc-process-target-list)))
+   (new-previous-structs true-listp
+                         :hyp (true-listp previous-structs)
+                         :rule-classes :type-prescription)
+   (new-previous-objs true-listp
+                      :hyp (true-listp previous-objs)
+                      :rule-classes :type-prescription)
+   (new-previous-fns true-listp
+                     :hyp (true-listp previous-fns)
+                     :rule-classes :type-prescription)
+   (new-uncalled-fns true-listp
+                     :hyp (true-listp uncalled-fns)
+                     :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-targets ((targets true-listp) (ctx ctxp) state)
+(define atc-process-targets ((targets true-listp) (wrld plist-worldp))
   :returns (mv erp
-               (target-fns symbol-listp)
-               state)
+               (targets symbol-listp)
+               (target-fns symbol-listp))
   :short "Process the targets @('t1'), ..., @('tp')."
   :long
   (xdoc::topstring
@@ -466,28 +426,19 @@
      and we ensure that the latter list is empty
      after processing all the targets.")
    (xdoc::p
-    "We return all the target functions."))
-  (b* (((unless (consp targets))
-        (er-soft+ ctx t nil
-                  "At least one target must be supplied."))
-       ((er (list & & previous-fns uncalled-fns) :iferr nil)
-        (atc-process-target-list targets nil nil nil nil ctx state))
+    "We return all the target functions.
+     We also return all the targets,
+     with a guaranteed @(tsee symbol-listp) type for use by the caller."))
+  (b* (((reterr) nil nil)
+       ((unless (consp targets))
+        (reterr "At least one target must be supplied."))
+       ((erp targets-as-symbols & & previous-fns uncalled-fns)
+        (atc-process-target-list targets nil nil nil nil wrld))
        ((unless (endp uncalled-fns))
-        (er-soft+ ctx t nil
-                  "The recursive target functions ~&0 ~
-                   are not called by any other target function."
-                  uncalled-fns)))
-    (acl2::value previous-fns))
-  ///
-
-  (defret symbol-listp-when-atc-process-targets
-    (implies (and (not erp)
-                  (true-listp targets))
-             (symbol-listp targets))
-    :hints
-    (("Goal" :in-theory (enable symbol-listp-when-atc-process-target-list))))
-
-  (in-theory (disable symbol-listp-when-atc-process-targets)))
+        (reterr (msg "The recursive target functions ~&0 ~
+                      are not called by any other target function."
+                     uncalled-fns))))
+    (retok targets-as-symbols previous-fns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -803,14 +754,7 @@
                                 stringp-when-atc-process-file-name
                                 erp-atc-process-file-name-when-absent
                                 evmac-process-input-print
-                                acl2::ensure-value-is-boolean)
-             :use
-             ((:instance symbol-listp-when-atc-process-targets
-                         (targets
-                          (mv-nth 1 (partition-rest-and-keyword-args
-                                     args *atc-allowed-options*)))
-                         (ctx ctx)
-                         (state state))))))
+                                acl2::ensure-value-is-boolean))))
       state)
   :short "Process all the inputs."
   (b* (((acl2::fun (irr))
@@ -831,7 +775,8 @@
                              "The inputs must be the targets ~
                               followed by the options ~&0."
                              *atc-allowed-options*))
-       ((er target-fns :iferr (irr)) (atc-process-targets targets ctx state))
+       ((mv erp targets target-fns) (atc-process-targets targets (w state)))
+       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        (output-dir-option (assoc-eq :output-dir options))
        (output-dir (if output-dir-option
                        (cdr output-dir-option)
