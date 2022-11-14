@@ -76,6 +76,7 @@
                ensure-value-is-string$
                ensure-value-is-symbol$
                er-soft+
+               erp
                evmac-appcond-listp
                evmac-appcond-theorem-list
                evmac-generate-defthm
@@ -169,6 +170,8 @@
                pseudo-var-p
                remove-equal-formals-actuals
                restore-output?
+               reterr
+               retok
                run-when
                str-fix
                string=>nats
