@@ -54,14 +54,6 @@
       which includes any generated events.")
 
     (xdoc::p
-     "In addition, this macro can optionally generate predicates
-      that say whether ABNF trees match ABNF abstract syntax elements.
-      These are versions of the tree matching predicates
-      in the formal @(see semantics) of ABNF,
-      but they are specialized to the grammar,
-      and are therefore more concise.")
-
-    (xdoc::p
      "Currently the implementation of this macro does not perform
       very thorough input validation.
       This will be improved in the future."))
@@ -76,7 +68,6 @@
      "            :untranslate ..."
      "            :well-formed ..."
      "            :closed ..."
-     "            :matchers ..."
      "            :parents ..."
      "            :short ..."
      "            :long ..."
@@ -199,25 +190,6 @@
        which is closed even though not all of its components are"))
 
     (xdoc::desc
-     "@(':matchers') &mdash; default @('nil')"
-     (xdoc::p
-      "Specifies whether @('defgrammar') should generate
-       tree matching predicates specialized to the grammar.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "Any non-@('nil') symbol, to generate the predicates.
-        In this case, the symbol is used as prefix of the names.")
-      (xdoc::li
-       "@('nil'), to not generate the predicates."))
-     (xdoc::p
-      "See the `"
-      xdoc::*evmac-section-generated-title*
-      "' section for the details of these predicates,
-       including the role of the prefix symbol in their names."))
-
-    (xdoc::desc
      (list
       "@(':parents')"
       "@(':short')"
@@ -273,72 +245,6 @@
       "(rulelist-closedp *name*)")
      (xdoc::p
       "This is generated iff the @(':closed') input is @('t')."))
-
-    (xdoc::desc
-     (list
-      "@('cst-matchp')"
-      "@('cst-list-elem-matchp')"
-      "@('cst-list-rep-matchp')"
-      "@('cst-list-list-conc-matchp')"
-      "@('cst-list-list-alt-matchp')")
-     (xdoc::p
-      "The tree matching predicates,
-       if the @(':matchers') input is the symbol @('cst').
-       Any symbol may be used,
-       but @('cst') (for Concrete Syntax Tree)
-       may be often a good choice,
-       in a package related to the language that the grammar refers to
-       (e.g. @('java::cst') for Java).
-       A longer prefix may be used when, in the same package,
-       there are multiple languages and grammars of interest,
-       e.g. @('pkg::lang1-cst') for one and @('pkg::lang2-cst') for the other.
-       The predicates are put in the same package as the prefix symbol.")
-     (xdoc::p
-      "Each predicate takes two arguments:")
-     (xdoc::ol
-      (xdoc::li
-       "A tree (for the first one),
-        or a list of trees (for the second and third one),
-        or a list of lists of trees (for the fourth and fifth one).")
-      (xdoc::li
-       "An ACL2 string, which must be an ABNF concrete syntax representation of
-        an element (for the first and second one),
-        or a repetition (for the third one),
-        or a concatenation (for the fourth one),
-        or an alternation (for the fifth one)."))
-     (xdoc::p
-      "Each predicate holds iff the (list of (list of)) tree(s)
-       is terminated and
-       matches the element or repetition or concatenation or alternation.
-       While in the @(see semantics) it makes sense
-       to include non-terminated trees as potentially matching,
-       for a specific grammar it normally makes sense
-       to consider only terminated trees:
-       this motivates the extra condition.")
-     (xdoc::p
-      "These generated predicates are actually macros,
-       which use (subroutines of) the "
-      (xdoc::seetopic "grammar-parser" "verified grammar parser")
-      " to parse the ACL2 strings passed as second arguments
-       into their ABNF abstract syntactic representation,
-       and then expand to calls of the appropriate
-       generic tree matching predicates in the @(see semantics),
-       passing the grammar as argument to them;
-       the dependency on the grammar is implicit in the generated predicates.
-       Note that the parsing of the strings happens
-       at macro expansion time (i.e. at compile time),
-       not at predicate call time (i.e. at run time).")
-     (xdoc::p
-      "There are some generated internal intermediate predicates
-       that these macros expand into calls of,
-       and it is these intermediate predicates that call
-       the generic tree matching predicates from the @(see semantics).
-       These intermediate predicates are actual ACL2 functions,
-       whose names are identical to the macros but with @('$') at the end. "
-      (xdoc::seetopic "acl2::macro-aliases-table" "Macro aliases")
-      " are also generated that link the macro names to the function names:
-       this way, the predicates can be opened (in proofs)
-       via their macro names."))
 
     (xdoc::desc
      "@('<other-events>')"
