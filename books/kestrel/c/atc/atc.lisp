@@ -93,8 +93,11 @@
 
   (xdoc::evmac-topic-implementation-item-input "file-name")
 
-  "@('file-path') is the path of the generated C file,
-   obtained from @('output-dir') and @('file-name')."
+  "@('path-wo-ext') is the path of the generated file(s),
+   without the @('.c') or @('.h') extension.
+   This @('path-wo-ext') is obtained from @('output-dir') and @('file-name')."
+
+  (xdoc::evmac-topic-implementation-item-input "header")
 
   (xdoc::evmac-topic-implementation-item-input "proofs")
 
@@ -143,7 +146,9 @@
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
        ((er (list t1...tp
-                  file-path
+                  file-name
+                  path-wo-ext
+                  header
                   pretty-printing
                   proofs
                   prog-const
@@ -152,7 +157,9 @@
                   print))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything t1...tp
-                        file-path
+                        file-name
+                        path-wo-ext
+                        header
                         pretty-printing
                         proofs
                         prog-const

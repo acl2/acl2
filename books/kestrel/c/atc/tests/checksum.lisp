@@ -113,4 +113,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |legacy| |checksum| :file-name "checksum")
+(c::atc |legacy| |checksum| :file-name "checksum" :header t)

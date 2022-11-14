@@ -14,7 +14,7 @@
 ; This file contains a preliminary ABNF grammar for a subset of C.
 ; This grammar is meant to describe the content of .h and .c files
 ; in a form that is neither before nor after preprocessing,
-; but rather includes both pre-processing and post-preprocessing constructs.
+; but rather includes constructs both before and after preprocessing.
 ; The purpose of this grammar is to capture as much information as possible
 ; of the content of .h and .c files,
 ; for use by tools that operate on C, e.g. that transform it.
@@ -30,8 +30,8 @@
 ; faithfully model the definition of C.
 ; (Currently the grammar in this file matches [C],
 ; but it may no longer quite match it
-; once we extend it to capture
-; both pre-processing and post-processing construct.)
+; once we extend it to capture constructs
+; both before and after preprocessing.)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -150,8 +150,8 @@ character = %x00-7F
 ; Note that tokens and preprocessing tokens overlap,
 ; and are meant to describe the language in different translation phases.
 ; However, in this grammar, as explained in 'Purpose' above,
-; we mix together preprocessing tokens and (postprocessing) tokens.
-; Currently they all all (postprocessing) tokens,
+; we mix together preprocessing tokens and (non-preprocessing) tokens.
+; Currently they are all (non-preprocessing) tokens,
 ; but at some future time they may include preprocessing tokens.
 
 ; There is a lexical overlap between identifiers and constants,
@@ -401,8 +401,8 @@ punctuator = "["
 
 ; We omit these, because, as explained in 'Purpose' above,
 ; the goal of this grammar is to represent C code in a form
-; that includes both preprocessing and postprocessing constructs,
-; and in fact we assume that numbers (constants) are postprocessing constructs,
+; that includes constructs both before and after preprocessing,
+; and in fact we assume that numbers (constants) are (non-preprocessing) tokens,
 ; as we plan to capture only limited preprocessing directives, as practical.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

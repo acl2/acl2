@@ -141,4 +141,5 @@
         |write|
         |copy$loop|
         |copy|
-        :file-name "arrays")
+        :file-name "arrays"
+        :header t)

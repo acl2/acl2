@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "int.h"
+
 int main(void) {
   int x = 3;
   int y = -2;

@@ -1,35 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-struct point2D { // copied from structs.c
-  int x;
-  int y;
-};
-
-struct point3D { // copied from structs.c
-  int x;
-  int y;
-  int z;
-};
-
-struct scalar_and_array { // copied from structs.c
-  int scalar;
-  unsigned char aggreg[10];
-};
-
-struct flex { // copied from structs.c
-    unsigned char fixed[5];
-    unsigned int filler;
-    unsigned char last[];
-};
-
-// without these, we get a type error
-// because the compiler thinks that these two functions return int
-// (eventually ATC should also generate a .h file,
-// which then this test file can include):
-struct point2D write_x_to_point2D_by_value(struct point2D point);
-struct point2D write_y_to_point2D_by_value(struct point2D point);
-struct scalar_and_array write_scalar_by_value(int v, struct scalar_and_array a);
-struct scalar_and_array write_aggreg_by_value(int i, unsigned char v, struct scalar_and_array a);
+#include "structs.h"
 
 void test_read_from_point2D_by_value() {
   struct point2D point = {.x = 11, .y = 22};

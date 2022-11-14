@@ -113,6 +113,7 @@
                make-evmac-appcond
                maybe-natp
                maybe-pseudo-event-formp
+               maybe-stringp
                mbt$
                measure+
                msg-listp

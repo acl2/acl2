@@ -370,4 +370,5 @@
         |bitior_sint_sint_test2|
         |bitior_sint_sint_test3|
         |bitior_sint_sint_test4|
-        :file-name "operators")
+        :file-name "operators"
+        :header t)
