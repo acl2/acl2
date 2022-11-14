@@ -7220,17 +7220,20 @@
                             (prec-objs atc-string-objinfo-alistp)
                             (header booleanp))
   :returns (mv (declon-h obj-declon-optionp)
-               (declon-c obj-declonp)
+               (declon-c obj-declon-optionp)
                (updated-prec-objs atc-string-objinfo-alistp))
   :short "Generate a C external object declaration."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the @(':header') input is @('t'),
+    "If the @(':header') input is @('t') and the object has an initializer,
      we generate two such declarations:
      one for the header, without initializer;
-     and one for the source file,
-     with initializer if the @(tsee defobject) has an initializer."))
+     and one for the source file, with initializer.
+     If the @(':header') input is @('t') and the object has no initializer,
+     we generate one declaration, for the header.
+     If the @(':header') input is @('nil'),
+     we generate one declaration, for the source file."))
   (b* ((id (defobject-info->name-ident info))
        (type (defobject-info->type info))
        (exprs (defobject-info->init info))
@@ -7240,17 +7243,24 @@
                       (make-obj-declon :tyspec tyspec
                                        :declor declor
                                        :init? nil)))
-       (declon-c (make-obj-declon :tyspec tyspec
-                                  :declor declor
-                                  :init? initer?))
+       (declon-c (and (or (not header)
+                          initer?)
+                      (make-obj-declon :tyspec tyspec
+                                       :declor declor
+                                       :init? initer?)))
        (info (atc-obj-info info))
        (prec-objs (acons (str-fix name)
                          info
                          (atc-string-objinfo-alist-fix prec-objs))))
     (mv declon-h declon-c prec-objs))
   ///
-  (defret atc-gen-obj-declon-iff-header
-    (iff declon-h header)))
+
+  (defret atc-gen-obj-declon-h-iff-header
+    (iff declon-h header))
+
+  (defret atc-gen-obj-declon-c-iff-not-header-or-init
+    (iff declon-c (or (not header)
+                      (consp (defobject-info->init info))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -7293,7 +7303,9 @@
     "If the header is generated,
      all the structs and external objects go there,
      while only declarations for the functions go there;
-     the function definitions go into the source file.
+     furthermore, the external objects have no initializers there.
+     The function definitions go into the source file,
+     together with the external objects that have initializers.
      If the header is not generated,
      everything goes into the source file."))
   (b* (((acl2::fun (irr)) (list nil nil nil nil nil))
@@ -7406,7 +7418,8 @@
                 (if header
                     (acl2::value
                      (list (list (ext-declon-obj-declon obj-declon-h))
-                           (list (ext-declon-obj-declon obj-declon-c))
+                           (and (defobject-info->init info)
+                                (list (ext-declon-obj-declon obj-declon-c)))
                            prec-fns
                            prec-tags
                            prec-objs

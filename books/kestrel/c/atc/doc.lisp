@@ -252,8 +252,7 @@
       and zero or more C structure type declarations,
       while the source file consists of
       one or more function definitions
-      and zero or more C external object declarations
-      (with or without initializers),
+      and zero or more C external object declarations with initializers,
       corresponding to
       the function declarations and the external object declarations
       in the header.")
