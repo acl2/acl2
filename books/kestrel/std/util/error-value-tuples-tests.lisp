@@ -14,6 +14,8 @@
 
 (include-book "std/testing/assert-equal" :dir :system)
 
+; cert_param: (non-acl2r)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zero-vals ((x integerp))
