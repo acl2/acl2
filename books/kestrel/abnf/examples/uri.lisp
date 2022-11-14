@@ -11,6 +11,7 @@
 (in-package "ABNF")
 
 (include-book "../grammar-definer/defgrammar")
+(include-book "../grammar-definer/deftreeops")
 (include-book "../operations/in-terminal-set")
 (include-book "../operations/plugging")
 (include-book "../notation/core-rules")
@@ -49,8 +50,7 @@
      to keep this constant unexpanded in output."))
   :file "uri.abnf"
   :untranslate t
-  :well-formed t
-  :matchers uri-cst)
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,3 +102,7 @@
                                              (char-code #\{)
                                              (char-code #\|)
                                              (char-code #\}))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::deftreeops *all-uri-grammar-rules* :prefix uri-cst)

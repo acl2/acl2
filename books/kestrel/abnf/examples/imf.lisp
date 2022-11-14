@@ -11,6 +11,7 @@
 (in-package "ABNF")
 
 (include-book "../grammar-definer/defgrammar")
+(include-book "../grammar-definer/deftreeops")
 (include-book "../operations/in-terminal-set")
 
 ; (depends-on "imf.abnf")
@@ -47,5 +48,8 @@
      to keep this constant unexpanded in output."))
   :file "imf.abnf"
   :untranslate t
-  :well-formed t
-  :matchers imf-cst)
+  :well-formed t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::deftreeops *imf-grammar-rules* :prefix imf-cst)
