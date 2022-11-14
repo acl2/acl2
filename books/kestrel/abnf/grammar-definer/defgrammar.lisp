@@ -81,9 +81,7 @@
 
   (xdoc::evmac-topic-implementation-item-input "well-formed")
 
-  (xdoc::evmac-topic-implementation-item-input "closed")
-
-  (xdoc::evmac-topic-implementation-item-input "matchers")))
+  (xdoc::evmac-topic-implementation-item-input "closed")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -170,7 +168,6 @@
         :untranslate
         :well-formed
         :closed
-        :matchers
         :parents
         :short
         :long)
@@ -187,7 +184,6 @@
                                 (untranslate booleanp)
                                 (well-formed booleanp)
                                 (closed booleanp)
-                                (matchers acl2::symbolp)
                                 (parents defgrammar-anyp)
                                 (short defgrammar-anyp)
                                 (long defgrammar-anyp)
@@ -196,7 +192,7 @@
                     :hyp (true-listp args))
                state)
   :short "Process all the inputs."
-  (b* (((fun (irr)) (list nil "" nil nil nil nil nil nil nil nil))
+  (b* (((fun (irr)) (list nil "" nil nil nil nil nil nil nil))
        ((mv args other-events) (std::split-/// ctx args))
        ((mv erp name options)
         (partition-rest-and-keyword-args args *defgrammar-allowed-options*))
@@ -242,14 +238,6 @@
                                          "The :CLOSED input"
                                          t
                                          (irr)))
-       (matchers-option (assoc-eq :matchers options))
-       (matchers (if (consp matchers-option)
-                     (cdr matchers-option)
-                   nil))
-       ((er &) (ensure-value-is-symbol$ matchers
-                                        "The :MATCHERS input"
-                                        t
-                                        (irr)))
        (parents-option (assoc-eq :parents options))
        (parents (if (consp parents-option)
                     (cdr parents-option)
@@ -267,7 +255,6 @@
                  untranslate
                  well-formed
                  closed
-                 matchers
                  parents
                  short
                  long
@@ -289,165 +276,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defgrammar-gen-cst-match ((matchers acl2::symbolp)
-                                  (name acl2::symbolp))
-  :returns (events pseudo-event-form-listp)
-  :short "Generate the first of the specialized matching predicates."
-  (b* ((cst-matchp (add-suffix-to-fn matchers "-MATCHP"))
-       (cst-matchp$ (add-suffix-to-fn cst-matchp "$")))
-    `((define ,cst-matchp$ ((tree treep) (elem elementp))
-        :returns (yes/no booleanp)
-        (and (tree-terminatedp tree)
-             (tree-match-element-p tree elem ,name))
-        :hooks (:fix))
-      (defmacro ,cst-matchp (tree elem)
-        (declare (xargs :guard (acl2::stringp elem)))
-        (b* (((mv err elem rest)
-              (parse-element (string=>nats elem)))
-             ((when err) (er hard ',cst-matchp "~@0" err))
-             ((when (consp rest))
-              (er hard ',cst-matchp
-                  "Extra: ~s0" (nats=>string rest)))
-             (elem (abstract-element elem)))
-          `(,',cst-matchp$ ,tree ',elem)))
-      (table acl2::macro-aliases-table
-        ',cst-matchp
-        ',cst-matchp$))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defgrammar-gen-cst-list-elem-match ((matchers acl2::symbolp)
-                                            (name acl2::symbolp))
-  :returns (events pseudo-event-form-listp)
-  :short "Generate the second of the specialized matching predicates."
-  (b* ((cst-list-elem-matchp (add-suffix-to-fn matchers "-LIST-ELEM-MATCHP"))
-       (cst-list-elem-matchp$ (add-suffix-to-fn cst-list-elem-matchp "$")))
-    `((define ,cst-list-elem-matchp$ ((trees tree-listp) (elem elementp))
-        :returns (yes/no booleanp)
-        (and (tree-list-terminatedp trees)
-             (tree-list-match-element-p trees elem ,name))
-        :hooks (:fix))
-      (defmacro ,cst-list-elem-matchp (trees elem)
-        (declare (xargs :guard (acl2::stringp elem)))
-        (b* (((mv err elem rest)
-              (parse-element (string=>nats elem)))
-             ((when err) (er hard ',cst-list-elem-matchp "~@0" err))
-             ((when (consp rest))
-              (er hard ',cst-list-elem-matchp
-                  "Extra: ~s0" (nats=>string rest)))
-             (elem (abstract-element elem)))
-          `(,',cst-list-elem-matchp$ ,trees ',elem)))
-      (table acl2::macro-aliases-table
-        ',cst-list-elem-matchp
-        ',cst-list-elem-matchp$))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defgrammar-gen-cst-list-rep-match ((matchers acl2::symbolp)
-                                           (name acl2::symbolp))
-  :returns (events pseudo-event-form-listp)
-  :short "Generate the third of the specialized matching predicates."
-  (b* ((cst-list-rep-matchp (add-suffix-to-fn matchers "-LIST-REP-MATCHP"))
-       (cst-list-rep-matchp$ (add-suffix-to-fn cst-list-rep-matchp "$")))
-    `((define ,cst-list-rep-matchp$ ((trees tree-listp) (rep repetitionp))
-        :returns (yes/no booleanp)
-        (and (tree-list-terminatedp trees)
-             (tree-list-match-repetition-p trees rep ,name))
-        :hooks (:fix))
-      (defmacro ,cst-list-rep-matchp (trees rep)
-        (declare (xargs :guard (acl2::stringp rep)))
-        (b* (((mv err rep rest)
-              (parse-repetition (string=>nats rep)))
-             ((when err) (er hard ',cst-list-rep-matchp "~@0" err))
-             ((when (consp rest))
-              (er hard ',cst-list-rep-matchp
-                  "Extra: ~s0" (nats=>string rest)))
-             (rep (abstract-repetition rep)))
-          `(,',cst-list-rep-matchp$ ,trees ',rep)))
-      (table acl2::macro-aliases-table
-        ',cst-list-rep-matchp
-        ',cst-list-rep-matchp$))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defgrammar-gen-cst-list-list-conc-match ((matchers acl2::symbolp)
-                                                 (name acl2::symbolp))
-  :returns (events pseudo-event-form-listp)
-  :short "Generate the fourth of the specialized matching predicates."
-  (b* ((cst-list-list-conc-matchp
-        (add-suffix-to-fn matchers "-LIST-LIST-CONC-MATCHP"))
-       (cst-list-list-conc-matchp$
-        (add-suffix-to-fn cst-list-list-conc-matchp "$")))
-    `((define ,cst-list-list-conc-matchp$ ((treess tree-list-listp)
-                                           (conc concatenationp))
-        :returns (yes/no booleanp)
-        (and (tree-list-list-terminatedp treess)
-             (tree-list-list-match-concatenation-p treess conc ,name))
-        :hooks (:fix))
-      (defmacro ,cst-list-list-conc-matchp (treess conc)
-        (declare (xargs :guard (acl2::stringp conc)))
-        (b* (((mv err conc rest)
-              (parse-concatenation (string=>nats conc)))
-             ((when err) (er hard ',cst-list-list-conc-matchp "~@0" err))
-             ((when (consp rest))
-              (er hard ',cst-list-list-conc-matchp
-                  "Extra: ~s0" (nats=>string rest)))
-             (conc (abstract-concatenation conc)))
-          `(,',cst-list-list-conc-matchp$ ,treess ',conc)))
-      (table acl2::macro-aliases-table
-        ',cst-list-list-conc-matchp
-        ',cst-list-list-conc-matchp$))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defgrammar-gen-cst-list-list-alt-match ((matchers acl2::symbolp)
-                                                (name acl2::symbolp))
-  :returns (events pseudo-event-form-listp)
-  :short "Generate the fifth of the specialized matching predicates."
-  (b* ((cst-list-list-alt-matchp
-        (add-suffix-to-fn matchers "-LIST-LIST-ALT-MATCHP"))
-       (cst-list-list-alt-matchp$
-        (add-suffix-to-fn cst-list-list-alt-matchp "$")))
-    `((define ,cst-list-list-alt-matchp$ ((treess tree-list-listp)
-                                          (alt alternationp))
-        :returns (yes/no booleanp)
-        (and (tree-list-list-terminatedp treess)
-             (tree-list-list-match-alternation-p treess alt ,name))
-        :hooks (:fix))
-      (defmacro ,cst-list-list-alt-matchp (treess alt)
-        (declare (xargs :guard (acl2::stringp alt)))
-        (b* (((mv err alt rest)
-              (parse-alternation (string=>nats alt)))
-             ((when err) (er hard ',cst-list-list-alt-matchp "~@0" err))
-             ((when (consp rest))
-              (er hard ',cst-list-list-alt-matchp
-                  "Extra: ~s0" (nats=>string rest)))
-             (alt (abstract-alternation alt)))
-          `(,',cst-list-list-alt-matchp$ ,treess ',alt)))
-      (table acl2::macro-aliases-table
-        ',cst-list-list-alt-matchp
-        ',cst-list-list-alt-matchp$))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defgrammar-gen-matchers ((matchers acl2::symbolp)
-                                 (name acl2::symbolp))
-  :returns (events pseudo-event-form-listp)
-  :short "Generate the specialized matching predicates."
-  (append (defgrammar-gen-cst-match matchers name)
-          (defgrammar-gen-cst-list-elem-match matchers name)
-          (defgrammar-gen-cst-list-rep-match matchers name)
-          (defgrammar-gen-cst-list-list-conc-match matchers name)
-          (defgrammar-gen-cst-list-list-alt-match matchers name)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define defgrammar-gen-everything ((name acl2::symbolp)
                                    (file acl2::stringp)
                                    (untranslate booleanp)
                                    (well-formed booleanp)
                                    (closed booleanp)
-                                   (matchers acl2::symbolp)
                                    parents
                                    short
                                    long
@@ -478,9 +311,6 @@
              (list `(defthm ,(packn-pos (list 'rulelist-closedp-of- name) name)
                       (rulelist-closedp ,name)
                       :hints (("Goal" :in-theory '((:e rulelist-closedp))))))))
-       (matcher-events
-        (and matchers
-             (defgrammar-gen-matchers matchers name)))
        (table-event (defgrammar-table-add call))
        (event
         `(progn
@@ -495,7 +325,6 @@
              ,@untranslate-event?
              ,@well-formed-event?
              ,@closed-event?
-             ,@matcher-events
              ,@other-events)
            ,table-event)))
     (value event)))
@@ -518,7 +347,6 @@
                   untranslate
                   well-formed
                   closed
-                  matchers
                   parents
                   short
                   long
@@ -531,7 +359,6 @@
       untranslate
       well-formed
       closed
-      matchers
       parents
       short
       long
