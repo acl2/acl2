@@ -1276,7 +1276,8 @@
       (block-item-case
        item
        :declon
-       (b* (((mv var tyname init?) (obj-declon-to-ident+tyname+init item.get))
+       (b* (((mv var & tyname init?)
+             (obj-declon-to-ident+scspec+tyname+init item.get))
             (type (tyname-to-type tyname))
             ((when (type-case type :array))
              (mv (error :unsupported-local-array) (compustate-fix compst)))

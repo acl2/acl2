@@ -1879,6 +1879,9 @@
      We also ensure that the initializer type matches the declared type,
      if the initializer is present.")
    (xdoc::p
+    "For now we require that there is no storage class specifier.
+     We will add support for storage classs specifiers.")
+   (xdoc::p
     "The @('constp') flag controls whether
      we require the initializer, if present, to be constant or not.
      If the initializer is absent, the test passes.")
@@ -1887,7 +1890,10 @@
      we require the initializer to be present.")
    (xdoc::p
     "We return the updated variable table."))
-  (b* (((mv var tyname init?) (obj-declon-to-ident+tyname+init declon))
+  (b* (((mv var scspec tyname init?)
+        (obj-declon-to-ident+scspec+tyname+init declon))
+       ((unless (scspecseq-case scspec :none))
+        (error (list :storage-class-not-supported scspec)))
        (type (check-tyname tyname tagenv))
        ((when (errorp type)) (error (list :declon-error-type type)))
        (wf (check-ident var))
