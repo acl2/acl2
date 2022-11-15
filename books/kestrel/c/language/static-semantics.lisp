@@ -41,25 +41,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum var-defstatus
+  :short "Fixtype of definition statuses of variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A variable (i.e. object) may be defined by a declaration or not
+     [C:6.7/5] [C:6.9.2];
+     it may be also tentatively defined,
+     in the case of a file-scope variable under certain conditions.
+     Thus, a variable may have three possible definition statuses:
+     not defined, tentatively defined, and defined.
+     This fixtype captures them.")
+   (xdoc::p
+    "See @(tsee var-table-add-var) for the details on
+     how this status is handled."))
+  (:undefined ())
+  (:tentative ())
+  (:defined ())
+  :pred var-defstatusp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod var-sinfo
   :short "Fixtype of static information about variables."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the information about variables needed for the static semantics.")
-   (xdoc::p
-    "This static information includes the type of the variable, clearly.")
-   (xdoc::p
-    "This static information also includes a flag that says
-     whether the variable (i.e. object, in C terminology)
-     has been defined or not.
-     This is currently important only for variables with file scope:
-     it is @('nil') when the variable is declared without an initializer,
-     in which case it is a tentative definition [C:6.9.2/2];
-     it is @('t') when the variable is declared with an initializer.
-     See @(tsee var-table-add-var) for details."))
+    "This is the information about variables needed for the static semantics.
+     It consists of a type and a definition status."))
   ((type type)
-   (definedp bool))
+   (defstatus var-defstatusp))
   :pred var-sinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -184,7 +196,7 @@
 
 (define var-table-add-var ((var identp)
                            (type typep)
-                           (initp booleanp)
+                           (defstatus var-defstatusp)
                            (vartab var-tablep))
   :returns (new-vartab var-table-resultp
                        :hints (("Goal" :in-theory (enable var-table-resultp))))
@@ -192,51 +204,82 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Besides the type of the variable, we also pass a flag to this function,
-     which says whether the variable has an initializer or not.
-     This is used to check the requirements on file-scope variables:
-     it is @('t') when the file-scope variable has an initializer;
-     while it is @('nil') otherwise.
-     We look up the variable in the innermost scope.
-     If it is present, and it is already defined, it is an error;
-     this is a bit stronger than required by [C],
-     but it suffices for our purposes,
-     i.e. for the C programs that we are currently interested in,
-     which may have file-scope variable declarations without initializers
-     followed by declarations for the same variables with initilizers,
-     and then no more declarations for the same variables after that.
-     If the variable is present in the scope but it is not defined yet,
-     there are two cases:
-     if the current declaration has an initializer,
-     we update the information about the variable to be defined;
-     otherwise we leave the information unchanged
-     (i.e. the declaration is still just a tentative definition).
-     In both cases, if the variable is in the table,
-     its type must be the same as in the current declaration.
-     If the variable is not present in the scope, we add it.
-     All of this works uniformly not only for file-scope variables,
-     but also for block-scope variables:
-     in our C subset, the latter always have an initializer,
-     and thus they are defined as soon as they are added to the table,
-     i.e. they are never in the state of a tentative definition."))
+    "Besides the type of the variable,
+     we also pass a variable definition status to this ACL2 function,
+     which says whether the variable declaration that we are processing
+     constitutes a definition, a tentative definition, or neither.
+     This variable definition status is determined
+     by the specifics of the declaration,
+     including where it occurs (block scope or file scope).")
+   (xdoc::p
+    "We look up the variable in the variable table.
+     If it is not found, we add it, with the definition status given.
+     If it is found, it must have the same type as the given type,
+     otherwise it is an error.
+     The given definition status is combined with the one in the table,
+     as follows [C:6.9.2]:")
+   (xdoc::ul
+    (xdoc::li
+     "If the one in the table is undefined,
+      and the one in the declaration is also undefined,
+      it remains undefined in the table.")
+    (xdoc::li
+     "If the one in the table is undefined,
+      and the one in the declaration is defined or tentatively defined,
+      the latter replaces the former in the table.")
+    (xdoc::li
+     "If the one in the table is tentatively defined,
+      and the one in the declaration is undefined or tentatively defined,
+      it remains tentatively defined in the table.")
+    (xdoc::li
+     "If the one in the table is tentatively defined,
+      and the one in the declaration is defined,
+      the latter replaces the former in the table.")
+    (xdoc::li
+     "If the one in the table is defined,
+      and the one in the declaration is undefined or tentatively defined,
+      it remains defined in the table.")
+    (xdoc::li
+     "If the one in the table is defined,
+      and the one in the declaration is defined,
+      it is an error, because there cannot be two definitions [C:6.9/5].")))
   (b* ((var (ident-fix var))
-       (type (type-fix type))
        (vartab (var-table-fix vartab))
        (varscope (car vartab))
        (var-info (omap::in var varscope))
        ((when (not (consp var-info)))
-        (b* ((info (make-var-sinfo :type type :definedp initp))
+        (b* ((info (make-var-sinfo :type type
+                                   :defstatus defstatus))
              (new-varscope (omap::update var info varscope)))
           (cons new-varscope (cdr vartab))))
        (info (cdr var-info))
        ((unless (type-equiv type
                             (var-sinfo->type info)))
         (error (list :different-type-var var)))
-       ((when (var-sinfo->definedp info)) (error (list :duplicate-var var)))
-       ((when (not initp)) vartab)
-       (new-info (change-var-sinfo info :definedp t))
-       (new-varscope (omap::update var new-info varscope)))
-    (cons new-varscope (cdr vartab)))
+       (tabdefstatus (var-sinfo->defstatus info))
+       ((when (or (and (var-defstatus-case tabdefstatus :undefined)
+                       (var-defstatus-case defstatus :undefined))
+                  (and (var-defstatus-case tabdefstatus :tentative)
+                       (var-defstatus-case defstatus :undefined))
+                  (and (var-defstatus-case tabdefstatus :tentative)
+                       (var-defstatus-case defstatus :tentative))
+                  (and (var-defstatus-case tabdefstatus :defined)
+                       (var-defstatus-case defstatus :undefined))
+                  (and (var-defstatus-case tabdefstatus :defined)
+                       (var-defstatus-case defstatus :tentative))))
+        vartab)
+       ((when (or (and (var-defstatus-case tabdefstatus :undefined)
+                       (var-defstatus-case defstatus :tentative))
+                  (and (var-defstatus-case tabdefstatus :undefined)
+                       (var-defstatus-case defstatus :defined))
+                  (and (var-defstatus-case tabdefstatus :tentative)
+                       (var-defstatus-case defstatus :defined))))
+        (b* ((new-info (change-var-sinfo info :defstatus defstatus))
+             (new-varscope (omap::update var new-info varscope)))
+          (cons new-varscope (cdr vartab)))))
+    (assert* (and (var-defstatus-case tabdefstatus :defined)
+                  (var-defstatus-case defstatus :defined))
+             (error (list :duplicate-var-def var))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1875,7 +1918,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We ensure that the type is complete [C:6.7/7].
+    "We ensure that the type is complete [C:6.7/7];
+     this is not always necessary in full C,
+     but our C subset requires that.
      We also ensure that the initializer type matches the declared type,
      if the initializer is present.")
    (xdoc::p
@@ -1889,7 +1934,14 @@
     "The @('initp') flag controls whether
      we require the initializer to be present.")
    (xdoc::p
-    "We return the updated variable table."))
+    "We return the updated variable table.
+     If there is no initializer,
+     in our C subset this must be in a file scope;
+     since we require no @('extern') storage class specifier for now,
+     in this case this must be a tentative definition [C:6.9.2/2].
+     If instead there is an intializer,
+     then it is a definition,
+     regardless of whether it has file scope or block scope."))
   (b* (((mv var scspec tyname init?)
         (obj-declon-to-ident+scspec+tyname+init declon))
        ((unless (scspecseq-case scspec :none))
@@ -1903,14 +1955,14 @@
        ((when (not init?))
         (if initp
             (error (list :declon-initializer-required (obj-declon-fix declon)))
-          (var-table-add-var var type nil vartab)))
+          (var-table-add-var var type (var-defstatus-tentative) vartab)))
        (init init?)
        (init-type (check-initer init funtab vartab tagenv constp))
        ((when (errorp init-type))
         (error (list :declon-error-init init-type)))
        (wf? (init-type-matchp init-type type))
        ((when (errorp wf?)) wf?))
-    (var-table-add-var var type t vartab))
+    (var-table-add-var var type (var-defstatus-defined) vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2180,6 +2232,7 @@
      We check the components of the parameter declaration
      and we check that the parameter can be added to the variable table;
      the latter check fails if there is a duplicate parameter.
+     Each parameter is considered defined in the variable table.
      Note that we regard each declaration as defining the variable,
      because no multiple declarations of the same parameter are allowed.
      We also ensure that the type is complete [C:6.7.6.3/4].
@@ -2192,7 +2245,7 @@
        ((when (errorp wf)) (error (list :param-error wf)))
        ((unless (type-completep type))
         (error (list :param-type-incomplete (param-declon-fix param)))))
-    (var-table-add-var var type t vartab))
+    (var-table-add-var var type (var-defstatus-defined) vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
