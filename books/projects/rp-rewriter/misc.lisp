@@ -1208,7 +1208,8 @@ RP-Rewriter will throw an eligible error.</p>"
                                    (rw-direction ':inside-out)
                                    (supress-warnings 'nil)
                                    (add-rp-rule 't)
-                                   (ruleset 'rp-rules))
+                                   (ruleset 'rp-rules)
+                                   (override-cl-hints 'nil))
         args)
        (world (w state))
        ((acl2::er translated-term)
@@ -1223,13 +1224,14 @@ RP-Rewriter will throw an eligible error.</p>"
         (translate-lst (strip-cdrs new-synps) t t nil 'defthmrp-fn world state))
        (new-synps (pairlis$ (strip-cars new-synps) new-synps-vals))
        
-       (hints  `(:hints (("goal"
-                          :do-not-induct t :rw-cache-state nil :do-not '(preprocess generalize fertilize)
-                          :clause-processor (rp-cl :runes ,runes
-                                                   :runes-outside-in ,runes-outside-in
-                                                   :new-synps ,new-synps
-                                                   :cases ,cases
-                                                   :ruleset ,ruleset)))))
+       (hints  (or override-cl-hints
+                   `(:hints (("goal"
+                              :do-not-induct t :rw-cache-state nil :do-not '(preprocess generalize fertilize)
+                              :clause-processor (rp-cl :runes ,runes
+                                                       :runes-outside-in ,runes-outside-in
+                                                       :new-synps ,new-synps
+                                                       :cases ,cases
+                                                       :ruleset ,ruleset))))))
        (body
         (cond
          (lambda-opt
