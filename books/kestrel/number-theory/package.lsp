@@ -1,6 +1,6 @@
 ; Primes Library: Package
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,10 +11,12 @@
 (in-package "ACL2")
 
 (include-book "kestrel/prime-fields/portcullis" :dir :system)
-(include-book "rtl/rel11/portcullis" :dir :system)
+(include-book "projects/quadratic-reciprocity/portcullis" :dir :system)
 
 (defpkg "PRIMES"
-  (append '(acl2::primep ; was rtl::primep
+  (append '(dm::primep ; this and other things were in the RTL package
+            dm::divides
+            dm::residue
             assert!
             b*
             define
