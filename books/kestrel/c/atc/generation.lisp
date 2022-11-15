@@ -2054,7 +2054,8 @@
                    ((mv tyspec declor) (ident+type-to-tyspec+declor
                                         (make-ident :name (symbol-name var))
                                         init.type))
-                   (declon (make-obj-declon :tyspec tyspec
+                   (declon (make-obj-declon :scspec (scspecseq-none)
+                                            :tyspec tyspec
                                             :declor declor
                                             :init? (initer-single init.expr)))
                    (item (block-item-declon declon))
@@ -2627,7 +2628,8 @@
                    ((mv tyspec declor) (ident+type-to-tyspec+declor
                                         (make-ident :name (symbol-name var))
                                         init.type))
-                   (declon (make-obj-declon :tyspec tyspec
+                   (declon (make-obj-declon :scspec (scspecseq-none)
+                                            :tyspec tyspec
                                             :declor declor
                                             :init? (initer-single init.expr)))
                    (item (block-item-declon declon))
@@ -7240,12 +7242,14 @@
        ((mv tyspec declor) (ident+type-to-tyspec+declor id type))
        (initer? (if (consp exprs) (initer-list exprs) nil))
        (declon-h (and header
-                      (make-obj-declon :tyspec tyspec
+                      (make-obj-declon :scspec (scspecseq-none)
+                                       :tyspec tyspec
                                        :declor declor
                                        :init? nil)))
        (declon-c (and (or (not header)
                           initer?)
-                      (make-obj-declon :tyspec tyspec
+                      (make-obj-declon :scspec (scspecseq-none)
+                                       :tyspec tyspec
                                        :declor declor
                                        :init? initer?)))
        (info (atc-obj-info info))
