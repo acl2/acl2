@@ -28,8 +28,10 @@
                   (equal var+scspec+tyname+init
                          (obj-declon-to-ident+scspec+tyname+init declon))
                   (equal var (mv-nth 0 var+scspec+tyname+init))
+                  (equal scspec (mv-nth 1 var+scspec+tyname+init))
                   (equal tyname (mv-nth 2 var+scspec+tyname+init))
                   (equal init (mv-nth 3 var+scspec+tyname+init))
+                  (scspecseq-case scspec :none)
                   init
                   (equal type (tyname-to-type tyname))
                   (not (type-case type :array))
@@ -64,6 +66,7 @@
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
       (:e obj-declon-to-ident+scspec+tyname+init)
+      (:e scspecseq-kind)
       return-type-of-init-value-single)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
