@@ -20,7 +20,7 @@
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/mod"))
 
-(in-theory (disable (:e dm::primep)))
+(in-theory (disable (:e primep)))
 
 ;;;
 ;;; prime
@@ -30,16 +30,16 @@
 (encapsulate (((prime) => *))
   (local (defun prime () 3))
   (defthm primep-of-prime
-    (dm::primep (prime))
-    :hints (("Goal" :in-theory (enable dm::primep)))))
+    (primep (prime))
+    :hints (("Goal" :in-theory (enable primep)))))
 
 (defthm primep-forward-to-posp
-  (implies (dm::primep x)
+  (implies (primep x)
            (posp x))
   :rule-classes :forward-chaining)
 
 (defthm primep-forward-to-bound
-  (implies (dm::primep x)
+  (implies (primep x)
            (<= 2 x))
   :rule-classes :forward-chaining)
 
@@ -526,7 +526,7 @@
 ;move?
 (defthm divides-of-prime-means-0
   (implies (fep x)
-           (equal (dm::divides (prime) x)
+           (equal (divides (prime) x)
                   (equal 0 x)))
   :hints (("Goal" :in-theory (enable fep))))
 
@@ -545,7 +545,7 @@
                             (b y)))
            :in-theory (enable mul
                               acl2::equal-of-0-and-mod
-                              dm::divides))))
+                              divides))))
 
 ;;Obtain an instance of Fermat's little theorem for the prime (prime).
 (encapsulate
@@ -564,7 +564,7 @@
                                      (p (prime))))
              :cases ((equal 0 a))
              :in-theory (e/d (pow-rewrite fep minus1)
-                             (expt (:e expt) (:e dm::primep)))))))
+                             (expt (:e expt) (:e primep)))))))
 
 (defthm inv-correct
   (implies (and (fep a)
