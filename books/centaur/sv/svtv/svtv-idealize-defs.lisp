@@ -32,74 +32,186 @@
 
 (local (std::add-default-post-define-hook :fix))
 
-(define 4vec-override-values-ok-<<= ((test 4vec-p)
-                                     (val 4vec-p)
-                                     (ref 4vec-p))
-  (4vec-<<= (4vec-bit?! test val 0)
-            (4vec-bit?! test ref 0))
-  ///
-  (defthm 4vec-override-values-ok-<<=-of-x-val
-    (equal (4vec-override-values-ok-<<= test (4vec-x) ref)
-           t)
-    :hints(("Goal" :in-theory (enable 4vec-override-values-ok-<<=))))
-
-  (defthm 4vec-override-values-ok-<<=-of-x-test
-    (equal (4vec-override-values-ok-<<= (4vec-x) val ref)
-           t)
-    :hints(("Goal" :in-theory (enable 4vec-override-values-ok-<<=))))
-
-  (defthm 4vec-override-values-ok-of-greater-ref
-    (implies (and (4vec-override-values-ok-<<= test val ref1)
-                  (4vec-<<= ref1 ref2))
-             (4vec-override-values-ok-<<= test val ref2))
-    :hints(("Goal" :in-theory (enable 4vec-<<=-transitive-1)))))
+(defxdoc svtv-idealize-internals
+  :short "Umbrella topic for internal concepts used in the proofs for the svtv-idealize framework."
+  :parents (svtv-idealize))
 
 
+;; (define 4vec-override-values-ok-<<= ((test 4vec-p)
+;;                                      (val 4vec-p)
+;;                                      (ref 4vec-p))
+;;   (4vec-<<= (4vec-bit?! test val 0)
+;;             (4vec-bit?! test ref 0))
+;;   ///
+;;   (defthm 4vec-override-values-ok-<<=-of-x-val
+;;     (equal (4vec-override-values-ok-<<= test (4vec-x) ref)
+;;            t)
+;;     :hints(("Goal" :in-theory (enable 4vec-override-values-ok-<<=))))
+
+;;   (defthm 4vec-override-values-ok-<<=-of-x-test
+;;     (equal (4vec-override-values-ok-<<= (4vec-x) val ref)
+;;            t)
+;;     :hints(("Goal" :in-theory (enable 4vec-override-values-ok-<<=))))
+
+;;   (defthm 4vec-override-values-ok-of-greater-ref
+;;     (implies (and (4vec-override-values-ok-<<= test val ref1)
+;;                   (4vec-<<= ref1 ref2))
+;;              (4vec-override-values-ok-<<= test val ref2))
+;;     :hints(("Goal" :in-theory (enable 4vec-<<=-transitive-1)))))
 
 
 
-
-(define svtv-override-triple-ok ((triple svtv-override-triple-p)
-                                 (pipe-env svex-env-p)
-                                 (ref-env svex-env-p))
+(define svtv-override-triple-mux-<<= ((triple svtv-override-triple-p)
+                                      (pipe-env svex-env-p)
+                                      (spec-env svex-env-p)
+                                      (spec-run svex-env-p))
   :returns (ok)
   (b* (((svtv-override-triple triple)))
-    (4vec-override-values-ok-<<= (svex-eval triple.test pipe-env)
-                                 (svex-eval triple.val pipe-env)
-                                 (svex-env-lookup triple.refvar ref-env)))
+    (4vec-override-mux-<<= (svex-eval triple.test pipe-env)
+                           (svex-eval triple.val pipe-env)
+                           (svex-eval triple.test spec-env)
+                           (svex-eval triple.val spec-env)
+                           (svex-env-lookup triple.refvar spec-run)))
   ///
-  (defthm svtv-override-triple-ok-when-<<=
-    (implies (and (svtv-override-triple-ok triple pipe-env ref-env1)
-                  (svex-env-<<= ref-env1 ref-env2))
-             (svtv-override-triple-ok triple pipe-env ref-env2))))
+  ;; (defthm 4vec-override-mux-<<=-when-spec-ref-<<=
+  ;;   (implies (and (4vec-override-mux-<<= impl-test impl-val spec-test spec-val spec-ref1)
+  ;;                 (4vec-<<= spec-ref1 spec-ref2))
+  ;;            (4vec-override-mux-<<= impl-test impl-val spec-test spec-val spec-ref2))
+  ;;   :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=
+  ;;                                     4vec-bit?!
+  ;;                                     4vec-<<=))))
+  (defthm svtv-override-triple-mux-<<=-when-<<=
+    (implies (and (svtv-override-triple-mux-<<= triple pipe-env spec-env spec-run1)
+                  (svex-env-<<= spec-run1 spec-run2))
+             (svtv-override-triple-mux-<<= triple pipe-env spec-env spec-run2))))
 
-(define svtv-override-triplemap-ok ((triplemap svtv-override-triplemap-p)
-                                    (pipe-env svex-env-p)
-                                    (ref-env svex-env-p))
+(define svtv-override-triplemap-muxes-<<= ((triplemap svtv-override-triplemap-p)
+                                           (pipe-env svex-env-p)
+                                           (spec-env svex-env-p)
+                                           (spec-run svex-env-p))
   :returns (ok)
   (if (atom triplemap)
       t
     (and (or (not (mbt (and (consp (car triplemap))
                             (svar-p (caar triplemap)))))
-             (svtv-override-triple-ok (cdar triplemap) pipe-env ref-env))
-         (svtv-override-triplemap-ok (cdr triplemap) pipe-env ref-env)))
+             (svtv-override-triple-mux-<<= (cdar triplemap) pipe-env spec-env spec-run))
+         (svtv-override-triplemap-muxes-<<= (cdr triplemap) pipe-env spec-env spec-run)))
   ///
-  (defret svtv-override-triple-ok-of-lookup-when-<fn>
+  (defret svtv-override-triple-mux-<<=-of-lookup-when-<fn>
     (implies (and ok
                   (hons-assoc-equal key triplemap)
                   (svar-p key))
-             (svtv-override-triple-ok (cdr (hons-assoc-equal key triplemap))
-                                      pipe-env ref-env)))
+             (svtv-override-triple-mux-<<= (cdr (hons-assoc-equal key triplemap))
+                                           pipe-env spec-env spec-run)))
 
-  (defthm svtv-override-triplemap-ok-when-<<=
-    (implies (and (svtv-override-triplemap-ok triplemaps pipe-env ref-env1)
-                  (svex-env-<<= ref-env1 ref-env2))
-             (svtv-override-triplemap-ok triplemaps pipe-env ref-env2)))
+  (defthm svtv-override-triplemap-muxes-<<=-when-<<=
+    (implies (and (svtv-override-triplemap-muxes-<<= triplemaps pipe-env spec-env spec-run1)
+                  (svex-env-<<= spec-run1 spec-run2))
+             (svtv-override-triplemap-muxes-<<= triplemaps pipe-env spec-env spec-run2)))
   
   (local (in-theory (enable svtv-override-triplemap-fix))))
+
+
+(define svtv-override-triplemaplist-muxes-<<= ((triplemaps svtv-override-triplemaplist-p)
+                                               (pipe-env svex-env-p)
+                                               (spec-env svex-env-p)
+                                               (spec-run svex-env-p))
+  :returns (ok)
+  (if (atom triplemaps)
+      t
+    (and (svtv-override-triplemap-muxes-<<= (car triplemaps) pipe-env spec-env spec-run)
+         (svtv-override-triplemaplist-muxes-<<= (cdr triplemaps) pipe-env spec-env spec-run)))
+  ///
+
+  (defthm svtv-override-triplemaplist-muxes-<<=-when-<<=
+    (implies (and (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-env spec-run1)
+                  (svex-env-<<= spec-run1 spec-run2))
+             (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-env spec-run2))))
+
+(define svtv-override-triplemap->tests ((triplemap svtv-override-triplemap-p))
+  :returns (tests svexlist-p)
+  (if (atom triplemap)
+      nil
+    (if (mbt (and (consp (car triplemap))
+                  (svar-p (caar triplemap))))
+        (cons (svtv-override-triple->test (cdar triplemap))
+              (svtv-override-triplemap->tests (cdr triplemap)))
+      (svtv-override-triplemap->tests (cdr triplemap))))
+  ///
+  (local (in-theory (enable svtv-override-triplemap-fix))))
+
+(define svex-envs-svexlist-muxtests-subsetp ((tests svexlist-p)
+                                             (spec-env svex-env-p)
+                                             (impl-env svex-env-p))
+  :returns (ok)
+  (if (atom tests)
+      t
+    (and (4vec-muxtest-subsetp (svex-eval (car tests) spec-env)
+                               (svex-eval (car tests) impl-env))
+         (svex-envs-svexlist-muxtests-subsetp (cdr tests) spec-env impl-env)))
+  ///
+  (defret <fn>-implies-4vec-muxtest-subsetp-when-member-tests
+    (implies (and ok
+                  (member-equal (svex-fix test) (Svexlist-fix tests)))
+             (4vec-muxtest-subsetp (svex-eval test spec-env)
+                                   (svex-eval test impl-env)))
+    :hints(("Goal" :in-theory (enable svexlist-fix)))))
+
+(define svtv-override-triplemaplist-muxtests-subsetp ((triplemaps svtv-override-triplemaplist-p)
+                                                      (spec-env svex-env-p)
+                                                      (impl-env svex-env-p))
+  (if (atom triplemaps)
+      t
+    (and (svex-envs-svexlist-muxtests-subsetp (svtv-override-triplemap->tests (car triplemaps))
+                                              spec-env impl-env)
+         (svtv-override-triplemaplist-muxtests-subsetp (cdr triplemaps) spec-env impl-env))))
+
+
+
+
+
+;; (define svtv-override-triple-ok ((triple svtv-override-triple-p)
+;;                                  (pipe-env svex-env-p)
+;;                                  (ref-env svex-env-p))
+;;   :returns (ok)
+;;   (b* (((svtv-override-triple triple)))
+;;     (4vec-override-values-ok-<<= (svex-eval triple.test pipe-env)
+;;                                  (svex-eval triple.val pipe-env)
+;;                                  (svex-env-lookup triple.refvar ref-env)))
+;;   ///
+;;   (defthm svtv-override-triple-ok-when-<<=
+;;     (implies (and (svtv-override-triple-ok triple pipe-env ref-env1)
+;;                   (svex-env-<<= ref-env1 ref-env2))
+;;              (svtv-override-triple-ok triple pipe-env ref-env2))))
+
+;; (define svtv-override-triplemap-ok ((triplemap svtv-override-triplemap-p)
+;;                                     (pipe-env svex-env-p)
+;;                                     (ref-env svex-env-p))
+;;   :returns (ok)
+;;   (if (atom triplemap)
+;;       t
+;;     (and (or (not (mbt (and (consp (car triplemap))
+;;                             (svar-p (caar triplemap)))))
+;;              (svtv-override-triple-ok (cdar triplemap) pipe-env ref-env))
+;;          (svtv-override-triplemap-ok (cdr triplemap) pipe-env ref-env)))
+;;   ///
+;;   (defret svtv-override-triple-ok-of-lookup-when-<fn>
+;;     (implies (and ok
+;;                   (hons-assoc-equal key triplemap)
+;;                   (svar-p key))
+;;              (svtv-override-triple-ok (cdr (hons-assoc-equal key triplemap))
+;;                                       pipe-env ref-env)))
+
+;;   (defthm svtv-override-triplemap-ok-when-<<=
+;;     (implies (and (svtv-override-triplemap-ok triplemaps pipe-env ref-env1)
+;;                   (svex-env-<<= ref-env1 ref-env2))
+;;              (svtv-override-triplemap-ok triplemaps pipe-env ref-env2)))
+  
+;;   (local (in-theory (enable svtv-override-triplemap-fix))))
                   
                   
-        
+
+
 
 
 (define svtv-override-triplemap-key-check ((key svar-p)
@@ -108,6 +220,12 @@
                                         (val-alist svex-alist-p)
                                         (probes svtv-probealist-p)
                                         (triplemap svtv-override-triplemap-p))
+  :short "Checks that the given key either isn't bound in both the test and val
+alists, or else has a triple in the triplemap such that the test of the triple
+is the key's binding in the test-alist, the val of the triple is the key's
+binding in the val-alist, and the refvar of the triple is bound in probes to a
+probe whose signal is the key and time is the current phase."
+  :parents (svtv-idealize-internals)
   :returns (ok)
   (b* ((test (svex-fastlookup key test-alist))
        ((unless test) t)
@@ -135,17 +253,38 @@
   ;;                   (svar-equiv x y))
   ;;          :rule-classes :forward-chaining))
   
-  (defret <fn>-implies
+  ;; (defret <fn>-implies
+  ;;   (implies (and ok
+  ;;                 (svtv-override-triple-ok (cdr (hons-assoc-equal (svar-fix key) triplemap))
+  ;;                                          pipe-env
+  ;;                                          (svtv-probealist-extract probes ref-envs)))
+  ;;            (4vec-override-values-ok-<<=
+  ;;             (svex-eval (svex-lookup key test-alist) pipe-env)
+  ;;             (svex-eval (svex-lookup key val-alist) pipe-env)
+  ;;             (svex-env-lookup key (nth phase ref-envs))))
+  ;;   :hints(("Goal" :in-theory (enable svtv-override-triple-ok))))
+
+  (local (defthm 4vec-override-mux-<<=-when-impl-test-x
+           (4vec-override-mux-<<= (4vec-x) impl-val spec-test spec-val spec-ref)
+           :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=)))))
+
+  (local (defthm 4vec-override-mux-<<=-when-impl-val-x
+           (4vec-override-mux-<<= impl-test (4vec-x) spec-test spec-val spec-ref)
+           :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=)))))
+  
+  (defret <fn>-implies-4vec-override-mux-<<=
     (implies (and ok
-                  (svtv-override-triple-ok (cdr (hons-assoc-equal (svar-fix key) triplemap))
-                                           pipe-env
-                                           (svtv-probealist-extract probes ref-envs)))
-             (4vec-override-values-ok-<<=
+                  (svtv-override-triple-mux-<<= (cdr (hons-assoc-equal (svar-fix key) triplemap))
+                                                pipe-env spec-env
+                                                (svtv-probealist-extract probes ref-envs)))
+             (4vec-override-mux-<<=
               (svex-eval (svex-lookup key test-alist) pipe-env)
               (svex-eval (svex-lookup key val-alist) pipe-env)
+              (svex-eval (svex-lookup key test-alist) spec-env)
+              (svex-eval (svex-lookup key val-alist) spec-env)
               (svex-env-lookup key (nth phase ref-envs))))
-    :hints(("Goal" :in-theory (enable svtv-override-triple-ok))))
-
+    :hints(("Goal" :in-theory (enable svtv-override-triple-mux-<<=))))
+  
   (defretd <fn>-implies-lookup-in-triplemap
     (implies (and ok
                   (case-split (svex-lookup key test-alist))
@@ -156,11 +295,11 @@
 
 
 (define svtv-override-triplemap-syntax-check ((keys svarlist-p)
-                                          (phase natp)
-                                          (test-alist svex-alist-p)
-                                          (val-alist svex-alist-p)
-                                          (probes svtv-probealist-p)
-                                          (triplemap svtv-override-triplemap-p))
+                                              (phase natp)
+                                              (test-alist svex-alist-p)
+                                              (val-alist svex-alist-p)
+                                              (probes svtv-probealist-p)
+                                              (triplemap svtv-override-triplemap-p))
   :returns (ok)
   (if (atom keys)
       t
@@ -170,26 +309,26 @@
 
 
 
-(define svtv-override-triplemaplist-ok ((triplemaps svtv-override-triplemaplist-p)
-                                        (pipe-env svex-env-p)
-                                        (ref-env svex-env-p))
-  :returns (ok)
-  (if (atom triplemaps)
-      t
-    (and (svtv-override-triplemap-ok (car triplemaps) pipe-env ref-env)
-         (svtv-override-triplemaplist-ok (cdr triplemaps) pipe-env ref-env)))
-  ///
+;; (define svtv-override-triplemaplist-ok ((triplemaps svtv-override-triplemaplist-p)
+;;                                         (pipe-env svex-env-p)
+;;                                         (ref-env svex-env-p))
+;;   :returns (ok)
+;;   (if (atom triplemaps)
+;;       t
+;;     (and (svtv-override-triplemap-ok (car triplemaps) pipe-env ref-env)
+;;          (svtv-override-triplemaplist-ok (cdr triplemaps) pipe-env ref-env)))
+;;   ///
 
-  (defthm svtv-override-triplemaplist-ok-when-<<=
-    (implies (and (svtv-override-triplemaplist-ok triplemaps pipe-env ref-env1)
-                  (svex-env-<<= ref-env1 ref-env2))
-             (svtv-override-triplemaplist-ok triplemaps pipe-env ref-env2))))
+;;   (defthm svtv-override-triplemaplist-ok-when-<<=
+;;     (implies (and (svtv-override-triplemaplist-ok triplemaps pipe-env ref-env1)
+;;                   (svex-env-<<= ref-env1 ref-env2))
+;;              (svtv-override-triplemaplist-ok triplemaps pipe-env ref-env2))))
 
 (define svtv-override-triplemaplist-syntax-check-aux ((phase natp)
-                                              (test-alists svex-alistlist-p)
-                                              (val-alists svex-alistlist-p)
-                                              (probes svtv-probealist-p)
-                                              (triplemaps svtv-override-triplemaplist-p))
+                                                      (test-alists svex-alistlist-p)
+                                                      (val-alists svex-alistlist-p)
+                                                      (probes svtv-probealist-p)
+                                                      (triplemaps svtv-override-triplemaplist-p))
   :returns (ok)
   :measure (len val-alists)
   (if (atom val-alists)
@@ -198,10 +337,10 @@
               (val-alist (car val-alists))
               (triplemap (car triplemaps))
               ((acl2::with-fast test-alist val-alist triplemap)))
-           (svtv-override-triplemap-syntax-check (svex-alist-keys (car val-alists))
+           (svtv-override-triplemap-syntax-check (svex-alist-keys val-alist)
                                                  phase
-                                                 (car test-alists)
-                                                 (car val-alists)
+                                                 test-alist
+                                                 val-alist
                                                  probes
                                                  (car triplemaps)))
          (svtv-override-triplemaplist-syntax-check-aux (1+ (lnfix phase))
@@ -241,8 +380,8 @@
        (probevar-look (hons-get (make-svtv-probe :signal key :time phase)
                                 (svtv-rev-probealist-fix rev-probes)))
        ((unless probevar-look)
-        (raise "No output for signal ~s0 at time ~x1 -- needed for override mappings"
-               key phase)
+        ;; (raise "No output for signal ~s0 at time ~x1 -- needed for override mappings"
+        ;;        key phase)
         (svtv-construct-triplemap (cdr keys) phase test-alist val-alist rev-probes)))
     (cons (cons key (make-svtv-override-triple
                      :test test

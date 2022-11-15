@@ -1065,7 +1065,39 @@
     (implies (4vec-override-mux-<<= impl-test impl-val spec-test spec-val spec-ref)
              (4vec-override-mux-agrees impl-test (4vec-x-override impl-val (4vec-bit?! spec-test spec-val spec-ref))
                                        spec-test spec-val spec-ref))
-    :hints(("Goal" :in-theory (enable 4vec-override-mux-agrees)))))
+    :hints(("Goal" :in-theory (enable 4vec-override-mux-agrees))))
+
+
+  (local (defthm lemma4
+           (implies (and (4vec-<<= (4vec-bit?! x y z1) z1)
+                         (4vec-<<= z1 z2))
+                    (4vec-<<= (4vec-bit?! x y z2) z2))
+           :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=
+                                             4vec-<<= 4vec-bit?!))
+                  (bitops::logbitp-reasoning))))
+  
+  (defthm 4vec-override-mux-<<=-when-spec-ref-greater
+    (implies (And (4vec-override-mux-<<= impl-test impl-val spec-test spec-val spec-ref1)
+                  (4vec-<<= spec-ref1 spec-ref2))
+             (4vec-override-mux-<<= impl-test impl-val spec-test spec-val spec-ref2))
+    :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=))
+           ;; (bitops::logbitp-reasoning)
+           ))
+
+  (local (defthm 4vec-bit?!-of-then-x-less-than-else
+           (4vec-<<= (4vec-bit?! test (4vec-x) else) else)
+           :hints(("Goal" :in-theory (enable 4vec-<<= 4vec-bit?!))
+                  (bitops::logbitp-reasoning))))
+  
+  
+  
+  (defthm 4vec-override-mux-<<=-when-impl-test-x
+    (4vec-override-mux-<<= (4vec-x) impl-val spec-test spec-val spec-ref)
+    :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=))))
+  
+  (defthm 4vec-override-mux-<<=-when-impl-val-x
+    (4vec-override-mux-<<= impl-test (4vec-x) spec-test spec-val spec-ref)
+    :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=)))))
 
 
 (define svar-override-triple-mux-<<= ((x svar-override-triple-p)
@@ -2414,8 +2446,8 @@
 
 
 
-(defsection svex-env-override-muxes-<<=
-  (defun-sk svex-env-override-muxes-<<= (impl-env spec-env spec-outs)
+(defsection svex-env-override-var-muxes-<<=
+  (defun-sk svex-env-override-var-muxes-<<= (impl-env spec-env spec-outs)
     (forall var
             (4vec-override-mux-<<= (svex-env-lookup (svar-change-override var :test) impl-env)
                                    (svex-env-lookup (svar-change-override var :val) impl-env)
@@ -2424,11 +2456,11 @@
                                    (svex-env-lookup (svar-change-override var :ref) spec-outs)))
     :rewrite :direct)
 
-  (in-theory (disable svex-env-override-muxes-<<=
-                      svex-env-override-muxes-<<=-necc))
+  (in-theory (disable svex-env-override-var-muxes-<<=
+                      svex-env-override-var-muxes-<<=-necc))
 
-  (defthm svex-env-override-muxes-<<=-necc-strong
-    (implies (and (svex-env-override-muxes-<<= impl-env spec-env spec-outs)
+  (defthm svex-env-override-var-muxes-<<=-necc-strong
+    (implies (and (svex-env-override-var-muxes-<<= impl-env spec-env spec-outs)
                   (svar-override-p refvar nil)
                   (equal testvar (svar-change-override refvar :test))
                   (equal valvar (svar-change-override refvar :val)))
@@ -2437,11 +2469,11 @@
                                     (svex-env-lookup testvar spec-env)
                                     (svex-env-lookup valvar spec-env)
                                     (svex-env-lookup refvar spec-outs)))
-    :hints (("goal" :use ((:instance svex-env-override-muxes-<<=-necc
+    :hints (("goal" :use ((:instance svex-env-override-var-muxes-<<=-necc
                            (var refvar))))))
 
-  (defthm svex-env-override-muxes-<<=-implies-svar-override-triplelist-muxes-<<=-of-svarlist-to-override-triples
-    (implies (and (svex-env-override-muxes-<<= impl-env spec-env spec-outs)
+  (defthm svex-env-override-var-muxes-<<=-implies-svar-override-triplelist-muxes-<<=-of-svarlist-to-override-triples
+    (implies (and (svex-env-override-var-muxes-<<= impl-env spec-env spec-outs)
                   (svarlist-override-p vars nil))
              (svar-override-triplelist-muxes-<<= (svarlist-to-override-triples vars)
                                                  impl-env spec-env spec-outs))
@@ -2450,47 +2482,47 @@
                                       svarlist-override-p
                                       svar-override-triple-mux-<<=))))
 
-  (defcong svex-envs-similar equal (svex-env-override-muxes-<<= impl-env spec-env spec-outs) 1
-    :hints (("goal" :cases ((svex-env-override-muxes-<<= impl-env spec-env spec-outs)))
+  (defcong svex-envs-similar equal (svex-env-override-var-muxes-<<= impl-env spec-env spec-outs) 1
+    :hints (("goal" :cases ((svex-env-override-var-muxes-<<= impl-env spec-env spec-outs)))
             (and stable-under-simplificationp
-                 (b* ((lit (assoc 'svex-env-override-muxes-<<= clause))
+                 (b* ((lit (assoc 'svex-env-override-var-muxes-<<= clause))
                       (other (if (eq (second lit) 'impl-env) 'impl-env-equiv 'impl-env))
-                      (w `(svex-env-override-muxes-<<=-witness . ,(cdr lit))))
+                      (w `(svex-env-override-var-muxes-<<=-witness . ,(cdr lit))))
                    `(:expand (,lit)
-                     :use ((:instance svex-env-override-muxes-<<=-necc
+                     :use ((:instance svex-env-override-var-muxes-<<=-necc
                             (impl-env ,other) (var ,w))))))))
 
-  (defcong svex-envs-similar equal (svex-env-override-muxes-<<= impl-env spec-env spec-outs) 2
-    :hints (("goal" :cases ((svex-env-override-muxes-<<= impl-env spec-env spec-outs)))
+  (defcong svex-envs-similar equal (svex-env-override-var-muxes-<<= impl-env spec-env spec-outs) 2
+    :hints (("goal" :cases ((svex-env-override-var-muxes-<<= impl-env spec-env spec-outs)))
             (and stable-under-simplificationp
-                 (b* ((lit (assoc 'svex-env-override-muxes-<<= clause))
+                 (b* ((lit (assoc 'svex-env-override-var-muxes-<<= clause))
                       (other (if (eq (third lit) 'spec-env) 'spec-env-equiv 'spec-env))
-                      (w `(svex-env-override-muxes-<<=-witness . ,(cdr lit))))
+                      (w `(svex-env-override-var-muxes-<<=-witness . ,(cdr lit))))
                    `(:expand (,lit)
-                     :use ((:instance svex-env-override-muxes-<<=-necc
+                     :use ((:instance svex-env-override-var-muxes-<<=-necc
                             (spec-env ,other) (var ,w))))))))
 
-  (defcong svex-envs-similar equal (svex-env-override-muxes-<<= impl-env spec-env spec-outs) 3
-    :hints (("goal" :cases ((svex-env-override-muxes-<<= impl-env spec-env spec-outs)))
+  (defcong svex-envs-similar equal (svex-env-override-var-muxes-<<= impl-env spec-env spec-outs) 3
+    :hints (("goal" :cases ((svex-env-override-var-muxes-<<= impl-env spec-env spec-outs)))
             (and stable-under-simplificationp
-                 (b* ((lit (assoc 'svex-env-override-muxes-<<= clause))
+                 (b* ((lit (assoc 'svex-env-override-var-muxes-<<= clause))
                       (other (if (eq (fourth lit) 'spec-outs) 'spec-outs-equiv 'spec-outs))
-                      (w `(svex-env-override-muxes-<<=-witness . ,(cdr lit))))
+                      (w `(svex-env-override-var-muxes-<<=-witness . ,(cdr lit))))
                    `(:expand (,lit)
-                     :use ((:instance svex-env-override-muxes-<<=-necc
+                     :use ((:instance svex-env-override-var-muxes-<<=-necc
                             (spec-outs ,other) (var ,w)))))))))
 
 
-(define svex-envlists-override-muxes-<<= ((impl-envs svex-envlist-p)
+(define svex-envlists-override-var-muxes-<<= ((impl-envs svex-envlist-p)
                                           (spec-envs svex-envlist-p)
                                           (spec-outs svex-envlist-p))
   (if (atom impl-envs)
       t
-    (and (ec-call (svex-env-override-muxes-<<= (car impl-envs) (car spec-envs) (car spec-outs)))
-         (svex-envlists-override-muxes-<<= (cdr impl-envs) (cdr spec-envs) (cdr spec-outs))))
+    (and (ec-call (svex-env-override-var-muxes-<<= (car impl-envs) (car spec-envs) (car spec-outs)))
+         (svex-envlists-override-var-muxes-<<= (cdr impl-envs) (cdr spec-envs) (cdr spec-outs))))
   ///
-  (defthm svex-envlists-override-muxes-<<=-implies-svar-override-triplelist-envlists-muxes-<<=-of-svarlist-to-override-triples
-    (implies (and (svex-envlists-override-muxes-<<= impl-envs spec-envs spec-outs)
+  (defthm svex-envlists-override-var-muxes-<<=-implies-svar-override-triplelist-envlists-muxes-<<=-of-svarlist-to-override-triples
+    (implies (and (svex-envlists-override-var-muxes-<<= impl-envs spec-envs spec-outs)
                   (svarlist-override-p vars nil))
              (svar-override-triplelist-envlists-muxes-<<=
               (svarlist-to-override-triples vars)
@@ -2498,53 +2530,53 @@
     :hints(("Goal" :in-theory (enable svar-override-triplelist-envlists-muxes-<<=)))))
   
 
-(defsection svex-env-override-tests-subsetp
-  (defun-sk svex-env-override-tests-subsetp (spec-env impl-env)
+(defsection svex-env-override-test-vars-subsetp
+  (defun-sk svex-env-override-test-vars-subsetp (spec-env impl-env)
     (forall var
             (implies (svar-override-p var :test)
                      (4vec-muxtest-subsetp (svex-env-lookup var spec-env)
                                            (svex-env-lookup var impl-env))))
     :rewrite :direct)
 
-  (in-theory (disable svex-env-override-tests-subsetp))
+  (in-theory (disable svex-env-override-test-vars-subsetp))
   
-  (defthm svex-env-override-tests-subsetp-implies-svex-env-muxtests-subsetp
-    (implies (and (svex-env-override-tests-subsetp spec-env impl-env)
+  (defthm svex-env-override-test-vars-subsetp-implies-svex-env-muxtests-subsetp
+    (implies (and (svex-env-override-test-vars-subsetp spec-env impl-env)
                   (svarlist-override-p testvars :test))
              (svex-env-muxtests-subsetp testvars spec-env impl-env))
     :hints(("Goal" :in-theory (enable svex-env-muxtests-subsetp
                                       svarlist-override-p))))
 
 
-  (defcong svex-envs-similar equal (svex-env-override-tests-subsetp spec-env impl-env) 1
-    :hints (("goal" :cases ((svex-env-override-tests-subsetp spec-env impl-env)))
+  (defcong svex-envs-similar equal (svex-env-override-test-vars-subsetp spec-env impl-env) 1
+    :hints (("goal" :cases ((svex-env-override-test-vars-subsetp spec-env impl-env)))
             (and stable-under-simplificationp
-                 (b* ((lit (assoc 'svex-env-override-tests-subsetp clause))
+                 (b* ((lit (assoc 'svex-env-override-test-vars-subsetp clause))
                       (other (if (eq (second lit) 'spec-env) 'spec-env-equiv 'spec-env))
-                      (w `(svex-env-override-tests-subsetp-witness . ,(cdr lit))))
+                      (w `(svex-env-override-test-vars-subsetp-witness . ,(cdr lit))))
                    `(:expand (,lit)
-                     :use ((:instance svex-env-override-tests-subsetp-necc
+                     :use ((:instance svex-env-override-test-vars-subsetp-necc
                             (spec-env ,other) (var ,w))))))))
 
-  (defcong svex-envs-similar equal (svex-env-override-tests-subsetp spec-env impl-env) 2
-    :hints (("goal" :cases ((svex-env-override-tests-subsetp spec-env impl-env)))
+  (defcong svex-envs-similar equal (svex-env-override-test-vars-subsetp spec-env impl-env) 2
+    :hints (("goal" :cases ((svex-env-override-test-vars-subsetp spec-env impl-env)))
             (and stable-under-simplificationp
-                 (b* ((lit (assoc 'svex-env-override-tests-subsetp clause))
+                 (b* ((lit (assoc 'svex-env-override-test-vars-subsetp clause))
                       (other (if (eq (third lit) 'impl-env) 'impl-env-equiv 'impl-env))
-                      (w `(svex-env-override-tests-subsetp-witness . ,(cdr lit))))
+                      (w `(svex-env-override-test-vars-subsetp-witness . ,(cdr lit))))
                    `(:expand (,lit)
-                     :use ((:instance svex-env-override-tests-subsetp-necc
+                     :use ((:instance svex-env-override-test-vars-subsetp-necc
                             (impl-env ,other) (var ,w)))))))))
 
-(define svex-envlists-override-tests-subsetp ((spec-envs svex-envlist-p)
+(define svex-envlists-override-test-vars-subsetp ((spec-envs svex-envlist-p)
                                               (impl-envs svex-envlist-p))
   (if (atom spec-envs)
       t
-    (and (ec-call (svex-env-override-tests-subsetp (car spec-envs) (car impl-envs)))
-         (svex-envlists-override-tests-subsetp (cdr spec-envs) (cdr impl-envs))))
+    (and (ec-call (svex-env-override-test-vars-subsetp (car spec-envs) (car impl-envs)))
+         (svex-envlists-override-test-vars-subsetp (cdr spec-envs) (cdr impl-envs))))
   ///
-  (defthm svex-envlists-override-tests-subsetp-implies-svex-envlists-muxtests-subsetp
-    (implies (and (svex-envlists-override-tests-subsetp spec-envs impl-envs)
+  (defthm svex-envlists-override-test-vars-subsetp-implies-svex-envlists-muxtests-subsetp
+    (implies (and (svex-envlists-override-test-vars-subsetp spec-envs impl-envs)
                   (svarlist-override-p testvars :test))
              (svex-envlists-muxtests-subsetp testvars spec-envs impl-envs))
     :hints(("Goal" :in-theory (enable svex-envlists-muxtests-subsetp)))))
@@ -3020,9 +3052,9 @@
                     (flatnorm-setup->monotonify data.flatnorm-setup)
 
                     (equal (len override-inputs) (len ref-inputs))
-                    (svex-envlists-override-muxes-<<= override-inputs ref-inputs spec-values)
+                    (svex-envlists-override-var-muxes-<<= override-inputs ref-inputs spec-values)
                     (svex-envlist-<<= (svex-envlist-filter-override override-inputs nil) ref-inputs)
-                    (svex-envlists-override-tests-subsetp ref-inputs override-inputs)
+                    (svex-envlists-override-test-vars-subsetp ref-inputs override-inputs)
                     
                     (svex-env-<<= override-initst ref-initst))
                (svex-envlist-<<= impl-values spec-values)))
@@ -3067,9 +3099,9 @@
                     (flatnorm-setup->monotonify data.flatnorm-setup)
 
                     (equal (len override-inputs) (len ref-inputs))
-                    (svex-envlists-override-muxes-<<= override-inputs ref-inputs spec-values)
+                    (svex-envlists-override-var-muxes-<<= override-inputs ref-inputs spec-values)
                     (svex-envlist-<<= (svex-envlist-filter-override override-inputs nil) ref-inputs)
-                    (svex-envlists-override-tests-subsetp ref-inputs override-inputs)
+                    (svex-envlists-override-test-vars-subsetp ref-inputs override-inputs)
                     
                     (svex-env-<<= override-initst ref-initst))
                (svex-env-<<= impl-finalstate spec-finalstate)))
