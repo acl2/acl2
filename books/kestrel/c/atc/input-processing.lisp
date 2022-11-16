@@ -48,6 +48,12 @@
   (implies (symbol-alistp x)
            (alistp x)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel symbol-listp-of-strip-cars-when-symbol-alistp
+  (implies (symbol-alistp x)
+           (symbol-listp (strip-cars x))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing atc)
@@ -442,112 +448,102 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-output-dir (output-dir (ctx ctxp) state)
-  :returns (mv erp (nothing null) state)
+(define atc-process-output-dir (output-dir state)
+  :returns (mv erp
+               (output-dir-as-string stringp)
+               state)
   :short "Process the @(':output-dir') input."
-  (b* (((er &) (ensure-value-is-string$ output-dir
-                                        "The :OUTPUT-DIR input"
-                                        t
-                                        nil))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If successful, return the input itself,
+     with a guaranteed @(tsee stringp) type."))
+  (b* (((acl2::fun (reterr erp state)) (mv erp "" state))
+       ((unless (stringp output-dir))
+        (reterr (msg "The :OUTPUT-DIR input must be a string, ~
+                      but ~x0 is not a string."
+                     output-dir)
+                state))
        ((mv msg? kind state) (oslib::file-kind output-dir))
-       ((when msg?) (er-soft+ ctx t nil
-                              "The kind of ~
-                               the output directory path ~x0 ~
-                               cannot be tested.  ~
-                               ~@1"
-                              output-dir msg?))
+       ((when msg?) (reterr (msg "The kind of ~
+                                  the output directory path ~x0 ~
+                                  cannot be tested.  ~
+                                  ~@1"
+                                 output-dir msg?)
+                            state))
        ((unless (eq kind :directory))
-        (er-soft+ ctx t nil
-                  "The output directory path ~x0 ~
-                   is not a directory; it has kind ~x1 instead."
-                  output-dir kind)))
-    (acl2::value nil))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string)))
-  ///
-
-  (defret stringp-when-atc-process-output-dir
-    (implies (not erp)
-             (stringp output-dir))
-    :hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
-
-  (in-theory (disable stringp-when-atc-process-output-dir)))
+        (reterr (msg "The output directory path ~x0 ~
+                      is not a directory; it has kind ~x1 instead."
+                     output-dir kind)
+                state)))
+    (retok output-dir state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-process-file-name (file-name
                                (file-name? booleanp)
                                (output-dir stringp)
-                               (ctx ctxp)
                                state)
   :returns (mv erp
+               (file-name-as-string stringp)
                (path-wo-ext stringp)
                state)
   :short "Process the @(':file-name') input."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If successful, return the full path of the file(s),
+    "If successful, return, besides the file name itself as a string,
+     the full path of the file(s),
      without the @('.c') or @('.h') extension,
      consisting of the output directory and
      the file name without extension.")
    (xdoc::p
-    "We make sure that, after adding the @('.c') extension,
+    "We make sure that, after adding each of the @('.h') and @('.c') extensions,
      either the file does not exist in the file system
-     or is a file and not a directory (i.e. has the right kind)."))
-  (b* (((unless file-name?)
-        (er-soft+ ctx t ""
-                  "The :FILE-NAME input must be present, ~
-                   but it is absent instead."))
-       ((er &) (ensure-value-is-string$ file-name
-                                        "The :FILE-NAME input"
-                                        t
-                                        ""))
+     or is a file and not a directory (i.e. has the right kind).")
+   (xdoc::p
+    "Due to the use of the file utilities, we also need to return state."))
+  (b* (((acl2::fun (reterr erp state)) (mv erp "" "" state))
+       ((unless file-name?)
+        (reterr (msg "The :FILE-NAME input must be present, ~
+                      but it is absent instead.")
+                state))
+       ((unless (stringp file-name))
+        (reterr (msg "The :FILE-NAME input must be a string, ~
+                      but ~x0 is not a string."
+                     file-name)
+                state))
        ((when (equal file-name ""))
-        (er-soft+ ctx t ""
-                  "The :FILE-NAME input must not be empty."))
+        (reterr (msg "The :FILE-NAME input must not be the empty string.")
+                state))
        ((unless (str::letter/digit/uscore/dash-charlist-p
                  (str::explode file-name)))
-        (er-soft+ ctx t ""
-                  "The :FILE-NAME input must consists of only ~
-                   ASCII letters, digits, underscores, and dashes, ~
-                   but ~s0 violates this condition."
-                  file-name))
+        (reterr (msg "The :FILE-NAME input must consists of only ~
+                      ASCII letters, digits, underscores, and dashes, ~
+                      but ~s0 violates this condition."
+                     file-name)
+                state))
        (path-wo-ext (oslib::catpath output-dir file-name))
        (path.c (str::cat path-wo-ext ".c"))
        ((mv msg? existsp state) (oslib::path-exists-p path.c))
-       ((when msg?) (er-soft+ ctx t ""
-                              "The existence of the file path ~x0 ~
-                               cannot be tested.  ~
-                               ~@1"
-                              path.c msg?))
-       ((when (not existsp)) (acl2::value path-wo-ext))
+       ((when msg?) (reterr (msg "The existence of the file path ~x0 ~
+                                  cannot be tested.  ~
+                                  ~@1"
+                                 path.c msg?)
+                            state))
+       ((when (not existsp)) (retok file-name path-wo-ext state))
        ((mv msg? kind state) (oslib::file-kind path.c))
-       ((when msg?) (er-soft+ ctx t ""
-                              "The kind of the file path ~x0 ~
-                               cannot be tested.  ~
-                               ~@1"
-                              path.c msg?))
+       ((when msg?) (reterr (msg "The kind of the file path ~x0 ~
+                                  cannot be tested.  ~
+                                  ~@1"
+                                 path.c msg?)
+                            state))
        ((unless (eq kind :regular-file))
-        (er-soft+ ctx t ""
-                  "The file path ~x0 ~
-                   is not a regular file; it has kind ~x1 instead."
-                  path.c kind)))
-    (acl2::value path-wo-ext))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string)))
-  ///
-
-  (defret stringp-when-atc-process-file-name
-    (implies (not erp)
-             (stringp file-name))
-    :hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
-
-  (in-theory (disable stringp-when-atc-process-file-name))
-
-  (defret erp-atc-process-file-name-when-absent
-    (implies (not file-name?)
-             erp))
-
-  (in-theory (disable erp-atc-process-file-name-when-absent)))
+        (reterr (msg "The file path ~x0 ~
+                      is not a regular file; it has kind ~x1 instead."
+                     path.c kind)
+                state)))
+    (retok file-name path-wo-ext state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -561,44 +557,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-pretty-printing (pretty-printing
-                                     (ctx ctxp)
-                                     state)
-  :returns (mv erp (options pprint-options-p) state)
+(define atc-process-pretty-printing (pretty-printing)
+  :returns (mv erp (options pprint-options-p))
   :short "Process the @(':pretty-printing') input."
-  (b* ((irrelevant (make-pprint-options))
-       ((er &) (ensure-keyword-value-list$ pretty-printing
-                                           "The :PRETTY-PRINTING input"
-                                           t
-                                           irrelevant))
+  (b* (((reterr)
+        (with-guard-checking :none (ec-call (pprint-options-fix :irrelevant))))
+       ((unless (keyword-value-listp pretty-printing))
+        (reterr (msg "The :PRETTY-PRINTING input must be a keyword-value list, ~
+                      but ~x0 is not a keyword-value list."
+                     pretty-printing)))
        (alist (keyword-value-list-to-alist pretty-printing))
        (keywords (strip-cars alist))
        (desc (msg "The list of keywords in the :PRETTY-PRINTING input ~x0"
                   keywords))
-       ((er &) (ensure-list-has-no-duplicates$ keywords
-                                               desc
-                                               t
-                                               irrelevant))
-       ((er &) (ensure-list-subset$ keywords
-                                    *atc-allowed-pretty-printing-options*
-                                    desc
-                                    t
-                                    irrelevant))
+       ((unless (no-duplicatesp-eq keywords))
+        (reterr (msg "~@0 must have no duplicates." desc)))
+       ((unless (subsetp-eq keywords *atc-allowed-pretty-printing-options*))
+        (reterr (msg "~@0 must be a subset of ~x1."
+                     desc *atc-allowed-pretty-printing-options*)))
        (parenthesize-nested-conditionals
         (cdr (assoc-eq :parenthesize-nested-conditionals alist)))
-       ((er &) (ensure-value-is-boolean$
-                parenthesize-nested-conditionals
-                (msg "The value ~x0 of the pretty-printing option ~
-                      :PARENTHESIZE-NESTED-CONDITIONALS"
-                     parenthesize-nested-conditionals)
-                t
-                irrelevant)))
-    (acl2::value
+       ((unless (booleanp parenthesize-nested-conditionals))
+        (reterr (msg "The value ~x0 of the pretty-printing option ~
+                      :PARENTHESIZE-NESTED-CONDITIONALS must be a boolean."
+                     parenthesize-nested-conditionals))))
+    (retok
      (make-pprint-options
-      :parenthesize-nested-conditionals parenthesize-nested-conditionals)))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-keyword-value-list
-                                           acl2::ensure-value-is-boolean)))
-  :prepwork ((local (include-book "std/alists/top" :dir :system))))
+      :parenthesize-nested-conditionals parenthesize-nested-conditionals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -606,17 +591,11 @@
                                 (const-name? booleanp)
                                 (target-fns symbol-listp)
                                 (proofs booleanp)
-                                (ctx ctxp)
-                                state)
+                                (wrld plist-worldp))
   :returns (mv erp
-               (val (tuple (prog-const symbolp)
-                           (wf-thm symbolp)
-                           (fn-thms symbol-symbol-alistp)
-                           val)
-                    :hyp (symbol-listp target-fns)
-                    :hints
-                    (("Goal" :in-theory (enable acl2::ensure-value-is-symbol))))
-               state)
+               (prog-const symbolp)
+               (wf-thm symbolp)
+               (fn-thms symbol-symbol-alistp :hyp (symbol-listp target-fns)))
   :short "Process the @(':const-name') input."
   :long
   (xdoc::topstring
@@ -641,47 +620,35 @@
      the @(':const-name') input must be absent
      and we return @('nil') for this as well as for the theorem names.
      No constant and theorems are generated when @(':proofs') is @('nil')."))
-  (b* (((acl2::fun (irr)) (list nil nil nil))
+  (b* (((reterr) nil nil nil)
        ((when (not proofs))
         (if const-name?
-            (er-soft+ ctx t (irr)
-                      "Since the :PROOFS input is NIL, ~
-                       the :CONST-NAME input must be absent, ~
-                       but it is ~x0 instead."
-                      const-name)
-          (acl2::value (list nil nil nil))))
-       ((er &) (ensure-value-is-symbol$ const-name
-                                        "The :CONST-NAME input"
-                                        t
-                                        (irr)))
+            (reterr (msg "Since the :PROOFS input is NIL, ~
+                          the :CONST-NAME input must be absent, ~
+                          but it is ~x0 instead."
+                         const-name))
+          (retok nil nil nil)))
+       ((unless (symbolp const-name))
+        (reterr (msg "The :CONST-NAME input must be a symbol, ~
+                      but ~x0 is not a symbol."
+                     const-name)))
        (prog-const (if (eq const-name :auto)
                        'c::*program*
                      const-name))
-       ((er &) (ensure-symbol-is-fresh-event-name$
-                prog-const
-                (msg "The constant name ~x0 ~
-                      specified by the :CONST-NAME input"
-                     prog-const)
-                'acl2::const
-                nil
-                t
-                (irr)))
+       (msg? (acl2::fresh-namep-msg-weak prog-const 'acl2::const wrld))
+       ((when msg?)
+        (reterr (msg "The constant name ~x0 ~
+                      determined by the :CONST-NAME input ~x0 ~
+                      is invalid: ~@2"
+                     prog-const const-name msg?)))
        (wf-thm (add-suffix prog-const "-WELL-FORMED"))
-       ((er &) (ensure-symbol-is-fresh-event-name$
-                wf-thm
-                (msg "The generated theorem name ~x0 ~
-                      indirectly specified by the :CONST-NAME input"
-                     wf-thm)
-                nil
-                nil
-                t
-                (irr)))
-       ((er fn-thms :iferr (irr))
-        (atc-process-const-name-aux target-fns prog-const ctx state)))
-    (acl2::value (list prog-const
-                       wf-thm
-                       fn-thms)))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-symbol)))
+       (msg? (acl2::fresh-namep-msg-weak wf-thm nil wrld))
+       ((when msg?)
+        (reterr (msg "The generated theorem name ~x0 ~
+                      for the well-formedness theorem is invalid: ~@1"
+                     wf-thm msg?)))
+       ((erp fn-thms) (atc-process-const-name-aux target-fns prog-const wrld)))
+    (retok prog-const wf-thm fn-thms))
 
   :prepwork
 
@@ -689,32 +656,24 @@
 
    (define atc-process-const-name-aux ((target-fns symbol-listp)
                                        (prog-const symbolp)
-                                       (ctx ctxp)
-                                       state)
+                                       (wrld plist-worldp))
      :returns (mv erp
-                  (val symbol-symbol-alistp :hyp (symbol-listp target-fns))
-                  state)
-     (b* (((when (endp target-fns)) (acl2::value nil))
+                  (fn-thms symbol-symbol-alistp :hyp (symbol-listp target-fns)))
+     (b* (((reterr) nil)
+          ((when (endp target-fns)) (retok nil))
           (fn (car target-fns))
           (fn-thm (packn (list prog-const "-" (symbol-name fn) "-CORRECT")))
-          ((er &) (ensure-symbol-is-fresh-event-name$
-                   fn-thm
-                   (msg "The generated theorem name ~x0 ~
-                         indirectly specified by the :CONST-NAME input"
-                        fn-thm)
-                   nil
-                   nil
-                   t
-                   nil))
-          ((er fn-thms) (atc-process-const-name-aux
-                         (cdr target-fns) prog-const ctx state)))
-       (acl2::value (acons fn fn-thm fn-thms)))
-     :verify-guards :after-returns))
-
-  ///
-
-  (more-returns
-   (val true-listp :rule-classes :type-prescription)))
+          (msg? (acl2::fresh-namep-msg-weak fn-thm nil wrld))
+          ((when msg?)
+           (reterr (msg "The generated theorem name ~x0 ~
+                         for the correctness theorem of the function ~x1 ~
+                         is invalid: ~@2"
+                        fn-thm fn msg?)))
+          ((erp fn-thms) (atc-process-const-name-aux (cdr target-fns)
+                                                     prog-const
+                                                     wrld)))
+       (retok (acons fn fn-thm fn-thms)))
+     :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -733,112 +692,108 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-inputs ((args true-listp) (ctx ctxp) state)
+(define atc-process-inputs ((args true-listp) state)
   :returns
   (mv erp
-      (val (tuple (targets symbol-listp)
-                  (file-name stringp)
-                  (path-wo-ext stringp)
-                  (header booleanp)
-                  (pretty-printing pprint-options-p)
-                  (proofs booleanp)
-                  (prog-const symbolp)
-                  (wf-thm symbolp)
-                  (fn-thms symbol-symbol-alistp)
-                  (print evmac-input-print-p)
-                  val)
-           :hyp (true-listp args)
-           :hints
-           (("Goal"
-             :in-theory (enable stringp-when-atc-process-output-dir
-                                stringp-when-atc-process-file-name
-                                erp-atc-process-file-name-when-absent
-                                evmac-process-input-print
-                                acl2::ensure-value-is-boolean))))
+      (targets symbol-listp)
+      (file-name stringp)
+      (path-wo-ext stringp)
+      (header booleanp)
+      (pretty-printing pprint-options-p)
+      (proofs booleanp)
+      (prog-const symbolp)
+      (wf-thm symbolp)
+      (fn-thms symbol-symbol-alistp)
+      (print evmac-input-print-p)
       state)
   :short "Process all the inputs."
-  (b* (((acl2::fun (irr))
-        (list nil
-              ""
-              ""
-              nil
-              (with-guard-checking :none
-                                   (ec-call (pprint-options-fix :irrelevant)))
-              nil
-              nil
-              nil
-              nil
-              nil))
+  (b* (((acl2::fun (reterr erp state))
+        (mv erp
+            nil
+            ""
+            ""
+            nil
+            (with-guard-checking
+             :none (ec-call (pprint-options-fix :irrelevant)))
+            nil
+            nil
+            nil
+            nil
+            nil
+            state))
+       (wrld (w state))
        ((mv erp targets options)
         (partition-rest-and-keyword-args args *atc-allowed-options*))
-       ((when erp) (er-soft+ ctx t (irr)
-                             "The inputs must be the targets ~
-                              followed by the options ~&0."
-                             *atc-allowed-options*))
+       ((when erp) (reterr (msg "The inputs must be the targets ~
+                                 followed by the options ~&0."
+                                *atc-allowed-options*)
+                           state))
        ((mv erp targets target-fns) (atc-process-targets targets (w state)))
-       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
+       ((when erp) (reterr erp state))
        (output-dir-option (assoc-eq :output-dir options))
        (output-dir (if output-dir-option
                        (cdr output-dir-option)
                      "."))
-       ((er & :iferr (irr)) (atc-process-output-dir output-dir ctx state))
+       ((mv erp output-dir state) (atc-process-output-dir output-dir state))
+       ((when erp) (reterr erp state))
        (file-name-option (assoc-eq :file-name options))
        ((mv file-name file-name?)
         (if file-name-option
             (mv (cdr file-name-option) t)
           (mv :irrelevant nil)))
-       ((er path-wo-ext :iferr (irr))
-        (atc-process-file-name file-name file-name? output-dir ctx state))
+       ((mv erp file-name path-wo-ext state)
+        (atc-process-file-name file-name file-name? output-dir state))
+       ((when erp) (reterr erp state))
        (header-option (assoc-eq :header options))
        (header (if header-option
                    (cdr header-option)
                  nil))
-       ((er & :iferr (irr)) (ensure-value-is-boolean$ header
-                                                      "The :HEADER input"
-                                                      t
-                                                      nil))
+       ((unless (booleanp header))
+        (reterr (msg "The :HEADER input must be a boolean, ~
+                      but ~x0 is not a boolean."
+                     header)
+                state))
        (pretty-printing-option (assoc-eq :pretty-printing options))
        (pretty-printing (if pretty-printing-option
                             (cdr pretty-printing-option)
                           nil))
-       ((er pretty-printing :iferr (irr))
-        (atc-process-pretty-printing pretty-printing ctx state))
+       ((mv erp pretty-printing) (atc-process-pretty-printing pretty-printing))
+       ((when erp) (reterr erp state))
        (proofs-option (assoc-eq :proofs options))
        (proofs (if proofs-option
                    (cdr proofs-option)
                  t))
-       ((er & :iferr (irr)) (ensure-value-is-boolean$ proofs
-                                                      "The :PROOFS input"
-                                                      t
-                                                      nil))
+       ((unless (booleanp proofs))
+        (reterr (msg "The :PROOFS input must be a boolean, ~
+                      but ~x0 is not a boolean."
+                     proofs)
+                state))
        (const-name-option (assoc-eq :const-name options))
        ((mv const-name const-name?)
         (if const-name-option
             (mv (cdr const-name-option) t)
           (mv :auto nil)))
-       ((er (list prog-const wf-thm fn-thms) :iferr (irr))
-        (atc-process-const-name const-name
-                                const-name?
-                                target-fns
-                                proofs
-                                ctx
-                                state))
+       ((mv erp prog-const wf-thm fn-thms)
+        (atc-process-const-name const-name const-name? target-fns proofs wrld))
+       ((when erp) (reterr erp state))
        (print-option (assoc-eq :print options))
        (print (if print-option
                   (cdr print-option)
                 :result))
-       ((er & :iferr (irr)) (evmac-process-input-print print ctx state)))
-    (acl2::value (list targets
-                       file-name
-                       path-wo-ext
-                       header
-                       pretty-printing
-                       proofs
-                       prog-const
-                       wf-thm
-                       fn-thms
-                       print)))
-  :guard-hints
-  (("Goal" :in-theory (e/d (acl2::ensure-value-is-boolean
-                            stringp-when-atc-process-output-dir)
-                           (not))))) ; reduce case splits
+       ((unless (evmac-input-print-p print))
+        (reterr (msg "The :PRINT input must be ~
+                      NIL, :ERROR, :RESULT, :INFO, or :ALL; ~
+                      but it is ~x0 instead."
+                     print)
+                state)))
+    (retok targets
+           file-name
+           path-wo-ext
+           header
+           pretty-printing
+           proofs
+           prog-const
+           wf-thm
+           fn-thms
+           print
+           state)))

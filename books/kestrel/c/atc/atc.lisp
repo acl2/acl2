@@ -145,17 +145,20 @@
           generate the events and code."
   (b* (((when (atc-table-lookup call (w state)))
         (acl2::value '(value-triple :redundant)))
-       ((er (list t1...tp
-                  file-name
-                  path-wo-ext
-                  header
-                  pretty-printing
-                  proofs
-                  prog-const
-                  wf-thm
-                  fn-thms
-                  print))
-        (atc-process-inputs args ctx state)))
+       ((mv erp
+            t1...tp
+            file-name
+            path-wo-ext
+            header
+            pretty-printing
+            proofs
+            prog-const
+            wf-thm
+            fn-thms
+            print
+            state)
+        (atc-process-inputs args state))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (atc-gen-everything t1...tp
                         file-name
                         path-wo-ext
