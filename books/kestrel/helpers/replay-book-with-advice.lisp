@@ -90,10 +90,10 @@
               (mv :advice-didnt-work :no state)))
           (mv nil (if trivialp :trivial :yes) state))))))
 
-;Returns (mv erp yes-count no-count maybe-count trivial-count state).
+;Returns (mv erp yes-count no-count maybe-count trivial-count error-count state).
 ;throws an error if any event fails
 ; This uses :brief printing.
-(defun submit-events-with-advice (events theorems-to-try n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count state)
+(defun submit-events-with-advice (events theorems-to-try n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count error-count state)
   (declare (xargs :guard (and (true-listp events)
                               (or (eq :all theorems-to-try)
                                   (symbol-listp theorems-to-try))
@@ -106,33 +106,40 @@
                   :mode :program
                   :stobjs state))
   (if (endp events)
-      (mv nil yes-count no-count maybe-count trivial-count state)
+      (mv nil yes-count no-count maybe-count trivial-count error-count state)
     (let ((event (first events)))
       (if (and (or (call-of 'defthm event) ; todo: maybe handle thm, defrule, rule, etc.  maybe handle defun and variants (termination and guard proof)
                    (call-of 'defthmd event))
                (or (eq :all theorems-to-try)
                    (member-eq (cadr event) theorems-to-try)))
           ;; It's a theorem for which we are to try advice:
-          (b* (((mv erp result state)
+          (b* (;; Try to prov it using advice:
+               ((mv erp result state)
                 (submit-defthm-event-with-advice event n book-to-avoid-absolute-path print server-url state))
-               ((when erp)
-                (er hard? 'submit-events-with-advice "ERROR (~x0) with advice attempt for event ~X12.~%" erp event nil)
-                (mv erp yes-count no-count maybe-count trivial-count state)))
-            (submit-events-with-advice (rest events) theorems-to-try n book-to-avoid-absolute-path print server-url
-                                       (if (eq :yes result) (+ 1 yes-count) yes-count)
-                                       (if (eq :no result) (+ 1 no-count) no-count)
-                                       (if (eq :maybe result) (+ 1 maybe-count) maybe-count)
-                                       (if (eq :trivial result) (+ 1 trivial-count) trivial-count)
-                                       state))
+               (- (and erp
+                       (cw "ERROR (~x0) with advice attempt for event ~X12 (continuing...).~%" erp event nil)
+                       )))
+            (if erp
+                ;; If there is an error, the result is meaningless:
+                (submit-events-with-advice (rest events) theorems-to-try n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count
+                                           (+ 1 error-count) state)
+              ;; No error, so count the result:
+              (submit-events-with-advice (rest events) theorems-to-try n book-to-avoid-absolute-path print server-url
+                                         (if (eq :yes result) (+ 1 yes-count) yes-count)
+                                         (if (eq :no result) (+ 1 no-count) no-count)
+                                         (if (eq :maybe result) (+ 1 maybe-count) maybe-count)
+                                         (if (eq :trivial result) (+ 1 trivial-count) trivial-count)
+                                         error-count
+                                         state)))
         ;; Not something for which we will try advice, so submit it and continue:
         (b* (((mv erp state)
               ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
               (submit-event-helper-core `(skip-proofs ,event) print state))
              ((when erp)
               (er hard? 'submit-events-with-advice "ERROR (~x0) with event ~X12.~%" erp event nil)
-              (mv erp yes-count no-count maybe-count trivial-count state))
+              (mv erp yes-count no-count maybe-count trivial-count error-count state))
              (- (cw "Skip: ~x0~%" (shorten-event event))))
-          (submit-events-with-advice (rest events) theorems-to-try n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count state))))))
+          (submit-events-with-advice (rest events) theorems-to-try n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count error-count state))))))
 
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
 ;; Returns (mv erp event state).
@@ -174,8 +181,8 @@
        ((mv erp state) (submit-event-helper-core '(defattach (acl2::always-do-proofs-during-make-event-expansion acl2::constant-t-function-arity-0) :system-ok t) nil state))
        ((when erp) (mv erp nil state))
        ;; Submit all the events, trying advice for each defthm:
-       ((mv erp yes-count no-count maybe-count trivial-count state)
-        (submit-events-with-advice events theorems-to-try n book-to-avoid-absolute-path print server-url 0 0 0 0 state))
+       ((mv erp yes-count no-count maybe-count trivial-count error-count state)
+        (submit-events-with-advice events theorems-to-try n book-to-avoid-absolute-path print server-url 0 0 0 0 0 state))
        ((when erp)
         (cw "Error: ~x0.~%" erp)
         (mv erp nil state))
@@ -185,7 +192,8 @@
                   (cw "YES    : ~x0~%" yes-count)
                   (cw "NO     : ~x0~%" no-count)
                   (cw "MAYBE  : ~x0~%" maybe-count)
-                  (cw "TRIVIAL: ~x0~%" trivial-count)))
+                  (cw "TRIVIAL: ~x0~%" trivial-count)
+                  (cw "ERROR  : ~x0~%" error-count)))
        ;; Undo margin widening:
        (state (unwiden-margins state)))
     ;; No error:
