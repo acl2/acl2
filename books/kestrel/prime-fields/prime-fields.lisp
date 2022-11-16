@@ -37,6 +37,5 @@
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/mod"))
 
-(in-theory (disable (:e dm::primep)))
+(in-theory (disable (:e primep)))
 
-(defmacro primep (x) `(dm::primep ,x)) ; todo: instead, import dm::primep into the PFIELD package?
