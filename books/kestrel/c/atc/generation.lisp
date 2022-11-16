@@ -7222,36 +7222,45 @@
                             (prec-objs atc-string-objinfo-alistp)
                             (header booleanp))
   :returns (mv (declon-h obj-declon-optionp)
-               (declon-c obj-declon-optionp)
+               (declon-c obj-declonp)
                (updated-prec-objs atc-string-objinfo-alistp))
   :short "Generate a C external object declaration."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the @(':header') input is @('t') and the object has an initializer,
-     we generate two such declarations:
-     one for the header, without initializer;
-     and one for the source file, with initializer.
-     If the @(':header') input is @('t') and the object has no initializer,
-     we generate one declaration, for the header.
-     If the @(':header') input is @('nil'),
-     we generate one declaration, for the source file."))
+    "If the @(':header') input is @('t'), we generate two declarations:
+     one for the header, with @('extern') and without initializer
+     (whether the @(tsee defobject) has an initializer or not);
+     and one for the source file, without @('extern'),
+     and with or without the intiializer
+     depending of whether the @(tsee defobject) has it or not.
+     If instead the @(':header') input is @('nil'),
+     we generate one declaration, for the source file,
+     without @('extern'),
+     and with or without the intiializer
+     depending of whether the @(tsee defobject) has it or not.
+     In other words, we always generate a declaration for the source file,
+     the same regardless of @(':header'),
+     and we optionally generate an @('extern') one for the header,
+     always without initializer.
+     The @('extern') serves so that the declaration
+     does not count like a tentative definition,
+     and the only definition (tentative if it has no initializer)
+     is in the source file."))
   (b* ((id (defobject-info->name-ident info))
        (type (defobject-info->type info))
        (exprs (defobject-info->init info))
        ((mv tyspec declor) (ident+type-to-tyspec+declor id type))
        (initer? (if (consp exprs) (initer-list exprs) nil))
        (declon-h (and header
-                      (make-obj-declon :scspec (scspecseq-none)
+                      (make-obj-declon :scspec (scspecseq-extern)
                                        :tyspec tyspec
                                        :declor declor
                                        :init? nil)))
-       (declon-c (and (or (not header)
-                          initer?)
-                      (make-obj-declon :scspec (scspecseq-none)
-                                       :tyspec tyspec
-                                       :declor declor
-                                       :init? initer?)))
+       (declon-c (make-obj-declon :scspec (scspecseq-none)
+                                  :tyspec tyspec
+                                  :declor declor
+                                  :init? initer?))
        (info (atc-obj-info info))
        (prec-objs (acons (str-fix name)
                          info
@@ -7260,11 +7269,7 @@
   ///
 
   (defret atc-gen-obj-declon-h-iff-header
-    (iff declon-h header))
-
-  (defret atc-gen-obj-declon-c-iff-not-header-or-init
-    (iff declon-c (or (not header)
-                      (consp (defobject-info->init info))))))
+    (iff declon-h header)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -7422,8 +7427,7 @@
                 (if header
                     (acl2::value
                      (list (list (ext-declon-obj-declon obj-declon-h))
-                           (and (defobject-info->init info)
-                                (list (ext-declon-obj-declon obj-declon-c)))
+                           (list (ext-declon-obj-declon obj-declon-c))
                            prec-fns
                            prec-tags
                            prec-objs
