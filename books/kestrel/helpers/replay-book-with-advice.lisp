@@ -114,16 +114,22 @@
                (or (eq :all theorems-to-try)
                    (member-eq (cadr event) theorems-to-try)))
           ;; It's a theorem for which we are to try advice:
-          (b* (;; Try to prov it using advice:
+          (b* ( ;; Try to prove it using advice:
                ((mv erp result state)
                 (submit-defthm-event-with-advice event n book-to-avoid-absolute-path print server-url state))
                (- (and erp
                        (cw "ERROR (~x0) with advice attempt for event ~X12 (continuing...).~%" erp event nil)
                        )))
             (if erp
-                ;; If there is an error, the result is meaningless:
-                (submit-events-with-advice (rest events) theorems-to-try n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count
-                                           (+ 1 error-count) state)
+                ;; If there is an error, the result is meaningless.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
+                (b* ((error-count (+ 1 error-count)) ; count this error
+                     ((mv erp state)
+                      ;; We use skip-proofs (but see the attachment to always-do-proofs-during-make-event-expansion below):
+                      (submit-event-helper-core `(skip-proofs ,event) print state))
+                     ((when erp)
+                      (er hard? 'submit-events-with-advice "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
+                      (mv erp yes-count no-count maybe-count trivial-count error-count state)))
+                  (submit-events-with-advice (rest events) theorems-to-try n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count error-count state))
               ;; No error, so count the result:
               (submit-events-with-advice (rest events) theorems-to-try n book-to-avoid-absolute-path print server-url
                                          (if (eq :yes result) (+ 1 yes-count) yes-count)
@@ -184,7 +190,7 @@
        ;; Submit all the events, trying advice for each defthm:
        ((mv erp yes-count no-count maybe-count trivial-count error-count state)
         (submit-events-with-advice events theorems-to-try n book-to-avoid-absolute-path print server-url 0 0 0 0 0 state))
-       ((when erp)
+       ((when erp) ; I suppose we could return partial results from this book instead
         (cw "Error: ~x0.~%" erp)
         (mv erp (list 0 0 0 0 0) state))
        ;; Print stats:
