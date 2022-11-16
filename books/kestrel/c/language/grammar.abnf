@@ -662,7 +662,7 @@ constant-expression = conditional-expression
 
 ; For now we omit the following:
 ; - Static assertions.
-; - Storage class specifiers.
+; - Storage class specifiers except for "extern".
 ; - Type qualifiers.
 ; - Function specifiers.
 ; - Alignment specifiers.
@@ -685,12 +685,15 @@ constant-expression = conditional-expression
 
 declaration = declaration-specifiers [ init-declarator-list ] ";"
 
-declaration-specifiers = type-specifier [ declaration-specifiers ]
+declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
+                       / type-specifier [ declaration-specifiers ]
 
 init-declarator-list = init-declarator
 
 init-declarator = declarator
                 / declarator "=" initializer
+
+storage-class-specifier = %s"extern"
 
 type-specifier = %s"void"
                / %s"char"
