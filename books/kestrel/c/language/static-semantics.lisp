@@ -1964,8 +1964,10 @@
      We also ensure that the initializer type matches the declared type,
      if the initializer is present.")
    (xdoc::p
-    "For now we require that there is no storage class specifier.
-     We will add support for storage classs specifiers.")
+    "If the declaration is in a file scope,
+     which is the case when there is just one scope in the variable table,
+     we allow the @('extern') storage class specifier;
+     otherwise, we disallow it.")
    (xdoc::p
     "The @('constp') flag controls whether
      we require the initializer, if present, to be constant or not.
@@ -1984,8 +1986,9 @@
      regardless of whether it has file scope or block scope."))
   (b* (((mv var scspec tyname init?)
         (obj-declon-to-ident+scspec+tyname+init declon))
-       ((unless (scspecseq-case scspec :none))
-        (error (list :storage-class-not-supported scspec)))
+       ((when (and (consp (cdr vartab))
+                   (scspecseq-case scspec :extern)))
+        (error (list :block-extern-disallowed (obj-declon-fix declon))))
        (type (check-tyname tyname tagenv))
        ((when (errorp type)) (error (list :declon-error-type type)))
        (wf (check-ident var))
