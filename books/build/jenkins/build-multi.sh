@@ -4,8 +4,8 @@
 # The parameters are predictable, but here are some sample
 # invocations:
 #
-# LISP=sbcl ACL2_HONS=h ACL2_PAR=no_p ACL2_REAL=r TARGET=std build-multi.sh
-# LISP=ccl ACL2_HONS=h ACL2_PAR=p ACL2_REAL=no_r TARGET=manual build-multi.sh
+# LISP=sbcl ACL2_PAR=no_p ACL2_REAL=r TARGET=std build-multi.sh
+# LISP=ccl ACL2_PAR=p ACL2_REAL=no_r TARGET=manual build-multi.sh
 
 # TODO: make it work with startjob, where startjob is a wrapper for
 # bash (really, the challenge in this is getting the definition of
