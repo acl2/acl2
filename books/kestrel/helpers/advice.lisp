@@ -2410,13 +2410,18 @@
                                 t               ; todo: consider non-top
                                 state))
        ((when (eq :unavailable raw-checkpoint-clauses))
-        (er hard? 'get-and-try-advice-for-theorem "No checkpoints are available (this is unexpected since the theorem was not proved).")
+        ;; Can this happen?  :doc Checkpoint-list indicates that :unavailable means the proof succeeded.
+        (cw "WARNING: Unavailable checkpoints after failed proof of ~x0.~%" theorem-name)
         (mv :no-checkpoints nil nil state))
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
        ;; TODO: Or use :otf-flg to get the real checkpoints?
        (checkpoint-clauses (if (equal raw-checkpoint-clauses '((acl2::<goal>)))
                                (clausify-term theorem-body wrld) ; todo: why is wrld needed?
-                             raw-checkpoint-clauses)))
+                             raw-checkpoint-clauses))
+       ((when (null checkpoint-clauses))
+        ;; A step-limit may fire before checkpoints can be generated:
+        (cw "WARNING: No checkpoints after failed proof of ~x0 (perhaps a limit fired).~%" theorem-name)
+        (mv :no-checkpoints nil nil state)))
     (get-and-try-advice-for-checkpoints checkpoint-clauses
                                         theorem-name
                                         theorem-body
