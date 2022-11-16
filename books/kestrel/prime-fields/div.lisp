@@ -46,12 +46,12 @@
   :hints (("Goal" :in-theory (enable div))))
 
 (defthm div-same
-  (implies (dm::primep p)
+  (implies (primep p)
            (equal (div x x p)
                   (if (equal 0 (fep-fix x p))
                       0
                     1)))
-  :hints (("Goal" :in-theory (e/d (div) (DM::PRIMEP)))))
+  :hints (("Goal" :in-theory (e/d (div) (primep)))))
 
 (defthm div-of-+-same-arg1-arg2
   (equal (div (+ x p) y p)
