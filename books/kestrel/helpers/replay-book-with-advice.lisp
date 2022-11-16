@@ -17,6 +17,7 @@
 ;; TODO: Exclude theorems not in the testing set!
 ;; TODO: Try advice on defthms inside encapsulates (and perhaps other forms).
 ;; TODO: Consider excluding advice that uses different version of the same library (e.g., rtl/rel9).
+;; TODO: Should this revert the world?
 
 ;; Example:
 ;; (replay-book-with-advice "../lists-light/append")
@@ -142,6 +143,65 @@
           (submit-events-with-advice (rest events) theorems-to-try n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count error-count state))))))
 
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
+;; Returns (mv erp counts state), where counts is (list yes-count no-count maybe-count trivial-count error-count).
+;; Since this returns an error triple, it can be wrapped in revert-world.
+(defun replay-book-with-advice-fn-aux (filename ; the book, with .lisp extension
+                                       theorems-to-try
+                                       n
+                                       print
+                                       server-url
+                                       state)
+  (declare (xargs :guard (and (stringp filename)
+                              (or (eq :all theorems-to-try)
+                                  (symbol-listp theorems-to-try))
+                              (natp n)
+                              (acl2::print-levelp print)
+                              (or (null server-url)
+                                  (stringp server-url)))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state))
+  (b* ( ;; We must avoid including the current book (or an other book that includes it) when trying to find advice:
+       (book-to-avoid-absolute-path (canonical-pathname filename nil state))
+       ((when (member-equal book-to-avoid-absolute-path
+                            (included-books-in-world (w state))))
+        (cw "WARNING: Can't replay ~s0 because it is already included in the world.~%" filename)
+        (mv :book-already-included (list 0 0 0 0 0) state))
+       ((mv dir &) (split-path filename))
+       (- (cw "REPLAYING ~s0 with advice:~%~%" filename))
+       ;; Read all the forms from the file:
+       ((mv erp events state)
+        (read-objects-from-book filename state))
+       ((when erp) (cw "Error: ~x0.~%" erp) (mv erp (list 0 0 0 0 0) state))
+       ;; Ensure we are working in the same dir as the book:
+       ((mv erp & state)
+        (set-cbd-fn dir state))
+       ((when erp) (mv erp (list 0 0 0 0 0) state))
+       ;; Make margins wider for nicer printing:
+       (state (widen-margins state))
+       ;; Ensure proofs are done during make-event expansion, even if we use skip-proofs:
+       ((mv erp state) (submit-event-helper-core '(defattach (acl2::always-do-proofs-during-make-event-expansion acl2::constant-t-function-arity-0) :system-ok t) nil state))
+       ((when erp) (mv erp (list 0 0 0 0 0) state))
+       ;; Submit all the events, trying advice for each defthm:
+       ((mv erp yes-count no-count maybe-count trivial-count error-count state)
+        (submit-events-with-advice events theorems-to-try n book-to-avoid-absolute-path print server-url 0 0 0 0 0 state))
+       ((when erp)
+        (cw "Error: ~x0.~%" erp)
+        (mv erp (list 0 0 0 0 0) state))
+       ;; Print stats:
+       (- (progn$ (cw "~%SUMMARY for book ~s0:~%" filename)
+                  (cw "(Asked each model for ~x0 recommendations.)~%" n)
+                  (cw "YES    : ~x0~%" yes-count)
+                  (cw "NO     : ~x0~%" no-count)
+                  (cw "MAYBE  : ~x0~%" maybe-count)
+                  (cw "TRIVIAL: ~x0~%" trivial-count)
+                  (cw "ERROR  : ~x0~%" error-count)))
+       ;; Undo margin widening:
+       (state (unwiden-margins state)))
+    (mv nil ; no error
+        (list yes-count no-count maybe-count trivial-count error-count)
+        state)))
+
+;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
 ;; Returns (mv erp event state).
 ;; Example: (replay-book-with-advice "helper.lisp" state)
 (defun replay-book-with-advice-fn (filename ; the book, with .lisp extension
@@ -159,46 +219,15 @@
                                   (stringp server-url)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
-  (b* (;; We must avoid including the current book (or an other book that includes it) when trying to find advice:
-       (book-to-avoid-absolute-path (canonical-pathname filename nil state))
-       ((when (member-equal book-to-avoid-absolute-path
-                            (included-books-in-world (w state))))
-        (cw "WARNING: Can't replay ~s0 because it is already included in the world.~%" filename)
-        (mv :book-already-included nil state))
-       ((mv dir &) (split-path filename))
-       (- (cw "REPLAYING ~s0 with advice:~%~%" filename))
-       ;; Read all the forms from the file:
-       ((mv erp events state)
-        (read-objects-from-book filename state))
-       ((when erp) (cw "Error: ~x0.~%" erp) (mv erp nil state))
-       ;; Ensure we are working in the same dir as the book:
-       ((mv erp & state)
-        (set-cbd-fn dir state))
-       ((when erp) (mv erp nil state))
-       ;; Make margins wider for nicer printing:
-       (state (widen-margins state))
-       ;; Ensure proofs are done during make-event expansion, even if we use skip-proofs:
-       ((mv erp state) (submit-event-helper-core '(defattach (acl2::always-do-proofs-during-make-event-expansion acl2::constant-t-function-arity-0) :system-ok t) nil state))
-       ((when erp) (mv erp nil state))
-       ;; Submit all the events, trying advice for each defthm:
-       ((mv erp yes-count no-count maybe-count trivial-count error-count state)
-        (submit-events-with-advice events theorems-to-try n book-to-avoid-absolute-path print server-url 0 0 0 0 0 state))
-       ((when erp)
-        (cw "Error: ~x0.~%" erp)
-        (mv erp nil state))
-       ;; Print stats:
-       (- (progn$ (cw "~%SUMMARY for book ~s0:~%" filename)
-                  (cw "(Asked each model for ~x0 recommendations.)~%" n)
-                  (cw "YES    : ~x0~%" yes-count)
-                  (cw "NO     : ~x0~%" no-count)
-                  (cw "MAYBE  : ~x0~%" maybe-count)
-                  (cw "TRIVIAL: ~x0~%" trivial-count)
-                  (cw "ERROR  : ~x0~%" error-count)))
-       ;; Undo margin widening:
-       (state (unwiden-margins state)))
+  (b* (((mv erp
+            & ; counts
+            state)
+        (replay-book-with-advice-fn-aux filename theorems-to-try n print server-url state))
+       ((when erp) (mv erp nil state)))
     ;; No error:
     (mv nil '(value-triple :invisible) state)))
 
+;; Example: (replay-book-with-advice "helper.lisp" state)
 (defmacro replay-book-with-advice (filename ; the book, with .lisp extension
                                    &key
                                    (theorems-to-try ':all) ; gets evaluated
