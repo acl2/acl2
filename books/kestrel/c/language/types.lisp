@@ -12,11 +12,11 @@
 (in-package "C")
 
 (include-book "abstract-syntax")
-(include-book "errors")
 (include-book "integer-formats")
 
 (include-book "../pack")
 
+(include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/pos-option" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 (include-book "std/util/defval" :dir :system)
@@ -121,11 +121,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult type "types")
+(fty::defresult type-result
+  :short "Fixtype of errors and types."
+  :ok type
+  :pred type-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult type-list "lists of types")
+(fty::defresult type-list-result
+  :short "Fixtype of errors and lists of types."
+  :ok type-list
+  :pred type-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -179,7 +185,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult member-type-list "lists of member types")
+(fty::defresult member-type-list-result
+  :short "Fixtype of errors and lists of member types."
+  :ok member-type-list
+  :pred member-type-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -261,9 +270,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable init-type-kind)))
-  (defresult init-type "initializer types"))
+(fty::defresult init-type-result
+  :short "Fixtype of errors and initializer types."
+  :ok init-type
+  :pred init-type-resultp
+  :prepwork ((local (in-theory (enable init-type-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
