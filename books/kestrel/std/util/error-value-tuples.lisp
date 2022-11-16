@@ -520,13 +520,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :order-subtopics t
-
-  :default-parent t)
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-b*-binder reterr
+  :parents (error-value-tuples)
   :short "Binder to introduce a local function that returns
           an error-value tuple with certain irrelevant values."
   :long
@@ -550,6 +549,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ retok (&rest args)
+  :parents (error-value-tuples)
   :short "Macro to return an error-value tuple with no error."
   :long
   (xdoc::topstring
@@ -562,6 +562,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-b*-binder erp
+  :parents (error-value-tuples)
   :short "Binder to propagate errors from error-value tuples."
   :long
   (xdoc::topstring
