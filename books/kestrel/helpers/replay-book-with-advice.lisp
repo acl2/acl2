@@ -40,6 +40,7 @@
                          (cadr rule-classes-result)
                        ;; means don't put in any :rule-classes arg at all:
                        '(:rewrite)))
+       (hints-classes-result (assoc-keyword :hints (cdddr defthm)))
        (- (cw "(ADVICE: ~x0: " theorem-name))
        ((mv erp successp best-rec state)
         (help::get-and-try-advice-for-theorem theorem-name
@@ -58,6 +59,8 @@
                                               :all   ; model
                                               t ; suppress warning about trivial rec, because below we ask if "original" is the best rec and handle trivial recs there
                                               state))
+       ;; TODO: Maybe track errors separately?  Might be that a step limit was reached before checkpoints could even be generated, so perhaps that counts as a :no?
+       ;; Would like to give time/steps proportional to what was needed for the original theorem.
        ((when erp) (mv erp :no state)))
     (if (not successp)
         (prog2$ (cw "NO).~%") ; close paren matches (ADVICE
@@ -71,7 +74,10 @@
                     (mv nil :maybe state)))
         (b* ((trivialp (equal "original" (help::successful-recommendationp-name best-rec)))
              (- (if trivialp
-                    (cw "TRIVIAL (no hints needed))~%") ; close paren matches (ADVICE
+                    (if hints-classes-result
+                        (cw "TRIVIAL (no hints needed, though some were given))~%") ; close paren matches (ADVICE
+                      (cw "TRIVIAL (no hints needed))~%") ; close paren matches (ADVICE
+                      )
                   (progn$ (cw "YES: ")
                           (help::show-successful-recommendation best-rec)
                           (cw ")~%")))) ; close paren matches (ADVICE
@@ -87,8 +93,10 @@
 ;Returns (mv erp yes-count no-count maybe-count trivial-count state).
 ;throws an error if any event fails
 ; This uses :brief printing.
-(defun submit-events-with-advice (events n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count state)
+(defun submit-events-with-advice (events theorems-to-try n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count state)
   (declare (xargs :guard (and (true-listp events)
+                              (or (eq :all theorems-to-try)
+                                  (symbol-listp theorems-to-try))
                               (natp n)
                               (or (null book-to-avoid-absolute-path)
                                   (stringp book-to-avoid-absolute-path))
@@ -100,14 +108,17 @@
   (if (endp events)
       (mv nil yes-count no-count maybe-count trivial-count state)
     (let ((event (first events)))
-      (if (or (call-of 'defthm event) ; todo: maybe handle thms
-              (call-of 'defthmd event))
+      (if (and (or (call-of 'defthm event) ; todo: maybe handle thm, defrule, rule, etc.  maybe handle defun and variants (termination and guard proof)
+                   (call-of 'defthmd event))
+               (or (eq :all theorems-to-try)
+                   (member-eq (cadr event) theorems-to-try)))
+          ;; It's a theorem for which we are to try advice:
           (b* (((mv erp result state)
                 (submit-defthm-event-with-advice event n book-to-avoid-absolute-path print server-url state))
                ((when erp)
                 (er hard? 'submit-events-with-advice "ERROR (~x0) with advice attempt for event ~X12.~%" erp event nil)
                 (mv erp yes-count no-count maybe-count trivial-count state)))
-            (submit-events-with-advice (rest events) n book-to-avoid-absolute-path print server-url
+            (submit-events-with-advice (rest events) theorems-to-try n book-to-avoid-absolute-path print server-url
                                        (if (eq :yes result) (+ 1 yes-count) yes-count)
                                        (if (eq :no result) (+ 1 no-count) no-count)
                                        (if (eq :maybe result) (+ 1 maybe-count) maybe-count)
@@ -115,22 +126,26 @@
                                        state))
         ;; Not something for which we will try advice, so submit it and continue:
         (b* (((mv erp state)
-              (submit-event-helper-core event print state))
+              ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
+              (submit-event-helper-core `(skip-proofs ,event) print state))
              ((when erp)
               (er hard? 'submit-events-with-advice "ERROR (~x0) with event ~X12.~%" erp event nil)
               (mv erp yes-count no-count maybe-count trivial-count state))
-             (- (cw "~x0~%" (shorten-event event))))
-          (submit-events-with-advice (rest events) n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count state))))))
+             (- (cw "Skip: ~x0~%" (shorten-event event))))
+          (submit-events-with-advice (rest events) theorems-to-try n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count state))))))
 
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
 ;; Returns (mv erp event state).
 ;; Example: (replay-book-with-advice "helper.lisp" state)
 (defun replay-book-with-advice-fn (filename ; the book, with .lisp extension
+                                   theorems-to-try
                                    n
                                    print
                                    server-url
                                    state)
   (declare (xargs :guard (and (stringp filename)
+                              (or (eq :all theorems-to-try)
+                                  (symbol-listp theorems-to-try))
                               (natp n)
                               (acl2::print-levelp print)
                               (or (null server-url)
@@ -141,8 +156,8 @@
        (book-to-avoid-absolute-path (canonical-pathname filename nil state))
        ((when (member-equal book-to-avoid-absolute-path
                             (included-books-in-world (w state))))
-        (er hard? 'replay-book-with-advice-fn "Can't replay ~s0 because it is already included in the world." filename)
-        (mv t nil state))
+        (cw "WARNING: Can't replay ~s0 because it is already included in the world.~%" filename)
+        (mv :book-already-included nil state))
        ((mv dir &) (split-path filename))
        (- (cw "REPLAYING ~s0 with advice:~%~%" filename))
        ;; Read all the forms from the file:
@@ -155,9 +170,12 @@
        ((when erp) (mv erp nil state))
        ;; Make margins wider for nicer printing:
        (state (widen-margins state))
+       ;; Ensure proofs are done during make-event expansion, even if we use skip-proofs:
+       ((mv erp state) (submit-event-helper-core '(defattach (acl2::always-do-proofs-during-make-event-expansion acl2::constant-t-function-arity-0) :system-ok t) nil state))
+       ((when erp) (mv erp nil state))
        ;; Submit all the events, trying advice for each defthm:
        ((mv erp yes-count no-count maybe-count trivial-count state)
-        (submit-events-with-advice events n book-to-avoid-absolute-path print server-url 0 0 0 0 state))
+        (submit-events-with-advice events theorems-to-try n book-to-avoid-absolute-path print server-url 0 0 0 0 state))
        ((when erp)
         (cw "Error: ~x0.~%" erp)
         (mv erp nil state))
@@ -175,8 +193,9 @@
 
 (defmacro replay-book-with-advice (filename ; the book, with .lisp extension
                                    &key
-                                   (n '10)
+                                   (theorems-to-try ':all) ; gets evaluated
+                                   (n '10) ; number of recommendations to use
                                    (print 'nil)
                                    (server-url 'nil) ; nil means get from environment var
                                    )
-  `(make-event-quiet (replay-book-with-advice-fn ,filename ,n ,print ,server-url state)))
+  `(make-event-quiet (replay-book-with-advice-fn ,filename ,theorems-to-try ,n ,print ,server-url state)))
