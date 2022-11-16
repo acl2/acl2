@@ -220,17 +220,17 @@
                                         (val-alist svex-alist-p)
                                         (probes svtv-probealist-p)
                                         (triplemap svtv-override-triplemap-p))
-  :short "Checks that the given key either isn't bound in both the test and val
-alists, or else has a triple in the triplemap such that the test of the triple
-is the key's binding in the test-alist, the val of the triple is the key's
-binding in the val-alist, and the refvar of the triple is bound in probes to a
-probe whose signal is the key and time is the current phase."
+  :short "Checks that the given key either isn't bound the test alist, or else
+has a triple in the triplemap such that the test of the triple is the key's
+binding in the test-alist, the val of the triple is the key's binding in the
+val-alist, and the refvar of the triple is bound in probes to a probe whose
+signal is the key and time is the current phase."
   :parents (svtv-idealize-internals)
   :returns (ok)
   (b* ((test (svex-fastlookup key test-alist))
        ((unless test) t)
-       (val (svex-fastlookup key val-alist))
-       ((unless val) t)
+       (val (or (svex-fastlookup key val-alist) (svex-x)))
+       ;; ((unless val) t)
        (triple (cdr (hons-get (svar-fix key) (svtv-override-triplemap-fix triplemap))))
        ((unless triple) nil)
        ((svtv-override-triple triple))
@@ -284,11 +284,44 @@ probe whose signal is the key and time is the current phase."
               (svex-eval (svex-lookup key val-alist) spec-env)
               (svex-env-lookup key (nth phase ref-envs))))
     :hints(("Goal" :in-theory (enable svtv-override-triple-mux-<<=))))
+
+
+  ;; (defret <fn>-implies-4vec-muxtest-subsetp
+  ;;   (implies (and ok
+  ;;                 (svtv-override-triple-mux-<<= (cdr (hons-assoc-equal (svar-fix key) triplemap))
+  ;;                                               pipe-env spec-env
+  ;;                                               (svtv-probealist-extract probes ref-envs)))
+  ;;            (4vec-muxtest-subsetp
+  ;;             (svex-eval (svex-lookup key test-alist) spec-env)
+  ;;             (svex-eval (svex-lookup key test-alist) pipe-env)))
+  ;;   :hints(("Goal" :in-theory (enable svtv-override-triple-mux-<<=))))
+
+  (local (defthm member-triplemap-tests-when-lookup-lemma
+           (implies (and (hons-assoc-equal key triplemap)
+                         (svar-p key))
+                    (member-equal (svtv-override-triple->test (cdr (hons-assoc-equal key triplemap)))
+                                  (svtv-override-triplemap->tests triplemap)))
+           :hints(("Goal" :in-theory (enable svtv-override-triplemap->tests)))))
+
+  (local (defthm member-triplemap-tests-when-lookup
+           (implies (and (equal val (svtv-override-triple->test (cdr (hons-assoc-equal key triplemap))))
+                         (hons-assoc-equal key triplemap)
+                         (svar-p key))
+                    (member-equal val
+                                  (svtv-override-triplemap->tests triplemap)))))
+           
+  
+  (defret member-tests-when-<fn>
+    (implies (and ok
+                  (svex-lookup key test-alist))
+             (member-equal (svex-lookup key test-alist)
+                           (svtv-override-triplemap->tests triplemap))))
   
   (defretd <fn>-implies-lookup-in-triplemap
     (implies (and ok
                   (case-split (svex-lookup key test-alist))
-                  (case-split (svex-lookup key val-alist)))
+                  ;; (case-split (svex-lookup key val-alist))
+                  )
              (hons-assoc-equal (svar-fix key) triplemap))))
               
          
@@ -330,14 +363,14 @@ probe whose signal is the key and time is the current phase."
                                                       (probes svtv-probealist-p)
                                                       (triplemaps svtv-override-triplemaplist-p))
   :returns (ok)
-  :measure (len val-alists)
-  (if (atom val-alists)
+  :measure (len test-alists)
+  (if (atom test-alists)
       t
     (and (b* ((test-alist (car test-alists))
               (val-alist (car val-alists))
               (triplemap (car triplemaps))
               ((acl2::with-fast test-alist val-alist triplemap)))
-           (svtv-override-triplemap-syntax-check (svex-alist-keys val-alist)
+           (svtv-override-triplemap-syntax-check (svex-alist-keys test-alist)
                                                  phase
                                                  test-alist
                                                  val-alist
@@ -531,6 +564,8 @@ probe whose signal is the key and time is the current phase."
                     :namemap x.namemap
                     :probes x.pipeline-setup.probes
                     :in-alists x.pipeline-setup.inputs
+                    :override-test-alists x.pipeline-setup.override-tests
+                    :override-val-alists x.pipeline-setup.override-vals                    
                     :initst-alist x.pipeline-setup.initst)))
 
 

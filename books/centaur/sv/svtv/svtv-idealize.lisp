@@ -263,10 +263,12 @@
               (spec-run (svtv-spec-run spec spec-pipe-env :base-ins spec-base-ins :initst spec-initst))
               (impl-run (svtv-run (<name>) pipe-env)))
            (implies (and 
-                     (svtv-override-triplemaplist-ok (<name>-triplemaplist) pipe-env spec-run)
+                     (svtv-override-triplemaplist-muxes-<<= (<name>-triplemaplist) pipe-env spec-pipe-env spec-run)
+                     (svtv-override-triplemaplist-muxtests-subsetp (<name>-triplemaplist) spec-pipe-env pipe-env)
                 
                      (svex-env-<<= (svex-env-reduce (<name>-input-vars) pipe-env)
-                                   spec-pipe-env))
+                                   spec-pipe-env)
+                     (svarlist-override-p (svex-envlist-all-keys spec-base-ins) nil))
                     (svex-env-<<= impl-run spec-run)))
          :hints(("Goal" :in-theory '((:CONGRUENCE
                                       SET-EQUIV-IMPLIES-SVEX-ENVS-EQUIVALENT-SVEX-ENV-REDUCE-1)
