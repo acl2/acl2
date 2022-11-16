@@ -142,8 +142,9 @@
         (b* (((mv erp state)
               ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
               (submit-event-helper-core `(skip-proofs ,event) print state))
+             ;; FIXME: Anything that tries to read from a file will give an error since the current dir won't be right.
              ((when erp)
-              (er hard? 'submit-events-with-advice "ERROR (~x0) with event ~X12.~%" erp event nil)
+              (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
               (mv erp yes-count no-count maybe-count trivial-count error-count state))
              (- (cw "Skip: ~x0~%" (shorten-event event))))
           (submit-events-with-advice (rest events) theorems-to-try n book-to-avoid-absolute-path print server-url yes-count no-count maybe-count trivial-count error-count state))))))
@@ -182,6 +183,8 @@
        ((mv erp & state)
         (set-cbd-fn dir state))
        ((when erp) (mv erp (list 0 0 0 0 0) state))
+       ;; TODO: Also have to change the dir from which files are read.  How can we do that?
+       ;; This didn't work: (- (sys-call "cd" (list dir)))
        ;; Make margins wider for nicer printing:
        (state (widen-margins state))
        ;; Ensure proofs are done during make-event expansion, even if we use skip-proofs:
