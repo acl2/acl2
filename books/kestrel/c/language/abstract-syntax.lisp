@@ -345,6 +345,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum scspecseq
+  :short "Fixtype of sequences of storage class specifuers [C:6.7.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A declaration allows a sequence of 0, 1, or 2 storage class specifiers,
+     subject to some constraints.
+     For now we just capture the empty sequence (i.e. no specifiers),
+     and the sequence consisting of the @('extern') specifier."))
+  (:none ())
+  (:extern ())
+  :pred scspecseqp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum obj-declor
   :short "Fixtype of object declarators [C:6.7.6]."
   :long
@@ -835,20 +850,17 @@
      to differentiate them from other kinds of declarators.")
    (xdoc::p
     "For now we define an object declaration as consisting of
+     a storage class specification sequence,
      a type specification sequence,
      an object declarator,
      and an optional initializer.")
    (xdoc::p
     "For now we model
-     no storage class specifiers
      no type qualifiers,
      no function specifiers,
-     and no alignment specifiers.")
-   (xdoc::p
-    "An object declaration as defined here is like
-     a parameter declaration (as defined in our abstract syntax)
-     with an optional initializer."))
-  ((tyspec tyspecseq)
+     and no alignment specifiers."))
+  ((scspec scspecseq)
+   (tyspec tyspecseq)
    (declor obj-declor)
    (init? initer-optionp))
   :tag :obj-declon

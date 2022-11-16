@@ -662,7 +662,7 @@ constant-expression = conditional-expression
 
 ; For now we omit the following:
 ; - Static assertions.
-; - Storage class specifiers.
+; - Storage class specifiers except for "extern".
 ; - Type qualifiers.
 ; - Function specifiers.
 ; - Alignment specifiers.
@@ -675,20 +675,25 @@ constant-expression = conditional-expression
 ; - Enumerator lists.
 ; - Anything between the square brackets of array declarators
 ;   other than integer constants, i.e. we only allow optional integer constants.
-; - Identifiers (not parameters) in function declarators.
+; - Identifiers (not parameters) in function declarators,
+;   except for the empty list of identifiers, i.e. "()".
 ; - Ellipsis in function parameters.
-; - Abstract declarators in function parameters.
+; - Abstract declarators in function parameters,
+;   except that we have a rule alternative for "(void)".
 ; - Abstract function declarators.
 ; - Designators in initializers.
 
 declaration = declaration-specifiers [ init-declarator-list ] ";"
 
-declaration-specifiers = type-specifier [ declaration-specifiers ]
+declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
+                       / type-specifier [ declaration-specifiers ]
 
 init-declarator-list = init-declarator
 
 init-declarator = declarator
                 / declarator "=" initializer
+
+storage-class-specifier = %s"extern"
 
 type-specifier = %s"void"
                / %s"char"
@@ -730,6 +735,7 @@ direct-declarator = identifier
                   / "(" declarator ")"
                   / direct-declarator "[" [ integer-constant ] "]"
                   / direct-declarator "(" parameter-type-list ")"
+                  / direct-declarator "(" %s"void" ")"
                   / direct-declarator "(" ")"
 
 pointer = "*"
