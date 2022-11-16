@@ -37,8 +37,10 @@
       (local `(local ,(shorten-event (cadr event))))
       (theory-invariant '(theory-invariant <elided>))
       (deftheory '(deftheory <elided>))
+      (defsection '(defsection <elided>))
+      (local '(local <elided>))
       (encapsulate '(encapsulate <elided> <elided>)) ; todo: recur inside encapsulate
-      (t event))))
+      (t `(,(car event) <elided>)))))
 
 ;Returns (mv erp state).
 ;throws an error if any event fails
