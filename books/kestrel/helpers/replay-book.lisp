@@ -36,6 +36,8 @@
       ((defun defund defun-nx define defun-sk define-sk defthm defthmd defrule defruled defrulel defruledl) (cadr event))
       (local `(local ,(shorten-event (cadr event))))
       (theory-invariant '(theory-invariant <elided>))
+      (deftheory '(deftheory <elided>))
+      (encapsulate '(encapsulate <elided> <elided>)) ; todo: recur inside encapsulate
       (t event))))
 
 ;Returns (mv erp state).
