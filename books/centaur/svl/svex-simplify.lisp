@@ -348,7 +348,7 @@
      (cond ((atom term)
             (if (svex-p term)
                 (mv nil term)
-              (progn$ (cw "ATTENTION! unexpected term ~p0 this atom does not ~
+              (progn$ (rp::cwe "ATTENTION! unexpected term ~p0 this atom does not ~
               satisfy svex-p ~%" term)
                       (mv t 0))))
            ((and (quotep term)
@@ -364,7 +364,7 @@
                          (mv nil term))
                         (t
                          (progn$
-                          (cw "ATTENTION! unexpected term ~p0. This quoted term
+                          (rp::cwe "ATTENTION! unexpected term ~p0. This quoted term
    does not satisfy svex-p ~%" term)
                           (mv t 0)))))
                  (res (hons-copy res)))

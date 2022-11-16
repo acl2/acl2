@@ -747,6 +747,19 @@ nothing to bump!" nil)))
                  (progn$ (raise "Unexpected rule name/rune is passed: ~p0" rule)
                          (mv nil nil))))))
 
+         (- (or (let* ((entry (assoc-equal
+                               rule-name
+                               (table-alist 'corresponding-rp-rule-openers-reverse (w state)))))
+                  (and
+                   entry
+                   (raise "Given rule name (~p0) is registered as a rp-rule-openers. Please give the rule's original name instead: ~p1" (car entry) (cdr entry))))
+                (let* ((entry (assoc-equal
+                               rule-name
+                               (table-alist 'corresponding-rp-rule-reverse (w state)))))
+                  (and
+                   entry
+                   (raise "Given rule name (~p0) is registered as a corresponding rp-rule. Please give the rule's original name instead: ~p1" (car entry) (cdr entry))))))
+
          (- (and (consp (get-rune-name rule-name state))
                  (equal (car (get-rune-name rule-name state)) :definition)
                  (consp rune)
@@ -789,11 +802,9 @@ nothing to bump!" nil)))
        `(encapsulate
           ,sigs
           ,@fncs
-          (def-rp-rule
+          (defthmd
             ,rule-name-for-rp-openers
             (and ,@openers)
-            :disabled-for-acl2 t
-            :lambda-opt nil
             :hints (("Goal"
                      :in-theory (union-theories
                                  '(hard-error hons-copy return-last ,@(strip-cars fnc-names))
@@ -817,8 +828,11 @@ nothing to bump!" nil)))
           (table ,ruleset ',rune (cons ',rw-direction ',(not disabled)))
 
           (table corresponding-rp-rule ',rule-name ',rule-name-for-rp)
-          (table corresponding-rp-rule-reverse ',rule-name-for-rp ',rule-name)
+          (table corresponding-rp-rule-openers ',rule-name ',rule-name-for-rp-openers)
 
+          (table corresponding-rp-rule-reverse ',rule-name-for-rp ',rule-name)
+          (table corresponding-rp-rule-openers-reverse ',rule-name-for-rp-openers ',rule-name)
+          
           (value-triple ',rule-name)))))
 
   (defmacro add-rp-rule (rule &rest args

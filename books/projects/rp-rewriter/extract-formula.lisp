@@ -643,18 +643,30 @@ rules))||#
  (defthm CUSTOM-REWRITE-WITH-META-EXTRACT-returns-RP-RULE-RW-LISTP
    (RP-RULE-RW-LISTP (CUSTOM-REWRITE-WITH-META-EXTRACT RULE-NAME RULE-NEW-SYNP WARNING STATE))))
 
+(local
+ (defthm RP-RULE-RW-LISTP-of-append
+   (implies (true-listp x)
+            (equal (rp-rule-rw-listp (append x y))
+                   (and (rp-rule-rw-listp x)
+                        (rp-rule-rw-listp y))))))
+          
+
 (defun get-rule-list (runes sc-alist new-synps warning state)
   (declare (xargs :guard (and (symbol-symbol-alistp sc-alist)
                               (alistp new-synps))
                   :guard-hints
                   (("Goal"
+                    :do-not-induct t
                     :in-theory (e/d () (rule-syntaxp
                                         rule-list-syntaxp
                                         RP-RULE-RW-LISTP
                                         update-rules-with-sc
                                         MAKE-FORMULA-BETTER
                                         CUSTOM-REWRITE-WITH-META-EXTRACT
-                                        ))))
+                                        ;;GET-GLOBAL
+                                        TABLE-ALIST
+                                        META-RUNE-P
+                                        FMT-TO-COMMENT-WINDOW))))
                   :stobjs (state)
                   :verify-guards t))
   (if (atom runes)
@@ -671,6 +683,9 @@ rules))||#
          ;; Check if the rule has a corresponding for-rp rule
          (corresponding-rp-rule (hons-assoc-equal rule-name
                                                   (table-alist 'corresponding-rp-rule (w state))))
+         (corresponding-rp-rule-opener (hons-assoc-equal
+                                        rule-name
+                                        (table-alist 'corresponding-rp-rule-openers (w state))))
          (rule-name (if corresponding-rp-rule (cdr corresponding-rp-rule)
                       rule-name))
 
@@ -708,6 +723,16 @@ rules))||#
          (rule-new-synp (cdr (assoc-equal rule-name new-synps)))
          (rules (custom-rewrite-with-meta-extract rule-name rule-new-synp
                                                   warning  state))
+
+         (rules-for-rp-openers
+          (and corresponding-rp-rule-opener
+               (symbolp (cdr corresponding-rp-rule-opener))
+               (custom-rewrite-with-meta-extract (cdr corresponding-rp-rule-opener)
+                                                 nil warning state)))
+
+         (rules (append rules-for-rp-openers
+                        rules))
+         
          #|(rules (try-to-add-rule-fnc rules rule-fnc-alist))||#
          ((when (not (rule-list-syntaxp rules)))
           (or (cw "Warning a problem with rule-list ~p0 ~%" rules)
@@ -812,9 +837,13 @@ alist
                         (list (cons #\0 rule))))
            (name (if given-type name (acl2::deref-macro-name name (macro-aliases (w state)))))
 
-           (corresponding-rule (hons-assoc-equal
-                                name
-                                (table-alist 'corresponding-rp-rule-reverse (w state))))
+           (corresponding-rule (or (hons-assoc-equal
+                                    name
+                                    (table-alist 'corresponding-rp-rule-reverse (w state)))
+                                   (hons-assoc-equal
+                                    name
+                                    (table-alist 'corresponding-rp-rule-openers-reverse
+                                                 (w state)))))
            ((mv given-type name)
             (if (and corresponding-rule
                      (symbolp (cdr corresponding-rule)))

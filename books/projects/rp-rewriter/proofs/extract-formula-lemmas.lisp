@@ -2127,6 +2127,12 @@ SC-TYPE SC-TERM))
                 (VALID-RULEP-SK RULE)))
   :rule-classes :forward-chaining)
 
+(defthm RP-RULE-RW-LISTP-of-append
+   (implies (true-listp x)
+            (equal (rp-rule-rw-listp (append x y))
+                   (and (rp-rule-rw-listp x)
+                        (rp-rule-rw-listp y)))))
+
 (defthm valid-rulep-update-rules-with-sc
   (implies (and (valid-rulesp rules)
                 (rp-rule-rw-listp rules)
@@ -2237,6 +2243,14 @@ SC-TYPE SC-TERM))
                             META-RUNE-P
                             RULE-SYNTAXP
                             MAKE-CUSTOM-RULE-FOR-META) ()))))
+
+(defthm VALID-RULESP-of-append
+  (implies (true-listp x)
+           (equal (VALID-RULESP (append x y))
+                  (and (VALID-RULESP x)
+                       (VALID-RULESP y))))
+  :hints (("Goal"
+           :in-theory (e/d () (VALID-RULEP)))))
 
 (defthm valid-rulesp-get-rules
   (implies (rp-evl-meta-extract-global-facts :state state)
