@@ -364,14 +364,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define obj-declon-to-ident+tyname+init ((declon obj-declonp))
-  :returns (mv (id identp) (tyname tynamep) (init initer-optionp))
+(define obj-declon-to-ident+scspec+tyname+init ((declon obj-declonp))
+  :returns (mv (id identp)
+               (scspec scspecseqp)
+               (tyname tynamep)
+               (init initer-optionp))
   :short "Decompose an object declaration into
-          an identifier, a type name, and an optional initializer."
+          an identifier,
+          a storage class specifier sequence,
+          a type name,
+          and an optional initializer."
   (b* (((obj-declon declon) declon)
        ((mv id tyname) (tyspec+declor-to-ident+tyname declon.tyspec
                                                       declon.declor)))
-    (mv id tyname declon.init?))
+    (mv id declon.scspec tyname declon.init?))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
