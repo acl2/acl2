@@ -161,7 +161,7 @@
   (defthm my-fermat-little
     (implies (and (fep a p)
                   (not (equal 0 a))
-                  (dm::primep p))
+                  (primep p))
              (equal (pow a (minus1 p) p)
                     1))
     :hints (("Goal" :use ((:instance dm::fermat

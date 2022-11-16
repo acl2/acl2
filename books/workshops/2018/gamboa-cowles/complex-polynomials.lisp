@@ -1228,11 +1228,12 @@
           )
   )
 
-(defthm last-cdr
-  (implies (consp (cdr x))
-           (equal (last (cdr x))
-                  (last x)))
-  :rule-classes nil)
+;; Commented out due to name clash:
+;; (defthm last-of-cdr
+;;   (implies (consp (cdr x))
+;;            (equal (last (cdr x))
+;;                   (last x)))
+;;   :rule-classes nil)
 
 (defthm last-cdr-add-polynomial
   (implies (and (polynomial-p poly2)
