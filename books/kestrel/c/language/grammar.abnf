@@ -675,9 +675,11 @@ constant-expression = conditional-expression
 ; - Enumerator lists.
 ; - Anything between the square brackets of array declarators
 ;   other than integer constants, i.e. we only allow optional integer constants.
-; - Identifiers (not parameters) in function declarators.
+; - Identifiers (not parameters) in function declarators,
+;   except for the empty list of identifiers, i.e. "()".
 ; - Ellipsis in function parameters.
-; - Abstract declarators in function parameters.
+; - Abstract declarators in function parameters,
+;   except that we have a rule alternative for "(void)".
 ; - Abstract function declarators.
 ; - Designators in initializers.
 
@@ -730,6 +732,7 @@ direct-declarator = identifier
                   / "(" declarator ")"
                   / direct-declarator "[" [ integer-constant ] "]"
                   / direct-declarator "(" parameter-type-list ")"
+                  / direct-declarator "(" %s"void" ")"
                   / direct-declarator "(" ")"
 
 pointer = "*"
