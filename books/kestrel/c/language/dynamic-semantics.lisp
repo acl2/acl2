@@ -1260,8 +1260,9 @@
        we also return a possibly updated computation state.")
      (xdoc::p
       "If the block item is a declaration,
-       we ensure it is a variable (not a structure type) declaration,
-       then we execute the initializer (which we require),
+       we ensure that it has no @('extern') storage class specifier
+       (we do not support it in blocks),
+       then we execute the initializer (which we require here),
        then we add the variable to the top scope of the top frame.
        The initializer value must have the same type as the variable,
        which automatically excludes the case of the variable being @('void'),
@@ -1276,7 +1277,11 @@
       (block-item-case
        item
        :declon
-       (b* (((mv var tyname init?) (obj-declon-to-ident+tyname+init item.get))
+       (b* (((mv var scspec tyname init?)
+             (obj-declon-to-ident+scspec+tyname+init item.get))
+            ((unless (scspecseq-case scspec :none))
+             (mv (error :unsupported-storage-class-specifier)
+                 (compustate-fix compst)))
             (type (tyname-to-type tyname))
             ((when (type-case type :array))
              (mv (error :unsupported-local-array) (compustate-fix compst)))

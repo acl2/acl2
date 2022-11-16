@@ -1109,7 +1109,10 @@
   :returns (lines msg-listp)
   :short "Pretty-print an object declaration."
   (b* (((obj-declon declon) declon))
-    (list (pprint-line (msg "~@0 ~@1~@2;"
+    (list (pprint-line (msg "~@0~@1 ~@2~@3;"
+                            (scspecseq-case declon.scspec
+                                            :none ""
+                                            :extern "extern ")
                             (pprint-tyspecseq declon.tyspec)
                             (pprint-obj-declor declon.declor)
                             (if declon.init?
