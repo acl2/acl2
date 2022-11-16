@@ -282,6 +282,46 @@
              (error (list :duplicate-var-def var))))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define var-scope-all-definedp ((varscope var-table-scopep))
+  :returns (yes/no booleanp)
+  :short "CHeck if all the variables in a scope are defined."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This applies to the file scope; see @(tsee var-table-all-definedp).")
+   (xdoc::p
+    "Even though C allows a variable to remain undefined in a translation unit
+     (if it is not used in expressions),
+     we are more strict and require every variable to be defined.
+     This includes the case of a tentative definition,
+     which is automatically turned into a full definition [C:6.9.2/2].
+     So we go through the variables in the (file) scope,
+     ensuring that they are defined or tentatively defined."))
+  (b* ((varscope (var-table-scope-fix varscope))
+       ((when (omap::empty varscope)) t)
+       ((mv & info) (omap::head varscope))
+       (defstatus (var-sinfo->defstatus info))
+       ((unless (or (var-defstatus-case defstatus :defined)
+                    (var-defstatus-case defstatus :tentative)))
+        nil))
+    (var-scope-all-definedp (omap::tail varscope)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define var-table-all-definedp ((vartab var-tablep))
+  :returns (yes/no booleanp)
+  :short "CHeck if all the variables in a file scope are defined."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We only use this ACL2 function when the variable table has one scope,
+     which must therefore be the file scope."))
+  (var-scope-all-definedp (car vartab))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod fun-sinfo
@@ -2616,6 +2656,8 @@
                                 (omap::keys (car vartab))))
        ((unless (set::empty overlap))
         (error (list :transunit-fun-obj-overlap overlap)))
+       ((unless (var-table-add-block vartab))
+        (error (list :transunit-has-undef-var vartab)))
        ((unless (fun-table-all-definedp funtab))
         (error (list :transunit-has-undef-fun funtab))))
     :wellformed)
