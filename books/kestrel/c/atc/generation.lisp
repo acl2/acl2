@@ -3348,16 +3348,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-cfun-fun-env-thm ((fn symbolp)
-                                  (prog-const symbolp)
-                                  (finfo? fun-info-optionp)
-                                  (init-fun-env-thm symbolp)
-                                  (names-to-avoid symbol-listp)
-                                  (wrld plist-worldp))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (name symbolp)
+(define atc-gen-cfun-fun-env-thm-name ((fn symbolp)
+                                       (names-to-avoid symbol-listp)
+                                       (wrld plist-worldp))
+  :returns (mv (name symbolp)
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
+  :short "Generate the name of the theorem saying that
+          looking up a certain C function in the function environment
+          yields the information for that function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The actual theorem is generated in @(tsee atc-gen-cfun-fun-env-thm).
+     We separate out the generation of the theorem name
+     because we need to use it in events that are computed
+     before the actual theorem can be computed
+     (see @(tsee atc-gen-fundef))."))
+  (fresh-logical-name-with-$s-suffix (add-suffix fn "-FUN-ENV")
+                                     nil
+                                     names-to-avoid
+                                     wrld))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-cfun-fun-env-thm ((fn symbolp)
+                                  (thm-name symbolp)
+                                  (prog-const symbolp)
+                                  (finfo fun-infop)
+                                  (init-fun-env-thm symbolp))
+  :returns (event pseudo-event-formp)
   :short "Generate the theorem saying that
           looking up a certain C function in the function environment
           yields the information for that function."
@@ -3370,14 +3390,10 @@
      that were executing function lookups,
      which worked fine for small programs,
      but not for larger programs."))
-  (b* (((unless (fun-infop finfo?)) (mv nil nil names-to-avoid))
-       (thm-name (add-suffix fn "-FUN-ENV"))
-       ((mv thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
-       (fn-name (symbol-name fn))
+  (b* ((fn-name (symbol-name fn))
        (formula `(equal (fun-env-lookup (ident ,fn-name)
                                         (init-fun-env (preprocess ,prog-const)))
-                        ',finfo?))
+                        ',finfo))
        (hints `(("Goal" :in-theory '((:e fun-env-lookup)
                                      (:e ident)
                                      ,init-fun-env-thm))))
@@ -3386,7 +3402,7 @@
                                :formula formula
                                :hints hints
                                :enable nil)))
-    (mv (list event) thm-name names-to-avoid)))
+    event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4640,6 +4656,8 @@
          fn fn-guard prec-tags prec-objs names-to-avoid ctx state))
        ((er params :iferr (irr))
         (atc-gen-param-declon-list typed-formals fn prec-objs ctx state))
+       ((mv fn-fun-env-thm names-to-avoid)
+        (atc-gen-cfun-fun-env-thm-name fn names-to-avoid wrld))
        (body (ubody+ fn wrld))
        ((er affect :iferr (irr))
         (atc-find-affected fn body typed-formals prec-fns ctx state))
@@ -4692,20 +4710,16 @@
        (limit `(binary-+ '2 ,body.limit))
        ((mv local-events
             exported-events
-            fn-fun-env-thm
             fn-result-thm
             fn-correct-thm
             names-to-avoid)
         (if proofs
-            (b* (((mv fn-fun-env-events
-                      fn-fun-env-thm
-                      names-to-avoid)
+            (b* ((fn-fun-env-event
                   (atc-gen-cfun-fun-env-thm fn
+                                            fn-fun-env-thm
                                             prog-const
                                             finfo
-                                            init-fun-env-thm
-                                            names-to-avoid
-                                            wrld))
+                                            init-fun-env-thm))
                  ((mv fn-result-events
                       fn-result-thm
                       names-to-avoid)
@@ -4742,18 +4756,17 @@
                                        formals-events
                                        body.events
                                        progress-start?
-                                       fn-fun-env-events
+                                       (list fn-fun-env-event)
                                        fn-result-events
                                        fn-correct-local-events
                                        progress-end?))
                  (exported-events fn-correct-exported-events))
               (mv local-events
                   exported-events
-                  fn-fun-env-thm
                   fn-result-thm
                   fn-correct-thm
                   names-to-avoid))
-          (mv nil nil nil nil nil names-to-avoid)))
+          (mv nil nil nil nil names-to-avoid)))
        (info (make-atc-fn-info
               :out-type body.type
               :in-types (atc-var-info-list->type-list
