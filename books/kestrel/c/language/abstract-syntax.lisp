@@ -13,6 +13,7 @@
 
 (include-book "errors")
 
+(include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 
 ; to generate more typed list theorems:
@@ -1062,7 +1063,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult transunit "translation units")
+(fty::defresult transunit-result
+  :short "Fixtype of errors and translation units."
+  :ok transunit
+  :pred transunit-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

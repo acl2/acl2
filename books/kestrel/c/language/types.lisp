@@ -16,7 +16,6 @@
 
 (include-book "../pack")
 
-(include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/pos-option" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 (include-book "std/util/defval" :dir :system)

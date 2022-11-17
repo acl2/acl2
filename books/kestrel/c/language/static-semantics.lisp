@@ -2655,7 +2655,6 @@
     "First we preprocess the file set.
      If preprocessing is successful,
      we check the translation unit."))
-  (b* ((tunit (preprocess fileset))
-       ((when (errorp tunit)) (reserrf tunit)))
+  (b* (((okf tunit) (preprocess fileset)))
     (check-transunit tunit))
   :hooks (:fix))

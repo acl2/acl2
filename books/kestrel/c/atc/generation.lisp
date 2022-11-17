@@ -7596,7 +7596,7 @@
      is explained in @(tsee atc-gen-fileset)."))
   (b* (((unless proofs) nil)
        (tunit (preprocess fileset))
-       ((when (errorp tunit))
+       ((when (reserrp tunit))
         (raise "Internal error: preprocessing of ~x0 fails with error ~x1."
                fileset tunit))
        (fenv (init-fun-env tunit))
