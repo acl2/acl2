@@ -50,7 +50,7 @@
 
 (defruled rel-boolean-to-spec
   (implies (and (primep p)
-                (pfield::fep b p))
+                (fep b p))
            (equal (rel-boolean b p)
                   (or (equal b 0)
                       (equal b 1))))
@@ -77,9 +77,9 @@
 
 (defruled rel-condeq-to-spec
   (implies (and (primep p)
-                (pfield::fep a p)
-                (pfield::fep b p)
-                (pfield::fep c p))
+                (fep a p)
+                (fep b p)
+                (fep c p))
            (equal (rel-condeq a b c p)
                   (or (equal a 0)
                       (equal b c))))
@@ -107,10 +107,10 @@
 
 (defruled rel-select-to-spec
   (implies (and (primep p)
-                (pfield::fep b p)
-                (pfield::fep x p)
-                (pfield::fep y p)
-                (pfield::fep z p)
+                (fep b p)
+                (fep x p)
+                (fep y p)
+                (fep z p)
                 (rel-boolean b p)) ; precondition
            (equal (rel-select b x y z p)
                   (equal z
@@ -140,7 +140,7 @@
 
 (defruled rel-nonzero-to-spec
   (implies (and (primep p)
-                (pfield::fep a p))
+                (fep a p))
            (equal (rel-nonzero a p)
                   (not (equal a 0))))
   :use (left-implies-right right-implies-left)
@@ -149,17 +149,17 @@
 
   ((defruled left-implies-right
      (implies (and (primep p)
-                   (pfield::fep a p))
+                   (fep a p))
               (implies (rel-nonzero a p)
                        (not (equal a 0))))
      :enable rel-nonzero)
 
    (defrule right-implies-left
      (implies (and (primep p)
-                   (pfield::fep a p))
+                   (fep a p))
               (implies (not (equal a 0))
                        (rel-nonzero a p)))
-     :use (:instance rel-nonzero-suff (ainv (pfield::inv a p))))))
+     :use (:instance rel-nonzero-suff (ainv (inv a p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,9 +184,9 @@
 
 (defruled rel-xor-to-spec
   (implies (and (primep p)
-                (pfield::fep a p)
-                (pfield::fep b p)
-                (pfield::fep c p)
+                (fep a p)
+                (fep b p)
+                (fep c p)
                 (rel-boolean a p) ; precondition
                 (rel-boolean b p) ; precondition
                 (> p 2)) ; additional precondition

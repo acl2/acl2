@@ -67,12 +67,12 @@
                     the prime variable ~x1."
                    expr.name prime)
           expr.name)
-   :add `(pfield::add ,(sesem-expression expr.arg1 prime)
-                      ,(sesem-expression expr.arg2 prime)
-                      ,prime)
-   :mul `(pfield::mul ,(sesem-expression expr.arg1 prime)
-                      ,(sesem-expression expr.arg2 prime)
-                      ,prime))
+   :add `(add ,(sesem-expression expr.arg1 prime)
+              ,(sesem-expression expr.arg2 prime)
+              ,prime)
+   :mul `(mul ,(sesem-expression expr.arg1 prime)
+              ,(sesem-expression expr.arg2 prime)
+              ,prime))
   :measure (expression-count expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
