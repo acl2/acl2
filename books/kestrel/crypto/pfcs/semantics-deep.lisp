@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,14 +26,14 @@
 
 (defxdoc+ semantics-deeply-embedded
   :parents (semantics)
-  :short "Deeply embedded semantics of PFCS."
+  :short "Deeply embedded semantics of PFCSes."
   :long
   (xdoc::topstring
    (xdoc::p
     "The semantics informally described in @(see semantics)
      can be formalized, mathematically, as a function
      with the following characteristics.
-     The function takes the following inputs:")
+     This mathematical semantic function takes the following inputs:")
    (xdoc::ol
     (xdoc::li
      "A system of constraints, of type @(tsee system).")
@@ -43,7 +43,8 @@
      "An assignment,
       i.e. a finite map from variables to prime field elements"))
    (xdoc::p
-    "The function returns one of the following possible outputs:")
+    "The mathematical semantic function
+     returns one of the following possible outputs:")
    (xdoc::ul
     (xdoc::li
      "The boolean `true', indicating that,
@@ -54,7 +55,7 @@
       given the input system of constraints,
       the input constraint is not satisfied by the input assignment.")
     (xdoc::li
-     "An error indication, indicating that,
+     "An error, indicating that,
       given the input system of constraints,
       the input constraint cannot be evaluated as satisfied or not."))
    (xdoc::p
@@ -66,20 +67,21 @@
     (xdoc::seetopic "well-formedness" "well-formed")
     ", which we plan to prove formally.")
    (xdoc::p
-    "Attempting to define this function in ACL2 runs into an issue.
+    "Attempting to define this mathematical semantic function in ACL2
+     runs into an issue.
      A constraint that is a call of a relation is satisfied
-     when all the constraints that form the body of the relation are,
+     when all the constraints that form the body of the relation are satisfied,
      in some assigment that extends the one that assigns
      the actual parameters to the formal parameters.
      This is an existential quantification,
      which is expressed via @(tsee defun-sk) in ACL2,
-     but the semantics function is recursive,
+     but the mathematical semantic function we are describing is recursive,
      and a mutual recursion cannot involve a @(tsee defun-sk).")
    (xdoc::p
     "To overcome this issue,
      we formalize a logical proof system
-     to derive assertions about the semantic function sketched above,
-     and we define the semantic function in terms of the proof system."))
+     to derive assertions about the mathematical semantic function,
+     and then we define the function in ACL2 in terms of the proof system."))
   :order-subtopics t
   :default-parent t)
 
@@ -91,7 +93,7 @@
   (xdoc::topstring
    (xdoc::p
     "These are assignments of field elements to variables,
-     used to express the semantics of PFCS
+     used to express the semantics of PFCSes
      (see @(see semantics-deeply-embedded)).")
    (xdoc::p
     "Since the type of field elements depends on the prime,
@@ -266,7 +268,7 @@
     "These are the assertions mentioned in @(see semantics-deeply-embedded).
      They are essentially logical formulas,
      asserting that the mathematical semantic function
-     returns the boolean `true' on given inputs.")
+     returns the boolean `true' on the given inputs.")
    (xdoc::p
     "The components of the assertions defined here
      correspond to the inputs of the mathematical semantic function
@@ -275,7 +277,7 @@
      This is left implicit in the assertions,
      because it would be the same in all of them,
      and so it is provided externally;
-     see the definition of the semantic function
+     see the ACL2 definition of the function
      in terms of the proof system."))
   ((asg assignment)
    (constr constraint))

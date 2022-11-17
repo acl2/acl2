@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,7 +17,7 @@
 
 (defxdoc+ semantics
   :parents (prime-field-constraint-systems)
-  :short "Semantics of PFCS."
+  :short "Semantics of PFCSes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -30,7 +30,7 @@
      satisfy all the constraints that define the relation.
      An equality constraint is satisfied
      when its evaluated left and right sides are equal.
-     A relation application in the body of another one is satisfied
+     A relation application in the defining body of another one is satisfied
      when the predicate it denotes holds on the prime field elements
      that result from evaluating its argument expressions.
      There must be no recursion in the relation definitions

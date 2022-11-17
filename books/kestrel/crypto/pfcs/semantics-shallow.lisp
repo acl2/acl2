@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -20,7 +20,7 @@
 
 (defxdoc+ semantics-shallowly-embedded
   :parents (semantics)
-  :short "Shallowly embedded semantics of PFCS."
+  :short "Shallowly embedded semantics of PFCSes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -99,7 +99,8 @@
     "We turn an equality constraint into an ACL2 equality
      of the terms denoted by the left and right expressions.
      We turn a relation constraint into an ACL2 call of the relation
-     on the terms denoted by the argument expressions."))
+     on the terms denoted by the argument expressions.
+     Note that we include the variable for the prime."))
   (constraint-case
    constr
    :equal `(equal ,(sesem-expression constr.left prime)
@@ -134,12 +135,13 @@
      If the definition has no free variables,
      we generate a @(tsee defun).
      Otherwise, we generate a @(tsee defun-sk)
-     with those free variables existentially quantified.")
+     with those free variables existentially quantified.
+     (More precisely, we generate @(tsee defund) or @tsee defund-sk).")
    (xdoc::p
-    "The existential quantification seems the ``right'' semantics
-     for the free variables in a relation definition,
+    "The existential quantification is the right semantics
+     for the free variables in a relation's definition,
      based on the intended use of these constraints in zero-knowledge proofs.
-     However, note that the quantification is avoided
+     However, the quantification is avoided
      if all the variables in the body are treated as parameters."))
   (b* (((definition def) def)
        ((when (member-eq prime def.para))
