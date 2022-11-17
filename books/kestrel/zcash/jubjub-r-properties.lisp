@@ -26,7 +26,7 @@
   :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
 (defruled solve-by-div
-  (implies (and (dm::primep p)
+  (implies (and (primep p)
                 (fep x p)
                 (fep a p)
                 (fep b p)
@@ -588,7 +588,7 @@
   :prep-lemmas
 
   ((defisar d-square-when-1-d-usquare-is-zero
-     (implies (and (dm::primep q)
+     (implies (and (primep q)
                    (fep u q)
                    (fep d q)
                    (not (equal d 0))
@@ -600,7 +600,7 @@
                           0))
               (ecurve::pfield-squarep d q))
      :proof
-     ((:assume (:q (dm::primep q)))
+     ((:assume (:q (primep q)))
       (:assume (:u (fep u q)))
       (:assume (:d (and (fep d q) (not (equal d 0)))))
       (:assume (:1-d.u^2=0 (equal (sub 1

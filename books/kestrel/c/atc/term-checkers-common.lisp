@@ -19,6 +19,7 @@
 
 (include-book "fty-pseudo-terms")
 
+(include-book "kestrel/std/util/error-value-tuples" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
@@ -166,13 +167,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-iconst ((term pseudo-termp) (ctx ctxp) state)
+(define atc-check-iconst ((term pseudo-termp))
   :returns (mv erp
-               (val (tuple (yes/no booleanp)
-                           (const iconstp)
-                           (out-type typep)
-                           val))
-               state)
+               (yes/no booleanp)
+               (const iconstp)
+               (out-type typep))
   :short "Check if a term represents an integer constant."
   :long
   (xdoc::topstring
@@ -180,34 +179,40 @@
     "If the term is a call of a function @('<type>-<base>-const')
      on a quoted integer constant,
      we return the C integer constant represented by this call.
-     We also return the C integer type of the constant."))
-  (b* (((acl2::fun (no)) (list nil (irr-iconst) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (acl2::value (no)))
+     We also return the C integer type of the constant.")
+   (xdoc::p
+    "In certain circumstances, we return an error in @('erp'),
+     namely when the term cannot represent any other C construct."))
+  (b* (((reterr) nil (irr-iconst) (irr-type))
+       ((acl2::fun (no)) (retok nil (irr-iconst) (irr-type)))
+       ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp type base const) (atc-check-symbol-3part term.fn))
        ((unless (and okp
                      (member-eq type '(sint uint slong ulong sllong ullong))
                      (member-eq base '(dec oct hex))
                      (eq const 'const)))
-        (acl2::value (no)))
+        (no))
+       ((unless (equal (symbol-package-name term.fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of an integer constant function, ~
+                      but it is not in the \"C\" package."
+                     term.fn)))
        ((unless (list-lenp 1 term.args))
-        (raise "Internal error: ~x0 not applied to 1 argument." term)
-        (acl2::value (no)))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." term)))
        (arg (first term.args))
        ((unless (pseudo-term-case arg :quote))
-        (er-soft+ ctx t (no)
-                  "The function ~x0 must be applied to a quoted constant, ~
-                   but it is applied to ~x1 instead."
-                  term.fn arg))
+        (reterr (msg "The function ~x0 must be applied to a quoted constant, ~
+                      but it is applied to ~x1 instead."
+                     term.fn arg)))
        (val (pseudo-term-quote->val arg))
        ((unless (natp val))
-        (er-soft+ ctx t (no)
-                  "The function ~x0 ~
-                   must be applied to a quoted natural number, ~
-                   but it is applied to ~x1 instead. ~
-                   Since this is required by the guard of ~x0, ~
-                   this call is unreachable under the guard."
-                  term.fn val))
+        (reterr (msg "The function ~x0 ~
+                      must be applied to a quoted natural number, ~
+                      but it is applied to ~x1 instead. ~
+                      Since this is required by the guard of ~x0, ~
+                      this call is unreachable under the guard."
+                     term.fn val)))
        (inrangep (case type
                    (sint (sint-integerp val))
                    (uint (uint-integerp val))
@@ -217,12 +222,11 @@
                    (ullong (ullong-integerp val))
                    (t (impossible))))
        ((unless inrangep)
-        (er-soft+ ctx t (no)
-                  "The function ~x0
-                   must be applied to a quoted natural number ~
-                   representable in the C type corresponding to ~x1, ~
-                   but it is applied to ~x2 instead."
-                  term.fn type val))
+        (reterr (msg "The function ~x0
+                      must be applied to a quoted natural number ~
+                      representable in the C type corresponding to ~x1, ~
+                      but it is applied to ~x2 instead."
+                     term.fn type val)))
        (base (case base
                (dec (iconst-base-dec))
                (oct (iconst-base-oct))
@@ -261,13 +265,7 @@
                                    :length (iconst-length-llong))
                       (type-ullong)))
           (t (mv (impossible) (impossible))))))
-    (acl2::value (list t const type)))
-  ///
-  (more-returns
-   (val (and (consp val)
-             (true-listp val))
-        :name typeset-of-atc-check-iconst
-        :rule-classes :type-prescription)))
+    (retok t const type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

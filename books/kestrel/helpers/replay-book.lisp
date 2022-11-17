@@ -33,10 +33,16 @@
   (if (not (consp event))
       event
     (case (car event)
+      (in-package event) ; no need to shorten
+      (include-book event) ; no need to shorten
       ((defun defund defun-nx define defun-sk define-sk defthm defthmd defrule defruled defrulel defruledl) (cadr event))
       (local `(local ,(shorten-event (cadr event))))
       (theory-invariant '(theory-invariant <elided>))
-      (t event))))
+      (deftheory '(deftheory <elided>))
+      (defsection '(defsection <elided>))
+      (local '(local <elided>))
+      (encapsulate '(encapsulate <elided> <elided>)) ; todo: recur inside encapsulate
+      (t `(,(car event) <elided>)))))
 
 ;Returns (mv erp state).
 ;throws an error if any event fails

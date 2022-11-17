@@ -99,6 +99,7 @@
 (include-book "kestrel/jvm/portcullis" :dir :system)
 (include-book "kestrel/number-theory/portcullis" :dir :system)
 (include-book "kestrel/prime-fields/portcullis" :dir :system)
+(include-book "kestrel/risc-v/portcullis" :dir :system)
 (include-book "kestrel/simpl-imp/portcullis" :dir :system)
 (include-book "kestrel/soft/portcullis" :dir :system)
 (include-book "kestrel/solidity/portcullis" :dir :system)
