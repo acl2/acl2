@@ -4752,11 +4752,11 @@
                        `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
                  (progress-end? (and (evmac-input-print->= print :info)
                                      `((cw-event " done.~%"))))
-                 (local-events (append (list fn-guard-event)
+                 (local-events (append progress-start?
+                                       (list fn-fun-env-event)
+                                       (list fn-guard-event)
                                        formals-events
                                        body.events
-                                       progress-start?
-                                       (list fn-fun-env-event)
                                        fn-result-events
                                        fn-correct-local-events
                                        progress-end?))
