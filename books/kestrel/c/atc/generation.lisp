@@ -500,8 +500,8 @@
               :thm-index gin.thm-index
               :names-to-avoid gin.names-to-avoid
               :proofs nil))))
-         ((er (list okp const out-type) :iferr (irr))
-          (atc-check-iconst term ctx state))
+         ((mv erp okp const out-type) (atc-check-iconst term))
+         ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
          ((when okp)
           (b* ((expr (expr-const (const-int const)))
                ((mv event & names-to-avoid)
@@ -7617,7 +7617,7 @@
      is explained in @(tsee atc-gen-fileset)."))
   (b* (((unless proofs) nil)
        (tunit (preprocess fileset))
-       ((when (errorp tunit))
+       ((when (reserrp tunit))
         (raise "Internal error: preprocessing of ~x0 fails with error ~x1."
                fileset tunit))
        (fenv (init-fun-env tunit))
