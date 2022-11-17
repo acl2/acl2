@@ -49,6 +49,7 @@ echo "Using STARTJOB = $STARTJOB"
 echo "Using ACL2_PAR  = $ACL2_PAR"
 echo "Using ACL2_REAL    = $ACL2_REAL"
 echo "Making TARGET   = $TARGET"
+echo "Using MAKEOPTS = $MAKEOPTS"
 
 if [ "${LISP:0:3}" == "gcl" ]; then
   USE_QUICKLISP="";
