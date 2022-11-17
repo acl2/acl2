@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -192,4 +193,7 @@
                untranslate-lst
                variablep
                well-founded-relation+
+               fty::okf
+               fty::reserrf
+               fty::reserrp
                std::defret-mutual)))
