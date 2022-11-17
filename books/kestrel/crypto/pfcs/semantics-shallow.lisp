@@ -13,6 +13,7 @@
 (include-book "abstract-syntax-operations")
 
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
+(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/std/util/defund-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
@@ -124,7 +125,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sesem-definition ((def definitionp) (prime symbolp))
-  :returns event
+  :returns (event pseudo-event-formp)
   :short "Shallowly embedded semantics of a definition."
   :long
   (xdoc::topstring
@@ -147,12 +148,14 @@
        ((when (member-eq prime def.para))
         (raise "The definition parameters ~x0 of ~x1 ~
                 include the prime variable ~x2."
-               def.para def.name prime))
+               def.para def.name prime)
+        '(_))
        (free (definition-free-vars def))
        ((when (member-eq prime free))
         (raise "The free variables ~x0 of ~x1 ~
                 include the prime variable ~x2."
-               free def.name prime))
+               free def.name prime)
+        '(_))
        (body `(and ,@(sesem-constraint-list def.body prime))))
     (if free
         `(defund-sk ,def.name (,@def.para ,prime)
@@ -163,7 +166,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sesem-system ((sys systemp) (prime symbolp))
-  :returns events
+  :returns (events pseudo-event-form-listp)
   :short "Shallowly embedded semanics of a system of constraints."
   :long
   (xdoc::topstring
