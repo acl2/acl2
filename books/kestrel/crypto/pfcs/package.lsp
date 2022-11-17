@@ -24,6 +24,8 @@
                          int
                          maybe-natp
                          nat
+                         pseudo-event-formp
+                         pseudo-event-form-listp
                          symbol-fix
                          symbol-list
                          pfield::fep
