@@ -579,8 +579,7 @@
 (define atc-process-pretty-printing ((options symbol-alistp))
   :returns (mv erp (ppoptions pprint-options-p))
   :short "Process the @(':pretty-printing') input."
-  (b* (((reterr)
-        (with-guard-checking :none (ec-call (pprint-options-fix :irrelevant))))
+  (b* (((reterr) (irr-pprint-options))
        (pretty-printing-option (assoc-eq :pretty-printing options))
        (pretty-printing (if pretty-printing-option
                             (cdr pretty-printing-option)
@@ -771,8 +770,7 @@
             ""
             ""
             nil
-            (with-guard-checking
-             :none (ec-call (pprint-options-fix :irrelevant)))
+            (irr-pprint-options)
             nil
             nil
             nil
