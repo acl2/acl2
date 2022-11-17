@@ -34,6 +34,7 @@ LISP=`which ccl`
 echo "Using LISP = $LISP"
 echo "Making TARGET = $TARGET"
 echo "Using STARTJOB = $STARTJOB"
+echo "Using MAKEOPTS = $MAKEOPTS"
 
 echo "Making ACL2"
 $STARTJOB -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP"
