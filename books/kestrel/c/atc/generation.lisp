@@ -517,7 +517,7 @@
                               :events (list event)
                               :thm-index (1+ gin.thm-index)
                               :names-to-avoid names-to-avoid
-                              :proofs nil))))
+                              :proofs gin.proofs))))
          ((mv okp op arg-term in-type out-type) (atc-check-unop term))
          ((when okp)
           (b* (((er (pexpr-gout arg))
@@ -978,7 +978,7 @@
                                        :events nil
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
-                                       :proofs nil)))
+                                       :proofs gin.proofs)))
        ((er (pexpr-gout first) :iferr (irr))
         (atc-gen-expr-pure (car terms)
                            (make-pexpr-gin
@@ -987,7 +987,7 @@
                             :fn gin.fn
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
-                            :proofs nil)
+                            :proofs gin.proofs)
                            ctx
                            state))
        ((er (pexprs-gout rest))
@@ -995,7 +995,8 @@
                                 (change-pexprs-gin
                                  gin
                                  :thm-index first.thm-index
-                                 :names-to-avoid first.names-to-avoid)
+                                 :names-to-avoid first.names-to-avoid
+                                 :proofs first.proofs)
                                 ctx
                                 state)))
     (acl2::value (make-pexprs-gout
@@ -1004,7 +1005,7 @@
                   :events (append first.events rest.events)
                   :thm-index rest.thm-index
                   :names-to-avoid rest.names-to-avoid
-                  :proofs nil)))
+                  :proofs rest.proofs)))
   :verify-guards nil ; done below
   ///
   (verify-guards atc-gen-expr-pure-list))
@@ -1102,7 +1103,7 @@
                                        :fn gin.fn
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
-                                       :proofs nil)
+                                       :proofs gin.proofs)
                                       ctx
                                       state))
              ((unless (equal args.types in-types))
@@ -1123,25 +1124,25 @@
             :events args.events
             :thm-index args.thm-index
             :names-to-avoid args.names-to-avoid
-            :proofs nil)))))
-    (b* (((er (pexpr-gout pure) :iferr (irr))
-          (atc-gen-expr-pure term
-                             (make-pexpr-gin :inscope gin.inscope
-                                             :prec-tags gin.prec-tags
-                                             :fn gin.fn
-                                             :thm-index gin.thm-index
-                                             :names-to-avoid gin.names-to-avoid
-                                             :proofs nil)
-                             ctx
-                             state)))
-      (acl2::value (make-expr-gout :expr pure.expr
-                                   :type pure.type
-                                   :affect affect
-                                   :limit '(quote 1)
-                                   :events pure.events
-                                   :thm-index pure.thm-index
-                                   :names-to-avoid pure.names-to-avoid
-                                   :proofs nil)))))
+            :proofs nil))))
+       ((er (pexpr-gout pure) :iferr (irr))
+        (atc-gen-expr-pure term
+                           (make-pexpr-gin :inscope gin.inscope
+                                           :prec-tags gin.prec-tags
+                                           :fn gin.fn
+                                           :thm-index gin.thm-index
+                                           :names-to-avoid gin.names-to-avoid
+                                           :proofs gin.proofs)
+                           ctx
+                           state)))
+    (acl2::value (make-expr-gout :expr pure.expr
+                                 :type pure.type
+                                 :affect affect
+                                 :limit '(quote 1)
+                                 :events pure.events
+                                 :thm-index pure.thm-index
+                                 :names-to-avoid pure.names-to-avoid
+                                 :proofs pure.proofs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1919,7 +1920,7 @@
                                   :fn gin.fn
                                   :thm-index gin.thm-index
                                   :names-to-avoid gin.names-to-avoid
-                                  :proofs nil)
+                                  :proofs gin.proofs)
                                  ctx
                                  state))
              ((er (stmt-gout then))
@@ -1928,7 +1929,8 @@
                              gin
                              :inscope (cons nil gin.inscope)
                              :thm-index test.thm-index
-                             :names-to-avoid test.names-to-avoid)
+                             :names-to-avoid test.names-to-avoid
+                             :proofs test.proofs)
                             ctx
                             state))
              ((er (stmt-gout else))
@@ -1937,7 +1939,8 @@
                              gin
                              :inscope (cons nil gin.inscope)
                              :thm-index then.thm-index
-                             :names-to-avoid then.names-to-avoid)
+                             :names-to-avoid then.names-to-avoid
+                             :proofs then.proofs)
                             ctx
                             state))
              ((unless (equal then.type else.type))
@@ -2027,7 +2030,7 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs nil)
+                                   :proofs gin.proofs)
                                   ctx
                                   state))
                    ((when (type-case init.type :pointer))
@@ -2068,8 +2071,7 @@
                                    :var-term-alist var-term-alist-body
                                    :inscope inscope-body
                                    :thm-index init.thm-index
-                                   :names-to-avoid init.names-to-avoid
-                                   :proofs nil)
+                                   :names-to-avoid init.names-to-avoid)
                                   ctx
                                   state))
                    (type body.type)
@@ -2113,7 +2115,7 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs nil)
+                                   :proofs gin.proofs)
                                   ctx
                                   state))
                    ((unless (equal prev-type rhs.type))
@@ -2158,7 +2160,8 @@
                                    gin
                                    :var-term-alist var-term-alist-body
                                    :thm-index rhs.thm-index
-                                   :names-to-avoid rhs.names-to-avoid)
+                                   :names-to-avoid rhs.names-to-avoid
+                                   :proofs rhs.proofs)
                                   ctx
                                   state))
                    (type body.type)
@@ -2211,9 +2214,7 @@
               (atc-gen-stmt val-term
                             (change-stmt-gin gin
                                              :affect vars
-                                             :loop-flag nil
-                                             :thm-index gin.thm-index
-                                             :names-to-avoid gin.names-to-avoid)
+                                             :loop-flag nil)
                             ctx
                             state))
              ((unless (type-case xform.type :void))
@@ -2230,7 +2231,8 @@
                              gin
                              :var-term-alist var-term-alist-body
                              :thm-index xform.thm-index
-                             :names-to-avoid xform.names-to-avoid)
+                             :names-to-avoid xform.names-to-avoid
+                             :proofs xform.proofs)
                             ctx
                             state))
              (items (append xform.items body.items))
@@ -2274,7 +2276,7 @@
                                         :fn gin.fn
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
-                                        :proofs nil)
+                                        :proofs gin.proofs)
                                        ctx
                                        state))
                    ((er (pexpr-gout sub) :iferr (irr))
@@ -2285,7 +2287,7 @@
                                         :fn gin.fn
                                         :thm-index arr.thm-index
                                         :names-to-avoid arr.names-to-avoid
-                                        :proofs nil)
+                                        :proofs arr.proofs)
                                        ctx
                                        state))
                    ((er (pexpr-gout elem) :iferr (irr))
@@ -2296,7 +2298,7 @@
                                         :fn gin.fn
                                         :thm-index sub.thm-index
                                         :names-to-avoid sub.names-to-avoid
-                                        :proofs nil)
+                                        :proofs sub.proofs)
                                        ctx
                                        state))
                    ((unless (equal arr.type (type-pointer elem-type)))
@@ -2374,7 +2376,7 @@
                                         :fn gin.fn
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
-                                        :proofs nil)
+                                        :proofs gin.proofs)
                                        ctx
                                        state))
                    ((er pointerp)
@@ -2409,7 +2411,7 @@
                                         :fn gin.fn
                                         :thm-index struct.thm-index
                                         :names-to-avoid struct.names-to-avoid
-                                        :proofs nil)
+                                        :proofs struct.proofs)
                                        ctx
                                        state))
                    ((unless (equal member.type member-type))
@@ -2439,7 +2441,8 @@
                                    gin
                                    :var-term-alist var-term-alist-body
                                    :thm-index member.thm-index
-                                   :names-to-avoid member.names-to-avoid)
+                                   :names-to-avoid member.names-to-avoid
+                                   :proofs member.proofs)
                                   ctx
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
@@ -2471,7 +2474,7 @@
                                         :fn gin.fn
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
-                                        :proofs nil)
+                                        :proofs gin.proofs)
                                        ctx
                                        state))
                    ((er pointerp)
@@ -2506,7 +2509,7 @@
                                         :fn gin.fn
                                         :thm-index struct.thm-index
                                         :names-to-avoid struct.names-to-avoid
-                                        :proofs nil)
+                                        :proofs struct.proofs)
                                        ctx
                                        state))
                    ((unless (equal index.type index-type))
@@ -2527,7 +2530,7 @@
                                         :fn gin.fn
                                         :thm-index index.thm-index
                                         :names-to-avoid index.names-to-avoid
-                                        :proofs nil)
+                                        :proofs index.proofs)
                                        ctx
                                        state))
                    ((unless (equal elem.type elem-type))
@@ -2558,7 +2561,8 @@
                                    gin
                                    :var-term-alist var-term-alist-body
                                    :thm-index elem.thm-index
-                                   :names-to-avoid elem.names-to-avoid)
+                                   :names-to-avoid elem.names-to-avoid
+                                   :proofs elem.proofs)
                                   ctx
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
@@ -2608,7 +2612,7 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs nil)
+                                   :proofs gin.proofs)
                                   ctx
                                   state))
                    ((when (type-case init.type :pointer))
@@ -2642,7 +2646,8 @@
                                    :var-term-alist var-term-alist-body
                                    :inscope inscope-body
                                    :thm-index init.thm-index
-                                   :names-to-avoid init.names-to-avoid)
+                                   :names-to-avoid init.names-to-avoid
+                                   :proofs init.proofs)
                                   ctx
                                   state))
                    (type body.type)
@@ -2682,7 +2687,7 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs nil)
+                                   :proofs gin.proofs)
                                   ctx
                                   state))
                    ((unless (equal prev-type rhs.type))
@@ -2720,7 +2725,8 @@
                                    gin
                                    :var-term-alist var-term-alist-body
                                    :thm-index rhs.thm-index
-                                   :names-to-avoid rhs.names-to-avoid)
+                                   :names-to-avoid rhs.names-to-avoid
+                                   :proofs rhs.proofs)
                                   ctx
                                   state))
                    (type body.type)
@@ -2760,7 +2766,8 @@
               (atc-gen-stmt val-term
                             (change-stmt-gin gin
                                              :affect (list var)
-                                             :loop-flag nil)
+                                             :loop-flag nil
+                                             :proofs gin.proofs)
                             ctx
                             state))
              ((unless (type-case xform.type :void))
@@ -2778,7 +2785,8 @@
                              gin
                              :var-term-alist var-term-alist-body
                              :thm-index xform.thm-index
-                             :names-to-avoid xform.names-to-avoid)
+                             :names-to-avoid xform.names-to-avoid
+                             :proofs xform.proofs)
                             ctx
                             state))
              (items (append xform.items body.items))
@@ -2843,7 +2851,7 @@
                                  :prec-tags gin.prec-tags
                                  :thm-index gin.thm-index
                                  :names-to-avoid gin.names-to-avoid
-                                 :proofs nil)
+                                 :proofs gin.proofs)
                                 ctx
                                 state))
                  ((when (consp first.affect))
@@ -2971,7 +2979,7 @@
                                        :fn gin.fn
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
-                                       :proofs nil)
+                                       :proofs gin.proofs)
                                       ctx
                                       state))
              ((unless (equal args.types in-types))
@@ -3001,7 +3009,7 @@
                                      :prec-tags gin.prec-tags
                                      :thm-index gin.thm-index
                                      :names-to-avoid gin.names-to-avoid
-                                     :proofs nil)
+                                     :proofs gin.proofs)
                       ctx
                       state))
        ((when gin.loop-flag)
@@ -3174,7 +3182,7 @@
                             :fn gin.fn
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
-                            :proofs nil)
+                            :proofs gin.proofs)
                            ctx
                            state))
        (formals (formals+ gin.fn wrld))
@@ -3206,7 +3214,7 @@
                        :prec-objs gin.prec-objs
                        :thm-index test.thm-index
                        :names-to-avoid test.names-to-avoid
-                       :proofs nil)
+                       :proofs test.proofs)
                       ctx
                       state))
        ((unless (type-case body.type :void))
