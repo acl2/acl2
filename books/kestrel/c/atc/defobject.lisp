@@ -256,8 +256,8 @@
     "In essence, this generates C code for
      a term used in the initializer of the external object."))
   (b* (((acl2::fun (irrelevant)) (list (irr-expr) (irr-type)))
-       ((er (list okp const out-type) :iferr (irrelevant))
-        (atc-check-iconst term ctx state))
+       ((mv erp okp const out-type) (atc-check-iconst term))
+       ((when erp) (er-soft+ ctx t (irrelevant) "~@0" erp))
        ((when okp)
         (acl2::value
          (list (expr-const (const-int const))

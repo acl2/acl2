@@ -500,8 +500,8 @@
               :thm-index gin.thm-index
               :names-to-avoid gin.names-to-avoid
               :proofs nil))))
-         ((er (list okp const out-type) :iferr (irr))
-          (atc-check-iconst term ctx state))
+         ((mv erp okp const out-type) (atc-check-iconst term))
+         ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
          ((when okp)
           (b* ((expr (expr-const (const-int const)))
                ((mv event & names-to-avoid)
