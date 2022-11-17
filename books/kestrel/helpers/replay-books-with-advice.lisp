@@ -12,10 +12,7 @@
 
 (include-book "kestrel/helpers/replay-book-with-advice" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
-;; (include-book "kestrel/alists-light/string-string-alistp" :dir :system)
-;; (include-book "kestrel/utilities/read-string" :dir :system)
-;; (include-book "kestrel/utilities/defmergesort" :dir :system)
-(include-book "kestrel/utilities/shuffle-list" :dir :system)
+(include-book "kestrel/utilities/shuffle-list2" :dir :system)
 
 ;move
 (defun string-starts-any-withp (string prefixes)
@@ -80,21 +77,27 @@
 
 ;; Returns (mv erp event state).
 ;; TODO: Need a way to set and use a random seed?
-(defun replay-books-with-advice-fn (book-to-theorems-alist base-dir excluded-prefixes n num-books state)
+(defun replay-books-with-advice-fn (book-to-theorems-alist base-dir excluded-prefixes seed n num-books state)
   (declare (xargs :mode :program
                   :guard (and (alistp book-to-theorems-alist)
                               (stringp base-dir)
                               (string-listp excluded-prefixes)
+                              (or (eq :random seed)
+                                  (minstd-rand0p seed))
                               (natp n)
                               (or (eq :all num-books)
                                   (natp num-books)))
                   :stobjs state))
-  (let ((book-to-theorems-alist (clear-keys-with-matching-prefixes book-to-theorems-alist excluded-prefixes nil)))
+  (b* ((book-to-theorems-alist (clear-keys-with-matching-prefixes book-to-theorems-alist excluded-prefixes nil))
+       ((mv seed state)
+        (if (eq :random seed)
+            (random$ *m31* state)
+          (mv seed state)))
+       (- (cw "Using random seed of ~x0.~%" seed)))
     (if (and (not (eq :all num-books))
              (> num-books (len book-to-theorems-alist)))
         (mv :not-enough-books nil state)
-      (b* (((mv shuffled-book-to-theorems-alist state)
-            (shuffle-list book-to-theorems-alist state))
+      (b* ((shuffled-book-to-theorems-alist (shuffle-list2 book-to-theorems-alist seed))
            (final-book-to-theorems-alist
             (if (eq :all num-books)
                 shuffled-book-to-theorems-alist
@@ -107,7 +110,8 @@
 (defmacro replay-books-with-advice (book-to-theorems-alist ; maps book names (relativee to books/, with .lisp extension) to lists of defthm names.
                                     base-dir
                                     &key
+                                    (seed ':random)
                                     (excluded-prefixes 'nil)
                                     (n '10) ; number of rec from each model
                                     (num-books ':all))
-  `(make-event (replay-books-with-advice-fn ,book-to-theorems-alist ,base-dir ,excluded-prefixes ,n ,num-books state)))
+  `(make-event (replay-books-with-advice-fn ,book-to-theorems-alist ,base-dir ,excluded-prefixes ,seed ,n ,num-books state)))
