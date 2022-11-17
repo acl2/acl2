@@ -28,5 +28,6 @@
                          pseudo-event-form-listp
                          symbol-fix
                          symbol-list
+                         dm::primep
                          pfield::fep
                          pfield::fe-listp)))

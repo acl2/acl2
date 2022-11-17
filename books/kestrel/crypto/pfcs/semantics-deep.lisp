@@ -20,7 +20,7 @@
 
 (local (include-book "std/lists/repeat" :dir :system))
 
-(local (in-theory (disable dm::primep)))
+(local (in-theory (disable primep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,7 +116,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define assignment-for-prime-p ((asg assignmentp) (p dm::primep))
+(define assignment-for-prime-p ((asg assignmentp) (p primep))
   :returns (yes/no booleanp)
   :short "Check if an assignment is for a prime field."
   :long
@@ -166,9 +166,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-expr ((asg assignmentp) (expr expressionp) (p dm::primep))
+(define eval-expr ((asg assignmentp) (expr expressionp) (p primep))
   :guard (assignment-for-prime-p asg p)
-  :returns (nat? maybe-natp :hyp (dm::primep p))
+  :returns (nat? maybe-natp :hyp (primep p))
   :short "Evaluate an expression, given an assignment and a prime field."
   :long
   (xdoc::topstring
@@ -208,13 +208,13 @@
   ///
 
   (defrule natp-of-eval-expr-when-not-nil
-    (implies (and (dm::primep p)
+    (implies (and (primep p)
                   (assignmentp asg)
                   (eval-expr asg expr p))
              (natp (eval-expr asg expr p))))
 
   (defrule fep-of-eval-expr
-    (implies (and (dm::primep p)
+    (implies (and (primep p)
                   (assignmentp asg)
                   (assignment-for-prime-p asg p)
                   (eval-expr asg expr p))
@@ -227,11 +227,11 @@
 
 (define eval-expr-list ((asg assignmentp)
                         (exprs expression-listp)
-                        (p dm::primep))
+                        (p primep))
   :guard (assignment-for-prime-p asg p)
   :returns (mv (okp booleanp)
                (nats nat-listp
-                     :hyp (and (dm::primep p)
+                     :hyp (and (primep p)
                                (assignmentp asg))))
   :short "Lift @(tsee eval-expr) to lists."
   :long
@@ -252,7 +252,7 @@
   ///
 
   (defrule fe-listp-of-eval-expr-list
-    (implies (and (dm::primep p)
+    (implies (and (primep p)
                   (assignmentp asg)
                   (assignment-for-prime-p asg p)
                   (mv-nth 0 (eval-expr-list asg exprs p)))
@@ -463,7 +463,7 @@
      in the assertions proved by the subtrees,
      because they do not prove any assertions in fact."))
 
-  (define exec-proof-tree ((ptree proof-treep) (sys systemp) (p dm::primep))
+  (define exec-proof-tree ((ptree proof-treep) (sys systemp) (p primep))
     :returns (outcome proof-outcomep)
     (proof-tree-case
      ptree
@@ -510,7 +510,7 @@
 
   (define exec-proof-tree-list ((ptrees proof-tree-listp)
                                 (sys systemp)
-                                (p dm::primep))
+                                (p primep))
     :returns (outcome proof-list-outcomep)
     (b* (((when (endp ptrees)) (proof-list-outcome-assertions nil))
          (outcome (exec-proof-tree (car ptrees) sys p)))
@@ -545,7 +545,7 @@
 (define-sk constraint-satp ((asg assignmentp)
                             (constr constraintp)
                             (sys systemp)
-                            (p dm::primep))
+                            (p primep))
   :guard (assignment-for-prime-p asg p)
   :returns (yes/no booleanp)
   :short "Semantic function saying if an assignment satisfies a constraint,
@@ -572,7 +572,7 @@
 (define-sk constraint-list-satp ((asg assignmentp)
                                  (constrs constraint-listp)
                                  (sys systemp)
-                                 (p dm::primep))
+                                 (p primep))
   :guard (assignment-for-prime-p asg p)
   :returns (yes/no booleanp)
   :short "Semantic function saying if an assignment

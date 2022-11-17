@@ -12,7 +12,7 @@
 
 (include-book "semantics-deep")
 
-(local (in-theory (disable dm::primep)))
+(local (in-theory (disable primep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
