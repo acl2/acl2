@@ -10,37 +10,40 @@
 
 (in-package "ACL2")
 
-(include-book "array-stobj")
+;; See also shuffle-array-stobj.lisp
 
-;; See also shuffle-array-stobj2.lisp
+(include-book "array-stobj")
+(include-book "kestrel/random/minstd-rand0" :dir :system)
 
 ;; (local (in-theory (disable mv-nth)))
 
-(local (in-theory (enable random$))) ;todo: or make/use a book about it
-
 ;; A Fisher-Yates shuffle
-;; Returns (mv array-stobj state).
-(defun shuffle-array-stobj-aux (i array-stobj state)
+;; Returns the array-stobj.
+(defun shuffle-array-stobj2-aux (i rand array-stobj)
   (declare (xargs :guard (and (integerp i)
-                              (< i (elems-length array-stobj)))
+                              (< i (elems-length array-stobj))
+                              (<= (elems-length array-stobj) *m31*)
+                              (minstd-rand0p rand))
+                  :guard-debug t
                   :measure (nfix (+ 1 i))
-                  :stobjs (array-stobj state)))
+                  :stobjs array-stobj))
   (if (or (not (mbt (integerp i)))
           (<= i 0) ; does nothing when just 1 element is left
           )
-      (mv array-stobj state)
+      array-stobj
     ;; Choose a random element with index in [0,i] to be element i in the result:
-    (mv-let (other-index state)
-      (random$ (+ 1 i) state)
+    (mv-let (other-index rand)
+      (extract-bounded-val-using-minstd-rand0 i rand)
       (let* ((other-element (elemsi other-index array-stobj))
              (i-element (elemsi i array-stobj))
              ;; Swap element i and the other element:
              (array-stobj (update-elemsi i other-element array-stobj))
              (array-stobj (update-elemsi other-index i-element array-stobj)))
-        (shuffle-array-stobj-aux (+ -1 i) array-stobj state)))))
+        (shuffle-array-stobj2-aux (+ -1 i) rand array-stobj)))))
 
-;; I had used with-local-state here, which requires a ttag, but that was unsound.
-;; Returns (mv array-stobj state).
-(defun shuffle-array-stobj (array-stobj state)
-  (declare (xargs :stobjs (array-stobj state)))
-  (shuffle-array-stobj-aux (+ -1 (elems-length array-stobj)) array-stobj state))
+;; Returns the array-stobj.
+(defun shuffle-array-stobj2 (seed array-stobj)
+  (declare (xargs :guard (and (minstd-rand0p seed)
+                              (<= (elems-length array-stobj) *m31*))
+                  :stobjs (array-stobj)))
+  (shuffle-array-stobj2-aux (+ -1 (elems-length array-stobj)) seed array-stobj))

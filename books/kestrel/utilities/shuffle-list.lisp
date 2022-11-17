@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; See also shuffle-list2.lisp.
+
 (include-book "shuffle-array-stobj")
 
 ;; Returns (mv shuffled-list state).  Returning state may be necessary for soundness.
