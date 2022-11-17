@@ -207,7 +207,7 @@
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
   ///
 
-  (defrule natp-of-eval-expr-when-not-nil
+  (defrule natp-of-eval-expr
     (implies (and (primep p)
                   (assignmentp asg)
                   (eval-expr asg expr p))
