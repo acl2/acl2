@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax")
 
+(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -40,7 +41,11 @@
    :mul (union-eq (expression-vars expr.arg1)
                   (expression-vars expr.arg2)))
   :measure (expression-count expr)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  ///
+
+  (defrule no-duplicatesp-equal-of-expression-vars
+    (no-duplicatesp-equal (expression-vars expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -54,7 +59,11 @@
   (cond ((endp exprs) nil)
         (t (union-eq (expression-vars (car exprs))
                      (expression-list-vars (cdr exprs)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  ///
+
+  (defrule no-duplicatesp-equal-of-expression-list-vars
+    (no-duplicatesp-equal (expression-list-vars exprs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,7 +79,11 @@
    :equal (union-eq (expression-vars constr.left)
                     (expression-vars constr.right))
    :relation (expression-list-vars constr.args))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  ///
+
+  (defrule no-duplicatesp-equal-of-constraint-vars
+    (no-duplicatesp-equal (constraint-vars expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,7 +97,11 @@
   (cond ((endp constrs) nil)
         (t (union-eq (constraint-vars (car constrs))
                      (constraint-list-vars (cdr constrs)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  ///
+
+  (defrule no-duplicatesp-equal-of-constraint-list-vars
+    (no-duplicatesp-equal (constraint-list-vars expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -98,7 +115,11 @@
    (xdoc::p
     "The variables are returned as a list without repetitions."))
   (set-difference-eq (constraint-list-vars (definition->body def))
-                     (definition->para def)))
+                     (definition->para def))
+  ///
+
+  (defrule no-duplicatesp-equal-of-definition-free-vars
+    (no-duplicatesp-equal (definition-free-vars expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
