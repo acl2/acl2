@@ -9563,18 +9563,20 @@
 
 ; See set-cbd-fn for explanation.
 
-  #+acl2-loop-only
-  (assign connected-book-directory dir)
-  #-acl2-loop-only
-  (without-interrupts
-   (setq *default-pathname-defaults*
+  (pprogn
+   (increment-file-clock state)
+   #+acl2-loop-only
+   (assign connected-book-directory dir)
+   #-acl2-loop-only
+   (without-interrupts
+    (setq *default-pathname-defaults*
 
 ; Dir may be nil during the boot-strap.  In that case we are returning to an
 ; initial situation, so we reset *default-pathname-defaults* to represent the
 ; current working directory.
 
-         (pathname (or dir (our-pwd))))
-   (assign connected-book-directory dir)))
+          (pathname (or dir (our-pwd))))
+    (assign connected-book-directory dir))))
 
 (defun set-cbd-fn (str state)
 
@@ -9604,7 +9606,7 @@
       (cond ((and (null str)
                   (f-get-global 'boot-strap-flg state))
 
-; This special case is expected.  
+; This special case is expected.
 
              (set-cbd-fn1 nil state))
             (t
