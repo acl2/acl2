@@ -207,7 +207,9 @@
 (defconst *known-models-and-strings*
   '((:calpoly . "kestrel-calpoly")
     ;; note the capital L:
-    (:leidos . "Leidos")))
+    (:leidos . "Leidos")
+    ;; (:leidos-gpt . "leidos-gpt") ;; for now, this has some CalPoly stuff for the action-type
+    ))
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
 
@@ -2382,20 +2384,22 @@
                   :stobjs state
                   :mode :program))
   (b* ((wrld (w state))
-       ;; Try the theorem:
+       ;; Try the theorem with the given hints:
+       ;; Or we could try it first with no hints...
        ((mv provedp state)
         (prove$-no-error 'get-and-try-advice-for-theorem
                          theorem-body
-                         theorem-hints ; or we could use nil here
+                         theorem-hints
                          theorem-otf-flg
                          step-limit
                          state))
        ;; TODO: What if the step-limit applied?
        ((when provedp)
+        ;; The original hints worked!
         (and (not suppress-trivial-warningp)
              (if (not theorem-hints)
-                 (cw "WARNING: Proved ~x0 without advice (no hints needed).~%" theorem-name)
-               (cw "WARNING: Proved ~x0 without advice.~%" theorem-name)))
+                 (cw "WARNING: Proved ~x0 with no hints.~%" theorem-name)
+               (cw "WARNING: Proved ~x0 with original hints.~%" theorem-name)))
         (mv nil ; no error
             t   ; proved (with the original hints)
             (make-successful-rec "original"

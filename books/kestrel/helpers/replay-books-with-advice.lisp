@@ -44,7 +44,9 @@
                               (stringp base-dir)
                               (natp n)
                               (natp done-book-count))
-                  :stobjs state))
+                  :stobjs state)
+           (irrelevant maybe-count) ; since we don't allow :add-hyp
+           )
   (if (endp book-to-theorems-alist)
       (mv nil '(value-triple :invisible) state)
     (b* ((- (cw "~%======================================================================~%"))
@@ -67,12 +69,11 @@
          (error-count (+ error-count book-error-count))
          (done-book-count (+ 1 done-book-count))
          (- (progn$ (cw "~%RUNNING TOTAL after ~x0 books:~%" done-book-count)
-                    (cw "YES    : ~x0~%" yes-count)
-                    (cw "NO     : ~x0~%" no-count)
-                    (cw "MAYBE  : ~x0~%" maybe-count)
-                    (cw "TRIVIAL: ~x0~%" trivial-count)
-                    (cw "ERROR  : ~x0~%" error-count)
-                    (cw "~%"))))
+                    (cw "ADVICE FOUND    : ~x0~%" yes-count)
+                    (cw "NO ADVICE FOUND : ~x0~%" no-count)
+                    ;; (cw "ADD HYP ADVICE FOUND : ~x0~%" maybe-count)
+                    (cw "NO HINTS NEEDED : ~x0~%" trivial-count)
+                    (cw "ERROR           : ~x0~%~%" error-count))))
       (replay-books-with-advice-fn-aux (rest book-to-theorems-alist) base-dir n yes-count no-count maybe-count trivial-count error-count done-book-count state))))
 
 ;; Returns (mv erp event state).

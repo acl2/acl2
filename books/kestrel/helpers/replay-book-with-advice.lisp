@@ -33,15 +33,15 @@
                               (or (null server-url)
                                   (stringp server-url)))
                   :stobjs state))
-  (b* ((defthm-variant (car defthm))
+  (b* ((defthm-variant (car defthm)) ; defthm or defthmd, etc.
        (theorem-name (cadr defthm))
        (theorem-body (caddr defthm))
        (rule-classes-result (assoc-keyword :rule-classes (cdddr defthm)))
        (rule-classes (if rule-classes-result
                          (cadr rule-classes-result)
-                       ;; means don't put in any :rule-classes arg at all:
+                       ;; this really means don't put in any :rule-classes arg at all:
                        '(:rewrite)))
-       (hints-classes-result (assoc-keyword :hints (cdddr defthm)))
+       (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
        (- (cw "(ADVICE: ~x0: " theorem-name))
        ((mv erp successp best-rec state)
         (help::get-and-try-advice-for-theorem theorem-name
@@ -64,20 +64,27 @@
        ;; Would like to give time/steps proportional to what was needed for the original theorem.
        ((when erp) (mv erp :no state)))
     (if (not successp)
-        (prog2$ (cw "NO).~%") ; close paren matches (ADVICE
-                (b* (((mv erp state) (submit-event-helper-core defthm nil state))
+        (prog2$ (cw "NO)~%") ; close paren matches (ADVICE
+                (b* (;; Submit the original defthm, so we can keep going:
+                     ((mv erp state) (submit-event-helper-core defthm nil state))
                      ((when erp) (mv erp :no state)))
                   (mv nil :no state)))
+      ;; We found advice that worked:
       (if (eq :add-hyp (help::successful-recommendationp-type best-rec))
+          ;; Note that :add-hyp is now disallowed above!
+          ;; TODO: Consider marking add-hyp as a failure, since we know the theorem is true without a hyp, but then
+          ;; we should allow the tool to keep looking for more recs
           (prog2$ (cw "Maybe: hyp added: ~x0)~%" (help::successful-recommendationp-object best-rec)) ; close paren matches (ADVICE
-                  (b* (((mv erp state) (submit-event-helper-core defthm nil state))
+                  (b* ( ;; Submit the original defthm (no extra hyp), so we can keep going:
+                       ((mv erp state) (submit-event-helper-core defthm nil state))
                        ((when erp) (mv erp :no state)))
                     (mv nil :maybe state)))
-        (b* ((trivialp (equal "original" (help::successful-recommendationp-name best-rec)))
-             (- (if trivialp
-                    (if hints-classes-result
+        (b* (;; Since we passed nil for the hints, this means the theorem proved with no hints:
+             (proved-with-no-hintsp (equal "original" (help::successful-recommendationp-name best-rec)))
+             (- (if proved-with-no-hintsp
+                    (if hints-presentp
                         (cw "TRIVIAL (no hints needed, though some were given))~%") ; close paren matches (ADVICE
-                      (cw "TRIVIAL (no hints needed))~%") ; close paren matches (ADVICE
+                      (cw "TRIVIAL (no hints needed or given))~%") ; close paren matches (ADVICE
                       )
                   (progn$ (cw "YES: ")
                           (help::show-successful-recommendation best-rec)
@@ -89,7 +96,7 @@
              ((when erp)
               (er hard? 'submit-defthm-event-with-advice "The discovered advice for ~x0 did not work!" theorem-name)
               (mv :advice-didnt-work :no state)))
-          (mv nil (if trivialp :trivial :yes) state))))))
+          (mv nil (if proved-with-no-hintsp :trivial :yes) state))))))
 
 ;Returns (mv erp yes-count no-count maybe-count trivial-count error-count state).
 ;throws an error if any event fails
@@ -199,11 +206,11 @@
        ;; Print stats:
        (- (progn$ (cw "~%SUMMARY for book ~s0:~%" filename)
                   (cw "(Asked each model for ~x0 recommendations.)~%" n)
-                  (cw "YES    : ~x0~%" yes-count)
-                  (cw "NO     : ~x0~%" no-count)
-                  (cw "MAYBE  : ~x0~%" maybe-count)
-                  (cw "TRIVIAL: ~x0~%" trivial-count)
-                  (cw "ERROR  : ~x0~%" error-count)))
+                  (cw "ADVICE FOUND    : ~x0~%" yes-count)
+                  (cw "NO ADVICE FOUND : ~x0~%" no-count)
+                  ;; (cw "ADD HYP ADVICE FOUND : ~x0~%" maybe-count)
+                  (cw "NO HINTS NEEDED : ~x0~%" trivial-count)
+                  (cw "ERROR           : ~x0~%" error-count)))
        ;; Undo margin widening:
        (state (unwiden-margins state)))
     (mv nil ; no error
