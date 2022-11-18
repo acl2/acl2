@@ -317,20 +317,30 @@
 (define atc-gen-expr-const-correct-thm ((fn symbolp)
                                         (term pseudo-termp)
                                         (expr exprp)
+                                        (type typep)
                                         (thm-index posp)
                                         (names-to-avoid symbol-listp)
                                         state)
+  :guard (type-integerp type)
   :returns (mv (event pseudo-event-formp)
                (name symbolp)
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
   :short "Generate a correctness theorem for the execution of
           a constant expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem says that the execution yields the term.
+     It also says that the term satisfies
+     the applicable shallowly embedded type predicate."))
   (b* ((name (pack fn '-expr thm-index '-correct))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid (w state)))
-       (formula `(equal (exec-expr-pure ',expr compst)
-                        ,term))
+       (typep (atc-type-to-recognizer type (w state)))
+       (formula `(and (equal (exec-expr-pure ',expr compst)
+                             ,term)
+                      (,typep ,term)))
        (formula (untranslate$ formula nil state))
        (hints `(("Goal" :in-theory '(exec-expr-pure-when-const
                                      (:e expr-kind)
@@ -372,7 +382,13 @@
                                      sllong-hex-const
                                      ullong-dec-const
                                      ullong-oct-const
-                                     ullong-hex-const))))
+                                     ullong-hex-const
+                                     sintp-of-sint
+                                     uintp-of-uint
+                                     slongp-of-slong
+                                     ulongp-of-ulong
+                                     sllongp-of-sllong
+                                     ullongp-of-ullong))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -508,6 +524,7 @@
                 (atc-gen-expr-const-correct-thm gin.fn
                                                 term
                                                 expr
+                                                out-type
                                                 gin.thm-index
                                                 gin.names-to-avoid
                                                 state)))
