@@ -1419,9 +1419,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The theorem asserts various properties about the formal under the guard.
-     These properties are needed when
-     the formal is used in proofs that build on this theorem.")
+    "The theorem asserts that, under the guard, the formal satisfies
+     the type recognizer from the shallow embedding (e.g. @(tsee sintp)).
+     This property is used in proofs that build on this theorem.")
    (xdoc::p
     "For now we only support integer types.
      If we encounter a different kind of type,
@@ -1431,31 +1431,11 @@
   (b* (((unless (type-integerp type)) (mv '(_) nil names-to-avoid))
        (name (pack fn '- formal))
        ((mv name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix name 'function names-to-avoid wrld))
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (pred (atc-type-to-recognizer type wrld))
        (formula `(implies (,fn-guard ,@fn-formals)
-                          (and (,pred ,formal)
-                               (valuep ,formal)
-                               (equal (type-of-value ,formal)
-                                      ',type)
-                               (equal (value-kind ,formal)
-                                      ,(type-kind type))
-                               (equal (value-fix ,formal)
-                                      ,formal)
-                               (not (flexible-array-member-p ,formal))
-                               (equal (remove-flexible-array-member ,formal)
-                                      ,formal))))
-       (hints
-        `(("Goal"
-           :in-theory
-           '(,fn-guard
-             ,(pack 'valuep-when- pred)
-             ,(pack 'type-of-value-when- pred)
-             ,(pack 'value-kind-when- pred)
-             value-fix-when-valuep
-             remove-flexible-array-member-when-absent
-             ,(pack 'not-flexible-array-member-p-when- pred)
-             (:e ,(pack 'type- (type-kind type)))))))
+                          (,pred ,formal)))
+       (hints `(("Goal" :in-theory '(,fn-guard))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
