@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "ACL2") ; todo: change to HELP package
 
 (include-book "kestrel/helpers/replay-book-with-advice" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
@@ -38,7 +38,7 @@
         (clear-keys-with-matching-prefixes (rest alist) prefixes (cons pair acc))))))
 
 ;; Returns (mv erp event state).
-(defun replay-books-with-advice-fn-aux (book-to-theorems-alist base-dir n yes-count no-count maybe-count trivial-count error-count done-book-count state)
+(defun replay-books-with-advice-fn-aux (book-to-theorems-alist base-dir n models yes-count no-count maybe-count trivial-count error-count done-book-count state)
   (declare (xargs :mode :program
                   :guard (and (alistp book-to-theorems-alist)
                               (stringp base-dir)
@@ -59,6 +59,7 @@
                                                         n
                                                         nil ; print
                                                         "https://proof.kestrel.edu/itueotwhskbfkjdgs/machine_interface"
+                                                        models
                                                         state)))
          ((list book-yes-count book-no-count book-maybe-count book-trivial-count book-error-count) counts)
          (- (and erp (cw "WARNING: Error replaying ~x0.~%" book)))
@@ -74,11 +75,11 @@
                     ;; (cw "ADD HYP ADVICE FOUND : ~x0~%" maybe-count)
                     (cw "NO HINTS NEEDED : ~x0~%" trivial-count)
                     (cw "ERROR           : ~x0~%~%" error-count))))
-      (replay-books-with-advice-fn-aux (rest book-to-theorems-alist) base-dir n yes-count no-count maybe-count trivial-count error-count done-book-count state))))
+      (replay-books-with-advice-fn-aux (rest book-to-theorems-alist) base-dir n models yes-count no-count maybe-count trivial-count error-count done-book-count state))))
 
 ;; Returns (mv erp event state).
 ;; TODO: Need a way to set and use a random seed?
-(defun replay-books-with-advice-fn (book-to-theorems-alist base-dir excluded-prefixes seed n num-books state)
+(defun replay-books-with-advice-fn (book-to-theorems-alist base-dir excluded-prefixes seed n models num-books state)
   (declare (xargs :mode :program
                   :guard (and (alistp book-to-theorems-alist)
                               (stringp base-dir)
@@ -86,10 +87,18 @@
                               (or (eq :random seed)
                                   (minstd-rand0p seed))
                               (natp n)
+                              (or (eq :all models)
+                                  (help::rec-modelsp models))
                               (or (eq :all num-books)
                                   (natp num-books)))
                   :stobjs state))
-  (b* ((book-to-theorems-alist (clear-keys-with-matching-prefixes book-to-theorems-alist excluded-prefixes nil))
+  (b* ( ;; Elaborate options:
+       (models (if (eq models :all)
+                   help::*known-models*
+                 (if (help::rec-modelp models)
+                     (list models) ; single model stands for singleton list of that model
+                   models)))
+       (book-to-theorems-alist (clear-keys-with-matching-prefixes book-to-theorems-alist excluded-prefixes nil))
        ((mv seed state)
         (if (eq :random seed)
             (random$ *m31* state)
@@ -103,7 +112,7 @@
             (if (eq :all num-books)
                 shuffled-book-to-theorems-alist
               (take num-books shuffled-book-to-theorems-alist))))
-        (replay-books-with-advice-fn-aux final-book-to-theorems-alist base-dir n 0 0 0 0 0 0 state)))))
+        (replay-books-with-advice-fn-aux final-book-to-theorems-alist base-dir n models 0 0 0 0 0 0 state)))))
 
 ;; TODO: Skip ACL2s stuff (don't even train on it!) since it can't be replayed in regular acl2?
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
@@ -114,5 +123,6 @@
                                     (seed ':random)
                                     (excluded-prefixes 'nil)
                                     (n '10) ; number of rec from each model
-                                    (num-books ':all))
-  `(make-event (replay-books-with-advice-fn ,book-to-theorems-alist ,base-dir ,excluded-prefixes ,seed ,n ,num-books state)))
+                                    (num-books ':all)
+                                    (models ':all))
+  `(make-event (replay-books-with-advice-fn ,book-to-theorems-alist ,base-dir ,excluded-prefixes ,seed ,n ,models ,num-books state)))
