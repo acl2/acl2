@@ -1448,11 +1448,13 @@
                            (fn-guard symbolp)
                            (prec-tags atc-string-taginfo-alistp)
                            (prec-objs atc-string-objinfo-alistp)
+                           (proofs booleanp)
                            (names-to-avoid symbol-listp)
                            (wrld plist-worldp))
   :returns (mv erp
                (typed-formals atc-symbol-varinfo-alistp)
                (events pseudo-event-form-listp)
+               (updated-proofs booleanp :hyp (booleanp proofs))
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
   :short "Calculate the C types of the formal parameters of a target function."
@@ -1464,10 +1466,13 @@
      types for the formals of @('fn').
      We ensure that there is exactly one such term for each formal.")
    (xdoc::p
-    "We also generate theorems about the formals.
-     For now this is only for formals with certain types.")
+    "We also generate theorems about the formals,
+     unless the input flag @('proofs') is @('nil').
+     For now this is only for formals with certain types:
+     if we encounter a type for which we do not generate a theorem,
+     we set the output flag @('updated-proofs') to @('nil').")
    (xdoc::p
-    "If this is successful,
+    "If we find types for all the formals,
      we return an alist from the formals to their variable information.
      The alist has unique keys, in the order of the formals.")
    (xdoc::p
@@ -1482,11 +1487,11 @@
      Then we construct the final alist by going through the formals in order,
      and looking up their types in the preliminary alist;
      here we detect when a formal has no corresponding conjunct in the guard."))
-  (b* (((reterr) nil nil nil)
+  (b* (((reterr) nil nil nil nil)
        (formals (formals+ fn wrld))
        (guard (uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
-       ((erp prelim-alist events names-to-avoid)
+       ((erp prelim-alist events proofs names-to-avoid)
         (atc-typed-formals-prelim-alist fn
                                         fn-guard
                                         formals
@@ -1494,11 +1499,12 @@
                                         guard-conjuncts
                                         prec-tags
                                         prec-objs
+                                        proofs
                                         names-to-avoid
                                         wrld))
        ((erp typed-formals)
         (atc-typed-formals-final-alist fn formals guard prelim-alist wrld)))
-    (retok typed-formals events names-to-avoid))
+    (retok typed-formals events proofs names-to-avoid))
 
   :prepwork
 
@@ -1509,16 +1515,18 @@
                                            (guard-conjuncts pseudo-term-listp)
                                            (prec-tags atc-string-taginfo-alistp)
                                            (prec-objs atc-string-objinfo-alistp)
+                                           (proofs booleanp)
                                            (names-to-avoid symbol-listp)
                                            (wrld plist-worldp))
      :returns (mv erp
                   (prelim-alist-final atc-symbol-varinfo-alistp)
                   (events pseudo-event-form-listp)
+                  (updated-proofs booleanp :hyp (booleanp proofs))
                   (updated-names-to-avoid symbol-listp
                                           :hyp (symbol-listp names-to-avoid)))
      :parents nil
-     (b* (((reterr) nil nil nil)
-          ((when (endp guard-conjuncts)) (retok nil nil names-to-avoid))
+     (b* (((reterr) nil nil nil nil)
+          ((when (endp guard-conjuncts)) (retok nil nil proofs names-to-avoid))
           (conjunct (car guard-conjuncts))
           ((mv type arg) (atc-check-guard-conjunct conjunct
                                                    prec-tags
@@ -1531,6 +1539,7 @@
                                            (cdr guard-conjuncts)
                                            prec-tags
                                            prec-objs
+                                           proofs
                                            names-to-avoid
                                            wrld))
           ((unless (member-eq arg formals))
@@ -1541,9 +1550,10 @@
                                            (cdr guard-conjuncts)
                                            prec-tags
                                            prec-objs
+                                           proofs
                                            names-to-avoid
                                            wrld))
-          ((erp prelim-alist events names-to-avoid)
+          ((erp prelim-alist events proofs names-to-avoid)
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
                                            formals
@@ -1551,6 +1561,7 @@
                                            (cdr guard-conjuncts)
                                            prec-tags
                                            prec-objs
+                                           proofs
                                            names-to-avoid
                                            wrld))
           ((when (consp (assoc-eq arg prelim-alist)))
@@ -1561,15 +1572,18 @@
                          must have exactly one type predicate in the guard, ~
                          even when the multiple predicates are the same."
                         guard fn arg)))
-           ((mv event name names-to-avoid)
-            (atc-gen-formal-thm fn fn-guard formals arg type
-                                names-to-avoid wrld))
+          ((mv event name names-to-avoid)
+           (if proofs
+               (atc-gen-formal-thm fn fn-guard formals arg type
+                                   names-to-avoid wrld)
+             (mv '(_) nil names-to-avoid)))
           (events (if name
                       (cons event events)
                     events))
+          (proofs (and name proofs))
           (info (make-atc-var-info :type type :thm name))
           (prelim-alist (acons arg info prelim-alist)))
-       (retok prelim-alist events names-to-avoid))
+       (retok prelim-alist events proofs names-to-avoid))
      :verify-guards nil ; done below
      ///
      (verify-guards atc-typed-formals-prelim-alist
@@ -4608,8 +4622,9 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
-       ((mv erp typed-formals formals-events names-to-avoid)
-        (atc-typed-formals fn fn-guard prec-tags prec-objs names-to-avoid wrld))
+       ((mv erp typed-formals formals-events proofs names-to-avoid)
+        (atc-typed-formals
+         fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
        ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        ((er params :iferr (irr))
         (atc-gen-param-declon-list typed-formals fn prec-objs ctx state))
@@ -5895,8 +5910,9 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
-       ((mv erp typed-formals formals-events names-to-avoid)
-        (atc-typed-formals fn fn-guard prec-tags prec-objs names-to-avoid wrld))
+       ((mv erp typed-formals formals-events proofs names-to-avoid)
+        (atc-typed-formals
+         fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
        ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        (body (ubody+ fn wrld))
        ((er (lstmt-gout loop) :iferr (irr))
