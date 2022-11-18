@@ -13989,6 +13989,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     accp-info
     read-file-iterate-safe
     #+acl2-devel plist-worldp-with-formals ; *the-live-state* (performance)
+    set-cbd-fn1
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
