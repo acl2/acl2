@@ -1,6 +1,6 @@
 ; R1CS package
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,9 +11,11 @@
 (in-package "ACL2")
 
 (include-book "kestrel/prime-fields/portcullis" :dir :system)
+(include-book "projects/quadratic-reciprocity/portcullis" :dir :system)
 
 (defpkg "R1CS"
-  (append '(pfield::fep
+  (append '(dm::primep
+            pfield::fep
             pfield::add
             pfield::sub
             pfield::mul
