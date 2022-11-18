@@ -76,6 +76,16 @@
  <li>The notion of ``most recent proof attempt'' includes proof attempts made
  during @(tsee make-event) expansion.</li>
 
+ <li>If the form @('(checkpoint-list t state)') evaluates to @('nil'), then the
+ most recent proof attempt produced no checkpoints at the top level.  This
+ happens when a failed proof is aborted before producing any checkpoints
+ because of reaching a @(see time-limit) or a @(see step-limit).  So when
+ @('(checkpoint-list t state)') evaluates to @('nil') as part of a larger
+ program, the caller of @('checkpoint-list') might be well served by instead
+ treating the list of top-level checkpoints as @('(list (list <goal>))'), where
+ @('<goal>') is the translated form of the most recent conjecture supplied to
+ the prover.</li>
+
  </ul>")
 
 (defxdoc checkpoint-list-pretty
