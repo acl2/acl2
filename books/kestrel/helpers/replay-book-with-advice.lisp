@@ -57,7 +57,7 @@
                                               '(:add-hyp) ; disallow :add-hyp, because no hyps are needed for these theorems
                                               nil ; disallowed-rec-sources, todo: allow passing these in
                                               1      ; max-wins
-                                              :all   ; model
+                                              :all   ; models ; todo: thread through
                                               t ; suppress warning about trivial rec, because below we ask if "original" is the best rec and handle trivial recs there
                                               state))
        ;; TODO: Maybe track errors separately?  Might be that a step limit was reached before checkpoints could even be generated, so perhaps that counts as a :no?
