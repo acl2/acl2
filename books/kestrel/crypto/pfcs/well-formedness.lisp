@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,16 +16,16 @@
 
 (defxdoc+ well-formedness
   :parents (prime-field-constraint-systems)
-  :short "Well-formedness of PFCS."
+  :short "Well-formedness of PFCSes."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A constraint in a PFCS that is not an equality,
+    "A constraint in a system that is not an equality,
      i.e. that is an application of a named relation to some expressions,
-     must reference a relation that is defined in the PFCS,
+     must reference a relation that is defined in the system,
      and the number of argument expressions
      must match the number of parameters of the named relation.
-     No two distinct relations in a PFCS may have the same name.
+     No two distinct relations in a system may have the same name.
      The parameters of a named relation definition must be unique.")
    (xdoc::p
     "All these well-formedness conditions are formalized here."))
@@ -36,7 +36,7 @@
 
 (define constraint-wfp ((constr constraintp) (sys systemp))
   :returns (yes/no booleanp)
-  :short "Check if a constraint is well-formed."
+  :short "Check if a constraint is well-formed, with respect to a system."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -58,7 +58,8 @@
 
 (define constraint-list-wfp ((constrs constraint-listp) (sys systemp))
   :returns (yes/no booleanp)
-  :short "Check if a list of constraints is well-formed."
+  :short "Check if a list of constraints is well-formed,
+          with respect to a system."
   :long
   (xdoc::topstring
    (xdoc::p

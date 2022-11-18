@@ -38,11 +38,11 @@
      after the type annotation step
      is that we need the type annotations to determine where the arrays are,
      and subject them to the analysis.
-     The reason why this analysis should be carried before
+     The reason why this analysis should be carried out before
      the variable reuse step
      is that this step may mark and differentiate array variables
      that the analysis needs to ensure that they denote the same array
-     and that the array is treated single-threadedly.")
+     so that the array is treated single-threadedly.")
    (xdoc::p
     "This array analysis is similar to ACL2's stobj analysis
      in the sense that it imposes the same draconian constraints
@@ -62,7 +62,7 @@
      Consider a function @('f') that takes two arrays as inputs
      and returns them (possibly modified) as outputs,
      and a function @('g') that takes two array inputs @('a') and @('b')
-     and calls @('g') with them:
+     and calls @('f') on them:
      we need to know how the two array outputs of @('g')
      correspond to the array inputs of @('g'),
      so that we can check that @('f') properly binds
@@ -103,9 +103,8 @@
     "Another complication of this array analysis,
      which does not happen with stobjs,
      is that some functions may create new arrays (directly or indirectly).
-     These are arrays not passed as inputs, but returned as outputs afresh.
-     As such, they do not correspond to any inputs,
-     so there is no name mapping.
+     These are arrays are not passed as inputs, but returned as outputs afresh.
+     As such, they do not correspond to any inputs, so there is no name mapping.
      This is why
      @(tsee atj-main-function-type) and @(tsee atj-other-function-type)
      allow unnamed array outputs,
@@ -116,7 +115,7 @@
      then the array analysis must ensure that these new arrays
      are bound to variables distinct from each other
      and from the ones of the input arrays.
-     In contrast, stobjs are not really created by functions;
+     In contrast, stobjs are not created by calling functions;
      they are declared, essentially as global variables,
      and created beforehand."))
   :order-subtopics t
@@ -142,7 +141,8 @@
      the list of symbols inferred by the array analysis
      has always the same length as
      the list of types inferred by the type annotations,
-     i.e. every term's result gets an array name.
+     i.e. every term's result gets an array name
+     (@('nil'), if the result is not an array).
      The array names are the names of the variables that hold the arrays.
      When a term returns a newly created array
      that is not yet bound to any variable,
@@ -159,7 +159,8 @@
      Each modified array must be
      always bound to the same array name inside a function.
      Different functions may use different names,
-     also because array variables are not global.
+     because array variables are not global;
+     but inside a function, the same name must be used.
      A function that takes an array argument can only be passed an array name,
      not a term whose value is an array.
      The exact constraints are explained below.
@@ -170,7 +171,7 @@
      but they are distinct from the `internal errors'
      that are so indicated in the error messages of some ATJ code.
      The internal errors are expected to never happen;
-     if they do, the reason is an implementation bug.
+     if they do, they are indicative of an implementation bug in ATJ.
      On the other hand, errors from the array analysis are expected to happen:
      they are a form of input validation,
      but one that is ``semantically deep'' and can only be performed
@@ -196,7 +197,7 @@
      we use @(tsee atj-type-list-to-type)
      to convert singletons to single types,
      which causes an error should the type list not be a singleton
-     (this would be an implementation error).
+     (this would indicate an implementation error).
      If the type of the variable is an array,
      the result of the array analysis is
      the singleton list with the name of the variable.
@@ -294,7 +295,7 @@
      creating an alist.
      Then we go through the function's output arrays
      (whose names match the array formal parameters
-     that may be modified by the function and returned,
+     that may be modified by the function and returned),
      and we use the alist mentioned just above
      to compute the output arrays of the call.
      For example, suppose that we have a call of @('f'),
