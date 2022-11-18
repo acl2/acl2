@@ -265,7 +265,11 @@
                                    :length (iconst-length-llong))
                       (type-ullong)))
           (t (mv (impossible) (impossible))))))
-    (retok t const type)))
+    (retok t const type))
+  ///
+  (defret type-integerp-of-atc-check-iconst.out-type
+    (implies yes/no
+             (type-integerp out-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
