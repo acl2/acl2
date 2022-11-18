@@ -1587,7 +1587,8 @@
      :parents nil
      (b* (((reterr) nil)
           ((when (endp formals)) (retok nil))
-          (formal (symbol-fix (car formals)))
+          (formal (car formals))
+          (formal (mbe :logic (symbol-fix formal) :exec formal))
           (formal+info (assoc-eq formal
                                  (atc-symbol-varinfo-alist-fix prelim-alist)))
           ((when (not (consp formal+info)))
