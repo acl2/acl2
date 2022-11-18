@@ -86,7 +86,7 @@
                         (cw "TRIVIAL (no hints needed, though some were given))~%") ; close paren matches (ADVICE
                       (cw "TRIVIAL (no hints needed or given))~%") ; close paren matches (ADVICE
                       )
-                  (progn$ (cw "YES: ")
+                  (progn$ (cw "YES: ~s0: " (help::successful-recommendationp-name best-rec))
                           (help::show-successful-recommendation best-rec)
                           (cw ")~%")))) ; close paren matches (ADVICE
              ((mv erp state)
