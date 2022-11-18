@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,7 +26,7 @@
 ; using the PFCS shallowly embedded semantics.
 
 ; These are simple examples for now,
-; but they should demonstrate how PFCS can support
+; but they should demonstrate how PFCSes can support
 ; the modular verification of hierarchical gadgets.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -49,8 +49,8 @@
 (make-event (sesem-definition (make-rel-boolean) 'p))
 
 (defruled rel-boolean-to-spec
-  (implies (and (dm::primep p)
-                (pfield::fep b p))
+  (implies (and (primep p)
+                (fep b p))
            (equal (rel-boolean b p)
                   (or (equal b 0)
                       (equal b 1))))
@@ -76,10 +76,10 @@
 (make-event (sesem-definition (make-rel-condeq) 'p))
 
 (defruled rel-condeq-to-spec
-  (implies (and (dm::primep p)
-                (pfield::fep a p)
-                (pfield::fep b p)
-                (pfield::fep c p))
+  (implies (and (primep p)
+                (fep a p)
+                (fep b p)
+                (fep c p))
            (equal (rel-condeq a b c p)
                   (or (equal a 0)
                       (equal b c))))
@@ -106,11 +106,11 @@
 (make-event (sesem-definition (make-rel-select) 'p))
 
 (defruled rel-select-to-spec
-  (implies (and (dm::primep p)
-                (pfield::fep b p)
-                (pfield::fep x p)
-                (pfield::fep y p)
-                (pfield::fep z p)
+  (implies (and (primep p)
+                (fep b p)
+                (fep x p)
+                (fep y p)
+                (fep z p)
                 (rel-boolean b p)) ; precondition
            (equal (rel-select b x y z p)
                   (equal z
@@ -139,8 +139,8 @@
 (make-event (sesem-definition (make-rel-nonzero) 'p))
 
 (defruled rel-nonzero-to-spec
-  (implies (and (dm::primep p)
-                (pfield::fep a p))
+  (implies (and (primep p)
+                (fep a p))
            (equal (rel-nonzero a p)
                   (not (equal a 0))))
   :use (left-implies-right right-implies-left)
@@ -148,18 +148,18 @@
   :prep-lemmas
 
   ((defruled left-implies-right
-     (implies (and (dm::primep p)
-                   (pfield::fep a p))
+     (implies (and (primep p)
+                   (fep a p))
               (implies (rel-nonzero a p)
                        (not (equal a 0))))
      :enable rel-nonzero)
 
    (defrule right-implies-left
-     (implies (and (dm::primep p)
-                   (pfield::fep a p))
+     (implies (and (primep p)
+                   (fep a p))
               (implies (not (equal a 0))
                        (rel-nonzero a p)))
-     :use (:instance rel-nonzero-suff (ainv (pfield::inv a p))))))
+     :use (:instance rel-nonzero-suff (ainv (inv a p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -183,10 +183,10 @@
 (make-event (sesem-definition (make-rel-xor) 'p))
 
 (defruled rel-xor-to-spec
-  (implies (and (dm::primep p)
-                (pfield::fep a p)
-                (pfield::fep b p)
-                (pfield::fep c p)
+  (implies (and (primep p)
+                (fep a p)
+                (fep b p)
+                (fep c p)
                 (rel-boolean a p) ; precondition
                 (rel-boolean b p) ; precondition
                 (> p 2)) ; additional precondition
