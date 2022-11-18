@@ -27,8 +27,9 @@
     (cw "~c0.~c1~c2" (cons integer-part 10) (cons tenths 1) (cons hundredths 1))))
 
 ;; Generate a short, printable thing that indicates an event (e.g., for a
-;; defthm, this returns its name).
+;; defthm, this returns (defthm <name> :elided).
 ;; TODO: Handle more kinds of thing.
+;; TODO: Maybe use ... instead of :elided.
 (defun shorten-event (event)
   (if (not (consp event))
       event
