@@ -208,7 +208,7 @@
   '((:calpoly . "kestrel-calpoly")
     ;; note the capital L:
     (:leidos . "Leidos")
-    ;; (:leidos-gpt . "leidos-gpt") ;; for now, this has some CalPoly stuff for the action-type
+    ;; (:leidos-gpt . "leidos-gpt") ;; for now, this has some CalPoly stuff for the action-type?
     ))
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
@@ -2264,7 +2264,7 @@
         (mv :no-server nil nil state))
        ;; Elaborate options:
        (models (if (eq model :all)
-                   '(:calpoly :leidos)
+                   *known-models*
                  (if (eq model :none)
                      nil
                    (list model))))
