@@ -31,7 +31,10 @@
 
 (std::def-primitive-aggregate svtv-generalized-thm
   (name
+   spec-override-vars
+   spec-override-var-bindings
    override-vars
+   override-var-bindings
    input-vars
    input-var-bindings
    output-vars
@@ -106,6 +109,7 @@
                                                  (append <input-bindings>
                                                          <input-vars>
                                                          <override-tests>
+                                                         <override-bindings>
                                                          <override-vals>)
                                                  :include '<outputs-list>))
                                   ((svassocs <outputs>) run))
@@ -120,8 +124,16 @@
                    (<concl> . ,x.concl)
                    (<input-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings)))
                    (<input-vars> . (list . ,(svtv-genthm-var-alist-termlist x.input-vars)))
-                   (<override-tests> . ',(svtv-genthm-override-test-alist x.override-vars x.triple-val-alist x.triples-name))
-                   (<override-vals> . (list . ,(svtv-genthm-var-alist-termlist x.override-vars)))
+                   (<override-tests> . ',(svtv-genthm-override-test-alist
+                                          (append (alist-keys x.spec-override-var-bindings)
+                                                  (alist-keys x.override-var-bindings)
+                                                  x.spec-override-vars
+                                                  x.override-vars)
+                                          x.triple-val-alist x.triples-name))
+                   (<override-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist
+                                                    (append x.spec-override-var-bindings
+                                                            x.override-var-bindings))))
+                   (<override-vals> . (list . ,(svtv-genthm-var-alist-termlist (append x.spec-override-vars x.override-vars))))
                    (<outputs-list> . ,x.output-vars))
      :splice-alist `((<outputs> . ,x.output-vars)
                      (<integerp-concls> . ,(if x.no-integerp nil (svtv-genthm-integerp-conclusions x)))

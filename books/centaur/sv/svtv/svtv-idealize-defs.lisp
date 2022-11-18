@@ -109,7 +109,11 @@
                   (svex-env-<<= spec-run1 spec-run2))
              (svtv-override-triplemap-muxes-<<= triplemaps pipe-env spec-env spec-run2)))
   
-  (local (in-theory (enable svtv-override-triplemap-fix))))
+  (local (in-theory (enable svtv-override-triple-mux-<<=)))
+  (defcong svex-envs-similar equal (svtv-override-triplemap-muxes-<<= x impl-env spec-env ref-env) 2)
+  (defcong svex-envs-similar equal (svtv-override-triplemap-muxes-<<= x impl-env spec-env ref-env) 3)
+  (defcong svex-envs-similar equal (svtv-override-triplemap-muxes-<<= x impl-env spec-env ref-env) 4)
+  (local (in-theory (e/d (svtv-override-triplemap-fix) (svtv-override-triple-mux-<<=)))))
 
 
 (define svtv-override-triplemaplist-muxes-<<= ((triplemaps svtv-override-triplemaplist-p)
@@ -126,7 +130,11 @@
   (defthm svtv-override-triplemaplist-muxes-<<=-when-<<=
     (implies (and (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-env spec-run1)
                   (svex-env-<<= spec-run1 spec-run2))
-             (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-env spec-run2))))
+             (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-env spec-run2)))
+
+  (defcong svex-envs-similar equal (svtv-override-triplemaplist-muxes-<<= x impl-env spec-env ref-env) 2)
+  (defcong svex-envs-similar equal (svtv-override-triplemaplist-muxes-<<= x impl-env spec-env ref-env) 3)
+  (defcong svex-envs-similar equal (svtv-override-triplemaplist-muxes-<<= x impl-env spec-env ref-env) 4))
 
 (define svtv-override-triplemap->tests ((triplemap svtv-override-triplemap-p))
   :returns (tests svexlist-p)
@@ -155,7 +163,10 @@
                   (member-equal (svex-fix test) (Svexlist-fix tests)))
              (4vec-muxtest-subsetp (svex-eval test spec-env)
                                    (svex-eval test impl-env)))
-    :hints(("Goal" :in-theory (enable svexlist-fix)))))
+    :hints(("Goal" :in-theory (enable svexlist-fix))))
+
+  (defcong svex-envs-similar equal (svex-envs-svexlist-muxtests-subsetp tests spec-env impl-env) 2)
+  (defcong svex-envs-similar equal (svex-envs-svexlist-muxtests-subsetp tests spec-env impl-env) 3))
 
 (define svtv-override-triplemaplist-muxtests-subsetp ((triplemaps svtv-override-triplemaplist-p)
                                                       (spec-env svex-env-p)
@@ -164,7 +175,10 @@
       t
     (and (svex-envs-svexlist-muxtests-subsetp (svtv-override-triplemap->tests (car triplemaps))
                                               spec-env impl-env)
-         (svtv-override-triplemaplist-muxtests-subsetp (cdr triplemaps) spec-env impl-env))))
+         (svtv-override-triplemaplist-muxtests-subsetp (cdr triplemaps) spec-env impl-env)))
+  ///
+  (defcong svex-envs-similar equal (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-env impl-env) 2)
+  (defcong svex-envs-similar equal (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-env impl-env) 3))
 
 
 
@@ -232,7 +246,8 @@ signal is the key and time is the current phase."
        (val (or (svex-fastlookup key val-alist) (svex-x)))
        ;; ((unless val) t)
        (triple (cdr (hons-get (svar-fix key) (svtv-override-triplemap-fix triplemap))))
-       ((unless triple) nil)
+       ((unless triple)
+        nil)
        ((svtv-override-triple triple))
        ((unless (and (equal triple.test test)
                      (equal triple.val val)))
@@ -413,8 +428,8 @@ signal is the key and time is the current phase."
        (probevar-look (hons-get (make-svtv-probe :signal key :time phase)
                                 (svtv-rev-probealist-fix rev-probes)))
        ((unless probevar-look)
-        ;; (raise "No output for signal ~s0 at time ~x1 -- needed for override mappings"
-        ;;        key phase)
+        (raise "No output for signal ~s0 at time ~x1 -- needed for override mappings"
+               key phase)
         (svtv-construct-triplemap (cdr keys) phase test-alist val-alist rev-probes)))
     (cons (cons key (make-svtv-override-triple
                      :test test

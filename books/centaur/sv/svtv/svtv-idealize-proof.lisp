@@ -5831,9 +5831,9 @@ environments."
   (local (std::set-define-current-function svtv-data-obj->ideal-spec))
   (local (in-theory (enable svtv-data-obj->ideal-spec)))
 
-  (local (defthm svex-env-reduce-<<=
-           (svex-env-<<= (svex-env-reduce keys x) x)
-           :hints(("Goal" :in-theory (enable svex-env-<<=)))))
+  (defthm svex-env-reduce-<<=-same
+    (svex-env-<<= (svex-env-reduce keys x) x)
+    :hints(("Goal" :in-theory (enable svex-env-<<=))))
   
   (local (defthm svex-envlist-reduce-<<=-lemma
            (svex-envlist-<<= (svex-envlist-reduce keys x) x)
@@ -6173,3 +6173,36 @@ environments."
   :hints (("goal" :use ((:instance set::mergesort-under-set-equiv (x x))
                         (:instance set::mergesort-under-set-equiv (x y)))
            :in-theory (disable set::mergesort-under-set-equiv))))
+
+
+;; All the conditions required for an ideal run to refine an SVTV run are
+;; satisfied if run on the same pipe-env with no base-ins or specified initst.
+(defthm 4vec-override-mux-<<=-of-same-test/val
+  (4vec-override-mux-<<= test val test val ref)
+  :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=-by-badbit))))
+
+(defthm svtv-override-triplemap-muxes-<<=-of-same-envs
+  (svtv-override-triplemap-muxes-<<= triplemap pipe-env pipe-env spec-run)
+  :hints(("Goal" :in-theory (enable svtv-override-triplemap-muxes-<<=
+                                    svtv-override-triple-mux-<<=))))
+
+(defthm svtv-override-triplemaplist-muxes-<<=-of-same-envs
+  (svtv-override-triplemaplist-muxes-<<= triplemaplist pipe-envs pipe-envs spec-run)
+  :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-muxes-<<=))))
+
+(defthm 4vec-muxtest-subsetp-of-same
+  (4vec-muxtest-subsetp x x)
+  :hints(("Goal" :in-theory (enable 4vec-muxtest-subsetp))))
+
+(defthm svex-envs-svexlist-muxtests-subsetp-of-same-env
+  (svex-envs-svexlist-muxtests-subsetp tests pipe-env pipe-env)
+  :hints(("Goal" :in-theory (enable svex-envs-svexlist-muxtests-subsetp))))
+
+(defthm svtv-override-triplemaplist-muxtests-subsetp-of-same-envs
+  (svtv-override-triplemaplist-muxtests-subsetp triplemaplist pipe-env pipe-env)
+  :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-muxtests-subsetp))))
+
+
+
+
+  

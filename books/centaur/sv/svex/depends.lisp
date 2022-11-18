@@ -327,11 +327,13 @@
     :hints(("Goal" :in-theory (enable setp)))))
 
 
+(local
+ (defthm svarlist-p-of-set-difference
+    (implies (svarlist-p x)
+             (svarlist-p (set-difference-equal x y)))))
 
 (defsection svex-env-removekeys-of-diff-is-svex-env-reduce
-  (defthm svarlist-p-of-set-difference
-    (implies (svarlist-p x)
-             (svarlist-p (set-difference-equal x y))))
+  
 
   (defthm svarlist-p-alist-keys
     (implies (svex-env-p x)
