@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -259,7 +259,7 @@
        so these two variants apply to different cases.")
      (xdoc::p
       "While the " *tailrec-design-notes*
-      "show how to handle variants in which, besides associativity,
+      " show how to handle variants in which, besides associativity,
        only either left or right identity holds,
        the current implementation does not handle them independently.
        They are either both absent
