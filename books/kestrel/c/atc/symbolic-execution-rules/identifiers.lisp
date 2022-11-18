@@ -177,3 +177,24 @@
     exec-memberp-of-const-identifier
     exec-arrsub-of-member-of-const-identifier
     exec-arrsub-of-memberp-of-const-identifier))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-identifier-other-rules
+  :short "Other rules related to C identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are separate from the ones in @(see atc-identifier-rules)
+     because these are only used in the new modular proof approach.")
+   (xdoc::p
+    "For now this is just one rule,
+     which serve to turn quoted integers into @('(ident <string>')') terms,
+     when they appear in @(tsee omap::update) nests
+     (when forming the initial scope of a C function)."))
+
+  (defruled omap-update-of-const-identifier
+    (implies (and (syntaxp (quotep var))
+                  (identp var))
+             (equal (omap::update var val scope)
+                    (omap::update (ident (ident->name var)) val scope)))))
