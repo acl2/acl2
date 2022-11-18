@@ -1449,15 +1449,12 @@
                            (prec-tags atc-string-taginfo-alistp)
                            (prec-objs atc-string-objinfo-alistp)
                            (names-to-avoid symbol-listp)
-                           (ctx ctxp)
-                           state)
+                           (wrld plist-worldp))
   :returns (mv erp
-               (val (tuple (typed-formals atc-symbol-varinfo-alistp)
-                           (events pseudo-event-form-listp)
-                           (updated-names-to-avoid symbol-listp)
-                           val)
-                    :hyp (symbol-listp names-to-avoid))
-               state)
+               (typed-formals atc-symbol-varinfo-alistp)
+               (events pseudo-event-form-listp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Calculate the C types of the formal parameters of a target function."
   :long
   (xdoc::topstring
@@ -1485,11 +1482,11 @@
      Then we construct the final alist by going through the formals in order,
      and looking up their types in the preliminary alist;
      here we detect when a formal has no corresponding conjunct in the guard."))
-  (b* ((wrld (w state))
+  (b* (((reterr) nil nil nil)
        (formals (formals+ fn wrld))
        (guard (uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
-       ((er (list prelim-alist events names-to-avoid))
+       ((erp prelim-alist events names-to-avoid)
         (atc-typed-formals-prelim-alist fn
                                         fn-guard
                                         formals
@@ -1498,37 +1495,30 @@
                                         prec-tags
                                         prec-objs
                                         names-to-avoid
-                                        ctx
-                                        state))
-       ((er typed-formals :iferr (list nil nil nil))
-        (atc-typed-formals-final-alist
-         fn formals guard prelim-alist ctx state)))
-    (acl2::value (list typed-formals events names-to-avoid)))
+                                        wrld))
+       ((erp typed-formals)
+        (atc-typed-formals-final-alist fn formals guard prelim-alist wrld)))
+    (retok typed-formals events names-to-avoid))
 
   :prepwork
 
-  ((define atc-typed-formals-prelim-alist
-     ((fn symbolp)
-      (fn-guard symbolp)
-      (formals symbol-listp)
-      (guard pseudo-termp)
-      (guard-conjuncts pseudo-term-listp)
-      (prec-tags atc-string-taginfo-alistp)
-      (prec-objs atc-string-objinfo-alistp)
-      (names-to-avoid symbol-listp)
-      (ctx ctxp)
-      state)
+  ((define atc-typed-formals-prelim-alist ((fn symbolp)
+                                           (fn-guard symbolp)
+                                           (formals symbol-listp)
+                                           (guard pseudo-termp)
+                                           (guard-conjuncts pseudo-term-listp)
+                                           (prec-tags atc-string-taginfo-alistp)
+                                           (prec-objs atc-string-objinfo-alistp)
+                                           (names-to-avoid symbol-listp)
+                                           (wrld plist-worldp))
      :returns (mv erp
-                  (val (tuple (prelim-alist-final atc-symbol-varinfo-alistp)
-                              (events pseudo-event-form-listp)
-                              (updated-names-to-avoid symbol-listp)
-                              val)
-                       :hyp (symbol-listp names-to-avoid))
-                  state)
+                  (prelim-alist-final atc-symbol-varinfo-alistp)
+                  (events pseudo-event-form-listp)
+                  (updated-names-to-avoid symbol-listp
+                                          :hyp (symbol-listp names-to-avoid)))
      :parents nil
-     (b* ((wrld (w state))
-          ((when (endp guard-conjuncts))
-           (acl2::value (list nil nil names-to-avoid)))
+     (b* (((reterr) nil nil nil)
+          ((when (endp guard-conjuncts)) (retok nil nil names-to-avoid))
           (conjunct (car guard-conjuncts))
           ((mv type arg) (atc-check-guard-conjunct conjunct
                                                    prec-tags
@@ -1542,8 +1532,7 @@
                                            prec-tags
                                            prec-objs
                                            names-to-avoid
-                                           ctx
-                                           state))
+                                           wrld))
           ((unless (member-eq arg formals))
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
@@ -1553,9 +1542,8 @@
                                            prec-tags
                                            prec-objs
                                            names-to-avoid
-                                           ctx
-                                           state))
-          ((er (list prelim-alist events names-to-avoid))
+                                           wrld))
+          ((erp prelim-alist events names-to-avoid)
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
                                            formals
@@ -1564,17 +1552,15 @@
                                            prec-tags
                                            prec-objs
                                            names-to-avoid
-                                           ctx
-                                           state))
+                                           wrld))
           ((when (consp (assoc-eq arg prelim-alist)))
-           (er-soft+ ctx t (list nil nil nil)
-                     "The guard ~x0 of the target function ~x1 ~
-                      includes multiple type predicates ~
-                      for the formal parameter ~x2. ~
-                      This is disallowed: every formal parameter ~
-                      must have exactly one type predicate in the guard, ~
-                      even when the multiple predicates are the same."
-                     guard fn arg))
+           (reterr (msg "The guard ~x0 of the target function ~x1 ~
+                         includes multiple type predicates ~
+                         for the formal parameter ~x2. ~
+                         This is disallowed: every formal parameter ~
+                         must have exactly one type predicate in the guard, ~
+                         even when the multiple predicates are the same."
+                        guard fn arg)))
            ((mv event name names-to-avoid)
             (atc-gen-formal-thm fn fn-guard formals arg type
                                 names-to-avoid wrld))
@@ -1583,11 +1569,9 @@
                     events))
           (info (make-atc-var-info :type type :thm name))
           (prelim-alist (acons arg info prelim-alist)))
-       (acl2::value (list prelim-alist events names-to-avoid)))
+       (retok prelim-alist events names-to-avoid))
      :verify-guards nil ; done below
      ///
-     (more-returns
-      (val true-listp :rule-classes :type-prescription))
      (verify-guards atc-typed-formals-prelim-alist
        :hints
        (("Goal"
@@ -1597,36 +1581,28 @@
                                           (formals symbol-listp)
                                           (guard pseudo-termp)
                                           (prelim-alist atc-symbol-varinfo-alistp)
-                                          (ctx ctxp)
-                                          state)
+                                          (wrld plist-worldp))
      :returns (mv erp
-                  (typed-formals atc-symbol-varinfo-alistp)
-                  state)
+                  (typed-formals atc-symbol-varinfo-alistp))
      :parents nil
-     (b* (((when (endp formals)) (acl2::value nil))
+     (b* (((reterr) nil)
+          ((when (endp formals)) (retok nil))
           (formal (symbol-fix (car formals)))
           (formal+info (assoc-eq formal
                                  (atc-symbol-varinfo-alist-fix prelim-alist)))
           ((when (not (consp formal+info)))
-           (er-soft+ ctx t nil
-                     "The guard ~x0 of the target function ~x1 ~
-                      has no type predicate for the formal parameter ~x2. ~
-                      Every formal parameter must have a type predicate."
-                     guard fn formal))
+           (reterr (msg "The guard ~x0 of the target function ~x1 ~
+                         has no type predicate for the formal parameter ~x2. ~
+                         Every formal parameter must have a type predicate."
+                        guard fn formal)))
           (info (cdr formal+info))
-          ((er typed-formals) (atc-typed-formals-final-alist fn
-                                                             (cdr formals)
-                                                             guard
-                                                             prelim-alist
-                                                             ctx
-                                                             state)))
-       (acl2::value (acons formal info typed-formals)))
-     :verify-guards :after-returns))
-
-  ///
-
-  (more-returns
-   (val true-listp :rule-classes :type-prescription)))
+          ((erp typed-formals) (atc-typed-formals-final-alist fn
+                                                              (cdr formals)
+                                                              guard
+                                                              prelim-alist
+                                                              wrld)))
+       (retok (acons formal info typed-formals)))
+     :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4631,9 +4607,9 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
-       ((er (list typed-formals formals-events names-to-avoid) :iferr (irr))
-        (atc-typed-formals
-         fn fn-guard prec-tags prec-objs names-to-avoid ctx state))
+       ((mv erp typed-formals formals-events names-to-avoid)
+        (atc-typed-formals fn fn-guard prec-tags prec-objs names-to-avoid wrld))
+       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        ((er params :iferr (irr))
         (atc-gen-param-declon-list typed-formals fn prec-objs ctx state))
        ((mv fn-fun-env-thm names-to-avoid)
@@ -5918,9 +5894,9 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
-       ((er (list typed-formals formals-events names-to-avoid) :iferr (irr))
-        (atc-typed-formals
-         fn fn-guard prec-tags prec-objs names-to-avoid ctx state))
+       ((mv erp typed-formals formals-events names-to-avoid)
+        (atc-typed-formals fn fn-guard prec-tags prec-objs names-to-avoid wrld))
+       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        (body (ubody+ fn wrld))
        ((er (lstmt-gout loop) :iferr (irr))
         (atc-gen-loop-stmt body
