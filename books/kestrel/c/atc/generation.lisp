@@ -4460,12 +4460,10 @@
                            (term pseudo-termp)
                            (typed-formals atc-symbol-varinfo-alistp)
                            (prec-fns atc-symbol-fninfo-alistp)
-                           (ctx ctxp)
-                           state)
+                           (wrld plist-worldp))
   :returns (mv erp
                (affected symbol-listp
-                         :hyp (atc-symbol-varinfo-alistp typed-formals))
-               state)
+                         :hyp (atc-symbol-varinfo-alistp typed-formals)))
   :short "Find the variables affected by a term."
   :long
   (xdoc::topstring
@@ -4514,77 +4512,73 @@
     "When we encounter @(tsee if)s with @(tsee mbt) or @(tsee mbt$) tests,
      we recursively process the `then' branch, skipping the `else' branch.
      This is because only the `then' branch represents C code."))
-  (b* (((mv okp test then else) (fty-check-if-call term))
+  (b* (((reterr) nil)
+       ((mv okp test then else) (fty-check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test))
              ((when mbtp) (atc-find-affected fn
                                              then
                                              typed-formals
                                              prec-fns
-                                             ctx
-                                             state))
+                                             wrld))
              ((mv mbt$p &) (check-mbt$-call test))
              ((when mbt$p) (atc-find-affected fn
                                               then
                                               typed-formals
                                               prec-fns
-                                              ctx
-                                              state))
-             ((er then-affected) (atc-find-affected fn
-                                                    then
-                                                    typed-formals
-                                                    prec-fns
-                                                    ctx
-                                                    state))
-             ((er else-affected) (atc-find-affected fn
-                                                    else
-                                                    typed-formals
-                                                    prec-fns
-                                                    ctx
-                                                    state)))
+                                              wrld))
+             ((erp then-affected) (atc-find-affected fn
+                                                     then
+                                                     typed-formals
+                                                     prec-fns
+                                                     wrld))
+             ((erp else-affected) (atc-find-affected fn
+                                                     else
+                                                     typed-formals
+                                                     prec-fns
+                                                     wrld)))
           (if (equal then-affected else-affected)
-              (acl2::value then-affected)
-            (er-soft+ ctx t nil
-                      "When generating code for function ~x0, ~
-                       an IF branch affects variables ~x1, ~
-                       while the other branch affects variables ~x2: ~
-                       this is disallowed."
-                      fn then-affected else-affected))))
+              (retok then-affected)
+            (reterr
+             (msg "When generating code for function ~x0, ~
+                   an IF branch affects variables ~x1, ~
+                   while the other branch affects variables ~x2: ~
+                   this is disallowed."
+                  fn then-affected else-affected)))))
        ((mv okp & body &) (fty-check-lambda-call term))
        ((when okp) (atc-find-affected fn
                                       body
                                       typed-formals
                                       prec-fns
-                                      ctx
-                                      state))
+                                      wrld))
        ((mv okp & & & & affected &)
-        (atc-check-cfun-call term nil prec-fns (w state)))
-       ((when okp) (acl2::value affected))
+        (atc-check-cfun-call term nil prec-fns wrld))
+       ((when okp) (retok affected))
        ((mv okp & & & affected & &)
         (atc-check-loop-call term nil prec-fns))
-       ((when okp) (acl2::value affected))
+       ((when okp) (retok affected))
        ((when (pseudo-term-case term :var))
         (b* ((var (pseudo-term-var->name term)))
           (if (atc-formal-pointerp var typed-formals)
-              (acl2::value (list var))
-            (acl2::value nil))))
+              (retok (list var))
+            (retok nil))))
        ((mv okp terms) (fty-check-list-call term))
        ((when okp)
         (cond ((and (symbol-listp terms)
                     (atc-formal-pointer-listp terms typed-formals))
-               (acl2::value terms))
+               (retok terms))
               ((and (symbol-listp (cdr terms))
                     (atc-formal-pointer-listp (cdr terms) typed-formals))
-               (acl2::value (cdr terms)))
-              (t (er-soft+ ctx t nil
-                           "When generating code for function ~x0, ~
-                            a term ~x1 was encountered that ~
-                            returns multiple values but they, ~
-                            or at least all of them except the first one, ~
-                            are not all formal parameters of ~x0 ~
-                            of pointer type."
-                           fn term)))))
-    (acl2::value nil))
+               (retok (cdr terms)))
+              (t (reterr
+                  (msg "When generating code for function ~x0, ~
+                        a term ~x1 was encountered that ~
+                        returns multiple values but they, ~
+                        or at least all of them except the first one, ~
+                        are not all formal parameters of ~x0 ~
+                        of pointer type."
+                       fn term))))))
+    (retok nil))
   :measure (pseudo-term-count term)
   :prepwork
   ((local (in-theory
@@ -4602,19 +4596,16 @@
                         (fn-thms symbol-symbol-alistp)
                         (print evmac-input-print-p)
                         (names-to-avoid symbol-listp)
-                        (ctx ctxp)
                         state)
   :guard (not (eq fn 'quote))
   :returns (mv erp
-               (val (tuple (fundef fundefp)
-                           (local-events pseudo-event-form-listp)
-                           (exported-events pseudo-event-form-listp)
-                           (updated-prec-fns atc-symbol-fninfo-alistp)
-                           (updated-names-to-avoid symbol-listp)
-                           val)
-                    :hyp (and (atc-symbol-fninfo-alistp prec-fns)
-                              (symbol-listp names-to-avoid)))
-               state)
+               (fundef fundefp)
+               (local-events pseudo-event-form-listp)
+               (exported-events pseudo-event-form-listp)
+               (updated-prec-fns atc-symbol-fninfo-alistp
+                                 :hyp (atc-symbol-fninfo-alistp prec-fns))
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate a C function definition
           from a non-recursive ACL2 function, with accompanying theorems."
   :long
@@ -4636,43 +4627,36 @@
      another 1 from there to @(tsee exec-block-item-list)
      in the @(':compound') case,
      and then we use the limit for the block."))
-  (b* (((acl2::fun (irr))
-        (list (with-guard-checking :none (ec-call (fundef-fix :irrelevant)))
-              nil
-              nil
-              nil
-              nil))
+  (b* (((reterr) (irr-fundef) nil nil nil nil)
        (wrld (w state))
        (name (symbol-name fn))
        ((unless (paident-stringp name))
-        (er-soft+ ctx t (irr)
-                  "The symbol name ~s0 of the function ~x1 ~
-                   must be a portable ASCII C identifier, but it is not."
-                  name fn))
+        (reterr
+         (msg "The symbol name ~s0 of the function ~x1 ~
+               must be a portable ASCII C identifier, but it is not."
+              name fn)))
        ((mv fn-guard-event
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
-       ((mv erp typed-formals formals-events proofs names-to-avoid)
+       ((erp typed-formals formals-events proofs names-to-avoid)
         (atc-typed-formals
          fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
-       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
-       ((mv erp params) (atc-gen-param-declon-list typed-formals fn prec-objs))
-       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
+       ((erp params) (atc-gen-param-declon-list typed-formals fn prec-objs))
        ((mv fn-fun-env-thm names-to-avoid)
         (atc-gen-cfun-fun-env-thm-name fn names-to-avoid wrld))
        (body (ubody+ fn wrld))
-       ((er affect :iferr (irr))
-        (atc-find-affected fn body typed-formals prec-fns ctx state))
+       ((erp affect)
+        (atc-find-affected fn body typed-formals prec-fns wrld))
        ((unless (atc-formal-pointer-listp affect typed-formals))
-        (er-soft+ ctx t (irr)
-                  "At least one of the formals of ~x0 ~
-                   that are affected by its body has a non-pointer type. ~
-                   This is currently disallowed: ~
-                   only pointer variables may be affected ~
-                   by a non-recursive target function."
-                  fn))
-       ((mv erp (stmt-gout body))
+        (reterr
+         (msg "At least one of the formals of ~x0 ~
+               that are affected by its body has a non-pointer type. ~
+               This is currently disallowed: ~
+               only pointer variables may be affected ~
+               by a non-recursive target function."
+              fn)))
+       ((erp (stmt-gout body))
         (atc-gen-stmt body
                       (make-stmt-gin
                        :var-term-alist nil
@@ -4688,21 +4672,20 @@
                        :names-to-avoid names-to-avoid
                        :proofs proofs)
                       state))
-       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        (names-to-avoid body.names-to-avoid)
        ((when (and (type-case body.type :void)
                    (not affect)))
-        (raise "Internal error: ~
-                the function ~x0 returns void and affects no variables."
-               fn)
-        (acl2::value (irr)))
+        (reterr
+         (raise "Internal error: ~
+                 the function ~x0 returns void and affects no variables."
+                fn)))
        ((unless (or (type-nonchar-integerp body.type)
                     (type-case body.type :struct)
                     (type-case body.type :void)))
-        (raise "Internal error: ~
-                the function ~x0 has return type ~x1."
-               fn body.type)
-        (acl2::value (irr)))
+        (reterr
+         (raise "Internal error: ~
+                 the function ~x0 has return type ~x1."
+                fn body.type)))
        (id (make-ident :name name))
        ((mv tyspec &) (ident+type-to-tyspec+declor id body.type))
        (fundef (make-fundef :tyspec tyspec
@@ -4781,21 +4764,17 @@
               :measure-nat-thm nil
               :fun-env-thm fn-fun-env-thm
               :limit limit)))
-    (acl2::value (list fundef
-                       local-events
-                       exported-events
-                       (acons fn info prec-fns)
-                       names-to-avoid)))
+    (retok fundef
+           local-events
+           exported-events
+           (acons fn info prec-fns)
+           names-to-avoid))
   :guard-hints
   (("Goal"
     :in-theory
     (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite
             alistp-when-atc-symbol-varinfo-alistp-rewrite
-            atc-var-info-listp-of-strip-cdrs-when-atc-symbol-varinfo-alistp)))
-  ///
-
-  (more-returns
-   (val true-listp :rule-classes :type-prescription)))
+            atc-var-info-listp-of-strip-cdrs-when-atc-symbol-varinfo-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -7385,17 +7364,23 @@
                                              local-events
                                              exported-events
                                              names-to-avoid)))
-                      (b* (((er (list fundef
-                                      local-events
-                                      exported-events
-                                      prec-fns
-                                      names-to-avoid)
-                                :iferr (list nil nil nil nil nil nil nil nil))
+                      (b* (((mv erp
+                                fundef
+                                local-events
+                                exported-events
+                                prec-fns
+                                names-to-avoid)
                             (atc-gen-fundef fn prec-fns prec-tags prec-objs
                                             proofs
                                             prog-const
                                             init-fun-env-thm fn-thms
-                                            print names-to-avoid ctx state))
+                                            print names-to-avoid state))
+                           ((when erp)
+                            (er-soft+ ctx
+                                      t
+                                      (list nil nil nil nil nil nil nil nil)
+                                      "~@0"
+                                      erp))
                            (ext (ext-declon-fundef fundef)))
                         (if header
                             (acl2::value (list (list
