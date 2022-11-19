@@ -44,7 +44,6 @@
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
 (include-book "kestrel/std/system/untranslate-dollar" :dir :system)
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
-(include-book "kestrel/std/util/defirrelevant" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "std/strings/strprefixp" :dir :system)
@@ -1701,7 +1700,7 @@
 
 ;;;;;;;;;;
 
-(acl2::defirrelevant irr-stmt-gout
+(defirrelevant irr-stmt-gout
   :short "An irrelevant output for @(tsee atc-gen-stmt)."
   :type stmt-goutp
   :body (make-stmt-gout :items nil
@@ -3091,13 +3090,27 @@
    (proofs bool))
   :pred lstmt-goutp)
 
+;;;;;;;;;;
+
+(defirrelevant irr-lstmt-gout
+  :short "An irrelevant output for @(tsee atc-gen-loop-stmt)."
+  :type lstmt-goutp
+  :body (make-lstmt-gout :stmt (irr-stmt)
+                         :test-term nil
+                         :body-term nil
+                         :affect nil
+                         :limit-body nil
+                         :limit-all nil
+                         :events nil
+                         :thm-index 1
+                         :names-to-avoid nil
+                         :proofs nil))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-loop-stmt ((term pseudo-termp)
-                           (gin lstmt-ginp)
-                           (ctx ctxp)
-                           state)
-  :returns (mv erp (val lstmt-goutp) state)
+(define atc-gen-loop-stmt ((term pseudo-termp) (gin lstmt-ginp) state)
+  :returns (mv erp
+               (val lstmt-goutp))
   :short "Generate a C loop statement from an ACL2 term."
   :long
   (xdoc::topstring
@@ -3154,21 +3167,22 @@
      which is the limit for the whole loop,
      we also return @('limit-body'), which is just for the loop body;
      this is in support for more modular proofs. "))
-  (b* (((acl2::fun (irr))
-        (with-guard-checking :none (ec-call (lstmt-gout-fix :irrelevant))))
+  (b* (((reterr) (change-lstmt-gout (irr-lstmt-gout)
+                                    :stmt (make-stmt-while :test (irr-expr)
+                                                           :body (irr-stmt))))
        ((lstmt-gin gin) gin)
        (wrld (w state))
        ((mv okp test-term then-term else-term) (fty-check-if-call term))
        ((unless okp)
-        (er-soft+ ctx t (irr)
-                  "When generating C loop code for the recursive function ~x0, ~
-                   a term ~x1 that is not an IF has been encountered."
-                  gin.fn term))
+        (reterr
+         (msg "When generating C loop code for the recursive function ~x0, ~
+               a term ~x1 that is not an IF has been encountered."
+              gin.fn term)))
        ((mv mbtp &) (check-mbt-call test-term))
-       ((when mbtp) (atc-gen-loop-stmt then-term gin ctx state))
+       ((when mbtp) (atc-gen-loop-stmt then-term gin state))
        ((mv mbt$p &) (check-mbt$-call test-term))
-       ((when mbt$p) (atc-gen-loop-stmt then-term gin ctx state))
-       ((mv erp (bexpr-gout test))
+       ((when mbt$p) (atc-gen-loop-stmt then-term gin state))
+       ((erp (bexpr-gout test))
         (atc-gen-expr-bool test-term
                            (make-bexpr-gin
                             :inscope gin.inscope
@@ -3178,7 +3192,6 @@
                             :names-to-avoid gin.names-to-avoid
                             :proofs gin.proofs)
                            state))
-       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        (formals (formals+ gin.fn wrld))
        ((mv okp affect)
         (b* (((when (member-eq else-term formals)) (mv t (list else-term)))
@@ -3188,13 +3201,13 @@
               (mv t terms)))
           (mv nil nil)))
        ((unless okp)
-        (er-soft+ ctx t (irr)
-                  "The 'else' branch ~x0 of the function ~x1, ~
-                   which should be the non-recursive branch, ~
-                   does not have the required form. ~
-                   See the user documentation."
-                  else-term gin.fn))
-       ((mv erp (stmt-gout body))
+        (reterr
+         (msg "The 'else' branch ~x0 of the function ~x1, ~
+               which should be the non-recursive branch, ~
+               does not have the required form. ~
+               See the user documentation."
+              else-term gin.fn)))
+       ((erp (stmt-gout body))
         (atc-gen-stmt then-term
                       (make-stmt-gin
                        :var-term-alist nil
@@ -3210,37 +3223,34 @@
                        :names-to-avoid test.names-to-avoid
                        :proofs test.proofs)
                       state))
-       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        ((unless (type-case body.type :void))
-        (raise "Internal error: ~
-                the loop body ~x0 of ~x1 ~ returns type ~x2."
-               then-term gin.fn body.type)
-        (mv t (irr) state))
+        (reterr
+         (raise "Internal error: ~
+                 the loop body ~x0 of ~x1 ~ returns type ~x2."
+                then-term gin.fn body.type)))
        (body-stmt (make-stmt-compound :items body.items))
        (stmt (make-stmt-while :test test.expr :body body-stmt))
        ((when (eq gin.measure-for-fn 'quote))
-        (raise "Internal error: the measure function is QUOTE.")
-        (mv t (irr) state))
+        (reterr
+         (raise "Internal error: the measure function is QUOTE.")))
        (measure-call (pseudo-term-fncall gin.measure-for-fn
                                          gin.measure-formals))
        (limit `(binary-+ '1 (binary-+ ,body.limit ,measure-call))))
-    (acl2::value (make-lstmt-gout :stmt stmt
-                                  :test-term test-term
-                                  :body-term then-term
-                                  :affect affect
-                                  :limit-body body.limit
-                                  :limit-all limit
-                                  :thm-index body.thm-index
-                                  :names-to-avoid body.names-to-avoid
-                                  :proofs nil)))
+    (retok (make-lstmt-gout :stmt stmt
+                            :test-term test-term
+                            :body-term then-term
+                            :affect affect
+                            :limit-body body.limit
+                            :limit-all limit
+                            :thm-index body.thm-index
+                            :names-to-avoid body.names-to-avoid
+                            :proofs nil)))
   :measure (pseudo-term-count term)
   :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))
   ///
 
   (defret stmt-kind-of-atc-gen-loop-stmt
-    (implies (not erp)
-             (equal (stmt-kind (lstmt-gout->stmt val))
-                    :while))))
+    (equal (stmt-kind (lstmt-gout->stmt val)) :while)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5938,7 +5948,7 @@
          fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
        ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        (body (ubody+ fn wrld))
-       ((er (lstmt-gout loop) :iferr (irr))
+       ((mv erp (lstmt-gout loop))
         (atc-gen-loop-stmt body
                            (make-lstmt-gin :typed-formals typed-formals
                                            :inscope (list typed-formals)
@@ -5951,8 +5961,8 @@
                                            :thm-index 1
                                            :names-to-avoid names-to-avoid
                                            :proofs proofs)
-                           ctx
                            state))
+       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        (names-to-avoid loop.names-to-avoid)
        ((unless (and (plist-worldp (w state))
                      (function-symbolp fn (w state))
