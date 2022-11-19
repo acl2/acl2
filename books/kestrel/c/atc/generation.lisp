@@ -5117,20 +5117,16 @@
                                       (measure-formals symbol-listp)
                                       (natp-of-measure-of-fn-thm symbolp)
                                       (names-to-avoid symbol-listp)
-                                      (ctx ctxp)
                                       state)
   :guard (and (function-symbolp fn (w state))
               (logicp fn (w state))
               (irecursivep+ fn (w state))
               (not (eq measure-of-fn 'quote)))
   :returns (mv erp
-               (val (tuple (event pseudo-event-formp)
-                           (name symbolp)
-                           (updated-names-to-avoid
-                            symbol-listp
-                            :hyp (symbol-listp names-to-avoid))
-                           val))
-               state)
+               (event pseudo-event-formp)
+               (name symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate the version of the termination theorem
           tailored to the limits and measure function."
   :long
@@ -5147,7 +5143,7 @@
      The purpose of this variant of the termination theorem
      is to help establish the induction hypothesis
      in the loop correctness theorem, as explained below."))
-  (b* (((acl2::fun (irr)) (list '(_) nil nil))
+  (b* (((reterr) '(_) nil nil)
        (wrld (w state))
        (termination-of-fn-thm
         (packn-pos (list 'termination-of- fn) fn))
@@ -5158,15 +5154,14 @@
                                            wrld))
        (tthm (termination-theorem$ fn state))
        ((when (eq (car tthm) :failed))
-        (raise "Internal error: cannot find termination theorem of ~x0." fn)
-        (acl2::value (irr)))
-       ((mv erp tthm-formula)
+        (reterr
+         (raise "Internal error: cannot find termination theorem of ~x0." fn)))
+       ((erp tthm-formula)
         (atc-gen-loop-tthm-formula tthm
                                    fn
                                    measure-of-fn
                                    measure-formals
                                    state))
-       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        ((mv termination-of-fn-thm-event &)
         (evmac-generate-defthm
          termination-of-fn-thm
@@ -5180,14 +5175,9 @@
                                 o-p
                                 o-finp
                                 o<))))))
-    (acl2::value
-     (list termination-of-fn-thm-event
+    (retok termination-of-fn-thm-event
            termination-of-fn-thm
            names-to-avoid)))
-  ///
-
-  (more-returns
-   (val true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5983,16 +5973,18 @@
                                             measure-formals
                                             names-to-avoid
                                             wrld))
-                 ((er (list termination-of-fn-thm-event
-                            termination-of-fn-thm)
-                      :iferr (list nil nil nil nil nil nil))
+                 ((mv erp
+                      termination-of-fn-thm-event
+                      termination-of-fn-thm
+                      names-to-avoid)
                   (atc-gen-loop-termination-thm fn
                                                 measure-of-fn
                                                 measure-formals
                                                 natp-of-measure-of-fn-thm
                                                 names-to-avoid
-                                                ctx
                                                 state))
+                 ((when erp) (er-soft+ ctx t (list nil nil nil nil nil nil)
+                                       "~@0" erp))
                  ((unless (and (plist-worldp (w state))
                                (irecursivep+ fn (w state))))
                   (raise "Internal error with W of STATE.")
