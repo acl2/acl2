@@ -292,16 +292,15 @@
 
 ;;;;;;;;;;
 
-(define irr-pexpr-gout ()
-  :returns (irr pexpr-goutp)
-  (make-pexpr-gout :expr (irr-expr)
-                   :type (irr-type)
-                   :events nil
-                   :thm-index 1
-                   :names-to-avoid nil
-                   :proofs nil)
-  ///
-  (in-theory (disable (:e irr-pexpr-gout))))
+(defirrelevant irr-pexpr-gout
+  :short "An irrelevant output for @(tsee atc-gen-expr-pure)."
+  :type pexpr-goutp
+  :body (make-pexpr-gout :expr (irr-expr)
+                         :type (irr-type)
+                         :events nil
+                         :thm-index 1
+                         :names-to-avoid nil
+                         :proofs nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -328,15 +327,14 @@
 
 ;;;;;;;;;;
 
-(define irr-bexpr-gout ()
-  :returns (irr bexpr-goutp)
-  (make-bexpr-gout :expr (irr-expr)
-                   :events nil
-                   :thm-index 1
-                   :names-to-avoid nil
-                   :proofs nil)
-  ///
-  (in-theory (disable (:e irr-bexpr-gout))))
+(defirrelevant irr-bexpr-gout
+  :short "An irrelevant output for @(tsee atc-gen-expr-bool)."
+  :type bexpr-goutp
+  :body (make-bexpr-gout :expr (irr-expr)
+                         :events nil
+                         :thm-index 1
+                         :names-to-avoid nil
+                         :proofs nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -987,16 +985,15 @@
 
 ;;;;;;;;;;
 
-(define irr-pexprs-gout ()
-  :returns (irr pexprs-goutp)
-  (make-pexprs-gout :exprs nil
-                    :types nil
-                    :events nil
-                    :thm-index 1
-                    :names-to-avoid nil
-                    :proofs nil)
-  ///
-  (in-theory (disable (:e irr-pexprs-gout))))
+(defirrelevant irr-pexprs-gout
+  :short "An irrelevant output for @(tsee atc-gen-expr-pure-list)."
+  :type pexprs-goutp
+  :body (make-pexprs-gout :exprs nil
+                          :types nil
+                          :events nil
+                          :thm-index 1
+                          :names-to-avoid nil
+                          :proofs nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1080,18 +1077,17 @@
 
 ;;;;;;;;;;
 
-(define irr-expr-gout ()
-  :returns (irr expr-goutp)
-  (make-expr-gout :expr (irr-expr)
-                  :type (irr-type)
-                  :affect nil
-                  :limit nil
-                  :events nil
-                  :thm-index 1
-                  :names-to-avoid nil
-                  :proofs nil)
-  ///
-  (in-theory (disable (:e irr-expr-gout))))
+(defirrelevant irr-expr-gout
+  :short "An irrelevant output for @(tsee atc-gen-expr)."
+  :type expr-goutp
+  :body (make-expr-gout :expr (irr-expr)
+                        :type (irr-type)
+                        :affect nil
+                        :limit nil
+                        :events nil
+                        :thm-index 1
+                        :names-to-avoid nil
+                        :proofs nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
