@@ -4869,62 +4869,57 @@
                                      (fn symbolp)
                                      (measure-of-fn symbolp)
                                      (measure-formals symbol-listp)
-                                     (ctx ctxp)
                                      state)
     :guard (not (eq measure-of-fn 'quote))
     :returns (mv erp
-                 new-term ; PSEUDO-TERMP proved below
-                 state)
-    (b* (((when (variablep term)) (acl2::value term))
-         ((when (fquotep term)) (acl2::value term))
+                 new-term) ; PSEUDO-TERMP proved below
+    (b* (((reterr) nil)
+         ((when (variablep term)) (retok term))
+         ((when (fquotep term)) (retok term))
          (term-fn (ffn-symb term))
          ((when (eq term-fn 'o<))
           (b* ((meas-gen (fargn term 2))
                (meas-inst (fargn term 1))
                ((mv okp subst) (one-way-unify$ meas-gen meas-inst state))
                ((when (not okp))
-                (er-soft+ ctx t nil
-                          "Failed to match istantiated measure ~x0 ~
-                           to general measure ~x1 of function ~x2."
-                          meas-inst meas-gen fn))
+                (reterr
+                 (msg "Failed to match istantiated measure ~x0 ~
+                       to general measure ~x1 of function ~x2."
+                      meas-inst meas-gen fn)))
                (measure-args (fty-fsublis-var-lst subst measure-formals)))
-            (acl2::value
+            (retok
              `(< (,measure-of-fn ,@measure-args)
                  (,measure-of-fn ,@measure-formals)))))
-         ((er new-args :iferr nil)
+         ((erp new-args)
           (atc-gen-loop-tthm-formula-lst (fargs term)
                                          fn
                                          measure-of-fn
                                          measure-formals
-                                         ctx
                                          state)))
-      (acl2::value (fcons-term term-fn new-args))))
+      (retok (fcons-term term-fn new-args))))
 
   (define atc-gen-loop-tthm-formula-lst ((terms pseudo-term-listp)
                                          (fn symbolp)
                                          (measure-of-fn symbolp)
                                          (measure-formals symbol-listp)
-                                         (ctx ctxp)
                                          state)
     :guard (not (eq measure-of-fn 'quote))
     :returns (mv erp
-                 new-terms ; PSEUDO-TERM-LISTP proved below
-                 state)
-    (b* (((when (endp terms)) (acl2::value nil))
-         ((er new-term :iferr nil)
+                 new-terms) ; PSEUDO-TERM-LISTP proved below
+    (b* (((reterr) nil)
+         ((when (endp terms)) (retok nil))
+         ((erp new-term)
           (atc-gen-loop-tthm-formula (car terms)
                                      fn
                                      measure-of-fn
                                      measure-formals
-                                     ctx
                                      state))
-         ((er new-terms) (atc-gen-loop-tthm-formula-lst (cdr terms)
-                                                        fn
-                                                        measure-of-fn
-                                                        measure-formals
-                                                        ctx
-                                                        state)))
-      (acl2::value (cons new-term new-terms))))
+         ((erp new-terms) (atc-gen-loop-tthm-formula-lst (cdr terms)
+                                                         fn
+                                                         measure-of-fn
+                                                         measure-formals
+                                                         state)))
+      (retok (cons new-term new-terms))))
 
   ///
 
@@ -5165,13 +5160,13 @@
        ((when (eq (car tthm) :failed))
         (raise "Internal error: cannot find termination theorem of ~x0." fn)
         (acl2::value (irr)))
-       ((er tthm-formula :iferr (irr))
+       ((mv erp tthm-formula)
         (atc-gen-loop-tthm-formula tthm
                                    fn
                                    measure-of-fn
                                    measure-formals
-                                   ctx
                                    state))
+       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        ((mv termination-of-fn-thm-event &)
         (evmac-generate-defthm
          termination-of-fn-thm
