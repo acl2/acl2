@@ -44,6 +44,7 @@
 (include-book "kestrel/std/system/uguard-plus" :dir :system)
 (include-book "kestrel/std/system/untranslate-dollar" :dir :system)
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
+(include-book "kestrel/std/util/defirrelevant" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "std/strings/strprefixp" :dir :system)
@@ -1702,13 +1703,24 @@
    (proofs bool))
   :pred stmt-goutp)
 
+;;;;;;;;;;
+
+(acl2::defirrelevant irr-stmt-gout
+  :short "An irrelevant output for @(tsee atc-gen-stmt)."
+  :type stmt-goutp
+  :body (make-stmt-gout :items nil
+                        :type (irr-type)
+                        :limit nil
+                        :events nil
+                        :thm-index 1
+                        :names-to-avoid nil
+                        :proofs nil))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-stmt ((term pseudo-termp)
-                      (gin stmt-ginp)
-                      (ctx ctxp)
-                      state)
-  :returns (mv erp (val stmt-goutp) state)
+(define atc-gen-stmt ((term pseudo-termp) (gin stmt-ginp) state)
+  :returns (mv erp
+               (val stmt-goutp))
   :short "Generate a C statement from an ACL2 term."
   :long
   (xdoc::topstring
@@ -1925,17 +1937,16 @@
      another 1 to go from there to the @(':return') case
      and @(tsee exec-expr-call-or-pure),
      for which we use the recursively calculated limit."))
-  (b* (((acl2::fun (irr))
-        (with-guard-checking :none (ec-call (stmt-gout-fix :irrelevant))))
+  (b* (((reterr) (irr-stmt-gout))
        (wrld (w state))
        ((stmt-gin gin) gin)
        ((mv okp test-term then-term else-term) (fty-check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test-term))
-             ((when mbtp) (atc-gen-stmt then-term gin ctx state))
+             ((when mbtp) (atc-gen-stmt then-term gin state))
              ((mv mbt$p &) (check-mbt$-call test-term))
-             ((when mbt$p) (atc-gen-stmt then-term gin ctx state))
-             ((mv erp (bexpr-gout test))
+             ((when mbt$p) (atc-gen-stmt then-term gin state))
+             ((erp (bexpr-gout test))
               (atc-gen-expr-bool test-term
                                  (make-bexpr-gin
                                   :inscope gin.inscope
@@ -1945,8 +1956,7 @@
                                   :names-to-avoid gin.names-to-avoid
                                   :proofs gin.proofs)
                                  state))
-             ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
-             ((er (stmt-gout then))
+             ((erp (stmt-gout then))
               (atc-gen-stmt then-term
                             (change-stmt-gin
                              gin
@@ -1954,9 +1964,8 @@
                              :thm-index test.thm-index
                              :names-to-avoid test.names-to-avoid
                              :proofs test.proofs)
-                            ctx
                             state))
-             ((er (stmt-gout else))
+             ((erp (stmt-gout else))
               (atc-gen-stmt else-term
                             (change-stmt-gin
                              gin
@@ -1964,16 +1973,15 @@
                              :thm-index then.thm-index
                              :names-to-avoid then.names-to-avoid
                              :proofs then.proofs)
-                            ctx
                             state))
              ((unless (equal then.type else.type))
-              (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         two branches ~x1 and ~x2 of a conditional term ~
-                         have different types ~x3 and ~x4; ~
-                         use conversion operations, if needed, ~
-                         to make the branches of the same type."
-                        gin.fn then-term else-term then.type else.type))
+              (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     two branches ~x1 and ~x2 of a conditional term ~
+                     have different types ~x3 and ~x4; ~
+                     use conversion operations, if needed, ~
+                     to make the branches of the same type."
+                    gin.fn then-term else-term then.type else.type)))
              (type then.type)
              (limit (pseudo-term-fncall
                      'binary-+
@@ -1982,7 +1990,7 @@
                       (pseudo-term-fncall
                        'binary-+
                        (list then.limit else.limit))))))
-          (acl2::value
+          (retok
            (make-stmt-gout
             :items
             (list
@@ -2008,42 +2016,42 @@
               (b* ((var var?)
                    ((mv info? & errorp) (atc-check-var var gin.inscope))
                    ((when errorp)
-                    (er-soft+ ctx t (irr)
-                              "When generating C code for the function ~x0, ~
-                               a new variable ~x1 has been encountered ~
-                               that has the same symbol name as, ~
-                               but different package name from, ~
-                               a variable already in scope. ~
-                               This is disallowed."
-                              gin.fn var))
+                    (reterr
+                     (msg "When generating C code for the function ~x0, ~
+                           a new variable ~x1 has been encountered ~
+                           that has the same symbol name as, ~
+                           but different package name from, ~
+                           a variable already in scope. ~
+                           This is disallowed."
+                          gin.fn var)))
                    ((when info?)
-                    (er-soft+ ctx t (irr)
-                              "The variable ~x0 in the function ~x1 ~
-                               is already in scope and cannot be re-declared."
-                              var gin.fn))
+                    (reterr
+                     (msg "The variable ~x0 in the function ~x1 ~
+                           is already in scope and cannot be re-declared."
+                          var gin.fn)))
                    ((unless (paident-stringp (symbol-name var)))
-                    (er-soft+ ctx t (irr)
-                              "The symbol name ~s0 of ~
-                               the MV-LET variable ~x1 of the function ~x2 ~
-                               must be a portable ASCII C identifier, ~
-                               but it is not."
-                              (symbol-name var) var gin.fn))
+                    (reterr
+                     (msg "The symbol name ~s0 of ~
+                           the MV-LET variable ~x1 of the function ~x2 ~
+                           must be a portable ASCII C identifier, ~
+                           but it is not."
+                          (symbol-name var) var gin.fn)))
                    ((mv info?-list innermostp-list)
                     (atc-get-vars-check-innermost vars gin.inscope))
                    ((when (member-eq nil info?-list))
-                    (er-soft+ ctx t (irr)
-                              "When generating C code for the function ~x0, ~
-                               an attempt is made to modify the variables ~x1, ~
-                               not all of which are in scope."
-                              gin.fn vars))
+                    (reterr
+                     (msg "When generating C code for the function ~x0, ~
+                           an attempt is made to modify the variables ~x1, ~
+                           not all of which are in scope."
+                          gin.fn vars)))
                    ((unless (atc-vars-assignablep
                              vars innermostp-list gin.affect))
-                    (er-soft+ ctx t (irr)
-                              "When generating C code for the function ~x0, ~
-                               an attempt is made to modify the variables ~x1, ~
-                               not all of which are assignable."
-                              gin.fn vars))
-                   ((mv erp (expr-gout init))
+                    (reterr
+                     (msg "When generating C code for the function ~x0, ~
+                           an attempt is made to modify the variables ~x1, ~
+                           not all of which are assignable."
+                          gin.fn vars)))
+                   ((erp (expr-gout init))
                     (atc-gen-expr val-term
                                   (make-expr-gin
                                    :var-term-alist gin.var-term-alist
@@ -2055,28 +2063,26 @@
                                    :names-to-avoid gin.names-to-avoid
                                    :proofs gin.proofs)
                                   state))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                    ((when (type-case init.type :pointer))
-                    (er-soft+ ctx t (irr)
-                              "When generating C code for the function ~x0, ~
-                               the term ~x1 of pointer type ~x2 ~
-                               is being assigned to a new variable ~x3. ~
-                               This is currently disallowed, ~
-                               because it would create an alias."
-                              gin.fn val-term init.type var))
+                    (reterr
+                     (msg "When generating C code for the function ~x0, ~
+                           the term ~x1 of pointer type ~x2 ~
+                           is being assigned to a new variable ~x3. ~
+                           This is currently disallowed, ~
+                           because it would create an alias."
+                          gin.fn val-term init.type var)))
                    ((unless (equal init.affect vars))
-                    (er-soft+ ctx t (irr)
-                              "The term ~x0 to which the variable ~x1 is bound ~
-                               must affect the variables ~x2, ~
-                               but it affects ~x3 instead."
-                              val-term var vars init.affect))
-                   (erp
+                    (reterr
+                     (msg "The term ~x0 to which the variable ~x1 is bound ~
+                           must affect the variables ~x2, ~
+                           but it affects ~x3 instead."
+                          val-term var vars init.affect)))
+                   ((erp)
                     (atc-ensure-formals-not-lost vars
                                                  gin.affect
                                                  gin.typed-formals
                                                  gin.fn
                                                  wrld))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                    ((mv tyspec declor) (ident+type-to-tyspec+declor
                                         (make-ident :name (symbol-name var))
                                         init.type))
@@ -2087,7 +2093,7 @@
                    (item (block-item-declon declon))
                    (varinfo (make-atc-var-info :type init.type :thm nil))
                    (inscope-body (atc-add-var var varinfo gin.inscope))
-                   ((er (stmt-gout body))
+                   ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
@@ -2095,7 +2101,6 @@
                                    :inscope inscope-body
                                    :thm-index init.thm-index
                                    :names-to-avoid init.names-to-avoid)
-                                  ctx
                                   state))
                    (type body.type)
                    (limit (pseudo-term-fncall
@@ -2104,31 +2109,31 @@
                                  (pseudo-term-fncall
                                   'binary-+
                                   (list init.limit body.limit))))))
-                (acl2::value (make-stmt-gout
-                              :items (cons item body.items)
-                              :type type
-                              :limit limit
-                              :events (append init.events body.events)
-                              :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid
-                              :proofs nil))))
+                (retok (make-stmt-gout
+                        :items (cons item body.items)
+                        :type type
+                        :limit limit
+                        :events (append init.events body.events)
+                        :thm-index body.thm-index
+                        :names-to-avoid body.names-to-avoid
+                        :proofs nil))))
              ((when (eq wrapper? 'assign))
               (b* ((var var?)
                    ((mv info? innermostp &) (atc-check-var var gin.inscope))
                    ((unless info?)
-                    (er-soft+ ctx t (irr)
-                              "When generating C code for the function ~x0, ~
-                               an attempt is being made ~
-                               to modify a variable ~x1 not in scope."
-                              gin.fn var))
+                    (reterr
+                     (msg "When generating C code for the function ~x0, ~
+                           an attempt is being made ~
+                           to modify a variable ~x1 not in scope."
+                          gin.fn var)))
                    ((unless (atc-var-assignablep var innermostp gin.affect))
-                    (er-soft+ ctx t (irr)
-                              "When generating C code for the function ~x0, ~
-                               an attempt is being made ~
-                               to modify a non-assignable variable ~x1."
-                              gin.fn var))
+                    (reterr
+                     (msg "When generating C code for the function ~x0, ~
+                           an attempt is being made ~
+                           to modify a non-assignable variable ~x1."
+                          gin.fn var)))
                    (prev-type (atc-var-info->type info?))
-                   ((mv erp (expr-gout rhs))
+                   ((erp (expr-gout rhs))
                     (atc-gen-expr val-term
                                   (make-expr-gin
                                    :var-term-alist gin.var-term-alist
@@ -2140,44 +2145,41 @@
                                    :names-to-avoid gin.names-to-avoid
                                    :proofs gin.proofs)
                                   state))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                    ((unless (equal prev-type rhs.type))
-                    (er-soft+ ctx t (irr)
-                              "The type ~x0 of the term ~x1 ~
-                               assigned to the LET variable ~x2 ~
-                               of the function ~x3 ~
-                               differs from the type ~x4 ~
-                               of a variable with the same symbol in scope."
-                              rhs.type val-term var gin.fn prev-type))
+                    (reterr
+                     (msg "The type ~x0 of the term ~x1 ~
+                           assigned to the LET variable ~x2 ~
+                           of the function ~x3 ~
+                           differs from the type ~x4 ~
+                           of a variable with the same symbol in scope."
+                          rhs.type val-term var gin.fn prev-type)))
                    ((unless (equal rhs.affect vars))
-                    (er-soft+ ctx t (irr)
-                              "The term ~x0 to which the variable ~x1 is bound ~
-                               must affect the variables ~x2, ~
-                               but it affects ~x3 instead."
-                              val-term var vars rhs.affect))
-                   (erp
+                    (reterr
+                     (msg "The term ~x0 to which the variable ~x1 is bound ~
+                           must affect the variables ~x2, ~
+                           but it affects ~x3 instead."
+                          val-term var vars rhs.affect)))
+                   ((erp)
                     (atc-ensure-formals-not-lost vars
                                                  gin.affect
                                                  gin.typed-formals
                                                  gin.fn
                                                  wrld))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                    ((when (type-case rhs.type :array))
-                    (raise "Internal error: array type ~x0." rhs.type)
-                    (acl2::value (irr)))
+                    (reterr (raise "Internal error: array type ~x0." rhs.type)))
                    ((when (type-case rhs.type :pointer))
-                    (er-soft+ ctx t (irr)
-                              "The term ~x0 to which the variable ~x1 is bound ~
-                               must not have a C pointer type, ~
-                               but it has type ~x2 instead."
-                              val-term var rhs.type))
+                    (reterr
+                     (msg "The term ~x0 to which the variable ~x1 is bound ~
+                           must not have a C pointer type, ~
+                           but it has type ~x2 instead."
+                          val-term var rhs.type)))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (expr-ident (make-ident :name (symbol-name var)))
                          :arg2 rhs.expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
-                   ((er (stmt-gout body))
+                   ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
@@ -2185,7 +2187,6 @@
                                    :thm-index rhs.thm-index
                                    :names-to-avoid rhs.names-to-avoid
                                    :proofs rhs.proofs)
-                                  ctx
                                   state))
                    (type body.type)
                    (limit (pseudo-term-fncall
@@ -2194,61 +2195,59 @@
                                  (pseudo-term-fncall
                                   'binary-+
                                   (list rhs.limit body.limit))))))
-                (acl2::value (make-stmt-gout
-                              :items (cons item body.items)
-                              :type type
-                              :limit limit
-                              :events (append rhs.events body.events)
-                              :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid
-                              :proofs nil))))
+                (retok (make-stmt-gout
+                        :items (cons item body.items)
+                        :type type
+                        :limit limit
+                        :events (append rhs.events body.events)
+                        :thm-index body.thm-index
+                        :names-to-avoid body.names-to-avoid
+                        :proofs nil))))
              ((unless (eq wrapper? nil))
-              (prog2$ (raise "Internal error: MV-LET wrapper is ~x0." wrapper?)
-                      (acl2::value (irr))))
+              (reterr
+               (raise "Internal error: MV-LET wrapper is ~x0." wrapper?)))
              ((mv info?-list innermostp-list)
               (atc-get-vars-check-innermost vars gin.inscope))
              ((when (member-eq nil info?-list))
-              (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         an attempt is made to modify the variables ~x1, ~
-                         not all of which are in scope."
-                        gin.fn vars))
+              (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     an attempt is made to modify the variables ~x1, ~
+                     not all of which are in scope."
+                    gin.fn vars)))
              ((unless (atc-vars-assignablep vars innermostp-list gin.affect))
-              (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         an attempt is made to modify the variables ~x1, ~
-                         not all of which are assignable."
-                        gin.fn vars))
+              (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     an attempt is made to modify the variables ~x1, ~
+                     not all of which are assignable."
+                    gin.fn vars)))
              ((unless (atc-affecting-term-for-let-p val-term gin.prec-fns))
-              (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         an MV-LET has been encountered ~
-                         whose term ~x1 to which the variables are bound ~
-                         does not have the required form."
-                        gin.fn val-term))
-             (erp
+              (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     an MV-LET has been encountered ~
+                     whose term ~x1 to which the variables are bound ~
+                     does not have the required form."
+                    gin.fn val-term)))
+             ((erp)
               (atc-ensure-formals-not-lost vars
                                            gin.affect
                                            gin.typed-formals
                                            gin.fn
                                            wrld))
-             ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
-             ((er (stmt-gout xform))
+             ((erp (stmt-gout xform))
               (atc-gen-stmt val-term
                             (change-stmt-gin gin
                                              :affect vars
                                              :loop-flag nil)
-                            ctx
                             state))
              ((unless (type-case xform.type :void))
-              (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         an MV-LET has been encountered ~
-                         whose term ~x1 to which the variables are bound ~
-                         has the non-void type ~x2, ~
-                         which is disallowed."
-                        gin.fn val-term xform.type))
-             ((er (stmt-gout body))
+              (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     an MV-LET has been encountered ~
+                     whose term ~x1 to which the variables are bound ~
+                     has the non-void type ~x2, ~
+                     which is disallowed."
+                    gin.fn val-term xform.type)))
+             ((erp (stmt-gout body))
               (atc-gen-stmt body-term
                             (change-stmt-gin
                              gin
@@ -2256,20 +2255,19 @@
                              :thm-index xform.thm-index
                              :names-to-avoid xform.names-to-avoid
                              :proofs xform.proofs)
-                            ctx
                             state))
              (items (append xform.items body.items))
              (type body.type)
              (limit (pseudo-term-fncall 'binary-+
                                         (list xform.limit body.limit))))
-          (acl2::value (make-stmt-gout
-                        :items items
-                        :type type
-                        :limit limit
-                        :events (append xform.events body.events)
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
+          (retok (make-stmt-gout
+                  :items items
+                  :type type
+                  :limit limit
+                  :events (append xform.events body.events)
+                  :thm-index body.thm-index
+                  :names-to-avoid body.names-to-avoid
+                  :proofs nil))))
        ((mv okp var val-term body-term wrapper?) (atc-check-let term))
        ((when okp)
         (b* ((val-instance (fty-fsublis-var gin.var-term-alist val-term))
@@ -2281,17 +2279,17 @@
               (atc-check-array-write var val-term))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
-                    (er-soft+ ctx t (irr)
-                              "The array write term ~x0 to which ~x1 is bound ~
-                               has the ~x2 wrapper, which is disallowed."
-                              val-term var wrapper?))
+                    (reterr
+                     (msg "The array write term ~x0 to which ~x1 is bound ~
+                           has the ~x2 wrapper, which is disallowed."
+                          val-term var wrapper?)))
                    ((unless (member-eq var gin.affect))
-                    (er-soft+ ctx t (irr)
-                              "The array ~x0 is being written to, ~
-                               but it is not among the variables ~x1 ~
-                               currently affected."
-                              var gin.affect))
-                   ((mv erp (pexpr-gout arr))
+                    (reterr
+                     (msg "The array ~x0 is being written to, ~
+                           but it is not among the variables ~x1 ~
+                           currently affected."
+                          var gin.affect)))
+                   ((erp (pexpr-gout arr))
                     (atc-gen-expr-pure var
                                        (make-pexpr-gin
                                         :inscope gin.inscope
@@ -2301,8 +2299,7 @@
                                         :names-to-avoid gin.names-to-avoid
                                         :proofs gin.proofs)
                                        state))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
-                   ((mv erp (pexpr-gout sub))
+                   ((erp (pexpr-gout sub))
                     (atc-gen-expr-pure sub-term
                                        (make-pexpr-gin
                                         :inscope gin.inscope
@@ -2312,8 +2309,7 @@
                                         :names-to-avoid arr.names-to-avoid
                                         :proofs arr.proofs)
                                        state))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
-                   ((mv erp (pexpr-gout elem))
+                   ((erp (pexpr-gout elem))
                     (atc-gen-expr-pure elem-term
                                        (make-pexpr-gin
                                         :inscope gin.inscope
@@ -2323,35 +2319,34 @@
                                         :names-to-avoid sub.names-to-avoid
                                         :proofs sub.proofs)
                                        state))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                    ((unless (equal arr.type (type-pointer elem-type)))
-                    (er-soft+ ctx t (irr)
-                              "The array ~x0 of type ~x1 ~
-                               does not have the expected type ~x2. ~
-                               This is indicative of ~
-                               unreachable code under the guards, ~
-                               given that the code is guard-verified."
-                              var arr.type (type-pointer elem-type)))
+                    (reterr
+                     (msg "The array ~x0 of type ~x1 ~
+                           does not have the expected type ~x2. ~
+                           This is indicative of ~
+                           unreachable code under the guards, ~
+                           given that the code is guard-verified."
+                          var arr.type (type-pointer elem-type))))
                    ((unless (equal sub.type sub-type))
-                    (er-soft+ ctx t (irr)
-                              "The array ~x0 of type ~x1 ~
-                               is being indexed with ~
-                               a subscript ~x2 of type x3, ~
-                               instead of type ~x4 as expected.
-                               This is indicative of ~
-                               unreachable code under the guards, ~
-                               given that the code is guard-verified."
-                              var arr.type sub sub.type sub-type))
+                    (reterr
+                     (msg "The array ~x0 of type ~x1 ~
+                           is being indexed with ~
+                           a subscript ~x2 of type x3, ~
+                           instead of type ~x4 as expected.
+                           This is indicative of ~
+                           unreachable code under the guards, ~
+                           given that the code is guard-verified."
+                          var arr.type sub sub.type sub-type)))
                    ((unless (equal elem.type elem-type))
-                    (er-soft+ ctx t (irr)
-                              "The array ~x0 of type ~x1 ~
-                               is being written to with ~
-                               an element ~x2 of type x3, ~
-                               instead of type ~x4 as expected.
-                               This is indicative of ~
-                               unreachable code under the guards, ~
-                               given that the code is guard-verified."
-                              var arr.type elem elem.type elem-type))
+                    (reterr
+                     (msg "The array ~x0 of type ~x1 ~
+                           is being written to with ~
+                           an element ~x2 of type x3, ~
+                           instead of type ~x4 as expected.
+                           This is indicative of ~
+                           unreachable code under the guards, ~
+                           given that the code is guard-verified."
+                          var arr.type elem elem.type elem-type)))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (make-expr-arrsub :arr arr.expr
@@ -2359,39 +2354,38 @@
                          :arg2 elem.expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
-                   ((er (stmt-gout body))
+                   ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body
                                    :thm-index elem.thm-index
                                    :names-to-avoid elem.names-to-avoid)
-                                  ctx
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
                                               (list (pseudo-term-quote 4)
                                                     body.limit))))
-                (acl2::value (make-stmt-gout
-                              :items (cons item body.items)
-                              :type body.type
-                              :limit limit
-                              :events (append arr.events
-                                              sub.events
-                                              elem.events
-                                              body.events)
-                              :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid
-                              :proofs nil))))
+                (retok (make-stmt-gout
+                        :items (cons item body.items)
+                        :type body.type
+                        :limit limit
+                        :events (append arr.events
+                                        sub.events
+                                        elem.events
+                                        body.events)
+                        :thm-index body.thm-index
+                        :names-to-avoid body.names-to-avoid
+                        :proofs nil))))
              ((mv okp member-term tag member-name member-type)
               (atc-check-struct-write-scalar var val-term gin.prec-tags))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
-                    (er-soft+ ctx t (irr)
-                              "The structure write term ~x0 ~
-                               to which ~x1 is bound ~
-                               has the ~x2 wrapper, which is disallowed."
-                              val-term var wrapper?))
-                   ((mv erp (pexpr-gout struct))
+                    (reterr
+                     (msg "The structure write term ~x0 ~
+                           to which ~x1 is bound ~
+                           has the ~x2 wrapper, which is disallowed."
+                          val-term var wrapper?)))
+                   ((erp (pexpr-gout struct))
                     (atc-gen-expr-pure var
                                        (make-pexpr-gin
                                         :inscope gin.inscope
@@ -2401,32 +2395,31 @@
                                         :names-to-avoid gin.names-to-avoid
                                         :proofs gin.proofs)
                                        state))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
-                   ((er pointerp)
+                   ((erp pointerp)
                     (cond
                      ((equal struct.type (type-struct tag))
-                      (acl2::value nil))
+                      (retok nil))
                      ((equal struct.type (type-pointer (type-struct tag)))
-                      (acl2::value t))
-                     (t (er-soft+ ctx t (irr)
-                                  "The structure ~x0 of type ~x1 ~
-                                   does not have the expected type ~x2 or ~x3. ~
-                                   This is indicative of ~
-                                   unreachable code under the guards, ~
-                                   given that the code is guard-verified."
-                                  var
-                                  struct.type
-                                  (type-struct tag)
-                                  (type-pointer (type-struct tag))))))
+                      (retok t))
+                     (t (reterr
+                         (msg "The structure ~x0 of type ~x1 ~
+                               does not have the expected type ~x2 or ~x3. ~
+                               This is indicative of ~
+                               unreachable code under the guards, ~
+                               given that the code is guard-verified."
+                              var
+                              struct.type
+                              (type-struct tag)
+                              (type-pointer (type-struct tag)))))))
                    ((when (and pointerp
                                (not (member-eq var gin.affect))))
-                    (er-soft+ ctx t (irr)
-                              "The structure ~x0 ~
-                               is being written to by pointer, ~
-                               but it is not among the variables ~x1 ~
-                               currently affected."
-                              var gin.affect))
-                   ((mv erp (pexpr-gout member))
+                    (reterr
+                     (msg "The structure ~x0 ~
+                           is being written to by pointer, ~
+                           but it is not among the variables ~x1 ~
+                           currently affected."
+                          var gin.affect)))
+                   ((erp (pexpr-gout member))
                     (atc-gen-expr-pure member-term
                                        (make-pexpr-gin
                                         :inscope gin.inscope
@@ -2436,18 +2429,17 @@
                                         :names-to-avoid struct.names-to-avoid
                                         :proofs struct.proofs)
                                        state))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                    ((unless (equal member.type member-type))
-                    (er-soft+ ctx t (irr)
-                              "The structure ~x0 of type ~x1 ~
-                               is being written to with ~
-                               a member ~x2 of type ~x3, ~
-                               instead of type ~x4 as expected. ~
-                               This is indicative of ~
-                               unreachable code under the guards, ~
-                               given that the code is guard-verified."
-                              var struct.type member-term
-                              member.type member-type))
+                    (reterr
+                     (msg "The structure ~x0 of type ~x1 ~
+                           is being written to with ~
+                           a member ~x2 of type ~x3, ~
+                           instead of type ~x4 as expected. ~
+                           This is indicative of ~
+                           unreachable code under the guards, ~
+                           given that the code is guard-verified."
+                          var struct.type member-term
+                          member.type member-type)))
                    (asg-mem (if pointerp
                                 (make-expr-memberp :target struct.expr
                                                    :name member-name)
@@ -2458,7 +2450,7 @@
                                           :arg2 member.expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
-                   ((er (stmt-gout body))
+                   ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
@@ -2466,30 +2458,29 @@
                                    :thm-index member.thm-index
                                    :names-to-avoid member.names-to-avoid
                                    :proofs member.proofs)
-                                  ctx
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
                                               (list (pseudo-term-quote 4)
                                                     body.limit))))
-                (acl2::value (make-stmt-gout
-                              :items (cons item body.items)
-                              :type body.type
-                              :limit limit
-                              :events (append struct.events
-                                              member.events)
-                              :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid
-                              :proofs nil))))
+                (retok (make-stmt-gout
+                        :items (cons item body.items)
+                        :type body.type
+                        :limit limit
+                        :events (append struct.events
+                                        member.events)
+                        :thm-index body.thm-index
+                        :names-to-avoid body.names-to-avoid
+                        :proofs nil))))
              ((mv okp index-term elem-term tag member index-type elem-type)
               (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
-                    (er-soft+ ctx t (irr)
-                              "The structure write term ~x0 ~
-                               to which ~x1 is bound ~
-                               has the ~x2 wrapper, which is disallowed."
-                              val-term var wrapper?))
-                   ((mv erp (pexpr-gout struct))
+                    (reterr
+                     (msg "The structure write term ~x0 ~
+                           to which ~x1 is bound ~
+                           has the ~x2 wrapper, which is disallowed."
+                          val-term var wrapper?)))
+                   ((erp (pexpr-gout struct))
                     (atc-gen-expr-pure var
                                        (make-pexpr-gin
                                         :inscope gin.inscope
@@ -2499,32 +2490,31 @@
                                         :names-to-avoid gin.names-to-avoid
                                         :proofs gin.proofs)
                                        state))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
-                   ((er pointerp)
+                   ((erp pointerp)
                     (cond
                      ((equal struct.type (type-struct tag))
-                      (acl2::value nil))
+                      (retok nil))
                      ((equal struct.type (type-pointer (type-struct tag)))
-                      (acl2::value t))
-                     (t (er-soft+ ctx t (irr)
-                                  "The structure ~x0 of type ~x1 ~
-                                   does not have the expected type ~x2 or ~x3. ~
-                                   This is indicative of ~
-                                   unreachable code under the guards, ~
-                                   given that the code is guard-verified."
-                                  var
-                                  struct.type
-                                  (type-struct tag)
-                                  (type-pointer (type-struct tag))))))
+                      (retok t))
+                     (t (reterr
+                         (msg "The structure ~x0 of type ~x1 ~
+                               does not have the expected type ~x2 or ~x3. ~
+                               This is indicative of ~
+                               unreachable code under the guards, ~
+                               given that the code is guard-verified."
+                              var
+                              struct.type
+                              (type-struct tag)
+                              (type-pointer (type-struct tag)))))))
                    ((when (and pointerp
                                (not (member-eq var gin.affect))))
-                    (er-soft+ ctx t (irr)
-                              "The structure ~x0 ~
-                               is being written to by pointer, ~
-                               but it is not among the variables ~x1 ~
-                               currently affected."
-                              var gin.affect))
-                   ((mv erp (pexpr-gout index))
+                    (reterr
+                     (msg "The structure ~x0 ~
+                           is being written to by pointer, ~
+                           but it is not among the variables ~x1 ~
+                           currently affected."
+                          var gin.affect)))
+                   ((erp (pexpr-gout index))
                     (atc-gen-expr-pure index-term
                                        (make-pexpr-gin
                                         :inscope gin.inscope
@@ -2534,18 +2524,17 @@
                                         :names-to-avoid struct.names-to-avoid
                                         :proofs struct.proofs)
                                        state))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                    ((unless (equal index.type index-type))
-                    (er-soft+ ctx t (irr)
-                              "The structure ~x0 of type ~x1 ~
-                               is being written to with ~
-                               an index ~x2 of type ~x3, ~
-                               instead of type ~x4 as expected. ~
-                               This is indicative of ~
-                               unreachable code under the guards, ~
-                               given that the code is guard-verified."
-                              var struct.type index-term index.type index-type))
-                   ((mv erp (pexpr-gout elem))
+                    (reterr
+                     (msg "The structure ~x0 of type ~x1 ~
+                           is being written to with ~
+                           an index ~x2 of type ~x3, ~
+                           instead of type ~x4 as expected. ~
+                           This is indicative of ~
+                           unreachable code under the guards, ~
+                           given that the code is guard-verified."
+                          var struct.type index-term index.type index-type)))
+                   ((erp (pexpr-gout elem))
                     (atc-gen-expr-pure elem-term
                                        (make-pexpr-gin
                                         :inscope gin.inscope
@@ -2555,17 +2544,16 @@
                                         :names-to-avoid index.names-to-avoid
                                         :proofs index.proofs)
                                        state))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                    ((unless (equal elem.type elem-type))
-                    (er-soft+ ctx t (irr)
-                              "The structure ~x0 of type ~x1 ~
-                               is being written to with ~
-                               a member array element ~x2 of type ~x3, ~
-                               instead of type ~x4 as expected.
-                               This is indicative of ~
-                               unreachable code under the guards, ~
-                               given that the code is guard-verified."
-                              var struct.type elem-term elem.type elem-type))
+                    (reterr
+                     (msg "The structure ~x0 of type ~x1 ~
+                           is being written to with ~
+                           a member array element ~x2 of type ~x3, ~
+                           instead of type ~x4 as expected.
+                           This is indicative of ~
+                           unreachable code under the guards, ~
+                           given that the code is guard-verified."
+                          var struct.type elem-term elem.type elem-type)))
                    (asg-mem (if pointerp
                                 (make-expr-memberp :target struct.expr
                                                    :name member)
@@ -2578,7 +2566,7 @@
                          :arg2 elem.expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
-                   ((er (stmt-gout body))
+                   ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
@@ -2586,46 +2574,45 @@
                                    :thm-index elem.thm-index
                                    :names-to-avoid elem.names-to-avoid
                                    :proofs elem.proofs)
-                                  ctx
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
                                               (list (pseudo-term-quote 4)
                                                     body.limit))))
-                (acl2::value (make-stmt-gout
-                              :items (cons item body.items)
-                              :type body.type
-                              :limit limit
-                              :events (append struct.events
-                                              index.events
-                                              elem.events
-                                              body.events)
-                              :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid
-                              :proofs nil))))
+                (retok (make-stmt-gout
+                        :items (cons item body.items)
+                        :type body.type
+                        :limit limit
+                        :events (append struct.events
+                                        index.events
+                                        elem.events
+                                        body.events)
+                        :thm-index body.thm-index
+                        :names-to-avoid body.names-to-avoid
+                        :proofs nil))))
              ((mv info? innermostp errorp) (atc-check-var var gin.inscope))
              ((when errorp)
-              (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         a new variable ~x1 has been encountered ~
-                         that has the same symbol name as, ~
-                         but different package name from, ~
-                         a variable already in scope. ~
-                         This is disallowed."
-                        gin.fn var))
+              (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     a new variable ~x1 has been encountered ~
+                     that has the same symbol name as, ~
+                     but different package name from, ~
+                     a variable already in scope. ~
+                     This is disallowed."
+                    gin.fn var)))
              ((when (eq wrapper? 'declar))
               (b* (((when info?)
-                    (er-soft+ ctx t (irr)
-                              "The variable ~x0 in the function ~x1 ~
-                               is already in scope and cannot be re-declared."
-                              var gin.fn))
+                    (reterr
+                     (msg "The variable ~x0 in the function ~x1 ~
+                           is already in scope and cannot be re-declared."
+                          var gin.fn)))
                    ((unless (paident-stringp (symbol-name var)))
-                    (er-soft+ ctx t (irr)
-                              "The symbol name ~s0 of ~
-                               the LET variable ~x1 of the function ~x2 ~
-                               must be a portable ASCII C identifier, ~
-                               but it is not."
-                              (symbol-name var) var gin.fn))
-                   ((mv erp (expr-gout init))
+                    (reterr
+                     (msg "The symbol name ~s0 of ~
+                           the LET variable ~x1 of the function ~x2 ~
+                           must be a portable ASCII C identifier, ~
+                           but it is not."
+                          (symbol-name var) var gin.fn)))
+                   ((erp (expr-gout init))
                     (atc-gen-expr val-term
                                   (make-expr-gin
                                    :var-term-alist gin.var-term-alist
@@ -2637,21 +2624,20 @@
                                    :names-to-avoid gin.names-to-avoid
                                    :proofs gin.proofs)
                                   state))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                    ((when (type-case init.type :pointer))
-                    (er-soft+ ctx t (irr)
-                              "When generating C code for the function ~x0, ~
-                               the term ~x1 of pointer type ~x2 ~
-                               is being assigned to a new variable ~x3. ~
-                               This is currently disallowed, ~
-                               because it would create an alias."
-                              gin.fn val-term init.type var))
+                    (reterr
+                     (msg "When generating C code for the function ~x0, ~
+                           the term ~x1 of pointer type ~x2 ~
+                           is being assigned to a new variable ~x3. ~
+                           This is currently disallowed, ~
+                           because it would create an alias."
+                          gin.fn val-term init.type var)))
                    ((when (consp init.affect))
-                    (er-soft+ ctx t (irr)
-                              "The term ~x0 to which the variable ~x1 is bound ~
-                               must not affect any variables, ~
-                               but it affects ~x2 instead."
-                              val-term var init.affect))
+                    (reterr
+                     (msg "The term ~x0 to which the variable ~x1 is bound ~
+                           must not affect any variables, ~
+                           but it affects ~x2 instead."
+                          val-term var init.affect)))
                    ((mv tyspec declor) (ident+type-to-tyspec+declor
                                         (make-ident :name (symbol-name var))
                                         init.type))
@@ -2662,7 +2648,7 @@
                    (item (block-item-declon declon))
                    (varinfo (make-atc-var-info :type init.type :thm nil))
                    (inscope-body (atc-add-var var varinfo gin.inscope))
-                   ((er (stmt-gout body))
+                   ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
@@ -2671,7 +2657,6 @@
                                    :thm-index init.thm-index
                                    :names-to-avoid init.names-to-avoid
                                    :proofs init.proofs)
-                                  ctx
                                   state))
                    (type body.type)
                    (limit (pseudo-term-fncall
@@ -2680,27 +2665,27 @@
                                  (pseudo-term-fncall
                                   'binary-+
                                   (list init.limit body.limit))))))
-                (acl2::value (make-stmt-gout
-                              :items (cons item body.items)
-                              :type type
-                              :limit limit
-                              :events (append init.events body.events)
-                              :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid
-                              :proofs nil))))
+                (retok (make-stmt-gout
+                        :items (cons item body.items)
+                        :type type
+                        :limit limit
+                        :events (append init.events body.events)
+                        :thm-index body.thm-index
+                        :names-to-avoid body.names-to-avoid
+                        :proofs nil))))
              ((unless (atc-var-assignablep var innermostp gin.affect))
-              (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         an attempt is being made ~
-                         to modify a non-assignable variable ~x1."
-                        gin.fn var))
+              (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     an attempt is being made ~
+                     to modify a non-assignable variable ~x1."
+                    gin.fn var)))
              ((when (eq wrapper? 'assign))
               (b* (((unless info?)
-                    (raise "Internal error: no information for variable ~x0."
-                           var)
-                    (acl2::value (irr)))
+                    (reterr
+                     (raise "Internal error: no information for variable ~x0."
+                            var)))
                    (prev-type (atc-var-info->type info?))
-                   ((mv erp (expr-gout rhs))
+                   ((erp (expr-gout rhs))
                     (atc-gen-expr val-term
                                   (make-expr-gin
                                    :var-term-alist gin.var-term-alist
@@ -2712,37 +2697,36 @@
                                    :names-to-avoid gin.names-to-avoid
                                    :proofs gin.proofs)
                                   state))
-                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                    ((unless (equal prev-type rhs.type))
-                    (er-soft+ ctx t (irr)
-                              "The type ~x0 of the term ~x1 ~
-                               assigned to the LET variable ~x2 ~
-                               of the function ~x3 ~
-                               differs from the type ~x4 ~
-                               of a variable with the same symbol in scope."
-                              rhs.type val-term var gin.fn prev-type))
+                    (reterr
+                     (msg "The type ~x0 of the term ~x1 ~
+                           assigned to the LET variable ~x2 ~
+                           of the function ~x3 ~
+                           differs from the type ~x4 ~
+                           of a variable with the same symbol in scope."
+                          rhs.type val-term var gin.fn prev-type)))
                    ((when (consp rhs.affect))
-                    (er-soft+ ctx t (irr)
-                              "The term ~x0 to which the variable ~x1 is bound ~
-                               must not affect any variables, ~
-                               but it affects ~x2 instead."
-                              val-term var rhs.affect))
+                    (reterr
+                     (msg "The term ~x0 to which the variable ~x1 is bound ~
+                           must not affect any variables, ~
+                           but it affects ~x2 instead."
+                          val-term var rhs.affect)))
                    ((when (type-case rhs.type :array))
-                    (raise "Internal error: array type ~x0." rhs.type)
-                    (acl2::value (irr)))
+                    (reterr
+                     (raise "Internal error: array type ~x0." rhs.type)))
                    ((when (type-case rhs.type :pointer))
-                    (er-soft+ ctx t (irr)
-                              "The term ~x0 to which the variable ~x1 is bound ~
-                               must not have a C pointer type, ~
-                               but it has type ~x2 instead."
-                              val-term var rhs.type))
+                    (reterr
+                     (msg "The term ~x0 to which the variable ~x1 is bound ~
+                           must not have a C pointer type, ~
+                           but it has type ~x2 instead."
+                          val-term var rhs.type)))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (expr-ident (make-ident :name (symbol-name var)))
                          :arg2 rhs.expr))
                    (stmt (stmt-expr asg))
                    (item (block-item-stmt stmt))
-                   ((er (stmt-gout body))
+                   ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
@@ -2750,7 +2734,6 @@
                                    :thm-index rhs.thm-index
                                    :names-to-avoid rhs.names-to-avoid
                                    :proofs rhs.proofs)
-                                  ctx
                                   state))
                    (type body.type)
                    (limit (pseudo-term-fncall
@@ -2759,50 +2742,47 @@
                                  (pseudo-term-fncall
                                   'binary-+
                                   (list rhs.limit body.limit))))))
-                (acl2::value (make-stmt-gout
-                              :items (cons item body.items)
-                              :type type
-                              :limit limit
-                              :events (append rhs.events body.events)
-                              :thm-index body.thm-index
-                              :names-to-avoid body.names-to-avoid
-                              :proofs nil))))
+                (retok (make-stmt-gout
+                        :items (cons item body.items)
+                        :type type
+                        :limit limit
+                        :events (append rhs.events body.events)
+                        :thm-index body.thm-index
+                        :names-to-avoid body.names-to-avoid
+                        :proofs nil))))
              ((unless (eq wrapper? nil))
-              (prog2$ (raise "Internal error: LET wrapper is ~x0." wrapper?)
-                      (acl2::value (irr))))
+              (reterr (raise "Internal error: LET wrapper is ~x0." wrapper?)))
              ((unless (atc-affecting-term-for-let-p val-term gin.prec-fns))
-              (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         we encountered a LET binding ~
-                         of the variable ~x1 to the term ~x2 ~
-                         that does not have any of the allowed forms. ~
-                         See the user documentation."
-                        gin.fn var val-term))
-             (erp
+              (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     we encountered a LET binding ~
+                     of the variable ~x1 to the term ~x2 ~
+                     that does not have any of the allowed forms. ~
+                     See the user documentation."
+                    gin.fn var val-term)))
+             ((erp)
               (atc-ensure-formals-not-lost (list var)
                                            gin.affect
                                            gin.typed-formals
                                            gin.fn
                                            wrld))
-             ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
-             ((er (stmt-gout xform))
+             ((erp (stmt-gout xform))
               (atc-gen-stmt val-term
                             (change-stmt-gin gin
                                              :affect (list var)
                                              :loop-flag nil
                                              :proofs gin.proofs)
-                            ctx
                             state))
              ((unless (type-case xform.type :void))
-              (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         a LET has been encountered ~
-                         whose unwrapped term ~x1 ~
-                         to which the variable is bound ~
-                         has the non-void type ~x2, ~
-                         which is disallowed."
-                        gin.fn val-term xform.type))
-             ((er (stmt-gout body))
+              (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     a LET has been encountered ~
+                     whose unwrapped term ~x1 ~
+                     to which the variable is bound ~
+                     has the non-void type ~x2, ~
+                     which is disallowed."
+                    gin.fn val-term xform.type)))
+             ((erp (stmt-gout body))
               (atc-gen-stmt body-term
                             (change-stmt-gin
                              gin
@@ -2810,61 +2790,59 @@
                              :thm-index xform.thm-index
                              :names-to-avoid xform.names-to-avoid
                              :proofs xform.proofs)
-                            ctx
                             state))
              (items (append xform.items body.items))
              (type body.type)
              (limit (pseudo-term-fncall
                      'binary-+
                      (list xform.limit body.limit))))
-          (acl2::value (make-stmt-gout
-                        :items items
-                        :type type
-                        :limit limit
-                        :events (append xform.events body.events)
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
+          (retok (make-stmt-gout
+                  :items items
+                  :type type
+                  :limit limit
+                  :events (append xform.events body.events)
+                  :thm-index body.thm-index
+                  :names-to-avoid body.names-to-avoid
+                  :proofs nil))))
        ((when (and (pseudo-term-case term :var)
                    (equal gin.affect
                           (list (pseudo-term-var->name term)))))
         (if gin.loop-flag
-            (er-soft+ ctx t (irr)
-                      "A loop body must end with ~
-                       a recursive call on every path, ~
-                       but in the function ~x0 it ends with ~x1 instead."
-                      gin.fn term)
-          (acl2::value (make-stmt-gout
-                        :items nil
-                        :type (type-void)
-                        :limit (pseudo-term-quote 1)
-                        :events nil
-                        :thm-index gin.thm-index
-                        :names-to-avoid gin.names-to-avoid
-                        :proofs nil))))
+            (reterr
+             (msg "A loop body must end with ~
+                   a recursive call on every path, ~
+                   but in the function ~x0 it ends with ~x1 instead."
+                  gin.fn term))
+          (retok (make-stmt-gout
+                  :items nil
+                  :type (type-void)
+                  :limit (pseudo-term-quote 1)
+                  :events nil
+                  :thm-index gin.thm-index
+                  :names-to-avoid gin.names-to-avoid
+                  :proofs nil))))
        ((mv okp terms) (fty-check-list-call term))
        ((when okp)
         (b* (((unless (>= (len terms) 2))
-              (raise "Internal error: MV applied to ~x0." terms)
-              (acl2::value (irr)))
+              (reterr (raise "Internal error: MV applied to ~x0." terms)))
              ((when gin.loop-flag)
-              (er-soft+ ctx t (irr)
-                        "A loop body must end with ~
-                         a recursive call on every path, ~
-                         but in the function ~x0 ~
-                         it ends with ~x1 instead."
-                        gin.fn term)))
+              (reterr
+               (msg "A loop body must end with ~
+                     a recursive call on every path, ~
+                     but in the function ~x0 ~
+                     it ends with ~x1 instead."
+                    gin.fn term))))
           (cond
            ((equal terms gin.affect)
-            (acl2::value (make-stmt-gout :items nil
-                                         :type (type-void)
-                                         :limit (pseudo-term-quote 1)
-                                         :events nil
-                                         :thm-index gin.thm-index
-                                         :names-to-avoid gin.names-to-avoid
-                                         :proofs nil)))
+            (retok (make-stmt-gout :items nil
+                                   :type (type-void)
+                                   :limit (pseudo-term-quote 1)
+                                   :events nil
+                                   :thm-index gin.thm-index
+                                   :names-to-avoid gin.names-to-avoid
+                                   :proofs nil)))
            ((equal (cdr terms) gin.affect)
-            (b* (((mv erp (expr-gout first))
+            (b* (((erp (expr-gout first))
                   (atc-gen-expr (car terms)
                                 (make-expr-gin
                                  :var-term-alist gin.var-term-alist
@@ -2876,125 +2854,124 @@
                                  :names-to-avoid gin.names-to-avoid
                                  :proofs gin.proofs)
                                 state))
-                 ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                  ((when (consp first.affect))
-                  (er-soft+ ctx t (irr)
-                            "The first argument ~x0 of the term ~x1 ~
-                             in the function ~x2 ~
-                             affects the variables ~x3, which is disallowed."
-                            (car terms) term gin.fn first.affect))
+                  (reterr
+                   (msg "The first argument ~x0 of the term ~x1 ~
+                         in the function ~x2 ~
+                         affects the variables ~x3, which is disallowed."
+                        (car terms) term gin.fn first.affect)))
                  (limit (pseudo-term-fncall
                          'binary-+
                          (list (pseudo-term-quote 3)
                                first.limit))))
-              (acl2::value (make-stmt-gout
-                            :items (list (block-item-stmt
-                                          (make-stmt-return :value first.expr)))
-                            :type first.type
-                            :limit limit
-                            :events first.events
-                            :thm-index first.thm-index
-                            :names-to-avoid first.names-to-avoid
-                            :proofs nil))))
-           (t (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         a term ~x0 has been encountered, ~
-                         which is disallowed."
-                        gin.fn term)))))
+              (retok (make-stmt-gout
+                      :items (list (block-item-stmt
+                                    (make-stmt-return :value first.expr)))
+                      :type first.type
+                      :limit limit
+                      :events first.events
+                      :thm-index first.thm-index
+                      :names-to-avoid first.names-to-avoid
+                      :proofs nil))))
+           (t (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     a term ~x0 has been encountered, ~
+                     which is disallowed."
+                    gin.fn term))))))
        ((mv okp loop-fn loop-args in-types loop-affect loop-stmt loop-limit)
         (atc-check-loop-call term gin.var-term-alist gin.prec-fns))
        ((when okp)
         (b* (((when gin.loop-flag)
-              (er-soft+ ctx t (irr)
-                        "A loop body must end with ~
-                         a recursive call on every path, ~
-                         but in the function ~x0 it ends with ~x1 instead."
-                        gin.fn term))
+              (reterr
+               (msg "A loop body must end with ~
+                     a recursive call on every path, ~
+                     but in the function ~x0 it ends with ~x1 instead."
+                    gin.fn term)))
              (formals (formals+ loop-fn wrld))
              ((unless (equal formals loop-args))
-              (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         a call of the recursive function ~x1 ~
-                         has been encountered ~
-                         that is not on its formals, ~
-                         but instead on the arguments ~x2.
-                         This is disallowed; see the ATC user documentation."
-                        gin.fn loop-fn loop-args))
+              (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     a call of the recursive function ~x1 ~
+                     has been encountered ~
+                     that is not on its formals, ~
+                     but instead on the arguments ~x2.
+                     This is disallowed; see the ATC user documentation."
+                    gin.fn loop-fn loop-args)))
              ((unless (equal gin.affect loop-affect))
-              (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         a call of the recursive function ~x1 ~
-                         has been encountered
-                         that represents a loop affecting ~x2, ~
-                         which differs from the variables ~x3 ~
-                         being affected here."
-                        gin.fn loop-fn loop-affect gin.affect))
+              (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     a call of the recursive function ~x1 ~
+                     has been encountered
+                     that represents a loop affecting ~x2, ~
+                     which differs from the variables ~x3 ~
+                     being affected here."
+                    gin.fn loop-fn loop-affect gin.affect)))
              (infos (atc-get-vars formals gin.inscope))
              ((unless (atc-var-info-listp infos))
-              (raise "Internal error: not all formals ~x0 have information ~x1."
-                     formals infos)
-              (acl2::value (irr)))
+              (reterr
+               (raise "Internal error: not all formals ~x0 have information ~x1."
+                      formals infos)))
              (types (atc-var-info-list->type-list infos))
              ((unless (equal types in-types))
-              (er-soft+ ctx t (irr)
-                        "The loop function ~x0 with input types ~x1 ~
-                         is applied to terms ~x2 returning ~x3. ~
-                         This is indicative of dead code under the guards, ~
-                         given that the code is guard-verified."
-                        loop-fn in-types formals types))
+              (reterr
+               (msg "The loop function ~x0 with input types ~x1 ~
+                     is applied to terms ~x2 returning ~x3. ~
+                     This is indicative of dead code under the guards, ~
+                     given that the code is guard-verified."
+                    loop-fn in-types formals types)))
              (limit (pseudo-term-fncall
                      'binary-+
                      (list (pseudo-term-quote 3)
                            loop-limit))))
-          (acl2::value (make-stmt-gout
-                        :items (list (block-item-stmt loop-stmt))
-                        :type (type-void)
-                        :limit limit
-                        :events nil
-                        :thm-index gin.thm-index
-                        :names-to-avoid gin.names-to-avoid
-                        :proofs nil))))
+          (retok (make-stmt-gout
+                  :items (list (block-item-stmt loop-stmt))
+                  :type (type-void)
+                  :limit limit
+                  :events nil
+                  :thm-index gin.thm-index
+                  :names-to-avoid gin.names-to-avoid
+                  :proofs nil))))
        ((when (equal term `(,gin.fn ,@(formals+ gin.fn wrld))))
         (if gin.loop-flag
-            (acl2::value (make-stmt-gout
-                          :items nil
-                          :type (type-void)
-                          :limit (pseudo-term-quote 1)
-                          :events nil
-                          :thm-index gin.thm-index
-                          :names-to-avoid gin.names-to-avoid
-                          :proofs nil))
-          (er-soft+ ctx t (irr)
-                    "When generating code for the recursive function ~x0, ~
-                     a recursive call to the loop function occurs ~
-                     not at the end of the computation on some path."
-                    gin.fn)))
+            (retok (make-stmt-gout
+                    :items nil
+                    :type (type-void)
+                    :limit (pseudo-term-quote 1)
+                    :events nil
+                    :thm-index gin.thm-index
+                    :names-to-avoid gin.names-to-avoid
+                    :proofs nil))
+          (reterr
+           (msg "When generating code for the recursive function ~x0, ~
+                 a recursive call to the loop function occurs ~
+                 not at the end of the computation on some path."
+                gin.fn))))
        ((mv okp called-fn arg-terms in-types out-type fn-affect limit)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when (and okp
                    (type-case out-type :void)))
         (b* (((when gin.loop-flag)
-              (er-soft+ ctx t (irr)
-                        "A loop body must end with ~
-                         a recursive call on every path, ~
-                         but in the function ~x0 it ends with ~x1 instead."
-                        gin.fn term))
+              (reterr
+               (msg "A loop body must end with ~
+                     a recursive call on every path, ~
+                     but in the function ~x0 it ends with ~x1 instead."
+                    gin.fn term)))
              ((unless (atc-check-cfun-call-args (formals+ called-fn wrld)
                                                 in-types
                                                 arg-terms))
-              (er-soft+ ctx t (irr)
-                        "The call ~x0 does not satisfy the restrictions ~
-                         on array arguments being identical to the formals."
-                        term))
+              (reterr
+               (msg "The call ~x0 does not satisfy the restrictions ~
+                     on array arguments being identical to the formals."
+                    term)))
              ((unless (equal gin.affect fn-affect))
-              (er-soft+ ctx t (irr)
-                        "When generating C code for the function ~x0, ~
-                         a call of the non-recursive function ~x1 ~
-                         has been encountered that affects ~x2, ~
-                         which differs from the variables ~x3 ~
-                         being affected here."
-                        gin.fn loop-fn fn-affect gin.affect))
-             ((mv erp (pexprs-gout args))
+              (reterr
+               (msg "When generating C code for the function ~x0, ~
+                     a call of the non-recursive function ~x1 ~
+                     has been encountered that affects ~x2, ~
+                     which differs from the variables ~x3 ~
+                     being affected here."
+                    gin.fn loop-fn fn-affect gin.affect)))
+             ((erp (pexprs-gout args))
               (atc-gen-expr-pure-list arg-terms
                                       (make-pexprs-gin
                                        :inscope gin.inscope
@@ -3004,26 +2981,25 @@
                                        :names-to-avoid gin.names-to-avoid
                                        :proofs gin.proofs)
                                       state))
-             ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
              ((unless (equal args.types in-types))
-              (er-soft+ ctx t (irr)
-                        "The function ~x0 with input types ~x1 is applied to ~
-                         expression terms ~x2 returning ~x3. ~
-                         This is indicative of provably dead code, ~
-                         given that the code is guard-verified."
-                        called-fn in-types arg-terms args.types))
+              (reterr
+               (msg "The function ~x0 with input types ~x1 is applied to ~
+                     expression terms ~x2 returning ~x3. ~
+                     This is indicative of provably dead code, ~
+                     given that the code is guard-verified."
+                    called-fn in-types arg-terms args.types)))
              (call-expr (make-expr-call :fun (make-ident
                                               :name (symbol-name called-fn))
                                         :args args.exprs)))
-          (acl2::value (make-stmt-gout
-                        :items (list (block-item-stmt (stmt-expr call-expr)))
-                        :type (type-void)
-                        :limit `(binary-+ '5 ,limit)
-                        :events args.events
-                        :thm-index args.thm-index
-                        :names-to-avoid args.names-to-avoid
-                        :proofs nil))))
-       ((mv erp (expr-gout term))
+          (retok (make-stmt-gout
+                  :items (list (block-item-stmt (stmt-expr call-expr)))
+                  :type (type-void)
+                  :limit `(binary-+ '5 ,limit)
+                  :events args.events
+                  :thm-index args.thm-index
+                  :names-to-avoid args.names-to-avoid
+                  :proofs nil))))
+       ((erp (expr-gout term))
         (atc-gen-expr term
                       (make-expr-gin :var-term-alist gin.var-term-alist
                                      :inscope gin.inscope
@@ -3034,45 +3010,44 @@
                                      :names-to-avoid gin.names-to-avoid
                                      :proofs gin.proofs)
                       state))
-       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        ((when gin.loop-flag)
-        (er-soft+ ctx t (irr)
-                  "A loop body must end with ~
-                   a recursive call on every path, ~
-                   but in the function ~x0 it ends with ~x1 instead."
-                  gin.fn term))
+        (reterr
+         (msg "A loop body must end with ~
+               a recursive call on every path, ~
+               but in the function ~x0 it ends with ~x1 instead."
+              gin.fn term)))
        ((unless (equal gin.affect term.affect))
-        (er-soft+ ctx t (irr)
-                  "When generating code for the non-recursive function ~x0, ~
-                   a term ~x1 was encountered at the end of the computation, ~
-                   that affects the variables ~x2, ~
-                   but ~x0 affects the variables ~x3 instead."
-                  gin.fn term term.affect gin.affect))
+        (reterr
+         (msg "When generating code for the non-recursive function ~x0, ~
+               a term ~x1 was encountered at the end of the computation, ~
+               that affects the variables ~x2, ~
+               but ~x0 affects the variables ~x3 instead."
+              gin.fn term term.affect gin.affect)))
        ((when (type-case term.type :void))
-        (raise "Internal error: return term ~x0 has type void." term)
-        (acl2::value (irr)))
+        (reterr
+         (raise "Internal error: return term ~x0 has type void." term)))
        ((when (type-case term.type :array))
-        (raise "Internal error: array type ~x0." term.type)
-        (acl2::value (irr)))
+        (reterr
+         (raise "Internal error: array type ~x0." term.type)))
        ((when (type-case term.type :pointer))
-        (er-soft+ ctx t (irr)
-                  "When generating a return statement for function ~x0, ~
-                   the term ~x1 that represents the return expression ~
-                   has pointer type ~x2, which is disallowed."
-                  gin.fn term term.type))
+        (reterr
+         (msg "When generating a return statement for function ~x0, ~
+               the term ~x1 that represents the return expression ~
+               has pointer type ~x2, which is disallowed."
+              gin.fn term term.type)))
        (limit (pseudo-term-fncall
                'binary-+
                (list (pseudo-term-quote 3)
                      term.limit))))
-    (acl2::value (make-stmt-gout
-                  :items (list (block-item-stmt
-                                (make-stmt-return :value term.expr)))
-                  :type term.type
-                  :limit limit
-                  :events term.events
-                  :thm-index term.thm-index
-                  :names-to-avoid term.names-to-avoid
-                  :proofs nil)))
+    (retok (make-stmt-gout
+            :items (list (block-item-stmt
+                          (make-stmt-return :value term.expr)))
+            :type term.type
+            :limit limit
+            :events term.events
+            :thm-index term.thm-index
+            :names-to-avoid term.names-to-avoid
+            :proofs nil)))
 
   :measure (pseudo-term-count term)
 
@@ -3223,7 +3198,7 @@
                    does not have the required form. ~
                    See the user documentation."
                   else-term gin.fn))
-       ((er (stmt-gout body) :iferr (irr))
+       ((mv erp (stmt-gout body))
         (atc-gen-stmt then-term
                       (make-stmt-gin
                        :var-term-alist nil
@@ -3238,8 +3213,8 @@
                        :thm-index test.thm-index
                        :names-to-avoid test.names-to-avoid
                        :proofs test.proofs)
-                      ctx
                       state))
+       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        ((unless (type-case body.type :void))
         (raise "Internal error: ~
                 the loop body ~x0 of ~x1 ~ returns type ~x2."
@@ -4693,7 +4668,7 @@
                    only pointer variables may be affected ~
                    by a non-recursive target function."
                   fn))
-       ((er (stmt-gout body) :iferr (irr))
+       ((mv erp (stmt-gout body))
         (atc-gen-stmt body
                       (make-stmt-gin
                        :var-term-alist nil
@@ -4708,8 +4683,8 @@
                        :thm-index 1
                        :names-to-avoid names-to-avoid
                        :proofs proofs)
-                      ctx
                       state))
+       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        (names-to-avoid body.names-to-avoid)
        ((when (and (type-case body.type :void)
                    (not affect)))
