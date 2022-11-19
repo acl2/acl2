@@ -1291,11 +1291,8 @@
                                      (fn-affect symbol-listp)
                                      (fn-typed-formals atc-symbol-varinfo-alistp)
                                      (fn symbolp)
-                                     (ctx ctxp)
-                                     state)
-  :returns (mv erp
-               (nothing null)
-               state)
+                                     (wrld plist-worldp))
+  :returns erp
   :short "Ensure that no affected formals are lost."
   :long
   (xdoc::topstring
@@ -1324,21 +1321,25 @@
      We go through the elements of @('bind-affect')
      and check each one against the formals of @('fn'),
      taking into account the types and whether @('fn') is recursive."))
-  (b* (((when (endp bind-affect)) (acl2::value nil))
+  (b* (((reterr))
+       ((when (endp bind-affect)) (retok))
        (var (car bind-affect))
        (info (cdr (assoc-eq var fn-typed-formals)))
        ((when (and info
-                   (or (irecursivep+ fn (w state))
+                   (or (irecursivep+ fn wrld)
                        (type-case (atc-var-info->type info) :pointer))
                    (not (member-eq var fn-affect))))
-        (er-soft+ ctx t nil
-                  "When generating C code for the function ~x0, ~
-                   the formal parameter ~x1 is being affected ~
-                   in an MV-LET or LET term, ~
-                   but it is not being returned by ~x0."
-                  fn var)))
-    (atc-ensure-formals-not-lost
-     (cdr bind-affect) fn-affect fn-typed-formals fn ctx state)))
+        (reterr
+         (msg "When generating C code for the function ~x0, ~
+               the formal parameter ~x1 is being affected ~
+               in an MV-LET or LET term, ~
+               but it is not being returned by ~x0."
+              fn var))))
+    (atc-ensure-formals-not-lost (cdr bind-affect)
+                                 fn-affect
+                                 fn-typed-formals
+                                 fn
+                                 wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2069,13 +2070,13 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val-term var vars init.affect))
-                   ((er & :iferr (irr))
+                   (erp
                     (atc-ensure-formals-not-lost vars
                                                  gin.affect
                                                  gin.typed-formals
                                                  gin.fn
-                                                 ctx
-                                                 state))
+                                                 wrld))
+                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                    ((mv tyspec declor) (ident+type-to-tyspec+declor
                                         (make-ident :name (symbol-name var))
                                         init.type))
@@ -2154,13 +2155,13 @@
                                must affect the variables ~x2, ~
                                but it affects ~x3 instead."
                               val-term var vars rhs.affect))
-                   ((er & :iferr (irr))
+                   (erp
                     (atc-ensure-formals-not-lost vars
                                                  gin.affect
                                                  gin.typed-formals
                                                  gin.fn
-                                                 ctx
-                                                 state))
+                                                 wrld))
+                   ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
                    ((when (type-case rhs.type :array))
                     (raise "Internal error: array type ~x0." rhs.type)
                     (acl2::value (irr)))
@@ -2225,13 +2226,13 @@
                          whose term ~x1 to which the variables are bound ~
                          does not have the required form."
                         gin.fn val-term))
-             ((er & :iferr (irr))
+             (erp
               (atc-ensure-formals-not-lost vars
                                            gin.affect
                                            gin.typed-formals
                                            gin.fn
-                                           ctx
-                                           state))
+                                           wrld))
+             ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
              ((er (stmt-gout xform))
               (atc-gen-stmt val-term
                             (change-stmt-gin gin
@@ -2777,13 +2778,13 @@
                          that does not have any of the allowed forms. ~
                          See the user documentation."
                         gin.fn var val-term))
-             ((er & :iferr (irr))
+             (erp
               (atc-ensure-formals-not-lost (list var)
                                            gin.affect
                                            gin.typed-formals
                                            gin.fn
-                                           ctx
-                                           state))
+                                           wrld))
+             ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
              ((er (stmt-gout xform))
               (atc-gen-stmt val-term
                             (change-stmt-gin gin
