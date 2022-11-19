@@ -3256,12 +3256,9 @@
 
 (define atc-gen-param-declon-list ((typed-formals atc-symbol-varinfo-alistp)
                                    (fn symbolp)
-                                   (prec-objs atc-string-objinfo-alistp)
-                                   (ctx ctxp)
-                                   state)
+                                   (prec-objs atc-string-objinfo-alistp))
   :returns (mv erp
-               (params param-declon-listp)
-               state)
+               (params param-declon-listp))
   :short "Generate a list of C parameter declarations
           from a list of ACL2 formal parameters."
   :long
@@ -3276,24 +3273,25 @@
    (xdoc::p
     "If a parameter represents an access to an external object,
      we skip it, i.e. we do not generate a declaration for it."))
-  (b* (((when (endp typed-formals)) (acl2::value nil))
+  (b* (((reterr) nil)
+       ((when (endp typed-formals)) (retok nil))
        ((cons formal info) (car typed-formals))
        (type (atc-var-info->type info))
        (name (symbol-name formal))
        ((unless (paident-stringp name))
-        (er-soft+ ctx t nil
-                  "The symbol name ~s0 of ~
-                   the formal parameter ~x1 of the function ~x2 ~
-                   must be a portable ASCII C identifier, but it is not."
-                  name formal fn))
+        (reterr
+         (msg "The symbol name ~s0 of ~
+               the formal parameter ~x1 of the function ~x2 ~
+               must be a portable ASCII C identifier, but it is not."
+              name formal fn)))
        (cdr-formals (strip-cars (cdr typed-formals)))
        ((when (member-equal name (symbol-name-lst cdr-formals)))
-        (er-soft+ ctx t nil
-                  "The formal parameter ~x0 of the function ~x1 ~
-                   has the same symbol name as ~
-                   another formal parameter among ~x2; ~
-                   this is disallowed, even if the package names differ."
-                  formal fn cdr-formals))
+        (reterr
+         (msg "The formal parameter ~x0 of the function ~x1 ~
+               has the same symbol name as ~
+               another formal parameter among ~x2; ~
+               this is disallowed, even if the package names differ."
+              formal fn cdr-formals)))
        ((when (b* ((info (cdr (assoc-equal (symbol-name formal) prec-objs)))
                    ((unless info) nil)
                    ((unless (atc-obj-infop info))
@@ -3302,14 +3300,14 @@
                            info))
                    (info (atc-obj-info->defobject info)))
                 (eq (defobject-info->name-symbol info) formal)))
-        (atc-gen-param-declon-list (cdr typed-formals) fn prec-objs ctx state))
+        (atc-gen-param-declon-list (cdr typed-formals) fn prec-objs))
        ((mv tyspec declor) (ident+type-to-tyspec+declor (make-ident :name name)
                                                         type))
        (param (make-param-declon :tyspec tyspec
                                  :declor declor))
-       ((er params)
-        (atc-gen-param-declon-list (cdr typed-formals) fn prec-objs ctx state)))
-    (acl2::value (cons param params)))
+       ((erp params)
+        (atc-gen-param-declon-list (cdr typed-formals) fn prec-objs)))
+    (retok (cons param params)))
   :prepwork ((local
               (in-theory
                (e/d
@@ -4659,8 +4657,8 @@
         (atc-typed-formals
          fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
        ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
-       ((er params :iferr (irr))
-        (atc-gen-param-declon-list typed-formals fn prec-objs ctx state))
+       ((mv erp params) (atc-gen-param-declon-list typed-formals fn prec-objs))
+       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        ((mv fn-fun-env-thm names-to-avoid)
         (atc-gen-cfun-fun-env-thm-name fn names-to-avoid wrld))
        (body (ubody+ fn wrld))
