@@ -5859,21 +5859,19 @@
                       (appcond-thms keyword-symbol-alistp)
                       (print evmac-input-print-p)
                       (names-to-avoid symbol-listp)
-                      (ctx ctxp)
                       state)
   :guard (and (function-symbolp fn (w state))
               (logicp fn (w state))
               (irecursivep+ fn (w state))
               (not (eq fn 'quote)))
   :returns (mv erp
-               (val (tuple (local-events pseudo-event-form-listp)
-                           (exported-events pseudo-event-form-listp)
-                           (updated-prec-fns atc-symbol-fninfo-alistp)
-                           (updated-names-to-avoid symbol-listp)
-                           val)
-                    :hyp (and (atc-symbol-fninfo-alistp prec-fns)
-                              (symbol-listp names-to-avoid)))
-               state)
+               (local-events pseudo-event-form-listp)
+               (exported-events pseudo-event-form-listp)
+               (updated-prec-fns atc-symbol-fninfo-alistp
+                                 :hyp (and (symbolp fn)
+                                           (atc-symbol-fninfo-alistp prec-fns)))
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate a C loop from a recursive ACL2 function,
           with accompanying theorems."
   :long
@@ -5892,7 +5890,7 @@
     "For now we do not generate a guard function for the guard of @('fn');
      also, we do not generate theorems for the formal parameters for now.
      We will change this soon."))
-  (b* (((acl2::fun (irr)) (list nil nil nil nil))
+  (b* (((reterr) nil nil nil nil)
        (wrld (w state))
        ((mv measure-of-fn-event
             measure-of-fn
@@ -5905,12 +5903,11 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
-       ((mv erp typed-formals formals-events proofs names-to-avoid)
+       ((erp typed-formals formals-events proofs names-to-avoid)
         (atc-typed-formals
          fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
-       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        (body (ubody+ fn wrld))
-       ((mv erp (lstmt-gout loop))
+       ((erp (lstmt-gout loop))
         (atc-gen-loop-stmt body
                            (make-lstmt-gin :typed-formals typed-formals
                                            :inscope (list typed-formals)
@@ -5924,23 +5921,17 @@
                                            :names-to-avoid names-to-avoid
                                            :proofs proofs)
                            state))
-       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        (names-to-avoid loop.names-to-avoid)
-       ((unless (and (plist-worldp (w state))
-                     (function-symbolp fn (w state))
-                     (logicp fn (w state))
-                     (irecursivep+ fn (w state))))
-        (raise "Internal error with W of STATE.")
-        (acl2::value (irr)))
-       ((er (list local-events
-                  exported-events
-                  natp-of-measure-of-fn-thm
-                  fn-result-thm
-                  fn-correct-thm
-                  names-to-avoid)
-            :iferr (irr))
+       ((erp
+         local-events
+         exported-events
+         natp-of-measure-of-fn-thm
+         fn-result-thm
+         fn-correct-thm
+         names-to-avoid)
         (if proofs
-            (b* (((mv fn-result-events
+            (b* (((reterr) nil nil nil nil nil nil)
+                 ((mv fn-result-events
                       fn-result-thm
                       names-to-avoid)
                   (atc-gen-fn-result-thm fn
@@ -5973,22 +5964,16 @@
                                             measure-formals
                                             names-to-avoid
                                             wrld))
-                 ((mv erp
-                      termination-of-fn-thm-event
-                      termination-of-fn-thm
-                      names-to-avoid)
+                 ((erp
+                   termination-of-fn-thm-event
+                   termination-of-fn-thm
+                   names-to-avoid)
                   (atc-gen-loop-termination-thm fn
                                                 measure-of-fn
                                                 measure-formals
                                                 natp-of-measure-of-fn-thm
                                                 names-to-avoid
                                                 state))
-                 ((when erp) (er-soft+ ctx t (list nil nil nil nil nil nil)
-                                       "~@0" erp))
-                 ((unless (and (plist-worldp (w state))
-                               (irecursivep+ fn (w state))))
-                  (raise "Internal error with W of STATE.")
-                  (acl2::value (irr)))
                  ((mv test-local-events
                       correct-test-thm
                       names-to-avoid)
@@ -6062,14 +6047,13 @@
                                        correct-local-events
                                        progress-end?))
                  (exported-events correct-exported-events))
-              (acl2::value
-               (list local-events
+              (retok local-events
                      exported-events
                      natp-of-measure-of-fn-thm
                      fn-result-thm
                      fn-correct-thm
-                     names-to-avoid)))
-          (acl2::value (list nil nil nil nil nil names-to-avoid))))
+                     names-to-avoid))
+          (retok nil nil nil nil nil names-to-avoid)))
        (info (make-atc-fn-info :out-type nil
                                :in-types (atc-var-info-list->type-list
                                           (strip-cdrs typed-formals))
@@ -6080,20 +6064,21 @@
                                :measure-nat-thm natp-of-measure-of-fn-thm
                                :fun-env-thm nil
                                :limit loop.limit-all)))
-    (acl2::value (list local-events
-                       exported-events
-                       (acons fn info prec-fns)
-                       names-to-avoid)))
-  :guard-hints
-  (("Goal"
-    :in-theory
-    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite
-            alistp-when-atc-symbol-varinfo-alistp-rewrite
-            atc-var-info-listp-of-strip-cdrs-when-atc-symbol-varinfo-alistp)))
-  ///
-
-  (more-returns
-   (val true-listp :rule-classes :type-prescription)))
+    (retok local-events
+           exported-events
+           (acons fn info prec-fns)
+           names-to-avoid))
+  :prepwork
+  ((local
+    (in-theory
+     (enable
+      acl2::true-listp-when-pseudo-event-form-listp-rewrite
+      alistp-when-atc-symbol-varinfo-alistp-rewrite
+      atc-var-info-listp-of-strip-cdrs-when-atc-symbol-varinfo-alistp)))
+   (defrulel consp-iff
+     (implies (true-listp x)
+              (iff (consp x)
+                   x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -7286,7 +7271,8 @@
                            (exported-events pseudo-event-form-listp)
                            (updated-names-to-avoid symbol-listp)
                            val)
-                    :hyp (and (atc-symbol-fninfo-alistp prec-fns)
+                    :hyp (and (symbol-listp targets)
+                              (atc-symbol-fninfo-alistp prec-fns)
                               (symbol-listp names-to-avoid)))
                state)
   :short "Generate two lists of C external declarations from the targets,
@@ -7336,15 +7322,21 @@
                               names-to-avoid)
                         :iferr (list nil nil nil nil nil nil nil nil))
                     (if (irecursivep+ fn (w state))
-                        (b* (((er (list local-events
-                                        exported-events
-                                        prec-fns
-                                        names-to-avoid)
-                                  :iferr (list nil nil nil nil nil nil nil nil))
+                        (b* (((mv erp
+                                  local-events
+                                  exported-events
+                                  prec-fns
+                                  names-to-avoid)
                               (atc-gen-loop fn prec-fns prec-tags prec-objs
                                             proofs prog-const
                                             fn-thms fn-appconds appcond-thms
-                                            print names-to-avoid ctx state)))
+                                            print names-to-avoid state))
+                             ((when erp)
+                              (er-soft+ ctx
+                                        t
+                                        (list nil nil nil nil nil nil nil nil)
+                                        "~@0"
+                                        erp)))
                           (acl2::value (list nil
                                              nil
                                              prec-fns
@@ -7632,7 +7624,8 @@
                            (exported-events pseudo-event-form-listp)
                            (updated-names-to-avoid symbol-listp)
                            val)
-                    :hyp (symbol-listp names-to-avoid))
+                    :hyp (and (symbol-listp targets)
+                              (symbol-listp names-to-avoid)))
                state)
   :short "Generate a file set from the ATC targets, and accompanying events."
   :long
