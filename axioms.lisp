@@ -29279,3 +29279,15 @@ Lisp definition."
   (declare (xargs :guard (true-listp x)))
   (mbe :logic (true-list-fix x)
        :exec x))
+
+(defthm acl2-count-car
+  (implies (consp x)
+           (< (acl2-count (car x))
+              (acl2-count x)))
+  :rule-classes :linear)
+
+(defthm acl2-count-cdr
+  (implies (consp x)
+           (< (acl2-count (cdr x))
+              (acl2-count x)))
+  :rule-classes :linear)

@@ -133,174 +133,56 @@ Goal
           (BINARY-* I I)
           I SUM))))
       (LIST ALIST)))))
-  (LET ((EXIT-FLG (CAR TRIPLE))
-        (NEW-ALIST (CADDR TRIPLE)))
-       (IMPLIES (AND (AND (ALISTP ALIST)
-                          (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                          (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-                     (EQUAL EXIT-FLG :LOOP-FINISH))
-                (AND (ALISTP NEW-ALIST)
-                     (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM NEW-ALIST)))))))
- (LET
-  ((TRIPLE
-    (TRUE-LIST-FIX
-     (APPLY$
-      (LAMBDA$
-       (ALIST)
-       (DECLARE
-            (XARGS :GUARD (AND (ALISTP ALIST)
-                               (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
-       (LET
-        ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-         (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-        (DECLARE (IGNORABLE SUM I))
-        (IF
-         (ZP I)
-         (CONS ':RETURN
-               (CONS SUM
-                     (CONS (CONS (CONS 'SUM SUM)
-                                 (CONS (CONS 'I I) 'NIL))
-                           'NIL)))
-         ((LAMBDA
-           (SQ I SUM)
-           ((LAMBDA
-              (SUM I)
-              (RETURN-LAST
-                   'PROGN
-                   (CHECK-DCL-GUARDIAN
-                        (INTEGERP SUM)
-                        '(SETQ SUM (THE INTEGER (BINARY-+ SQ SUM))))
-                   (CONS 'NIL
-                         (CONS 'NIL
-                               (CONS ((LAMBDA (I SUM)
-                                              (CONS (CONS 'SUM SUM)
-                                                    (CONS (CONS 'I I) 'NIL)))
-                                      (BINARY-+ '-1 I)
-                                      SUM)
-                                     'NIL)))))
-            (BINARY-+ SQ SUM)
-            I))
-          (BINARY-* I I)
-          I SUM))))
-      (LIST ALIST)))))
-  (LET ((EXIT-FLG (CAR TRIPLE))
-        (NEW-ALIST (CADDR TRIPLE)))
-       (IMPLIES (AND (AND (ALISTP ALIST)
-                          (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                          (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-                     (EQUAL EXIT-FLG NIL))
-                (AND (ALISTP NEW-ALIST)
-                     (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM NEW-ALIST)))
-                     (NATP (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST)))))))
- (LET
-  ((TRIPLE
-    (TRUE-LIST-FIX
-     (APPLY$
-      (LAMBDA$
-       (ALIST)
-       (DECLARE
-            (XARGS :GUARD (AND (ALISTP ALIST)
-                               (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
-       (LET
-        ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-         (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-        (DECLARE (IGNORABLE SUM I))
-        (IF
-         (ZP I)
-         (CONS ':RETURN
-               (CONS SUM
-                     (CONS (CONS (CONS 'SUM SUM)
-                                 (CONS (CONS 'I I) 'NIL))
-                           'NIL)))
-         ((LAMBDA
-           (SQ I SUM)
-           ((LAMBDA
-              (SUM I)
-              (RETURN-LAST
-                   'PROGN
-                   (CHECK-DCL-GUARDIAN
-                        (INTEGERP SUM)
-                        '(SETQ SUM (THE INTEGER (BINARY-+ SQ SUM))))
-                   (CONS 'NIL
-                         (CONS 'NIL
-                               (CONS ((LAMBDA (I SUM)
-                                              (CONS (CONS 'SUM SUM)
-                                                    (CONS (CONS 'I I) 'NIL)))
-                                      (BINARY-+ '-1 I)
-                                      SUM)
-                                     'NIL)))))
-            (BINARY-+ SQ SUM)
-            I))
-          (BINARY-* I I)
-          I SUM))))
-      (LIST ALIST)))))
   (LET
    ((EXIT-FLG (CAR TRIPLE))
     (NEW-ALIST (CADDR TRIPLE)))
    (IMPLIES
-    (AND (AND (ALISTP ALIST)
-              (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-              (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-         (EQUAL EXIT-FLG NIL))
-    (L<
-     (LEX-FIX
-      (APPLY$
-       (LAMBDA$
-          (ALIST)
-          (DECLARE
+    (AND (ALISTP ALIST)
+         (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+         (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+    (CASE
+     EXIT-FLG
+     ((NIL)
+      (AND
+       (AND (ALISTP NEW-ALIST)
+            (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM NEW-ALIST)))
+            (NATP (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST))))
+       (L<
+        (LEX-FIX
+         (APPLY$
+          (LAMBDA$
+           (ALIST)
+           (DECLARE
                (XARGS :GUARD (AND (ALISTP ALIST)
                                   (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
                                   (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
-          (LET ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-               (DECLARE (IGNORABLE SUM I))
-               (ACL2-COUNT I)))
-       (LIST NEW-ALIST)))
-     (LEX-FIX
-      (APPLY$
-       (LAMBDA$
-          (ALIST)
-          (DECLARE
+           (LET ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+                 (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                (DECLARE (IGNORABLE SUM I))
+                (ACL2-COUNT I)))
+          (LIST NEW-ALIST)))
+        (LEX-FIX
+         (APPLY$
+          (LAMBDA$
+           (ALIST)
+           (DECLARE
                (XARGS :GUARD (AND (ALISTP ALIST)
                                   (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
                                   (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
-          (LET ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
-                (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-               (DECLARE (IGNORABLE SUM I))
-               (ACL2-COUNT I)))
-       (LIST ALIST)))))))
+           (LET ((SUM (CDR (ASSOC-EQ-SAFE 'SUM ALIST)))
+                 (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                (DECLARE (IGNORABLE SUM I))
+                (ACL2-COUNT I)))
+          (LIST ALIST))))))
+     (:LOOP-FINISH (AND (ALISTP NEW-ALIST)
+                        (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM NEW-ALIST)))))
+     (OTHERWISE T)))))
  (IMPLIES (NATP N)
           (AND (ALISTP (LIST '(SUM . 0) (CONS 'I N)))
                (INTEGERP (CDR (ASSOC-EQ-SAFE 'SUM
                                              (LIST '(SUM . 0) (CONS 'I N)))))
                (NATP (CDR (ASSOC-EQ-SAFE 'I
                                          (LIST '(SUM . 0) (CONS 'I N)))))))).
-Subgoal 4
-
-Splitter note (see :DOC splitter) for Subgoal 4 (3 subgoals).
-  if-intro: ((:DEFINITION EV$-LIST-DEF)
-             (:DEFINITION NOT)
-             (:META APPLY$-PRIM-META-FN-CORRECT)
-             (:REWRITE EV$-OPENER)
-             (:REWRITE ZP-OPEN))
-
-Subgoal 4.3
-Subgoal 4.2
-Subgoal 4.1
-Subgoal 3
-
-Splitter note (see :DOC splitter) for Subgoal 3 (3 subgoals).
-  if-intro: ((:DEFINITION EV$-LIST-DEF)
-             (:DEFINITION NOT)
-             (:META APPLY$-PRIM-META-FN-CORRECT)
-             (:REWRITE EV$-OPENER)
-             (:REWRITE ZP-OPEN))
-
-Subgoal 3.3
-Subgoal 3.2
-Subgoal 3.1
 Subgoal 2
 
 Splitter note (see :DOC splitter) for Subgoal 2 (3 subgoals).

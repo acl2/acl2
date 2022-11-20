@@ -329,8 +329,6 @@ Subgoal *1/2
 Subgoal *1/1
 Subgoal *1/1'
 Subgoal *1/1''
-Subgoal *1/1'''
-Subgoal *1/1'4'
 
 *1 is COMPLETED!
 Thus key checkpoint Goal'' is COMPLETED!
@@ -357,7 +355,6 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION SUITABLY-TAMEP-LISTP)
         (:DEFINITION TAMEP)
         (:DEFINITION TRUE-LISTP)
-        (:ELIM CAR-CDR-ELIM)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART APPLY$-PRIM)
         (:EXECUTABLE-COUNTERPART APPLY$-PRIMP)
@@ -378,6 +375,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
+        (:LINEAR ACL2-COUNT-CDR)
         (:META APPLY$-PRIM-META-FN-CORRECT)
         (:REWRITE APPLY$-PRIMITIVE)
         (:REWRITE APPLY$-PRIMP-BADGE)
@@ -497,8 +495,6 @@ Subgoal *1/2
 Subgoal *1/1
 Subgoal *1/1'
 Subgoal *1/1''
-Subgoal *1/1'''
-Subgoal *1/1'4'
 
 *1 is COMPLETED!
 Thus key checkpoint Goal'' is COMPLETED!
@@ -525,7 +521,6 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION SUITABLY-TAMEP-LISTP)
         (:DEFINITION TAMEP)
         (:DEFINITION TRUE-LISTP)
-        (:ELIM CAR-CDR-ELIM)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART APPLY$-PRIM)
         (:EXECUTABLE-COUNTERPART APPLY$-PRIMP)
@@ -546,6 +541,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
+        (:LINEAR ACL2-COUNT-CDR)
         (:META APPLY$-PRIM-META-FN-CORRECT)
         (:REWRITE APPLY$-PRIMITIVE)
         (:REWRITE APPLY$-PRIMP-BADGE)
@@ -2292,16 +2288,11 @@ Subgoal *1/5
 Subgoal *1/4
 Subgoal *1/4'
 Subgoal *1/4''
-Subgoal *1/4'''
-Subgoal *1/4'4'
-Subgoal *1/4'5'
 Subgoal *1/3
 Subgoal *1/2
 Subgoal *1/1
 Subgoal *1/1'
 Subgoal *1/1''
-Subgoal *1/1'''
-Subgoal *1/1'4'
 
 *1 is COMPLETED!
 Thus key checkpoint Goal'' is COMPLETED!
@@ -2310,8 +2301,7 @@ Q.E.D.
 
 Summary
 Form:  ( THM ...)
-Rules: ((:DEFINITION ACL2-COUNT)
-        (:DEFINITION ASSOC-EQ-SAFE)
+Rules: ((:DEFINITION ASSOC-EQ-SAFE)
         (:DEFINITION ASSOC-EQUAL)
         (:DEFINITION DO$)
         (:DEFINITION EV$-LIST-DEF)
@@ -2327,7 +2317,6 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SUITABLY-TAMEP-LISTP)
         (:DEFINITION TAMEP)
-        (:ELIM CAR-CDR-ELIM)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART APPLY$-PRIMP)
         (:EXECUTABLE-COUNTERPART BADGE-PRIM)
@@ -2345,6 +2334,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
         (:INDUCTION LEN)
+        (:LINEAR ACL2-COUNT-CDR)
         (:META APPLY$-PRIM-META-FN-CORRECT)
         (:REWRITE APPLY$-PRIMITIVE)
         (:REWRITE APPLY$-PRIMP-BADGE)
@@ -2359,8 +2349,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:REWRITE EV$-OPENER)
         (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
         (:REWRITE UNICITY-OF-0)
-        (:TYPE-PRESCRIPTION ACL2-COUNT)
-        (:TYPE-PRESCRIPTION LEN))
+        (:TYPE-PRESCRIPTION ACL2-COUNT))
 
 Proof succeeded.
 ACL2 !>>(THM (IMPLIES (NATP N)
@@ -2607,8 +2596,6 @@ Subgoal *1/2
 Subgoal *1/1
 Subgoal *1/1'
 Subgoal *1/1''
-Subgoal *1/1'''
-Subgoal *1/1'4'
 
 *1 is COMPLETED!
 Thus key checkpoint Goal'' is COMPLETED!
@@ -2634,7 +2621,6 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION SUITABLY-TAMEP-LISTP)
         (:DEFINITION TAMEP)
         (:DEFINITION TRUE-LISTP)
-        (:ELIM CAR-CDR-ELIM)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART APPLY$-PRIM)
         (:EXECUTABLE-COUNTERPART APPLY$-PRIMP)
@@ -2654,6 +2640,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
         (:INDUCTION TRUE-LISTP)
+        (:LINEAR ACL2-COUNT-CDR)
         (:META APPLY$-PRIM-META-FN-CORRECT)
         (:REWRITE APPEND-TO-NIL)
         (:REWRITE APPLY$-PRIMITIVE)
