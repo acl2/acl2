@@ -836,7 +836,7 @@
                              (gin bexpr-ginp)
                              state)
     :returns (mv erp
-                 (val bexpr-goutp))
+                 (gout bexpr-goutp))
     :parents (atc-event-and-code-generation atc-gen-expr-pure/bool)
     :short "Generate a C expression from an ACL2 term
             that must be an expression term returning a boolean."
@@ -1000,7 +1000,7 @@
                                 (gin pexprs-ginp)
                                 state)
   :returns (mv erp
-               (val pexprs-goutp))
+               (gout pexprs-goutp))
   :short "Generate a list of C expressions from a list of ACL2 terms
           that must be pure expression terms returning C values."
   :long
@@ -1094,7 +1094,7 @@
                       (gin expr-ginp)
                       state)
   :returns (mv erp
-               (val expr-goutp))
+               (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
           that must be an expression term."
   :long
@@ -1715,7 +1715,7 @@
 
 (define atc-gen-stmt ((term pseudo-termp) (gin stmt-ginp) state)
   :returns (mv erp
-               (val stmt-goutp))
+               (gout stmt-goutp))
   :short "Generate a C statement from an ACL2 term."
   :long
   (xdoc::topstring
@@ -3110,7 +3110,7 @@
 
 (define atc-gen-loop-stmt ((term pseudo-termp) (gin lstmt-ginp) state)
   :returns (mv erp
-               (val lstmt-goutp))
+               (gout lstmt-goutp))
   :short "Generate a C loop statement from an ACL2 term."
   :long
   (xdoc::topstring
@@ -3250,7 +3250,7 @@
   ///
 
   (defret stmt-kind-of-atc-gen-loop-stmt
-    (equal (stmt-kind (lstmt-gout->stmt val)) :while)))
+    (equal (stmt-kind (lstmt-gout->stmt gout)) :while)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5922,13 +5922,12 @@
                                            :proofs proofs)
                            state))
        (names-to-avoid loop.names-to-avoid)
-       ((erp
-         local-events
-         exported-events
-         natp-of-measure-of-fn-thm
-         fn-result-thm
-         fn-correct-thm
-         names-to-avoid)
+       ((erp local-events
+             exported-events
+             natp-of-measure-of-fn-thm
+             fn-result-thm
+             fn-correct-thm
+             names-to-avoid)
         (if proofs
             (b* (((reterr) nil nil nil nil nil nil)
                  ((mv fn-result-events
@@ -5964,10 +5963,9 @@
                                             measure-formals
                                             names-to-avoid
                                             wrld))
-                 ((erp
-                   termination-of-fn-thm-event
-                   termination-of-fn-thm
-                   names-to-avoid)
+                 ((erp termination-of-fn-thm-event
+                       termination-of-fn-thm
+                       names-to-avoid)
                   (atc-gen-loop-termination-thm fn
                                                 measure-of-fn
                                                 measure-formals
@@ -7262,19 +7260,14 @@
                                   (header booleanp)
                                   (print evmac-input-print-p)
                                   (names-to-avoid symbol-listp)
-                                  (ctx ctxp)
                                   state)
   :returns (mv erp
-               (val (tuple (exts-h ext-declon-listp)
-                           (exts-c ext-declon-listp)
-                           (local-events pseudo-event-form-listp)
-                           (exported-events pseudo-event-form-listp)
-                           (updated-names-to-avoid symbol-listp)
-                           val)
-                    :hyp (and (symbol-listp targets)
-                              (atc-symbol-fninfo-alistp prec-fns)
-                              (symbol-listp names-to-avoid)))
-               state)
+               (exts-h ext-declon-listp)
+               (exts-c ext-declon-listp)
+               (local-events pseudo-event-form-listp)
+               (exported-events pseudo-event-form-listp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate two lists of C external declarations from the targets,
           including generating C loops from recursive ACL2 functions."
   :long
@@ -7294,166 +7287,148 @@
      together with the external objects that have initializers.
      If the header is not generated,
      everything goes into the source file."))
-  (b* (((acl2::fun (irr)) (list nil nil nil nil nil))
-       ((when (endp targets)) (acl2::value (list nil nil nil nil names-to-avoid)))
+  (b* (((reterr) nil nil nil nil nil)
+       (wrld (w state))
+       ((when (endp targets)) (retok nil nil nil nil names-to-avoid))
        (target (car targets))
-       ((er (list exts-h
-                  exts-c
-                  prec-fns
-                  prec-tags
-                  prec-objs
-                  local-events
-                  exported-events
-                  names-to-avoid)
-            :iferr (irr))
-        (b* (((when (function-symbolp target (w state)))
+       ((erp exts-h
+             exts-c
+             prec-fns
+             prec-tags
+             prec-objs
+             local-events
+             exported-events
+             names-to-avoid)
+        (b* (((reterr) nil nil nil nil nil nil nil nil)
+             ((when (function-symbolp target wrld))
               (b* ((fn target)
                    ((when (eq fn 'quote))
-                    (raise "Internal error: QUOTE target function.")
-                    (acl2::value (list nil nil nil nil nil nil nil)))
-                   ((unless (logicp fn (w state)))
-                    (raise "Internal error: ~x0 not in logic mode." fn)
-                    (acl2::value (list nil nil nil nil nil nil nil)))
-                   ((er (list exts-h
-                              exts-c
-                              prec-fns
-                              local-events
-                              exported-events
-                              names-to-avoid)
-                        :iferr (list nil nil nil nil nil nil nil nil))
-                    (if (irecursivep+ fn (w state))
-                        (b* (((mv erp
-                                  local-events
-                                  exported-events
-                                  prec-fns
-                                  names-to-avoid)
+                    (reterr
+                     (raise "Internal error: QUOTE target function.")))
+                   ((unless (logicp fn wrld))
+                    (reterr
+                     (raise "Internal error: ~x0 not in logic mode." fn)))
+                   ((erp exts-h
+                         exts-c
+                         prec-fns
+                         local-events
+                         exported-events
+                         names-to-avoid)
+                    (if (irecursivep+ fn wrld)
+                        (b* (((reterr) nil nil nil nil nil nil)
+                             ((erp local-events
+                                   exported-events
+                                   prec-fns
+                                   names-to-avoid)
                               (atc-gen-loop fn prec-fns prec-tags prec-objs
                                             proofs prog-const
                                             fn-thms fn-appconds appcond-thms
-                                            print names-to-avoid state))
-                             ((when erp)
-                              (er-soft+ ctx
-                                        t
-                                        (list nil nil nil nil nil nil nil nil)
-                                        "~@0"
-                                        erp)))
-                          (acl2::value (list nil
-                                             nil
-                                             prec-fns
-                                             local-events
-                                             exported-events
-                                             names-to-avoid)))
-                      (b* (((mv erp
-                                fundef
-                                local-events
-                                exported-events
-                                prec-fns
-                                names-to-avoid)
+                                            print names-to-avoid state)))
+                          (retok nil
+                                 nil
+                                 prec-fns
+                                 local-events
+                                 exported-events
+                                 names-to-avoid))
+                      (b* (((reterr) nil nil nil nil nil nil)
+                           ((erp fundef
+                                 local-events
+                                 exported-events
+                                 prec-fns
+                                 names-to-avoid)
                             (atc-gen-fundef fn prec-fns prec-tags prec-objs
                                             proofs
                                             prog-const
                                             init-fun-env-thm fn-thms
                                             print names-to-avoid state))
-                           ((when erp)
-                            (er-soft+ ctx
-                                      t
-                                      (list nil nil nil nil nil nil nil nil)
-                                      "~@0"
-                                      erp))
                            (ext (ext-declon-fundef fundef)))
                         (if header
-                            (acl2::value (list (list
-                                                (ext-declon-fun-declon
-                                                 (fundef-to-fun-declon fundef)))
-                                               (list ext)
-                                               prec-fns
-                                               local-events
-                                               exported-events
-                                               names-to-avoid))
-                          (acl2::value (list nil
-                                             (list ext)
-                                             prec-fns
-                                             local-events
-                                             exported-events
-                                             names-to-avoid)))))))
-                (acl2::value
-                 (list exts-h
+                            (retok (list (ext-declon-fun-declon
+                                          (fundef-to-fun-declon fundef)))
+                                   (list ext)
+                                   prec-fns
+                                   local-events
+                                   exported-events
+                                   names-to-avoid)
+                          (retok nil
+                                 (list ext)
+                                 prec-fns
+                                 local-events
+                                 exported-events
+                                 names-to-avoid))))))
+                (retok exts-h
                        exts-c
                        prec-fns
                        prec-tags
                        prec-objs
                        local-events
                        exported-events
-                       names-to-avoid))))
+                       names-to-avoid)))
              (name (symbol-name target))
-             (info (defstruct-table-lookup name (w state)))
+             (info (defstruct-table-lookup name wrld))
              ((when info)
               (b* (((mv tag-declon tag-thms prec-tags names-to-avoid)
                     (atc-gen-tag-declon name info prec-tags proofs
                                         names-to-avoid (w state)))
                    (ext (ext-declon-tag-declon tag-declon)))
                 (if header
-                    (acl2::value (list (list ext)
-                                       nil
-                                       prec-fns
-                                       prec-tags
-                                       prec-objs
-                                       tag-thms
-                                       nil
-                                       names-to-avoid))
-                  (acl2::value (list nil
-                                     (list ext)
-                                     prec-fns
-                                     prec-tags
-                                     prec-objs
-                                     tag-thms
-                                     nil
-                                     names-to-avoid)))))
+                    (retok (list ext)
+                           nil
+                           prec-fns
+                           prec-tags
+                           prec-objs
+                           tag-thms
+                           nil
+                           names-to-avoid)
+                  (retok nil
+                         (list ext)
+                         prec-fns
+                         prec-tags
+                         prec-objs
+                         tag-thms
+                         nil
+                         names-to-avoid))))
              (info (defobject-table-lookup name (w state)))
              ((when info)
               (b* (((mv obj-declon-h obj-declon-c prec-objs)
                     (atc-gen-obj-declon name info prec-objs header)))
                 (if header
-                    (acl2::value
-                     (list (list (ext-declon-obj-declon obj-declon-h))
+                    (retok (list (ext-declon-obj-declon obj-declon-h))
                            (list (ext-declon-obj-declon obj-declon-c))
                            prec-fns
                            prec-tags
                            prec-objs
                            nil
                            nil
-                           names-to-avoid))
-                  (acl2::value
-                   (list nil
+                           names-to-avoid)
+                  (retok nil
                          (list (ext-declon-obj-declon obj-declon-c))
                          prec-fns
                          prec-tags
                          prec-objs
                          nil
                          nil
-                         names-to-avoid))))))
-          (acl2::value
-           (prog2$ (raise "Internal error: ~
-                           target ~x0 is not ~
-                           a function or DEFSTRUCT or DEFOBJECT."
-                          target)
-                   (list nil nil nil nil nil nil nil nil)))))
-       ((er (list more-exts-h
-                  more-exts-c
-                  more-local-events
-                  more-exported-events
-                  names-to-avoid))
+                         names-to-avoid)))))
+          (reterr (raise "Internal error: ~
+                          target ~x0 is not ~
+                          a function or DEFSTRUCT or DEFOBJECT."
+                         target))))
+       ((erp more-exts-h
+             more-exts-c
+             more-local-events
+             more-exported-events
+             names-to-avoid)
         (atc-gen-ext-declon-lists (cdr targets) prec-fns prec-tags prec-objs
                                   proofs prog-const
                                   init-fun-env-thm fn-thms
                                   fn-appconds appcond-thms
                                   header
-                                  print names-to-avoid ctx state)))
-    (acl2::value (list (append exts-h more-exts-h)
-                       (append exts-c more-exts-c)
-                       (append local-events more-local-events)
-                       (append exported-events more-exported-events)
-                       names-to-avoid)))
+                                  print names-to-avoid state)))
+    (retok (append exts-h more-exts-h)
+           (append exts-c more-exts-c)
+           (append local-events more-local-events)
+           (append exported-events more-exported-events)
+           names-to-avoid))
 
   :prepwork
   ((local
@@ -7484,9 +7459,6 @@
   :verify-guards nil ; done below
 
   ///
-
-  (more-returns
-   (val true-listp :rule-classes :type-prescription))
 
   (verify-guards atc-gen-ext-declon-lists
     :hints
@@ -7674,16 +7646,17 @@
                                            nil
                                            names-to-avoid
                                            (w state)))
-       ((er (list exts-h
-                  exts-c
-                  fn-thm-local-events
-                  fn-thm-exported-events
-                  names-to-avoid)
-            :iferr (irr))
+       ((mv erp
+            exts-h
+            exts-c
+            fn-thm-local-events
+            fn-thm-exported-events
+            names-to-avoid)
         (atc-gen-ext-declon-lists targets nil nil nil proofs
                                  prog-const init-fun-env-thm
                                  fn-thms fn-appconds appcond-thms
-                                 header print names-to-avoid ctx state))
+                                 header print names-to-avoid state))
+       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
        (file-h (and header (make-file :declons exts-h)))
        (file-c (make-file :declons exts-c))
        (fileset (make-fileset :path-wo-ext path-wo-ext
