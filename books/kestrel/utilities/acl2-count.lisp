@@ -14,11 +14,15 @@
 ;; TODO: Consider disabling acl2-count here.
 
 ;; a pretty strong linear rule but requires (consp x).
+;; Matt K. mod: Commented out, since it is now incorporated (at Eric's
+;; suggestion) into ACL2, where its name is acl2-count-car-cdr-linear.
+#|
 (defthm acl2-count-when-consp-linear
   (implies (consp x)
            (equal (acl2-count x)
                   (+ 1 (acl2-count (car x)) (acl2-count (cdr x)))))
   :rule-classes :linear)
+|#
 
 ;; These next 4 are weaker but don't assume (consp x):
 
