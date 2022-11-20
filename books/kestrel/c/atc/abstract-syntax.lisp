@@ -266,3 +266,12 @@
   :short "An irrelevant file."
   :type filep
   :body (file nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-fileset
+  :short "An irrelevant file set."
+  :type filesetp
+  :body (make-fileset :path-wo-ext ""
+                      :dot-h nil
+                      :dot-c (irr-file)))

@@ -7588,17 +7588,13 @@
                          (header booleanp)
                          (print evmac-input-print-p)
                          (names-to-avoid symbol-listp)
-                         (ctx ctxp)
                          state)
   :returns (mv erp
-               (val (tuple (fileset filesetp)
-                           (local-events pseudo-event-form-listp)
-                           (exported-events pseudo-event-form-listp)
-                           (updated-names-to-avoid symbol-listp)
-                           val)
-                    :hyp (and (symbol-listp targets)
-                              (symbol-listp names-to-avoid)))
-               state)
+               (fileset filesetp)
+               (local-events pseudo-event-form-listp)
+               (exported-events pseudo-event-form-listp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate a file set from the ATC targets, and accompanying events."
   :long
   (xdoc::topstring
@@ -7624,18 +7620,15 @@
      and then we generate the theorem;
      however, in the generated events,
      we put that theorem before the ones for the functions."))
-  (b* (((acl2::fun (irr))
-        (list (with-guard-checking :none (ec-call (fileset-fix :irrelevant)))
-              nil
-              nil
-              nil))
+  (b* (((reterr) (irr-fileset) nil nil nil)
+       (wrld (w state))
        ((mv appcond-local-events fn-appconds appcond-thms names-to-avoid)
         (if proofs
             (b* (((mv appconds fn-appconds)
                   (atc-gen-appconds targets (w state)))
                  ((mv appcond-events appcond-thms & names-to-avoid)
                   (evmac-appcond-theorem-list appconds nil names-to-avoid
-                                              print ctx state)))
+                                              print 'atc state)))
               (mv appcond-events fn-appconds appcond-thms names-to-avoid))
           (mv nil nil nil nil)))
        ((mv wf-thm-local-events wf-thm-exported-events)
@@ -7645,18 +7638,16 @@
         (fresh-logical-name-with-$s-suffix init-fun-env-thm
                                            nil
                                            names-to-avoid
-                                           (w state)))
-       ((mv erp
-            exts-h
-            exts-c
-            fn-thm-local-events
-            fn-thm-exported-events
-            names-to-avoid)
+                                           wrld))
+       ((erp exts-h
+             exts-c
+             fn-thm-local-events
+             fn-thm-exported-events
+             names-to-avoid)
         (atc-gen-ext-declon-lists targets nil nil nil proofs
-                                 prog-const init-fun-env-thm
-                                 fn-thms fn-appconds appcond-thms
-                                 header print names-to-avoid state))
-       ((when erp) (er-soft+ ctx t (irr) "~@0" erp))
+                                  prog-const init-fun-env-thm
+                                  fn-thms fn-appconds appcond-thms
+                                  header print names-to-avoid state))
        (file-h (and header (make-file :declons exts-h)))
        (file-c (make-file :declons exts-c))
        (fileset (make-fileset :path-wo-ext path-wo-ext
@@ -7678,13 +7669,10 @@
        (exported-events (append (and proofs (list exported-const-event))
                                 wf-thm-exported-events
                                 fn-thm-exported-events)))
-    (acl2::value (list fileset
-                       local-events
-                       exported-events
-                       names-to-avoid)))
-  ///
-  (more-returns
-   (val true-listp :rule-classes :type-prescription)))
+    (retok fileset
+           local-events
+           exported-events
+           names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -7810,10 +7798,11 @@
      if the call is the body of a @(tsee let),
      the formals that are not affected then become ignored."))
   (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
-       ((er (list fileset local-events exported-events &) :iferr '(_))
+       ((mv erp fileset local-events exported-events &)
         (atc-gen-fileset targets path-wo-ext proofs
                          prog-const wf-thm fn-thms
-                         header print names-to-avoid ctx state))
+                         header print names-to-avoid state))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
        ((er fileset-gen-event) (atc-gen-fileset-event fileset
                                                       file-name
                                                       pretty-printing
