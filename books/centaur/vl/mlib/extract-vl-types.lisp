@@ -330,13 +330,15 @@
           (vl-types->acl2-types-parse-args-list (cdr args-lst) pkg-sym))))
 
 (define extract-vl-types-generate-macros
-  ((name stringp)
-   accessor-macro-name
-   changer-macro-name-aux
-   changer-macro-name
-   ranges-fn-name
-   (pkg-sym symbolp))
-  (declare (ignorable name))
+  (&key
+   ((name stringp) 'name)
+   (accessor-macro-name 'accessor-macro-name)
+   (changer-macro-name-aux 'changer-macro-name-aux)
+   (changer-macro-name 'changer-macro-name)
+   (ranges-fn-name 'ranges-fn-name)
+   ((pkg-sym symbolp) 'pkg-sym)
+   (constant-value 'nil))
+  (declare (ignorable name constant-value))
   `(
     (define ,changer-macro-name-aux (args)
       :parents nil
@@ -359,8 +361,14 @@
     ;;(defsection ,changer-macro-name
     ;;:short (str::cat "Modifier for the VL type @(see |" ,name "|)")
     ;;:long "<p>See @(see vl::extract-vl-types) to see how to use this modifier. </p>"
-    (defmacro ,changer-macro-name (value &rest args)
-      (b* ((assignments (,changer-macro-name-aux args)))
+    (defmacro ,changer-macro-name (,@(if constant-value nil '(value)) &rest args)
+      (b* (,@(and constant-value
+                  `((__FUNCTION__ ',changer-macro-name)
+                    ((std::extract-keyword-args
+                      :other-args args
+                      (value ',constant-value))
+                     args)))
+           (assignments (,changer-macro-name-aux args)))
         (list 'b*
               (cons (list 'value value)
                     assignments)
@@ -371,8 +379,18 @@
     ;;  :short (str::cat "Accessor for the VL type @(see |" ,name "|).")
     ;;  :long "<p>See @(see vl::extract-vl-types) to see how to use this accessor.</p>"
     (defmacro ,accessor-macro-name
-        (value &optional (args '""))
-      (b* ((args (vl-types->acl2-types-parse-args
+        (,@(if constant-value '(&rest args) '(value &optional (args '""))))
+      (b* (,@(and constant-value
+                  `((__FUNCTION__ ',accessor-macro-name)
+                    ((std::extract-keyword-args
+                      :other-args args
+                      (value ',constant-value))
+                     args)
+                    ((unless (and (atom (cdr args))
+                                  (stringp (or (car args) ""))))
+                     (raise "Expected to get one string but got: ~p0" args))
+                    (args (or (car args) ""))))
+           (args (vl-types->acl2-types-parse-args
                   args ',pkg-sym))
            ((mv start width)
             (,ranges-fn-name 0 args)))
@@ -546,7 +564,7 @@
                               (debug-extracted-vl-type-array value collected-dims excludes (1- depth-limit))))))))
            (mv ranges-case-statement debug-clause events size)))
 
-        (::VL-USERTYPE
+        (:VL-USERTYPE
          (b* (((vl-usertype x) member.type)
               ((mv events size)
                (vl-types->acl2-types-new-type x.name x.res orig-def-alist pkg-sym))
@@ -609,7 +627,9 @@
   (define vl-types->acl2-types-new-type (name
                                          vl-datatype
                                          (orig-def-alist alistp)
-                                         (pkg-sym symbolp))
+                                         (pkg-sym symbolp)
+                                         &key
+                                         (constant-value 'nil))
     :returns (mv (events)
                  (size natp))
     (b* (((unless (stringp name))
@@ -649,10 +669,7 @@
                           (dims ',collected-dims))
                        (get-extracted-vl-type-array-ranges start width dims args
                                                            ,name nil)))
-                   ,@(extract-vl-types-generate-macros
-                      name
-                      accessor-macro-name
-                      changer-macro-name-aux changer-macro-name ranges-fn-name pkg-sym)
+                   ,@(extract-vl-types-generate-macros)
 
                    (define ,debug-fn-name ((value integerp)
                                            (excludes (and (true-list-listp excludes)
@@ -719,10 +736,7 @@
                           (progn$ (raise "An invalid field (~p0) is given for vl-struct type ~s1 ~%" cur-arg ,name)
                                   (mv start width))))))
 
-                   ,@(extract-vl-types-generate-macros
-                      name
-                      accessor-macro-name
-                      changer-macro-name-aux changer-macro-name ranges-fn-name pkg-sym)
+                   ,@(extract-vl-types-generate-macros)
 
                    (define ,debug-fn-name ((value integerp)
                                            (excludes (and (true-list-listp excludes)
@@ -789,10 +803,7 @@
                           (progn$ (raise "An invalid field (~p0) is given for vl-struct type ~s1 ~%" cur-arg ,name)
                                   (mv start width))))))
 
-                   ,@(extract-vl-types-generate-macros
-                      name
-                      accessor-macro-name
-                      changer-macro-name-aux changer-macro-name ranges-fn-name pkg-sym)
+                   ,@(extract-vl-types-generate-macros)
 
                    (define ,debug-fn-name ((value integerp)
                                            (excludes (and (true-list-listp excludes)
@@ -895,48 +906,47 @@
               ((mv range-case-statement debug-clause member-events size)
                (vl-structmember->acl2-types tmp-struct-member 0 orig-def-alist pkg-sym t))
               (this-events
-               `((defsection ,symbol
-                   :autodoc nil
-                   :set-as-default-parent t
-                   :short ,(str::cat "Accessor, modifier, and debug functions for the extracted " name " VL-usertype (possibly a variable/wire) ")
-                   :long ,(str::cat
-                           (if (assoc-equal name orig-def-alist) (cdr (assoc-equal name orig-def-alist)) "")
-                           "<p>For this VL-usertype, 3 ACL2 functions/macros are created for users. An accessor: @({(|" name "| value field),})</p> <p>A modifier: @({(change-|"name"| value field-newval-pairs),}) </p> <p>And a debug function to print all the fields: @({(|"name"|-debug value optional-args).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions.</p>")
+               `((,@(if constant-value
+                        '(progn)
+                      `(defsection ,symbol
+                         :autodoc nil
+                         :set-as-default-parent t
+                         :short ,(str::cat "Accessor, modifier, and debug functions for the extracted " name " VL-usertype (possibly a variable/wire) ")
+                         :long ,(str::cat
+                                 (if (assoc-equal name orig-def-alist) (cdr (assoc-equal name orig-def-alist)) "")
+                                 "<p>For this VL-usertype, 3 ACL2 functions/macros are created for users. An accessor: @({(|" name "| value field),})</p> <p>A modifier: @({(change-|"name"| value field-newval-pairs),}) </p> <p>And a debug function to print all the fields: @({(|"name"|-debug value optional-args).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions.</p>")
+                         ))
+                  (define ,ranges-fn-name ((start natp) (args true-listp))
+                    ;;:short ,(str::cat "Calculate the bit locations that a certain field is stored for @(see |" name "|) VL union type. Not intended to be called by users.")
+                    :parents nil
+                    (b* ((width ,size)
+                         ((when (atom args)) (mv start width))
+                         (rest-args args))
+                      ,(second range-case-statement)))
 
-                   (define ,ranges-fn-name ((start natp) (args true-listp))
-                     ;;:short ,(str::cat "Calculate the bit locations that a certain field is stored for @(see |" name "|) VL union type. Not intended to be called by users.")
-                     :parents nil
-                     (b* ((width ,size)
-                          ((when (atom args)) (mv start width))
-                          (rest-args args))
-                       ,(second range-case-statement)))
+                  ,@(extract-vl-types-generate-macros :constant-value constant-value)
 
-                   ,@(extract-vl-types-generate-macros
-                      name
-                      accessor-macro-name
-                      changer-macro-name-aux changer-macro-name ranges-fn-name pkg-sym)
+                  (define ,debug-fn-name ((value integerp)
+                                          (excludes (and (true-list-listp excludes)
+                                                         (true-listp excludes)))
+                                          (depth-limit integerp))
+                    :parents nil
+                    (declare (ignorable excludes))
+                    ,debug-clause)
 
-                   (define ,debug-fn-name ((value integerp)
-                                           (excludes (and (true-list-listp excludes)
-                                                          (true-listp excludes)))
-                                           (depth-limit integerp))
-                     :parents nil
-                     (declare (ignorable excludes))
-                     ,debug-clause)
+                  ;; I believe below is not necessary. But I am not sure so
+                  ;; leaving it here just in case...
+                  ,(extract-vl-types-generate-debug-vector-functions debug-fn-name
+                                                                     debug-vector-fn-name
+                                                                     pkg-sym)
 
-                   ,(extract-vl-types-generate-debug-vector-functions debug-fn-name
-                                                                      debug-vector-fn-name
-                                                                      pkg-sym)
-
-                   ;;(defsection ,debug-macro-name
-                   ;;:short ,(str::cat "Debug macro for  @(see |" name "|) VL union type.")
-                   ;;:long "<p>See @(see vl::extract-vl-types) for explanation of arguments and how to use the debug functionality.</p>"
-
-                   (defmacro ,debug-macro-name (value &key exclude (depth-limit '1000))
-                     (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
-                       (list ',debug-fn-name value (list 'quote excludes) depth-limit)))
-                   ;;)
-                   ))))
+                  (defmacro ,debug-macro-name (,@(if constant-value nil '(value))
+                                               &key exclude (depth-limit '1000)
+                                               ,@(and constant-value `((value ',constant-value))))
+                    (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
+                      (list ',debug-fn-name value (list 'quote excludes) depth-limit)))
+                  ;;)
+                  ))))
            (mv (append member-events
                        this-events)
                size)))
@@ -1001,7 +1011,7 @@ nil
                             (new-val character-listp)
                             (all-string character-listp)
                             &optional
-                            (delimeters '(acl2::explode " :][-;()*/+
+                            (delimeters '(acl2::explode " :][-;()*/+{}'
 ")))
     :mode :program
     :guard (natp (len old-val))
@@ -1029,54 +1039,10 @@ nil
     :mode :program
     (if (atom link-strings)
         doc-string
-      (b* (;;  TODO: FIX THIS  BELOW BY  CREATING/FINDING A FUNCTION  THAT DOES
-           ;; STRING SUBSTITUTION  WHEN THERE ARE  NO OTHER LETTERS  AROUND THE
-           ;; MATCH:
-
-           (doc-string (implode (strsubst-vl-vars
+      (b* ((doc-string (implode (strsubst-vl-vars
                                  (explode (car link-strings))
                                  (explode (str::cat "@(see |" (car link-strings) "|)"))
-                                 (explode doc-string))))
-
-           ;; ;; when ends with space:
-           ;; (doc-string (str::strsubst (str::cat " " (car link-strings) " ")
-           ;;                            (str::cat " @(see |" (car link-strings) "|) ")
-           ;;                            doc-string))
-           ;; (doc-string (str::strsubst (str::cat "(" (car link-strings) " ")
-           ;;                            (str::cat "(@(see |" (car link-strings) "|) ")
-           ;;                            doc-string))
-           ;; (doc-string (str::strsubst (str::cat "-" (car link-strings) " ")
-           ;;                            (str::cat "-@(see |" (car link-strings) "|) ")
-           ;;                            doc-string))
-           ;; (doc-string (str::strsubst (str::cat "[" (car link-strings) " ")
-           ;;                            (str::cat "[@(see |" (car link-strings) "|) ")
-           ;;                            doc-string))
-
-           ;; ;; when ends with -
-           ;; (doc-string (str::strsubst (str::cat " " (car link-strings) "-")
-           ;;                            (str::cat " " "@(see |" (car link-strings) "|)-")
-           ;;                            doc-string))
-           ;; (doc-string (str::strsubst (str::cat "-" (car link-strings) "-")
-           ;;                            (str::cat "-" "@(see |" (car link-strings) "|)-")
-           ;;                            doc-string))
-           ;; (doc-string (str::strsubst (str::cat "(" (car link-strings) "-")
-           ;;                            (str::cat "(" "@(see |" (car link-strings) "|)-")
-           ;;                            doc-string))
-           ;; (doc-string (str::strsubst (str::cat "[" (car link-strings) "-")
-           ;;                            (str::cat "[" "@(see |" (car link-strings) "|)-")
-           ;;                            doc-string))
-
-           ;; ;; when ends with )
-           ;; (doc-string (str::strsubst (str::cat " "(car link-strings) ")")
-           ;;                            (str::cat " @(see |" (car link-strings) "|))")
-           ;;                            doc-string))
-           ;; (doc-string (str::strsubst (str::cat "("(car link-strings) ")")
-           ;;                            (str::cat "(@(see |" (car link-strings) "|))")
-           ;;                            doc-string))
-           ;; (doc-string (str::strsubst (str::cat "-"(car link-strings) ")")
-           ;;                            (str::cat "-@(see |" (car link-strings) "|))")
-           ;;                            doc-string))
-           )
+                                 (explode doc-string)))))
         (extract-vl-types-insert-xdoc-links doc-string (cdr link-strings)))))
 
   (define extract-vl-types-create-xdoc-for-types (ss ;; vl-scopestack
@@ -1103,24 +1069,38 @@ nil
                  (mv (vl-typedef->minloc x) (vl-typedef->maxloc x)))
                 ((vl-vardecl-p x)
                  (b* (((vl-location loc) (vl-vardecl->loc x)))
-                   ;; Here I assume that a declaration takes places on a line without anything else.
-                   (mv (change-vl-location loc :col 0)
-                       (change-vl-location loc :line (1+ loc.line) :col 0))))
+                   ;; making the column 0 because the start location can eat away the declaration type.
+                   (mv (change-vl-location loc :col 0) nil)))
                 ((vl-paramdecl-p x)
                  (b* (((vl-location loc) (vl-paramdecl->loc x)))
-                   ;; Here I assume that a declaration takes places on a line without anything else.
-                   (mv (change-vl-location loc :col 0)
-                       (change-vl-location loc :line (1+ loc.line) :col 0))))
-                (t (mv (make-vl-location) (make-vl-location)))))
+                   ;; making the column 0 because the start location can eat away the declaration type.
+                   (mv (change-vl-location loc :col 0) nil)))
+                (t (mv (raise "Unexpected vl-type for x: ~p0" x) nil))))
 
          ((mv okp result & state) (vl-read-file (vl-location->filename minloc)))
          ((unless okp)
           (progn$ (cw "Couldn't read file ~p0 for ~p1 ~%"
                       (vl-location->filename minloc) this.name)
                   (mv rest state)))
-         (string (vl-string-between-locs (vl-echarlist->string result)
+         (string
+          (cond (maxloc
+                 (vl-string-between-locs (vl-echarlist->string result)
                                          minloc
                                          maxloc))
+                (t
+                 ;; when maxloc is unknown, find the first instance of
+                 ;; ";" to figure out when the declaration ends.
+                 (b* ((string (vl-echarlist->string result))
+                      (start (vl-string-findloc string minloc))
+                      (end (search ";" string :start2 start))
+                      (end (or end
+                               ;; if ";" is not found, then at least return one line:
+                               (vl-string-findloc
+                                string
+                                (make-vl-location :line (1+ (vl-location->line minloc))
+                                                  :col 0)))))
+                   (subseq string start (1+ end))))))
+
          ;; insert xdoc hyperlinks to quickly navigate children types.
          (string (extract-vl-types-insert-xdoc-links string all-vl-type-names))
 
@@ -1128,8 +1108,14 @@ nil
          (string (str::strsubst "<" "@('<')" string))
 
          (string (str::cat "<p>Original Verilog Definition: <code>" string "</code></p>"))
-         (string (str::cat string
-                           "<p> Source <a href=\"file://"(vl-location->filename minloc)"\">file</a>:" (vl-location->filename minloc) "<br />Lines: " (str::int-to-dec-string (vl-location->line minloc)) "-" (str::int-to-dec-string (vl-location->line maxloc)) ".</p>"))
+         (string
+          (str::cat
+           string
+           "<p> Source <a href=\"file://" (vl-location->filename  minloc) "\">file</a>:"
+           (vl-location->filename minloc) "<br />"
+           "Lines: " (str::int-to-dec-string (vl-location->line minloc))
+           "-" (if maxloc (str::int-to-dec-string (vl-location->line maxloc)) "?")
+           ".</p>"))
 
          )
       (mv `((,(car vl-type-names) . ,string) ,@rest)
@@ -1143,7 +1129,15 @@ nil
        (events
         (case (vl-paramtype-kind x.type)
           (:vl-explicitvalueparam
-           (b* (((vl-explicitvalueparam x) x.type))
+           (b* (((vl-explicitvalueparam x) x.type)
+                (constant-value-name (intern-in-package-of-symbol (str::cat "*"x.name"*") pkg-sym))
+
+                ((mv extra-events &)
+                 (if (equal (vl-datatype-kind x.type) :vl-usertype)
+                     (vl-types->acl2-types-new-type x.name x.type
+                                                    orig-def-alist pkg-sym
+                                                    :constant-value constant-value-name)
+                   (mv nil nil))))
              `((defsection ,(intern-in-package-of-symbol x.name pkg-sym)
                  :short ,(str::cat "An extracted VL type parameter with a constant value of "
                                    (cond ((integerp x.final-value)
@@ -1157,9 +1151,15 @@ nil
                                          (t "??")))
                  :long ,(str::cat
                          (if (assoc-equal x.name orig-def-alist) (cdr (assoc-equal x.name orig-def-alist)) "")
-                         "@(def *|"x.name"|*)")
-                 (defconst ,(intern-in-package-of-symbol (str::cat "*"x.name"*") pkg-sym)
-                   ,x.final-value)))))
+                         "@(def *|"x.name"|*)"
+                         (if extra-events
+                             (str::cat "<p>Since this constant value is a special user type, 3 ACL2 functions/macros are created for users: an accessor, a modifier and a debugger.</p><p> An accessor: @({(|" x.name "| optional-field),})</p> <p>A modifier: @({(change-|"x.name"| field-newval-pairs),}) </p> <p>And a debug function to print all the fields: @({(|"x.name"|-debug optional-args).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions. Note that since this type is a constant, these functions/macros do not explicitly take the \"value\". Instead, it uses the value of <tt>*|"x.name"|*</tt> by default. Passing an extra key argument \":value\" to any one of these macros/functions can override the value used.</p>")
+                           ""))
+                 :autodoc nil
+                 :set-as-default-parent t
+                 (defconst ,constant-value-name
+                   ,x.final-value))
+               ,@extra-events)))
           (& (raise "Unsupported vl-paramtype-kind: ~p0 for ~p1" x.type x.name)))))
     events))
 
@@ -1191,33 +1191,33 @@ nil
          (cur-name (car names-to-extract))
          (cur (vl::vl-scopestack-find-item cur-name ss))
 
+         ((mv name type)
+          (cond ((vl-typedef-p cur)
+                 (mv (vl-typedef->name cur) (vl-typedef->type cur)))
+                ((vl-vardecl-p cur)
+                 (mv (vl-vardecl->name cur) (vl-vardecl->type cur)))
+                ((vl-paramdecl-p cur)
+                 (mv cur-name (and (equal (vl-paramtype-kind (vl-paramdecl->type cur)) :vl-explicitvalueparam)
+                                   (vl-explicitvalueparam->type (vl-paramdecl->type cur)))))
+                (t (mv "" nil))))
+         ;;----
+         ;; create doc strings for each data type that comes along:
+         (?all-included-type-names (append (list name)
+                                           (and type (vl-datatype->all-children-names type))
+                                           all-names-to-extract))
+         (all-included-type-names (remove-duplicates all-included-type-names))
+         ((mv orig-def-alist state)
+          (extract-vl-types-create-xdoc-for-types ss all-included-type-names all-included-type-names state))
+         ;;---
+
          ((mv events state)
           (cond ((or (vl-typedef-p cur)
                      (vl-vardecl-p cur))
-                 (b* (((mv name type)
-                       (cond ((vl-typedef-p cur)
-                              (mv (vl-typedef->name cur) (vl-typedef->type cur)))
-                             ((vl-vardecl-p cur)
-                              (mv (vl-vardecl->name cur) (vl-vardecl->type cur)))
-                             (t (mv "" nil))))
-
-                      ;;----
-                      ;; create doc strings for each data type that comes along:
-                      (?all-included-type-names (append (list name)
-                                                        (vl-datatype->all-children-names type)
-                                                        all-names-to-extract))
-                      (all-included-type-names (remove-duplicates all-included-type-names))
-                      ((mv orig-def-alist state)
-                       (extract-vl-types-create-xdoc-for-types ss all-included-type-names all-included-type-names state))
-                      ;;---
-
-                      ((mv events ?size)
+                 (b* (((mv events ?size)
                        (vl-types->acl2-types-new-type name type orig-def-alist pkg-sym)))
                    (mv events state)))
                 ((vl-paramdecl-p cur)
-                 (b* (((mv orig-def-alist state)
-                       (extract-vl-types-create-xdoc-for-types ss (list cur-name) all-names-to-extract state))
-                      (events (extract-vl-paramdecl cur orig-def-alist pkg-sym)))
+                 (b* ((events (extract-vl-paramdecl cur orig-def-alist pkg-sym)))
                    (mv events state)))
                 (t
                  (mv (if cur
