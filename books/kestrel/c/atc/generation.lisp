@@ -7774,9 +7774,9 @@
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
                             (call pseudo-event-formp)
-                            (ctx ctxp)
                             state)
-  :returns (mv erp (event pseudo-event-formp) state)
+  :returns (mv erp
+               (event pseudo-event-formp))
   :short "Generate the file and the events."
   :long
   (xdoc::topstring
@@ -7796,12 +7796,12 @@
      with just the affected variables, which may be a subset of the formals;
      if the call is the body of a @(tsee let),
      the formals that are not affected then become ignored."))
-  (b* ((names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
-       ((mv erp fileset local-events exported-events &)
+  (b* (((reterr) '(_))
+       (names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
+       ((erp fileset local-events exported-events &)
         (atc-gen-fileset targets path-wo-ext proofs
                          prog-const wf-thm fn-thms
                          header print names-to-avoid state))
-       ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
        (fileset-gen-event (atc-gen-fileset-event fileset
                                                  file-name
                                                  pretty-printing
@@ -7819,10 +7819,10 @@
        (encapsulate+ (restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
        (table-event (atc-table-record-event call info)))
-    (acl2::value `(progn ,encapsulate+
-                         ,table-event
-                         ,@print-events
-                         (value-triple :invisible))))
+    (retok `(progn ,encapsulate+
+                   ,table-event
+                   ,@print-events
+                   (value-triple :invisible))))
   :guard-hints
   (("Goal"
     :in-theory
