@@ -7679,9 +7679,8 @@
 (define atc-gen-fileset-event ((fileset filesetp)
                                (file-name stringp)
                                (pretty-printing pprint-options-p)
-                               (print evmac-input-print-p)
-                               state)
-  :returns (mv erp (event pseudo-event-formp) state)
+                               (print evmac-input-print-p))
+  :returns (event pseudo-event-formp)
   :short "Event to pretty-print the generated C code to the file system."
   :long
   (xdoc::topstring
@@ -7724,9 +7723,9 @@
           (b* (((er &)
                 (pprint-fileset ',fileset ,file-name ',pretty-printing state)))
             (acl2::value '(value-triple :invisible))))))
-    (acl2::value `(progn ,@progress-start?
-                         ,file-gen-event
-                         ,@progress-end?))))
+    `(progn ,@progress-start?
+            ,file-gen-event
+            ,@progress-end?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -7803,11 +7802,10 @@
                          prog-const wf-thm fn-thms
                          header print names-to-avoid state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp))
-       ((er fileset-gen-event) (atc-gen-fileset-event fileset
-                                                      file-name
-                                                      pretty-printing
-                                                      print
-                                                      state))
+       (fileset-gen-event (atc-gen-fileset-event fileset
+                                                 file-name
+                                                 pretty-printing
+                                                 print))
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events fileset)))
        (encapsulate
