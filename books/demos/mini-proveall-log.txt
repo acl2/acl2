@@ -2153,8 +2153,6 @@ Goal
              (ACL2-COUNT X))).
 Goal'
 Goal''
-Goal'''
-Goal'4'
 
 Q.E.D.
 
@@ -2189,16 +2187,13 @@ with Common Lisp.
 
 Summary
 Form:  ( DEFUN APP0 ...)
-Rules: ((:DEFINITION ACL2-COUNT)
-        (:DEFINITION ENDS-IN-A-0)
+Rules: ((:DEFINITION ENDS-IN-A-0)
         (:DEFINITION NOT)
         (:DEFINITION O-FINP)
         (:DEFINITION O<)
-        (:ELIM CAR-CDR-ELIM)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
-        (:REWRITE CAR-CONS)
-        (:REWRITE CDR-CONS)
+        (:LINEAR ACL2-COUNT-CAR-CDR-LINEAR)
         (:TYPE-PRESCRIPTION ACL2-COUNT))
  APP0
 ACL2 !>>>(DEFUN REV0 (X)
@@ -2219,8 +2214,6 @@ Goal
              (ACL2-COUNT X))).
 Goal'
 Goal''
-Goal'''
-Goal'4'
 
 Q.E.D.
 
@@ -2324,8 +2317,7 @@ with Common Lisp.
 
 Summary
 Form:  ( DEFUN REV0 ...)
-Rules: ((:DEFINITION ACL2-COUNT)
-        (:DEFINITION APP0)
+Rules: ((:DEFINITION APP0)
         (:DEFINITION ENDS-IN-A-0)
         (:DEFINITION NOT)
         (:DEFINITION O-FINP)
@@ -2341,7 +2333,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:INDUCTION APP0)
         (:INDUCTION ENDS-IN-A-0)
         (:INDUCTION REV0)
-        (:REWRITE CAR-CONS)
+        (:LINEAR ACL2-COUNT-CAR-CDR-LINEAR)
         (:REWRITE CDR-CONS)
         (:TYPE-PRESCRIPTION ACL2-COUNT)
         (:TYPE-PRESCRIPTION APP0)

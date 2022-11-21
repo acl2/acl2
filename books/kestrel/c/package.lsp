@@ -55,6 +55,7 @@
                ctxp
                cw-event
                define-sk
+               defirrelevant
                defmacro+
                defopener
                defopeners

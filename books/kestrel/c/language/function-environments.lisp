@@ -97,15 +97,6 @@
   :ok fun-env
   :pred fun-env-resultp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irr-fun-env ()
-  :returns (fenv fun-envp)
-  :short "An irrelevant function environment, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (fun-env-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-fun-env))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fun-env-lookup ((name identp) (fenv fun-envp))

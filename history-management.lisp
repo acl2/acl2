@@ -12576,44 +12576,13 @@
                      (subst-var initial-alist do-fn-var do-fn-guard)
                      warranted-clause
                      t)))
-; The nested lambda expressions used in conjectures (e), (f), and (g) below are
-; the fully translated form of
 
-;  (let ((triple (true-list-fix (apply$ ',do-fn (list alist)))))
-;    (let ((exit-flg (car triple))
-;          (new-alist (caddr triple)))
-;      (implies ... ...)))
-
-; Note also that since there are no free variables in the conjecture other than
-; alist, there is no point in including hypotheses from the surrounding
-; context.  We do, however, include the warrant hypotheses.  Also note that
-; there is always a guard on the do-fn and the fin-fn, namely, at least,
-; (alistp alist), so we don't try to avoid generating the special conjectures
-; involving trivial guards.
+; Special conjectures (e), (f), and (g) all concern the new alist produced
+; by running the DO loop$ body one step.
 
 ; (e) if the guard on do-fn is satisfied by some alist and running do-fn
 ;     produces an exit-flg of nil (and some new alist) then the guard on do-fn
 ;     is satisfied by that new alist.
-
-               (special-conjecture-e
-                (add-literal-smart
-                 `((lambda (triple alist)
-                     ((lambda (exit-flg new-alist alist)
-                        (implies (if ,(subst-var 'alist
-                                                 do-fn-var
-                                                 do-fn-guard)
-                                     (equal exit-flg 'nil)
-                                     'nil)
-                                 ,(subst-var 'new-alist
-                                             do-fn-var
-                                             do-fn-guard)))
-                      (car triple)
-                      (car (cdr (cdr triple)))
-                      alist))
-                   (true-list-fix (apply$ ',do-fn (cons alist 'nil)))
-                   alist)
-                 warrant-hyps
-                 t))
 
 ; (f) if the guard on do-fn is satisfied on some alist and running do-fn
 ;     produces an exit-flg of :loop-finish (and some new alist) then the guard
@@ -12627,41 +12596,60 @@
 ;     easier to suffer the proof than to detect the triviality of the
 ;     non-trivial lambda we generate!  To fix this, change translate11-loop$!
 
-               (special-conjecture-f
-                (add-literal-smart
-                 `((lambda (triple alist)
-                     ((lambda (exit-flg new-alist alist)
-                        (implies (if ,(subst-var 'alist
-                                                 do-fn-var
-                                                 do-fn-guard)
-                                     (equal exit-flg ':loop-finish)
-                                     'nil)
-                                 ,(subst-var 'new-alist
-                                             fin-fn-var
-                                             fin-fn-guard)))
-                      (car triple)
-                      (car (cdr (cdr triple)))
-                      alist))
-                   (true-list-fix (apply$ ',do-fn (cons alist 'nil)))
-                   alist)
-                 warrant-hyps
-                 t))
-
 ; (g) if the guard on do-fn is satisfied by alist and running do-fn produces an
 ;     exit flg of nil and (a some new alist) then the measure of the new alist
 ;     is smaller than that of alist.
 
-               (special-conjecture-g
+; But instead of producing three proof obligations we produce just one
+; containing the conclusions of the three special conjectures.  The nested
+; lambda expressions below are the fully translated form of
+
+;  (let ((triple (true-list-fix (apply$ ',do-fn (list alist)))))
+;    (let ((exit-flg (car triple))
+;          (new-alist (caddr triple)))
+;      (implies ,do-fn-guard
+;               (cond
+;                ((equal exit-flg nil)
+;                 (and <conclusion-e>
+;                      <conclusion-g>))
+;                ((equal exit-flg :loop-finish)
+;                 <conclusion-f>)
+;                (t t))
+
+; The basic idea is to apply the DO loop$ body once to get triple, extract the
+; exit-flg and new-alist, and then check that exit-flg and new-alist have the
+; appropriate properties.  By moving the three conclusions into the innermost
+; lambda we hope to avoid causing the prover to simplify the DO loop$ body
+; multiple times.
+
+; Note also that since there are no free variables in the conjecture other than
+; alist, there is no point in including hypotheses from the surrounding
+; context.  We do, however, include the warrant hypotheses.  Also note that
+; there is always a guard on the do-fn and the fin-fn, namely, at least,
+; (alistp alist), so we don't try to avoid generating the special conjectures
+; involving trivial guards.
+
+               (special-conjecture-e-f-g
                 (add-literal-smart
                  `((lambda (triple alist)
                      ((lambda (exit-flg new-alist alist)
-                        (implies (if ,(subst-var 'alist
-                                                 do-fn-var
-                                                 do-fn-guard)
-                                     (equal exit-flg 'nil)
-                                     'nil)
-                                 (l< (lex-fix (apply$ ',m-fn (cons new-alist 'nil)))
-                                     (lex-fix (apply$ ',m-fn (cons alist 'nil))))))
+                        (implies
+                         ,(subst-var 'alist do-fn-var do-fn-guard)
+                         (if (equal exit-flg 'nil)
+                             (if ,(subst-var ; conclusion (e)
+                                   'new-alist
+                                   do-fn-var
+                                   do-fn-guard)
+                                 (l<         ; conclusion (g)
+                                  (lex-fix (apply$ ',m-fn (cons new-alist 'nil)))
+                                  (lex-fix (apply$ ',m-fn (cons alist 'nil))))
+                                 'nil)
+                             (if (equal exit-flg ':loop-finish)
+                                 ,(subst-var ; conclusion (f)
+                                   'new-alist
+                                   fin-fn-var
+                                   fin-fn-guard)
+                                 't))))
                       (car triple)
                       (car (cdr (cdr triple)))
                       alist))
@@ -12672,15 +12660,9 @@
           (mv (append (if (equal special-conjecture-d *true-clause*)
                           nil
                           (list special-conjecture-d))
-                      (if (equal special-conjecture-e *true-clause*)
+                      (if (equal special-conjecture-e-f-g *true-clause*)
                           nil
-                          (list special-conjecture-e))
-                      (if (equal special-conjecture-f *true-clause*)
-                          nil
-                          (list special-conjecture-f))
-                      (if (equal special-conjecture-g *true-clause*)
-                          nil
-                          (list special-conjecture-g)))
+                          (list special-conjecture-e-f-g)))
               ttree)))
        (t ; style = :plain or :fancy
         (let* ((test-b (loop$-scion-restriction (ffn-symb term)))

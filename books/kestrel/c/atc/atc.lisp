@@ -137,16 +137,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-fn ((args true-listp) (call pseudo-event-formp) (ctx ctxp) state)
-  :returns (mv erp (event "A @('pseudo-event-formp').") state)
-  :mode :program
+(define atc-process-inputs-and-gen-everything ((args true-listp)
+                                               (call pseudo-event-formp)
+                                               state)
+  :returns (mv erp
+               (event pseudo-event-formp)
+               state)
   :parents (atc-implementation)
-  :short "Process the inputs and
-          generate the events and code."
-  (b* (((when (atc-table-lookup call (w state)))
-        (acl2::value '(value-triple :redundant)))
+  :short "Process the inputs and generate the events and code."
+  (b* (((acl2::fun (reterr erp state)) (mv erp '(_) state))
+       ((when (atc-table-lookup call (w state)))
+        (retok '(value-triple :redundant) state))
        ((mv erp
-            t1...tp
+            targets
             file-name
             path-wo-ext
             header
@@ -158,20 +161,35 @@
             print
             state)
         (atc-process-inputs args state))
+       ((when erp) (reterr erp state))
+       ((mv erp event)
+        (atc-gen-everything targets
+                            file-name
+                            path-wo-ext
+                            header
+                            pretty-printing
+                            proofs
+                            prog-const
+                            wf-thm
+                            fn-thms
+                            print
+                            call
+                            state))
+       ((when erp) (reterr erp state)))
+    (retok event state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-fn ((args true-listp) (call pseudo-event-formp) (ctx ctxp) state)
+  :returns (mv erp
+               (event pseudo-event-formp)
+               state)
+  :parents (atc-implementation)
+  :short "Event expansion of @(tsee atc)."
+  (b* (((mv erp event state)
+        (atc-process-inputs-and-gen-everything args call state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
-    (atc-gen-everything t1...tp
-                        file-name
-                        path-wo-ext
-                        header
-                        pretty-printing
-                        proofs
-                        prog-const
-                        wf-thm
-                        fn-thms
-                        print
-                        call
-                        ctx
-                        state)))
+    (acl2::value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
