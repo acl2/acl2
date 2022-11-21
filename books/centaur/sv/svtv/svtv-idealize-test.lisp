@@ -53,9 +53,9 @@
                              (make-wire :name "res1"  :width 4 :low-idx 0)
                              (make-wire :name "res2"  :width 4 :low-idx 0)
                              (make-wire :name "res3"  :width 4 :low-idx 0))
-                :assigns (list (cons (simple-lhs "a" 4)  (make-driver :value (svex-concat 4 "a-in" 0)))
-                               (cons (simple-lhs "b" 4)  (make-driver :value (svex-concat 4 "b-in" 0)))
-                               (cons (simple-lhs "op" 2) (make-driver :value (svex-concat 2 "op-in" 0)))
+                :assigns (list (cons (simple-lhs "a" 4)  (make-driver :value (svex-concat 4 (make-svar :name "a-in" :delay 1) 0)))
+                               (cons (simple-lhs "b" 4)  (make-driver :value (svex-concat 4 (make-svar :name "b-in" :delay 1) 0)))
+                               (cons (simple-lhs "op" 2) (make-driver :value (svex-concat 2 (make-svar :name "op-in" :delay 1) 0)))
                                (cons (simple-lhs "res1" 4)
                                      (make-driver :value
                                                   (svex-concat 4

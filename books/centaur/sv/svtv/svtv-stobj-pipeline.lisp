@@ -87,7 +87,8 @@
               (b* ((st-vars (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
                 (and (equal (svex-alist-keys (pipeline-setup->initst (svtv-data->pipeline-setup svtv-data)))
                             st-vars)
-                     (not (acl2::hons-intersect-p precomp-inputs st-vars)))))
+                     (not (acl2::hons-intersect-p precomp-inputs st-vars))
+                     (not (acl2::hons-dups-p st-vars)))))
   :guard-debug t
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
@@ -128,7 +129,8 @@
               (b* ((st-vars (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
                 (and (equal (svex-alist-keys (pipeline-setup->initst pipeline-setup))
                             st-vars)
-                     (not (acl2::hons-intersect-p precomp-inputs st-vars)))))
+                     (not (acl2::hons-intersect-p precomp-inputs st-vars))
+                     (not (acl2::hons-dups-p st-vars)))))
   :returns (mv updated new-svtv-data)
   (if (and (equal (pipeline-setup-fix pipeline-setup)
                   (svtv-data->pipeline-setup svtv-data))

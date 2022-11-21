@@ -297,7 +297,7 @@
                         (svtv-assigns-override-vars flatnorm.assigns config)))
        ((acl2::with-fast override-alist))
        (overridden-assigns (svex-alist-compose flatnorm.assigns override-alist))
-       (overridden-delays (svex-alist-compose (fast-alist-clean flatnorm.delays)
+       (overridden-delays (svex-alist-compose flatnorm.delays
                                               override-alist)))
     (mv overridden-assigns overridden-delays))
   ///
@@ -307,7 +307,7 @@
 
   (defret svex-alist-keys-of-<fn>-delays
     (equal (svex-alist-keys delay-alist)
-           (svex-alist-keys (fast-alist-clean (flatnorm-res->delays flatnorm))))))
+           (svex-alist-keys (flatnorm-res->delays flatnorm)))))
 
 (local (defthm append-subset-under-set-equiv
            (implies (subsetp a b)
@@ -342,7 +342,8 @@
   (defcong flatnorm-res-equiv equal (phase-fsm-composition-p phase-fsm flatnorm config) 2)
 
   (defthm phase-fsm-composition-p-implies-no-duplicate-nextstate-keys
-    (implies (phase-fsm-composition-p phase-fsm flatnorm config)
+    (implies (and (phase-fsm-composition-p phase-fsm flatnorm config)
+                  (no-duplicatesp-equal (svex-alist-keys (flatnorm-res->delays flatnorm))))
              (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate phase-fsm))))))
 
 
@@ -379,12 +380,13 @@ to a small number is usually practical if there is such a problem.")
                                           :rewrite params.rewrite
                                           :scc-selfcompose-limit params.scc-selfcompose-limit))))
        (updates2 (fast-alist-fork updates1 (make-fast-alist (svex-alist-compose override-alist updates1))))
-       (nextstates (make-fast-alist (svex-alist-compose (fast-alist-clean flatnorm.delays) updates2))))
+       (nextstates (make-fast-alist (svex-alist-compose flatnorm.delays updates2))))
     (fast-alist-free updates2)
     (make-base-fsm :values updates1 :nextstate nextstates))
   ///
   (defret no-duplicate-nextstates-of-<fn>
-    (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate fsm))))
+    (implies (no-duplicatesp-equal (svex-alist-keys (flatnorm-res->delays flatnorm)))
+             (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate fsm)))))
 
   (local (defthmd svex-alist-keys-when-svex-alist-p
            (implies (svex-alist-p x)

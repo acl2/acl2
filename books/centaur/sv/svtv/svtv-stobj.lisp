@@ -597,6 +597,11 @@
                   (svtv-data$c->pipeline-validp x))
              (svtv-data$c-pipeline-okp x (svtv-data$c->pipeline x))))
 
+  (local (defthm svex-alist-keys-when-alist-eval-equiv!-normalize-assigns
+           (implies (svex-alist-eval-equiv! x (flatnorm-res->assigns (svtv-normalize-assigns flatten aliases setup)))
+                    (equal (svex-alist-keys x)
+                           (svex-alist-keys (flatnorm-res->assigns (svtv-normalize-assigns flatten aliases setup)))))))
+  
   (defthm no-duplicatesp-nextstate-keys-of-svtv-data->phase-fsm
     (implies (and (svtv-data$ap x)
                   (svtv-data$a->phase-fsm-validp x)
@@ -605,11 +610,12 @@
              (no-duplicatesp-equal
               (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm x)))))
     :hints(("Goal" :in-theory (e/d (svtv-data$ap)
-                                   (no-duplicate-nextstates-of-svtv-compose-assigns/delays))
-            :use ((:instance no-duplicate-nextstates-of-svtv-compose-assigns/delays
-                   (flatnorm (svtv-normalize-assigns (svtv-data$c->flatten x)
-                                                     (svtv-data$c->aliases x)
-                                                     (svtv-data$c->flatnorm-setup x))))))))
+                                   (no-duplicate-nextstates-of-svtv-compose-assigns/delays
+                                    phase-fsm-composition-p-implies-no-duplicate-nextstate-keys))
+            :use ((:instance phase-fsm-composition-p-implies-no-duplicate-nextstate-keys
+                   (phase-fsm (svtv-data$c->phase-fsm x))
+                   (flatnorm (svtv-data$c->flatnorm x))
+                   (config (svtv-data$c->phase-fsm-setup x)))))))
 
   (defthm moddb-ok-when-svtv-data$ap
     (implies (and (svtv-data$ap x)

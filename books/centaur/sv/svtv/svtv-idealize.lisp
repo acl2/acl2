@@ -152,7 +152,7 @@
   (defthmd svex-env-reduce-when-svex-env-non-x-p-and-<<=
     (implies (and (svex-env-non-x-p (svex-env-reduce vars env1))
                   (svex-env-<<= env1 env2)
-                  (equal (alist-keys (svex-env-fix env1)) (alist-keys (svex-env-fix env2))))
+                  (set-equiv (alist-keys (svex-env-fix env1)) (alist-keys (svex-env-fix env2))))
              (equal (svex-env-reduce vars env1)
                     (svex-env-reduce vars env2)))
     :hints(("Goal" :in-theory (enable svex-env-reduce-redef
@@ -401,11 +401,11 @@
                           (svex-alistlist-vars)
                           (<name>-input-vars))))))
 
-       (defret no-duplicate-state-keys-of-<fn>
+       (defret no-duplicate-state-keys-of-<ideal-name>
          (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
          :hints (("goal" :in-theory '(<data>-facts
                                       <data>-correct
-                                      <fn>
+                                      <ideal-name>
                                       design->ideal-fsm
                                       fields-of-svtv-data-obj->ideal-spec
                                       svex-alist-keys-of-flatnorm->ideal-fsm-nextstate
@@ -416,12 +416,12 @@
                                      no-duplicatesp-by-hons-dups-p)))
                  ))
        
-       (defret initst-keys-of-<fn>
+       (defret initst-keys-of-<ideal-name>
          (equal (svex-alist-keys (svtv-spec->initst-alist spec))
                 (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
          :hints (("goal" :in-theory '(<data>-facts
                                       <data>-correct
-                                      <fn>
+                                      <ideal-name>
                                       design->ideal-fsm
                                       fields-of-svtv-data-obj->ideal-spec
                                       svex-alist-keys-of-flatnorm->ideal-fsm-nextstate
@@ -432,18 +432,15 @@
                                      (flatnorm-res->delays)
                                      (svex-alist-keys)
                                      (svtv-data-obj->flatnorm)
-                                     hons-dups-p-when-variable-free
                                      (pipeline-setup->initst)
-                                     (svtv-data-obj->pipeline-setup)
-                                     no-duplicatesp-by-hons-dups-p)))
-                 ))
+                                     (svtv-data-obj->pipeline-setup))))))
 
-       (defret value-keys-of-<fn>
+       (defret probe-keys-of-<ideal-name>
          (equal (alist-keys (svtv-spec->probes spec))
                 (svex-alist-keys (svtv->outexprs (<name>))))
          :hints (("goal" :in-theory '(<data>-facts
                                       <data>-correct
-                                      <fn>
+                                      <ideal-name>
                                       design->ideal-fsm
                                       fields-of-svtv-data-obj->ideal-spec
                                       svex-alist-keys-of-flatnorm->ideal-fsm-nextstate
@@ -458,10 +455,10 @@
                                      (pipeline-setup->probes)
                                      (svtv-data-obj->pipeline-setup))))))
 
-       (defret cycle-outputs-captured-of-<fn>
+       (defret cycle-outputs-captured-of-<ideal-name>
          (svtv-cyclephaselist-has-outputs-captured
           (svtv-spec->cycle-phases spec))
-         :hints (("goal" :in-theory '(<fn>
+         :hints (("goal" :in-theory '(<ideal-name>
                                       fields-of-svtv-data-obj->ideal-spec
                                       (svtv-data-obj->cycle-phases)
                                       (svtv-cyclephaselist-has-outputs-captured)
@@ -533,7 +530,7 @@
                                    acl2::hons-dups-p-no-duplicatesp
                                    no-duplicate-state-keys-of-<ideal-name>
                                    initst-keys-of-<ideal-name>
-                                   value-keys-of-<ideal-name>
+                                   probe-keys-of-<ideal-name>
                                    cycle-outputs-captured-of-<ideal-name>
                                    svarlist-p-when-not-consp
                                    svex-env-reduce-of-nil
@@ -554,7 +551,7 @@
        (fgl::remove-fgl-rewrite <ideal-name>-exec)
        (fgl::disable-execution <ideal-name>-exec)
 
-       (fgl::def-fgl-rewrite <fn>-fgl
+       (fgl::def-fgl-rewrite <ideal-name>-exec-fgl
          (equal (<ideal-name>-exec env output-vars)
                 (b* ((run (and (consp output-vars)
                                (sv::svtv-run (<name>) (svex-env-fix env)
@@ -587,7 +584,7 @@
                                acl2::hons-dups-p-no-duplicatesp
                                no-duplicate-state-keys-of-<ideal-name>
                                initst-keys-of-<ideal-name>
-                               value-keys-of-<ideal-name>
+                               probe-keys-of-<ideal-name>
                                cycle-outputs-captured-of-<ideal-name>
                                svarlist-p-when-not-consp
                                svex-env-reduce-of-nil
@@ -1608,6 +1605,9 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
 
 
 
+
+(logic)
+
 ;; Svtv-override-triplemaplist-envs-match shortcut.
 ;; Reduce svtv-override-triplemaplist-envs-match on a concrete spec and concrete-keyed env to a small set of checks.
 
@@ -1707,7 +1707,9 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
     (implies (svtv-override-subst-matches-env env-subst env)
              (equal (svtv-override-triplelist-envs-match checks env spec)
                     (svtv-override-triplemap-envs-match triplemap env spec)))
-    :hints (("goal" :in-theory (e/d (svtv-override-triplemap-envs-match))))))
+    :hints (("goal" :in-theory (e/d (svtv-override-triplemap-envs-match)))))
+
+  (local (in-theory (enable svtv-override-triplemap-fix))))
 
 
 (define svtv-override-triplemaplist-envs-match-checks ((triplemaps svtv-override-triplemaplist-p)
