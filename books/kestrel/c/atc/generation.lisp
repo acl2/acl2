@@ -89,43 +89,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; move to a more general library:
-
-(defun list-lenp-fn (n l)
-  (if (zp n)
-      `(endp ,l)
-    `(and (consp ,l)
-          ,(list-lenp-fn (1- n) `(cdr ,l)))))
-
-(defmacro list-lenp (n l)
-  (declare (xargs :guard (natp n)))
-  `(let ((l ,l)) ,(list-lenp-fn n 'l)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; move to a more general library:
-
-; (these serve to speed up some proofs in this file)
-
-(defrulel tuplep-of-2-of-list
-  (std::tuplep 2 (list x1 x2)))
-
-(defrulel tuplep-of-3-of-list
-  (std::tuplep 3 (list x1 x2 x3)))
-
-(defrulel tuplep-of-4-of-list
-  (std::tuplep 4 (list x1 x2 x3 x4)))
-
-(defrulel tuplep-of-5-of-list
-  (std::tuplep 5 (list x1 x2 x3 x4 x5)))
-
-(defrulel tuplep-of-6-of-list
-  (std::tuplep 6 (list x1 x2 x3 x4 x5 x6)))
-
-(local (in-theory (disable std::tuplep)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ atc-event-and-code-generation
   :parents (atc-implementation)
   :short "Event generation and code generation performed by @(tsee atc)."
