@@ -581,7 +581,20 @@ signal is the key and time is the current phase."
                     :in-alists x.pipeline-setup.inputs
                     :override-test-alists x.pipeline-setup.override-tests
                     :override-val-alists x.pipeline-setup.override-vals                    
-                    :initst-alist x.pipeline-setup.initst)))
+                    :initst-alist x.pipeline-setup.initst))
+  ///
+  (defret fields-of-<fn>
+    (b* (((svtv-spec spec))
+         ((svtv-data-obj x))
+         ((pipeline-setup x.pipeline-setup)))
+      (and (equal spec.fsm (design->ideal-fsm x.design x.phase-fsm-setup))
+           (equal spec.cycle-phases x.cycle-phases)
+           (equal spec.namemap x.namemap)
+           (equal spec.probes x.pipeline-setup.probes)
+           (equal spec.in-alists x.pipeline-setup.inputs)
+           (equal spec.override-test-alists x.pipeline-setup.override-tests)
+           (equal spec.override-val-alists x.pipeline-setup.override-vals)                 
+           (equal spec.initst-alist x.pipeline-setup.initst)))))
 
 
 

@@ -31,12 +31,15 @@
 (include-book "override-common")
 (include-book "override-thm-common")
 (include-book "centaur/fgl/def-fgl-thm" :dir :system)
+(include-book "centaur/fgl/def-fgl-rewrite" :dir :system)
+(include-book "centaur/fgl/config" :dir :system)
 (local (include-book "svtv-idealize-proof"))
 (local (include-book "std/alists/alist-keys" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :Dir :System))
 (local (include-book "centaur/bitops/equal-by-logbitp" :Dir :System))
 
+(local (std::add-default-post-define-hook :fix))
 
 ;; Just a few theorems from svtv-idealize-proof are needed for this event.  We'll import them redundantly here.
 (std::defredundant :names (set-equiv-by-mergesort-equal
@@ -47,6 +50,135 @@
                            svtv-override-triplemaplist-muxes-<<=-of-same-envs
                            svtv-override-triplemaplist-muxtests-subsetp-of-same-envs
                            4vec-override-mux-<<=-of-same-test/val))
+
+
+(defthmd delays-of-design->flatnorm-of-svtv-data-obj
+  (b* (((svtv-data-obj data))
+       ((flatnorm-setup data.flatnorm-setup)))
+    (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic data))
+                  data.flatten-validp
+                  data.flatnorm-validp
+                  data.flatnorm-setup.monotonify)
+             (equal (flatnorm-res->delays (design->flatnorm data.design))
+                    (flatnorm-res->delays data.flatnorm))))
+  :hints(("Goal" :in-theory (enable design->flatnorm
+                                    svtv-normalize-assigns))))
+
+(defthmd no-duplicatesp-by-hons-dups-p
+  (implies (and (syntaxp (cmr::term-variable-free-p x))
+                (not (acl2::hons-dups-p x)))
+           (no-duplicatesp-equal x))
+  :hints(("Goal" :in-theory (disable hons-dups-p))))
+
+(cmr::def-force-execute hons-dups-p-when-variable-free
+  acl2::hons-dups-p)
+
+
+(defsection svex-alist-eval-of-fal-extract
+
+  (defthmd fal-extract-is-svex-env-reduce
+    (implies (and (svarlist-p vars)
+                  (svex-env-p env))
+             (equal (acl2::fal-extract vars env)
+                    (svex-env-reduce vars env)))
+    :hints(("Goal" :in-theory (enable acl2::fal-extract
+                                      svex-env-reduce
+                                      svex-env-lookup
+                                      svex-env-boundp))))
+
+  (local (defthm cdr-hons-assoc-equal-when-svex-alist-p
+           (implies (svex-alist-p x)
+                    (iff (cdr (hons-assoc-equal k x))
+                         (hons-assoc-equal k x)))
+           :hints(("Goal" :in-theory (enable svex-alist-p)))))
+  
+  (defthmd fal-extract-is-svex-alist-reduce
+    (implies (and (svarlist-p vars)
+                  (svex-alist-p alist))
+             (equal (acl2::fal-extract vars alist)
+                    (svex-alist-reduce vars alist)))
+    :hints(("Goal" :in-theory (enable acl2::fal-extract
+                                      svex-alist-reduce
+                                      svex-lookup))))
+
+  (defthmd svex-alist-eval-of-fal-extract
+    (implies (and (svarlist-p keys)
+                  (svex-alist-p alist))
+             (equal (svex-alist-eval (fal-extract keys alist) env)
+                    (svex-env-reduce keys (svex-alist-eval alist env))))
+    :hints(("Goal" :in-theory (enable fal-extract-is-svex-alist-reduce
+                                      fal-extract-is-svex-env-reduce)))))
+
+
+
+(define 4vec-non-x-p ((x 4vec-p))
+  (b* (((4vec x)))
+    (equal (logandc2 x.upper x.lower) 0))
+  ///
+  (defthmd 4vec-<<=-when-4vec-non-x-p
+    (implies (4vec-non-x-p x)
+             (equal (4vec-<<= x y)
+                    (4vec-equiv x y)))
+    :hints(("Goal" :in-theory (enable 4vec-<<= 4vec-fix-is-4vec-of-fields))
+           (bitops::logbitp-reasoning))))
+             
+
+
+(defthmd svex-env-lookup-when-non-x-p-and-<<=
+  (implies (and (svex-env-<<= env1 env2)
+                (4vec-non-x-p (svex-env-lookup k env1)))
+           (equal (svex-env-lookup k env2)
+                  (svex-env-lookup k env1)))
+  :hints(("Goal" :use ((:instance svex-env-<<=-necc (x env1) (y env2) (var k)))
+          :in-theory (e/d (4vec-<<=-when-4vec-non-x-p)
+                          (svex-env-<<=-necc)))))
+
+(define svex-env-non-x-p ((x svex-env-p))
+  (if (atom x)
+      t
+    (and (or (not (mbt (and (consp (car x))
+                            (svar-p (caar x)))))
+             (4vec-non-x-p (cdar x)))
+         (svex-env-non-x-p (cdr x))))
+  ///
+  (defthmd lookup-when-svex-env-non-x-p
+    (implies (and (svex-env-non-x-p x)
+                  (svex-env-boundp k x))
+             (4vec-non-x-p (svex-env-lookup k x)))
+    :hints(("Goal" :in-theory (enable svex-env-boundp svex-env-lookup
+                                      hons-assoc-equal))))
+
+
+  (defthmd svex-env-reduce-when-svex-env-non-x-p-and-<<=
+    (implies (and (svex-env-non-x-p (svex-env-reduce vars env1))
+                  (svex-env-<<= env1 env2)
+                  (equal (alist-keys (svex-env-fix env1)) (alist-keys (svex-env-fix env2))))
+             (equal (svex-env-reduce vars env1)
+                    (svex-env-reduce vars env2)))
+    :hints(("Goal" :in-theory (enable svex-env-reduce-redef
+                                      svex-env-boundp-iff-member-alist-keys
+                                      svex-env-lookup-when-non-x-p-and-<<=)
+            :induct (len vars))))
+
+  (local (in-theory (enable svex-env-fix))))
+
+(defthm svex-env-reduce-of-nil
+  (Equal (svex-env-reduce nil x) nil)
+  :hints(("Goal" :in-theory (enable svex-env-reduce))))
+
+
+(defthm svex-env-reduce-when-not-consp
+  (implies (not (consp keys))
+           (Equal (svex-env-reduce keys x) nil))
+  :hints(("Goal" :in-theory (enable svex-env-reduce))))
+
+
+
+(fgl::disable-execution svtv-spec-run)
+(fgl::remove-fgl-rewrite svtv-spec-run-fn)
+
+
+
 
 
 (defconst *svtv-idealize-template*
@@ -95,8 +227,8 @@
                       (mergesort (append (svex-alist-vars x.pipeline-setup.initst)
                                          (svex-alistlist-vars x.pipeline-setup.inputs))))))
        :returns (vars svarlist-p
-                            :hints (("goal" :in-theory '((svarlist-p)
-                                                         (<name>-input-vars)))))
+                      :hints (("goal" :in-theory '((svarlist-p)
+                                                   (<name>-input-vars)))))
        *<name>-input-vars*
        ///
        (in-theory (disable (<name>-input-vars))))
@@ -182,6 +314,8 @@
        ///
        (in-theory (disable (<ideal-name>)))
 
+       (fgl::remove-fgl-rewrite <ideal-name>)
+       (fgl::disable-execution <ideal-name>)
        ;; (defconst *<name>-phase-count*
        ;;   (b* (((svtv-data-obj x) (<data>))
        ;;        ((pipeline-setup x.pipeline-setup)))
@@ -267,6 +401,72 @@
                           (svex-alistlist-vars)
                           (<name>-input-vars))))))
 
+       (defret no-duplicate-state-keys-of-<fn>
+         (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
+         :hints (("goal" :in-theory '(<data>-facts
+                                      <data>-correct
+                                      <fn>
+                                      design->ideal-fsm
+                                      fields-of-svtv-data-obj->ideal-spec
+                                      svex-alist-keys-of-flatnorm->ideal-fsm-nextstate
+                                      svex-alist-keys-of-delays-of-flatnorm-add-overrides
+                                      delays-of-design->flatnorm-of-svtv-data-obj))
+                 (and stable-under-simplificationp
+                      '(:in-theory '(hons-dups-p-when-variable-free
+                                     no-duplicatesp-by-hons-dups-p)))
+                 ))
+       
+       (defret initst-keys-of-<fn>
+         (equal (svex-alist-keys (svtv-spec->initst-alist spec))
+                (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
+         :hints (("goal" :in-theory '(<data>-facts
+                                      <data>-correct
+                                      <fn>
+                                      design->ideal-fsm
+                                      fields-of-svtv-data-obj->ideal-spec
+                                      svex-alist-keys-of-flatnorm->ideal-fsm-nextstate
+                                      svex-alist-keys-of-delays-of-flatnorm-add-overrides
+                                      delays-of-design->flatnorm-of-svtv-data-obj))
+                 (and stable-under-simplificationp
+                      '(:in-theory '((<data>)
+                                     (flatnorm-res->delays)
+                                     (svex-alist-keys)
+                                     (svtv-data-obj->flatnorm)
+                                     hons-dups-p-when-variable-free
+                                     (pipeline-setup->initst)
+                                     (svtv-data-obj->pipeline-setup)
+                                     no-duplicatesp-by-hons-dups-p)))
+                 ))
+
+       (defret value-keys-of-<fn>
+         (equal (alist-keys (svtv-spec->probes spec))
+                (svex-alist-keys (svtv->outexprs (<name>))))
+         :hints (("goal" :in-theory '(<data>-facts
+                                      <data>-correct
+                                      <fn>
+                                      design->ideal-fsm
+                                      fields-of-svtv-data-obj->ideal-spec
+                                      svex-alist-keys-of-flatnorm->ideal-fsm-nextstate
+                                      svex-alist-keys-of-delays-of-flatnorm-add-overrides
+                                      delays-of-design->flatnorm-of-svtv-data-obj))
+                 (and stable-under-simplificationp
+                      '(:in-theory '((<data>)
+                                     (<name>)
+                                     (svtv->outexprs)
+                                     (svex-alist-keys)
+                                     (alist-keys)
+                                     (pipeline-setup->probes)
+                                     (svtv-data-obj->pipeline-setup))))))
+
+       (defret cycle-outputs-captured-of-<fn>
+         (svtv-cyclephaselist-has-outputs-captured
+          (svtv-spec->cycle-phases spec))
+         :hints (("goal" :in-theory '(<fn>
+                                      fields-of-svtv-data-obj->ideal-spec
+                                      (svtv-data-obj->cycle-phases)
+                                      (svtv-cyclephaselist-has-outputs-captured)
+                                      (<data>)))))
+         
   
 
        (defret <ideal-name>-refines-<name>
@@ -308,7 +508,94 @@
                                       svtv-override-triplemaplist-muxes-<<=-of-same-envs
                                       svex-env-reduce-<<=-same
                                       (svex-envlist-all-keys)
-                                      (svarlist-override-p))))))))
+                                      (svarlist-override-p))))))
+
+     (define <ideal-name>-exec ((env svex-env-p)
+                                (output-vars svarlist-p))
+       :guard-hints (("goal" :use ((:instance <ideal-name>-refines-<name>-on-same-envs
+                                    (pipe-env env)))
+                      :in-theory '(svex-alist-eval-of-fal-extract
+                                   svex-alist-p-of-svtv->outexprs
+                                   svex-env-fix-when-svex-env-p
+                                   keys-of-svtv-spec-run
+                                   (svex-env-p)
+                                   (svex-envlist-p)
+                                   svtv-run
+                                   svtv-p-of-<name>
+                                   svtv-spec-p-of-<ideal-name>
+                                   svex-env-p-of-svex-alist-eval
+                                   alist-keys-of-svex-alist-eval
+                                   (make-fast-alist)
+                                   make-fast-alist
+                                   return-type-of-svex-alist-eval-for-symbolic
+                                   svex-alist-eval-of-svex-env-fix-env
+                                   svex-env-p-of-svtv-spec-run
+                                   acl2::hons-dups-p-no-duplicatesp
+                                   no-duplicate-state-keys-of-<ideal-name>
+                                   initst-keys-of-<ideal-name>
+                                   value-keys-of-<ideal-name>
+                                   cycle-outputs-captured-of-<ideal-name>
+                                   svarlist-p-when-not-consp
+                                   svex-env-reduce-of-nil
+                                   svex-env-p-of-svex-env-reduce
+                                   svex-env-reduce-when-svex-env-non-x-p-and-<<=
+                                   )))
+       :hooks ((:fix :hints (("goal" :in-theory '(SVTV-SPEC-RUN-FN-OF-SVEX-ENV-FIX-PIPE-ENV
+                                                  svex-env-reduce-of-svarlist-fix-keys
+                                                  <ideal-name>-exec)))))
+       (mbe :logic (sv::svex-env-reduce output-vars
+                                        (sv::svtv-spec-run (<ideal-name>) env))
+            :exec (b* ((run (and (consp output-vars)
+                                 (sv::svtv-run (<name>) env :include output-vars)))
+                       ((when (sv::svex-env-non-x-p run)) run))
+                    (sv::svex-env-reduce output-vars
+                                         (sv::svtv-spec-run (<ideal-name>) env))))
+       ///
+       (fgl::remove-fgl-rewrite <ideal-name>-exec)
+       (fgl::disable-execution <ideal-name>-exec)
+
+       (fgl::def-fgl-rewrite <fn>-fgl
+         (equal (<ideal-name>-exec env output-vars)
+                (b* ((run (and (consp output-vars)
+                               (sv::svtv-run (<name>) (svex-env-fix env)
+                                             :include (svarlist-fix output-vars))))
+                     ((when (sv::svex-env-non-x-p run)) run))
+                  (sv::svex-env-reduce output-vars
+                                       (sv::svtv-spec-run (<ideal-name>) env))))
+         :hints (("goal"
+                  :use ((:instance <ideal-name>-refines-<name>-on-same-envs
+                         (pipe-env env)))
+                  :in-theory '(<ideal-name>-exec
+                               svex-alist-eval-of-fal-extract
+                               svex-alist-p-of-svtv->outexprs
+                               svarlist-fix-under-iff
+                               svex-env-fix-when-svex-env-p
+                               svarlist-p-of-svarlist-fix
+                               keys-of-svtv-spec-run
+                               (svex-env-p)
+                               (svex-envlist-p)
+                               svtv-run
+                               svtv-p-of-<name>
+                               svtv-spec-p-of-<ideal-name>
+                               svex-env-p-of-svex-alist-eval
+                               alist-keys-of-svex-alist-eval
+                               (make-fast-alist)
+                               make-fast-alist
+                               return-type-of-svex-alist-eval-for-symbolic
+                               svex-alist-eval-of-svex-env-fix-env
+                               svex-env-p-of-svtv-spec-run
+                               acl2::hons-dups-p-no-duplicatesp
+                               no-duplicate-state-keys-of-<ideal-name>
+                               initst-keys-of-<ideal-name>
+                               value-keys-of-<ideal-name>
+                               cycle-outputs-captured-of-<ideal-name>
+                               svarlist-p-when-not-consp
+                               svex-env-reduce-of-nil
+                               svex-env-reduce-of-svarlist-fix-keys
+                               svex-env-p-of-svex-env-reduce
+                               svex-env-reduce-when-svex-env-non-x-p-and-<<=
+                               svex-env-reduce-when-not-consp
+                               )))))))
 
 
 (defun def-svtv-ideal-fn (ideal-name svtv-name data-name)
@@ -368,7 +655,9 @@
                     (4vec-<<= (svex-eval (svtv-override-triple->test triple) spec)
                               (svex-eval (svtv-override-triple->test triple) env)))))
     :hints(("Goal" :in-theory (enable svtv-override-triplemap-fix
-                                      svtv-override-triple-envs-match)))))
+                                      svtv-override-triple-envs-match))))
+
+  (local (in-theory (enable svtv-override-triplemap-fix))))
 
 (define svtv-override-triplemaplist-envs-match ((triplemaps svtv-override-triplemaplist-p)
                                                 (env svex-env-p)
@@ -594,6 +883,7 @@
     :hints (("goal" :do-not-induct t))))
 
 (define svtv-override-subst-matches-env-metafn ((x pseudo-termp))
+  :hooks nil
   (acl2::pseudo-term-case x
     :fncall (b* (((unless (and (eq x.fn 'svtv-override-subst-matches-env)
                                (equal (len x.args) 2)))
@@ -715,7 +1005,9 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
     :hints(("Goal" :in-theory (e/d (svtv-override-triplemap-envs-match
                                     svex-envs-svexlist-muxtests-subsetp
                                     svtv-override-triplemap->tests
-                                    4vec-muxtest-subsetp-when-svtv-override-test-check-muxtest-subsetp))))))
+                                    4vec-muxtest-subsetp-when-svtv-override-test-check-muxtest-subsetp)))))
+
+  (local (in-theory (enable svtv-override-triplemap-fix))))
 
 
 (define svtv-override-triplemaplist-check-muxtest-subsetp ((x svtv-override-triplemaplist-p)
@@ -918,7 +1210,9 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
              (equal (svtv-override-checklist-ok checks impl-env spec-env ref-env)
                     (svtv-override-triplemap-muxes-<<= x impl-env spec-env ref-env)))
     :hints(("Goal" :in-theory (e/d (svtv-override-triplemap-muxes-<<=
-                                    svtv-override-triplemap-envs-match))))))
+                                    svtv-override-triplemap-envs-match)))))
+
+  (local (in-theory (enable svtv-override-triplemap-fix))))
 
 (define svtv-override-triplemaplist-analyze-necessary-mux-<<=-checks ((x svtv-override-triplemaplist-p)
                                                                       (impl-subst svex-alist-p)
@@ -1314,3 +1608,334 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
 
 
 
+;; Svtv-override-triplemaplist-envs-match shortcut.
+;; Reduce svtv-override-triplemaplist-envs-match on a concrete spec and concrete-keyed env to a small set of checks.
+
+(define svtv-override-triplelist-envs-match ((triplelist svtv-override-triplelist-p)
+                                            (env svex-env-p)
+                                            (spec svex-env-p))
+  :returns (ok)
+  (if (atom triplelist)
+      t
+    (and (svtv-override-triple-envs-match (car triplelist) env spec)
+         (svtv-override-triplelist-envs-match (cdr triplelist) env spec)))
+  ///
+  (defthm svtv-override-triplelist-envs-match-of-cons-quote
+    (implies (syntaxp (quotep first))
+             (equal (svtv-override-triplelist-envs-match (cons first rest) env spec)
+                    (and (b* (((svtv-override-triple first)))
+                           (and (svex-case first.test
+                                  :quote t
+                                  :var (equal (svex-env-lookup first.test.name env)
+                                              (svex-env-lookup first.test.name spec))
+                                  :otherwise (equal (svex-eval first.test env)
+                                                    (svex-eval first.test spec)))
+                                (svex-case first.val
+                                  :quote t
+                                  :var (4vec-<<= (svex-env-lookup first.val.name spec)
+                                                 (svex-env-lookup first.val.name env))
+                                  :otherwise (4vec-<<= (svex-eval first.val spec)
+                                                       (svex-eval first.val env)))))
+                         (svtv-override-triplelist-envs-match rest env spec))))
+    :hints(("Goal" :in-theory (enable svtv-override-triple-envs-match
+                                      svex-eval))))
+
+  (defthm svtv-override-triplelist-envs-match-of-cons
+    (equal (svtv-override-triplelist-envs-match (cons first rest) env spec)
+           (and (svtv-override-triple-envs-match first env spec)
+                (svtv-override-triplelist-envs-match rest env spec))))
+
+  (defthm svtv-override-triplelist-envs-match-of-append
+    (equal (svtv-override-triplelist-envs-match (append first rest) env spec)
+           (and (svtv-override-triplelist-envs-match first env spec)
+                (svtv-override-triplelist-envs-match rest env spec))))
+
+  (defthm svtv-override-triplelist-envs-match-of-nil
+    (svtv-override-triplelist-envs-match nil env spec)))
+
+(define svtv-override-triple-envs-match-checks ((triple svtv-override-triple-p)
+                                                (env-subst svex-alist-p)
+                                                (spec svex-env-p))
+  :returns (checks svtv-override-triplelist-p)
+  (b* (((svtv-override-triple triple))
+       (env-test (svex-subst triple.test env-subst))
+       (test-ok (and (svex-case env-test :quote)
+                     (equal (svex-quote->val env-test)
+                            (svex-eval triple.test spec))))
+       (spec-val (svex-eval triple.val spec))
+       (val-ok (or (equal spec-val (4vec-x))
+                   (b* ((env-val (svex-subst triple.val env-subst)))
+                     (and (svex-case env-val :quote)
+                          (4vec-<<= spec-val (svex-quote->val  env-val)))))))
+    (and (not (and test-ok val-ok))
+         (list (svtv-override-triple-fix triple))))
+  ///
+  (defret <fn>-correct
+    (implies (svtv-override-subst-matches-env env-subst env)
+             (equal (svtv-override-triplelist-envs-match checks env spec)
+                    (svtv-override-triple-envs-match triple env spec)))
+    :hints (("goal" :in-theory (e/d (svtv-override-subst-matches-env
+                                     svtv-override-triple-envs-match)
+                                    (svex-eval-of-svex-subst))
+            :use ((:instance svex-eval-of-svex-subst
+                   (pat (svtv-override-triple->test triple))
+                   (al env-subst)
+                   (env env))
+                  (:instance svex-eval-of-svex-subst
+                   (pat (svtv-override-triple->val triple))
+                   (al env-subst)
+                   (env env)))))))
+
+
+
+(define svtv-override-triplemap-envs-match-checks ((triplemap svtv-override-triplemap-p)
+                                                   (env-subst svex-alist-p)
+                                                   (spec svex-env-p))
+  :returns (checks svtv-override-triplelist-p)
+  (b* (((when (atom triplemap)) nil)
+       ((unless (mbt (and (consp (car triplemap))
+                          (svar-p (caar triplemap)))))
+        (svtv-override-triplemap-envs-match-checks (cdr triplemap) env-subst spec))
+       (checks1 (svtv-override-triple-envs-match-checks (cdar triplemap) env-subst spec)))
+    (mbe :logic (append checks1 (svtv-override-triplemap-envs-match-checks (cdr triplemap) env-subst spec))
+         :exec (if checks1
+                   (append checks1 (svtv-override-triplemap-envs-match-checks (cdr triplemap) env-subst spec))
+                 (svtv-override-triplemap-envs-match-checks (cdr triplemap) env-subst spec))))
+    
+  ///
+  (defret <fn>-correct
+    (implies (svtv-override-subst-matches-env env-subst env)
+             (equal (svtv-override-triplelist-envs-match checks env spec)
+                    (svtv-override-triplemap-envs-match triplemap env spec)))
+    :hints (("goal" :in-theory (e/d (svtv-override-triplemap-envs-match))))))
+
+
+(define svtv-override-triplemaplist-envs-match-checks ((triplemaps svtv-override-triplemaplist-p)
+                                                       (env-subst svex-alist-p)
+                                                       (spec svex-env-p))
+  :returns (checks svtv-override-triplelist-p)
+  (b* (((when (atom triplemaps)) nil))
+    (append (svtv-override-triplemap-envs-match-checks (car triplemaps) env-subst spec)
+            (svtv-override-triplemaplist-envs-match-checks (cdr triplemaps) env-subst spec)))
+    
+  ///
+  (defret <fn>-correct
+    (implies (svtv-override-subst-matches-env env-subst env)
+             (equal (svtv-override-triplelist-envs-match checks env spec)
+                    (svtv-override-triplemaplist-envs-match triplemaps env spec)))
+    :hints (("goal" :in-theory (e/d (svtv-override-triplemaplist-envs-match)))))
+
+  
+  (defthm svtv-override-triplemaplist-envs-match-simplify
+    (implies (and (syntaxp (cmr::term-variable-free-p x))
+                  (syntaxp (quotep spec))
+                  (bind-free (b* (((mv ok subst) (svex-env-term-extract-substitution env)))
+                               (and ok
+                                    `((env-subst . ',(make-fast-alist subst)))))
+                             (env-subst))
+                  (svtv-override-subst-matches-env env-subst env)
+                  (equal checks (svtv-override-triplemaplist-envs-match-checks x env-subst spec))
+                  (syntaxp (quotep checks)))
+             (equal (svtv-override-triplemaplist-envs-match x env spec)
+                    (svtv-override-triplelist-envs-match checks env spec))))
+
+  (cmr::def-force-execute svtv-override-triplemaplist-envs-match-checks-when-variable-free
+    svtv-override-triplemaplist-envs-match-checks))
+
+
+
+
+(defxdoc svex-fixpoint-decomposition-methodology
+  :parents (sv)
+  :short "High-level description of decomposition methodology for @(see SVTV)s."
+  :long "<p>In hardware verification, it is important to be able to break down
+proofs into pieces. An important technique for this purpose is to assume that
+certain internal signals have particular values at particular times, and prove
+something about their fanout logic. For symbolic simulation, the best
+performance for this method is obtained by replacing the fanin logic of these
+signals with free symbolic values, which we call \"overriding\" those
+signals. In order to compose together multiple proofs using this technique, it
+is important to be able to use a theorem proved about a design's behavior with
+certain signals overridden to prove a theorem about the design without (some
+of) those overrides.</p>
+
+<p>As a high-level example, suppose we prove that the partial product summation
+of a multiplier is correct by overriding the partial product signals.  Note:
+the following uses a made-up syntax, for illustration purposes only.  In our
+real framework, @('run-design') would be replaced by @('svtv-run'), @('lookup')
+would be replaced by @('svex-env-lookup'), etc.</p>
+
+@({
+ (defthm multiplier-pp-sum-correct-override
+    (implies (unsigned-byte-p 128 partial-products-value)
+             (let* ((run (run-design (multiplier)
+                                     :inputs `((opcode . ,*multiply-opcode*))
+                                     :overrides `((partial-product-signal . ,partial-products-value)))))
+                 (equal (lookup 'multiplier-output run)
+                        (pp-sum-spec partial-products-value)))))
+ }})
+
+
+<p>Additionally, suppose that we've proved that the same multiplier computes a
+correct Booth encoding as its partial products signal:</p>
+
+@({
+ (defthm multiplier-booth-encoding-correct
+    (implies (and (unsigned-byte-p 16 a) (unsigned-byte-p 16 b))
+             (let* ((run (run-design (multiplier)
+                                     :inputs `((opcode . ,*multiply-opcode*)
+                                               (a-input . ,a)
+                                               (b-input . ,b)))))
+               (equal (lookup 'partial-product-signal run)
+                      (booth-enc-spec a b)))))
+ })
+
+<p>We'd like to be able to compose these two theorems and prove the multiplier
+correct from end to end.  But the design here has been run with two different
+settings for the inputs and overrides, and these can't be reconciled as-is.  At
+a high level, our decomposition methodology works by allowing theorems such as
+these -- which are convenient to prove using symbolic simulation -- to be
+generalized into theorems that can be straightforwardly composed. Using the
+same made-up syntax:</p>
+
+@({
+ (defthm multiplier-pp-sum-correct-gen
+   (let* ((opcode (lookup 'opcode input-env))
+          (run (run-design (multiplier) :inputs input-env))
+          (partial-products-value (lookup 'partial-product-signal run))
+          (result (lookup 'multiplier-output run)))
+      (implies (and (equal opcode *multiply-opcode*)
+                    (unsigned-byte-p 128 partial-products-value))
+               (equal result (pp-sum-spec partial-products-value)))))
+ })
+
+<p>Notice this has been changed in two ways:</p>
+
+<ul>
+<li>First, the @(':inputs') argument, which used to be an explicit alist, is
+now a free variable with a hypothesis assuming that the inputs that were given
+before (opcode bound to @('*multiply-opcode*')) are correctly bound there.</li>
+
+<li>Second, the overrides are replaced by references to observations of
+internal signals.  That is, we're no longer replacing the fanin cone of
+@('partial-product-signal') with a variable, as we wanted for symbolic
+simulation; rather, we're looking at whatever the value of that signal happens
+to be, and proving that the multiplier output satisfies its spec based on that
+signal.</li>
+</ul>
+
+<p>The booth encoding theorem can be changed similarly, although since it had
+no overrides only the first change applies here:</p>
+
+@({
+ (defthm multiplier-booth-encoding-correct-gen
+   (let* ((opcode (lookup 'opcode input-env))
+          (a      (lookup 'a-input input-env))
+          (b      (lookup 'b-input input-env))
+          (run (run-design (multiplier) :inputs input-env))
+          (partial-products-value (lookup 'partial-product-signal run)))
+      (implies (and (equal opcode *multiply-opcode*)
+                    (unsigned-byte-p 16 a)
+                    (unsigned-byte-p 16 b))
+               (equal partial-products-value (booth-enc-spec a b)))))
+ })
+
+<p>Notice that these theorems now can be composed! In fact, given a lemma about
+the bit width of @('booth-enc-spec'), we can obtain:</p>
+
+@({
+ (defthm multiplier-computes-pp-sum-of-booth-enc
+   (let* ((opcode (lookup 'opcode input-env))
+          (a      (lookup 'a-input input-env))
+          (b      (lookup 'b-input input-env))
+          (run (run-design (multiplier) :inputs input-env))
+          (result (lookup 'multiplier-output run)))
+      (implies (and (equal opcode *multiply-opcode*)
+                    (unsigned-byte-p 16 a)
+                    (unsigned-byte-p 16 b))
+               (equal result (pp-sum-spec (booth-enc-spec a b))))))
+ })
+
+<p>This methodology's main user interface is @(see def-svtv-idealized-thm).
+See that topic for usage.  In the rest of this topic we'll discuss how this
+works and the solutions to certain complications.</p>
+
+
+<p>To produce the generalized forms of the theorems above, we want a particular
+property of the design: that if we override a signal with the value that it
+would have had anyway, then the values of all signals are preserved. Stated in
+terms of our imaginary @('run-design') function above, for the particular case
+of the partial-products-value of our multiplier design:</p>
+
+@({
+ (defthm multiplier-partial-product-overrides-correct
+   (let* ((base-run (run-design (multiplier) :inputs input-env))
+          (partial-products-value (lookup 'partial-product-signal base-run))
+          (override-run (run-design (multiplier)
+                                    :inputs input-env
+                                    :overrides `((partial-product-signal . ,partial-products-value)))))
+      (all-lookups-equivalent override-run base-run)))
+ })
+
+<p>This theorem, along with a couple of other simpler facts that allow the
+generalization of the input environment would be sufficient to let us
+generalize @('multiplier-pp-sum-correct-override') to
+@('multiplier-pp-sum-correct-gen').</p>
+
+<p>Generally we also want to allow for multiple override signals in different combinations.
+potentially overridden signals:</p>
+
+@({
+ (defthm multiplier-partial-product-overrides-correct
+   (let* ((base-run (run-design (multiplier) :inputs input-env))
+          (override-run (run-design (multiplier)
+                                    :inputs input-env
+                                    :overrides override-env)))
+      (implies (override-signals-consistent-with-base-run override-env base-run)
+               (all-lookups-equivalent override-run base-run))))
+ })
+
+<p>Here we imagine @('override-signals-consistent-with-base-run') would check
+that all internal signals of the design that are bound in @('override-env') are
+bound to the same value in @('base-run').</p>
+
+<p>This overrides-correct condition seems intuitively obvious and we would like
+to prove it for all designs.  However, sometimes it's not true!  In particular,
+it is not generally true of designs where there are 0-delay combinational
+loops.  These can occur due to latch-based logic or clock gating logic, often
+enough that it isn't workable to just disallow them.</p>
+
+<p>The correct way to deal with 0-delay combinational loops is to compute the
+fixpoint.  That is, for a given setting of the circuit inputs and stateholding
+elements, begin at a state setting these values for the inputs/states and all
+internal signals set to X.  Apply the internal signals' update functions to
+obtain a new state.  Repeat this until we reach a fixpoint.  It is a theorem
+that if all signals have finite bit widths and the update functions respect
+X-monotonicity, then a fixpoint is reached by the time we have repeated this
+@('n') times where @('n') is the total number of bits in all internal
+signals.</p>
+
+<p>Because of the number of repetitions needed, it isn't practical to actually
+compute the fixpoint.  Instead we use a composition method that is efficient
+and practially useful, but not guaranteed to compute the fixpoint.  However, it
+is guaranteed to be conservative with respect to the fixpoint: that is, if a
+signal's value in this composition is non-X, then its fixpoint value must be
+the same.</p>
+
+<p>The composition we compute does not always satisfy the overrides-correct
+condition above.  For example, if we override a signal that is part of a
+0-delay combinational loop and its fanin logic therefore appears more than once
+in different forms (composed with itself a different number of times), then
+overriding all occurrences of that fanin logic with the signal's final value
+isn't guaranteed to preserve the value of other signals.</p>
+
+<p>However, the overrides-correct condition is true of the fixpoint. One
+version of this is proved in \"centaur/sv/svex/fixpoint-override\" as
+@('svex-alist-eval-override-fixpoint-equivalent-to-reference-fixpoint'); a
+somewhat more general version is proved in
+@('svex-alist-eval-fixpoint-override-impl-equiv-spec').</p>
+
+<p>(To be continued)</p>
+
+
+")

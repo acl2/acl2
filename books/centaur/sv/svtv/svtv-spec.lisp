@@ -464,7 +464,12 @@
        (cycle-outs (svex-envlist-phase-outputs-extract-cycle-outputs
                     x.cycle-phases phase-outs))
        (svtv-fsm-outs (svtv-name-lhs-map-eval-list x.namemap cycle-outs)))
-    (svtv-probealist-extract x.probes svtv-fsm-outs)))
+    (svtv-probealist-extract x.probes svtv-fsm-outs))
+  ///
+
+  (defret keys-of-<fn>
+    (equal (alist-keys pipe-out)
+           (alist-keys (svtv-spec->probes x)))))
 
 (define svtv-spec-run ((x svtv-spec-p)
                        (pipe-env svex-env-p)
@@ -483,4 +488,8 @@
        (phase-outs (mbe :logic (base-fsm-eval full-ins full-initst x.fsm)
                         :exec (base-fsm-eval full-ins (svex-env-extract (svex-alist-keys (base-fsm->nextstate x.fsm)) full-initst)
                                              x.fsm))))
-    (svtv-spec-phase-outs->pipe-out x phase-outs)))
+    (svtv-spec-phase-outs->pipe-out x phase-outs))
+  ///
+  (defret keys-of-<fn>
+    (equal (alist-keys pipe-out)
+           (alist-keys (svtv-spec->probes x)))))
