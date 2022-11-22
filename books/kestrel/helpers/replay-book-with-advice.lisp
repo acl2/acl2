@@ -192,7 +192,7 @@
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
 ;; Returns (mv erp counts state), where counts is (list yes-count no-count maybe-count trivial-count error-count).
 ;; Since this returns an error triple, it can be wrapped in revert-world.
-(defun replay-book-with-advice-fn-aux (filename ; the book, with .lisp extension
+(defun replay-book-with-advice-fn-aux (filename ; the book, with .lisp extension, we should have already checked that it exists
                                        theorems-to-try
                                        n
                                        print
@@ -216,13 +216,14 @@
         (cw "WARNING: Can't replay ~s0 because it is already included in the world.~%" filename)
         (mv :book-already-included (list 0 0 0 0 0) state))
        ((mv dir &) (split-path filename))
-       (- (cw "REPLAYING ~s0 with advice:~%~%" filename))
+       (- (cw "REPLAYING ~s0 with advice:~%" filename))
+       (state (load-port-file-if-exists (remove-lisp-suffix filename t) state))
        ;; Read all the forms from the file:
        ((mv erp events state)
         (read-objects-from-book filename state))
-       (- (cw "~x0 events.~%" (len events)))
+       (- (cw "(~x0 events.)~%" (len events)))
        (events (discard-events-after-last-advice-event events theorems-to-try))
-       (- (cw "~x0 events after discarding final events.~%" (len events)))
+       (- (cw "(~x0 events after discarding final events.)~%~%" (len events)))
        ((when (null events))
         (mv nil ; no error, but nothing to do for this book
             (list 0 0 0 0 0) state))
@@ -260,7 +261,6 @@
 
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
 ;; Returns (mv erp event state).
-;; Example: (replay-book-with-advice "helper.lisp" state)
 (defun replay-book-with-advice-fn (filename ; the book, with .lisp extension
                                    theorems-to-try
                                    n
@@ -277,7 +277,11 @@
                                   (stringp server-url)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
-  (b* ( ;; Elaborate options:
+  (b* (((mv book-existsp state) (file-existsp filename state))
+       ((when (not book-existsp))
+        (er hard? 'replay-book-with-advice-fn "The book ~x0 does not exist." filename)
+        (mv :book-does-not-exist nil state))
+        ;; Elaborate options:
        (models (if (eq models :all)
                    help::*known-models*
                  (if (help::rec-modelp models)
@@ -289,10 +293,12 @@
         (replay-book-with-advice-fn-aux filename theorems-to-try n print server-url models state))
        ((when erp) (mv erp nil state)))
     ;; No error:
-    (mv nil '(value-triple :invisible) state)))
+    (mv nil '(value-triple :replay-succeeded) state)))
 
-;; Example: (replay-book-with-advice "helper.lisp" state)
 ;; TODO: Add timing info.
+;; This has no effect on the world, because all the work is done in make-event
+;; expansion and such changes do not persist.
+;; Example: (replay-book-with-advice "../lists-light/append.lisp")
 (defmacro replay-book-with-advice (filename ; the book, with .lisp extension
                                    &key
                                    (theorems-to-try ':all) ; gets evaluated
