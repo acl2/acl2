@@ -578,9 +578,12 @@
                                      (cw "~%~%**** ERROR ****~%~
                                           The ERP binder ~
                                           must be followed by ~
-                                          exactly one form, ~
-                                          but it followed by ~
-                                          the forms ~x0 instead.~%~%")))))
+                                          exactly one form,
+                                          optionally followed by ~
+                                          :IFERR and a form, ~
+                                          but instead this ERP binder ~
+                                          is followed by the forms ~x0.~%~%"
+                                         forms)))))
   :body
   `(b* ((,(if (consp args)
               `(mv erp ,@args)

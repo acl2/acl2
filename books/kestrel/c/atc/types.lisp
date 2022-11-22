@@ -15,6 +15,8 @@
 (include-book "../language/abstract-syntax-operations")
 (include-book "../language/integer-ranges")
 
+(include-book "kestrel/std/util/defirrelevant" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-types
@@ -31,13 +33,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-type ()
-  :returns (ty typep)
-  :short "An irrelevant type,
-          usable as a dummy return value."
-  (with-guard-checking :none (ec-call (type-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-type))))
+(defirrelevant irr-type
+  :short "An irrelevant type."
+  :type typep
+  :body (type-void))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

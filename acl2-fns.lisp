@@ -524,6 +524,15 @@
                 (eq (car (caddr form)) 'throw-nonexec-error))
            (setq *acl2-output-type-abort* '*))
           (t (output-type-for-declare-form-rec (car (last form)) flet-alist))))
+   ((eq (car form) 'macrolet)
+
+; We take a very conservative approach here.  As of this writing (November
+; 2022), which is when we are introducing support for macrolet in ACL2, only
+; GCL sets *do-proclaims*, so only GCL executes this code.  Quite possibly we
+; could just return '*.  And maybe with some effort we could dive into the
+; macrolet expression and compute a type.  But for now we'll just punt.
+
+    (setq *acl2-output-type-abort* '*))
    ((eq (car form) 'return-from)
     (output-type-for-declare-form-rec (car (last form)) flet-alist))
    ((eq (car form) 'when)

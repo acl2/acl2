@@ -27,22 +27,48 @@
     (cw "~c0.~c1~c2" (cons integer-part 10) (cons tenths 1) (cons hundredths 1))))
 
 ;; Generate a short, printable thing that indicates an event (e.g., for a
-;; defthm, this returns its name).
-;; TODO: Handle more kinds of thing.
+;; defthm, this returns (defthm <name> :elided).
+;; TODO: Handle more kinds of thing (see :doc events).
+;; TODO: Maybe use ... instead of :elided.
 (defun shorten-event (event)
   (if (not (consp event))
       event
     (case (car event)
-      (in-package event) ; no need to shorten
-      (include-book event) ; no need to shorten
-      ((defun defund defun-nx define defun-sk define-sk defthm defthmd defrule defruled defrulel defruledl) (cadr event))
       (local `(local ,(shorten-event (cadr event))))
-      (theory-invariant '(theory-invariant <elided>))
-      (deftheory '(deftheory <elided>))
-      (defsection '(defsection <elided>))
-      (local '(local <elided>))
-      (encapsulate '(encapsulate <elided> <elided>)) ; todo: recur inside encapsulate
-      (t `(,(car event) <elided>)))))
+      (in-package event)   ; no need to shorten
+      (include-book event) ; no need to shorten
+      ;; These have names, so we print the name:
+      ((defun defund defun-nx defund-nx define defun-sk defund-sk define-sk defun-inline defun-notinline defund-inline defund-notinline defun$ defn
+
+              defthm defthmd defthmg defthmr defrule defruled defrulel defruledl
+              defaxiom
+              defabbrev
+              defmacro
+              defstobj
+              defcong
+              defconst
+              defret
+              defchoose
+              defequiv
+              defxdoc
+              ;; soft things like defun2?
+              defexec
+              defpun
+              deflabel
+              ;; defpkg ; no
+              )
+       `(,(car event) ,(cadr event) :elided))
+      ;; defevaluator?
+      ;; mutual-recursion?
+      ;; skip-proofs?
+      ((thm rule) `(,(car event) :elided))
+      (theory-invariant '(theory-invariant :elided))
+      (in-theory '(in-theory :elided))
+      (deftheory `(deftheory ,(cadr event) :elided))
+      (defsection `(defsection ,(cadr event) :elided))
+      (encapsulate '(encapsulate :elided :elided)) ; todo: recur inside encapsulate?
+      (progn '(progn :elided)) ; todo: recur inside progn?
+      (t `(,(car event) :elided)))))
 
 ;Returns (mv erp state).
 ;throws an error if any event fails

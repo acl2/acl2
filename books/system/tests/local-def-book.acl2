@@ -1,0 +1,9 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "local-def")
+
+; Help dependency scanner.
+#||
+(depends-on "local-def-input.lsp")
+(depends-on "local-def-log.txt")
+(include-book "projects/apply/top" :dir :system)
+||#

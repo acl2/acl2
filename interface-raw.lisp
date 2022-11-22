@@ -1287,10 +1287,21 @@
 (defun-one-output oneify (x fns w program-p)
 
 ; Keep this function in sync with translate11.  Errors have generally been
-; removed, since we know they can't occur.
+; removed here, since we know they can't occur.
 
-; Fns is a list of fns that have been flet-bound.  It is important not to treat
-; any of these as macros.
+; Fns is an alist.  Entries include (fn) for each flet-bound fn and (mac args
+; body) for each macrolet-bound mac.  We use a single structure for both local
+; function and macro definitions since that allows earlier entries to shadow
+; those that are farther back.  We don't need to store local function
+; definitions in that structure, and we don't need to deal with declare forms
+; in macro definitions since translate will already have checked guards and
+; types during expansion.  We don't need to distinguish between binding two
+; macro names in the same macrolet vs. two different macrolets, because
+; translate enforces the HyperSpec requirement that macro bodies don't
+; reference locally-defined functions or macros.  (It isn't completely clear
+; perhaps about the prohibition on locally-defined macros, but GCL seems to
+; ignore them while CCL and SBCL, at least, do not; so ACL2 enforces that
+; prohibition.)
 
 ; Program-p is true when we want an MBE to use its :exec version.  Thus, use
 ; program-p = t when attempting to approximate raw Lisp behavior.
@@ -1372,6 +1383,42 @@
                           (cdr x))
             (cddr (car x)))
      fns w program-p))
+   ((let ((pair (assoc-eq (car x) fns)))
+      (and (cdr pair) ; pair is (name args body), hence from macrolet
+           (let* ((args (cadr pair))
+                  (body (caddr pair))
+                  (alist
+                   (mv-let (erp alist)
+                     (bind-macro-args args x w *default-state-vars*)
+                     (cond (erp
+
+; Macroexpansion succeeded during translate.  So it is unexpected for it to
+; fail here.
+
+                            (error "Implementation error: Unexpected error in ~
+                                    oneify:~%x = ~s~%fns = ~s"
+                                   x fns))
+                           (t alist))))
+                  (expansion
+
+; The following use of eval may seem suspicious for two reasons, as follows.
+
+; (1) Restrictions are being ignored that are imposed by the declare form (type
+; restrictions, as of this writing, though :guard restrictions may be supported
+; in the future).
+
+; (2) Superior FLET and MACROLET bindings are being ignored.
+
+; However, checks made at translate time need not be duplicated here, so (1) is
+; not a concern.  (2) is not an issue because symbols bound by superior FLET
+; and MACROLET forms are not allowed; see the handling of the state-vars field,
+; in-macrolet-def, by translate.
+
+                   (eval `(let ,(loop for pair in alist
+                                      collect (list (car pair)
+                                                    (kwote (cdr pair))))
+                            ,body))))
+             (oneify expansion fns w program-p)))))
    ((eq (car x) 'return-last)
 
 ; Warning: Keep this in sync with prog2$-call.
@@ -1554,9 +1601,16 @@
     (list 'flet
           (oneify-flet-bindings (cadr x) fns w program-p)
           (oneify (car (last x))
-                  (union-eq (strip-cars (cadr x)) fns)
+                  (append (pairlis$ (strip-cars (cadr x)) nil) fns)
                   w
                   program-p)))
+   ((eq (car x) 'macrolet) ; (macrolet (.. (mac args [dcls/str]* b) ..) body)
+    (oneify (car (last x))
+            (append (loop for tuple in (cadr x) collect
+                          (list* (car tuple) (cadr tuple) (last tuple)))
+                    fns)
+            w
+            program-p))
    ((eq (car x) 'translate-and-test)
     (oneify (caddr x) fns w program-p))
    ((eq (car x) 'with-local-stobj)
@@ -1634,7 +1688,7 @@
      "Implementation error: Unexpected call of throw-or-attach in oneify:~%~x0"
      x))
    ((and (getpropc (car x) 'macro-body nil w)
-         (not (member-eq (car x) fns)))
+         (not (assoc-eq (car x) fns)))
     (oneify (macroexpand1! x) fns w program-p))
    ((eq (car x) 'wormhole-eval)
 
