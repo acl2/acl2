@@ -6609,8 +6609,8 @@
           ((and (symbolp logical-name)
                 (not (eq logical-name :here))
                 (or (member-eq logical-name
-                               '(declare flet lambda lambda$ let loop$ quote
-                                         with-local-stobj))
+                               '(declare flet macrolet lambda lambda$ let loop$
+                                         quote with-local-stobj))
                     (eql (getpropc logical-name 'absolute-event-number nil
                                    wrld)
                          0)))

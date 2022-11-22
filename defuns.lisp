@@ -8743,8 +8743,6 @@
                        (car lst))
                  (raw-lambda$s-to-lambdas (cdr lst))))))
 
-(defconst *default-state-vars* (default-state-vars nil))
-
 (defun chk-acceptable-lambda$-translations1 (new-pairs ctx wrld state)
   (cond
    ((null new-pairs) (value nil))

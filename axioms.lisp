@@ -13913,7 +13913,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev-lst ; *ev-shortcut-okp*
     allegro-allocate-slowly-fn ; sys:gsgc-parameter
     certify-book-fn ; si::sgc-on
-    translate11-flet-alist1 ; special-form-or-op-p
+    translate11-local-def ; special-form-or-op-p
     include-book-fn1
     include-book-fn
     set-w ; retract-world1, extend-world1, ...
