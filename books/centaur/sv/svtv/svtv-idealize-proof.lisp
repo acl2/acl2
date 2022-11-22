@@ -5409,6 +5409,54 @@ environments."
               :in-theory (e/d (svex-envlist-<<=-transitive-2
                                svex-envlist-<<=-transitive-1)
                               (base-fsm-eval-of-design->ideal-fsm-refines-overridden-approximation-when-triples-ok))))
+     :otf-flg t)
+
+   (defthm base-fsm-eval-of-design->ideal-fsm-refines-overridden-ideal-fsm-gen
+     (b* (((svtv-data-obj data))
+          ((base-fsm ideal-fsm) (design->ideal-fsm data.design data.phase-fsm-setup))
+          (triples
+           (svarlist-to-override-triples
+            (svtv-assigns-override-vars (flatnorm-res->assigns data.flatnorm)
+                                        (phase-fsm-config->override-config data.phase-fsm-setup))))
+          (override-vars (svar-override-triplelist-override-vars triples))
+          (test-vars (svar-override-triplelist->testvars triples))
+          (spec-values (base-fsm-eval ref-inputs ref-initst ideal-fsm))
+          (impl-values (base-fsm-eval override-inputs override-initst ideal-fsm)))
+       (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic data))
+                     data.flatten-validp
+                     data.flatnorm-validp
+                     (flatnorm-setup->monotonify data.flatnorm-setup)
+
+                     (equal (len override-inputs) (len ref-inputs))
+                     (svex-envlist-<<= (svex-envlist-reduce (set-difference-equal (svarlist-fix input-vars)
+                                                                                  override-vars)
+                                                            override-inputs)
+                                       ref-inputs)
+                     (subsetp-equal (svex-alist-vars ideal-fsm.values)
+                                    (svarlist-fix input-vars))
+                     (subsetp-equal (svex-alist-vars ideal-fsm.nextstate)
+                                    (svarlist-fix input-vars))
+                     (svar-override-triplelist-envlists-muxes-<<= triples override-inputs ref-inputs spec-values)
+                     (svex-envlists-muxtests-subsetp test-vars ref-inputs override-inputs)
+                     (svex-env-<<= override-initst ref-initst))
+                (svex-envlist-<<= impl-values spec-values)))
+     :hints (("Goal" :do-not-induct t
+              :use ((:instance base-fsm-eval-of-design->ideal-fsm-refines-overridden-ideal-fsm-when-triples-ok
+                     (ref-inputs (compose-ref-input-envs
+                                  override-inputs ref-inputs
+                                  (append input-vars
+                                          (b* (((svtv-data-obj data))
+                                               ((base-fsm ideal-fsm) (design->ideal-fsm data.design data.phase-fsm-setup))
+                                               (triples
+                                                (svarlist-to-override-triples
+                                                 (svtv-assigns-override-vars (flatnorm-res->assigns data.flatnorm)
+                                                                             (phase-fsm-config->override-config data.phase-fsm-setup))))
+                                               (override-vars (svar-override-triplelist-override-vars triples)))
+                                            override-vars))))
+                     (override-inputs override-inputs)))
+              :in-theory (e/d (svex-envlist-<<=-transitive-2
+                               svex-envlist-<<=-transitive-1)
+                              (base-fsm-eval-of-design->ideal-fsm-refines-overridden-ideal-fsm-when-triples-ok))))
      :otf-flg t)))
 
 
@@ -5660,6 +5708,22 @@ environments."
                                               svex-env-lookup-when-not-boundp
                                               svex-env-boundp-iff-member-alist-keys)))))
 
+   (local (defthm svar-override-triplelist-muxes-<<=-of-svex-env-x-override-impl
+            (implies (and (svarlist-override-p (alist-keys (svex-env-fix base-ins)) nil)
+                          (svarlist-override-p override-in-vars nil))
+                     (equal (svar-override-triplelist-muxes-<<=
+                             (svarlist-to-override-triples override-in-vars)
+                             (svex-env-x-override impl-env base-ins) spec-env spec-outs)
+                            (svar-override-triplelist-muxes-<<=
+                             (svarlist-to-override-triples override-in-vars)
+                             impl-env spec-env spec-outs)))
+            :hints(("Goal" :in-theory (enable svarlist-to-override-triples
+                                              svar-override-triplelist-muxes-<<=
+                                              svar-override-triple-mux-<<=
+                                              svarlist-override-p
+                                              svex-env-lookup-when-not-boundp
+                                              svex-env-boundp-iff-member-alist-keys)))))
+
 
    (local (defthm svar-override-triplelist-muxes-<<=-when-spec-non-override
             (implies (and (syntaxp (not (equal spec-base-ins ''nil)))
@@ -5671,6 +5735,20 @@ environments."
                             (svar-override-triplelist-muxes-<<=
                              (svarlist-to-override-triples override-in-vars)
                              impl-env nil spec-outs)))
+            :hints(("Goal" :in-theory (enable svarlist-to-override-triples
+                                              svar-override-triplelist-muxes-<<=
+                                              svar-override-triple-mux-<<=
+                                              svarlist-override-p
+                                              svex-env-lookup-when-not-boundp
+                                              svex-env-boundp-iff-member-alist-keys)))))
+
+   (local (defthm svar-override-triplelist-muxes-<<=-when-impl-non-override
+            (implies (and (syntaxp (not (equal base-ins ''nil)))
+                          (svarlist-override-p (alist-keys (svex-env-fix base-ins)) nil)
+                          (svarlist-override-p override-in-vars nil))
+                     (svar-override-triplelist-muxes-<<=
+                      (svarlist-to-override-triples override-in-vars)
+                      base-ins spec-env spec-outs))
             :hints(("Goal" :in-theory (enable svarlist-to-override-triples
                                               svar-override-triplelist-muxes-<<=
                                               svar-override-triple-mux-<<=
@@ -5693,20 +5771,46 @@ environments."
                                               svex-envlist-all-keys
                                               svex-envlist-x-override)
                     :induct t :do-not-induct t))))
+
+   (local (defthm svar-override-triplelist-envlists-muxes-<<=-of-non-override-impl
+            (implies (and (syntaxp (not (equal base-ins ''nil)))
+                          (svarlist-override-p (svex-envlist-all-keys base-ins) nil)
+                          (svarlist-override-p override-in-vars nil))
+                     (svar-override-triplelist-envlists-muxes-<<=
+                      (svarlist-to-override-triples override-in-vars)
+                      base-ins spec-envs spec-outs))
+            :hints(("Goal" :in-theory (enable svar-override-triplelist-envlists-muxes-<<=
+                                              svex-envlist-all-keys
+                                              svex-envlist-x-override)
+                    :induct t :do-not-induct t))))
    
    (defthm svar-override-triplelist-envlists-muxes-<<=-of-svex-envlist-x-override
-           (implies (and (svarlist-override-p (svex-envlist-all-keys spec-base-ins) nil)
-                         (svarlist-override-p override-in-vars nil))
-                    (equal (svar-override-triplelist-envlists-muxes-<<=
-                            (svarlist-to-override-triples override-in-vars)
-                            impl-envs (svex-envlist-x-override spec-envs spec-base-ins) spec-outs)
-                           (svar-override-triplelist-envlists-muxes-<<=
-                            (svarlist-to-override-triples override-in-vars)
-                            impl-envs spec-envs spec-outs)))
-           :hints(("Goal" :in-theory (enable svar-override-triplelist-envlists-muxes-<<=
-                                             svex-envlist-all-keys
-                                             svex-envlist-x-override)
-                   :induct t :do-not-induct t)))))
+     (implies (and (svarlist-override-p (svex-envlist-all-keys spec-base-ins) nil)
+                   (svarlist-override-p override-in-vars nil))
+              (equal (svar-override-triplelist-envlists-muxes-<<=
+                      (svarlist-to-override-triples override-in-vars)
+                      impl-envs (svex-envlist-x-override spec-envs spec-base-ins) spec-outs)
+                     (svar-override-triplelist-envlists-muxes-<<=
+                      (svarlist-to-override-triples override-in-vars)
+                      impl-envs spec-envs spec-outs)))
+     :hints(("Goal" :in-theory (enable svar-override-triplelist-envlists-muxes-<<=
+                                       svex-envlist-all-keys
+                                       svex-envlist-x-override)
+             :induct t :do-not-induct t)))
+
+   (defthm svar-override-triplelist-envlists-muxes-<<=-of-svex-envlist-x-override-impl
+     (implies (and (svarlist-override-p (svex-envlist-all-keys base-ins) nil)
+                   (svarlist-override-p override-in-vars nil))
+              (equal (svar-override-triplelist-envlists-muxes-<<=
+                      (svarlist-to-override-triples override-in-vars)
+                      (svex-envlist-x-override impl-envs base-ins) spec-envs spec-outs)
+                     (svar-override-triplelist-envlists-muxes-<<=
+                      (svarlist-to-override-triples override-in-vars)
+                      impl-envs spec-envs spec-outs)))
+     :hints(("Goal" :in-theory (enable svar-override-triplelist-envlists-muxes-<<=
+                                       svex-envlist-all-keys
+                                       svex-envlist-x-override)
+             :induct t :do-not-induct t)))))
 
 
 
@@ -5719,6 +5823,20 @@ environments."
                      (equal (svex-env-muxtests-subsetp
                              test-vars
                              (svex-env-x-override spec-env spec-base-ins) impl-env)
+                            (svex-env-muxtests-subsetp
+                             test-vars spec-env impl-env)))
+            :hints(("Goal" :in-theory (enable svarlist-to-override-triples
+                                              svex-env-muxtests-subsetp
+                                              svarlist-override-p
+                                              svex-env-lookup-when-not-boundp
+                                              svex-env-boundp-iff-member-alist-keys)))))
+
+   (local (defthm svex-env-muxtests-subsetp-of-svex-env-x-override-impl
+            (implies (and (svarlist-override-p (alist-keys (svex-env-fix base-ins)) nil)
+                          (svarlist-override-p test-vars :test))
+                     (equal (svex-env-muxtests-subsetp
+                             test-vars
+                             spec-env (svex-env-x-override impl-env base-ins))
                             (svex-env-muxtests-subsetp
                              test-vars spec-env impl-env)))
             :hints(("Goal" :in-theory (enable svarlist-to-override-triples
@@ -5740,6 +5858,19 @@ environments."
                                               svarlist-override-p
                                               svex-env-lookup-when-not-boundp
                                               svex-env-boundp-iff-member-alist-keys)))))
+
+   (local (defthm svar-override-triplelist-muxtests-subsetp-when-impl-non-override
+            (implies (and (syntaxp (not (equal base-ins ''nil)))
+                          (svarlist-override-p (alist-keys (svex-env-fix base-ins)) nil)
+                          (svarlist-override-p test-vars :test))
+                     (equal (svex-env-muxtests-subsetp
+                             test-vars spec-env base-ins)
+                            (svex-env-muxtests-subsetp test-vars spec-env nil)))
+            :hints(("Goal" :in-theory (enable svarlist-to-override-triples
+                                              svex-env-muxtests-subsetp
+                                              svarlist-override-p
+                                              svex-env-lookup-when-not-boundp
+                                              svex-env-boundp-iff-member-alist-keys)))))
             
 
    (local (defthm svex-envlists-muxtests-subsetp-of-non-override-spec
@@ -5753,6 +5884,18 @@ environments."
                                               svex-envlist-all-keys
                                               svex-envlist-x-override)
                     :induct t :do-not-induct t))))
+
+   (local (defthm svex-envlists-muxtests-subsetp-of-non-override-impl
+            (implies (and (syntaxp (not (equal base-ins ''nil)))
+                          (svarlist-override-p (svex-envlist-all-keys base-ins) nil)
+                          (svarlist-override-p test-vars :test))
+                     (equal (svex-envlists-muxtests-subsetp
+                             test-vars spec-envs base-ins)
+                            (svex-envlists-muxtests-subsetp test-vars spec-envs nil)))
+            :hints(("Goal" :in-theory (enable svex-envlists-muxtests-subsetp
+                                              svex-envlist-all-keys
+                                              svex-envlist-x-override)
+                    :induct t :do-not-induct t))))
    
    (defthm svex-envlists-muxtests-subsetp-of-svex-envlist-x-override
            (implies (and (svarlist-override-p (svex-envlist-all-keys spec-base-ins) nil)
@@ -5760,6 +5903,20 @@ environments."
                     (equal (svex-envlists-muxtests-subsetp
                             test-vars
                             (svex-envlist-x-override spec-envs spec-base-ins) impl-envs)
+                           (svex-envlists-muxtests-subsetp
+                            test-vars spec-envs impl-envs)))
+           :hints(("Goal" :in-theory (enable svex-envlists-muxtests-subsetp
+                                             svex-envlist-all-keys
+                                             svex-envlist-x-override)
+                   :induct t :do-not-induct t)))
+
+
+   (defthm svex-envlists-muxtests-subsetp-of-svex-envlist-x-override-impl
+           (implies (and (svarlist-override-p (svex-envlist-all-keys base-ins) nil)
+                         (svarlist-override-p test-vars :test))
+                    (equal (svex-envlists-muxtests-subsetp
+                            test-vars
+                            spec-envs (svex-envlist-x-override impl-envs base-ins))
                            (svex-envlists-muxtests-subsetp
                             test-vars spec-envs impl-envs)))
            :hints(("Goal" :in-theory (enable svex-envlists-muxtests-subsetp
@@ -6156,6 +6313,198 @@ environments."
                     )
                (svex-env-<<= impl-run spec-run)))
     :hints(("Goal" :use ((:instance <fn>-run-refines-svtv-spec-run-with-len-spec-base-ins-bound
+                          (spec-base-ins (b* (((svtv-data-obj x))
+                                              ((pipeline-setup x.pipeline-setup)))
+                                           (take (* (len x.cycle-phases)
+                                                    (len (svtv-probealist-outvars x.pipeline-setup.probes)))
+                                                 spec-base-ins)))))
+            :in-theory (disable <fn>-run-refines-svtv-spec-run-with-len-spec-base-ins-bound))))
+
+
+  (local
+   (defret <fn>-run-refines-svtv-ideal-spec-run-with-len-spec-base-ins-bound
+     (b* (((svtv-spec spec))
+          ((svtv-data-obj x))
+          ((pipeline-setup x.pipeline-setup))
+          (spec-run (svtv-spec-run spec spec-pipe-env :base-ins spec-base-ins :initst spec-initst))
+          (impl-run (svtv-spec-run spec pipe-env)))
+       ;; Note: this isn't fully general given we don't allow base-ins/initst in the impl-run,
+       ;; but the conditions for this to be OK are more complicated that we want to deal with.
+       ;; E.g., we need
+       ;; (svex-env-<<= (svex-env-x-override impl-pipe-initst-result impl-initst)
+       ;;               (svex-env-x-override spec-pipe-initst-result spec-initst))
+       ;; and even if we have (svex-env-<<= impl-pipe-initst-result spec-pipe-initst-result)
+       ;; as well as (svex-env-<<= impl-initst spec-initst),
+       ;; we can't conclude that without more complicated conditions -- namely,
+       ;; impl-initst must be <<= (svex-env-x-override spec-pipe-initst-result spec-initst)
+       ;; wherever impl-pipe-initst-result is x.
+       ;; Similar strangeness holds for inputs.
+       ;; :base-ins base-ins :initst initst
+       (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                     x.flatten-validp
+                     x.flatnorm-validp
+                     x.phase-fsm-validp
+                     x.cycle-fsm-validp
+                     x.pipeline-validp
+                     (flatnorm-setup->monotonify x.flatnorm-setup)
+                    
+
+                     (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-pipe-env spec-run)
+                     (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-pipe-env pipe-env)
+                     (svtv-override-triplemaplist-syntax-check
+                      x.pipeline-setup.override-tests x.pipeline-setup.override-vals
+                      x.pipeline-setup.probes triplemaps)
+                    
+                     (svarlist-override-p (svtv-cyclephaselist-keys x.cycle-phases) nil)
+                     (svtv-cyclephaselist-unique-i/o-phase x.cycle-phases)
+                     (equal (svex-alist-keys-list x.pipeline-setup.override-tests)
+                            (svex-alist-keys-list x.pipeline-setup.override-vals))
+                     (no-duplicatesp-each (svex-alist-keys-list x.pipeline-setup.override-tests))
+                     (svarlist-override-p
+                      (svtv-name-lhs-map-list-all-keys
+                       (svtv-name-lhs-map-inverse-list
+                        (svtv-name-lhs-map-extract-list
+                         (take (len (svtv-probealist-outvars x.pipeline-setup.probes))
+                               (svex-alist-keys-list x.pipeline-setup.override-tests))
+                         x.namemap)))
+                      nil)
+                     (<= (len x.pipeline-setup.override-tests)
+                         (len (svtv-probealist-outvars x.pipeline-setup.probes)))
+                     (<= (len spec-base-ins)
+                         (* (len x.cycle-phases)
+                            (len (svtv-probealist-outvars x.pipeline-setup.probes))))
+                    
+                     (svex-env-<<= (svex-env-reduce
+                                    (append (svex-alist-vars x.pipeline-setup.initst)
+                                            (svex-alistlist-vars x.pipeline-setup.inputs))
+                                    pipe-env)
+                                   spec-pipe-env)
+                     (svarlist-override-p (svex-envlist-all-keys spec-base-ins) nil)
+                     ;; (svarlist-override-p (svex-envlist-all-keys base-ins) nil)
+                    
+                     (svex-alistlist-check-monotonic x.pipeline-setup.inputs)
+                     (svex-alistlist-check-monotonic x.pipeline-setup.override-vals)
+                     (svex-alistlist-check-monotonic x.pipeline-setup.override-tests)
+                    
+                     (svex-alist-check-monotonic x.pipeline-setup.initst)
+                     ;; (svex-envlist-<<= base-ins spec-base-ins)
+                     ;; (svex-env-<<= initst spec-initst)
+                     )
+                (svex-env-<<= impl-run spec-run)))
+     :hints(("Goal" :in-theory (e/d (svtv-spec-run
+                                     svtv-data-obj->spec
+                                     svar-override-triplelist-override-vars-of-triples-when-svarlist-override-p)
+                                    (base-fsm-eval-of-design->ideal-fsm-refines-overridden-ideal-fsm-when-triples-ok
+                                     base-fsm-eval-of-design->ideal-fsm-refines-overridden-ideal-fsm-gen))
+             :restrict ((svtv-override-triplemaplist-muxes-<<=-of-spec-outs-implies-svar-override-keys-check-separate-override-envlists-of-spec-ins
+                         ((triplemaps triplemaps)))
+                        (svtv-override-triplemaplist-muxtests-subsetp-of-spec-outs-implies-svex-envlists-muxtests-subsetp
+                         ((triplemaps triplemaps))))
+             :use ((:instance base-fsm-eval-of-design->ideal-fsm-refines-overridden-ideal-fsm-gen
+                    (data x)
+                    (ref-inputs (b* (((svtv-data-obj x))
+                                     ((pipeline-setup x.pipeline-setup)))
+                                  (svex-envlist-x-override
+                                   (svtv-spec-pipe-env->phase-envs
+                                    (make-svtv-spec :fsm (design->ideal-fsm x.design x.phase-fsm-setup)
+                                                    :cycle-phases x.cycle-phases
+                                                    :namemap x.namemap
+                                                    :probes x.pipeline-setup.probes
+                                                    :in-alists x.pipeline-setup.inputs
+                                                    :override-test-alists x.pipeline-setup.override-tests
+                                                    :override-val-alists x.pipeline-setup.override-vals
+                                                    :initst-alist x.pipeline-setup.initst)
+                                    spec-pipe-env)
+                                   spec-base-ins)))
+                    (input-vars (b* (((svtv-data-obj x))
+                                     ((base-fsm fsm) (design->ideal-fsm x.design x.phase-fsm-setup)))
+                                  (append (svex-alist-vars fsm.nextstate)
+                                          (svex-alist-vars fsm.values))))
+                    (ref-initst (svex-env-x-override
+                                 (b* (((svtv-data-obj x))
+                                      ((pipeline-setup x.pipeline-setup)))
+                                   (svex-alist-eval x.pipeline-setup.initst spec-pipe-env))
+                                 spec-initst))
+                    (override-inputs (b* (((svtv-data-obj x))
+                                          ((pipeline-setup x.pipeline-setup)))
+                                       (svex-envlist-x-override
+                                        (svtv-spec-pipe-env->phase-envs
+                                         (make-svtv-spec :fsm (design->ideal-fsm x.design x.phase-fsm-setup)
+                                                         :cycle-phases x.cycle-phases
+                                                         :namemap x.namemap
+                                                         :probes x.pipeline-setup.probes
+                                                         :in-alists x.pipeline-setup.inputs
+                                                         :override-test-alists x.pipeline-setup.override-tests
+                                                         :override-val-alists x.pipeline-setup.override-vals
+                                                         :initst-alist x.pipeline-setup.initst)
+                                         pipe-env)
+                                        nil)))
+                    (override-initst (svex-env-x-override
+                                      (b* (((svtv-data-obj x))
+                                           ((pipeline-setup x.pipeline-setup)))
+                                        (svex-alist-eval x.pipeline-setup.initst pipe-env))
+                                      nil))))
+             :do-not-induct t))
+     :otf-flg t))
+
+
+  (defret <fn>-run-refines-svtv-ideal-spec-run
+    (b* (((svtv-spec spec))
+         ((svtv-data-obj x))
+         ((pipeline-setup x.pipeline-setup))
+         (spec-run (svtv-spec-run spec spec-pipe-env :base-ins spec-base-ins :initst spec-initst))
+         (impl-run (svtv-spec-run spec pipe-env
+                                  ;; Note: this isn't fully general given we don't allow base-ins/initst in the impl-run,
+                                  ;; but the conditions for this to be OK are more complicated that we want to deal with.
+                                  ;; :base-ins base-ins :initst initst
+                                  )))
+      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                    x.flatten-validp
+                    x.flatnorm-validp
+                    x.phase-fsm-validp
+                    x.cycle-fsm-validp
+                    x.pipeline-validp
+                    (flatnorm-setup->monotonify x.flatnorm-setup)
+                    
+
+                    (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-pipe-env spec-run)
+                    (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-pipe-env pipe-env)
+                    
+                    (svtv-override-triplemaplist-syntax-check
+                     x.pipeline-setup.override-tests x.pipeline-setup.override-vals
+                     x.pipeline-setup.probes triplemaps)
+                    
+                    (svarlist-override-p (svtv-cyclephaselist-keys x.cycle-phases) nil)
+                    (svtv-cyclephaselist-unique-i/o-phase x.cycle-phases)
+                    (equal (svex-alist-keys-list x.pipeline-setup.override-tests)
+                           (svex-alist-keys-list x.pipeline-setup.override-vals))
+                    (no-duplicatesp-each (svex-alist-keys-list x.pipeline-setup.override-tests))
+                    (svarlist-override-p
+                     (svtv-name-lhs-map-list-all-keys
+                      (svtv-name-lhs-map-inverse-list
+                       (svtv-name-lhs-map-extract-list
+                        (take (len (svtv-probealist-outvars x.pipeline-setup.probes))
+                              (svex-alist-keys-list x.pipeline-setup.override-tests))
+                        x.namemap)))
+                     nil)
+                    (<= (len x.pipeline-setup.override-tests)
+                        (len (svtv-probealist-outvars x.pipeline-setup.probes)))
+
+
+                    (svex-env-<<= (svex-env-reduce
+                                   (append (svex-alist-vars x.pipeline-setup.initst)
+                                           (svex-alistlist-vars x.pipeline-setup.inputs))
+                                   pipe-env)
+                                  spec-pipe-env)
+                    (svarlist-override-p (svex-envlist-all-keys spec-base-ins) nil)
+                    
+                    (svex-alistlist-check-monotonic x.pipeline-setup.inputs)
+                    (svex-alistlist-check-monotonic x.pipeline-setup.override-vals)
+                    (svex-alistlist-check-monotonic x.pipeline-setup.override-tests)
+                    (svex-alist-check-monotonic x.pipeline-setup.initst)
+                    )
+               (svex-env-<<= impl-run spec-run)))
+    :hints(("Goal" :use ((:instance <fn>-run-refines-svtv-ideal-spec-run-with-len-spec-base-ins-bound
                           (spec-base-ins (b* (((svtv-data-obj x))
                                               ((pipeline-setup x.pipeline-setup)))
                                            (take (* (len x.cycle-phases)

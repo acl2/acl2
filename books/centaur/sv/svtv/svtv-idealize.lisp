@@ -46,6 +46,7 @@
                            SET-EQUIV-IMPLIES-SVEX-ENVS-EQUIVALENT-SVEX-ENV-REDUCE-1
                            SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-1
                            SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-SPEC-RUN
+                           SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-IDEAL-SPEC-RUN
                            svex-env-reduce-<<=-same
                            svtv-override-triplemaplist-muxes-<<=-of-same-envs
                            svtv-override-triplemaplist-muxtests-subsetp-of-same-envs
@@ -496,11 +497,55 @@
                                      )
                  :do-not-induct t)))
 
+       (defret <ideal-name>-refines-<ideal-name>
+         (b* (((svtv-spec spec))
+              (spec-run (svtv-spec-run spec spec-pipe-env :base-ins spec-base-ins :initst spec-initst))
+              (impl-run (svtv-spec-run spec pipe-env)))
+           (implies (and 
+                     (svtv-override-triplemaplist-muxes-<<= (<name>-triplemaplist) pipe-env spec-pipe-env spec-run)
+                     (svtv-override-triplemaplist-muxtests-subsetp (<name>-triplemaplist) spec-pipe-env pipe-env)
+                
+                     (svex-env-<<= (svex-env-reduce (<name>-input-vars) pipe-env)
+                                   spec-pipe-env)
+                     (svarlist-override-p (svex-envlist-all-keys spec-base-ins) nil))
+                    (svex-env-<<= impl-run spec-run)))
+         :hints(("Goal" :in-theory '((:CONGRUENCE
+                                      SET-EQUIV-IMPLIES-SVEX-ENVS-EQUIVALENT-SVEX-ENV-REDUCE-1)
+                                     (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-1)
+                                     (:DEFINITION <IDEAL-NAME>)
+                                     (:DEFINITION <NAME>-SPEC)
+                                     (:DEFINITION NOT)
+                                     (:REWRITE <DATA>-CORRECT)
+                                     (:REWRITE <DATA>-FACTS)
+                                     (:REWRITE SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-IDEAL-SPEC-RUN)
+                                     (:REWRITE
+                                      SVTV-RUN-OF-<NAME>-IS-SVTV-SPEC-RUN-OF-<NAME>-SPEC)
+                                     (:REWRITE SYNTAX-CHECK-OF-<NAME>-TRIPLEMAPLIST)
+                                     (:TYPE-PRESCRIPTION LEN)
+                                     (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
+                                     ;; (:TYPE-PRESCRIPTION SVTV-OVERRIDE-TRIPLEMAPLIST-OK)
+                                     )
+                 :do-not-induct t)))
+
        (defret <ideal-name>-refines-<name>-on-same-envs
-         (b* ((spec-run (svtv-spec-run spec pipe-env))
+         (b* ((spec-run (svtv-spec-run spec pipe-env :base-ins spec-base-ins :initst spec-initst))
               (impl-run (svtv-run (<name>) pipe-env)))
-           (svex-env-<<= impl-run spec-run))
+           (implies (svarlist-override-p (svex-envlist-all-keys spec-base-ins) nil)
+                    (svex-env-<<= impl-run spec-run)))
          :hints (("goal" :in-theory '(<ideal-name>-refines-<name>
+                                      svtv-override-triplemaplist-muxtests-subsetp-of-same-envs
+                                      svtv-override-triplemaplist-muxes-<<=-of-same-envs
+                                      svex-env-reduce-<<=-same
+                                      (svex-envlist-all-keys)
+                                      (svarlist-override-p)))))
+
+       (defret <ideal-name>-refines-<ideal-name>-on-same-envs
+         (b* (((svtv-spec spec))
+              (spec-run (svtv-spec-run spec spec-pipe-env :base-ins spec-base-ins :initst spec-initst))
+              (impl-run (svtv-spec-run spec spec-pipe-env)))
+           (implies (svarlist-override-p (svex-envlist-all-keys spec-base-ins) nil)
+                    (svex-env-<<= impl-run spec-run)))
+         :hints (("goal" :in-theory '(<ideal-name>-refines-<ideal-name>
                                       svtv-override-triplemaplist-muxtests-subsetp-of-same-envs
                                       svtv-override-triplemaplist-muxes-<<=-of-same-envs
                                       svex-env-reduce-<<=-same
@@ -509,14 +554,17 @@
 
      (define <ideal-name>-exec ((env svex-env-p)
                                 (output-vars svarlist-p))
+       :enabled t
        :guard-hints (("goal" :use ((:instance <ideal-name>-refines-<name>-on-same-envs
-                                    (pipe-env env)))
+                                    (pipe-env env) (spec-base-ins nil) (spec-initst nil)))
                       :in-theory '(svex-alist-eval-of-fal-extract
                                    svex-alist-p-of-svtv->outexprs
                                    svex-env-fix-when-svex-env-p
                                    keys-of-svtv-spec-run
                                    (svex-env-p)
                                    (svex-envlist-p)
+                                   (svex-envlist-all-keys)
+                                   (svarlist-override-p)
                                    svtv-run
                                    svtv-p-of-<name>
                                    svtv-spec-p-of-<ideal-name>
@@ -561,7 +609,7 @@
                                        (sv::svtv-spec-run (<ideal-name>) env))))
          :hints (("goal"
                   :use ((:instance <ideal-name>-refines-<name>-on-same-envs
-                         (pipe-env env)))
+                         (pipe-env env) (spec-base-ins nil) (spec-initst nil)))
                   :in-theory '(<ideal-name>-exec
                                svex-alist-eval-of-fal-extract
                                svex-alist-p-of-svtv->outexprs
@@ -571,6 +619,8 @@
                                keys-of-svtv-spec-run
                                (svex-env-p)
                                (svex-envlist-p)
+                               (svex-envlist-all-keys)
+                               (svarlist-override-p)
                                svtv-run
                                svtv-p-of-<name>
                                svtv-spec-p-of-<ideal-name>
@@ -1348,6 +1398,10 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
 
     (:rewrite 4VEC-OVERRIDE-MUX-<<=-OF-SAME-TEST/VAL)
     (:rewrite 4vec-override-mux-<<=-when-no-spec-override-and-impl-val-same-as-ref)
+
+    (:rewrite svex-env-lookup-of-svex-env-reduce)
+    (:executable-counterpart member-equal)
+    (:executable-counterpart svarlist-fix$inline)
     ))
 
 
@@ -1414,7 +1468,9 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                          <concl>)))
             :hints (:@ :no-lemmas <hints>)
             (:@ (not :no-lemmas)
-             (("Goal" :use ((:instance <ideal>-refines-<svtv>
+             (("Goal" :use ((:instance
+                             (:@ (not :use-ideal) <ideal>-refines-<svtv>)
+                             (:@ :use-ideal <ideal>-refines-<ideal>)
                              (spec-pipe-env env)
                              (spec-base-ins base-ins)
                              (spec-initst initst)
@@ -1439,7 +1495,8 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                             (:ruleset svtv-idealized-thm-rules))
                            )
                )
-              . <hints>)))))
+              . <hints>))
+            :rule-classes <rule-classes>)))
     (acl2::template-subst
      template
      :atom-alist
@@ -1462,7 +1519,8 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                               x.triple-val-alist x.triples-name))
        (<override-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist
                                         (append x.spec-override-var-bindings x.override-var-bindings))))
-       (<override-vals> . (list . ,(svtv-genthm-var-alist-termlist (append x.spec-override-vars x.override-vars)))))
+       (<override-vals> . (list . ,(svtv-genthm-var-alist-termlist (append x.spec-override-vars x.override-vars))))
+       (<rule-classes> . ,x.rule-classes))
      :splice-alist
      `((<input-var-svassocs> . ,(append x.input-vars (strip-cars x.input-var-bindings)))
        (<input-unbound-svassocs> . ,x.input-vars)
@@ -1485,7 +1543,8 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
      :str-alist `(("<NAME>" . ,(symbol-name x.name))
                   ("<SVTV>" . ,(symbol-name x.svtv))
                   ("<IDEAL>" . ,(symbol-name x.ideal)))
-     :features (and x.no-lemmas '(:no-lemmas))
+     :features (append (and x.no-lemmas '(:no-lemmas))
+                       (and x.lemma-use-ideal '(:use-ideal)))
      :pkg-sym x.pkg-sym)))
 
 
@@ -1529,10 +1588,11 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
          (lemma-defthm 'fgl::def-fgl-thm)
          lemma-args
          lemma-nonlocal
+         lemma-use-ideal
          no-lemmas
          no-integerp
          hints
-         rule-classes
+         (rule-classes ':rewrite)
          (pkg-sym name))
         args)
        
@@ -1591,6 +1651,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
        :lemma-nonlocal lemma-nonlocal
        :lemma-defthm lemma-defthm
        :lemma-args lemma-args
+       :lemma-use-ideal lemma-use-ideal
        :hints hints
        :triples-name triplemaplist
        :triple-val-alist triple-val-alist
@@ -1736,7 +1797,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                                     `((env-subst . ',(make-fast-alist subst)))))
                              (env-subst))
                   (svtv-override-subst-matches-env env-subst env)
-                  (equal checks (svtv-override-triplemaplist-envs-match-checks x env-subst spec))
+                  (equal checks (svtv-override-triplemaplist-envs-match-checks x env-subst (make-fast-alist spec)))
                   (syntaxp (quotep checks)))
              (equal (svtv-override-triplemaplist-envs-match x env spec)
                     (svtv-override-triplelist-envs-match checks env spec))))

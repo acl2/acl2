@@ -202,5 +202,42 @@
   :no-lemmas t)
 
 
+(def-svtv-idealized-thm mod-run-res3-integerp-override
+  :spec-override-vars (a b)
+  :spec-override-var-bindings ((op 0))
+  :output-vars (res3)
+  :svtv mod-run
+  :ideal mod-ideal
+  :unsigned-byte-hyps t
+  :concl (integerp res3))
+
+(define mod-run-res3 ((a natp) (b natp))
+  (svex-env-lookup 'res3 (mod-ideal-exec `((op-ovr . -1)
+                                           (a-ovr . -1)
+                                           (b-ovr . -1)
+                                           (op . 0)
+                                           (a . ,(loghead 4 a))
+                                           (b . ,(loghead 4 b)))
+                                         '(res3))))
+
+(def-svtv-idealized-thm mod-run-res3-is-mod-run-res3
+  :spec-override-vars (a)
+  :override-vars (b)
+  :spec-override-var-bindings ((op 0))
+  :output-vars (res3)
+  :svtv mod-run
+  :ideal mod-ideal
+  :unsigned-byte-hyps t
+  :concl (equal res3 (mod-run-res3 a b))
+  :lemma-use-ideal t
+  :lemma-defthm defthm
+  :lemma-args (:hints (("goal" :in-theory (enable* mod-run-res3
+                                                   svtv-override-triplemaplist-envs-match-checks-when-variable-free
+                                                   4vec-p-when-integerp
+                                                  (:ruleset svtv-idealized-thm-rules))))))
+                    
+                    
+
+
                                
 

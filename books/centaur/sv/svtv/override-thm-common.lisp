@@ -50,6 +50,7 @@
    lemma-nonlocal
    lemma-defthm
    lemma-args
+   lemma-use-ideal
    no-lemmas
    no-integerp
    hints
@@ -105,7 +106,8 @@
   (b* (((svtv-generalized-thm x))
        (template '(<defthm> <name>-override-lemma
                     (implies <hyp>
-                             (b* ((run (svtv-run (<svtv>)
+                             (b* ((run ((:@ (not :use-ideal) svtv-run (<svtv>))
+                                        (:@ :use-ideal svtv-spec-run (<ideal>))
                                                  (append <input-bindings>
                                                          <input-vars>
                                                          <override-tests>
@@ -121,6 +123,7 @@
      :atom-alist `((<defthm> . ,x.lemma-defthm)
                    (<hyp> . ,x.hyp)
                    (<svtv> . ,x.svtv)
+                   (<ideal> . ,x.ideal)
                    (<concl> . ,x.concl)
                    (<input-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings)))
                    (<input-vars> . (list . ,(svtv-genthm-var-alist-termlist x.input-vars)))
@@ -139,6 +142,7 @@
                      (<integerp-concls> . ,(if x.no-integerp nil (svtv-genthm-integerp-conclusions x)))
                      (<args> . ,x.lemma-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
+     :features (and x.lemma-use-ideal '(:use-ideal))
      :pkg-sym x.pkg-sym)))
 
 
