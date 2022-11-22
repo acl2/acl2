@@ -5078,7 +5078,7 @@
 ; bogus compiler warning in LispWorks 6.0.1, gone in LispWorks 6.1
            (state-global-let*
             ((raw-include-book-dir-alist nil)
-             (connected-book-directory directory-name))
+             (connected-book-directory directory-name set-cbd-state))
             (let ((*load-compiled-stack* (acons full-book-name
                                                 load-compiled-file
                                                 *load-compiled-stack*)))
@@ -5263,7 +5263,7 @@
 
            (null *hcomp-book-ht*))
        (state-free-global-let*-safe
-        ((connected-book-directory directory-name))
+        ((connected-book-directory directory-name set-cbd-state))
         (let* ((os-file (pathname-unix-to-os full-book-string state))
                (ofile (convert-book-string-to-compiled os-file state))
                (os-file-exists (probe-file os-file))
@@ -8320,8 +8320,11 @@
               string that represents an absolute ACL2 (i.e., Unix-style) ~%~
               pathname.  Sorry for the inconvenience."
             *initial-cbd*)))
-    (f-put-global 'connected-book-directory *initial-cbd*
-                  state)))
+
+; *Initial-cbd* is already in good shape, do not call set-cbd since it calls
+; *os, which might not be defined yet during the boot-strap.
+
+    (set-cbd-fn1 *initial-cbd* state)))
 
 (defun initialize-acl2 (&optional (pass-2-ld-skip-proofsp 'include-book)
                                   &aux
@@ -9009,7 +9012,8 @@
             (with-suppression ; package locks, not just warnings, for read
              (state-free-global-let*
               ((connected-book-directory
-                (f-get-global 'connected-book-directory state)))
+                (f-get-global 'connected-book-directory state)
+                set-cbd-state))
               (cond (quietp
 
 ; We avoid using with-output!, since it generates a call of state-global-let*,

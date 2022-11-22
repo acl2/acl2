@@ -9559,22 +9559,69 @@
       str
     (string-append str *directory-separator-string*)))
 
+(defun set-cbd-fn1 (dir state)
+
+; See set-cbd-fn for explanation.
+
+  (pprogn
+   (increment-file-clock state)
+   #+acl2-loop-only
+   (assign connected-book-directory dir)
+   #-acl2-loop-only
+   (without-interrupts
+    (setq *default-pathname-defaults*
+
+; Dir may be nil during the boot-strap.  In that case we are returning to an
+; initial situation, so we reset *default-pathname-defaults* to represent the
+; current working directory.
+
+          (pathname (or dir (our-pwd))))
+    (assign connected-book-directory dir))))
+
 (defun set-cbd-fn (str state)
+
+; We attempt to reduce potential confusion by having Lisp special variable
+; *default-pathname-defaults* track the cbd.  Quoting the CL HyperSpec Section
+; 19.2.3 (Merging Pathnames):
+
+;   Except as explicitly specified otherwise, for functions that manipulate or
+;   inquire about files in the file system, the pathname argument to such a
+;   function is merged with *default-pathname-defaults* before accessing the
+;   file system (as if by merge-pathnames).
+
+; And quoting "Function MERGE-PATHNAMES":
+
+;   merge-pathnames pathname &optional default-pathname default-version
+;   ...
+;   default-pathname---a pathname designator. The default is the value of
+;   *default-pathname-defaults*.
+;   ...
+;   If pathname does not specify a host, device, directory, name, or type, each
+;   such component is copied from default-pathname.
+
   (let ((os (os (w state)))
         (ctx (cons 'set-cbd str)))
     (cond
      ((not (stringp str))
-      (er soft ctx
-          "The argument of set-cbd must be a string, unlike ~x0.  See :DOC ~
-           cbd."
-          str))
+      (cond ((and (null str)
+                  (f-get-global 'boot-strap-flg state))
+
+; This special case is expected.
+
+             (set-cbd-fn1 nil state))
+            (t
+             (er soft ctx
+                 "The argument of set-cbd must be a string, unlike ~x0.  See ~
+                  :DOC cbd."
+                 str))))
      (t (let ((str (expand-tilde-to-user-home-dir str os ctx state)))
           (cond
            ((absolute-pathname-string-p str nil os)
-            (assign connected-book-directory
-                    (canonical-dirname! (maybe-add-separator str)
-                                        ctx
-                                        state)))
+            (set-cbd-fn1
+             (canonical-dirname! (maybe-add-separator str)
+                                 ctx
+                                 state)
+             state))
            ((not (absolute-pathname-string-p
                   (f-get-global 'connected-book-directory state)
                   t
@@ -9588,14 +9635,15 @@
                 str
                 (f-get-global 'connected-book-directory state)))
            (t
-            (assign connected-book-directory
-                    (canonical-dirname!
-                     (maybe-add-separator
-                      (our-merge-pathnames
-                       (f-get-global 'connected-book-directory state)
-                       str))
-                     ctx
-                     state)))))))))
+            (set-cbd-fn1
+             (canonical-dirname!
+              (maybe-add-separator
+               (our-merge-pathnames
+                (f-get-global 'connected-book-directory state)
+                str))
+              ctx
+              state)
+             state))))))))
 
 (defmacro set-cbd (str)
   `(set-cbd-fn ,str state))
@@ -13617,7 +13665,8 @@
                                   (skip-notify-on-defttag
                                    (and ttags-info ; hence cert-obj is non-nil
                                         full-book-string))
-                                  (connected-book-directory directory-name)
+                                  (connected-book-directory directory-name
+                                                            set-cbd-state)
                                   (match-free-error nil)
                                   (guard-checking-on
                                    t) ; see Essay on Guard Checking
@@ -16874,7 +16923,8 @@
                                        wrld1))))
                                    (ld-redefinition-action nil)
                                    (connected-book-directory
-                                    directory-name))
+                                    directory-name
+                                    set-cbd-state))
                                   (revert-world-on-error
                                    (er-let* ((portcullis-skipped-proofsp
                                               (value
@@ -17399,7 +17449,8 @@
 ; This binding is for the call of compile-certified-file below, though perhaps
 ; there will be other uses.
 
-                                                    directory-name))
+                                                    directory-name
+                                                    set-cbd-state))
                                                   (pprogn
 ; Write certificate.
                                                    (print-certify-book-step-4
