@@ -207,25 +207,31 @@
 (defconst *known-models-and-strings*
   '((:calpoly . "kestrel-calpoly")
     ;; note the capital L:
-    (:leidos . "Leidos")))
+    (:leidos . "Leidos")
+    ;; (:leidos-gpt . "leidos-gpt")
+    ))
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
 
 (defconst *extra-rec-sources*
   '(:enable :history))
 
+;; Indicates one of the machine learning recommendation models.  Either one of
+;; the known models, or a string representing some unknown model (gets passed
+;; through to the HTTP request).
 (defund rec-modelp (x)
   (declare (xargs :guard t))
   (or (stringp x) ; raw string to pass in the HTTP POST data
-      (member-eq x *known-models*) ; known model sets
+      (member-eq x *known-models*) ; known models
       ))
 
-;; Indicates one of the machine learning recommendation models
+;; Recognizes a (duplicate-free) list of recommendation models.
 (defund rec-modelsp (models)
   (declare (xargs :guard t))
   (if (atom models)
       (null models)
     (and (rec-modelp (first models))
+         ;; (not (member-equal (first models) (rest models))) ;; todo: add back?
          (rec-modelsp (rest models)))))
 
 (defun model-to-string (model)
@@ -2222,7 +2228,7 @@
                                            disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
                                            disallowed-rec-sources
                                            max-wins
-                                           model
+                                           models
                                            state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (or (null book-to-avoid-absolute-path)
@@ -2243,15 +2249,13 @@
                                   (natp max-wins))
                               (rec-type-listp disallowed-rec-types)
                               (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
-                              (or (eq :all model)
-                                  (eq :none model)
-                                  (rec-modelp model)))
+                              (rec-modelsp models))
                   :stobjs state
                   :mode :program))
   (b* ((wrld (w state))
        ;; Get server info:
        ((mv erp server-url state)
-        (if (eq :none model)
+        (if (null models)
             (mv nil "NONE" state)
           (if server-url
               (mv nil server-url state)
@@ -2260,12 +2264,6 @@
        ((when (not (stringp server-url)))
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
         (mv :no-server nil nil state))
-       ;; Elaborate options:
-       (models (if (eq model :all)
-                   '(:calpoly :leidos)
-                 (if (eq model :none)
-                     nil
-                   (list model))))
        ;; Get the recommendations:
        ((mv erp ml-recommendations state)
         (get-recs-from-models models n checkpoint-clauses server-url debug print nil state))
@@ -2354,7 +2352,7 @@
                                        disallowed-rec-types
                                        disallowed-rec-sources
                                        max-wins
-                                       model
+                                       models
                                        suppress-trivial-warningp
                                        state)
   (declare (xargs :guard (and (symbolp theorem-name)
@@ -2375,27 +2373,27 @@
                               (or ;; (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
-                              (or (eq :all model)
-                                  (eq :none model)
-                                  (rec-modelp model))
+                              (rec-modelsp models)
                               (booleanp suppress-trivial-warningp))
                   :stobjs state
                   :mode :program))
   (b* ((wrld (w state))
-       ;; Try the theorem:
+       ;; Try the theorem with the given hints:
+       ;; Or we could try it first with no hints...
        ((mv provedp state)
         (prove$-no-error 'get-and-try-advice-for-theorem
                          theorem-body
-                         theorem-hints ; or we could use nil here
+                         theorem-hints
                          theorem-otf-flg
                          step-limit
                          state))
        ;; TODO: What if the step-limit applied?
        ((when provedp)
+        ;; The original hints worked!
         (and (not suppress-trivial-warningp)
              (if (not theorem-hints)
-                 (cw "WARNING: Proved ~x0 without advice (no hints needed).~%" theorem-name)
-               (cw "WARNING: Proved ~x0 without advice.~%" theorem-name)))
+                 (cw "WARNING: Proved ~x0 with no hints.~%" theorem-name)
+               (cw "WARNING: Proved ~x0 with original hints.~%" theorem-name)))
         (mv nil ; no error
             t   ; proved (with the original hints)
             (make-successful-rec "original"
@@ -2436,7 +2434,7 @@
                                         disallowed-rec-types
                                         disallowed-rec-sources
                                         max-wins
-                                        model
+                                        models
                                         state)))
 
 ;; Returns (mv erp event state).
@@ -2453,7 +2451,7 @@
                          disallowed-rec-types
                          disallowed-rec-sources
                          max-wins
-                         model
+                         models
                          state)
   (declare (xargs :guard (and (symbolp theorem-name)
                               ;; theorem-body
@@ -2473,13 +2471,18 @@
                               (or (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
-                              (or (eq :all model)
-                                  (eq :none model)
-                                  (rec-modelp model)))
+                              (or (eq :all models)
+                                  (rec-modelp models) ; represents a singleton set
+                                  (rec-modelsp models)))
                   :stobjs state
                   :mode :program))
   (b* ((wrld (w state))
        ;; Elaborate options:
+       (models (if (eq models :all)
+                   *known-models*
+                 (if (rec-modelp models)
+                     (list models) ; single model stands for singleton list of that model
+                   models)))
        (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
        (translated-theorem-body (acl2::translate-term theorem-body 'defthm-advice-fn wrld))
@@ -2497,7 +2500,7 @@
                                         disallowed-rec-types
                                         disallowed-rec-sources
                                         max-wins
-                                        model
+                                        models
                                         nil
                                         state))
        ((when erp) (mv erp nil state)))
@@ -2525,11 +2528,11 @@
                          (disallowed-rec-types 'nil)
                          (disallowed-rec-sources 'nil)
                          (max-wins ':auto)
-                         (model ':all)
+                         (models ':all)
                          (rule-classes '(:rewrite))
                          )
   `(acl2::make-event-quiet
-    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,model state)))
+    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::defthm-advice (&rest rest) `(defthm-advice ,@rest))
@@ -2548,7 +2551,7 @@
                       disallowed-rec-types
                       disallowed-rec-sources
                       max-wins
-                      model
+                      models
                       state)
   (declare (xargs :guard (and ;; theorem-body
                           ;; theorem-hints
@@ -2566,13 +2569,18 @@
                           (or (eq :auto max-wins)
                               (null max-wins)
                               (natp max-wins))
-                          (or (eq :all model)
-                              (eq :none model)
-                              (rec-modelp model)))
+                          (or (eq :all models)
+                              (rec-modelp models) ; represents a singleton set
+                              (rec-modelsp models)))
                   :stobjs state
                   :mode :program))
   (b* ((wrld (w state))
        ;; Elaborate options:
+       (models (if (eq models :all)
+                   *known-models*
+                 (if (rec-modelp models)
+                     (list models) ; single model stands for singleton list of that model
+                   models)))
        (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
        (translated-theorem-body (acl2::translate-term theorem-body 'defthm-advice-fn wrld))
@@ -2590,7 +2598,7 @@
                                         disallowed-rec-types
                                         disallowed-rec-sources
                                         max-wins
-                                        model
+                                        models
                                         nil
                                         state))
        ((when erp) (mv erp nil state)))
@@ -2614,11 +2622,11 @@
                       (disallowed-rec-types 'nil)
                       (disallowed-rec-sources 'nil)
                       (max-wins ':auto)
-                      (model ':all)
+                      (models ':all)
                       ;; no rule-classes
                       )
   `(acl2::make-event-quiet
-    (thm-advice-fn ',body ',hints ,otf-flg ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,model state)))
+    (thm-advice-fn ',body ',hints ,otf-flg ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::thm-advice (&rest rest) `(thm-advice ,@rest))
@@ -2637,7 +2645,7 @@
                   disallowed-rec-types
                   disallowed-rec-sources
                   max-wins
-                  model
+                  models
                   state)
   (declare (xargs :guard (and (natp n)
                               (acl2::print-levelp print)
@@ -2654,14 +2662,19 @@
                               (or (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
-                              (or (eq :all model)
-                                  (eq :none model)
-                                  (rec-modelp model)))
+                              (or (eq :all models)
+                                  (rec-modelp models) ; represents a singleton set
+                                  (rec-modelsp models)))
                   :stobjs state
                   :mode :program ; because we untranslate (for now)
                   ))
   (b* ((wrld (w state))
        ;; Elaborate options:
+       (models (if (eq models :all)
+                   *known-models*
+                 (if (rec-modelp models)
+                     (list models) ; single model stands for singleton list of that model
+                   models)))
        (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
        ;; Get most recent failed theorem:
@@ -2714,7 +2727,7 @@
                                             disallowed-rec-types
                                             disallowed-rec-sources
                                             max-wins
-                                            model
+                                            models
                                             state))
        ((when erp) (mv erp nil state))
        ;; Ensure there are no checkpoints left over from an attempt to use advice, in case the user calls the tool again.
@@ -2749,8 +2762,8 @@
         '(value-triple :invisible) state)))
 
 ;; Generate advice for the most recent failed theorem.
-(defmacro advice (&key (n '10) (print 't) (server-url 'nil) (debug 'nil) (step-limit ':auto) (disallowed-rec-types 'nil) (disallowed-rec-sources 'nil) (max-wins ':auto) (model ':all))
-  `(acl2::make-event-quiet (advice-fn ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,model state)))
+(defmacro advice (&key (n '10) (print 't) (server-url 'nil) (debug 'nil) (step-limit ':auto) (disallowed-rec-types 'nil) (disallowed-rec-sources 'nil) (max-wins ':auto) (models ':all))
+  `(acl2::make-event-quiet (advice-fn ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::advice (&rest rest) `(advice ,@rest))

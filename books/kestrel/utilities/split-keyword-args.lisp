@@ -11,16 +11,17 @@
 (in-package "ACL2")
 
 ;; Split ARGS into an initial portion of non-keywords, and the rest, which
-;; should be a keyword-alist.
-;; Returns (mv non-keyword-args keyword-alist).
+;; should be a keyword-value-list.
+;; Returns (mv non-keyword-args keyword-value-list).
 ;; ex: (split-keyword-args '(x 3 y z :foo 4 :bar 5))
+;; See also partition-rest-and-keyword-args.
 (defun split-keyword-args (args)
   (declare (xargs :guard (true-listp args)))
   (if (endp args)
       (mv nil nil)
     (if (keywordp (first args))
         (mv nil args)
-      (mv-let (rest-args rest-keyword-alist)
+      (mv-let (rest-args rest-keyword-value-list)
         (split-keyword-args (rest args))
         (mv (cons (first args) rest-args)
-            rest-keyword-alist)))))
+            rest-keyword-value-list)))))
