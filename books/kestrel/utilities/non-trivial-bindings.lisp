@@ -30,6 +30,10 @@
            (symbol-alistp (non-trivial-bindings vars vals)))
   :hints (("Goal" :in-theory (enable non-trivial-bindings))))
 
+(defthm alistp-of-non-trivial-bindings
+  (alistp (non-trivial-bindings vars vals))
+  :hints (("Goal" :in-theory (enable non-trivial-bindings))))
+
 (defthm symbol-listp-of-strip-cars-of-non-trivial-bindings
   (implies (symbol-listp vars)
            (symbol-listp (strip-cars (non-trivial-bindings vars vals))))
