@@ -351,6 +351,7 @@
                                             (min (- size start)
                                                  bits-size)))
                       0)))
+    :lambda-opt nil
     :hints (("Goal"
              :in-theory (e/d (4VEC-PART-SELECT-of-4vec-bitnot$-2
                               4VEC-PART-SELECT-of-4vec-bitnot$-1
@@ -375,7 +376,7 @@
                               bits)
                              ()))))
 
-  (add-svex-simplify-rule bits-of-4vec-bitnot$)
+  (add-svex-simplify-rule bits-of-4vec-bitand$)
 
   (def-rp-rule 4vec-bitor-of-negated-same-var-with-bitnot$
     (implies (and (natp size)
@@ -2182,6 +2183,21 @@
    (use-arithmetic-5 t))
 
   (def-rp-rule :disabled-for-acl2 t
+    logbit-to-bits-without-hyps
+    (implies t
+             (equal (acl2::logbit index x)
+                    (bits (ifix x) (nfix index) 1)))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-part-select
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              4VEC-RSH
+                              4VEC-ZERO-EXT
+                              4VEC-SHIFT-CORE)
+                             (;;4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                              4VEC-ZERO-EXT-IS-4VEC-CONCAT)))))
+  
+  (def-rp-rule :disabled-for-acl2 t
     logbit-to-bits
     (implies (and (natp index)
                   (integerp x))
@@ -2483,6 +2499,21 @@
    (use-arithmetic-5 t))
 
   (def-rp-rule :disabled-for-acl2 t
+    logbitp-to-bits-without-hyps
+    (equal (acl2::logbitp index x)
+           (equal (svl::bits (ifix x) (nfix index) 1)
+                  1))
+    :hints (("Goal"
+             :in-theory (e/d (SV::4VEC-PART-SELECT
+                              svl::bits
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              SV::4VEC-SHIFT-CORE
+                              SV::4VEC-CONCAT
+                              SV::4VEC-RSH)
+                             (SVL::EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1)))))
+  
+  (def-rp-rule :disabled-for-acl2 t
     logbitp-to-bits
     (implies (and (integerp x)
                   (natp index))
@@ -2500,6 +2531,27 @@
                              (SVL::EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1)))))
 
   (add-svex-simplify-rule logbitp-to-bits))
+
+
+(def-rp-rule :disabled-for-acl2 t
+  logcons-to-logapp
+  (implies t
+           (equal (acl2::logcons x y)
+                  (logapp 1 (ACL2::BFIX x) y))))
+
+(svl::add-svex-simplify-rule logcons-to-logapp)
+
+(def-rp-rule ACL2::BFIX-opener
+  (implies (bitp x)
+           (equal (ACL2::BFIX x) x)))
+
+(def-rp-rule :disabled-for-acl2 t
+  postiive-ash-to-logapp
+  (implies (natp size)
+           (equal (ash x size)
+                  (logapp size 0 x))))
+
+(svl::add-svex-simplify-rule postiive-ash-to-logapp)
 
 #!SVL
 (encapsulate
@@ -2627,3 +2679,4 @@
            (acl2-numberp x)))
 
 (svl::add-svex-simplify-rule integerp-implies-acl2-numberp)
+

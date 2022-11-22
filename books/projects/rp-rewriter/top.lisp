@@ -59,30 +59,58 @@
   "<p>RP-Rewriter (rp for 'retain property') is a verified clause processor
   that can be used to replace ACL2's rewriter for some theorems, and for some
   cases, can provide time efficiency and convenience when building lemmas. It
-  uses a subset of the heuristics of the ACL2's rewriter but adds two
-  distinctive features: 1. By introducing an invariant, it can retain
-  properties about terms, which we call side-conditions. 2. In the case of
-  alists in the theorems to be rewritten, it can create a corresponding
-  fast-alist in the background. It also has some other improvements pertaining
-  to meta-rules.</p> <p> It supports a big set of rewrite rules existing in
-  ACL2's world that may have syntaxp. For every other rule-classes, it treats
-  them as rewrire-rules. It also provides a mechanism to run meta
-  functions. The rest of the rule classes are not supported and are discarded
-  by the rewriter. We also do not support rules with @(see bind-free), @(see
-  acl2::loop-stopper), @(see acl2::free-variables), @(see force), @(see
-  case-split) etc. Note that there is also no @(see acl2::type-alist) or any
-  form of type reasoning.  </p> <p> The rewriter enables users to attach
-  certain properties (i.e., side-conditions) to terms as rewriting takes
-  place. These properties can be used to relieve hypotheses efficiently without
-  backchaining.</p>
+  uses a subset of the heuristics of the ACL2's rewriter but has some
+  distinctive features:</p>
 
- <p> If a rewrite rule has @(see hons-acons) on its right hand side,
-  rp-rewriter has a built-in mechanism that treats that as a trigger function
-  to create a fast-alist in the background. When another term seems to be
-  trying to read a value from that alist with a known instance of a function
-  such as assoc-equal, the built in meta functions reads the value from the
-  corresponding fast-alist instead of tracing it in the logical term. This may
-  give great timing benefits when dealing with terms with large alists. </p>")
+<ol>
+ <li> By introducing an invariant, it can retain
+  properties about terms, which we call side-conditions. These properties can
+ help relieve hypotheses or be used in meta functions even after large terms
+ went through drastic changes through rewriting that may have made it difficult
+ to confirm those properties through regular hyp relief system.
+ </li>
+<li> In the case of
+  alists in the theorems to be rewritten, it can create a corresponding
+  fast-alist in the background for later fast search and access. It does that
+ by triggering a special mechanism when it encounters @(see hons-acons) and
+ @(see hons-get) in terms. </li>
+<li> Meta rules can return a @(see dont-rw) structure to prevent repeated rewriting of large
+   returned terms, which can provide large performance (time and memory)
+  benefits. </li>
+<li> It supports inside-out as well as outside-in rewriting in the same
+  rewriting pass. </li>
+</ol>
+
+
+ <p> The rewriter supports a big set of rewrite rules existing in
+  ACL2's world. For every other rule-classes, it treats
+  them as rewrite-rules if possible.  It also provides a mechanism to run meta
+  functions. We do not support rules with @(see bind-free), @(see
+  acl2::loop-stopper), @(see acl2::free-variables), @(see
+  case-split) etc. Note that there is also no @(see acl2::type-alist) or any
+  form of type reasoning.  </p>
+
+
+<p> This rewriter is mainly used by an efficient integer @(see
+multiplier-verification) library. </p>
+
+<p> Two papers are published that mainly discuss RP-Rewriter: </p>
+
+<ul>
+<li> (<a
+href=\"https://doi.org/10.48550/arXiv.2009.13765\">
+RP-Rewriter: An Optimized Rewriter for Large Terms in ACL2</a>)
+</li>
+
+<li>
+(<a
+href=\"https://doi.org/10.48550/arXiv.2205.11703\">
+Verified Implementation of an Efficient Term-Rewriting Algorithm for Multiplier Verification on ACL2
+</a>)
+</li>
+
+</ul>
+")
 
 
 (xdoc::defxdoc
@@ -126,7 +154,7 @@
 <p> Below is a list of events where we use the side-conditions feature of
  RP-Rewriter to verify a conjecture. </p> 
 <p> This documentation is still under construction, please see
- books/projects/rp-rewriter/demo.lsp for the events.
+ books/projects/rp-rewriter/demo.lsp for the demo events.
 </p>")
 
                

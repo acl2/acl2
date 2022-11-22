@@ -386,11 +386,11 @@
 (local
  (defthm rp-rw-of-quotep-term
    (implies (quotep term)
-            (equal (equal (rp-rw term dont-rw context  iff-flg  limit rp-state state)
+            (equal (equal (rp-rw term dont-rw context  iff-flg backchain-limit limit rp-state state)
                           (list term rp-state))
                    t))
    :hints (("Goal"
-            :expand (rp-rw term dont-rw context iff-flg  limit rp-state state)
+            :expand (rp-rw term dont-rw context iff-flg backchain-limit  limit rp-state state)
             :do-not-induct t
             :in-theory (e/d (rp-ex-counterpart
                              quotep
@@ -444,12 +444,12 @@
    (equal (consp (MV-NTH
                   0
                   (RP-RW-SUBTERMS SUBTERMS DONT-RW CONTEXT 
-                                  LIMIT   rp-state STATE)))
+                                 backchain-limit LIMIT   rp-state STATE)))
           (consp subterms))
    :hints (("Goal"
             :induct (induct-1 subterms limit)
             :expand (RP-RW-SUBTERMS SUBTERMS DONT-RW CONTEXT
-                                     LIMIT  rp-state STATE)
+                                   backchain-limit  LIMIT  rp-state STATE)
             :in-theory (e/d (RP-RW-SUBTERMS) (RP-RW))))))
 
 (local
@@ -474,10 +474,10 @@
    (implies (is-rp term)
             (equal (MV-NTH
                     0
-                    (rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG  LIMIT rp-state STATE))
+                    (rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG backchain-limit LIMIT rp-state STATE))
                    (cadr term)))
    :hints (("Goal"
-            :expand ((rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG  LIMIT rp-state STATE))
+            :expand ((rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG backchain-limit LIMIT rp-state STATE))
             :in-theory (e/d (is-rp) (rp-rw-subterms
                                      rp-rw))))))
 
@@ -614,7 +614,7 @@
 (verify-guards calculate-dont-rw$inline)
 (verify-guards calculate-dont-rw-lst$inline)
 
-(local
+#|(local
  (defret unsigned-byte-p-of-GET-LIMIT-FOR-HYP-RW
    (implies (and (unsigned-byte-p 58 limit)
                  (not (zp limit))
@@ -624,7 +624,7 @@
    :fn GET-LIMIT-FOR-HYP-RW
    :hints (("Goal"
             :in-theory (e/d (GET-LIMIT-FOR-HYP-RW
-                             RP-STATEP) ())))))
+                             RP-STATEP) ())))))|#
 
 
 (verify-guards create-if-instance$inline)
@@ -655,6 +655,13 @@
                            (FALIST-CONSISTENT
                             rp-termp
                             )))))
+
+(local
+ (defthm integer-of-*RW-BACKCHAIN-LIMIT*
+   (implies (rp-statep rp-state)
+            (INTEGERP (NTH *RW-BACKCHAIN-LIMIT* RP-STATE)))
+   :hints (("Goal"
+            :in-theory (e/d (rp-statep) ())))))
 
 (verify-guards rp-rw
   :otf-flg nil

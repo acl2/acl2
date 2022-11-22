@@ -697,7 +697,8 @@ for each usertype is stored in the res field.</p>"
    (inst-ss         vl-scopestack-p "Scopestack for the instantiating context")
    (mod-ss          vl-scopestack-p "Scopestack for the instantiated module")
    &key
-   (no-rename 'nil))
+   (no-rename 'nil)
+   (user-name maybe-stringp))
   :returns (mv (instkey vl-unparam-instkey-p "Instance key uniquely identifying
                                               the module/parameter combo.")
                (ledger vl-unparam-ledger-p "Updated ledger whose instkeymap
@@ -710,22 +711,17 @@ for each usertype is stored in the res field.</p>"
        ((when existing)
         ;; This module has already been named -- just return the existing name.
         (mv instkey ledger))
-       ((when (or no-rename
-                  (and (vl-paramdecllist-all-localp paramdecls)
-                       (atom ifportalist))))
-        ;; If there are no parameters, or there are only localparams, preserve
-        ;; the original name of the module.
-        (b* ((signature (make-vl-unparam-signature :modname origname
-                                                   :newname origname
-                                                   :final-params paramdecls
-                                                   :final-ports ports))
-             (instkeymap (hons-acons instkey signature ledger.instkeymap)))
-          (mv instkey (change-vl-unparam-ledger ledger
-                                                :instkeymap instkeymap))))
-       ;; Haven't named this particular combination yet: generate the name,
-       ;; uniquify it, and add it to the ledger.
-       (basename (vl-unparam-basename origname paramdecls ifportalist
-                                      (not ledger.omit-default-params)))
+       (basename (or user-name
+                     (if (or no-rename
+                             (and (vl-paramdecllist-all-localp paramdecls)
+                                  (atom ifportalist)))
+                         origname
+                       (vl-unparam-basename origname paramdecls ifportalist
+                                            (not ledger.omit-default-params)))))
+       ;; We used to only use the namedb for renamed modules (i.e. not when
+       ;; selecting the origname).  Since allowing user parameter settings (and
+       ;; allowing them to specify the name), we just put everything in a
+       ;; namedb.
        ((mv newname ndb) (vl-namedb-plain-name basename ledger.ndb))
        (signature (make-vl-unparam-signature :modname origname
                                              :newname newname
@@ -2527,12 +2523,108 @@ for each usertype is stored in the res field.</p>"
           (append instkeys1 instkeys2)
           warnings elabindex ledger)))
 
-(define vl-toplevel-default-signature ((modname stringp)
-                                       (warnings vl-warninglist-p)
-                                       (elabindex "global scope")
-                                       (ledger vl-unparam-ledger-p)
-                                       &key
-                                       ((config vl-simpconfig-p) 'config))
+;; (define vl-toplevel-default-signature ((modname stringp)
+;;                                        (warnings vl-warninglist-p)
+;;                                        (elabindex "global scope")
+;;                                        (ledger vl-unparam-ledger-p)
+;;                                        &key
+;;                                        ((config vl-simpconfig-p) 'config))
+;;   :returns (mv (ok)
+;;                (instkeys vl-unparam-instkeylist-p)
+;;                (warnings vl-warninglist-p)
+;;                (new-elabindex)
+;;                (ledger vl-unparam-ledger-p))
+;;   :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
+;;                       (implies (vl-module-p x)
+;;                                (vl-scope-p x))))
+;;              (local (defthm vl-scope-p-when-vl-interface-p-strong
+;;                       (implies (vl-interface-p x)
+;;                                (vl-scope-p x)))))
+;;   (b* ((modname (string-fix modname))
+;;        (ledger (vl-unparam-ledger-fix ledger))
+;;        (x (vl-scopestack-find-definition modname (vl-elabindex->ss)))
+;;        ((unless (and x
+;;                      (or (eq (tag x) :vl-module)
+;;                          (eq (tag x) :vl-interface))))
+;;         (mv nil nil
+;;             (fatal :type :vl-unparam-fail
+;;                    :msg "Programming error: top-level module/interface ~s0 not found"
+;;                    :args (list modname))
+;;             elabindex ledger))
+;;        ((vl-elabindex elabindex) (vl-elabindex-push x))
+;;        (paramdecls (if (eq (tag x) :vl-module)
+;;                        (vl-module->paramdecls x)
+;;                      (vl-interface->paramdecls x)))
+;;        (ports (if (eq (tag x) :vl-module)
+;;                   (vl-module->ports x)
+;;                 (vl-interface->ports x)))
+;;        ((mv ok warnings elabindex final-paramdecls)
+;;         (vl-scope-finalize-params paramdecls
+;;                                   (make-vl-paramargs-named)
+;;                                   warnings
+;;                                   elabindex elabindex.ss
+;;                                   (caar (vl-elabindex->undostack))))
+;;        (inside-mod-ss (vl-elabindex->ss))
+;;        (elabindex (vl-elabindex-undo))
+;;        ((unless ok) (mv nil nil warnings elabindex ledger))
+;;        ((mv instkey ledger) (vl-unparam-add-to-ledger
+;;                              modname final-paramdecls ports nil
+;;                              ledger elabindex.ss
+;;                              inside-mod-ss
+;;                              :no-rename t))
+
+;;        ((mv ok ifaceport-instkeys warnings elabindex ledger)
+;;         (vl-portlist-interface-signatures
+;;          (if (eq (tag x) :vl-module)
+;;              (vl-module->ports x)
+;;            (vl-interface->ports x))
+;;          warnings elabindex ledger)))
+
+;;     (mv ok (cons instkey ifaceport-instkeys) warnings elabindex ledger)))
+
+;; (define vl-toplevel-default-signatures ((names string-listp)
+;;                                         (warnings vl-warninglist-p)
+;;                                         (elabindex "design level")
+;;                                         (ledger vl-unparam-ledger-p)
+;;                                         &key
+;;                                         ((config vl-simpconfig-p) 'config))
+;;   :returns (mv (instkeys vl-unparam-instkeylist-p)
+;;                (warnings vl-warninglist-p)
+;;                (new-elabindex)
+;;                (ledger vl-unparam-ledger-p))
+;;   (if (atom names)
+;;       (mv nil (vl-warninglist-fix warnings)
+;;           elabindex (vl-unparam-ledger-fix ledger))
+;;     (b* (((mv ?ok instkeys1 warnings elabindex ledger)
+;;           (vl-toplevel-default-signature (car names) warnings elabindex ledger))
+;;          ((mv instkeys warnings elabindex ledger)
+;;           (vl-toplevel-default-signatures (cdr names) warnings elabindex ledger)))
+;;       (mv (append-without-guard instkeys1 instkeys)
+;;           warnings elabindex ledger))))
+
+
+
+(define vl-string/int-alist-to-namedargs ((x vl-string/int-alist-p))
+  :returns (args vl-namedparamvaluelist-p)
+  :hooks ((:fix :hints ((and stable-under-simplificationp
+                             '(:expand ((vl-string/int-alist-fix x)))))))
+  (if (atom x)
+      nil
+    (if (mbt (and (consp (car x))
+                  (stringp (caar x))))
+        (cons (make-vl-namedparamvalue
+               :name (caar x)
+               :value (make-vl-paramvalue-expr :expr (vl-make-index (cdar x))))
+              (vl-string/int-alist-to-namedargs (cdr x)))
+      (vl-string/int-alist-to-namedargs (cdr x)))))
+
+(define vl-user-signature ((user-sig vl-user-paramsetting-p)
+                           (really-user-p) ;; is this really a user-given signature, or one generated for top-level mods
+                           (warnings vl-warninglist-p)
+                           (elabindex "global scope")
+                           (ledger vl-unparam-ledger-p)
+                           &key
+                           ((config vl-simpconfig-p) 'config))
   :returns (mv (ok)
                (instkeys vl-unparam-instkeylist-p)
                (warnings vl-warninglist-p)
@@ -2544,16 +2636,22 @@ for each usertype is stored in the res field.</p>"
              (local (defthm vl-scope-p-when-vl-interface-p-strong
                       (implies (vl-interface-p x)
                                (vl-scope-p x)))))
-  (b* ((modname (string-fix modname))
+  (b* (((vl-user-paramsetting user-sig))
        (ledger (vl-unparam-ledger-fix ledger))
-       (x (vl-scopestack-find-definition modname (vl-elabindex->ss)))
+       (x (vl-scopestack-find-definition user-sig.modname (vl-elabindex->ss)))
        ((unless (and x
                      (or (eq (tag x) :vl-module)
                          (eq (tag x) :vl-interface))))
         (mv nil nil
-            (fatal :type :vl-unparam-fail
-                   :msg "Programming error: top-level module/interface ~s0 not found"
-                   :args (list modname))
+            (if really-user-p
+                ;; this signature really came from the user -- blame them
+                (fatal :type :vl-user-signature-unparam-fail
+                       :msg "Top-level module/interface ~s0 required by user paramsetting ~x1 not found"
+                       :args (list user-sig.modname (vl-user-paramsetting-fix user-sig)))
+              ;; this signature was generated for a top-level module -- blame us
+              (fatal :type :vl-unparam-fail
+                     :msg "Programming error: top-level module/interface ~s0 not found"
+                     :args (list user-sig.modname)))
             elabindex ledger))
        ((vl-elabindex elabindex) (vl-elabindex-push x))
        (paramdecls (if (eq (tag x) :vl-module)
@@ -2564,7 +2662,8 @@ for each usertype is stored in the res field.</p>"
                 (vl-interface->ports x)))
        ((mv ok warnings elabindex final-paramdecls)
         (vl-scope-finalize-params paramdecls
-                                  (make-vl-paramargs-named)
+                                  (make-vl-paramargs-named
+                                   :args (vl-string/int-alist-to-namedargs user-sig.settings))
                                   warnings
                                   elabindex elabindex.ss
                                   (caar (vl-elabindex->undostack))))
@@ -2572,10 +2671,10 @@ for each usertype is stored in the res field.</p>"
        (elabindex (vl-elabindex-undo))
        ((unless ok) (mv nil nil warnings elabindex ledger))
        ((mv instkey ledger) (vl-unparam-add-to-ledger
-                             modname final-paramdecls ports nil
+                             user-sig.modname final-paramdecls ports nil
                              ledger elabindex.ss
                              inside-mod-ss
-                             :no-rename t))
+                             :user-name user-sig.unparam-name))
 
        ((mv ok ifaceport-instkeys warnings elabindex ledger)
         (vl-portlist-interface-signatures
@@ -2586,25 +2685,71 @@ for each usertype is stored in the res field.</p>"
 
     (mv ok (cons instkey ifaceport-instkeys) warnings elabindex ledger)))
 
-(define vl-toplevel-default-signatures ((names string-listp)
-                                        (warnings vl-warninglist-p)
-                                        (elabindex "design level")
-                                        (ledger vl-unparam-ledger-p)
-                                        &key
-                                        ((config vl-simpconfig-p) 'config))
+
+
+
+(define vl-user-signatures ((settings vl-user-paramsettings-p)
+                            (really-user-p) ;; are these really user-given signatures, or generated for top-level mods
+                            (warnings vl-warninglist-p)
+                            (elabindex "design level")
+                            (ledger vl-unparam-ledger-p)
+                            &key
+                            ((config vl-simpconfig-p) 'config))
   :returns (mv (instkeys vl-unparam-instkeylist-p)
                (warnings vl-warninglist-p)
                (new-elabindex)
                (ledger vl-unparam-ledger-p))
-  (if (atom names)
+  (if (atom settings)
       (mv nil (vl-warninglist-fix warnings)
           elabindex (vl-unparam-ledger-fix ledger))
     (b* (((mv ?ok instkeys1 warnings elabindex ledger)
-          (vl-toplevel-default-signature (car names) warnings elabindex ledger))
+          (vl-user-signature (car settings) really-user-p
+                             warnings elabindex ledger))
          ((mv instkeys warnings elabindex ledger)
-          (vl-toplevel-default-signatures (cdr names) warnings elabindex ledger)))
-      (mv (append-without-guard instkeys1 instkeys)
-          warnings elabindex ledger))))
+          (vl-user-signatures (cdr settings) really-user-p
+                              warnings elabindex ledger)))
+      (mv (append-without-guard instkeys1 instkeys) warnings elabindex ledger))))
+
+
+(define vl-user-paramsettings-for-top-names ((top-names string-listp))
+  :returns (paramsettings vl-user-paramsettings-p)
+  (if (atom top-names)
+      nil
+    (cons (make-vl-user-paramsetting :modname (car top-names)
+                                     :unparam-name (car top-names)
+                                     :settings nil)
+          (vl-user-paramsettings-for-top-names (cdr top-names)))))
+
+(define vl-toplevel-signatures ((top-names string-listp)
+                                (warnings vl-warninglist-p)
+                                (elabindex "design level")
+                                (ledger vl-unparam-ledger-p)
+                                &key
+                                ((config vl-simpconfig-p) 'config))
+  :returns (mv (instkeys vl-unparam-instkeylist-p)
+               (warnings vl-warninglist-p)
+               (new-elabindex)
+               (ledger vl-unparam-ledger-p))
+  :prepwork ((local (defthm true-listp-when-string-listp-rw
+                      (implies (string-listp x)
+                               (true-listp x))))
+             (local (defthm string-listp-of-set-diff
+                      (implies (string-listp x)
+                               (string-listp (set-difference-equal x y))))))
+  (b* (((vl-simpconfig config))
+       (top-names (case config.user-paramsettings-mode
+                    (:default (set-difference-equal (string-list-fix top-names)
+                                                    (alist-keys config.user-paramsettings)))
+                    (:include-toplevel (string-list-fix top-names))
+                    (otherwise ;; :user-only
+                     nil)))
+       ((mv instkeys-user warnings elabindex ledger)
+        (vl-user-signatures config.user-paramsettings t warnings elabindex ledger))
+       ((mv instkeys-top warnings elabindex ledger)
+        (vl-user-signatures
+         (vl-user-paramsettings-for-top-names top-names) nil warnings elabindex ledger)))
+    (mv (append-without-guard instkeys-user instkeys-top)
+        warnings elabindex ledger)))
 
 
 #|
@@ -2888,12 +3033,11 @@ scopestacks.</p>"
                 :omit-default-params
                 (vl-simpconfig->name-without-default-params config)))
 
-       ;; This is something Sol wanted for Samev.  The idea is to instance
-       ;; every top-level module with its default parameters, so that we don't
-       ;; just throw away the whole design if someone is trying to check a
-       ;; parameterized module.
+       ;; Instantiate top-level modules according to the user signatures, and
+       ;; additionally (if allowed by the user-paramsettings-mode) default
+       ;; signatures for any top-level modules.
        ((mv top-sigs warnings elabindex ledger)
-        (vl-toplevel-default-signatures topmods warnings elabindex ledger))
+        (vl-toplevel-signatures topmods warnings elabindex ledger))
 
        ((wmv warnings new-mods new-ifaces new-classes donelist elabindex ledger)
         (vl-unparameterize-main-list top-sigs nil 1000 elabindex ledger))

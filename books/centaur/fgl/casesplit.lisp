@@ -397,8 +397,8 @@
 (defprod fgl-casesplit-config
   ((split-params)
    (solve-params)
-   (split-concl-p)
-   (repeat-concl-p)
+   (split-concl)
+   (repeat-concl)
    (cases casesplit-alist-p)
    (fgl-config fgl-config-p)))
 
@@ -520,7 +520,7 @@
          :hints(("Goal" :in-theory (enable pseudo-term-list-fix)
                  :induct (len x)))))
 
-(define fgl-casesplit-hyp/concl (split-concl-p
+(define fgl-casesplit-hyp/concl (split-concl
                                  (clause pseudo-term-listp))
   :returns (mv (hyp pseudo-termp
                     :hints ((and stable-under-simplificationp
@@ -531,7 +531,7 @@
        ((when (atom clause)) (mv ''t ''nil)))
     (case-match clause
       ((('implies hyp concl)) (mv hyp concl))
-      (& (if split-concl-p
+      (& (if split-concl
              (mv `(not ,(disjoin (take (+ -1 (len clause)) clause)))
                  (nth (+ -1 (len clause)) clause))
            (mv ''t (disjoin clause))))))
@@ -554,8 +554,8 @@
         (cw "fgl-casesplit-clause-proc error: bad config~%")
         (list clause))
        ((fgl-casesplit-config config))
-       ((mv hyp concl) (fgl-casesplit-hyp/concl config.split-concl-p clause)))
-    (list (list (if config.repeat-concl-p
+       ((mv hyp concl) (fgl-casesplit-hyp/concl config.split-concl clause)))
+    (list (list (if config.repeat-concl
                     (fgl-casesplit-before-core hyp concl config)
                   (fgl-casesplit-core hyp concl config)))))
   ///
@@ -586,7 +586,7 @@
     
        
   
-(define fgl-casesplit-hint-fn (cases split-params solve-params split-concl-p repeat-concl-p
+(define fgl-casesplit-hint-fn (cases split-params solve-params split-concl repeat-concl
                                 (fgl-config fgl-config-p)
                                 state)
   :mode :program
@@ -595,14 +595,14 @@
                                                             (fgl-toplevel-sat-check-config))
                                           :solve-params (or solve-params
                                                             (fgl-toplevel-sat-check-config))
-                                          :split-concl-p split-concl-p
-                                          :repeat-concl-p repeat-concl-p
+                                          :split-concl split-concl
+                                          :repeat-concl repeat-concl
                                           :cases cases-trans
                                           :fgl-config fgl-config)))
     (value `(:clause-processor (fgl-casesplit-clause-proc clause ',config)))))
 
-(defmacro fgl-casesplit (&key cases split-params solve-params split-concl-p repeat-concl-p fgl-config)
-  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl-p ,repeat-concl-p ,fgl-config state))
+(defmacro fgl-casesplit (&key cases split-params solve-params split-concl repeat-concl fgl-config)
+  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl ,repeat-concl ,fgl-config state))
 
 
 

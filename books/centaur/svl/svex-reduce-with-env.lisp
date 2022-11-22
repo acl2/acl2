@@ -565,7 +565,11 @@
                 ((when (and (quotep val)
                             (consp (cdr val))
                             (4vec-p (unquote val))))
-                 (4vec-part-select start size (unquote val))))
+                 (4vec-part-select start size (unquote val)))
+                (- (and (4vec-p val)
+                        (acl2::raise "Constants are expected to be quoted in the
+                                       given env. But given instead:~p0"
+                                     (cons svex val)))))
              (svex-reduce-w/-env-masked-return svex)))
           (otherwise
            (b* ((fn (car svex))
@@ -957,7 +961,10 @@ but did not resolve the branch ~%" first))))
                 ((when (and (quotep val)
                             (consp (cdr val))
                             (4vec-p (unquote val))))
-                 (unquote val)))
+                 (unquote val))
+                (- (and (4vec-p val)
+                        (acl2::raise "Constants are expected to be quoted in the
+                                       given env. But given instead:~p0" (cons svex val)))))
              svex))
           (otherwise
            (b* ((fn (car svex))
@@ -2158,7 +2165,7 @@ but did not resolve the branch ~%" first))))
                        (:TYPE-PRESCRIPTION 4VEC-BITOR)
                        (:TYPE-PRESCRIPTION 4VEC-BITAND)
                        )))
-
+  
   (with-output
     :off :All
     :on (error summary)

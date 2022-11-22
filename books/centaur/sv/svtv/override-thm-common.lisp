@@ -53,6 +53,8 @@
    lemma-use-ideal
    no-lemmas
    no-integerp
+   final-defthm
+   final-args
    hints
    constlist-hyp
    rule-classes

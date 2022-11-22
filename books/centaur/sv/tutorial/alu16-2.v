@@ -45,6 +45,7 @@
 
 module alu16 (
   output [15:0] out,
+  output [15:0] out2,
   input [2:0] opcode,
   input [15:0] abus,
   input [15:0] bbus,
@@ -83,15 +84,29 @@ module alu16 (
     : (opcode == `OP_BITXOR) ? ans_bitxor
     : (opcode == `OP_MIN)    ? ans_min
     : (opcode == `OP_COUNT)  ? ans_count
+    // : (opcode == `OP_MULT)   ? ans_mult
     : 16'bx;
 
-  flop #(16) outflop (.q(out), .d(ans), .clk(clk));
+   // Output for the first seven opcodes above
+   flop #(16) outflop (.q(out),        .d(ans),     .clk(clk));
 
-//   assign ans2 = out;
-//    : (opcode == `OP_MULT)   ? ans_mult
-//    : 16'bx;
 
-//  flop #(16) outflop2 (.q(out2), .d(ans2), .clk(clk));
+   // Added for our two-cycle multiplier
+
+   wire [15:0] ans_mult2;
+   wire [2:0]  opcode2;
+
+   flop #(16) multval (.q(ans_mult2), .d(ans_mult), .clk(clk));
+   flop #(3)  opflop  (.q(opcode2),   .d(opcode),   .clk(clk));
+
+   wire [15:0] ans2;
+
+   assign ans2 =
+      (opcode2 == `OP_MULT)   ? ans_mult2
+    : 16'bx;
+
+   // Output for the multiply instruction
+   flop #(16) outflop2 (.q(out2), .d(ans2), .clk(clk));
 
 
 endmodule
