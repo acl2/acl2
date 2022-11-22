@@ -238,10 +238,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-fundef
+  :short "An irrelevant function definition."
+  :type fundefp
+  :body (make-fundef :tyspec (irr-tyspecseq)
+                     :declor (make-fun-declor-base :name (irr-ident)
+                                                   :params nil)
+                     :body nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-ext-declon
   :short "An irrelevant external declaration."
   :type ext-declonp
-  :body (ext-declon-tag-declon (irr-tag-declon)))
+  :body (ext-declon-fundef (irr-fundef)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -256,3 +266,12 @@
   :short "An irrelevant file."
   :type filep
   :body (file nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-fileset
+  :short "An irrelevant file set."
+  :type filesetp
+  :body (make-fileset :path-wo-ext ""
+                      :dot-h nil
+                      :dot-c (irr-file)))

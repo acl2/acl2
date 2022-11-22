@@ -693,6 +693,13 @@ Maybe be useful for replacing acl2-count with acl2s-size.
    :rule-classes :built-in-clause)
  )
 
+(defthm acl2s-size-car-cdr-linear
+  (implies (consp x)
+           (equal (acl2s-size x)
+                  (+ 1 (acl2s-size (car x))
+                     (acl2s-size (cdr x)))))
+  :rule-classes :linear)
+
 #|
 (defthm acl2s-size-string
   (implies (stringp x)
