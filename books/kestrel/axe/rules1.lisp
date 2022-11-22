@@ -350,7 +350,7 @@
   (("Goal"
     :CASES ((<= (BVCHOP INDEXSIZE INDEX) INDEX))
     :IN-THEORY (E/d (NTH2 BVNTH
-                          ALL-INTEGERP-WHEN-ALL-NATP) (NTH-OF-BVCHOP-BECOMES-NTH2)))))
+                          ALL-INTEGERP-WHEN-ALL-NATP) ()))))
 
 ;Thu Mar  4 15:56:21 2010
 ;; (skip -proofs
@@ -397,7 +397,7 @@
   (("Goal"
     :CASES ((<= (BVCHOP INDEXSIZE INDEX) INDEX))
     :IN-THEORY (E/d (NTH2 BVNTH
-                       ALL-INTEGERP-WHEN-ALL-NATP) (NTH-OF-BVCHOP-BECOMES-NTH2)))))
+                       ALL-INTEGERP-WHEN-ALL-NATP) ()))))
 
 ;bbozo gross
 (defthm bvnth-tighten-32-8
@@ -1054,7 +1054,6 @@
                    (and (equal 1 (getbit 0 a)) (not (equal 1 (getbit 0 b)))))
            :in-theory (disable ;GETBIT-WHEN-NOT-0
                        ;;GETBIT-WHEN-NOT-1
-                               NTH-OF-BVCAT-BECOMES-NTH2
                                ))))
 
 (defthmd nth-of-if-arg2
