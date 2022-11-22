@@ -288,7 +288,7 @@
                   (nth2 size (bvxor size x y) lst)))
   :hints (("Goal" :in-theory (enable nth2))))
 
-(defthm nth-of-bvcat-becomes-nth2
+(defthmd nth-of-bvcat-becomes-nth2
   (implies (and (natp highsize)
                 (natp lowsize)
                 (<= lowsize highsize))
