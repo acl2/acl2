@@ -4105,6 +4105,9 @@
                                   (prec-tags atc-string-taginfo-alistp)
                                   (prec-objs atc-string-objinfo-alistp)
                                   (prog-const symbolp)
+                                  (compst-var symbolp)
+                                  (fenv-var symbolp)
+                                  (limit-var symbolp)
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-fun-env-thm symbolp)
                                   (limit pseudo-termp)
@@ -4264,9 +4267,6 @@
   (b* ((wrld (w state))
        (name (cdr (assoc-eq fn fn-thms)))
        (formals (strip-cars typed-formals))
-       (compst-var (genvar$ 'atc "COMPST" nil formals state))
-       (fenv-var (genvar$ 'atc "FENV" nil formals state))
-       (limit-var (genvar$ 'atc "LIMIT" nil formals state))
        (result-var (if (type-case type :void)
                        nil
                      (genvar$ 'atc "RESULT" nil formals state)))
@@ -4549,6 +4549,219 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-omap-update-formals ((typed-formals atc-symbol-varinfo-alistp))
+  :returns (mv (term pseudo-termp
+                     :hyp (atc-symbol-varinfo-alistp typed-formals))
+               (all-integers-p booleanp))
+  :short "Generate a term that is an @(tsee omap::update) nest
+          for the formals of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used in the generated theorem that describes
+     the initial scope for a function execution.
+     It has the form")
+   (xdoc::codeblock
+    "(omap::update (ident <string>) <symbol> (omap::update ... nil) ...)")
+   (xdoc::p
+    "where @('<string>') is the string for the name of the C formal
+     and @('<symbol') is the symbol that is the corresponding ACL2 formal.")
+   (xdoc::p
+    "We also return a flag saying whether
+     the formals all have integer types or not."))
+  (b* (((when (endp typed-formals)) (mv acl2::*nil* t))
+       ((cons var info) (car typed-formals))
+       ((mv omap-rest all-intp)
+        (atc-gen-omap-update-formals (cdr typed-formals))))
+    (mv `(omap::update (ident ',(symbol-name var)) ,var ,omap-rest)
+        (and (type-integerp (atc-var-info->type info))
+             all-intp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-add-var-formals ((fn symbolp)
+                                 (typed-formals atc-symbol-varinfo-alistp)
+                                 (compst-var symbolp))
+  :returns (term pseudo-termp
+                 :hyp (and (symbolp compst-var)
+                           (atc-symbol-varinfo-alistp typed-formals)))
+  :short "Generate a term that is an @(tsee add-var) nest
+          for the formals of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used in the generated theorem that describes
+     the initial computation state for a function execution.
+     It has the form")
+   (xdoc::codeblock
+    "(add-var  (ident <string>)"
+    "          <symbol>"
+    "          (add-var ... (add-frame (ident <fn>) compst)...))")
+   (xdoc::p
+    "where @('<string>') is the string for the name of the C formal,
+     @('<symbol>') is the symbol that is the corresponding ACL2 formal,
+     and the nest ends with @('(add-frame (ident <fn>) compst)'),
+     where @('<fn>') is the string for the function name."))
+  (b* (((when (endp typed-formals))
+        `(add-frame (ident ',(symbol-name fn)) ,compst-var))
+       ((cons var &) (car typed-formals))
+       (add-var-rest (atc-gen-add-var-formals fn
+                                              (cdr typed-formals)
+                                              compst-var)))
+    `(add-var (ident ',(symbol-name var)) ,var ,add-var-rest)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-init-scope-thms ((fn symbolp)
+                                 (fn-guard symbolp)
+                                 (typed-formals atc-symbol-varinfo-alistp)
+                                 (prog-const symbolp)
+                                 (fn-fun-env-thm symbolp)
+                                 (compst-var symbolp)
+                                 (fenv-var symbolp)
+                                 (names-to-avoid symbol-listp)
+                                 state)
+  :returns (mv (expand-event pseudo-event-formp)
+               (expand-thm symbolp)
+               (scopep-event pseudo-event-formp)
+               (scopep-thm symbolp)
+               (proofs booleanp)
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate the theorems about
+          the initial scope of a function execution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate one theorem saying what the initial scope expands to,
+     and one theorem saying that the expansion satisfies @(tsee scopep)."))
+  (b* ((wrld (w state))
+       ((mv omap-update-nest proofs) (atc-gen-omap-update-formals typed-formals))
+       ((unless proofs) (mv '(_) nil '(_) nil nil names-to-avoid))
+       (formals (strip-cars typed-formals))
+       (expand-thm (pack fn '-init-scope-expand))
+       ((mv expand-thm names-to-avoid)
+        (fresh-logical-name-with-$s-suffix expand-thm nil names-to-avoid wrld))
+       (info-var (genvar$ 'atc "INFO" nil formals state))
+       (formal-thms (atc-var-info-list->thm-list (strip-cdrs typed-formals)))
+       (expand-formula
+        `(implies (and (compustatep ,compst-var)
+                       (equal ,fenv-var
+                              (init-fun-env (preprocess ,prog-const)))
+                       (equal ,info-var
+                              (fun-env-lookup (ident ,(symbol-name fn))
+                                              ,fenv-var))
+                       (,fn-guard ,@formals))
+                  (equal (init-scope (fun-info->params ,info-var)
+                                     (list ,@formals))
+                         ,omap-update-nest)))
+       (expand-hints
+        `(("Goal" :in-theory '(,fn-fun-env-thm
+                               (:e fun-info->params)
+                               init-scope-when-consp
+                               (:e param-declonp)
+                               ,@formal-thms
+                               valuep-when-ucharp
+                               valuep-when-scharp
+                               valuep-when-ushortp
+                               valuep-when-sshortp
+                               valuep-when-uintp
+                               valuep-when-sintp
+                               valuep-when-ulongp
+                               valuep-when-slongp
+                               valuep-when-ullongp
+                               valuep-when-sllongp
+                               type-of-value-when-ucharp
+                               type-of-value-when-scharp
+                               type-of-value-when-ushortp
+                               type-of-value-when-sshortp
+                               type-of-value-when-uintp
+                               type-of-value-when-sintp
+                               type-of-value-when-ulongp
+                               type-of-value-when-slongp
+                               type-of-value-when-ullongp
+                               type-of-value-when-sllongp
+                               not-flexible-array-member-p-when-ucharp
+                               not-flexible-array-member-p-when-scharp
+                               not-flexible-array-member-p-when-ushortp
+                               not-flexible-array-member-p-when-sshortp
+                               not-flexible-array-member-p-when-uintp
+                               not-flexible-array-member-p-when-sintp
+                               not-flexible-array-member-p-when-ulongp
+                               not-flexible-array-member-p-when-slongp
+                               not-flexible-array-member-p-when-ullongp
+                               not-flexible-array-member-p-when-sllongp
+                               remove-flexible-array-member-when-absent
+                               value-fix-when-valuep
+                               (:e param-declon-to-ident+tyname)
+                               mv-nth-of-cons
+                               (:e zp)
+                               (:e tyname-to-type)
+                               value-listp-of-cons
+                               (:e value-listp)
+                               (:e init-scope)
+                               (:e scopep)
+                               (:e type-uchar)
+                               (:e type-schar)
+                               (:e type-ushort)
+                               (:e type-sshort)
+                               (:e type-uint)
+                               (:e type-sint)
+                               (:e type-ulong)
+                               (:e type-slong)
+                               (:e type-ullong)
+                               (:e type-sllong)
+                               omap::in-of-update
+                               (:e omap::in)
+                               scopep-of-update
+                               omap-update-of-const-identifier
+                               (:e identp)
+                               (:e ident->name)
+                               identp-of-ident
+                               equal-of-ident
+                               (:e str-fix)))))
+       ((mv expand-event &)
+        (evmac-generate-defthm expand-thm
+                               :formula expand-formula
+                               :hints expand-hints
+                               :enable nil))
+       (scopep-thm (pack fn '-init-scope-scopep))
+       ((mv scopep-thm names-to-avoid)
+        (fresh-logical-name-with-$s-suffix scopep-thm nil names-to-avoid wrld))
+       (scopep-formula
+        `(implies (and (compustatep ,compst-var)
+                       (equal ,fenv-var
+                              (init-fun-env (preprocess ,prog-const)))
+                       (,fn-guard ,@formals))
+                  (scopep ,omap-update-nest)))
+       (scopep-hints
+        `(("Goal" :in-theory '(scopep-of-update
+                               (:e scopep)
+                               identp-of-ident
+                               ,@formal-thms
+                               valuep-when-ucharp
+                               valuep-when-scharp
+                               valuep-when-ushortp
+                               valuep-when-sshortp
+                               valuep-when-uintp
+                               valuep-when-sintp
+                               valuep-when-ulongp
+                               valuep-when-slongp
+                               valuep-when-ullongp
+                               valuep-when-sllongp))))
+       ((mv scopep-event &)
+        (evmac-generate-defthm scopep-thm
+                               :formula scopep-formula
+                               :hints scopep-hints
+                               :enable nil)))
+    (mv expand-event
+        expand-thm
+        scopep-event
+        scopep-thm
+        t
+        names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fundef ((fn symbolp)
                         (prec-fns atc-symbol-fninfo-alistp)
                         (prec-tags atc-string-taginfo-alistp)
@@ -4606,8 +4819,23 @@
         (atc-typed-formals
          fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
        ((erp params) (atc-gen-param-declon-list typed-formals fn prec-objs))
+       (formals (strip-cars typed-formals))
+       (compst-var (genvar$ 'atc "COMPST" nil formals state))
+       (fenv-var (genvar$ 'atc "FENV" nil formals state))
+       (limit-var (genvar$ 'atc "LIMIT" nil formals state))
        ((mv fn-fun-env-thm names-to-avoid)
         (atc-gen-cfun-fun-env-thm-name fn names-to-avoid wrld))
+       ((mv init-scope-expand-event
+            & ; init-scope-expand-thm
+            init-scope-scopep-event
+            & ; init-scope-scopep-thm
+            proofs
+            names-to-avoid)
+        (if proofs
+            (atc-gen-init-scope-thms fn fn-guard typed-formals prog-const
+                                     fn-fun-env-thm compst-var fenv-var
+                                     names-to-avoid state)
+          (mv '(_) nil '(_) nil nil names-to-avoid)))
        (body (ubody+ fn wrld))
        ((erp affect)
         (atc-find-affected fn body typed-formals prec-fns wrld))
@@ -4692,6 +4920,9 @@
                                             prec-tags
                                             prec-objs
                                             prog-const
+                                            compst-var
+                                            fenv-var
+                                            limit-var
                                             fn-thms
                                             fn-fun-env-thm
                                             limit
@@ -4705,6 +4936,8 @@
                                        (list fn-fun-env-event)
                                        (list fn-guard-event)
                                        formals-events
+                                       (list init-scope-expand-event)
+                                       (list init-scope-scopep-event)
                                        body.events
                                        fn-result-events
                                        fn-correct-local-events
