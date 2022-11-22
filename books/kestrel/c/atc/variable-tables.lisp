@@ -55,6 +55,13 @@
   :short "Lift @(tsee atc-var-info->type) to lists."
   (atc-var-info->type x))
 
+;;;;;;;;;;
+
+(std::defprojection atc-var-info-list->thm-list ((x atc-var-info-listp))
+  :returns (thms symbol-listp)
+  :short "Lift @(tsee atc-var-info->thm) to lists."
+  (atc-var-info->thm x))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption atc-var-info-option
