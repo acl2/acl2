@@ -14,6 +14,8 @@
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
+(include-book "kestrel/utilities/file-existsp" :dir :system)
+(include-book "kestrel/utilities/make-event-quiet" :dir :system)
 
 ;; Prints VAL, rounded to the hundredths place.
 ;; Returns nil
@@ -134,9 +136,31 @@
                       ;; No error:
                       (mv nil forms state))))))))))))
 
+
+;; Returns state.
+(defun load-port-file-if-exists (book-path ; no extension
+                                 state)
+  (declare (xargs :guard (stringp book-path)
+                  :stobjs state
+                  :mode :program))
+  (let ((port-file-path (concatenate 'string book-path ".port")))
+    (mv-let (existsp state)
+      (file-existsp port-file-path state)
+      (if (not existsp)
+          (prog2$ (cw "NOTE: Not loading ~s0 (does not exist)~%." port-file-path)
+                  state)
+        (mv-let (erp val state)
+          ;; TODO: Make this less noisy:
+          (eval-port-file (concatenate 'string book-path ".lisp") 'load-port-file-if-exists state)
+          (declare (ignore val))
+          (if erp
+              (prog2$ (er hard? 'load-port-file-if-exists "Error loading .port file for ~x0." book-path)
+                      state)
+            state))))))
+
 ;; Reads and then submits all the events in FILENAME.
-;; Returns (mv erp state).
-;; Example: (replay-book "helper.lisp" state)
+;; Returns (mv erp event state).
+;; TODO: Take just a filename
 (defun replay-book-fn (dir      ; no trailing slash
                        bookname ; no extension
                        print state)
@@ -145,23 +169,37 @@
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple and in-package-fn
                   :stobjs state))
-  (mv-let (erp events state)
-    (read-objects-from-book (concatenate 'string dir "/" bookname ".lisp") state)
-    (if erp
-        (mv erp state)
-      (mv-let (erp val state)
-        (set-cbd-fn dir state)
-        (declare (ignore val))
-        (if erp
-            (mv erp state)
-          (let ((state (widen-margins state)))
-            (mv-let (erp state)
-              (submit-and-time-events events print state)
-              (let ((state (unwiden-margins state)))
-                (mv erp state)))))))))
+  (let* ((book-path-no-extension (concatenate 'string dir "/" bookname))
+         (book-path (concatenate 'string book-path-no-extension ".lisp")))
+    (mv-let (book-existsp state)
+      (file-existsp book-path state)
+      (if (not book-existsp)
+          (prog2$ (er hard? 'replay-book-fn "The book ~x0 does not exist." book-path)
+                  (mv :book-does-not-exist nil state))
+        ;; We load the .port file mostly so that #. constants mentioned in the book are defined:
+        (let ((state (load-port-file-if-exists book-path-no-extension state)))
+          (mv-let (erp events state)
+            (read-objects-from-book book-path state)
+            (if erp
+                (mv erp nil state)
+              ;; We set the CBD so that the book is replayed in its own directory:
+              (mv-let (erp val state)
+                (set-cbd-fn dir state)
+                (declare (ignore val))
+                (if erp
+                    (mv erp nil state)
+                  (let ((state (widen-margins state)))
+                    (mv-let (erp state)
+                      (submit-and-time-events events print state)
+                      (let ((state (unwiden-margins state)))
+                        ;; No error:
+                        (mv erp '(value-triple :replay-succeeded) state)))))))))))))
 
+;; This has no effect on the world, because all the work is done in make-event
+;; expansion and such changes do not persist.
+;; Example: (replay-book "../lists-light" "append")
 (defmacro replay-book (dir ; no trailing slash
                        bookname ; no extension
                        &key
                        (print 'nil))
-  `(replay-book-fn ,dir ,bookname ,print state))
+  `(make-event-quiet (replay-book-fn ,dir ,bookname ,print state)))
