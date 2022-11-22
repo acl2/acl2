@@ -229,6 +229,7 @@
   
   (defthm no-duplicate-nextstates-of-base-nextstate
     (implies (and (svtv-data$ap svtv-data)
+                  (svtv-data$c->flatnorm-validp svtv-data)
                   (svtv-data$c->phase-fsm-validp svtv-data))
              (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
     :hints(("Goal" :in-theory (e/d (svtv-data$ap))))))
@@ -251,6 +252,7 @@
                                    (state 'state))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->flatten-validp svtv-data)
+              (svtv-data->flatnorm-validp svtv-data)
               (equal (alist-keys initst)
                      (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
   ;; :guard-hints ((and stable-under-simplificationp
@@ -328,6 +330,7 @@
                                    (state 'state))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->flatten-validp svtv-data)
+              (svtv-data->flatnorm-validp svtv-data)
               ;; (svtv-data->cycle-fsm-validp svtv-data)
               (equal (alist-keys initst)
                      (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
@@ -444,6 +447,7 @@
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               ;; (svtv-data->cycle-fsm-validp svtv-data)
               (svtv-data->flatten-validp svtv-data)
+              (svtv-data->flatnorm-validp svtv-data)
               ;; (svtv-data->namemap-validp svtv-data)
               (equal (svex-alist-keys (pipeline-setup->initst setup))
                      (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
@@ -464,6 +468,7 @@
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               ;; (svtv-data->cycle-fsm-validp svtv-data)
               (svtv-data->flatten-validp svtv-data)
+              (svtv-data->flatnorm-validp svtv-data)
               ;; (svtv-data->namemap-validp svtv-data)
               (equal (svex-alist-keys (pipeline-setup->initst (svtv-data->pipeline-setup svtv-data)))
                      (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))

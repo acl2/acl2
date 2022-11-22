@@ -106,14 +106,23 @@
   (b* (((svtv-generalized-thm x))
        (template '(<defthm> <name>-override-lemma
                     (implies <hyp>
-                             (b* ((run ((:@ (not :use-ideal) svtv-run (<svtv>))
-                                        (:@ :use-ideal svtv-spec-run (<ideal>))
-                                                 (append <input-bindings>
+                             (b* ((run (:@ (not :use-ideal)
+                                        (svtv-run (<svtv>)
+                                                  (append <input-bindings>
                                                          <input-vars>
                                                          <override-tests>
                                                          <override-bindings>
                                                          <override-vals>)
-                                                 :include '<outputs-list>))
+                                                 (:@ (not :use-ideal) :include)
+                                                 '<outputs-list>))
+                                       (:@ :use-ideal
+                                        (svex-env-reduce '<outputs-list>
+                                                         (svtv-spec-run (<ideal>)
+                                                                        (append <input-bindings>
+                                                                                <input-vars>
+                                                                                <override-tests>
+                                                                                <override-bindings>
+                                                                                <override-vals>)))))
                                   ((svassocs <outputs>) run))
                                (and <integerp-concls>
                                     <concl>)))

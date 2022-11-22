@@ -2987,12 +2987,12 @@ proved.</p>")
           :expand ((svarlist-fix vars)))))
 
 
-(defthm alist-keys-of-svtv-probealist-extract
-  (equal (alist-keys (svtv-probealist-extract probes vals))
-         (alist-keys (svtv-probealist-fix probes)))
-  :hints(("Goal" :in-theory (enable svtv-probealist-fix
-                                    svtv-probealist-extract
-                                    alist-keys))))
+;; (defthm alist-keys-of-svtv-probealist-extract
+;;   (equal (alist-keys (svtv-probealist-extract probes vals))
+;;          (alist-keys (svtv-probealist-fix probes)))
+;;   :hints(("Goal" :in-theory (enable svtv-probealist-fix
+;;                                     svtv-probealist-extract
+;;                                     alist-keys))))
 
 
 (defthm-svex-eval-flag
