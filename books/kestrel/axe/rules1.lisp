@@ -51,11 +51,12 @@
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 
-(defthmd even-when-power-of-2-and-at-least-2
-  (implies (and (<= 2 n)
-                (power-of-2p n))
-           (integerp (* 1/2 n)))
-  :hints (("Goal" :in-theory (e/d (power-of-2p natp) (exponents-add)))))
+(local
+ (defthmd even-when-power-of-2-and-at-least-2
+   (implies (and (<= 2 n)
+                 (power-of-2p n))
+            (integerp (* 1/2 n)))
+   :hints (("Goal" :in-theory (e/d (power-of-2p natp) (exponents-add))))))
 
 (local
  ;;gen
