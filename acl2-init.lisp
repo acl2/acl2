@@ -1391,8 +1391,15 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
   #+(or ccl cmu gcl lispworks)
   (when (pathname-directory *default-pathname-defaults*)
     (let ((p (make-pathname)))
-      (format t "~%Note: Resetting *default-pathname-defaults* to ~s.~%"
-              p)
+
+; Before November 2022 we printed the following message.  But now it seems
+; inappropriate at the user level; in particular, since ACL2 arranges for
+; *default-pathname-defaults* to track the cbd, users shouldn't need to know
+; anything about *default-pathname-defaults*.
+
+;     (format t "~%Note: Resetting *default-pathname-defaults* to ~s.~%"
+;             p)
+
       (setq *default-pathname-defaults* p)))
   nil)
 
