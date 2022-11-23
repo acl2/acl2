@@ -342,3 +342,30 @@
        ((when (> (len x) 10)) (reterr 'large))
        ((erp) (f "abc")))
     (retok #\G)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define a (x state)
+  :returns (mv erp (int integerp) (key keywordp) state)
+  (b* (((reterr) 0 :kwd state)
+       ((when (consp x)) (reterr "ERR")))
+    (retok 1 :good state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defstobj store)
+
+(define b (x state store)
+  :returns (mv erp store (int integerp) (key keywordp) state)
+  (b* (((reterr) store 0 :key state)
+       ((when (consp x)) (reterr "ERR")))
+    (mv nil store 1 :good state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define c ((x integerp))
+  :returns (mv erp (y integerp))
+  (b* (((reterr) (ifix x)))
+    (if (> x 0)
+        (retok (1- (ifix x)))
+      (reterr "negative"))))
