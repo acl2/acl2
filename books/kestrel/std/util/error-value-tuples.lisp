@@ -118,7 +118,7 @@
        where @('erp') is a non-@('nil') error indication,
        such as a message of the form @('(msg ...)'),
        and where @('irr-val1'), ..., @('irr-valN')
-       are ground terms that evaluate to irrelevant values of appropriate types.
+       are terms that evaluate to irrelevant values of appropriate types.
        In a statically strongly typed style,
        the values should have the same types
        that they have when no error occurs,
@@ -145,7 +145,7 @@
         but must still be provided."))
 
      (xdoc::p
-      "The binding expands to a local function (in the @(tsee flet) sense),
+      "The binding expands to a local macro (in the @(tsee macrolet) sense),
        also named @('reterr') in the @('ACL2') package,
        that takes one argument @('erp')
        and extends it to an error-value tuple with the irrelevant values.
@@ -183,13 +183,11 @@
        by an explicit dummy term to return irrelevant results.")
 
      (xdoc::p
-      "The restriction that the terms denoting the irrelevant values are ground
-       is motivated by the fact that this binder expands into an @(tsee flet),
-       which requires every variable in its body to be one of its formals
-       (this restriction may be lifted at some point).
-       This means, in particular, that stobj results, including state,
-       in error-value tuples cannot be returned by @('reterr');
-       they can be returned via @('(mv ...)')."))
+      "The terms denoting the irrelevant values do not need to be ground,
+       because this binder expands into a @(tsee macrolet),
+       which can introduce variables in the expansion.
+       This is useful to return stobj results, including state,
+       as value components of error-value tuples."))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -260,7 +258,7 @@
        that can be used as components of the @(tsee patbind-mv) binder.")
 
      (xdoc::p
-      "This binder assumes that @('reterr') is a local function
+      "This binder assumes that @('reterr') is a local macro
        introduced by a preceding @('reterr') binder (described above).")
 
      (xdoc::p
@@ -540,11 +538,11 @@
                                           were supplied instead.~%~%"
                                          args))))
           (declare (ignore args)))
-  :body `(b* (((fun (reterr erp))
-               ,(if (consp forms)
-                    `(mv erp ,@forms)
-                  'erp)))
-           ,rest-expr))
+  :body `(macrolet ((reterr (erp)
+                            ,(if (consp forms)
+                                 `(list* 'mv erp ',forms)
+                               'erp)))
+                   ,rest-expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
