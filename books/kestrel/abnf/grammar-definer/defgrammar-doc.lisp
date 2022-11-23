@@ -118,7 +118,9 @@
      (xdoc::p
       "This must be an ACL2 string that is a file path.
        The path may be absolute,
-       or relative to the current working directory."))
+       or relative to the "
+      (xdoc::seetopic "cbd" "connected book directory")
+      "."))
 
     (xdoc::desc
      "@(':untranslate') &mdash; default @('nil')"
