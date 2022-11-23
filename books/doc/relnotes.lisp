@@ -179,6 +179,9 @@
      external object definitions (i.e. global variables) of array types.")
 
    (xdoc::p
+    "Support has been added for structures with flexible array members.")
+
+   (xdoc::p
     "An initial simple model of preprocessing has been added,
      along with support for file sets consisting of headers and source files.")
 
@@ -191,17 +194,34 @@
 
    (xdoc::p
     "Support has been added for
-     external object definitions (i.e. global variables) of array types.")
+     external object definitions (i.e. global variables) of array types,
+     via a new @(tsee c::defobject) event macro.")
 
    (xdoc::p
     "The user documentation of @(tsee c::defstruct)
      has been extended and improved.")
 
    (xdoc::p
+    "The event macro @(tsee c::defstruct) has been extended
+     to support flexible array members.")
+
+   (xdoc::p
+    "Support has been added to represent and generate
+     code that handles structures by value,
+     in addition to by pointer.")
+
+   (xdoc::p
     "An option to generate header files has been added.
      The previous keyed option to specify the output file path
      has been replaced with two keyed options to specify
      the output directory path and the file name without the extension.")
+
+   (xdoc::p
+    "A new proof generation approach has been started,
+     where smaller, more modular proofs are generated
+     for each generated C construct.
+     This new approach will co-exist with the current one,
+     until the former will replace the latter.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -268,6 +288,13 @@
     " have been added, to facilitate the
      generation, propagation, and catching of errors
      in statically strongly typed code that implements tools.")
+
+   (xdoc::p
+    "A new event macro @(tsee defirrelevant) has been added,
+     which automates some of the boilerplate related to
+     defining an irrelevant value of a given type
+     (usable as a dummy value, but of appropriate type).
+     Typically useful for irrelevant values of structured fixtypes.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
