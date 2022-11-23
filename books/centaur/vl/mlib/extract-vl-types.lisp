@@ -30,13 +30,15 @@
 (include-book "../loader/filemap")
 (include-book "../loader/read-file")
 
-(include-book "centaur/bitops/part-select" :dir :system)
-(include-book "centaur/bitops/part-install" :dir :system)
+(include-book "centaur/sv/svex/4vec" :dir :system)
+
+;;(include-book "centaur/bitops/part-select" :dir :system)
+;;(include-book "centaur/bitops/part-install" :dir :system)
 
 ;; (include-book "projects/apply/top" :dir :system)
 
-(progn
 
+(progn
   (defthm natp-of-expt
     (implies (and (natp x) (natp y))
              (<= 0 (expt x y))))
@@ -49,17 +51,63 @@
     (implies (and (natp x) (natp y))
              (<= 0 (+ x y))))
 
+
+  (defthm 4vec-p-of-*
+    (implies (and (integerp x) (integerp y))
+             (sv::4vec-p (* x y)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-p) ()))))
+
+  (defthm 4vec-p-of-+
+    (implies (and (integerp x) (integerp y))
+             (sv::4vec-p (+ x y)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-p) ()))))
+
   (defthm TRUE-LIST-LISTP-of-PAIRLIS$
     (implies (true-list-listp lst)
              (true-list-listp (pairlis$ x lst)))
     :hints (("Goal"
              :in-theory (e/d (pairlis$ true-list-listp) ()))))
 
-  (local
-   (in-theory (e/d ()
-                   (expt distributivity
-                         floor acl2::loghead acl2::logtail mod
-                         bitops::part-select-width-low$inline)))))
+  (defthmd 4VEC-P-WHEN-INTEGERP
+    (Implies (integerp x)
+             (sv::4vec-p x))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-p) ()))))
+
+  (defthm 4VEC-P-WHEN-INTEGERP-type-prescription
+    (Implies (integerp x)
+             (sv::4vec-p x))
+    :rule-classes :type-prescription
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-p) ()))))
+
+  (defthm integerp-of-4vec-part-select
+    (implies (and (natp lsb)
+                  (natp width)
+                  (integerp val))
+             (integerp (sv::4vec-part-select lsb width val)))
+    :rule-classes (:rewrite :type-prescription)
+    :hints (("Goal"
+             :in-theory (e/d (SV::4VEC
+                              SV::4VEC-CONCAT
+                              sv::2vec
+                              SV::4VEC-RSH
+                              SV::4VEC-SHIFT-CORE
+                              sv::4vec-part-select SV::4VEC-ZERO-EXT
+                                                   SV::4VEC->UPPER
+                                                   sv::4vec->lower)
+                             ()))))
+  )
+
+(local
+ (in-theory (e/d ()
+                 (expt distributivity
+                       floor acl2::loghead acl2::logtail mod
+                       sv::4vec-part-select
+                       sv::4vec-p
+                       sv::4vec-part-install))))
 
 #!VL
 (defsection vl-coretype-collect-dims
@@ -352,10 +400,14 @@
                      (car args) ',pkg-sym))
            ((mv start width)
             (,ranges-fn-name 0 cur-arg)))
-        (cons (list 'value (list 'acl2::part-install
-                                 (cadr args)
-                                 'value
-                                 :low start :width width))
+        (cons (list 'value
+                    (list 'sv::4vec-part-install
+                          start width
+                          'value (cadr args))
+                    #|(list 'acl2::part-install
+                    (cadr args)
+                    'value
+                    :low start :width width)|#)
               rest)))
 
     ;;(defsection ,changer-macro-name
@@ -394,10 +446,27 @@
                   args ',pkg-sym))
            ((mv start width)
             (,ranges-fn-name 0 args)))
-        (list 'acl2::part-select
-              value :low start :width width)))
+        (list 'sv::4vec-part-select start width value)
+        #|(list 'acl2::part-select
+        value :low start :width width)|#))
     ;;    )
     ))
+
+(define str::hexify-4vec ((x sv::4vec-p))
+  :returns (res stringp)
+  (if (integerp x)
+      (str::hexify x)
+    (str::cat "(" (str::hexify (sv::4vec->upper x))
+              " . " (str::hexify (sv::4vec->lower x))
+              ")")))
+
+(define str::binify-4vec ((x sv::4vec-p))
+  :returns (res stringp)
+  (if (integerp x)
+      (str::binify x)
+    (str::cat "(" (str::binify (sv::4vec->upper x))
+              " . " (str::binify (sv::4vec->lower x))
+              ")")))
 
 (define extract-vl-types-generate-debug-vector-functions ((debug-fn-name symbolp)
                                                           (debug-vector-fn-name symbolp)
@@ -409,7 +478,7 @@
          pkg-sym)))
     `(defines ,debug-vector-fn-name
 
-       (define ,debug-vector-fn-name ((value integerp)
+       (define ,debug-vector-fn-name ((value sv::4vec-p)
                                       (dims vl-coretype-collected-dims-p)
                                       (excludes (and (true-list-listp excludes)
                                                      (true-listp excludes)))
@@ -427,7 +496,7 @@
                   (list (,(if debug-fn-name 'cons 'list) trace result))))
                ((< depth-limit 1)
                 (b* ((result `(:value ,value
-                                      :hex ,(str::hexify value)
+                                      :hex ,(str::hexify-4vec value)
                                       :limit-reached))
                      ((when (equal trace "")) (list result)))
                   (list (cons trace result))))
@@ -445,7 +514,7 @@
        (define ,debug-vector-loop-fn-name ((lsb-offset natp)
                                            (slice-size natp)
                                            (cnt natp)
-                                           (value integerp)
+                                           (value sv::4vec-p)
                                            (dims vl-coretype-collected-dims-p)
                                            (excludes (and (true-list-listp excludes)
                                                           (true-listp excludes)))
@@ -466,9 +535,10 @@
                                                   trace))
                 (user-index (+ cnt lsb-offset))
                 (cur-slice-value
-                 (acl2::part-select value
-                                    :low (* slice-size cnt)
-                                    :width slice-size))
+                 (sv::4vec-part-select (* slice-size cnt) slice-size value)
+                 #|(acl2::part-select value
+                 :low (* slice-size cnt)
+                 :width slice-size)|#)
                 (cur-slice-trace (str::cat trace
                                            "["
                                            (str::nat-to-dec-string user-index)
@@ -478,7 +548,7 @@
                 ((when (member-equal (list user-index '*) excludes))
                  (append rest
                          `((,cur-slice-trace :value ,cur-slice-value
-                                             :hex ,(str::hexify cur-slice-value)
+                                             :hex ,(str::hexify-4vec cur-slice-value)
                                              :fields-excluded))))
 
                 (excludes (collect-and-cdr-lists-that-start-with user-index excludes))
@@ -553,9 +623,10 @@
                       (cons ,member.name
                             (b* ((start ,(if offset offset 0))
                                  (width ,size)
-                                 (value (acl2::part-select value :low start :width width))
+                                 (value (sv::4vec-part-select start width value))
+                                 #|(value (acl2::part-select value :low start :width width))|#
                                  ((when (member-equal (list ',member.symbol '*) excludes))
-                                  `(:value ,value :hex ,(str::hexify value) :fields-excluded))
+                                  `(:value ,value :hex ,(str::hexify-4vec value) :fields-excluded))
                                  #|((when (< depth-limit 1))
                                  `(:value ,value :hex ,(str::hexify value) :limit-reached))|#
 
@@ -606,11 +677,12 @@
                        '(:type ,@(and collected-dims '(:vector)) ,x.symbol)
                        (b* ((start ,(if offset offset 0))
                             (width ,size)
-                            (value (acl2::part-select value :low start :width width))
+                            (value (sv::4vec-part-select start width value))
+                            #|(value (acl2::part-select value :low start :width width))|#
 
                             ,@(and (not fake-usertype-p)
                                    `(((when (member-equal (list ',member.symbol '*) excludes))
-                                      `(:value ,value :hex ,(str::hexify value) :fields-excluded))
+                                      `(:value ,value :hex ,(str::hexify-4vec value) :fields-excluded))
                                      (excludes (collect-and-cdr-lists-that-start-with ',member.symbol
                                                                                       excludes))))
                             ,@(and collected-dims
@@ -671,20 +743,20 @@
                                                            ,name nil)))
                    ,@(extract-vl-types-generate-macros)
 
-                   (define ,debug-fn-name ((value integerp)
+                   (define ,debug-fn-name ((value sv::4vec-p)
                                            (excludes (and (true-list-listp excludes)
                                                           (true-listp excludes)))
                                            (depth-limit integerp))
                      :parents nil
                      ;;:short ,(str::cat "Debug aux function for  @(see " name ") VL coretype. Not intended to be called by users.")
                      (declare (ignorable excludes depth-limit))
-                     (b* ((value (acl2::loghead ,size value)))
+                     (b* ((value (sv::4vec-part-select 0 ,size value)))
                        ,(cond ((atom collected-dims)
                                'value)
                               ((atom (cdr collected-dims))
                                `(list :value value
-                                      :hex (str::hexify value)
-                                      :bin (str::binify value)))
+                                      :hex (str::hexify-4vec value)
+                                      :bin (str::binify-4vec value)))
                               (t
                                `(debug-extracted-vl-type-array value ',collected-dims excludes depth-limit)))))
 
@@ -738,7 +810,7 @@
 
                    ,@(extract-vl-types-generate-macros)
 
-                   (define ,debug-fn-name ((value integerp)
+                   (define ,debug-fn-name ((value sv::4vec-p)
                                            (excludes (and (true-list-listp excludes)
                                                           (true-listp excludes)))
                                            (depth-limit integerp))
@@ -747,7 +819,7 @@
                      (declare (ignorable excludes))
                      (cond ((< depth-limit 1)
                             (list :value value
-                                  :hex (str::hexify value)
+                                  :hex (str::hexify-4vec value)
                                   :limit-reached))
                            (t
                             (flatten
@@ -805,7 +877,7 @@
 
                    ,@(extract-vl-types-generate-macros)
 
-                   (define ,debug-fn-name ((value integerp)
+                   (define ,debug-fn-name ((value sv::4vec-p)
                                            (excludes (and (true-list-listp excludes)
                                                           (true-listp excludes)))
                                            (depth-limit integerp))
@@ -813,7 +885,7 @@
                      (declare (ignorable excludes))
                      (cond ((< depth-limit 1)
                             (list :value value
-                                  :hex (str::hexify value)
+                                  :hex (str::hexify-4vec value)
                                   :limit-reached))
                            (t
                             (flatten ;; :value (acl2::loghead ,size value)
@@ -866,22 +938,25 @@
 
                    (define ,accessor-macro-name ((value))
                      ;;:short ,(str::cat "Accessor function for @(see |" name "|) VL enum type. When given an integer, it returns the string equivalent; when given a string, it returns the integer equivalant for this enum type.")
-                     :guard (or (integerp value)
+                     :guard (or (sv::4vec-p value)
                                 (stringp value))
                      :parents nil
-                     (if (integerp value)
-                         (case value
-                           ,@int-to-string-cases
-                           (otherwise :invalid-enumitem ;;value
-                                      ))
-                       (case-match value
-                         ,@string-to-int-cases
-                         (& (progn$ (cw "Invalid enum type given: ~s0 ~%" value)
-                                    -1)
-                            ;;value
-                            ))))
+                     (cond ((integerp value)
+                            (case value
+                              ,@int-to-string-cases
+                              (otherwise :invalid-enumitem ;;value
+                                         )))
+                           ((sv::4vec-p value)
+                            value)
+                           (t 
+                            (case-match value
+                              ,@string-to-int-cases
+                              (& (progn$ (cw "Invalid enum type given: ~s0 ~%" value)
+                                         -1)
+                                 ;;value
+                                 )))))
 
-                   (define ,debug-fn-name ((value integerp)
+                   (define ,debug-fn-name ((value sv::4vec-p)
                                            (excludes)
                                            (depth-limit integerp))
                      (declare (ignorable excludes depth-limit))
@@ -926,7 +1001,7 @@
 
                   ,@(extract-vl-types-generate-macros :constant-value constant-value)
 
-                  (define ,debug-fn-name ((value integerp)
+                  (define ,debug-fn-name ((value sv::4vec-p)
                                           (excludes (and (true-list-listp excludes)
                                                          (true-listp excludes)))
                                           (depth-limit integerp))
@@ -1099,7 +1174,7 @@ nil
                                 string
                                 (make-vl-location :line (1+ (vl-location->line minloc))
                                                   :col 0)))))
-                   (subseq string start (1+ end))))))
+                   (subseq string start (min (length string) end))))))
 
          ;; insert xdoc hyperlinks to quickly navigate children types.
          (string (extract-vl-types-insert-xdoc-links string all-vl-type-names))
@@ -1266,7 +1341,7 @@ nil
 
     ;;(:rewrite acl2::member-of-cons)
     ;;(:rewrite acl2::commutativity-2-of-+)
-    (:type-prescription str::hexify)
+    (:type-prescription str::hexify-4vec)
     ;;(:rewrite acl2::open-small-nthcdr)
     (:forward-chaining vl::when-vl-coretype-collected-dims-p-is-consp)
     (:type-prescription acl2::true-listp-nthcdr-type-prescription)
@@ -1306,12 +1381,15 @@ nil
     (:rewrite acl2::sublistp-when-prefixp)
     (:elim car-cdr-elim)
     (:type-prescription len)
-    (:type-prescription bitops::part-select-width-low$inline)
+    ;;(:type-prescription bitops::part-select-width-low$inline)
     (:definition string-listp)
     (:e eqlablep)
     ;;(:rewrite sv::fix-of-number)
     (:executable-counterpart equal)
-    (:definition eql)))
+    (:definition eql)
+
+    (:rewrite SV::4VEC-P-OF-4VEC-PART-SELECT)
+    (:rewrite 4VEC-P-WHEN-INTEGERP)))
 
 #!VL
 (defmacro extract-vl-types (&rest args)
@@ -1325,7 +1403,7 @@ nil
     `(encapsulate nil
        (with-output
          :off :all
-         :on (error)
+         :on (comment error)
          (make-event
           (b* (((mv events state)
                 (extract-vl-types-fn ,design ,module ,package ',names-to-extract ',names-to-extract
