@@ -164,7 +164,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-type-to-recognizer ((type typep) (wrld plist-worldp))
+(define type-to-recognizer ((type typep) (wrld plist-worldp))
   :returns (recognizer symbolp)
   :short "ACL2 recognizer corresponding to a C type."
   :long
@@ -323,7 +323,7 @@
   (b* ((name (pack fn '-expr thm-index '-correct))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid (w state)))
-       (typep (atc-type-to-recognizer type (w state)))
+       (typep (type-to-recognizer type (w state)))
        (formula `(and (equal (exec-expr-pure ',expr compst)
                              ,term)
                       (,typep ,term)))
@@ -1443,7 +1443,7 @@
        (name (pack fn '- formal))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-       (pred (atc-type-to-recognizer type wrld))
+       (pred (type-to-recognizer type wrld))
        (formula `(implies (,fn-guard ,@fn-formals)
                           (,pred ,formal)))
        (hints `(("Goal" :in-theory '(,fn-guard))))
@@ -3668,7 +3668,7 @@
                        fn-call))
           ((cons name info) (car results))
           (type (atc-var-info->type info))
-          (type-conjunct `(,(atc-type-to-recognizer type wrld) ,theresult))
+          (type-conjunct `(,(type-to-recognizer type wrld) ,theresult))
           (nonnil-conjunct? (and index? (list theresult)))
           (arraylength-conjunct?
            (b* (((unless (type-case type :pointer)) nil)
@@ -6817,7 +6817,7 @@
                                                  nil
                                                  names-to-avoid
                                                  wrld))
-             (typep (atc-type-to-recognizer type wrld))
+             (typep (type-to-recognizer type wrld))
              ((unless typep)
               (raise "Internal error: unsupported member type ~x0." type)
               (mv nil nil nil))
