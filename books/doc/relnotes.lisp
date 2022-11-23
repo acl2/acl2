@@ -169,14 +169,21 @@
    (xdoc::h5 (xdoc::seetopic "c::language" "C Language Formalization"))
 
    (xdoc::p
+    "The language formalization has been simplified
+     and moved out of ATC and into the C formalization proper,
+     i.e. into the deep embedding of C in ACL2,
+     which is now independent from the shallow embedding of C in ACL2.")
+
+   (xdoc::p
     "Support has been added for
      external object definitions (i.e. global variables) of array types.")
 
    (xdoc::p
-    "Some parts of the formalization have been simplified
-     and moved out of ATC and into the C formalization proper,
-     i.e. into the deep embedding of C in ACL2,
-     which is now independent from the shallow embedding of C in ACL2.")
+    "An initial simple model of preprocessing has been added,
+     along with support for file sets consisting of headers and source files.")
+
+   (xdoc::p
+    "An ABNF grammar for a subset of C has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
@@ -189,6 +196,12 @@
    (xdoc::p
     "The user documentation of @(tsee c::defstruct)
      has been extended and improved.")
+
+   (xdoc::p
+    "An option to generate header files has been added.
+     The previous keyed option to specify the output file path
+     has been replaced with two keyed options to specify
+     the output directory path and the file name without the extension.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
