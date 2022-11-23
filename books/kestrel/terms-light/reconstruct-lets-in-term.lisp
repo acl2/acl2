@@ -122,7 +122,7 @@
 (mutual-recursion
  ;; Reconstructs LETs and MV-LETs in term.
  ;; Note that the result is no longer a translated term (pseudo-termp).
- (defund reconstruct-lets-in-term (term)
+ (defund reconstruct-lets-in-term-aux (term)
    (declare (xargs :guard (pseudo-termp term)
                    :measure (acl2-count term)))
    (if (or (variablep term)
@@ -131,20 +131,24 @@
      ;;it's a function call (maybe a lambda application):
      (if (translated-mv-letp term)
          `(mv-let ,(vars-of-translated-mv-let term)
-           ,(reconstruct-lets-in-term (term-of-translated-mv-let term))
-           ,(reconstruct-lets-in-term (body-of-translated-mv-let term)))
+           ,(reconstruct-lets-in-term-aux (term-of-translated-mv-let term))
+           ,(reconstruct-lets-in-term-aux (body-of-translated-mv-let term)))
        (let* ((fn (ffn-symb term))
-              (new-args (reconstruct-lets-in-terms (fargs term))))
+              (new-args (reconstruct-lets-in-terms-aux (fargs term))))
          (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
              `(let ,(alist-to-doublets (non-trivial-bindings (lambda-formals fn) new-args))
-                ,(reconstruct-lets-in-term (lambda-body fn)))
+                ,(reconstruct-lets-in-term-aux (lambda-body fn)))
            ;; not a lambda application, so just rebuild the function call:
            `(,fn ,@new-args))))))
 
- (defund reconstruct-lets-in-terms (terms)
+ (defund reconstruct-lets-in-terms-aux (terms)
    (declare (xargs :guard (pseudo-term-listp terms)
                    :measure (acl2-count terms)))
    (if (endp terms)
        nil
-     (cons (reconstruct-lets-in-term (first terms))
-           (reconstruct-lets-in-terms (rest terms))))))
+     (cons (reconstruct-lets-in-term-aux (first terms))
+           (reconstruct-lets-in-terms-aux (rest terms))))))
+
+(defund reconstruct-lets-in-term (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (reconstruct-lets-in-term-aux term))
