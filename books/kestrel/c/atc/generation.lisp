@@ -4734,8 +4734,6 @@
         (fresh-logical-name-with-$s-suffix scopep-thm nil names-to-avoid wrld))
        (scopep-formula
         `(implies (and (compustatep ,compst-var)
-                       (equal ,fenv-var
-                              (init-fun-env (preprocess ,prog-const)))
                        (,fn-guard ,@formals))
                   (scopep ,omap-update-nest)))
        (scopep-hints
