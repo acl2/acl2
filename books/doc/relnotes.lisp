@@ -249,6 +249,13 @@
      in the error triple in case of error.
      See the latest documentation for details.")
 
+   (xdoc::p
+    "New utilities for "
+    (xdoc::seetopic "error-value-tuples" "error-value tuples")
+    " have been added, to facilitate the
+     generation, propagation, and catching of errors
+     in statically strongly typed code that implements tools.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Tools Library")
