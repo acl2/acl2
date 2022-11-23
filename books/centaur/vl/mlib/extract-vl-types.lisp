@@ -1099,7 +1099,7 @@ nil
                                 string
                                 (make-vl-location :line (1+ (vl-location->line minloc))
                                                   :col 0)))))
-                   (subseq string start (1+ end))))))
+                   (subseq string start (min (length string) end))))))
 
          ;; insert xdoc hyperlinks to quickly navigate children types.
          (string (extract-vl-types-insert-xdoc-links string all-vl-type-names))
@@ -1325,7 +1325,7 @@ nil
     `(encapsulate nil
        (with-output
          :off :all
-         :on (error)
+         :on (comment error)
          (make-event
           (b* (((mv events state)
                 (extract-vl-types-fn ,design ,module ,package ',names-to-extract ',names-to-extract
