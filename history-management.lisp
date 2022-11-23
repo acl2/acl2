@@ -6609,8 +6609,8 @@
           ((and (symbolp logical-name)
                 (not (eq logical-name :here))
                 (or (member-eq logical-name
-                               '(declare flet lambda lambda$ let loop$ quote
-                                         with-local-stobj))
+                               '(declare flet macrolet lambda lambda$ let loop$
+                                         quote with-local-stobj))
                     (eql (getpropc logical-name 'absolute-event-number nil
                                    wrld)
                          0)))
@@ -17021,8 +17021,10 @@
 (defun remove-lisp-suffix (x dotp)
 
 ; X is a full-book-name, hence a string ending in ".lisp".  We remove that
-; "lisp" suffix, leaving the final "." if and only if dotp is true.
+; "lisp" suffix, removing the final "." if and only if dotp is true.
 
+  (declare (xargs :guard (and (stringp x)
+                              (<= 5 (length x)))))
   (subseq x 0 (- (length x)
                  (if dotp 5 4))))
 
