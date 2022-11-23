@@ -20,12 +20,13 @@
               ;; todo: untranslate:
               '(let ((x (binary-+ y z))) (binary-+ '1 x)))
 
-;; A test with an ignored var.  TODO: Get this to work.
+;; A test with an ignored var.
 ;; ;; :trans (let ((x (+ y z))) (declare (ignore x)) 7)
-;; (assert-equal (reconstruct-lets-in-term '((lambda (x) '7) (hide (binary-+ y z))))
-;;               ;; todo: untranslate:
-;;               '(let ((x (binary-+ y z))) (binary-+ '1 x)))
-
+(assert-equal (reconstruct-lets-in-term '((lambda (x) '7) (hide (binary-+ y z))))
+              ;; todo: untranslate:
+              '(let ((x (binary-+ y z)))
+                 (declare (ignore x))
+                 '7))
 
 ;; A test with just an mv-let
 ;; :trans (mv-let (x y) (mv 3 4) (+ x y))
@@ -38,6 +39,15 @@
               '(mv-let (x y)
                  (cons '3 (cons '4 'nil)) ; todo: the MV got lost.  we could restore it since we know 2 values are needed
                  (binary-+ x y)))
+
+;; A test with an mv-let with an ignored var:
+;; :trans (mv-let (x y) (mv 3 4) (declare (ignore x)) y)
+(assert-equal (reconstruct-lets-in-term '((lambda (mv)
+                                            ((lambda (x y) y)
+                                             (hide (mv-nth '0 mv))
+                                             (mv-nth '1 mv)))
+                                          (cons '3 (cons '4 'nil))))
+              '(mv-let (x y) (cons '3 (cons '4 'nil)) (declare (ignore x)) y))
 
 ;; A test with an mv-let and a let (the let is in the body of the mv-let):
 ;; :trans (mv-let (x y) (mv 3 4) (let ((z (+ x y))) (* 2 z)))

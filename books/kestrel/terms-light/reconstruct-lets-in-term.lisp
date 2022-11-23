@@ -15,14 +15,19 @@
 
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
 (include-book "kestrel/lists-light/prefixp-def" :dir :system)
+(include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
+
+(local (in-theory (disable mv-nth)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: move to lists-light
 
 ;; Tests whether L1 is a suffix of L2.
-(defun list-suffixp (l1 l2)
+(defund list-suffixp (l1 l2)
   (declare (xargs :guard (and (true-listp l1)
                               (true-listp l2))))
   (prefixp (reverse l1) (reverse l2)))
@@ -37,7 +42,19 @@
 
 ;; TODO: Factor out this mv-let material into a separate book:
 
+(defund numbered-mv-nthp (term n core)
+  (declare (xargs :guard (natp n)))
+  (and (consp term)
+       (eq 'mv-nth (ffn-symb term))
+       (true-listp term)
+       (= 2 (len (fargs term)))
+       (quotep (fargn term 1))
+       (= 1 (len (fargs (fargn term 1)))) ; to allow unquoting
+       (equal (unquote (fargn term 1)) n)
+       (equal (fargn term 2) core)))
+
 ;; Check that the TERMS and (mv-nth '0 <core>), (mv-nth '1 <core>), etc.
+;; except allow HIDES to appear around the mv-nths.
 (defund numbered-mv-nthsp (terms curr core)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (natp curr)
@@ -45,26 +62,24 @@
   (if (endp terms)
       t
     (let ((term (first terms)))
-      (and (consp term)
-           (eq 'mv-nth (ffn-symb term))
-           (= 2 (len (fargs term)))
-           (quotep (fargn term 1))
-           (equal (unquote (fargn term 1)) curr)
-           (equal (fargn term 2) core)
+      (and (or (numbered-mv-nthp term curr core)
+               (and (consp term)
+                    (eq 'hide (ffn-symb term))
+                    (= 1 (len (fargs term)))
+                    (numbered-mv-nthp (fargn term 1) curr core)))
            (numbered-mv-nthsp (rest terms) (+ 1 curr) core)))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (mv-let (x y) <term> <body>)
 ;; translates to:
-;; ((lambda (mv ...other-body-vars...)
-;;    ((lambda (x y ...other-body-vars...) <translated-body>)
+;; ((lambda (mv ...extra-body-vars...)
+;;    ((lambda (x y ...extra-body-vars...) <translated-body>)
 ;;     (mv-nth '0 mv)
 ;;     (mv-nth '1 mv)
-;;     ...other-body-vars...))
+;;     ...extra-body-vars...))
 ;;   <translated-term>
-;;   ...other-body-vars...)
+;;   ...extra-body-vars...)
 (defun translated-mv-letp (term)
   (declare (xargs :guard (pseudo-termp term)))
   (and (consp term)
@@ -78,7 +93,7 @@
               (let ((mv-formal (first outer-lambda-formals)) ;; usually named mv or mv0 or mv1, etc.
                     (extra-body-vars (rest outer-lambda-formals))
                     (outer-lambda-body (lambda-body outer-lambda)))
-                (and (list-suffixp extra-body-vars outer-lambda-args)
+                (and (equal extra-body-vars (rest outer-lambda-args))
                      (consp outer-lambda-body)
                      (flambda-applicationp outer-lambda-body)
                      (let* ((inner-lambda (ffn-symb outer-lambda-body))
@@ -104,6 +119,15 @@
     (take (- (len inner-lambda-formals) (len extra-body-vars))
           inner-lambda-formals)))
 
+;; Extracts the extra body vars (bound to themselves) in a translated mv-let.
+(defun extra-body-vars-of-translated-mv-let (term)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (translated-mv-letp term))))
+  (let* ((outer-lambda (ffn-symb term))
+         (outer-lambda-formals (lambda-formals outer-lambda))
+         (extra-body-vars (rest outer-lambda-formals)))
+    extra-body-vars))
+
 ;; Extracts the multi-valued term from a translated mv-let.
 (defun term-of-translated-mv-let (term)
   (declare (xargs :guard (and (pseudo-termp term)
@@ -119,36 +143,149 @@
       (let ((inner-lambda (ffn-symb outer-lambda-body)))
         (lambda-body inner-lambda)))))
 
+(defund strip-hides-from-vals-for-keys (keys alist)
+  (declare (xargs :guard (and (symbol-listp keys)
+                              (alistp alist))))
+  (if (endp alist)
+      nil
+    (let* ((pair (first alist))
+           (key (car pair))
+           (val (cdr pair)))
+      (if (and (member-eq key keys)
+               (consp val)
+               (eq 'hide (ffn-symb val))
+               (consp (fargs val)))
+          (acons key (cadr val) (strip-hides-from-vals-for-keys keys (rest alist)))
+        (cons pair (strip-hides-from-vals-for-keys keys (rest alist)))))))
+
+(defthm alistp-of-strip-hides-from-vals-for-keys
+  (implies (alistp alist)
+           (alistp (strip-hides-from-vals-for-keys keys alist)))
+  :hints (("Goal" :in-theory (enable strip-hides-from-vals-for-keys))))
+
+;; TODO: Remove hides introduced for ignored vars:
 (mutual-recursion
  ;; Reconstructs LETs and MV-LETs in term.
+ ;; Returns (mv term free-vars).
  ;; Note that the result is no longer a translated term (pseudo-termp).
  (defund reconstruct-lets-in-term-aux (term)
    (declare (xargs :guard (pseudo-termp term)
-                   :measure (acl2-count term)))
-   (if (or (variablep term)
-           (fquotep term))
-       term
-     ;;it's a function call (maybe a lambda application):
-     (if (translated-mv-letp term)
-         `(mv-let ,(vars-of-translated-mv-let term)
-           ,(reconstruct-lets-in-term-aux (term-of-translated-mv-let term))
-           ,(reconstruct-lets-in-term-aux (body-of-translated-mv-let term)))
-       (let* ((fn (ffn-symb term))
-              (new-args (reconstruct-lets-in-terms-aux (fargs term))))
-         (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
-             `(let ,(alist-to-doublets (non-trivial-bindings (lambda-formals fn) new-args))
-                ,(reconstruct-lets-in-term-aux (lambda-body fn)))
-           ;; not a lambda application, so just rebuild the function call:
-           `(,fn ,@new-args))))))
+                   :measure (acl2-count term)
+                   :verify-guards nil ; done below
+                   ))
+   (if (variablep term)
+       (mv term (list term))
+     (if (fquotep term)
+         (mv term nil)
+       ;;it's a function call (maybe a lambda application):
+       (if (translated-mv-letp term)
+           (mv-let (new-mv-term mv-term-vars)
+             (reconstruct-lets-in-term-aux (term-of-translated-mv-let term))
+             (mv-let (new-body-term body-vars)
+               (reconstruct-lets-in-term-aux (body-of-translated-mv-let term))
+               (let* ((vars (vars-of-translated-mv-let term))
+                      (ignored-vars (set-difference-eq vars body-vars)))
+                 (mv `(mv-let ,vars
+                        ,new-mv-term
+                        ;; maybe put in an ignore declare:
+                        ,@(and ignored-vars `((declare (ignore ,@ignored-vars))))
+                        ,new-body-term)
+                     ;; The lambda should be closed, so the free vars are from the args, which are the mv-term and the extra-body-vars:
+                     (union-eq mv-term-vars
+                               (extra-body-vars-of-translated-mv-let term))))))
+         (let* ((fn (ffn-symb term)))
+           (mv-let (new-args args-free-vars)
+             (reconstruct-lets-in-terms-aux (fargs term))
+             (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
+                 (mv-let (new-lambda-body lambda-body-vars)
+                   (reconstruct-lets-in-term-aux (lambda-body fn))
+                   (let* ((lambda-formals (lambda-formals fn))
+                          (ignored-vars (set-difference-eq lambda-formals lambda-body-vars)))
+                     (mv `(let ,(alist-to-doublets (strip-hides-from-vals-for-keys ignored-vars (non-trivial-bindings lambda-formals new-args))) ; HIDE is introduced when a let with ignored vars is translated
+                            ;; maybe put in an ignore declare:
+                            ,@(and ignored-vars `((declare (ignore ,@ignored-vars))))
+                            ,new-lambda-body)
+                         ;; the lambda should be closed, so we don't include the lambda-body-vars:
+                         args-free-vars)))
+               ;; not a lambda application, so just rebuild the function call:
+               (mv `(,fn ,@new-args)
+                   args-free-vars))))))))
 
+ ;; Returns (mv terms all-free-vars).
  (defund reconstruct-lets-in-terms-aux (terms)
    (declare (xargs :guard (pseudo-term-listp terms)
                    :measure (acl2-count terms)))
    (if (endp terms)
-       nil
-     (cons (reconstruct-lets-in-term-aux (first terms))
-           (reconstruct-lets-in-terms-aux (rest terms))))))
+       (mv nil nil)
+     (mv-let (new-first-term first-term-free-vars)
+       (reconstruct-lets-in-term-aux (first terms))
+       (mv-let (new-rest-terms rest-terms-free-vars)
+         (reconstruct-lets-in-terms-aux (rest terms))
+         (mv (cons new-first-term new-rest-terms)
+             (union-eq first-term-free-vars rest-terms-free-vars)))))))
+
+(make-flag reconstruct-lets-in-term-aux)
+
+(defthm-flag-reconstruct-lets-in-term-aux
+  (defthm symbol-listp-of-mv-nth-1-of-reconstruct-lets-in-term-aux
+    (implies (pseudo-termp term)
+             (symbol-listp (mv-nth 1 (reconstruct-lets-in-term-aux term))))
+    :flag reconstruct-lets-in-term-aux)
+  (defthm symbol-listp-of-mv-nth-1-of-reconstruct-lets-in-terms-aux
+    (implies (pseudo-term-listp terms)
+             (symbol-listp (mv-nth 1 (reconstruct-lets-in-terms-aux terms))))
+    :flag reconstruct-lets-in-terms-aux)
+  :hints (("Goal" :in-theory (enable reconstruct-lets-in-term-aux
+                                     reconstruct-lets-in-terms-aux))))
+
+(defthm-flag-reconstruct-lets-in-term-aux
+  (defthm true-listp-of-mv-nth-0-of-reconstruct-lets-in-terms-aux
+    (true-listp (mv-nth 0 (reconstruct-lets-in-terms-aux terms)))
+    :flag reconstruct-lets-in-terms-aux)
+  :skip-others t
+  :hints (("Goal" :in-theory (enable reconstruct-lets-in-terms-aux))))
+
+(verify-guards reconstruct-lets-in-term-aux
+  :hints (("Goal" :expand ((pseudo-termp term))
+           :in-theory (enable true-listp-when-symbol-listp pseudo-termp))))
 
 (defund reconstruct-lets-in-term (term)
   (declare (xargs :guard (pseudo-termp term)))
-  (reconstruct-lets-in-term-aux term))
+  (mv-let (term vars)
+    (reconstruct-lets-in-term-aux term)
+    (declare (ignore vars))
+    term))
+
+;; This proves that the free vars returned are correct:
+(local
+ (progn
+   (include-book "free-vars-in-term")
+   (include-book "kestrel/lists-light/perm" :dir :system)
+   (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system)
+   (include-book "no-duplicate-lambda-formals-in-termp")
+
+   ;; (defthm symbol-listp-of-cdr-type
+   ;;    (implies (symbol-listp x)
+   ;;             (symbol-listp (cdr x)))
+   ;;    :rule-classes :type-prescription)
+
+   (defthm-flag-reconstruct-lets-in-term-aux
+     (defthm mv-nth-1-of-reconstruct-lets-in-term-aux-under-perm
+       (implies (and (pseudo-termp term)
+                     (no-duplicate-lambda-formals-in-termp term))
+                (perm (mv-nth 1 (reconstruct-lets-in-term-aux term))
+                      (free-vars-in-term term)))
+       :flag reconstruct-lets-in-term-aux)
+     (defthm mv-nth-1-of-reconstruct-lets-in-terms-aux-under-perm
+       (implies (and (pseudo-term-listp terms)
+                     (no-duplicate-lambda-formals-in-termsp terms))
+                (perm (mv-nth 1 (reconstruct-lets-in-terms-aux terms))
+                      (free-vars-in-terms terms)))
+       :flag reconstruct-lets-in-terms-aux)
+     :hints (("subgoal *1/3" :use (:instance free-vars-in-terms-when-symbol-listp (terms (cddr term))))
+             ("subgoal *1/2" :use (:instance free-vars-in-terms-when-symbol-listp (terms (cddr term))))
+             ("Goal" :expand ((free-vars-in-term term)
+                              (free-vars-in-terms (cdr term)))
+              :in-theory (enable reconstruct-lets-in-term-aux
+                                 reconstruct-lets-in-terms-aux
+                                 no-duplicate-lambda-formals-in-termp))))))
