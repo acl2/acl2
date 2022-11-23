@@ -428,14 +428,29 @@
 
 
 (defprod svtv-spec
-  ((fsm base-fsm-p)
-   (cycle-phases svtv-cyclephaselist-p)
-   (namemap svtv-name-lhs-map-p)
-   (probes svtv-probealist-p)
-   (in-alists svex-alistlist-p)
-   (override-test-alists svex-alistlist-p)
-   (override-val-alists svex-alistlist-p)
-   (initst-alist svex-alist-p)))
+  :parents (svex-stvs)
+  :short "A data object representing a run of an FSM, similar to an SVTV but
+without computing the unrolling of the FSM."
+  :long "
+
+<p>When creating an @(see svtv) using @(see defsvtv$), a phase FSM is created
+for the given design and subsequently that phase FSM is composed further into a
+clock cycle FSM and then a combinational pipeline, which is an unrolling of the
+cycle FSM.  This pipeline unrolling is the main content of an SVTV
+object (namely, its @('outexprs') field).  An svtv-spec object contains the
+data necessary to compute the pipeline, but not the unrolled cycle FSM or
+pipeline itself.  It can be shown that an @(see svtv-run) of an SVTV is equal
+to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
+"
+  ((fsm base-fsm-p "The FSM to be run")
+   (cycle-phases svtv-cyclephaselist-p
+                 "The list of @(see svtv-cyclephase) objects representing the clock cycle")
+   (namemap svtv-name-lhs-map-p "Mapping from namemap names to @(see lhs) objects in terms of FSM signal names")
+   (probes svtv-probealist-p "Specification for which outputs/internal signals should be sampled when, in terms of namemap names")
+   (in-alists svex-alistlist-p "Specification for what (symbolic) inputs are set at what cycles -- a list of binding alists (one for each cycle) of namemap names to constants and user variable names.")
+   (override-test-alists svex-alistlist-p "Specification for what override tests are set at what cycles -- similar to in-alists")
+   (override-val-alists svex-alistlist-p "Specification for what override values are set at what cycles -- similar to in-alists")
+   (initst-alist svex-alist-p "Initial state, mapping from FSM previous-state variables to constants and user variable names")))
 
 (define svtv-spec-pipe-env->phase-envs ((x svtv-spec-p) (pipe-env svex-env-p))
   :returns (phase-envs svex-envlist-p)
@@ -476,6 +491,8 @@
                        &key
                        (base-ins svex-envlist-p)
                        (initst svex-env-p))
+  :parents (svtv-spec)
+  :short "Run an @(see svtv-spec) object and return its outputs"
   :returns (pipe-out svex-env-p)
   :guard (and (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm x)))))
               (equal (svex-alist-keys (svtv-spec->initst-alist x))
@@ -493,3 +510,5 @@
   (defret keys-of-<fn>
     (equal (alist-keys pipe-out)
            (alist-keys (svtv-spec->probes x)))))
+
+

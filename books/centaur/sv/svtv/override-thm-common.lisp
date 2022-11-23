@@ -56,7 +56,6 @@
    final-defthm
    final-args
    hints
-   constlist-hyp
    rule-classes
    pkg-sym))
 

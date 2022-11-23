@@ -1451,7 +1451,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
 (defun svtv-idthm-final-thm (x)
   (b* (((svtv-generalized-thm x))
        (template
-         '(defthm <name>
+         '(<defthm> <name>
             (b* (((svassocs <input-var-svassocs>
                             <spec-override-svassocs>) env)
                  (run (svtv-spec-run (<ideal>) env
@@ -1466,36 +1466,37 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                             (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
                        (b* (((svassocs <outputs>) run))
                          <concl>)))
-            :hints (:@ :no-lemmas <hints>)
+            <args>
+            (:@ :no-lemmas <hints-hints>)
             (:@ (not :no-lemmas)
-             (("Goal" :use ((:instance
-                             (:@ (not :use-ideal) <ideal>-refines-<svtv>)
-                             (:@ :use-ideal <ideal>-refines-<ideal>)
-                             (spec-pipe-env env)
-                             (spec-base-ins base-ins)
-                             (spec-initst initst)
-                             (pipe-env (b* ((?run (svtv-spec-run (<ideal>) env
-                                                                 :base-ins base-ins
-                                                                 :initst initst))
-                                            ((svassocs <override-inst-svassocs>) run)
-                                            ((svassocs <spec-override-inst-svassocs>
-                                                       <input-unbound-svassocs>) env))
-                                         (APPEND <input-bindings>
-                                                 <input-vars>
-                                                 <override-tests>
-                                                 <override-bindings>
-                                                 <override-vals>))))
-                            (:instance <name>-override-lemma
-                             <spec-override-var-instantiation>
-                             <override-var-instantiation>
-                             <input-var-instantiation>))
-               :in-theory (acl2::e/d**
-                           ((:EXECUTABLE-COUNTERPART <SVTV>-TRIPLEMAPLIST)
-                            (:REWRITE SVARLIST-P-OF-<SVTV>-INPUT-VARS)
-                            (:ruleset svtv-idealized-thm-rules))
-                           )
-               )
-              . <hints>))
+             :hints (("Goal" :use ((:instance
+                                    (:@ (not :use-ideal) <ideal>-refines-<svtv>)
+                                    (:@ :use-ideal <ideal>-refines-<ideal>)
+                                    (spec-pipe-env env)
+                                    (spec-base-ins base-ins)
+                                    (spec-initst initst)
+                                    (pipe-env (b* ((?run (svtv-spec-run (<ideal>) env
+                                                                        :base-ins base-ins
+                                                                        :initst initst))
+                                                   ((svassocs <override-inst-svassocs>) run)
+                                                   ((svassocs <spec-override-inst-svassocs>
+                                                              <input-unbound-svassocs>) env))
+                                                (APPEND <input-bindings>
+                                                        <input-vars>
+                                                        <override-tests>
+                                                        <override-bindings>
+                                                        <override-vals>))))
+                                   (:instance <name>-override-lemma
+                                    <spec-override-var-instantiation>
+                                    <override-var-instantiation>
+                                    <input-var-instantiation>))
+                      :in-theory (acl2::e/d**
+                                  ((:EXECUTABLE-COUNTERPART <SVTV>-TRIPLEMAPLIST)
+                                   (:REWRITE SVARLIST-P-OF-<SVTV>-INPUT-VARS)
+                                   (:ruleset svtv-idealized-thm-rules))
+                                  )
+                      )
+                     . <hints>))
             :rule-classes <rule-classes>)))
     (acl2::template-subst
      template
@@ -1503,7 +1504,6 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
      `((<hyp> . ,x.hyp)
        (<concl> . ,x.concl)
        (<ideal> . ,x.ideal)
-; (<constlist-hyp> . ,x.constlist-hyp)
        (<triplemaps> . ,x.triples-name)
        (<const-overrides> . ',(svtv-idthm-override-subst
                                (append (alist-keys x.spec-override-var-bindings) x.spec-override-vars)
@@ -1592,6 +1592,8 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
          no-lemmas
          no-integerp
          hints
+         (final-defthm 'defthm)
+         final-args
          (rule-classes ':rewrite)
          (pkg-sym name))
         args)
@@ -1601,6 +1603,16 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
        (output-part-vars (all-vars1-lst trans-parts nil))
        ((mv err svtv-val) (magic-ev-fncall svtv nil state t t))
        ((when err) (er soft ctx "Couldn't evaluate ~x0" (list svtv)))
+       (input-vars (if (equal input-vars :all)
+                       (b* ((all-ins (svtv->ins svtv-val))
+                            (ovr-controls (svar-override-triplelist->testvars triples-val))
+                            (ovr-signals (svar-override-triplelist->valvars triples-val))
+                            (all-ins (set-difference-eq all-ins ovr-controls))
+                            (all-ins (set-difference-eq all-ins ovr-signals))
+                            (all-ins (set-difference-eq all-ins
+                                                        (strip-cars input-var-bindings))))
+                         all-ins)
+                     input-vars))
        (hyp (if unsigned-byte-hyps
                 (b* ((inmasks (svtv->inmasks svtv-val))
                      (inputs (append input-vars override-vars spec-override-vars))
@@ -1627,7 +1639,6 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
        ;;                           `(svtv-override-triplelist-muxes-<<=-of-nil(if consts
        ;;                    `(svtv-override-constantlist-ok ',consts run)
        ;;                  t))
-       (constlist-hyp t)
        ((acl2::with-fast triple-val-alist)))
 
     (value
@@ -1657,7 +1668,8 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
        :triple-val-alist triple-val-alist
        :no-lemmas no-lemmas
        :no-integerp no-integerp
-       :constlist-hyp constlist-hyp
+       :final-defthm final-defthm
+       :final-args final-args
        :rule-classes rule-classes
        :pkg-sym pkg-sym)))))
 
@@ -1963,13 +1975,16 @@ that all internal signals of the design that are bound in @('override-env') are
 bound to the same value in @('base-run').</p>
 
 <p>This overrides-correct condition seems intuitively obvious and we would like
-to prove it for all designs.  However, sometimes it's not true!  In particular,
-it is not generally true of designs where there are 0-delay combinational
-loops.  These can occur due to latch-based logic or clock gating logic, often
-enough that it isn't workable to just disallow them.</p>
+to prove it for all designs.  However, it is actually a fairly deep property of
+the design object, and as we'll see, depending how we compose the design
+together it may or may not be true.</p>
 
-<p>The correct way to deal with 0-delay combinational loops is to compute the
-fixpoint.  That is, for a given setting of the circuit inputs and stateholding
+<p>The problematic cases have to do with designs where there are 0-delay
+combinational loops.  These can occur due to latch-based logic or clock gating
+logic, often enough that it isn't workable to just disallow them.</p>
+
+<p>The correct way to deal with 0-delay combinational loops is to compute a
+<i>fixpoint</i>.  That is, for a given setting of the circuit inputs and stateholding
 elements, begin at a state setting these values for the inputs/states and all
 internal signals set to X.  Apply the internal signals' update functions to
 obtain a new state.  Repeat this until we reach a fixpoint.  It is a theorem
@@ -1978,14 +1993,13 @@ X-monotonicity, then a fixpoint is reached by the time we have repeated this
 @('n') times where @('n') is the total number of bits in all internal
 signals.</p>
 
-<p>Because of the number of repetitions needed, it isn't practical to actually
-compute the fixpoint.  Instead we use a composition method that is efficient
-and practially useful, but not guaranteed to compute the fixpoint.  However, it
-is guaranteed to be conservative with respect to the fixpoint: that is, if a
-signal's value in this composition is non-X, then its fixpoint value must be
-the same.</p>
+<p>Because of the number of repetitions needed, it isn't always practical to
+actually compute the fixpoint.  Instead we use an approximate composition
+method that is efficient, practially useful, and conservative with respect to
+the fixpoint: that is, if a signal's value in this approximate composition is
+non-X, then its fixpoint value must be the same.</p>
 
-<p>The composition we compute does not always satisfy the overrides-correct
+<p>The approximate composition does not always satisfy the overrides-correct
 condition above.  For example, if we override a signal that is part of a
 0-delay combinational loop and its fanin logic therefore appears more than once
 in different forms (composed with itself a different number of times), then
@@ -1998,7 +2012,345 @@ version of this is proved in \"centaur/sv/svex/fixpoint-override\" as
 somewhat more general version is proved in
 @('svex-alist-eval-fixpoint-override-impl-equiv-spec').</p>
 
-<p>(To be continued)</p>
+
+<p>This leads us to the following methodology for composing hardware proofs
+with overrides:</p>
+
+<ul>
+
+<li>Compute a symbolic representation <i>approx</i> of the desired run of the
+design based on the approximate composition -- in particular, using @(see
+defsvtv$).</li>
+
+<li>Define a non-executable function <i>ideal</i> that logically computes the
+analogous run with the fixpoint composition.  This can be done using @(see
+def-svtv-ideal).</li>
+
+<li>To prove composition-friendly facts about <i>ideal</i>, first prove a lemma
+with overrides about <i>approx</i> (such as
+@('multiplier-pp-sum-correct-override') and use the conservativity of
+<i>approx</i> with respect to <i>ideal</i> along with the overrides-correct
+property of <i>ideal</i> to prove the composition-friendly fact (such as
+@('multiplier-pp-sum-correct-gen')) about <i>ideal</i>. This is automated by
+@(see def-svtv-idealized-thm).
+</li>
+
+</ul>
+")
 
 
+(defxdoc def-svtv-ideal
+  :parents (svex-fixpoint-decomposition-methodology)
+  :short "Define a non-executable, fixpoint-based analogue of a @(see symbolic-test-vector)."
+  :long " <p>To use this, first define an SVTV using @(see defsvtv$)
+and (immediately after) save the contents of the resulting @(see svtv-data)
+stobj to an object using @(see def-svtv-data-export).  Then invoke
+@('def-svtv-ideal') as follows:</p>
+
+@({
+ (def-svtv-ideal ideal-name svtv-name data-name)
+ })
+
+<p>For example,</p>
+
+@({
+ (sv::defsvtv$ my-mod-run ...)
+
+ ;; must be immediately after the defsvtv$ (or at least ensure that the
+ ;; svtv-data stobj is not modified in between)
+ (sv::def-svtv-data-export my-mod-data)
+
+ ;; may occur later, no more reliance on the svtv-data stobj:
+ (sv::def-svtv-ideal my-mod-ideal my-mod-run my-mod-data)
+ })
+
+<p>This produces a 0-ary function (not intended to be executed) named
+@('my-mod-ideal'), which returns an @(see svtv-spec) object encapsulating the
+same pipeline run as in @('my-mod-run'), but based on a fixpoint composition of
+the module's assignments rather than the approximate composition that is
+computed for the SVTV.  See @(see svex-fixpoint-decomposition-methodology) for
+further explanation.  A few important properties relating @('my-mod-ideal') and
+@('my-mod-run') are proved:</p>
+
+<ul>
+
+<li>@('my-mod-ideal-refines-my-mod-run') -- this allows us to infer facts about
+@('my-mod-ideal') from proofs about @('my-mod-run'), where potentially the
+@('my-mod-run') proof may be done with override signals that may be removed
+from the theorem about @('my-mod-ideal').</li>
+
+<li>@('my-mod-ideal-refines-my-mod-run-on-same-envs') -- special case of the
+above theorem where the input environments are the same, i.e. no overrides are
+removed.</li>
+
+<li>@('my-mod-ideal-refines-my-mod-ideal') -- this allows us to remove
+overrides from theorems about @('my-mod-ideal').</li>
+
+</ul>
+
+<p>Additionally, the @('def-svtv-ideal') event produces a function named (in
+our example) @('my-mod-ideal-exec'), which (logically) produces some subset of
+the output signals of a @(see svtv-spec-run) of @('my-mod-ideal'), but
+accomplishes this (when successful) executing @(see svtv-run) of
+@('my-mod-run').  If the outputs from the @('svtv-run') contain no Xes, then
+this is the same as the @('svtv-spec-run') of @('my-mod-ideal').</p>
+
+")
+
+
+(defxdoc def-svtv-idealized-thm
+  :parents (svex-fixpoint-decomposition-methodology)
+  :short "Prove a theorem about an idealized SVTV via a symbolic simulation lemma about the SVTV itself."
+  :long "
+<p>See @(see svex-fixpoint-decomposition-methodology) for background on the methodology that this supports.</p>
+
+<p>Usage:</p>
+@({
+ (def-svtv-idealized-thm theorem-name
+   :svtv svtv-name
+   :ideal ideal-name
+   :input-vars input-variable-list
+   :input-var-bindings input-variable-binding-list
+   :override-vars override-variable-list
+   :override-var-bindings override-variable-binding-list
+   :spec-override-vars override-variable-list
+   :spec-override-var-bindings override-variable-binding-list
+   :output-vars output-variable-list
+   :output-parts output-part-list
+   :hyp hypothesis-term
+   :concl conclusion-term
+   :enable rules-list
+   :unsigned-byte-hyps nil
+   :no-lemmas nil
+   :no-integerp nil
+   :lemma-nonlocal nil
+   :lemma-defthm nil
+   :lemma-args nil
+   :lemma-use-ideal nil
+   :hints hints
+   :rule-classes rule-classes
+   :pkg-sym sym)
+ })
+
+<p>For each of the keyword arguments, if absent a default will be looked up in
+the @(see table) @('svtv-generalized-thm-defaults'), which may be (locally)
+modified by users in order to avoid (for example) the need to repeatedly
+specify the same SVTV and ideal in every form.</p>
+
+<p>Prerequisite: What we are calling the \"ideal\" here must be a @(see
+svtv-spec) object created for the given SVTV, which can be done using @(see
+def-svtv-ideal).</p>
+
+<p>We briefly describe the arguments of the macro and then we'll describe the
+theorem proved in FGL and the generalized corollary this macro generates.</p>
+
+<h3>Arguments</h3>
+
+<ul>
+<li>@(':svtv') is the name of the SVTV</li>
+
+<li>@(':ideal') must be the name of the \"ideal\" function produced by @(see
+def-svtv-ideal), a 0-ary function that produces a @(see svtv-spec) object
+reflecting the same run as the SVTV, but based on a full fixpoint of the
+hardware module.</li>
+
+<li>@(':input-vars') are the names of any input variables of the SVTV that will
+appear in the hypothesis or conclusion, except those that are bound in
+@(':input-var-bindings'). Instead of a list of signals, users may pass \":all\"
+parameter to get all the input variables that are not bound.</li>
+
+<li>@(':input-var-bindings') is a list of @('let')-like bindings of input
+variables to expressions.</li>
+
+<li>@(':override-vars') is a list of override-value variables of the SVTV to be
+overridden in the FGL theorem.</li>
+
+<li>@(':override-var-bindings') is a list of @('let')-like bindings of override
+value variables to expressions.</li>
+
+<li>@(':spec-override-vars') is a list of override-value variables of the SVTV
+to be overridden in both the FGL theorem and the resulting generalized theorem.
+The difference between @(':override-vars') and @(':spec-override-vars') is that
+the @(':override-vars') will not be overridden in the generalized theorem, but
+the @(':spec-override-vars') still will.</li>
+
+<li>@(':spec-override-var-bindings') is a list of @('let')-like bindings of
+override value variables to expressions, which will be overridden in both the
+FGL theorem and generalized theorem.</li>
+
+<li>@(':output-vars') is a list of output variables of the SVTV that are used in the conclusion.</li>
+
+<li>@(':output-parts') is a list of 4vec expressions -- part selects, zero
+extends, shifts, concatenations -- of the output variables.  The given parts of
+the outputs will be proved to be integerp in order to use a monotonicity
+argument.  Variables that are not mentioned in output-parts will be proved
+integerp as a whole.</li>
+
+<li>@(':hyp') is a term (default T), which may reference variables
+listed in input-vars and override-vars as well as variables used in the
+expressions of input-bindings</li>
+
+<li>@(':concl') is a term which may reference the same variables available to
+@(':hyp') as well as the output-vars.</li>
+
+<li>@(':enable') is a list of rules to be included in the theory for the final
+generalized theorm, mainly useful when specifying @(':output-parts').</li>
+
+<li>@(':no-lemmas') says to skip the initial override theorem and monotonicity
+lemma and tries to prove the final (generalized) theorem directly, with the
+hints given by the user.</li>
+
+<li>@(':lemma-defthm') defaults to @('fgl::def-fgl-thm') but can be set
+to (e.g.) @('defthm') or @('fgl::def-fgl-param-thm') to change how the initial
+lemma is proved.</li>
+
+<li>@(':lemma-args') gives additional arguments to be passed to the form
+proving the initial lemma, which could be hints for a @('defthm') form or FGL
+keyword args for @('fgl::def-fgl-thm') or @('fgl::def-fgl-param-thm').</li>
+
+<li>@(':lemma-use-ideal') phrases the lemma in terms of a run of the ideal
+svtv-spec, rather than the SVTV.</li>
+
+<li>@(':no-integerp') says to skip proving @('integerp') of each output in the
+initial override theorem.  The @(':enable') option typically must be used to
+provide additional rules for the final theorem to show that the lemma implies
+the outputs are integers.</li>
+
+<li>@(':hints') are hints for the final theorem, used by themselves if @(':no-lemmas')
+is set and in addition to the automatically provided hints if not.</li>
+
+<li>@(':final-defthm') defaults to @('defthm') but can be set to a different
+macro to change how the final generalized theorem is proved</li>
+
+<li>@(':final-defthm-args') gives additional arguments to the form proving the
+final generalized theorem.</li>
+
+<li>@(':rule-classes') gives the rule classes of the theorem proved.</li>
+
+<li>@(':unsigned-byte-hyps') says to automatically add @('unsigned-byte-p')
+hypotheses for each input and override variable.</li>
+</ul>
+
+<h3>Initial override lemma</h3>
+
+<p>The initial override theorem is typically proved with FGL, but can be done
+otherwise using the @(':lemma-defthm') argument. It says that under the given
+hypotheses, a run of the SVTV on a particular, explicitly constructed
+environment produces outputs satisfying the conclusion.  In addition, it proves
+that those outputs are integers (whereas they could otherwise be arbitrary
+@(see 4vec)s including X and Z bits).  The environment is constructed as
+follows:</p>
+
+<ul>
+<li>Input variables bound in @(':input-var-bindings') are bound to their respective values</li>
+<li>Input variables listed in @(':input-vars') are bound to variables of the same name</li>
+<li>Override value variables listed in @(':override-vars') and
+@(':spec-override-vars') are bound to variables of the same name</li>
+<li>Override value variables bound in @(':override-var-bindings') and
+@(':spec-override-var-bindings') are bound to their respective values</li>
+
+<li>Override test variables corresponding to the override value variables
+listed in @(':override-vars'), @(':override-var-bindings'),
+@(':spec-override-vars'), and @(':spec-override-var-bindings') are all bound to
+-1.</li>
+
+</ul>
+
+<p>For example, the following form:</p>
+
+@({
+ (def-svtv-idealized-thm partial-prods-to-product
+   :svtv multiplier-svtv
+   :ideal multiplier-svtv-ideal
+   :input-var-bindings ((opcode *mul-opcode*))
+   :spec-override-var-bindings ((clkgates 0))
+   :override-vars (partial-products)
+   :output-vars (product)
+   :hyp (unsigned-byte-p 128 partial-products)
+   :concl (equal product (sum-partial-products partial-products)))
+ })
+<p>produces approximately the following initial lemma:</p>
+@({
+ (fgl::def-fgl-thm partial-prods-to-product-override-lemma
+   (implies (unsigned-byte-p 128 partial-products)
+            (b* ((run (svtv-run (multiplier-svtv)
+                                `((opcode . ,*mul-opcode*)
+                                  (partial-products . ,partial-products)
+                                  (clkgates . 0)
+                                  (override-partial-products . -1)
+                                  (override-clkgates . -1))
+                       :include '(product)))
+                 (product (svex-env-lookup 'product run)))
+              (and (integerp product)
+                   (equal product (sum-partial-products partial-products))))))
+ })
+
+<p>The @(':lemma-use-ideal') option would replace the @('svtv-run') form with the
+following form:</p>
+
+@({
+  (svex-env-reduce '(product)
+                   (svtv-spec-run (multiplier-svtv-ideal)
+                                 `((opcode . ,*mul-opcode*)
+                                   (partial-products . ,partial-products)
+                                   ...)))
+ })
+
+
+<h3>Generalized theorem</h3>
+
+<p>The generalized theorem refers to a single free variable @('env') rather
+than a free variable for each input and override value.  It binds @('run') to
+the run of the ideal on that env.  Input variables -- both those listed in
+@(':input-vars') and the keys of @(':input-var-bindings') -- are bound to their
+lookups in @('env'), and hypotheses are added stating that the keys of
+@(':input-var-bindings') are bound to their respective values. Outputs are
+bound (as usual) to their lookups in @('run'), and override variables from
+@(':override-vars') and @(':override-var-bindings') are additionally bound to
+the lookups of their respective reference variables in @('run').  Override
+variables listed in @(':spec-override-vars') and
+@(':spec-override-var-bindings') are still overridden, i.e. the value variables
+are looked up in @('env') similar to inputs.  An additional hypothesis states
+that the only override test variables that are set in the env are those
+corresponding to the value variables listed in @(':spec-override-vars') and
+@(':spec-override-var-bindings'): this is the
+@('svtv-override-triplemaplist-envs-match') hypothesis in the theorem below.
+Finally, the svtv-spec-run allows an additional setting of input and initial
+state variables not set by the SVTV itself; these are given respectively by
+@('base-ins') and @('initst') in the theorem.  Base-ins, however, must be
+assumed not to set any additional override test variables.</p>
+
+<p>For example, the form above produces approximately the following generalized
+theorem, which we have annotated to say where each binding and hypothesis comes
+from:</p>
+@({
+ (defthm partial-prods-to-product
+   (b* (;; Input variables bound to their lookups in env
+        (opcode (svex-env-lookup 'opcode env))
+        ;; Spec-override variables bound to their lookups in env
+        (clkgates (svex-env-lookup 'clkgates env))
+
+        ;; Run the idealized SVTV
+        (run (svtv-spec-run (multiplier-svtv-ideal) env :base-ins base-ins :initst initst))
+
+        ;; Override variables bound to their lookups in run
+        (partial-products (svex-env-lookup 'partial-products run))
+        ;; Output variables bound to their lookups in run
+        (product (svex-env-lookup 'product run)))
+     (implies (and ;; Hyp given by the user
+                   (unsigned-byte-p 128 partial-products)
+                   ;; Implicit hyp from input-var-bindings
+                   (equal opcode *mul-opcode*)
+                   ;; Implicit hyp from spec-override-var-bindings
+                   (equal clkgates 0)
+                   ;; Env only overrides those variables mentioned in spec-override-vars/bindings
+                   (svtv-override-triplelist-envs-match
+                    (multiplier-svtv-triplemaplist)
+                    env
+                    '((override-clkgates . -1)))
+                   ;; Base-ins doesn't add any override test settings
+                   (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
+             ;; Conclusion given by the user
+             (equal product (sum-partial-products partial-products)))))
+ })
 ")

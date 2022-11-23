@@ -1965,10 +1965,6 @@ irrelevant inputs are removed.</p>"
 
 
 
-(defxdoc svtv
-  :parents (svex-stvs)
-  :short "A shorter name for @(see svex-stvs), i.e. SVEX Symbolic Test Vectors.")
-
 (defxdoc svex-stvs
   :parents (sv)
   :short "SVEX Symbolic Test Vectors" 
