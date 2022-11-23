@@ -106,7 +106,7 @@ can't argue that a network composed from a submodule has anything to do with a
 network composed from its parent module, because we might have chosen different
 ways to do the composition and there's no a priori connection between these.</p>
 
-<h3>Least Fixpoint</p>
+<h3>Least Fixpoint</h3>
 
 <p>Fortunately, there is a stronger theoretical basis that this
 @('netevalcomp-p') notion is compatible with.  Basically, if all the assignment

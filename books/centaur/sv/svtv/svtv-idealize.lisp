@@ -102,13 +102,23 @@
                                       svex-alist-reduce
                                       svex-lookup))))
 
-  (defthmd svex-alist-eval-of-fal-extract
-    (implies (and (svarlist-p keys)
-                  (svex-alist-p alist))
-             (equal (svex-alist-eval (fal-extract keys alist) env)
-                    (svex-env-reduce keys (svex-alist-eval alist env))))
-    :hints(("Goal" :in-theory (enable fal-extract-is-svex-alist-reduce
-                                      fal-extract-is-svex-env-reduce)))))
+  (local (defthm hons-assoc-equal-of-svex-alist-eval
+           (equal (hons-assoc-equal v (svex-alist-eval al env))
+                  (and (svar-p v)
+                       (hons-assoc-equal v al)
+                       (cons v (svex-eval (cdr (hons-assoc-equal v al)) env))))
+           :hints(("Goal" :in-theory (enable svex-alist-eval)))))
+
+  (local (defthm car-of-hons-assoc-equal
+           (equal (car (hons-assoc-equal k x))
+                  (and (hons-assoc-equal k x) k))))
+
+  ;; bozo -- redundant with svtv-stobj-decomp
+  (defthm svex-alist-eval-of-fal-extract
+    (implies (svarlist-p vars)
+             (equal (svex-alist-eval (fal-extract vars al) env)
+                    (svex-env-reduce vars (svex-alist-eval al env))))
+    :hints(("Goal" :in-theory (enable fal-extract svex-env-reduce svex-alist-eval svarlist-p)))))
 
 
 
@@ -1405,6 +1415,32 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
     ))
 
 
+(define svtv-override-triplemaplist->tests ((x svtv-override-triplemaplist-p))
+  :returns (tests svexlist-p)
+  (if (atom x)
+      nil
+    (append (svtv-override-triplemap->tests (car x))
+            (svtv-override-triplemaplist->tests (cdr x)))))
+
+(define svtv-override-triplemap->vals ((triplemap svtv-override-triplemap-p))
+  :returns (vals svexlist-p)
+  (if (atom triplemap)
+      nil
+    (if (mbt (and (consp (car triplemap))
+                  (svar-p (caar triplemap))))
+        (cons (svtv-override-triple->val (cdar triplemap))
+              (svtv-override-triplemap->vals (cdr triplemap)))
+      (svtv-override-triplemap->vals (cdr triplemap))))
+  ///
+  (local (in-theory (enable svtv-override-triplemap-fix))))
+
+(define svtv-override-triplemaplist->vals ((x svtv-override-triplemaplist-p))
+  :returns (vals svexlist-p)
+  (if (atom x)
+      nil
+    (append (svtv-override-triplemap->vals (car x))
+            (svtv-override-triplemaplist->vals (cdr x)))))
+
 
 
 
@@ -1603,22 +1639,6 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
        (output-part-vars (all-vars1-lst trans-parts nil))
        ((mv err svtv-val) (magic-ev-fncall svtv nil state t t))
        ((when err) (er soft ctx "Couldn't evaluate ~x0" (list svtv)))
-       (input-vars (if (equal input-vars :all)
-                       (b* ((all-ins (svtv->ins svtv-val))
-                            (ovr-controls (svar-override-triplelist->testvars triples-val))
-                            (ovr-signals (svar-override-triplelist->valvars triples-val))
-                            (all-ins (set-difference-eq all-ins ovr-controls))
-                            (all-ins (set-difference-eq all-ins ovr-signals))
-                            (all-ins (set-difference-eq all-ins
-                                                        (strip-cars input-var-bindings))))
-                         all-ins)
-                     input-vars))
-       (hyp (if unsigned-byte-hyps
-                (b* ((inmasks (svtv->inmasks svtv-val))
-                     (inputs (append input-vars override-vars spec-override-vars))
-                     (masks (acl2::fal-extract inputs inmasks)))
-                  `(and ,@(svtv-unsigned-byte-hyps masks) ,hyp))
-              hyp))
        (triplemaplist (acl2::template-subst
                  '<svtv>-triplemaplist
                  :str-alist `(("<SVTV>" . ,(symbol-name svtv)))
@@ -1629,7 +1649,22 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
        (triplelist (svtv-override-triplemaplist-to-triplelist triplemaplist-val))
        (triple-val-alist (svtv-override-triplelist-val-alist triplelist))
 
-
+       
+       (input-vars (if (equal input-vars :all)
+                       (b* ((all-ins (svtv->ins svtv-val))
+                            (ovr-controls (svex-alist-vars (svtv-override-triplemaplist->tests triplemaplist-val)))
+                            (ovr-signals (svex-alist-vars (svtv-override-triplemaplist->vals triplemaplist-val)))
+                            (all-ins (acl2::hons-set-diff all-ins (append ovr-controls ovr-signals
+                                                                          (alist-keys input-var-bindings)))))
+                         all-ins)
+                     input-vars))
+       (hyp (if unsigned-byte-hyps
+                (b* ((inmasks (svtv->inmasks svtv-val))
+                     (inputs (append input-vars override-vars spec-override-vars))
+                     (masks (acl2::fal-extract inputs inmasks)))
+                  `(and ,@(svtv-unsigned-byte-hyps masks) ,hyp))
+              hyp))
+       
        ;; (override-subst (make-fast-alist (svtv-idthm-override-subst override-vars triple-val-alist triplemaplist)))
        ;; (mux-<<=-triples
        ;;  (svtv-override-triplemaplist-analyze-necessary-mux-<<=-checks triplemaplist-val override-subst))
@@ -1984,14 +2019,15 @@ combinational loops.  These can occur due to latch-based logic or clock gating
 logic, often enough that it isn't workable to just disallow them.</p>
 
 <p>The correct way to deal with 0-delay combinational loops is to compute a
-<i>fixpoint</i>.  That is, for a given setting of the circuit inputs and stateholding
-elements, begin at a state setting these values for the inputs/states and all
-internal signals set to X.  Apply the internal signals' update functions to
-obtain a new state.  Repeat this until we reach a fixpoint.  It is a theorem
-that if all signals have finite bit widths and the update functions respect
-X-monotonicity, then a fixpoint is reached by the time we have repeated this
-@('n') times where @('n') is the total number of bits in all internal
-signals.</p>
+<i>fixpoint</i>.  That is, for a given setting of the circuit inputs and
+stateholding elements, begin at a state setting these values for the
+inputs/states and all internal signals set to X.  Apply the internal signals'
+update functions to obtain a new state.  Repeat this until we reach a fixpoint.
+It is a theorem that if all signals have finite bit widths and the update
+functions respect X-monotonicity, then a fixpoint is reached by the time we
+have repeated this @('n') times where @('n') is the total number of bits in all
+internal signals.  A more in-depth exploration of this algorithm is written in
+@(see least-fixpoint).</p>
 
 <p>Because of the number of repetitions needed, it isn't always practical to
 actually compute the fixpoint.  Instead we use an approximate composition
