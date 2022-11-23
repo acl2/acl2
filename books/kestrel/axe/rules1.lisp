@@ -269,32 +269,32 @@
 
 ;dups among rules??: :pl  (unsigned-byte-p 8 (bvcat 8 x 1 y))
 
-(defthmd nth-of-slice-becomes-nth2
-  (implies (and (natp high)
-                (natp low)
-                (<= low high))
-           (equal (nth (slice high low index)  lst)
-                  (nth2 (+ 1 high (- low)) (slice high low index) lst)))
-  :hints (("Goal" :in-theory (enable nth2))))
+;; (defthmd nth-of-slice-becomes-nth2
+;;   (implies (and (natp high)
+;;                 (natp low)
+;;                 (<= low high))
+;;            (equal (nth (slice high low index)  lst)
+;;                   (nth2 (+ 1 high (- low)) (slice high low index) lst)))
+;;   :hints (("Goal" :in-theory (enable nth2))))
 
-(defthmd nth-of-bvchop-becomes-nth2
-  (equal (nth (bvchop size index)  lst)
-         (nth2 size (bvchop size index) lst))
-  :hints (("Goal" :in-theory (enable nth2))))
+;; (defthmd nth-of-bvchop-becomes-nth2
+;;   (equal (nth (bvchop size index)  lst)
+;;          (nth2 size (bvchop size index) lst))
+;;   :hints (("Goal" :in-theory (enable nth2))))
 
-(defthmd nth-of-bvxor-becomes-nth2
-  (implies (and (natp size))
-           (equal (nth (bvxor size x y)  lst)
-                  (nth2 size (bvxor size x y) lst)))
-  :hints (("Goal" :in-theory (enable nth2))))
+;; (defthmd nth-of-bvxor-becomes-nth2
+;;   (implies (and (natp size))
+;;            (equal (nth (bvxor size x y)  lst)
+;;                   (nth2 size (bvxor size x y) lst)))
+;;   :hints (("Goal" :in-theory (enable nth2))))
 
-(defthmd nth-of-bvcat-becomes-nth2
-  (implies (and (natp highsize)
-                (natp lowsize)
-                (<= lowsize highsize))
-           (equal (nth (bvcat highsize highval lowsize lowval)  lst)
-                  (nth2 (+ highsize lowsize) (bvcat highsize highval lowsize lowval) lst)))
-  :hints (("Goal" :in-theory (enable nth2))))
+;; (defthmd nth-of-bvcat-becomes-nth2
+;;   (implies (and (natp highsize)
+;;                 (natp lowsize)
+;;                 (<= lowsize highsize))
+;;            (equal (nth (bvcat highsize highval lowsize lowval)  lst)
+;;                   (nth2 (+ highsize lowsize) (bvcat highsize highval lowsize lowval) lst)))
+;;   :hints (("Goal" :in-theory (enable nth2))))
 
 (defthm nth2-becomes-bvnth-for-natps
   (implies (and (all-natp vals)
