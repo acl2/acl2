@@ -16,7 +16,7 @@
 ;; A simple test, with extensive guard checking
 (deftest
   (defthm-advice test (equal x x) :rule-classes nil
-    :model :none ; don't contact the server
+    :models nil ; don't contact the server
     )
   )
 
@@ -25,6 +25,6 @@
   (defthm-advice test2
     (equal (len (append x y))
            (+ (len x) (len y)))
-    :model :none ; don't contact the server
+    :models nil ; don't contact the server
     )
   )

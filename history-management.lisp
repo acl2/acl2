@@ -17021,8 +17021,10 @@
 (defun remove-lisp-suffix (x dotp)
 
 ; X is a full-book-name, hence a string ending in ".lisp".  We remove that
-; "lisp" suffix, leaving the final "." if and only if dotp is true.
+; "lisp" suffix, removing the final "." if and only if dotp is true.
 
+  (declare (xargs :guard (and (stringp x)
+                              (<= 5 (length x)))))
   (subseq x 0 (- (length x)
                  (if dotp 5 4))))
 

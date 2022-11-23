@@ -1542,8 +1542,7 @@
                                   standard-oi0)
                                  *directory-separator-string*)
                     os 'update-cbd state)))
-             (f-put-global
-              'connected-book-directory
+             (set-cbd-state
               (if (absolute-pathname-string-p filename-dir nil os)
                   filename-dir
                 (our-merge-pathnames old-cbd filename-dir))
@@ -1675,12 +1674,12 @@
              (ld-fn-body standard-oi0 new-ld-specials-alist state))
             (pprogn
              (f-put-global 'ld-level old-ld-level state)
-             (f-put-global 'connected-book-directory old-cbd state)
+             (set-cbd-state old-cbd state)
              (f-put-ld-specials old-ld-specials-alist t state)
              (close-channels channel-closing-alist state))
             (pprogn
              (f-put-global 'ld-level old-ld-level state)
-             (f-put-global 'connected-book-directory old-cbd state)
+             (set-cbd-state old-cbd state)
              (f-put-ld-specials old-ld-specials-alist t state)
              (close-channels channel-closing-alist state)))
          (acl2-unwind-protect
@@ -1800,8 +1799,7 @@
                                  NIL
                                  (pprogn
                                   (f-put-global 'ld-level old-ld-level state)
-                                  (f-put-global 'connected-book-directory
-                                                old-cbd state)
+                                  (set-cbd-state old-cbd state)
                                   (f-put-ld-specials old-ld-specials-alist
                                                      t ; update useless-runes
                                                      state)
@@ -1829,10 +1827,7 @@
                                                    new-ld-specials-alist state)
                                        (PROGN
                                         (WHEN bind-flg
-                                              (f-put-global
-                                               'connected-book-directory
-                                               old-cbd
-                                               state))
+                                              (set-cbd-state old-cbd state))
                                         (SETQ LD-ERP ERP)
                                         (SETQ LD-VAL VAL)
                                         NIL))))
