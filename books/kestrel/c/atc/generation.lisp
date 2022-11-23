@@ -4768,6 +4768,83 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-push-init-thm ((fn symbolp)
+                               (fn-guard symbolp)
+                               (typed-formals atc-symbol-varinfo-alistp)
+                               (omap-update-nest pseudo-termp)
+                               (compst-var symbolp)
+                               (names-to-avoid symbol-listp)
+                               (wrld plist-worldp))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (add-var-nest
+                pseudo-termp
+                :hyp (and (symbolp compst-var)
+                          (atc-symbol-varinfo-alistp typed-formals)))
+               (names-to-avoid symbol-listp
+                               :hyp (symbol-listp names-to-avoid)))
+  :short "Generate the theorem about
+          the initial computation state of a function execution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This theorem says that pushing onto the frame stack
+     a new frame with the initial scope for the function
+     yields a computation state expressed as
+     an @(tsee add-var) nest ended by an @(tsee add-frame).")
+   (xdoc::p
+    "We also return that computation state term,
+     since it is used in subsequent theorems."))
+  (b* ((add-var-nest (atc-gen-add-var-formals fn typed-formals compst-var))
+       (formals (strip-cars typed-formals))
+       (name (pack fn '-push-init))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       (formal-thms (atc-var-info-list->thm-list (strip-cdrs typed-formals)))
+       (formula
+        `(implies (and (compustatep ,compst-var)
+                       (,fn-guard ,@formals))
+                  (equal (push-frame
+                          (make-frame :function (ident ,(symbol-name fn))
+                                      :scopes (list ,omap-update-nest))
+                          ,compst-var)
+                         ,add-var-nest)))
+       (hints
+        `(("Goal" :in-theory '(push-frame-of-one-nonempty-scope
+                               push-frame-of-one-empty-scope
+                               ,@formal-thms
+                               valuep-when-ucharp
+                               valuep-when-scharp
+                               valuep-when-ushortp
+                               valuep-when-sshortp
+                               valuep-when-uintp
+                               valuep-when-sintp
+                               valuep-when-ulongp
+                               valuep-when-slongp
+                               valuep-when-ullongp
+                               valuep-when-sllongp
+                               not-flexible-array-member-p-when-ucharp
+                               not-flexible-array-member-p-when-scharp
+                               not-flexible-array-member-p-when-ushortp
+                               not-flexible-array-member-p-when-sshortp
+                               not-flexible-array-member-p-when-uintp
+                               not-flexible-array-member-p-when-sintp
+                               not-flexible-array-member-p-when-ulongp
+                               not-flexible-array-member-p-when-slongp
+                               not-flexible-array-member-p-when-ullongp
+                               not-flexible-array-member-p-when-sllongp
+                               scopep-of-update
+                               (:e scopep)
+                               identp-of-ident))))
+       ((mv event &)
+        (evmac-generate-defthm name
+                               :formula formula
+                               :hints hints
+                               :enable nil)))
+    (mv event name add-var-nest names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fundef ((fn symbolp)
                         (prec-fns atc-symbol-fninfo-alistp)
                         (prec-tags atc-string-taginfo-alistp)
@@ -4835,7 +4912,7 @@
             & ; init-scope-expand-thm
             init-scope-scopep-event
             & ; init-scope-scopep-thm
-            & ; omap-update-nest
+            omap-update-nest
             proofs
             names-to-avoid)
         (if proofs
@@ -4843,6 +4920,14 @@
                                      fn-fun-env-thm compst-var fenv-var
                                      names-to-avoid state)
           (mv '(_) nil '(_) nil nil nil names-to-avoid)))
+       ((mv push-init-thm-event
+            & ; push-init-thm-name
+            & ; add-var-nest
+            names-to-avoid)
+        (if proofs
+            (atc-gen-push-init-thm fn fn-guard typed-formals omap-update-nest
+                                   compst-var names-to-avoid wrld)
+          (mv '(_) nil nil names-to-avoid)))
        (body (ubody+ fn wrld))
        ((erp affect)
         (atc-find-affected fn body typed-formals prec-fns wrld))
@@ -4945,6 +5030,7 @@
                                        formals-events
                                        (list init-scope-expand-event)
                                        (list init-scope-scopep-event)
+                                       (list push-init-thm-event)
                                        body.events
                                        fn-result-events
                                        fn-correct-local-events
