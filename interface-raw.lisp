@@ -5131,35 +5131,36 @@
          (catch 'missing-compiled-book
 ; bogus compiler warning in LispWorks 6.0.1, gone in LispWorks 6.1
            (state-global-let*
-            ((raw-include-book-dir-alist nil)
-             (connected-book-directory directory-name set-cbd-state))
-            (let ((*load-compiled-stack* (acons full-book-name
-                                                load-compiled-file
-                                                *load-compiled-stack*)))
-              (multiple-value-bind
-               (er val)
-               (catch 'my-book-error
-                 (our-handler-bind
-                  ((error (function
-                           (lambda (c)
+            ((raw-include-book-dir-alist nil))
+            (with-cbd
+             directory-name
+             (let ((*load-compiled-stack* (acons full-book-name
+                                                 load-compiled-file
+                                                 *load-compiled-stack*)))
+               (multiple-value-bind
+                (er val)
+                (catch 'my-book-error
+                  (our-handler-bind
+                   ((error (function
+                            (lambda (c)
 
 ; Function hcomp-transfer-to-hash-tables might not have been run, which would
 ; leave *hcomp-fn-ht* in an odd state.  In the worst case that function would
 ; have emptied these hash tables; here, we do the easy thing and set them all
 ; to nil.
 
-                             (setq *hcomp-fn-ht* nil
-                                   *hcomp-const-ht* nil
-                                   *hcomp-macro-ht* nil)
-                             (throw 'my-book-error
-                                    (values t (format nil "~a" c)))))))
-                  (values nil
-                          (cond (ofile-p (load-compiled ofile t))
-                                (t (with-reckless-readtable (load efile)))))))
-               (value (setq status
-                            (cond (er (setq status val))
-                                  (to-be-compiled-p 'to-be-compiled)
-                                  (t 'complete))))))))
+                              (setq *hcomp-fn-ht* nil
+                                    *hcomp-const-ht* nil
+                                    *hcomp-macro-ht* nil)
+                              (throw 'my-book-error
+                                     (values t (format nil "~a" c)))))))
+                   (values nil
+                           (cond (ofile-p (load-compiled ofile t))
+                                 (t (with-reckless-readtable (load efile)))))))
+                (value (setq status
+                             (cond (er (setq status val))
+                                   (to-be-compiled-p 'to-be-compiled)
+                                   (t 'complete)))))))))
          (cond
           ((stringp status) ; status is raw Lisp error message
            (warning$ ctx "Compiled file"
@@ -5316,8 +5317,8 @@
 ; described in the Essay on Hash Table Support for Compilation.
 
            (null *hcomp-book-ht*))
-       (state-free-global-let*-safe
-        ((connected-book-directory directory-name set-cbd-state))
+       (with-cbd
+        directory-name
         (let* ((os-file (pathname-unix-to-os full-book-string state))
                (ofile (convert-book-string-to-compiled os-file state))
                (os-file-exists (probe-file os-file))
@@ -5385,7 +5386,8 @@
                                         (handle-hcomp-loop$-alist
                                          (load efile)
                                          full-book-string)))
-                                      (raw-mode-p (load os-file))))))))))))
+                                      (raw-mode-p (load os-file))))))))))
+        :binder state-free-global-let*-safe))
       ((let* ((entry (assert$ *hcomp-book-ht* ; not raw mode, e.g.
                               (gethash full-book-name *hcomp-book-ht*)))
               (status (and entry
@@ -9064,10 +9066,8 @@
           #+acl2-infix (f-put-global 'infixp nil *the-live-state*)
           (mv-let (erp val state)
             (with-suppression ; package locks, not just warnings, for read
-             (state-free-global-let*
-              ((connected-book-directory
-                (f-get-global 'connected-book-directory state)
-                set-cbd-state))
+             (with-cbd
+              :same
               (cond (quietp
 
 ; We avoid using with-output!, since it generates a call of state-global-let*,
@@ -9100,7 +9100,8 @@
                             (ld-post-eval-print nil)
                             (ld-prompt nil))
                            (ld-fn quiet-alist *the-live-state* nil)))))))
-                    (t (ld-fn ld-alist *the-live-state* nil)))))
+                    (t (ld-fn ld-alist *the-live-state* nil)))
+              :binder state-free-global-let*))
             #+acl2-infix
             (f-put-global 'infixp old-infixp *the-live-state*)
             (cond (erp (format t "**Error encountered during LD of ACL2 ~

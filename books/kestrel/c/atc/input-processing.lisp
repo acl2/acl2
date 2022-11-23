@@ -456,7 +456,7 @@
    (xdoc::p
     "If successful, return the input itself,
      with a guaranteed @(tsee stringp) type."))
-  (b* (((acl2::fun (reterr erp state)) (mv erp "" state))
+  (b* (((reterr) "" state)
        (output-dir-option (assoc-eq :output-dir options))
        (output-dir (if output-dir-option
                        (cdr output-dir-option)
@@ -464,20 +464,17 @@
        ((unless (stringp output-dir))
         (reterr (msg "The :OUTPUT-DIR input must be a string, ~
                       but ~x0 is not a string."
-                     output-dir)
-                state))
+                     output-dir)))
        ((mv msg? kind state) (oslib::file-kind output-dir))
        ((when msg?) (reterr (msg "The kind of ~
                                   the output directory path ~x0 ~
                                   cannot be tested.  ~
                                   ~@1"
-                                 output-dir msg?)
-                            state))
+                                 output-dir msg?)))
        ((unless (eq kind :directory))
         (reterr (msg "The output directory path ~x0 ~
                       is not a directory; it has kind ~x1 instead."
-                     output-dir kind)
-                state)))
+                     output-dir kind))))
     (retok output-dir state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -504,48 +501,41 @@
      or is a file and not a directory (i.e. has the right kind).")
    (xdoc::p
     "Due to the use of the file utilities, we also need to return state."))
-  (b* (((acl2::fun (reterr erp state)) (mv erp "" "" state))
+  (b* (((reterr) "" "" state)
        (file-name-option (assoc-eq :file-name options))
        ((unless (consp file-name-option))
         (reterr (msg "The :FILE-NAME input must be present, ~
-                      but it is absent instead.")
-                state))
+                      but it is absent instead.")))
        (file-name (cdr file-name-option))
        ((unless (stringp file-name))
         (reterr (msg "The :FILE-NAME input must be a string, ~
                       but ~x0 is not a string."
-                     file-name)
-                state))
+                     file-name)))
        ((when (equal file-name ""))
-        (reterr (msg "The :FILE-NAME input must not be the empty string.")
-                state))
+        (reterr (msg "The :FILE-NAME input must not be the empty string.")))
        ((unless (str::letter/digit/uscore/dash-charlist-p
                  (str::explode file-name)))
         (reterr (msg "The :FILE-NAME input must consists of only ~
                       ASCII letters, digits, underscores, and dashes, ~
                       but ~s0 violates this condition."
-                     file-name)
-                state))
+                     file-name)))
        (path-wo-ext (oslib::catpath output-dir file-name))
        (path.c (str::cat path-wo-ext ".c"))
        ((mv msg? existsp state) (oslib::path-exists-p path.c))
        ((when msg?) (reterr (msg "The existence of the file path ~x0 ~
                                   cannot be tested.  ~
                                   ~@1"
-                                 path.c msg?)
-                            state))
+                                 path.c msg?)))
        ((when (not existsp)) (retok file-name path-wo-ext state))
        ((mv msg? kind state) (oslib::file-kind path.c))
        ((when msg?) (reterr (msg "The kind of the file path ~x0 ~
                                   cannot be tested.  ~
                                   ~@1"
-                                 path.c msg?)
-                            state))
+                                 path.c msg?)))
        ((unless (eq kind :regular-file))
         (reterr (msg "The file path ~x0 ~
                       is not a regular file; it has kind ~x1 instead."
-                     path.c kind)
-                state)))
+                     path.c kind))))
     (retok file-name path-wo-ext state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -764,44 +754,23 @@
                (print evmac-input-print-p)
                state)
   :short "Process all the inputs."
-  (b* (((acl2::fun (reterr erp state))
-        (mv erp
-            nil
-            ""
-            ""
-            nil
-            (irr-pprint-options)
-            nil
-            nil
-            nil
-            nil
-            nil
-            state))
+  (b* (((reterr) nil "" "" nil (irr-pprint-options) nil nil nil nil nil state)
        (wrld (w state))
        ((mv erp targets options)
         (partition-rest-and-keyword-args args *atc-allowed-options*))
        ((when erp) (reterr (msg "The inputs must be the targets ~
                                  followed by the options ~&0."
-                                *atc-allowed-options*)
-                           state))
-       ((mv erp targets target-fns) (atc-process-targets targets (w state)))
-       ((when erp) (reterr erp state))
-       ((mv erp output-dir state) (atc-process-output-dir options state))
-       ((when erp) (reterr erp state))
-       ((mv erp file-name path-wo-ext state)
+                                *atc-allowed-options*)))
+       ((erp targets target-fns) (atc-process-targets targets wrld))
+       ((erp output-dir state) (atc-process-output-dir options state))
+       ((erp file-name path-wo-ext state)
         (atc-process-file-name options output-dir state))
-       ((when erp) (reterr erp state))
-       ((mv erp header) (atc-process-header options))
-       ((when erp) (reterr erp state))
-       ((mv erp pretty-printing) (atc-process-pretty-printing options))
-       ((when erp) (reterr erp state))
-       ((mv erp proofs) (atc-process-proofs options))
-       ((when erp) (reterr erp state))
-       ((mv erp prog-const wf-thm fn-thms)
+       ((erp header) (atc-process-header options))
+       ((erp pretty-printing) (atc-process-pretty-printing options))
+       ((erp proofs) (atc-process-proofs options))
+       ((erp prog-const wf-thm fn-thms)
         (atc-process-const-name options target-fns proofs wrld))
-       ((when erp) (reterr erp state))
-       ((mv erp print) (atc-process-print options))
-       ((when erp) (reterr erp state)))
+       ((erp print) (atc-process-print options)))
     (retok targets
            file-name
            path-wo-ext

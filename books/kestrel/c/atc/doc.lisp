@@ -110,9 +110,9 @@
       "This must be an ACL2 string that is
        a valid path to an existing directory in the file system;
        the path may be absolute,
-       or relative to
-       the current working directory.
-       The default is the current working directory."))
+       or relative to the "
+      (xdoc::seetopic "cbd" "connected book directory")
+      ". The default is the connected book directory."))
 
     (xdoc::desc
      "@(':file-name') &mdash; no default"
