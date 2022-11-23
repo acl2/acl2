@@ -4569,7 +4569,7 @@
    (xdoc::p
     "We also return a flag saying whether
      the formals all have integer types or not."))
-  (b* (((when (endp typed-formals)) (mv acl2::*nil* t))
+  (b* (((when (endp typed-formals)) (mv nil t))
        ((cons var info) (car typed-formals))
        ((mv omap-rest all-intp)
         (atc-gen-omap-update-formals (cdr typed-formals))))
