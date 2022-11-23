@@ -4625,6 +4625,8 @@
                (expand-thm symbolp)
                (scopep-event pseudo-event-formp)
                (scopep-thm symbolp)
+               (omap-update-nest pseudo-termp
+                                 :hyp (atc-symbol-varinfo-alistp typed-formals))
                (proofs booleanp)
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorems about
@@ -4633,10 +4635,13 @@
   (xdoc::topstring
    (xdoc::p
     "We generate one theorem saying what the initial scope expands to,
-     and one theorem saying that the expansion satisfies @(tsee scopep)."))
+     and one theorem saying that the expansion satisfies @(tsee scopep).")
+   (xdoc::p
+    "We also return the @(tsee omap::update) nest term
+     that describes the initial scope, for use in subsequent theorems.."))
   (b* ((wrld (w state))
        ((mv omap-update-nest proofs) (atc-gen-omap-update-formals typed-formals))
-       ((unless proofs) (mv '(_) nil '(_) nil nil names-to-avoid))
+       ((unless proofs) (mv '(_) nil '(_) nil nil nil names-to-avoid))
        (formals (strip-cars typed-formals))
        (expand-thm (pack fn '-init-scope-expand))
        ((mv expand-thm names-to-avoid)
@@ -4757,6 +4762,7 @@
         expand-thm
         scopep-event
         scopep-thm
+        omap-update-nest
         t
         names-to-avoid)))
 
@@ -4829,13 +4835,14 @@
             & ; init-scope-expand-thm
             init-scope-scopep-event
             & ; init-scope-scopep-thm
+            & ; omap-update-nest
             proofs
             names-to-avoid)
         (if proofs
             (atc-gen-init-scope-thms fn fn-guard typed-formals prog-const
                                      fn-fun-env-thm compst-var fenv-var
                                      names-to-avoid state)
-          (mv '(_) nil '(_) nil nil names-to-avoid)))
+          (mv '(_) nil '(_) nil nil nil names-to-avoid)))
        (body (ubody+ fn wrld))
        ((erp affect)
         (atc-find-affected fn body typed-formals prec-fns wrld))
