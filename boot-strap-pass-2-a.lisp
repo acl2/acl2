@@ -101,6 +101,7 @@
 (verify-termination-boot-strap flatten-ands-in-lit) ; and guards
 (verify-termination-boot-strap union-equal-to-end) ; and guards
 (verify-termination-boot-strap flatten-ands-in-lit!) ; and guards
+(verify-termination-boot-strap remove-lisp-suffix) ; and guards
 
 (verify-guards warranted-fns-of-world)
 
