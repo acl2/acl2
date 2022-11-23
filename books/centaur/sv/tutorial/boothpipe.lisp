@@ -130,10 +130,8 @@
 (def-saved-event boothpipe-data
   (def-svtv-data-export boothpipe-data))
 
-(def-saved-event boothpipe-run-override-thms
-  (defsection boothpipe-run-override-thms
-    (local (include-book "centaur/sv/svtv/svtv-fsm-override-fgl-theory" :dir :system))
-    (def-svtv-override-thms boothpipe-run boothpipe-data)))
+(def-saved-event boothpipe-run-ideal
+  (def-svtv-ideal boothpipe-ideal boothpipe-run boothpipe-data))
 
 
 
@@ -144,6 +142,16 @@
                         (cons 'b 5)
                         (cons 'en 1)))
        (out-alist (svtv-run (boothpipe-run) in-alist))
+       (result    (cdr (assoc 'o out-alist))))
+    (equal result 15))))
+
+(local
+ (assert!
+  ;; Make sure boothpipe-ideal-exec produces the same answer.
+  (b* ((in-alist  (list (cons 'a 3)
+                        (cons 'b 5)
+                        (cons 'en 1)))
+       (out-alist (boothpipe-ideal-exec in-alist '(o)))
        (result    (cdr (assoc 'o out-alist))))
     (equal result 15))))
 
@@ -217,17 +225,18 @@
 ; We'll now prove, separately, our two main lemmas, about the decomposed
 ; circuit.
 
-(def-saved-event svtv-generalized-thm-defaults
-  (progn (local (table sv::svtv-generalized-thm-defaults :svtv 'boothpipe-run))
-         (local (table sv::svtv-generalized-thm-defaults :unsigned-byte-hyps t))
-         (local (table sv::svtv-generalized-thm-defaults :input-var-bindings '((en 1))))))
+(def-saved-event svtv-idealized-thm-defaults
+  (progn (local (table sv::svtv-idealized-thm-defaults :svtv 'boothpipe-run))
+         (local (table sv::svtv-idealized-thm-defaults :ideal 'boothpipe-ideal))
+         (local (table sv::svtv-idealized-thm-defaults :unsigned-byte-hyps t))
+         (local (table sv::svtv-idealized-thm-defaults :input-var-bindings '((en 1))))))
 
 
 
 (def-saved-event boothpipe-pp-correct
    ;; Main Lemma 1.  Partial Products Part is Correct.
    ;; This is a very easy proof for Glucose, taking about 1.5 seconds.
- (def-svtv-generalized-thm boothpipe-pp-correct
+ (def-svtv-idealized-thm boothpipe-pp-correct
    :input-vars (a b)
    :output-vars (pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7)
    :concl (and (equal pp0 (boothpipe-pp-spec 16 0 a b))
@@ -268,7 +277,7 @@
 ;; Main Lemma 2.  Addition Part is Correct.
 
 (def-saved-event boothpipe-sum-correct
- (def-svtv-generalized-thm boothpipe-sum-correct
+ (def-svtv-idealized-thm boothpipe-sum-correct
    :override-vars (pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7)
    :output-vars (o)
    :concl (b* ((- (cw "o: ~s0~%" (str::hexify o)))
@@ -385,14 +394,14 @@
 ;; (local (in-theory (disable boothpipe-decomp-is-boothpipe-via-GL)))
 
 ; All that remains is to chain the above facts together.  Fortunately, the
-; theorem resulting from each def-svtv-generalized-thm form is one that can
+; theorem resulting from each def-svtv-idealized-thm form is one that can
 ; easily be composed with other such theorems.  Boothpipe-pp-correct shows that
 ; the partial products are computed correctly; boothpipe-sum-correct shows that
 ; the partial products are correctly summed, and booth-sum-of-products-correct
 ; shows that the composition of the partial product computation and summing
 ; produces the signed 16-bit multiply.  The composition of these is just an
 ; ordinary ACL2 theorem (by rewriting), but we can write it succinctly as
-; another def-svtv-generalized-thm form (using the :no-lemmas option to skip the
+; another def-svtv-idealized-thm form (using the :no-lemmas option to skip the
 ; FGL step.)
 
 (in-theory (disable loghead logext unsigned-byte-p))
@@ -400,13 +409,12 @@
 ;; This is the most general form of the theorem. Note the ugly hyp #4 -- really
 ;; this just says that the PP override test variables should be unbound, or set to 0 or X.
 (def-saved-event boothpipe-correct-gen
-  (def-svtv-generalized-thm boothpipe-correct-gen
+  (def-svtv-idealized-thm boothpipe-correct-gen
     :input-vars (a b)
     :output-vars (o)
     :concl (equal o (loghead 32 (* (logext 16 a)
                                    (logext 16 b))))
-    :no-lemmas t
-    :hints(("Goal" :in-theory (e/d () ((boothpipe-run-pipeline-override-triples)))))))
+    :no-lemmas t))
 
 (make-event
  ;; Save the final defthm form from boothpipe-correct-gen.
@@ -431,7 +439,7 @@
              (b* ((in-alist (list `(a . ,a)
                                   `(b . ,b)
                                   `(en . 1)))
-                  (out-alist (svtv-run (boothpipe-run) in-alist))
+                  (out-alist (svtv-spec-run (boothpipe-ideal) in-alist))
                   (o         (svex-env-lookup 'o out-alist)))
                (equal o (loghead 32 (* (logext 16 a) (logext 16 b))))))
     :hints(("Goal" :in-theory (e/d (svex-env-lookup-of-cons
@@ -440,8 +448,7 @@
                                     svex-env-keys-no-1s-p-of-variable-free-term
                                     hons-intersection-force-execute
                                     svex-env-keys-no-1s-p-of-cons)
-                                   ((svex-env-lookup)
-                                    (boothpipe-run-pipeline-override-triples)))))))
+                                   ((svex-env-lookup)))))))
 
 
 
@@ -477,7 +484,9 @@ see that file and the comments in it.</p>
 <p>In the boothpipe example, the intermediate signals to split the pipeline on
 are the partial products @('pp0')...@('pp7').  We'll have one SVTV that says
 how to run the whole module, whether we're decomposing on the partial products
-or not.  For each of the partial products, this SVTV will both conditionally overrides the signal and provides an output signal that producess the un-overridden value:</p>
+or not.  For each of the partial products, this SVTV will both conditionally
+override the signal and provide an output signal that produces the
+un-overridden value:</p>
 
 @(`(:code ($ boothpipe-run))`)
 
@@ -521,23 +530,46 @@ rewriting.</p>
 want to override the partial products of the SVTV with free variables and show
 that the output computed is a function of those variables.  However, ultimately
 we want to know what happens in the SVTV when these signals are not
-overridden. To do this we use some facts that may be automatically proven about
-the SVTV to show that this fact about the run with the partial products
-overridden implies a similar fact about a run where the partial products are
-instead sampled as outputs.  The steps for this are as follows.</p>
+overridden. To do this, we'll use the facts that we prove via symbolic
+simulation on the SVTV to prove similar facts about another object, the
+<i>ideal</i> svtv-spec.  The topic @(see
+svex-fixpoint-decomposition-methodology) has more details of what this object
+is; generally speaking, we won't compute the ideal but we'll prove things about
+it and we can sometimes execute a simulation of it (via a @(see mbe) trick).
+First we define the ideal as a 0-ary function (though it will produce an error
+if that function is run), and automatically prove some facts relating the SVTV
+to the ideal.  These facts show:</p>
 
-<p>First, prove the automatic theorems about the SVTV:</p>
+<ul>
+<li>Runs of the SVTV are conservative approximations of runs of the ideal, and</li>
+<li>The ideal has the property that if a signal is overridden with the value
+that signal would have anyway, it doesn't change the values of any other
+signals.</li>
+</ul>
+
+<p>These facts allow us to generalize proofs about the SVTV to theorems about
+the ideal, which can easily be composed together.  The steps for defining the
+ideal are as follows:</p>
+
 @(`(:code ($ boothpipe-data))`)
-@(`(:code ($ boothpipe-run-override-thms))`)
+@(`(:code ($ boothpipe-run-ideal))`)
 
-<p>Now we can use the @(see def-svtv-generalized-thm) utility to prove our two
+<p>This last event (for which the previous one is a prerequisite) produces a
+0-ary function @('boothpipe-ideal') which is the object that we'll prove our
+composable theorems about, even though we can't execute it.  It also produces a
+function @('boothpipe-ideal-exec') that (logically) extracts certain output
+signals from a run of @('boothpipe-ideal') -- but since @('boothpipe-ideal')
+isn't executable, it actually uses @('boothpipe-run') to compute what must be
+the values of those varibles.</p>
+
+<p>Now we can use the @(see def-svtv-idealized-thm) utility to prove our two
 steps. First, we set some defaults that will be used for all
-@('def-svtv-generalized-thm') invocations in this book: these forms say which
-SVTV we're using, to assume by default that all input and override variables
-used are appropriate-sized unsigned bytes, and to assume the enable signal is
-1.</p>
+@('def-svtv-idealized-thm') invocations in this book: these forms say which
+SVTV we're using, the name of the SVTV's corresponding ideal, to assume by
+default that all input and override variables used are appropriate-sized
+unsigned bytes, and to assume the enable signal is 1.</p>
 
-@(`(:code ($ svtv-generalized-thm-defaults))`)
+@(`(:code ($ svtv-idealized-thm-defaults))`)
 
 <p>We can start by proving the partial product computation correct:</p>
 @(`(:code ($ boothpipe-pp-correct))`)
@@ -548,7 +580,7 @@ proofs-with-stvs):</p>
 
 @(`(:code ($ boothpipe-pp-correct-fgl))`)
 
-<p>This lemma is used to prove a much more general result:</p>
+<p>This lemma is used to prove a much more general result about the ideal:</p>
 
 @(`(:code ($ boothpipe-pp-correct-final-thm))`)
 
@@ -566,15 +598,17 @@ to @('svex-env-lookup')s of the bound object -- e.g.,</p>
    ...)
  })
 
-<p>Second, there is a special hypothesis:</p>
+<p>Second, there are two special hypotheses:</p>
 @({
- (SVEX-ENV-KEYS-NO-1S-P (SVAR-OVERRIDE-TRIPLELIST->TESTVARS
-                          (BOOTHPIPE-RUN-PIPELINE-OVERRIDE-TRIPLES)) ENV)
+ (SVTV-OVERRIDE-TRIPLEMAPLIST-ENVS-MATCH (BOOTHPIPE-RUN-TRIPLEMAPLIST) ENV 'NIL)
+ (SVARLIST-OVERRIDE-P (SVEX-ENVLIST-ALL-KEYS BASE-INS) NIL)
  })
 
-<p>This says that in the environment, there are no conditional override test
-variables set to 1s -- i.e., no signals defined as conditional overrides are
-actually overridden.</p>
+<p>The first says that in the environment, there are no conditional override
+test variables set to 1s -- i.e., no signals defined as conditional overrides
+are actually overridden.  The second says that the base-ins, which can be used
+to set FSM input signals that aren't stimulated by the SVTV, doesn't set any
+overrides.</p>
 
 <p>Third, note that @('boothpipe-pp-correct') is much more generally
 applicable as a set of rewrite rules than
@@ -585,7 +619,7 @@ about it, whereas in a typical bitblasting theorem it would be expressed as an
 alist of a specific shape with some symbolic values bound to concrete keys.
 This is what allows this theorem to be composed with others much more easily.
 The lemmas proved in the @('def-svtv-override-thms') form allow the FGL lemma
-to be generalized into this form.</p>
+to be idealized into this form.</p>
 
 
 
@@ -596,19 +630,21 @@ to be generalized into this form.</p>
 partial products:</p>
 @(`(:code ($ boothpipe-sum-correct-fgl))`)
 
-<p>The final theorem proved by the @('def-svtv-generalized-thm') form, however,
-eliminates these overrides.  It again has the @('svex-env-keys-no-1s-p')
-hypothesis, and instead extracts the partial products from the outputs of the
-@('svtv-run'). That is, instead of a theorem \"If you run the SVTV with PPs
+<p>The final theorem proved by the @('def-svtv-idealized-thm') form, however,
+eliminates these overrides.  It again has the
+@('svtv-override-triplemaplist-envs-match') and @('svarlist-override-p')
+hypotheses, but extracts the partial products from the outputs of the
+@('svtv-run') instead of providing them as an override in the input
+environment.  That is, instead of a theorem \"If you run the SVTV with PPs
 overridden, output @('o') is related to the override values\" we instead have a
-theorem \"If you run the SVTV with no overrides, output @('o') is related to
+theorem \"If you run the ideal with no overrides, output @('o') is related to
 the values of the PPs.\" This again is much easier to compose, because we can
 easily describe an @('svtv-run') which satisfies the hypotheses of both
 @('boothpipe-pp-correct') and @('boothpipe-sum-correct') simultaneously.</p>
 
 <p>We now have two rewrite rules that will be useful in our final theorem: one
-expresses the final output @('o') of the SVTV as the sum of the @('pp')
-outputs, and the other expresses the @('pp') outputs of the SVTV as the correct
+expresses the final output @('o') of the ideal as the sum of the @('pp')
+outputs, and the other expresses the @('pp') outputs of the ideal as the correct
 Booth partial products for the inputs @('a') and @('b').  We want to use these
 to show that @('o') is the multiplication of @('a') and @('b'). So we first
 need a theorem showing that the sum of the Booth partial products is
@@ -618,8 +654,8 @@ it's purely an ACL2 arithmetic theorem:</p>
 @(`(:code ($ booth-sum-of-products-correct))`)
 
 <p>This can now be used to prove our top-level theorem.  We can do this with
-another @('def-svtv-generalized-thm') form, this time with the @(':no-lemmas t')
-argument, which directs it to prove the generalized theorem directly with ACL2
+another @('def-svtv-idealized-thm') form, this time with the @(':no-lemmas t')
+argument, which directs it to prove the idealized theorem directly with ACL2
 rather than first proving an FGL lemma:</p>
 
 @(`(:code ($ boothpipe-correct-gen))`)

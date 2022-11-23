@@ -1540,6 +1540,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
      `((<hyp> . ,x.hyp)
        (<concl> . ,x.concl)
        (<ideal> . ,x.ideal)
+       (<defthm> . ,x.final-defthm)
        (<triplemaps> . ,x.triples-name)
        (<const-overrides> . ',(svtv-idthm-override-subst
                                (append (alist-keys x.spec-override-var-bindings) x.spec-override-vars)
@@ -1575,7 +1576,9 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
        (<spec-override-var-instantiation> . ,(svtv-idthm-spec-override-var-instantiation x.spec-override-vars))
        (<input-var-instantiation> . ,(svtv-genthm-input-var-instantiation x.input-vars))
        (<outputs> . ,x.output-vars)
-       (<enable> . ,x.enable))
+       (<enable> . ,x.enable)
+       (<hints-hints> . ,(and x.hints `(:hints ,x.hints)))
+       (<args> . ,x.final-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name))
                   ("<SVTV>" . ,(symbol-name x.svtv))
                   ("<IDEAL>" . ,(symbol-name x.ideal)))
@@ -1850,7 +1853,9 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                     (svtv-override-triplelist-envs-match checks env spec))))
 
   (cmr::def-force-execute svtv-override-triplemaplist-envs-match-checks-when-variable-free
-    svtv-override-triplemaplist-envs-match-checks))
+    svtv-override-triplemaplist-envs-match-checks)
+
+  (in-theory (enable svtv-override-triplemaplist-envs-match-checks-when-variable-free)))
 
 
 
