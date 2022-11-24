@@ -103,30 +103,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr-const-correct-thm ((fn symbolp)
-                                        (term pseudo-termp)
-                                        (expr exprp)
-                                        (type typep)
-                                        (thm-index posp)
-                                        (names-to-avoid symbol-listp)
-                                        state)
+(define atc-gen-expr-const ((term pseudo-termp)
+                            (const iconstp)
+                            (type typep)
+                            (gin pexpr-ginp)
+                            state)
   :guard (type-integerp type)
-  :returns (mv (event pseudo-event-formp)
-               (name symbolp)
-               (updated-names-to-avoid symbol-listp
-                                       :hyp (symbol-listp names-to-avoid)))
-  :short "Generate a correctness theorem for the execution of
-          a constant expression."
+  :returns (gout pexpr-goutp)
+  :short "Generate a C expression and theorem from an ACL2 term
+          that represents an integer constant expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "The theorem says that the execution yields the term.
      It also says that the term satisfies
-     the applicable shallowly embedded type predicate."))
-  (b* ((name (pack fn '-expr thm-index '-correct))
-       ((mv name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix name nil names-to-avoid (w state)))
-       (typep (type-to-recognizer type (w state)))
+     the applicable shallowly embedded type predicate.")
+   (xdoc::p
+    "The hints cover all possible integer constants,
+     but we could make them more nuanced to the specifics of the constant."))
+  (b* (((pexpr-gin gin) gin)
+       (wrld (w state))
+       (expr (expr-const (const-int const)))
+       ((when (not gin.proofs))
+        (make-pexpr-gout :expr expr
+                         :type type
+                         :events nil
+                         :thm-index gin.thm-index
+                         :names-to-avoid gin.names-to-avoid
+                         :proofs nil))
+       (thm-name (pack gin.fn '-expr gin.thm-index '-correct))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil gin.names-to-avoid wrld))
+       (typep (type-to-recognizer type wrld))
        (formula `(and (equal (exec-expr-pure ',expr compst)
                              ,term)
                       (,typep ,term)))
@@ -178,11 +186,16 @@
                                      ulongp-of-ulong
                                      sllongp-of-sllong
                                      ullongp-of-ullong))))
-       ((mv event &) (evmac-generate-defthm name
+       ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv event name names-to-avoid)))
+    (make-pexpr-gout :expr expr
+                     :type type
+                     :events (list event)
+                     :thm-index (1+ gin.thm-index)
+                     :names-to-avoid names-to-avoid
+                     :proofs t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -304,24 +317,8 @@
               :thm-index gin.thm-index
               :names-to-avoid gin.names-to-avoid
               :proofs nil))))
-         ((erp okp const out-type) (atc-check-iconst term))
-         ((when okp)
-          (b* ((expr (expr-const (const-int const)))
-               ((mv event & names-to-avoid)
-                (atc-gen-expr-const-correct-thm gin.fn
-                                                term
-                                                expr
-                                                out-type
-                                                gin.thm-index
-                                                gin.names-to-avoid
-                                                state)))
-            (retok
-             (make-pexpr-gout :expr expr
-                              :type out-type
-                              :events (list event)
-                              :thm-index (1+ gin.thm-index)
-                              :names-to-avoid names-to-avoid
-                              :proofs gin.proofs))))
+         ((erp okp const type) (atc-check-iconst term))
+         ((when okp) (retok (atc-gen-expr-const term const type gin state)))
          ((mv okp op arg-term in-type out-type) (atc-check-unop term))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
