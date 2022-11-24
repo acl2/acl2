@@ -1899,7 +1899,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             the following nested sequence of included books (outermost~%~
             to innermost):~%~{  ~a~%~}~;.~]"
            name
-           (book-name-to-filename (caar stk) project-dir-alist ctx)
+           (book-name-to-filename-1 (caar stk) project-dir-alist ctx)
            (null (cdr stk))
            (book-name-lst-to-filename-lst
             (reverse-strip-cars stk nil)
@@ -8140,7 +8140,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq (car x) 'quote)
          (and (consp (cdr x))
               (null (cdr (cdr x)))))
-        ((not (true-listp x)) nil)
         ((not (pseudo-term-listp (cdr x))) nil)
         (t (or (symbolp (car x))
 
@@ -8166,6 +8165,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (pseudo-term-listp (cdr lst))))))
 
 )
+
+(defthm pseudo-termp-consp-forward
+    (implies (and (pseudo-termp x)
+		  (consp x))
+	     (true-listp x))
+  :hints (("Goal" :expand ((pseudo-termp x))))
+  :rule-classes :forward-chaining)
 
 (defthm pseudo-term-listp-forward-to-true-listp
   (implies (pseudo-term-listp x)
