@@ -57,3 +57,4 @@
 (include-book "all-fnnames1")
 (include-book "get-conjuncts")
 (include-book "get-hyps-and-conc")
+(include-book "replace-corresponding-arg")
