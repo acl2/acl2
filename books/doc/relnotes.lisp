@@ -242,6 +242,13 @@
      See the documentation for details,
      including functional differences with @('one-way-unify').")
 
+   (xdoc::p
+    "A new utility @(tsee termination-theorem$) has been added,
+     which is a logic-mode guard-verified version
+     of the built-in @('termination-theorem').
+     See the documentation for details,
+     including functional differences with @('termination-theorem').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
