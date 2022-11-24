@@ -190,6 +190,7 @@
      ".")
     :elt-type concatenation
     :true-listp t
+    :elementp-of-nil t
     :pred alternationp
     :measure (two-nats-measure (acl2-count x) 0))
 

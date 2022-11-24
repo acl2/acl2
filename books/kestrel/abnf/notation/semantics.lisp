@@ -200,6 +200,7 @@
       ", these are the outer lists that correspond to concatenations."))
     :elt-type tree-list
     :true-listp t
+    :elementp-of-nil t
     :pred tree-list-listp
     ///
 
