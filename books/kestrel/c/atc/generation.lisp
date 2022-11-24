@@ -21,31 +21,17 @@
 
 (include-book "symbolic-execution-rules/top")
 
-(include-book "../language/dynamic-semantics")
-
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
-(include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/system/function-symbolp" :dir :system)
-(include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
-(include-book "kestrel/std/util/tuple" :dir :system)
-(include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "std/strings/strprefixp" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/basic/member-symbol-name" :dir :system))
-(local (include-book "kestrel/std/system/all-fnnames" :dir :system))
-(local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
-(local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
-(local (include-book "std/typed-lists/string-listp" :dir :system))
-(local (include-book "std/typed-lists/symbol-listp" :dir :system))
-
-(local (include-book "projects/apply/loop" :dir :system))
-(local (in-theory (disable acl2::loop-book-theory)))
 
 (local (in-theory (disable state-p)))
 
@@ -375,7 +361,6 @@
       acl2::subsetp-car-member
       acl2::alistp-of-cdr
       default-symbol-name
-      acl2::symbolp-when-member-equal-of-symbol-listp
       omap::alistp-when-mapp
       pseudo-event-form-listp
       acl2::alistp-when-hons-duplicity-alist-p
