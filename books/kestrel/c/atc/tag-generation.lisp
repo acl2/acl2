@@ -129,6 +129,9 @@
                                              (ident ,(ident->name memname))
                                              compst)
                                (,reader struct))))
+             (value-kind-when-typep (pack 'value-kind-when-
+                                          (integer-type-to-fixtype type)
+                                          'p))
              (hints `(("Goal"
                        :in-theory
                        '(exec-member
@@ -139,7 +142,10 @@
                          ,recognizer
                          ,reader
                          ,not-error-thm
-                         ,fixer-recognizer-thm))))
+                         ,fixer-recognizer-thm
+                         value-struct-read
+                         ,value-kind-when-typep
+                         (:e ident)))))
              ((mv event-member &)
               (evmac-generate-defthm thm-member-name
                                      :formula formula-member
