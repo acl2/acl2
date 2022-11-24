@@ -50,6 +50,7 @@
   ((expr expr)
    (type type)
    (events pseudo-event-form-list)
+   (thm-name symbolp)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -63,6 +64,7 @@
   :body (make-pexpr-gout :expr (irr-expr)
                          :type (irr-type)
                          :events nil
+                         :thm-name nil
                          :thm-index 1
                          :names-to-avoid nil
                          :proofs nil))
@@ -128,6 +130,7 @@
         (make-pexpr-gout :expr expr
                          :type type
                          :events nil
+                         :thm-name nil
                          :thm-index gin.thm-index
                          :names-to-avoid gin.names-to-avoid
                          :proofs nil))
@@ -193,6 +196,7 @@
     (make-pexpr-gout :expr expr
                      :type type
                      :events (list event)
+                     :thm-name thm-name
                      :thm-index (1+ gin.thm-index)
                      :names-to-avoid names-to-avoid
                      :proofs t)))
@@ -314,6 +318,7 @@
               :expr (expr-ident (make-ident :name (symbol-name var)))
               :type type
               :events nil
+              :thm-name nil
               :thm-index gin.thm-index
               :names-to-avoid gin.names-to-avoid
               :proofs nil))))
@@ -336,6 +341,7 @@
                                            :arg arg.expr)
                     :type out-type
                     :events arg.events
+                    :thm-name nil
                     :thm-index arg.thm-index
                     :names-to-avoid arg.names-to-avoid
                     :proofs nil))))
@@ -368,6 +374,7 @@
                                             :arg2 arg2.expr)
                     :type out-type
                     :events (append arg1.events arg2.events)
+                    :thm-name nil
                     :thm-index arg2.thm-index
                     :names-to-avoid arg2.names-to-avoid
                     :proofs nil))))
@@ -388,6 +395,7 @@
                                           :arg arg.expr)
                     :type out-type
                     :events arg.events
+                    :thm-name nil
                     :thm-index arg.thm-index
                     :names-to-avoid arg.names-to-avoid
                     :proofs nil))))
@@ -420,6 +428,7 @@
                                             :sub sub.expr)
                     :type out-type
                     :events (append arr.events sub.events)
+                    :thm-name nil
                     :thm-index sub.thm-index
                     :names-to-avoid sub.names-to-avoid
                     :proofs nil))))
@@ -434,6 +443,7 @@
                                                    :name member)
                            :type mem-type
                            :events arg.events
+                           :thm-name nil
                            :thm-index arg.thm-index
                            :names-to-avoid arg.names-to-avoid
                            :proofs nil)))
@@ -443,6 +453,7 @@
                                                     :name member)
                            :type mem-type
                            :events arg.events
+                           :thm-name nil
                            :thm-index arg.thm-index
                            :names-to-avoid arg.names-to-avoid
                            :proofs nil)))
@@ -494,6 +505,7 @@
                                   :sub index.expr)
                            :type elem-type
                            :events (append index.events struct.events)
+                           :thm-name nil
                            :thm-index struct.thm-index
                            :names-to-avoid struct.names-to-avoid
                            :proofs nil)))
@@ -506,6 +518,7 @@
                                   :sub index.expr)
                            :type elem-type
                            :events (append index.events struct.events)
+                           :thm-name nil
                            :thm-index struct.thm-index
                            :names-to-avoid struct.names-to-avoid
                            :proofs nil)))
@@ -538,6 +551,7 @@
             (retok (make-pexpr-gout :expr arg.expr
                                     :type (type-sint)
                                     :events arg.events
+                                    :thm-name nil
                                     :thm-index arg.thm-index
                                     :names-to-avoid arg.names-to-avoid
                                     :proofs nil))))
@@ -582,6 +596,7 @@
                                     :else else.expr)
               :type then.type
               :events (append test.events then.events else.events)
+              :thm-name nil
               :thm-index else.thm-index
               :names-to-avoid else.names-to-avoid
               :proofs nil)))))
