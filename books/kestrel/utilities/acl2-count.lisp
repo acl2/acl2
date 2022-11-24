@@ -13,16 +13,8 @@
 
 ;; TODO: Consider disabling acl2-count here.
 
-;; a pretty strong linear rule but requires (consp x).
-;; Matt K. mod: Commented out, since it is now incorporated (at Eric's
-;; suggestion) into ACL2, where its name is acl2-count-car-cdr-linear.
-#|
-(defthm acl2-count-when-consp-linear
-  (implies (consp x)
-           (equal (acl2-count x)
-                  (+ 1 (acl2-count (car x)) (acl2-count (cdr x)))))
-  :rule-classes :linear)
-|#
+;; Note that ACL2 now includes a pretty strong linear rule about acl2-count,
+;; acl2-count-car-cdr-linear, though it does require consp.
 
 ;; These next 4 are weaker but don't assume (consp x):
 
@@ -54,7 +46,8 @@
            (<= (acl2-count (cdr y)) (acl2-count x)))
   :hints (("Goal" :in-theory (disable acl2-count))))
 
-(defthm <-of-0-and-acl2-count-when-consp-linear
+;; Is this needed, given acl2-count-car-cdr-linear?
+(defthmd <-of-0-and-acl2-count-when-consp-linear
   (implies (consp x)
            (< 0 (acl2-count x)))
   :rule-classes :linear
@@ -63,16 +56,21 @@
 (defthm <=-of-acl2-count-of-nthcdr
   (<= (acl2-count (nthcdr n lst))
       (acl2-count lst))
-  :rule-classes (:rewrite (:linear :trigger-terms ((acl2-count (nthcdr n lst)))))
-  :hints (("Goal" :induct (NTHCDR N LST)
+  :hints (("Goal" :induct (nthcdr n lst)
            :in-theory (enable nthcdr))))
 
+(defthm <=-of-acl2-count-of-nthcdr-linear
+  (<= (acl2-count (nthcdr n lst))
+      (acl2-count lst))
+  :rule-classes ((:linear :trigger-terms ((acl2-count (nthcdr n lst)))))
+  :hints (("Goal" :by <=-of-acl2-count-of-nthcdr)))
+
 (defthm <-of-acl2-count-of-nthcdr
-  (implies (and (consp lst)
-                (integerp n))
+  (implies (consp lst)
            (equal (< (acl2-count (nthcdr n lst))
                      (acl2-count lst))
-                  (< 0 n)))
+                  (and (< 0 n)
+                       (integerp n))))
   :hints (("Goal" :induct (nthcdr n lst) :in-theory (enable nthcdr))
           ("subgoal *1/1" :cases ((< 0 n)))
           ("subgoal *1/2" :cases ((< 0 n)))))
@@ -112,13 +110,14 @@
   :hints (("Goal" :induct (NTH N LST)
            :in-theory (enable nth))))
 
-(defthm acl2-count-of-one-less-bound
-  (implies (posp bound)
-           (< (acl2-count (+ -1 bound))
-              (acl2-count bound)))
+(defthm <-of-acl2-count-of-one-less
+  (implies (posp x)
+           (< (acl2-count (+ -1 x))
+              (acl2-count x)))
   :hints (("Goal" :in-theory (enable acl2-count))))
 
 ;todo: use polarities?
-(defthm acl2-count-hack
+;drop?
+(defthmd acl2-count-hack
   (implies (<= (acl2-count x) y)
            (< (acl2-count x) (+ 1 y))))

@@ -86,7 +86,8 @@ public class ABNFShallowGuardedTests {
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseABNFCore";
-        Acl2Value input = getInputFromFile("../../../abnf/core-rules.abnf");
+        Acl2Value input =
+            getInputFromFile("../../../abnf/notation/core-rules.abnf");
         test_Parse(testName, input, n, m);
     }
 
@@ -95,7 +96,7 @@ public class ABNFShallowGuardedTests {
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseABNFSyntax";
         Acl2Value input =
-            getInputFromFile("../../../abnf/concrete-syntax-rules.abnf");
+            getInputFromFile("../../../abnf/notation/concrete-syntax-rules.abnf");
         test_Parse(testName, input, n, m);
     }
 

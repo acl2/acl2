@@ -131,7 +131,7 @@
   :hints(("Goal" :in-theory (enable glcp-config-update-param))))
 
 (define glmc-config-update-param (param (config glmc-config-p))
-  :returns (new-config glmc-config-p :hyp :guard) 
+  :returns (new-config glmc-config-p :hyp :guard)
   (b* (((glmc-config config))
        (glcp-config (glcp-config-update-param param config.glcp-config)))
     (change-glmc-config config :glcp-config glcp-config))
@@ -188,7 +188,7 @@
 (define glmc-config-update-rewrites ((config glmc-config-p)
                                      (rewrites)
                                      (branch-merges))
-  :returns (new-config glmc-config-p :hyp :guard) 
+  :returns (new-config glmc-config-p :hyp :guard)
   (b* (((glmc-config config))
        (glcp-config (glcp-config-update-rewrites config.glcp-config rewrites branch-merges)))
     (change-glmc-config config :glcp-config glcp-config))
@@ -243,7 +243,7 @@
           (interp-profiler (update-prof-stack nil interp-profiler)))
        interp-profiler)
      interp-st)))
-       
+
 
 
 (define init-interp-st (interp-st (config glmc-config-p) state)
@@ -335,9 +335,9 @@
   :returns (mv contra new-pathcond new-interp-st new-bvar-db)
   (b* (((mv contra1 interp-st bvar-db)
         (glcp-parametrize-accs pathcond-bfr interp-st bvar-db1 bvar-db))
-       
+
        ((mv contra2 pathcond) (glcp-bfr-to-pathcond pathcond-bfr pathcond)))
-    
+
     (mv (or contra1 contra2)
         pathcond interp-st bvar-db)))
 
@@ -470,7 +470,7 @@
                   (symbol-listp (union-eq x y)))))
 
 
-                               
+
 
 (local (defthm symbol-listp-when-variable-listp
          (implies (and (variable-listp x)
@@ -574,7 +574,7 @@
            (equal (consp (remove x y))
                   (not (subsetp y (list x))))
            :hints(("Goal" :in-theory (enable subsetp remove)))))
-  
+
   (std::defret vars-subset-of-bound-by-glmc-syntax-checks
     (implies (not er)
              (b* (((glmc-config config))
@@ -648,6 +648,35 @@
                     (not (intersectp-equal (simple-term-vars-lst config.rest-ins) config.frame-in-vars)))))
     :hints ((acl2::set-reasoning))))
 
+; Matt K. addition: definition from before November 2022 of pseudo-termp, to
+; allow the next event (glmc-measure-clauses) to be admitted.
+(local
+ #!acl2
+ (defthm pseudo-termp-def
+     (equal (pseudo-termp x)
+            (cond ((atom x) (symbolp x))
+                  ((eq (car x) 'quote)
+                   (and (consp (cdr x))
+                        (null (cdr (cdr x)))))
+                  ((not (true-listp x)) nil)
+                  ((not (pseudo-term-listp (cdr x))) nil)
+                  (t (or (symbolp (car x))
+
+; For most function applications we do not check that the number of
+; arguments matches the number of formals.  However, for lambda
+; applications we do make that check.  The reason is that the
+; constraint on an evaluator dealing with lambda applications must use
+; pairlis$ to pair the formals with the actuals and pairlis$ insists on
+; the checks below.
+
+                         (and (true-listp (car x))
+                              (equal (length (car x)) 3)
+                              (eq (car (car x)) 'lambda)
+                              (symbol-listp (cadr (car x)))
+                              (pseudo-termp (caddr (car x)))
+                              (equal (length (cadr (car x)))
+                                     (length (cdr x))))))))
+   :rule-classes ((:definition :controller-alist ((pseudo-termp t))))))
 
 (define glmc-measure-clauses ((config glmc-config-p))
   :guard (not (glmc-clause-syntax-checks config))
@@ -699,7 +728,7 @@
                              'nil
                            ,config.run))
                        ,@(list-fix config.in-vars)
-                       ,(acl2::bindinglist-to-lambda-nest-exec 
+                       ,(acl2::bindinglist-to-lambda-nest-exec
                          config.bindings config.nextst))))))
               ,@config.frame-ins
               ,@config.rest-ins
@@ -773,7 +802,7 @@
   ;;         (t (check-run (nextst st (car ins)) (cdr ins))))
   ;; We need to show that what we'll prove through model checking implies this clause.
   ;; We'll first show that check-run is of the appropriate form
-  ;; 
+  ;;
   (list* (glmc-clause-check-clause clause config)
          (glmc-run-check-clause config)
          (append (glmc-measure-clauses config)
@@ -896,7 +925,7 @@
                                  (fsm glmc-fsm-p)
                                  bvar-db state)
   :returns (mv er new-state)
-  
+
   (b* (((glmc-fsm fsm))
        (?config config)
        (?bvar-db bvar-db)
@@ -924,7 +953,7 @@
                                              fsm.nextst
                                              fsm.initst
                                              fsm.var-bound))))))))
-  
+
 
 (local (defthm pseudo-term-listp-when-variable-listp
          (implies (and (variable-listp x)
@@ -936,7 +965,7 @@
          (implies (shape-spec-bindingsp x)
                   (variable-listp (alist-keys x)))
          :hints(("Goal" :in-theory (enable shape-spec-bindingsp)))))
-  
+
 (define glcp-cov-clause ((hypo pseudo-termp) (bindings shape-spec-bindingsp))
   :returns (cov-clause pseudo-term-listp :hyp :guard)
   (list '(not (gl-cp-hint 'coverage))
@@ -949,14 +978,14 @@
     (glcp-cov-clause `(if ,config.st-hyp ,config.in-hyp 'nil) config.shape-spec-alist)))
 
 
-  
+
 
 (local (defthm state-of-preferred-defs-to-overrides
          (equal (mv-nth 2 (preferred-defs-to-overrides table state))
                 state)
          :hints(("Goal" :in-theory (enable preferred-defs-to-overrides)))))
 
-  
+
 (define glmc-config-load-overrides ((config glmc-config-p)
                                     state)
   :returns (mv er (new-config

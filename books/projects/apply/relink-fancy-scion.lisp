@@ -967,7 +967,7 @@
                  (assoc-equal x old-alist))
             (and (CONSP (CAR/CDR-VAL (CADR X) GLOBAL-ACTUAL))
                  (or (eq (car (CAR/CDR-VAL (CADR X) GLOBAL-ACTUAL)) 'CONS)
-                     (eq (car (CAR/CDR-VAL (CADR X) GLOBAL-ACTUAL)) 'quote)))) 
+                     (eq (car (CAR/CDR-VAL (CADR X) GLOBAL-ACTUAL)) 'quote))))
    :rule-classes nil))
 
 (local
@@ -1029,25 +1029,11 @@
                                            A2))))
            ("Subgoal *1/3" ; "Subgoal *1/3.22'''"
             :use (:instance strong-alist-property-implies-cadr-not-bad))
-           ("Subgoal *1/3.38'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.37'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.35''" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.34''" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.33'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.32'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.30'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.28'''" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.27'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.13'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.11.2'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.11.1'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.10'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.8'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.7'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.5''" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.4''" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.3'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1))
-           ("Subgoal *1/3.2'" :in-theory (enable strong-alist-property-cdr-assoc-equal-1)))))
+; Matt K. mod: Replace subgoal hints with the following, to save the proof
+; after Nov. 2022 elimination of (not (true-listp x)) check from the definition
+; of pseudo-termp.
+           (and stable-under-simplificationp
+                '(:in-theory (enable strong-alist-property-cdr-assoc-equal-1))))))
 
 (local
  (defthm ev$-relink-term
