@@ -8852,7 +8852,10 @@
 ; comments).
 
 (defmacro make-sysfile (key str)
-  `(cons ,key ,str))
+  (cond ((and (keywordp key)
+              (stringp str))
+         `(quote (,key . ,str)))
+        (t `(cons ,key ,str))))
 
 (defun sysfile-p (x)
 

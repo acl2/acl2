@@ -375,7 +375,6 @@
                              ((EQ (CAR TERM) 'QUOTE)
                               (AND (CONSP (CDR TERM))
                                    (NULL (CDDR TERM))))
-                             ((NOT (TRUE-LISTP TERM)) NIL)
                              ((NOT (NEW-PSEUDO-TERM-LISTP (CDR TERM)))
                               NIL)
                              ((SYMBOLP (CAR TERM))
