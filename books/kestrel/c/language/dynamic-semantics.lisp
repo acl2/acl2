@@ -316,12 +316,22 @@
     "This is for the @('.') operator.
      The operand must be a structure.
      The named member must be in the structure.
-     The value associated to the member is returned."))
+     The value associated to the member is returned.")
+   (xdoc::p
+    "We ensure that the value is not an array.
+     In our current C model, we only use this ACL2 function
+     when executing pure expressions, where we return values.
+     In full C, expressions that evaluate to arrays
+     undergo array-pointer conversion,
+     but currently out model is not limited."))
   (b* (((unless (value-case str :struct))
         (error (list :mistype-member
                      :required :struct
-                     :supplied (type-of-value str)))))
-    (value-struct-read mem str))
+                     :supplied (type-of-value str))))
+       (val (value-struct-read mem str))
+       ((when (errorp val)) val)
+       ((when (value-case val :array)) (error :member-array-whole-read)))
+    val)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -336,7 +346,11 @@
      The operand must be a non-null pointer to a structure
      of type consistent with the structure.
      The named member must be in the structure.
-     The value associated to the member is returned."))
+     The value associated to the member is returned.")
+   (xdoc::p
+    "Similarly to @(tsee exec-memberp),
+     we ensure that the value is not an array,
+     for the same reason explained there."))
   (b* (((unless (value-case str :pointer))
         (error (list :mistype-memberp
                      :required :pointer
@@ -354,8 +368,11 @@
                        (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
                      :pointer reftype
-                     :array (type-struct (value-struct->tag struct))))))
-    (value-struct-read mem struct))
+                     :array (type-struct (value-struct->tag struct)))))
+       (val (value-struct-read mem struct))
+       ((when (errorp val)) val)
+       ((when (value-case val :array)) (error :member-array-whole-read)))
+    val)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
