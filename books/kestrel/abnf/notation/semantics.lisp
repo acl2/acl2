@@ -200,6 +200,7 @@
       ", these are the outer lists that correspond to concatenations."))
     :elt-type tree-list
     :true-listp t
+    :elementp-of-nil t
     :pred tree-list-listp
     ///
 
@@ -410,7 +411,13 @@
 
     :hints (("Goal" :in-theory (enable tree->string
                                        tree-list->string
-                                       tree-list-list->string)))))
+                                       tree-list-list->string))))
+
+  (defruled branches-terminated-when-tree-terminated
+    (implies (abnf::tree-terminatedp tree)
+             (abnf::tree-list-list-terminatedp
+              (abnf::tree-nonleaf->branches tree)))
+    :enable (abnf::tree-nonleaf->branches)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -922,6 +929,41 @@
              tree->string))
 
   (fty::deffixequiv-mutual tree-match-alt/conc/rep/elem-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection theorems-about-terminated-trees-matching-elements
+  :short "Some theorems about terminated trees matching certain elements."
+
+  (defruled tree-nonleaf-when-match-rulename/group/option
+    (implies (and (abnf::tree-match-element-p tree element rules)
+                  (member-eq (abnf::element-kind element)
+                             '(:rulename :group :option))
+                  (abnf::tree-terminatedp tree))
+             (equal (abnf::tree-kind tree) :nonleaf))
+    :expand (abnf::tree-match-element-p tree element rules)
+    :enable abnf::tree-terminatedp)
+
+  (defruled tree-rulename-when-match-rulename
+    (implies (and (abnf::tree-match-element-p tree element rules)
+                  (abnf::element-case element :rulename)
+                  (abnf::tree-terminatedp tree))
+             (equal (abnf::tree-nonleaf->rulename? tree)
+                    (abnf::element-rulename->get element)))
+    :expand (abnf::tree-match-element-p tree element rules)
+    :use tree-nonleaf-when-match-rulename/group/option)
+
+  (defruled tree-branches-match-alt-when-match-rulename
+    (implies (and (abnf::tree-match-element-p tree element rules)
+                  (abnf::element-case element :rulename)
+                  (equal alt
+                         (abnf::lookup-rulename
+                          (abnf::element-rulename->get element) rules))
+                  (abnf::tree-terminatedp tree))
+             (abnf::tree-list-list-match-alternation-p
+              (abnf::tree-nonleaf->branches tree) alt rules))
+    :expand (abnf::tree-match-element-p tree element rules)
+    :use tree-nonleaf-when-match-rulename/group/option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
