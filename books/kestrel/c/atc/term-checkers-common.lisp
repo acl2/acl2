@@ -227,7 +227,9 @@
         (reterr (msg "The function ~x0
                       must be applied to a quoted natural number ~
                       representable in the C type corresponding to ~x1, ~
-                      but it is applied to ~x2 instead."
+                      but it is applied to ~x2 instead.
+                      This is indicative of provably dead code, ~
+                      given that the code is guard-verified."
                      term.fn type val)))
        (base (case base
                (dec (iconst-base-dec))
