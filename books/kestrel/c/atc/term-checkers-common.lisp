@@ -171,7 +171,8 @@
   :returns (mv erp
                (yes/no booleanp)
                (const iconstp)
-               (type typep))
+               (type typep)
+               (type-base-const symbolp))
   :short "Check if a term represents an integer constant."
   :long
   (xdoc::topstring
@@ -179,12 +180,13 @@
     "If the term is a call of a function @('<type>-<base>-const')
      on a quoted integer constant,
      we return the C integer constant represented by this call.
-     We also return the C integer type of the constant.")
+     We also return the C integer type of the constant.
+     We also return the @('<type>-<base>-const') function symbol.")
    (xdoc::p
     "In certain circumstances, we return an error in @('erp'),
      namely when the term cannot represent any other C construct."))
-  (b* (((reterr) nil (irr-iconst) (irr-type))
-       ((acl2::fun (no)) (retok nil (irr-iconst) (irr-type)))
+  (b* (((reterr) nil (irr-iconst) (irr-type) nil)
+       ((acl2::fun (no)) (retok nil (irr-iconst) (irr-type) nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp type base const) (atc-check-symbol-3part term.fn))
@@ -265,7 +267,7 @@
                                    :length (iconst-length-llong))
                       (type-ullong)))
           (t (mv (impossible) (impossible))))))
-    (retok t const type))
+    (retok t const type term.fn))
   ///
   (defret type-integerp-of-atc-check-iconst.type
     (implies yes/no

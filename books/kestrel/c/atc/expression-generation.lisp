@@ -329,7 +329,7 @@
          ((pexpr-gin gin) gin)
          ((when (pseudo-term-case term :var))
           (retok (atc-gen-expr-var (pseudo-term-var->name term) gin)))
-         ((erp okp const type) (atc-check-iconst term))
+         ((erp okp const type &) (atc-check-iconst term))
          ((when okp) (retok (atc-gen-expr-const term const type gin state)))
          ((mv okp op arg-term in-type out-type) (atc-check-unop term))
          ((when okp)
