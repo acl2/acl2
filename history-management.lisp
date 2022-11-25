@@ -2406,30 +2406,33 @@
            (stringp (car arg))
            (character-alistp (cdr arg)))))
 
-(defun print-failure1 (erp ctx state)
+(defun print-failure1 (erp acc-ttree ctx state)
   (let ((channel (proofs-co state)))
     (pprogn
      (error-fms-channel
-      nil ctx "Failure" "~@0See :DOC failure.~@1"
+      nil ctx "Failure"
+      "~@0See :DOC failure.~#1~[~|*NOTE*: Useless-runes were in use and can ~
+       affect proof attempts.  See :DOC useless-runes-failures.~/~]"
       (list (cons #\0
                   (if (tilde-@p erp)
                       erp
                     ""))
             (cons #\1
-                  (let ((useless-runes (f-get-global
-                                        'useless-runes
-                                        state)))
-                    (if (and useless-runes
-                             (not (eq (access useless-runes useless-runes :tag)
-                                      'CHANNEL)))
-                        (msg "~|*NOTE*: Useless-runes may have contributed to ~
-                              proof failure.  See :DOC useless-runes-failures.")
-                      ""))))
+                  (if (and acc-ttree ; likely non-nil after a proof attempt
+                           (not (ld-skip-proofsp state))
+                           (let ((useless-runes
+                                  (f-get-global 'useless-runes state)))
+                             (and useless-runes
+                                  (not (eq (access useless-runes useless-runes
+                                                   :tag)
+                                           'CHANNEL)))))
+                      0
+                    1)))
       channel state 1)
      (io? summary nil state (channel)
           (fms *proof-failure-string* nil channel state nil)))))
 
-(defun print-failure (erp event-type ctx state)
+(defun print-failure (erp event-type acc-ttree ctx state)
   (pprogn
    (save-and-print-gag-state state)
    #+acl2-par
@@ -2448,13 +2451,13 @@
                           '(encapsulate progn make-event defun)))
           (cond
            ((output-ignored-p 'error state)
-            (io? summary nil state (erp ctx)
-                 (print-failure1 erp ctx state)))
-           (t (print-failure1 erp ctx state))))
+            (io? summary nil state (erp acc-ttree ctx)
+                 (print-failure1 erp acc-ttree ctx state)))
+           (t (print-failure1 erp acc-ttree ctx state))))
          ((member-eq 'errors (f-get-global 'inhibited-summary-types state))
           state)
-         (t (io? summary nil state (erp ctx)
-                 (print-failure1 erp ctx state))))))
+         (t (io? summary nil state (erp acc-ttree ctx)
+                 (print-failure1 erp acc-ttree ctx state))))))
 
 ; The following two defproxy events will be "upgraded" to defstub events after
 ; state-p, which is called in the guard for each, is in :logic mode.
@@ -3001,7 +3004,8 @@
 ; use io? below, and inside some functions below, because of its window hacking
 ; and saved-output functions.
 
-           (let ((output-ignored-p (output-ignored-p 'summary state)))
+           (let ((output-ignored-p (output-ignored-p 'summary state))
+                 (acc-ttree (f-get-global 'accumulated-ttree state)))
              (pprogn
               (if (or erp noop-flg output-ignored-p)
                   state
@@ -3033,9 +3037,7 @@
                                 (fmt-ctx ctx col channel state)
                                 (declare (ignore col))
                                 (newline channel state)))))))
-              (print-rules-and-hint-events-summary
-               (f-get-global 'accumulated-ttree state)
-               state)
+              (print-rules-and-hint-events-summary acc-ttree state)
               (print-system-attachments-summary state)
               (print-warnings-summary state)
               (print-time-summary state)
@@ -3071,7 +3073,7 @@
               (pprogn
                (cond (erp
                       (pprogn
-                       (print-failure erp event-type ctx state)
+                       (print-failure erp event-type acc-ttree ctx state)
                        (cond
                         ((f-get-global 'proof-tree state)
                          (io? proof-tree nil state
