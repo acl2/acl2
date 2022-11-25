@@ -105,6 +105,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-expr-var ((var symbolp)
+                          (gin pexpr-ginp))
+  :returns (gout pexpr-goutp)
+  :short "Generate a C expression from an ACL2 variable."
+  (b* (((pexpr-gin gin) gin)
+       (info (atc-get-var var gin.inscope))
+       ((when (not info))
+        (raise "Internal error: the variable ~x0 in function ~x1 ~
+                has no associated information." var gin.fn)
+        (irr-pexpr-gout))
+       (type (atc-var-info->type info)))
+    (make-pexpr-gout
+     :expr (expr-ident (make-ident :name (symbol-name var)))
+     :type type
+     :events nil
+     :thm-name nil
+     :thm-index gin.thm-index
+     :names-to-avoid gin.names-to-avoid
+     :proofs nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-expr-const ((term pseudo-termp)
                             (const iconstp)
                             (type typep)
@@ -306,22 +328,7 @@
     (b* (((reterr) (irr-pexpr-gout))
          ((pexpr-gin gin) gin)
          ((when (pseudo-term-case term :var))
-          (b* ((var (pseudo-term-var->name term))
-               (info (atc-get-var var gin.inscope))
-               ((when (not info))
-                (reterr
-                 (raise "Internal error: the variable ~x0 in function ~x1 ~
-                         has no associated information." var gin.fn)))
-               (type (atc-var-info->type info)))
-            (retok
-             (make-pexpr-gout
-              :expr (expr-ident (make-ident :name (symbol-name var)))
-              :type type
-              :events nil
-              :thm-name nil
-              :thm-index gin.thm-index
-              :names-to-avoid gin.names-to-avoid
-              :proofs nil))))
+          (retok (atc-gen-expr-var (pseudo-term-var->name term) gin)))
          ((erp okp const type) (atc-check-iconst term))
          ((when okp) (retok (atc-gen-expr-const term const type gin state)))
          ((mv okp op arg-term in-type out-type) (atc-check-unop term))
