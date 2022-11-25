@@ -130,6 +130,7 @@
 (define atc-gen-expr-const ((term pseudo-termp)
                             (const iconstp)
                             (type typep)
+                            (type-base-const symbolp)
                             (gin pexpr-ginp)
                             state)
   :guard (type-integerp type)
@@ -164,15 +165,15 @@
                              ,term)
                       (,typep ,term)))
        (formula (untranslate$ formula nil state))
+       (fixtype (pack (type-kind type)))
+       (exec-const-to-fixtype (pack 'exec-const-to- fixtype))
+       (fixtype-integerp (pack fixtype '-integerp))
+       (recognizer (pack fixtype 'p))
+       (recognizer-of-fixtype (pack recognizer '-of- fixtype))
        (hints `(("Goal" :in-theory '(exec-expr-pure-when-const
                                      (:e expr-kind)
                                      (:e expr-const->get)
-                                     exec-const-to-sint
-                                     exec-const-to-uint
-                                     exec-const-to-slong
-                                     exec-const-to-ulong
-                                     exec-const-to-sllong
-                                     exec-const-to-ullong
+                                     ,exec-const-to-fixtype
                                      (:e const-kind)
                                      (:e const-int->get)
                                      (:e iconst->unsignedp)
@@ -181,36 +182,9 @@
                                      (:e iconst->base)
                                      (:e iconst-length-kind)
                                      (:e iconst-base-kind)
-                                     (:e sint-integerp)
-                                     (:e uint-integerp)
-                                     (:e slong-integerp)
-                                     (:e ulong-integerp)
-                                     (:e sllong-integerp)
-                                     (:e ullong-integerp)
-                                     sint-dec-const
-                                     sint-oct-const
-                                     sint-hex-const
-                                     uint-dec-const
-                                     uint-oct-const
-                                     uint-hex-const
-                                     slong-dec-const
-                                     slong-oct-const
-                                     slong-hex-const
-                                     ulong-dec-const
-                                     ulong-oct-const
-                                     ulong-hex-const
-                                     sllong-dec-const
-                                     sllong-oct-const
-                                     sllong-hex-const
-                                     ullong-dec-const
-                                     ullong-oct-const
-                                     ullong-hex-const
-                                     sintp-of-sint
-                                     uintp-of-uint
-                                     slongp-of-slong
-                                     ulongp-of-ulong
-                                     sllongp-of-sllong
-                                     ullongp-of-ullong))))
+                                     (:e ,fixtype-integerp)
+                                     ,type-base-const
+                                     ,recognizer-of-fixtype))))
        ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints
@@ -329,8 +303,9 @@
          ((pexpr-gin gin) gin)
          ((when (pseudo-term-case term :var))
           (retok (atc-gen-expr-var (pseudo-term-var->name term) gin)))
-         ((erp okp const type &) (atc-check-iconst term))
-         ((when okp) (retok (atc-gen-expr-const term const type gin state)))
+         ((erp okp const type type-base-const) (atc-check-iconst term))
+         ((when okp) (retok (atc-gen-expr-const
+                             term const type type-base-const gin state)))
          ((mv okp op arg-term in-type out-type) (atc-check-unop term))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
