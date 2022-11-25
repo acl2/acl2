@@ -13,6 +13,7 @@
 (include-book "type-annotation")
 
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
+(include-book "std/typed-lists/symbol-listp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -679,7 +680,10 @@
      directly or indirectly created a new array and assigned it to a variable,
      which is then returned as result of array analysis,
      but the declared array names are only the ones
-     that match some formal parameter names.")
+     that match some formal parameter names.
+     Note that we need to remove the types from the formal parameters
+     in order to properly compare them with the inferred variables,
+     which do not have type annotations.")
    (xdoc::p
     "These checks tie the intraprocedural array analysis
      (performed by @(tsee atj-analyze-arrays-in-term))
@@ -707,8 +711,9 @@
                 the length of the inferred arrays ~x0 ~
                 differs from the length of the declared arrays ~x1."
                arrays out-arrays))
+       (uformals (atj-type-unannotate-vars formals))
        (pass
-        (atj-analyze-arrays-in-formals+body-aux formals arrays out-arrays)))
+        (atj-analyze-arrays-in-formals+body-aux uformals arrays out-arrays)))
     (if pass
         nil
       (raise "Array analysis failure: ~
@@ -718,7 +723,7 @@
              formals body arrays out-arrays)))
 
   :prepwork
-  ((define atj-analyze-arrays-in-formals+body-aux ((formals symbol-listp)
+  ((define atj-analyze-arrays-in-formals+body-aux ((uformals symbol-listp)
                                                    (inferred symbol-listp)
                                                    (declared symbol-listp))
      :guard (= (len inferred) (len declared))
@@ -729,7 +734,7 @@
               (decl (car declared)))
            (and (or (eq inf decl)
                     (and (null decl)
-                         (not (member-eq inf formals))))
-                (atj-analyze-arrays-in-formals+body-aux formals
+                         (not (member-eq inf uformals))))
+                (atj-analyze-arrays-in-formals+body-aux uformals
                                                         (cdr inferred)
                                                         (cdr declared))))))))
