@@ -171,7 +171,7 @@
   :returns (mv erp
                (yes/no booleanp)
                (const iconstp)
-               (out-type typep))
+               (type typep))
   :short "Check if a term represents an integer constant."
   :long
   (xdoc::topstring
@@ -267,9 +267,9 @@
           (t (mv (impossible) (impossible))))))
     (retok t const type))
   ///
-  (defret type-integerp-of-atc-check-iconst.out-type
+  (defret type-integerp-of-atc-check-iconst.type
     (implies yes/no
-             (type-integerp out-type))))
+             (type-integerp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
