@@ -217,6 +217,7 @@
         (mv :book-already-included (list 0 0 0 0 0) state))
        ((mv dir &) (split-path filename))
        (- (cw "REPLAYING ~s0 with advice:~%" filename))
+       ;; May be necessary for resolving #. constants in read-objects-from-book:
        (state (load-port-file-if-exists (remove-lisp-suffix filename t) state))
        ;; Read all the forms from the file:
        ((mv erp events state)
@@ -225,6 +226,7 @@
        (events (discard-events-after-last-advice-event events theorems-to-try))
        (- (cw "(~x0 events after discarding final events.)~%~%" (len events)))
        ((when (null events))
+        (cw "~%SUMMARY for book ~s0: NO EVENTS TO TEST~%" filename)
         (mv nil ; no error, but nothing to do for this book
             (list 0 0 0 0 0) state))
        ((when erp) (cw "Error: ~x0.~%" erp) (mv erp (list 0 0 0 0 0) state))
