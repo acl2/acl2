@@ -76,7 +76,7 @@
      ;more acl2 exports
      aconsp
      
-     mget g mset s wf-keyp rcdp good-map
+     mget g mset s wf-keyp rcdp good-map ss ss-macro
 
      ;; fix-pkg ; Matt K. mod: now in acl2::*acl2-exports*
      fix-sym
