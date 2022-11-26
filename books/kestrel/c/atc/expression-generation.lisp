@@ -16,6 +16,7 @@
 (include-book "tag-tables")
 (include-book "term-checkers-atc")
 (include-book "types-to-recognizers")
+(include-book "generation-contexts")
 
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
