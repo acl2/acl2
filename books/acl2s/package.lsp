@@ -161,7 +161,7 @@
      
      ; from community books
      u::defloop template-subst
-     mget g mset s wf-keyp rcdp good-map
+     mget g mset s wf-keyp rcdp good-map ss ss-macro
 
      stage
 
@@ -201,7 +201,7 @@
   (union-eq
    '(defxdoc e/d er-let* b* value
       aconsp 
-      mget g mset s wf-keyp rcdp good-map
+      mget g mset s wf-keyp rcdp good-map ss ss-macro
       legal-variable-or-constant-namep
       legal-constantp
       legal-variablep
