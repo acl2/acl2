@@ -76,7 +76,7 @@
      ;more acl2 exports
      aconsp
      
-     mget mset wf-keyp good-map
+     mget g mset s wf-keyp rcdp good-map
 
      ;; fix-pkg ; Matt K. mod: now in acl2::*acl2-exports*
      fix-sym
@@ -161,7 +161,7 @@
      
      ; from community books
      u::defloop template-subst
-     mget mset
+     mget g mset s wf-keyp rcdp good-map
 
      stage
 
@@ -201,7 +201,7 @@
   (union-eq
    '(defxdoc e/d er-let* b* value
       aconsp 
-      mget mset wf-keyp good-map
+      mget g mset s wf-keyp rcdp good-map
       legal-variable-or-constant-namep
       legal-constantp
       legal-variablep
