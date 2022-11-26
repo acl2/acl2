@@ -2123,6 +2123,7 @@
        ((erp (stmt-gout body))
         (atc-gen-stmt body
                       (make-stmt-gin
+                       :context nil
                        :var-term-alist nil
                        :typed-formals typed-formals
                        :inscope (list typed-formals)
@@ -3379,7 +3380,8 @@
        (body (ubody+ fn wrld))
        ((erp (lstmt-gout loop))
         (atc-gen-loop-stmt body
-                           (make-lstmt-gin :typed-formals typed-formals
+                           (make-lstmt-gin :context nil
+                                           :typed-formals typed-formals
                                            :inscope (list typed-formals)
                                            :fn fn
                                            :measure-for-fn measure-of-fn

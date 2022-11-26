@@ -175,7 +175,8 @@
 
 (fty::defprod stmt-gin
   :short "Inputs for @(tsee atc-gen-stmt)."
-  ((var-term-alist symbol-pseudoterm-alist)
+  ((context atc-contextp)
+   (var-term-alist symbol-pseudoterm-alist)
    (typed-formals atc-symbol-varinfo-alist)
    (inscope atc-symbol-varinfo-alist-list)
    (loop-flag booleanp)
@@ -448,6 +449,7 @@
              ((erp (bexpr-gout test))
               (atc-gen-expr-bool test-term
                                  (make-bexpr-gin
+                                  :context nil
                                   :inscope gin.inscope
                                   :prec-tags gin.prec-tags
                                   :fn gin.fn
@@ -553,6 +555,7 @@
                    ((erp (expr-gout init))
                     (atc-gen-expr val-term
                                   (make-expr-gin
+                                   :context nil
                                    :var-term-alist gin.var-term-alist
                                    :inscope gin.inscope
                                    :fn gin.fn
@@ -635,6 +638,7 @@
                    ((erp (expr-gout rhs))
                     (atc-gen-expr val-term
                                   (make-expr-gin
+                                   :context nil
                                    :var-term-alist gin.var-term-alist
                                    :inscope gin.inscope
                                    :fn gin.fn
@@ -791,6 +795,7 @@
                    ((erp (pexpr-gout arr))
                     (atc-gen-expr-pure var
                                        (make-pexpr-gin
+                                        :context nil
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -801,6 +806,7 @@
                    ((erp (pexpr-gout sub))
                     (atc-gen-expr-pure sub-term
                                        (make-pexpr-gin
+                                        :context nil
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -811,6 +817,7 @@
                    ((erp (pexpr-gout elem))
                     (atc-gen-expr-pure elem-term
                                        (make-pexpr-gin
+                                        :context nil
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -887,6 +894,7 @@
                    ((erp (pexpr-gout struct))
                     (atc-gen-expr-pure var
                                        (make-pexpr-gin
+                                        :context nil
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -921,6 +929,7 @@
                    ((erp (pexpr-gout member))
                     (atc-gen-expr-pure member-term
                                        (make-pexpr-gin
+                                        :context nil
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -982,6 +991,7 @@
                    ((erp (pexpr-gout struct))
                     (atc-gen-expr-pure var
                                        (make-pexpr-gin
+                                        :context nil
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -1016,6 +1026,7 @@
                    ((erp (pexpr-gout index))
                     (atc-gen-expr-pure index-term
                                        (make-pexpr-gin
+                                        :context nil
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -1036,6 +1047,7 @@
                    ((erp (pexpr-gout elem))
                     (atc-gen-expr-pure elem-term
                                        (make-pexpr-gin
+                                        :context nil
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -1114,6 +1126,7 @@
                    ((erp (expr-gout init))
                     (atc-gen-expr val-term
                                   (make-expr-gin
+                                   :context nil
                                    :var-term-alist gin.var-term-alist
                                    :inscope gin.inscope
                                    :fn gin.fn
@@ -1187,6 +1200,7 @@
                    ((erp (expr-gout rhs))
                     (atc-gen-expr val-term
                                   (make-expr-gin
+                                   :context nil
                                    :var-term-alist gin.var-term-alist
                                    :inscope gin.inscope
                                    :fn gin.fn
@@ -1344,6 +1358,7 @@
             (b* (((erp (expr-gout first))
                   (atc-gen-expr (car terms)
                                 (make-expr-gin
+                                 :context nil
                                  :var-term-alist gin.var-term-alist
                                  :inscope gin.inscope
                                  :fn gin.fn
@@ -1473,6 +1488,7 @@
              ((erp (pexprs-gout args))
               (atc-gen-expr-pure-list arg-terms
                                       (make-pexprs-gin
+                                       :context nil
                                        :inscope gin.inscope
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn
@@ -1500,7 +1516,8 @@
                   :proofs nil))))
        ((erp (expr-gout term))
         (atc-gen-expr term
-                      (make-expr-gin :var-term-alist gin.var-term-alist
+                      (make-expr-gin :context nil
+                                     :var-term-alist gin.var-term-alist
                                      :inscope gin.inscope
                                      :fn gin.fn
                                      :prec-fns gin.prec-fns
@@ -1565,7 +1582,8 @@
 
 (fty::defprod lstmt-gin
   :short "Inputs for @(tsee atc-gen-loop-stmt)."
-  ((typed-formals atc-symbol-varinfo-alist)
+  ((context atc-contextp)
+   (typed-formals atc-symbol-varinfo-alist)
    (inscope atc-symbol-varinfo-alist-list)
    (fn symbol)
    (measure-for-fn symbol)
@@ -1689,6 +1707,7 @@
        ((erp (bexpr-gout test))
         (atc-gen-expr-bool test-term
                            (make-bexpr-gin
+                            :context nil
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
                             :fn gin.fn
@@ -1714,6 +1733,7 @@
        ((erp (stmt-gout body))
         (atc-gen-stmt then-term
                       (make-stmt-gin
+                       :context nil
                        :var-term-alist nil
                        :typed-formals gin.typed-formals
                        :inscope (cons nil gin.inscope)

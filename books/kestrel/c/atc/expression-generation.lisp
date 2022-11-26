@@ -36,7 +36,8 @@
 
 (fty::defprod pexpr-gin
   :short "Inputs for @(tsee atc-gen-expr-pure)."
-  ((inscope atc-symbol-varinfo-alist-list)
+  ((context atc-contextp)
+   (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
    (thm-index pos)
@@ -74,7 +75,8 @@
 
 (fty::defprod bexpr-gin
   :short "Inputs for @(tsee atc-gen-expr-bool)."
-  ((inscope atc-symbol-varinfo-alist-list)
+  ((context atc-contextp)
+   (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
    (thm-index pos)
@@ -524,6 +526,7 @@
           (b* (((erp (bexpr-gout arg))
                 (atc-gen-expr-bool arg-term
                                    (make-bexpr-gin
+                                    :context nil
                                     :inscope gin.inscope
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
@@ -543,6 +546,7 @@
           (b* (((erp (bexpr-gout test))
                 (atc-gen-expr-bool test-term
                                    (make-bexpr-gin
+                                    :context nil
                                     :inscope gin.inscope
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
@@ -684,6 +688,7 @@
           (b* (((erp (pexpr-gout arg))
                 (atc-gen-expr-pure arg-term
                                    (make-pexpr-gin
+                                    :context nil
                                     :inscope gin.inscope
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
@@ -723,7 +728,8 @@
 
 (fty::defprod pexprs-gin
   :short "Inputs for @(tsee atc-gen-expr-pure-list)."
-  ((inscope atc-symbol-varinfo-alist-list)
+  ((context atc-contextp)
+   (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
    (thm-index pos)
@@ -781,6 +787,7 @@
        ((erp (pexpr-gout first))
         (atc-gen-expr-pure (car terms)
                            (make-pexpr-gin
+                            :context nil
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
                             :fn gin.fn
@@ -811,7 +818,8 @@
 
 (fty::defprod expr-gin
   :short "Inputs for @(tsee atc-gen-expr)."
-  ((var-term-alist symbol-pseudoterm-alist)
+  ((context atc-contextp)
+   (var-term-alist symbol-pseudoterm-alist)
    (inscope atc-symbol-varinfo-alist-list)
    (fn symbol)
    (prec-fns atc-symbol-fninfo-alist)
@@ -908,6 +916,7 @@
              ((erp (pexprs-gout args))
               (atc-gen-expr-pure-list arg-terms
                                       (make-pexprs-gin
+                                       :context nil
                                        :inscope gin.inscope
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn
@@ -936,7 +945,8 @@
             :proofs nil))))
        ((erp (pexpr-gout pure))
         (atc-gen-expr-pure term
-                           (make-pexpr-gin :inscope gin.inscope
+                           (make-pexpr-gin :context nil
+                                           :inscope gin.inscope
                                            :prec-tags gin.prec-tags
                                            :fn gin.fn
                                            :thm-index gin.thm-index
