@@ -11,6 +11,11 @@
 (include-book "acl2s/acl2s-sigs" :dir :system :ttags :all)
 (include-book "acl2s/definec" :dir :system :ttags :all)
 
+(set-well-founded-relation l<)
+(set-termination-method :ccg)
+(set-ccg-time-limit 300)
+
+
 ;(acl2s-defaults :set cgen-single-test-timeout 0)
 
 (definec d-t1 (x :int) :int
@@ -25,3 +30,7 @@
 (property d-t1-thm (x :int)
   (== (d-t1 x) x))
 
+(definec foo (x y :int z :tl :cons) :cons
+  (if (< x y)
+      z
+    (foo (- x 2) (1- y) z)))

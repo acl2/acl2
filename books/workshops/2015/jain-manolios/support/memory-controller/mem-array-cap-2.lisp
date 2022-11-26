@@ -182,10 +182,10 @@
 
 ; single step of buffered stack machine
 (defun impl-step (s)
-  (let* ((mem (mget :dmem s))
-         (rbuf (mget :rbuf s))
+  (let* ((mem (g :dmem s))
+         (rbuf (g :rbuf s))
          (reqs (istate-mem-reqs s))
-         (pt (mget :pt s))
+         (pt (g :pt s))
          (req (nth pt reqs)))
     (if (reqp req)
         (let ((nxt-mem (if (stutterp req rbuf)
@@ -255,13 +255,16 @@ instruction."
       (equal v (spec-step (spec-step (spec-step w))))))
 
 (defthm mset-rbuf-nil
-  (equal (mset :rbuf
-               nil (mset :mem-reqs (mget :mem-reqs s) nil))
-         (mset :mem-reqs (mget :mem-reqs s) nil))
-  :hints (("goal" :use (:instance acl2::mset-diff-mset (b :rbuf) (a :mem-reqs) (x (mget :mem-reqs s)) (y nil)
+  (equal (s :rbuf
+            nil (s :mem-reqs (g :mem-reqs s) nil))
+         (s :mem-reqs (g :mem-reqs s) nil))
+  :hints (("goal" :use (:instance acl2::s-diff-s1
+                                  (b :rbuf)
+                                  (a :mem-reqs)
+                                  (x (g :mem-reqs s))
+                                  (y nil)
                                   (r nil))
-           :in-theory (disable acl2::mset-diff-mset))))
-
+           :in-theory (disable acl2::s-diff-s1))))
 
 (defthm optmemc-skip-refines-memc
   (implies (and (good-statep s)
@@ -275,4 +278,4 @@ instruction."
                                                ; rank decreases
                           (< (rank u) (rank s)))))
            (spec-step-skip-rel w (ref-map u)))
-  :hints (("goal" :in-theory (disable reqp))))
+  :hints (("goal" :in-theory (e/d (istate sstate) (reqp)))))
