@@ -197,6 +197,10 @@ Skipping for now.
 (property (rs :data)
   (receiver-statep (receiver-state rs)))
 
+(property (rs :receiver-state a b c :all)
+  (equal (g :received (ss rs :received a :received b :received c))
+         c))
+         
 (must-fail
  (defdata-alias r2 r1))
 
