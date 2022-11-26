@@ -148,34 +148,34 @@ Added these rules as built-in clauses
                  (:linear :backchain-limit-lst 0)))
 
 (defthm records-lemma-acl2s-size
-  (implies (and (acl2::ifmp v)
-                (acl2::well-formed-map v))
-           (< (acl2s-size (acl2::mget-wf x v))
+  (implies (and (acl2::ifrp v)
+                (acl2::rcdp v))
+           (< (acl2s-size (acl2::g-aux x v))
               (acl2s-size v)))
-  :hints (("goal" :in-theory (enable acl2::mget-wf)))
+  :hints (("goal" :in-theory (enable g-aux ifrp)))
   :rule-classes ((:linear :backchain-limit-lst 1)))
  
 (defthm records-acl2s-size-linear-arith-<=
-  (<= (acl2s-size (mget k v))
+  (<= (acl2s-size (g k v))
       (acl2s-size v))
-  :hints (("goal" :in-theory (enable mget acl2::acl2->map)))
+  :hints (("goal" :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
   :rule-classes :linear)
 
 (defthm records-acl2s-size-linear-arith-<2
-  (implies (and (not (equal k (acl2::ill-formed-key)))
-                (mget k v))
-           (< (acl2s-size (mget k v))
+  (implies (and k
+                (g k v))
+           (< (acl2s-size (g k v))
               (acl2s-size v)))
-  :hints (("goal" :in-theory (enable mget acl2::acl2->map)))
+  :hints (("goal" :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
   :rule-classes ((:linear :backchain-limit-lst 1)))
 
 (defthm records-acl2s-size
-  (implies (and (consp v)
-                (not (equal x (acl2::ill-formed-key))))
-           (< (acl2s-size (mget x v))
+  (implies (and x
+                (consp v))
+           (< (acl2s-size (g x v))
               (acl2s-size v)))
-  :hints (("goal" :induct (acl2::mget-wf x v)
-           :in-theory (enable mget acl2::acl2->map)))
+  :hints (("goal" :induct (g-aux x v)
+           :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
   :rule-classes ((:linear :backchain-limit-lst 1)))
 
 (defthm acl2s-size-evens-weak
