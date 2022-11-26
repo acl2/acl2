@@ -12,6 +12,7 @@
 
 ;; TODO: Put in ignore declares for LETs and MV-LETS when needed.
 ;; TODO: Consider combining nested LETs into LET*s.
+;; TODO: Consider having this also do some untranslation.
 
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
 (include-book "kestrel/lists-light/prefixp-def" :dir :system)
@@ -177,8 +178,8 @@
        (mv term (list term))
      (if (fquotep term)
          (mv term nil)
-       ;;it's a function call (maybe a lambda application):
        (if (translated-mv-letp term)
+           ;; It's (the translation of) an MV-LET:
            (mv-let (new-mv-term mv-term-vars)
              (reconstruct-lets-in-term-aux (term-of-translated-mv-let term))
              (mv-let (new-body-term body-vars)
@@ -249,6 +250,9 @@
   :hints (("Goal" :expand ((pseudo-termp term))
            :in-theory (enable true-listp-when-symbol-listp pseudo-termp))))
 
+;; Reconstructs LETs and MV-LETs in term. Returns a term equivalent to TERM.
+;; The result is usually not a pseudo-term, because it contains LETs and/or
+;; MV-LETs.
 (defund reconstruct-lets-in-term (term)
   (declare (xargs :guard (pseudo-termp term)))
   (mv-let (term vars)
