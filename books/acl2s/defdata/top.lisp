@@ -157,13 +157,13 @@ is the given by its macroexpansion.
          ;; fix a program counter value
          (pc 1)
          ;; get the instruction pointed to by pc
-         (instr (mget pc I)) 
+         (instr (g pc I)) 
          ;; get immediate value field of instr
          (im (inst-imm instr))
          ;; set immediate value field and the pc entry 
-         (I1 (mset pc (set-inst-imm (1+ im) instr) I))
+         (I1 (s pc (set-inst-imm (1+ im) instr) I))
          ;; alternative way of getting immediate value field
-         (im2 (mget :imm (mget pc I1)))
+         (im2 (g :imm (g pc I1)))
          ((inst op rd rs1 ?imm) instr)
          )
     (equal (inst op rd rs1 (1- im2)) instr))
@@ -536,12 +536,12 @@ For example: </p>
 
 @({
 (defdata-attach imemory
-         :constraint (mget a x) ;x is the variable of this type
+         :constraint (g a x) ;x is the variable of this type
          :constraint-variable x
          :rule (implies (and (natp a) ;additional hyps
                              (instp x.a)
                              (imemoryp x1))
-                        (equal x (mset a x.a x1))) ;refine/expand
+                        (equal x (s a x.a x1))) ;refine/expand
          :meta-precondition (or (variablep a)
                                 (fquotep a))
          :match-type :subterm-match)
