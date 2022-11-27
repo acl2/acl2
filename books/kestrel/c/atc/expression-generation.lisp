@@ -147,6 +147,11 @@
      It also says that the term satisfies
      the applicable shallowly embedded type predicate.")
    (xdoc::p
+    "This theorem holds unconditionally;
+     it does not actually depend on the computation state.
+     We do not need to contextualize the theorem,
+     i.e. we ignore the @(tsee atc-context).")
+   (xdoc::p
     "The hints cover all possible integer constants,
      but we could make them more nuanced to the specifics of the constant."))
   (b* (((pexpr-gin gin) gin)
