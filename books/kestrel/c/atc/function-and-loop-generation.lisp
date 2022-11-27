@@ -2026,6 +2026,115 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-init-inscope ((fn symbolp)
+                              (fn-guard symbolp)
+                              (fn-formals symbol-listp)
+                              (typed-formals atc-symbol-varinfo-alistp)
+                              (compst-var symbolp)
+                              (context atc-contextp)
+                              (names-to-avoid symbol-listp)
+                              (wrld plist-worldp))
+  :returns (mv (inscope atc-symbol-varinfo-alist-listp
+                        :hyp (atc-symbol-varinfo-alistp typed-formals))
+               (events pseudo-event-form-listp)
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate the initial symbol table for a C function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like the typed formals alist,
+     except that the theorem stored in each variable information
+     says that the @(tsee read-var) of the variable
+     yields the variable itself,
+     and also that the variable has the applicable type.
+     In contrast, the theorem stored
+     in each variable information in the typed formals alist
+     only talks about the variable (i.e. formal parameter).")
+   (xdoc::p
+    "As we expand our modular proof generation to cover more constructs,
+     we expect to generate similar theorems about @(tsee read-var)
+     when we update the variable table.
+     In those theorems, the right side of the equality
+     may be a more general shallowly embedded C expression,
+     instead of being just a variable.
+     In general, the idea is that the theorem stored
+     in the variable information of a variable in the variable table
+     captures the relevant facts about the variable in scope;
+     these facts are used for proofs about expressions
+     that reference the variable.")
+   (xdoc::p
+    "This ACL2 function goes throught the typed formals,
+     and generates a corresponding variable table.
+     Each theorem is contextualized to the initial computation state;
+     this is what @('context') contains.
+     We return the variable table, along with the theorem events,
+     whose names are stored in the variable table."))
+  (b* (((mv scope events names-to-avoid)
+        (atc-gen-init-inscope-aux fn fn-guard fn-formals typed-formals
+                                  compst-var context names-to-avoid wrld)))
+    (mv (list scope) events names-to-avoid))
+
+  :prepwork
+  ((define atc-gen-init-inscope-aux ((fn symbolp)
+                                     (fn-guard symbolp)
+                                     (fn-formals symbol-listp)
+                                     (typed-formals atc-symbol-varinfo-alistp)
+                                     (compst-var symbolp)
+                                     (context atc-contextp)
+                                     (names-to-avoid symbol-listp)
+                                     (wrld plist-worldp))
+     :returns
+     (mv (inscope atc-symbol-varinfo-alistp
+                  :hyp (atc-symbol-varinfo-alistp typed-formals))
+         (events pseudo-event-form-listp)
+         (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+     :parents nil
+     (b* (((when (endp typed-formals)) (mv nil nil names-to-avoid))
+          ((cons var info) (car typed-formals))
+          (type (atc-var-info->type info))
+          (var-thm (atc-var-info->thm info))
+          (type-pred (type-to-recognizer type wrld))
+          (name (pack fn '- var '-in-scope))
+          ((mv name names-to-avoid)
+           (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+          (formula `(and (equal (read-var (ident ,(symbol-name var))
+                                          ,compst-var)
+                                ,var)
+                         (,type-pred ,var)))
+          (formula (atc-contextualize formula context))
+          (formula `(implies (and (compustatep ,compst-var)
+                                  (,fn-guard ,@fn-formals))
+                             ,formula))
+          (not-flexible-array-member-p-when-type-pred
+           (pack 'not-flexible-array-member-p-when- type-pred))
+          (valuep-when-type-pred (pack 'valuep-when- type-pred))
+          (hints
+           `(("Goal" :in-theory '(read-var-of-add-var
+                                  ,var-thm
+                                  ident-fix-when-identp
+                                  identp-of-ident
+                                  equal-of-ident-and-ident
+                                  (:e str-fix)
+                                  ,not-flexible-array-member-p-when-type-pred
+                                  remove-flexible-array-member-when-absent
+                                  value-fix-when-valuep
+                                  ,valuep-when-type-pred))))
+          ((mv event &) (evmac-generate-defthm name
+                                               :formula formula
+                                               :hints hints
+                                               :enable nil))
+          ((mv inscope-rest events-rest names-to-avoid)
+           (atc-gen-init-inscope-aux fn fn-guard fn-formals
+                                     (cdr typed-formals)
+                                     compst-var context names-to-avoid wrld)))
+       (mv (cons (cons var
+                       (make-atc-var-info :type type :thm name))
+                 inscope-rest)
+           (cons event events-rest)
+           names-to-avoid)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fundef ((fn symbolp)
                         (prec-fns atc-symbol-fninfo-alistp)
                         (prec-tags atc-string-taginfo-alistp)
@@ -2111,6 +2220,11 @@
           (mv '(_) nil nil names-to-avoid)))
        (context (list (make-atc-premise-compustate :var compst-var
                                                    :term add-var-nest)))
+       ((mv inscope init-inscope-events names-to-avoid)
+        (if proofs
+            (atc-gen-init-inscope fn fn-guard formals typed-formals
+                                  compst-var context names-to-avoid wrld)
+          (mv (list typed-formals) nil names-to-avoid)))
        (body (ubody+ fn wrld))
        ((erp affect)
         (atc-find-affected fn body typed-formals prec-fns wrld))
@@ -2128,7 +2242,7 @@
                        :context context
                        :var-term-alist nil
                        :typed-formals typed-formals
-                       :inscope (list typed-formals)
+                       :inscope inscope
                        :loop-flag nil
                        :affect affect
                        :fn fn
@@ -2215,6 +2329,7 @@
                                        (list init-scope-expand-event)
                                        (list init-scope-scopep-event)
                                        (list push-init-thm-event)
+                                       init-inscope-events
                                        body.events
                                        fn-result-events
                                        fn-correct-local-events
