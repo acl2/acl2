@@ -2103,12 +2103,14 @@
           (mv '(_) nil '(_) nil nil nil names-to-avoid)))
        ((mv push-init-thm-event
             & ; push-init-thm-name
-            & ; add-var-nest
+            add-var-nest
             names-to-avoid)
         (if proofs
             (atc-gen-push-init-thm fn fn-guard typed-formals omap-update-nest
                                    compst-var names-to-avoid wrld)
           (mv '(_) nil nil names-to-avoid)))
+       (context (list (make-atc-premise-compustate :var compst-var
+                                                   :term add-var-nest)))
        (body (ubody+ fn wrld))
        ((erp affect)
         (atc-find-affected fn body typed-formals prec-fns wrld))
@@ -2123,7 +2125,7 @@
        ((erp (stmt-gout body))
         (atc-gen-stmt body
                       (make-stmt-gin
-                       :context nil
+                       :context context
                        :var-term-alist nil
                        :typed-formals typed-formals
                        :inscope (list typed-formals)
