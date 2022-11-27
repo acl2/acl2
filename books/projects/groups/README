@@ -1,0 +1,19 @@
+;; David M. Russinoff
+;; david@russinoff.com
+;; http://www.russinoff.com
+
+This directory contains an initial ACL2 formalization of elementary finite group theory, consisting of the following books:
+
+* lists: a collection of results pertaining to list processing that were required in the development of the theory
+
+* groups: groups and subgroups, the macros defgroup and defsubgroup, and some examples
+
+* quotients: left cosets, Lagrange's Theorem, normal subgroupss, quotient groups
+
+* cauchy: Cauchy's Theorem (If the order of a group g is divisible by prime p, then g has a subgroup of order p)
+
+* symmetric: permutations, symmetric groups, tranpositions, parity of a permutation, alternating groups
+
+* actions: group actions, the defaction macro, conjugate subgroups
+
+* sylow: lifting a subgroup of a quotient group, p-groups and maximal p-subgroups, Sylow theorems
