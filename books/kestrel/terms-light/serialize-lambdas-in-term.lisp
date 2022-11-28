@@ -1,6 +1,6 @@
 ; A tool to turn multi-var lambdas into nests of single-var lambdas
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "free-vars-in-term")
 (include-book "sublis-var-simple")
+;; (include-book "trivial-formals")
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/utilities/fresh-names" :dir :system)
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
@@ -52,16 +53,25 @@
 ;; Once we add the temporary (and the binding that is now safe), start again looking for additional safe ones.
 ;; TODO: Can we work harder to minimize the number of temporaries?
 
-;; Makes a nest of lambda applications, one per each of the BINDINGS, around BODY.
+;; Makes a nest of lambda applications, one for each of the BINDINGS, around BODY.
+;; TODO: Consider ignored vars
+;; Could optmize by having this also return the free vars.
 (defun make-lambda-nest (bindings body)
-  (declare (xargs :guard (symbol-alistp bindings)))
+  (declare (xargs :guard (and (symbol-alistp bindings)
+                              (pseudo-term-listp (strip-cdrs bindings))
+                              (pseudo-termp body))))
   (if (endp bindings)
       body
     (let* ((binding (first bindings))
            (var (car binding))
-           (val (cdr binding)))
-      `((lambda (,var) ,(make-lambda-nest (rest bindings) body))
-        ,val))))
+           (val (cdr binding))
+           (body (make-lambda-nest (rest bindings) body))
+           (body-vars (free-vars-in-term body)))
+      (if (not (member-eq var body-vars))
+          ;; This var is not used, so skip it:
+          body
+        (let ((other-body-vars (remove1-eq var body-vars)))
+          `((lambda (,var ,@other-body-vars) ,body) ,val ,@other-body-vars))))))
 
 (defthm pseudo-termp-of-make-lambda-nest
   (implies (and (symbol-alistp bindings)
@@ -178,6 +188,7 @@
                               (symbol-listp vars-to-avoid))))
   (let* ((bindings (non-trivial-bindings lambda-formals args)) ; all applied in parallel
          (body-vars (free-vars-in-term lambda-body))
+         ;; (trivial-lambda-formals (trivial-formals lambda-formals args))
          (serialized-bindings (serialize-bindings bindings (append body-vars vars-to-avoid))))
     ;; Could make a let* here, but then it would not be a pseudo-term
     (make-lambda-nest serialized-bindings lambda-body)))

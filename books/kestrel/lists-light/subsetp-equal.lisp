@@ -210,6 +210,11 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))
 
+(defthm subsetp-equal-of-cons-of-remove1-equal-same
+  (equal (subsetp-equal x (cons a (remove1-equal a y)))
+         (subsetp-equal x (cons a y)))
+  :hints (("Goal" :in-theory (enable subsetp-equal))))
+
 ;todo: this must be proved somewhere else
 ;The -alt avoids a name clash
 (defthm subsetp-equal-transitive-alt
