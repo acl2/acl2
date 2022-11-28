@@ -173,7 +173,7 @@
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil gin.names-to-avoid wrld))
        (typep (type-to-recognizer type wrld))
-       (formula `(and (equal (exec-expr-pure ',expr compst)
+       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
                              ,term)
                       (,typep ,term)))
        (formula (untranslate$ formula nil state))
