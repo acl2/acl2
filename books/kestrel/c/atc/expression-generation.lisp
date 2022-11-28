@@ -40,6 +40,8 @@
    (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
+   (fn-guard symbol)
+   (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -79,6 +81,8 @@
    (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
+   (fn-guard symbol)
+   (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -535,6 +539,8 @@
                                     :inscope gin.inscope
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
+                                    :fn-guard gin.fn-guard
+                                    :compst-var gin.compst-var
                                     :thm-index gin.thm-index
                                     :names-to-avoid gin.names-to-avoid
                                     :proofs nil)
@@ -555,6 +561,8 @@
                                     :inscope gin.inscope
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
+                                    :fn-guard gin.fn-guard
+                                    :compst-var gin.compst-var
                                     :thm-index gin.thm-index
                                     :names-to-avoid gin.names-to-avoid
                                     :proofs nil)
@@ -697,6 +705,8 @@
                                     :inscope gin.inscope
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
+                                    :fn-guard gin.fn-guard
+                                    :compst-var gin.compst-var
                                     :thm-index gin.thm-index
                                     :names-to-avoid gin.names-to-avoid
                                     :proofs nil)
@@ -737,6 +747,8 @@
    (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
+   (fn-guard symbol)
+   (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -796,6 +808,8 @@
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
                             :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
                             :proofs gin.proofs)
@@ -827,6 +841,8 @@
    (var-term-alist symbol-pseudoterm-alist)
    (inscope atc-symbol-varinfo-alist-list)
    (fn symbol)
+   (fn-guard symbol)
+   (compst-var symbol)
    (prec-fns atc-symbol-fninfo-alist)
    (prec-tags atc-string-taginfo-alist)
    (thm-index pos)
@@ -925,6 +941,8 @@
                                        :inscope gin.inscope
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn
+                                       :fn-guard gin.fn-guard
+                                       :compst-var gin.compst-var
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
                                        :proofs gin.proofs)
@@ -954,6 +972,8 @@
                                            :inscope gin.inscope
                                            :prec-tags gin.prec-tags
                                            :fn gin.fn
+                                           :fn-guard gin.fn-guard
+                                           :compst-var gin.compst-var
                                            :thm-index gin.thm-index
                                            :names-to-avoid gin.names-to-avoid
                                            :proofs gin.proofs)

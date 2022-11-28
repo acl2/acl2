@@ -2246,6 +2246,8 @@
                        :loop-flag nil
                        :affect affect
                        :fn fn
+                       :fn-guard fn-guard
+                       :compst-var compst-var
                        :prec-fns prec-fns
                        :prec-tags prec-tags
                        :prec-objs prec-objs
@@ -3501,6 +3503,8 @@
                                            :typed-formals typed-formals
                                            :inscope (list typed-formals)
                                            :fn fn
+                                           :fn-guard nil
+                                           :compst-var nil
                                            :measure-for-fn measure-of-fn
                                            :measure-formals measure-formals
                                            :prec-fns prec-fns
