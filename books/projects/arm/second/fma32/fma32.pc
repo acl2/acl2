@@ -441,12 +441,6 @@ ui32 fadd32(ui32 c, bool pSign, ui9 pExp, ui48 pMant, ui3 rMode, bool scaleOp, s
     }
   }
 
-        // Rounding increment:
-        rndInc = computeInc(rMode, resSign, resMant, grd, stk);
-      }
-    }
-  }
-
   // Assemble result:
   ui32 res;
   res[31] = resSign;
