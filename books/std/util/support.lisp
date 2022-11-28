@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
@@ -133,8 +134,12 @@ allowed.</p>"
                 (eq x (caar legals)))
            :multiple)
           (t (keyword-legality x (cdr legals))))))
-          
 
+
+(local ; used to verify the guards of extract-keywords
+ (defthm alistp-of-remove1-assoc-equal
+   (implies (alistp alist)
+            (alistp (remove1-assoc-equal key alist)))))
 
 (defsection extract-keywords
   :parents (support)
@@ -193,8 +198,7 @@ be a list of the arguments to the occurrences.  For example:</p>
 extract-keywords), with default-value support."
 
   (defun getarg (arg default alist)
-    (declare (xargs ;; :mode :program
-                    :guard (and (eqlablep arg)
+    (declare (xargs :guard (and (eqlablep arg)
                                 (alistp alist))))
     (b* ((look (assoc arg alist)))
       (if look
@@ -208,18 +212,16 @@ extract-keywords), with default-value support, and additionally return a flag
 saying whether the key was bound.  Returns (mv value boundp)."
 
   (defun getarg+ (arg default alist)
-    (declare (xargs ;; :mode :program
-                    :guard (and (eqlablep arg)
+    (declare (xargs :guard (and (eqlablep arg)
                                 (alistp alist))))
     (b* ((look (assoc arg alist)))
       (if look
           (mv (cdr look) t)
         (mv default nil)))))
 
-(program)
-
 
 (defun assigns-for-getargs (args alist lazyp)
+  (declare (xargs :mode :program))
   (if (atom args)
       nil
     (append (let ((arg (car args)))
@@ -290,6 +292,7 @@ saying whether the key was bound.  Returns (mv value boundp)."
 
 
 (defun keys-for-getargs (args)
+  (declare (xargs :mode :program))
   (if (atom args)
       nil
     (b* ((arg (car args))
@@ -370,7 +373,6 @@ saying whether the key was bound.  Returns (mv value boundp)."
 
 
 
-
 (defsection split-///
   :parents (support)
   :short "Split an argument list into pre- and post-@('///') contents."
@@ -388,7 +390,18 @@ saying whether the key was bound.  Returns (mv value boundp)."
           (mv nil (cdr x)))
          ((mv pre post)
           (split-/// ctx (cdr x))))
-      (mv (cons (car x) pre) post))))
+      (mv (cons (car x) pre) post)))
+
+  (defthmd true-listp-of-split-///.pre-///
+    (true-listp (mv-nth 0 (split-/// ctx x))))
+
+  (defthm true-listp-of-split-///.post-///
+    (implies (true-listp x)
+             (true-listp (mv-nth 1 (split-/// ctx x)))))
+
+  (in-theory (disable split-///)))
+
+
 
 (defsection ends-with-period-p
   :parents (support)
@@ -411,6 +424,7 @@ saying whether the key was bound.  Returns (mv value boundp)."
 substitutions are reapplied to the result of other substitutions.</p>"
 
   (defun dumb-str-sublis-iter (remainder alist x start end len)
+    (declare (xargs :mode :program))
     ;; remainder is a tail of alist, which contains the full list of substutions.
     ;; len is the length of x
     (b* (((when (atom remainder))
@@ -452,6 +466,7 @@ substitutions are reapplied to the result of other substitutions.</p>"
 
   (mutual-recursion
    (defun generic-eval-requirement (req req-alist)
+     (declare (xargs :mode :program))
      (if (atom req)
          (let ((look (assoc req req-alist)))
            (if look
@@ -485,6 +500,7 @@ substitutions are reapplied to the result of other substitutions.</p>"
 ;; Collects up any calls of functions listed in FNS that are present in x.
 (mutual-recursion
  (defun find-calls-of-fns-term (x fns acc)
+   (declare (xargs :mode :program))
    (cond ((or (atom x) (eq (car x) 'quote)) acc)
          ((member-eq (car x) fns)
           (find-calls-of-fns-list (cdr x) fns (cons x acc)))
@@ -500,10 +516,9 @@ substitutions are reapplied to the result of other substitutions.</p>"
 ;; Gives an expand hint for any function in FNS present in the
 ;; conclusion of the clause.
 (defun expand-calls-computed-hint (clause fns)
- (let ((expand-list (find-calls-of-fns-term (car (last clause)) fns nil)))
-   `(:expand ,expand-list)))
+  (declare (xargs :mode :program))
+  (let ((expand-list (find-calls-of-fns-term (car (last clause)) fns nil)))
+    `(:expand ,expand-list)))
 
 (defmacro expand-calls (&rest fns)
   `(expand-calls-computed-hint clause ',fns))
-
-

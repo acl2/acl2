@@ -8233,6 +8233,21 @@
 
 ; End of code for printing type-alists.
 
+(defun print-pot-lst (pot-lst evisc-tuple)
+  (cond
+   ((null pot-lst) (cw "~%"))
+   (t (prog2$
+       (cw "-----~|For maximal term ~X02~|the list of polynomials is:~|~X12~|"
+           (access linear-pot (car pot-lst) :var)
+           (append (show-poly-lst
+                    (access linear-pot (car pot-lst) :negatives)
+                    nil)
+                   (show-poly-lst
+                    (access linear-pot (car pot-lst) :positives)
+                    nil))
+           evisc-tuple)
+       (print-pot-lst (cdr pot-lst) evisc-tuple)))))
+
 ; Start support for find-rules-of-rune, in support of
 ; backchain-limit-enforcers.
 
@@ -9027,6 +9042,19 @@
                                              nil
                                            '(brr-evisc-tuple state)))
                              (value :invisible))))
+         (pot-list-fn (plusp)
+                      `(lambda nil
+                         (let ((pot-list (get-brr-local 'pot-list state)))
+                           (prog2$ (if pot-list
+                                       (prog2$
+                                        (cw "~%Display of linear pot-list:~|")
+                                        (print-pot-lst
+                                         pot-list
+                                         ,(if plusp
+                                              nil
+                                            '(brr-evisc-tuple state))))
+                                     (cw "~%The linear pot-list is empty.~|"))
+                                   (value :invisible)))))
          (target-fn (plusp)
                     `(lambda nil
                        (prog2$ (cw "~X01~|"
@@ -9182,6 +9210,10 @@
        0 ,(not-yet-evaled-fn))
       (:poly-list+
        0 ,(not-yet-evaled-fn))
+      (:pot-list
+       0 ,(pot-list-fn nil))
+      (:pot-list+
+       0 ,(pot-list-fn t))
       (:q
        0 (lambda nil
            (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or use ~
@@ -9349,6 +9381,19 @@
                               (er soft :POLY-LIST
                                   ":POLY-LIST is only legal for a :LINEAR ~
                                    rule."))))))
+         (pot-list-fn (plusp)
+                      `(lambda nil
+                         (let ((pot-list (get-brr-local 'pot-list state)))
+                           (prog2$ (if pot-list
+                                       (prog2$
+                                        (cw "~%Display of linear pot-list:~|")
+                                        (print-pot-lst
+                                         pot-list
+                                         ,(if plusp
+                                              nil
+                                            '(brr-evisc-tuple state))))
+                                     (cw "~%The linear pot-list is empty.~|"))
+                                   (value :invisible)))))
          (rewritten-rhs-fn (plusp)
                            `(lambda nil
                               (let ((lemma (get-brr-local 'lemma state)))
@@ -9529,6 +9574,10 @@
        0 ,(poly-list-fn nil))
       (:poly-list+
        0 ,(poly-list-fn t))
+      (:pot-list
+       0 ,(pot-list-fn nil))
+      (:pot-list+
+       0 ,(pot-list-fn t))
       (:q
        0 (lambda nil
            (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or use ~
@@ -9578,7 +9627,7 @@
             (value :invisible)))))))
 
 (defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
-                     gstack rcnst state)
+                     gstack rcnst simplify-clause-pot-lst state)
 
 ; #+ACL2-PAR note: since we lock the use of wormholes, brr might be usable
 ; within the parallelized waterfall.  However, since locks can serialize
@@ -9616,6 +9665,7 @@
                      (target . ,target)
                      (unify-subst . ,unify-subst)
                      (type-alist . ,type-alist)
+                     (pot-list . ,simplify-clause-pot-lst)
                      (ancestors . ,ancestors)
                      (rcnst . ,rcnst)
                      (initial-ttree . ,initial-ttree))))
@@ -16075,7 +16125,8 @@
                              (null (brkpt1 lemma term unify-subst
                                            type-alist ancestors
                                            ttree
-                                           gstack rcnst state)))
+                                           gstack rcnst simplify-clause-pot-lst
+                                           state)))
                         (cond
                          ((null (loop-stopperp
                                  (access rewrite-rule lemma :heuristic-info)
@@ -16325,7 +16376,8 @@
                (cond
                 ((and unify-ans
                       (null (brkpt1 rule term unify-subst type-alist ancestors
-                                    ttree gstack rcnst state)))
+                                    ttree gstack rcnst simplify-clause-pot-lst
+                                    state)))
                  (with-accumulated-persistence
                   (access rewrite-rule rule :rune)
                   ((the (signed-byte 30) step-limit) term-out ttree)
@@ -16956,7 +17008,7 @@
              (null (brkpt1 lemma term unify-subst
                            type-alist ancestors
                            nil ; ttree
-                           gstack rcnst state)))
+                           gstack rcnst simplify-clause-pot-lst state)))
         (let ((rune (access linear-lemma lemma :rune)))
           (with-accumulated-persistence
            rune
@@ -19659,7 +19711,8 @@
                        (null (brkpt1 lemma term unify-subst
                                      type-alist ancestors
                                      ttree
-                                     gstack rcnst state)))
+                                     gstack rcnst simplify-clause-pot-lst
+                                     state)))
                   (cond
                    ((null (loop-stopperp loop-stopper unify-subst wrld))
                     (prog2$
@@ -20067,7 +20120,7 @@
                                         ttree1 ttree)
 
 ; Body, above, is passed in as the ``target'' for push-warrants.  The target is
-; only used in commentary about the forcing.  The :target of a forced rewerite
+; only used in commentary about the forcing.  The :target of a forced rewrite
 ; rule is generally the term to which the rule was applied, but here we're
 ; talking about function symbols that must (probably) be apply$'d during the
 ; rewriting of :target.

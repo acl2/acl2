@@ -1,4 +1,4 @@
-; Getting all but the first character of a string
+; Dropping the first character from a string
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2022 Kestrel Institute

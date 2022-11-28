@@ -27,8 +27,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod atc-fn-info
-  :short "Fixtype of
-          information associated to an ACL2 function translated to C."
+  :short "Fixtype of information associated to
+          an ACL2 function translated to a C function or loop."
   :long
   (xdoc::topstring
    (xdoc::p

@@ -33,7 +33,7 @@
 
 ;drop or move hyps?
 ;expensive?
-(defthm mod-equal-impossible-value
+(defthmd mod-equal-impossible-value
   (implies (and (<= j k) ; unusual
                 (natp i)
                 (natp j))

@@ -1,7 +1,7 @@
 ; BV Library: logand
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -538,3 +538,19 @@
   :hints (("Goal" :cases ((and (<= 0 i) (<= 0 j))
                           (and (not (<= 0 i)) (<= 0 j))
                           (and (<= 0 i) (not (<= 0 j)))))))
+
+(defthm <-of-logand-and--1
+  (equal (< (logand i j) -1)
+         (and (< (ifix i) 0)
+              (< (ifix j) 0)
+              (or (< (ifix i) -1)
+                  (< (ifix j) -1))))
+  :hints (("Goal" :induct (logand i j)
+           :in-theory (enable logand))))
+
+(defthm <-of--1-and-logand
+  (equal (< -1 (logand i j))
+         (not (and (< (ifix i) 0)
+                   (< (ifix j) 0))))
+  :hints (("Goal" :use (:instance <-of-logand-and-0)
+           :in-theory (disable <-of-logand-and-0))))

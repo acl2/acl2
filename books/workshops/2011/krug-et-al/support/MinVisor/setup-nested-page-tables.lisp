@@ -3697,7 +3697,10 @@ or
 
  (local (include-book "arithmetic-5/top" :dir :system))
 
-;;; Why didn't I need this for init_pdpt-modify-loop-1?
+; Matt K. mod 10/2022: Avoid rewriting loop with useless-runes = -25.
+ (local (in-theory (disable (:rewrite simplify-sums-<))))
+
+;;; why didn't I need this for init_pdpt-modify-loop-1?
 
  (defthm |(G field (INIT_PDTS-MODIFY-INNER-LOOP-1 i j s))|
    (implies (not (equal field :mem))

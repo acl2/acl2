@@ -52,13 +52,12 @@
    the target in @('targets') for which C code is being generated."
 
   "@('prec-tags') is an alist
-   from ACL2 @(tsee defstruct) symbols to their associated information.
-   The @(tsee defstruct) symbols are the ones in @('targets') that precede,
+   from ACL2 @(tsee defstruct) names to their associated information.
+   The @(tsee defstruct)s are the ones in @('targets') that precede,
    in the latter list,
    the target in @('targets') for which C code is being generated.
-   The @('prec-tags') alist is always a subset of the "
-  (xdoc::seetopic "defstruct-table-definition" "@(tsee defstruct) table")
-  " that is constructed by @(tsee defstruct) calls
+   The @('prec-tags') alist is always a subset of the @(tsee defstruct) table
+   that is constructed by @(tsee defstruct) calls
    and that is part of the ACL2 world prior to calling ATC:
    the @('prec-tags') is initially empty,
    gets extended as targets that are @(tsee defstruct) names are processed,
@@ -71,7 +70,34 @@
    furthermore, it makes it easier and more efficient
    to retrieve information about all the target @(tsee defstruct)s of interest."
 
-  (xdoc::evmac-topic-implementation-item-input "output-file")
+  "@('prec-objs') is an alist
+   from ACL2 @(tsee defobject) names to their associated information.
+   The @(tsee defobject)s are the ones in @('targets') that precede,
+   in the latter list,
+   the target in @('targets') for which C code is being generated.
+   The @('prec-objs') alist is always a subset of the @(tsee defobject) table
+   that is constructed by @(tsee defobject) calls
+   and that is part of the ACL2 world prior to calling ATC:
+   the @('prec-objs') is initially empty,
+   gets extended as targets that are @(tsee defobject) names are processed,
+   and eventually contains all the @(tsee defobject) table information
+   for the @(tsee defobject) targets passed to ATC.
+   The reason for using the @('prec-objs') alist this way,
+   instead of using the @(tsee defobject) table directly,
+   is so that we can ensure that all the targets are supplied to ATC,
+   and in the right order;
+   furthermore, it makes it easier and more efficient
+   to retrieve information about all the target @(tsee defobject)s of interest."
+
+  (xdoc::evmac-topic-implementation-item-input "output-dir")
+
+  (xdoc::evmac-topic-implementation-item-input "file-name")
+
+  "@('path-wo-ext') is the path of the generated file(s),
+   without the @('.c') or @('.h') extension.
+   This @('path-wo-ext') is obtained from @('output-dir') and @('file-name')."
+
+  (xdoc::evmac-topic-implementation-item-input "header")
 
   (xdoc::evmac-topic-implementation-item-input "proofs")
 
@@ -95,6 +121,9 @@
    to the names of the generated respective correctness theorems.
    This is @('nil') if @('proofs') is @('nil')."
 
+  "@('fn-guard') is the name of a locally generated function
+   for the guard of @('fn')."
+
   "@('typed-formals') is an alist
    from the formal parameters of one of the functions in @('t1'), ..., @('tp')
    to their C types.
@@ -108,34 +137,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-fn ((args true-listp) (call pseudo-event-formp) (ctx ctxp) state)
-  :returns (mv erp (event "A @('pseudo-event-formp').") state)
-  :mode :program
+(define atc-process-inputs-and-gen-everything ((args true-listp)
+                                               (call pseudo-event-formp)
+                                               state)
+  :returns (mv erp
+               (event pseudo-event-formp)
+               state)
   :parents (atc-implementation)
-  :short "Process the inputs and
-          generate the events and code."
-  (b* (((when (atc-table-lookup call (w state)))
-        (acl2::value '(value-triple :redundant)))
-       ((er (list t1...tp
-                  output-file
-                  pretty-printing
-                  proofs
-                  prog-const
-                  wf-thm
-                  fn-thms
-                  print))
-        (atc-process-inputs args ctx state)))
-    (atc-gen-everything t1...tp
-                        output-file
-                        pretty-printing
-                        proofs
-                        prog-const
-                        wf-thm
-                        fn-thms
-                        print
-                        call
-                        ctx
-                        state)))
+  :short "Process the inputs and generate the events and code."
+  (b* (((acl2::fun (reterr erp state)) (mv erp '(_) state))
+       ((when (atc-table-lookup call (w state)))
+        (retok '(value-triple :redundant) state))
+       ((mv erp
+            targets
+            file-name
+            path-wo-ext
+            header
+            pretty-printing
+            proofs
+            prog-const
+            wf-thm
+            fn-thms
+            print
+            state)
+        (atc-process-inputs args state))
+       ((when erp) (reterr erp state))
+       ((mv erp event)
+        (atc-gen-everything targets
+                            file-name
+                            path-wo-ext
+                            header
+                            pretty-printing
+                            proofs
+                            prog-const
+                            wf-thm
+                            fn-thms
+                            print
+                            call
+                            state))
+       ((when erp) (reterr erp state)))
+    (retok event state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-fn ((args true-listp) (call pseudo-event-formp) (ctx ctxp) state)
+  :returns (mv erp
+               (event pseudo-event-formp)
+               state)
+  :parents (atc-implementation)
+  :short "Event expansion of @(tsee atc)."
+  (b* (((mv erp event state)
+        (atc-process-inputs-and-gen-everything args call state))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
+    (acl2::value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

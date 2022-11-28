@@ -92,16 +92,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult fun-env "function environments")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irr-fun-env ()
-  :returns (fenv fun-envp)
-  :short "An irrelevant function environment, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (fun-env-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-fun-env))))
+(fty::defresult fun-env-result
+  :short "Fixtype of errors and function environments."
+  :ok fun-env
+  :pred fun-env-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,7 +121,7 @@
        ((fundef fundef) fundef)
        (name (fundef->name fundef))
        ((when (fun-env-lookup name fenv))
-        (error (list :duplicate-function-definition name)))
+        (reserrf (list :duplicate-function-definition name)))
        (info (fun-info-from-fundef fundef)))
     (omap::update name info fenv))
   :hooks (:fix))
@@ -155,8 +149,8 @@
        (ext-declon-case
         declon
         :obj-declon (init-fun-env-aux (cdr declons) fenv)
+        :fun-declon (init-fun-env-aux (cdr declons) fenv)
         :tag-declon (init-fun-env-aux (cdr declons) fenv)
-        :fundef (b* ((fenv (fun-env-extend declon.get fenv))
-                     ((when (errorp fenv)) fenv))
+        :fundef (b* (((okf fenv) (fun-env-extend declon.get fenv)))
                   (init-fun-env-aux (cdr declons) fenv))))
      :hooks (:fix))))

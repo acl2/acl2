@@ -3,7 +3,6 @@
 ; Contact:
 ;   David M. Russinoff
 ;   david@russinoff.com
-;   1106 W 9th St., Austin, TX 78703
 ;   http://www.russinoff.com/
 ;
 ; See license file books/rtl/rel11/license.txt.

@@ -234,15 +234,12 @@
   :hints (("Goal" :in-theory (e/d (getbit leftrotate) (bvchop-1-becomes-getbit
                                                        slice-becomes-getbit)))))
 
-;gen the 32!
 (defthm equal-of-leftrotate-and-leftrotate
-  (implies (and (equal 32 size) ;gen!
-                (natp size)
-                ;(<= size 32)
-                )
+  (implies (natp size)
            (equal (equal (leftrotate size n x) (leftrotate size n y))
                   (equal (bvchop size x) (bvchop size y))))
-  :hints (("Goal" :in-theory (enable leftrotate))))
+  :hints (("Goal" :cases ((equal 0 size))
+           :in-theory (enable leftrotate))))
 
 ;; This may fail to match if the first mention of X has been chopped down.
 (defthmd bvcat-of-slice-becomes-leftrotate

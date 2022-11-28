@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "ops-diff-types.h"
+
 int main(void) {
   unsigned int x = 3;
   unsigned char y = 77;

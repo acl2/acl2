@@ -10,7 +10,7 @@
 ;; This file depends on the LaTeX .sty file, "CLI.sty".
 ;; CLI.sty should be stored in *infix-directory*.
 
-(in-package "user")
+(in-package "USER")
 
 (format *terminal-io* "Loading the ainfix latex-init file.")
 

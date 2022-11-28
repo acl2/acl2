@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -54,6 +55,7 @@
                ctxp
                cw-event
                define-sk
+               defirrelevant
                defmacro+
                defopener
                defopeners
@@ -76,6 +78,7 @@
                ensure-value-is-string$
                ensure-value-is-symbol$
                er-soft+
+               erp
                evmac-appcond-listp
                evmac-appcond-theorem-list
                evmac-generate-defthm
@@ -99,6 +102,7 @@
                fsublis-var
                fsublis-var-lst
                genvar
+               genvar$
                get-ruleset
                implode
                impossible
@@ -107,10 +111,12 @@
                keyword-symbol-alistp
                keyword-value-list-to-alist
                lnfix
+               logicp
                make-event-terse
                make-evmac-appcond
                maybe-natp
                maybe-pseudo-event-formp
+               maybe-stringp
                mbt$
                measure+
                msg-listp
@@ -120,12 +126,15 @@
                nats=>string
                nvariablep
                one-way-unify
+               one-way-unify$
                packn
                packn-pos
+               pos
                pos-listp
                pos-option
                pos-optionp
                prefixp
+               pseudo-event-form-list
                pseudo-event-form-listp
                pseudo-event-formp
                pseudo-event-form
@@ -164,20 +173,28 @@
                pseudo-var-p
                remove-equal-formals-actuals
                restore-output?
+               reterr
+               retok
                run-when
                str-fix
                string=>nats
                symbol-fix
                symbol-list
                symbol-list-fix
+               symbol-pseudoterm-alist
                symbol-pseudoterm-alistp
                symbol-pseudoterm-alist-fix
                symbol-symbol-alistp
                table-alist+
+               termination-theorem$
                tuple
                ubody+
                uguard+
+               untranslate$
                untranslate-lst
                variablep
                well-founded-relation+
+               fty::okf
+               fty::reserrf
+               fty::reserrp
                std::defret-mutual)))

@@ -24,7 +24,6 @@
                                     not-quotep ;drop?
                                     heavier-dag-term
                                     bv-term-syntaxp
-                                    not-bv-term-syntaxp
                                     is-a-myif
                                     not-is-a-myif ;drop?
                                     syntactic-booleanp
@@ -33,10 +32,10 @@
                                     syntactic-variablep
                                     is-the-variablep
                                     should-reverse-equality
-                                    bv-array-write-nest-ending-inp
-                                    bvcat-nest-with-low-zeros
-                                    bv-array-write-nest-with-val-at-index
+                                    bv-array-write-nest-ending-inp-axe
+                                    bvcat-nest-with-low-zerosp-axe
+                                    bv-array-write-nest-with-val-at-indexp-axe
                                     term-should-be-trimmed-axe-plus-one
                                     term-should-be-trimmed-axe
-                                    should-commute-args-dag
-                                    should-commute-args-increasing-dag))
+                                    should-commute-axe-argsp
+                                    should-commute-axe-args-increasingp))

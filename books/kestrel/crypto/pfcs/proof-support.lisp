@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,21 +12,21 @@
 
 (include-book "semantics-deep")
 
-(local (in-theory (disable rtl::primep)))
+(local (in-theory (disable primep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ proof-support
   :parents (prime-field-constraint-systems)
-  :short "Proof support for PFCS."
+  :short "Proof support for PFCSes."
   :long
   (xdoc::topstring
    (xdoc::p
-    "PFCS representing specific gadgets can be reasoned about
+    "PFCSes representing specific gadgets can be reasoned about
      (to prove properties of them, such as compliance to specifications)
      using either the shallowly or deeply embedded semantics.
-     Both work fine for the case of fixed, completely defined PFCS.
-     However, to reason about parameterized families of PFCS,
+     Both work fine for the case of fixed, completely defined PFCSes.
+     However, to reason about parameterized families of PFCSes,
      such as a gadget to decompose a number into a varying number of bits
      (where the number of bits is a parameter),
      or even more simply a gadget parameterized over
@@ -46,21 +46,24 @@
      It may be possible to extend the shallowly embedded semantics
      to recognize and take into account certain forms of parameterized PFCS,
      or even extend PFCS with forms of parameterization.
+     It may be also possible to define ACL2 functions
+     that generate both PFCS abstract syntax and associated proofs,
+     based on the kind of parameters mentioned above.
      But for now,
      with PFCS and their shallowly embedded semantics being what they are,
      the deeply embedded semantics must be used
-     to reason about parameterized PFCS.")
+     to reason about parameterized PFCSes.")
    (xdoc::p
-    "However, the (deeply embedded) semantics of PFCS is somewhat complicated,
+    "However, the (deeply embedded) semantics of PFCSes is somewhat complicated,
      defined in terms of
      existentially quantified proof trees and their execution.
      The reason for that complication is discussed
      in @(see semantics-deeply-embedded).
-     The complication extends to attempts to reason about PFCS
+     The complication extends to attempts to reason about PFCSes
      (whether parameterized or not)
      directly in terms of the defined semantics.")
    (xdoc::p
-    "Fortunately, it is possible to prove rules
+    "Fortunately, it should be possible to prove rules
      that facilitate reasoning with the deeply embedded semantics.
      These rules let us avoid dealing explcitly with proof trees.
      These rules are work in progress."))

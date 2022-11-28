@@ -724,6 +724,7 @@
                                 '(SET-BOGUS-MUTUAL-RECURSION-OK T)
                                 '(SET-IRRELEVANT-FORMALS-OK T)
                                 '(SET-IGNORE-OK T)
+                                '(SET-STATE-OK T)
                                 (append extras
                                         table-evs
                                         (and in-theory-event

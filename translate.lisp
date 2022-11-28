@@ -357,14 +357,15 @@
 ; the domain in arg 3.  (do$ is handled differently: it takes three functional
 ; arguments!)
 
+; NOTE: As of 11/11/2022 it is not clear that the restriction described next
+; is necessary.  The bug below fails to be a bug even after redefining
+; *loop$-special-function-symbols* to be nil.  We may revisit this restriction.
+
 ; Because of all the Special Conjectures (see the Essay on Loop$) we have to be
 ; careful not to evaluate ground calls of the special function symbols
 ; listed below during guard clause generation.  If any of these functions were
 ; to be evaluated we would fail to recognize the need for some special
-; conjectures.  For example, (collect$ (lambda$ ...)  (tails '...))  is a
-; pattern that triggers Special Conjecture (c) because it represents ON
-; iteration, and that pattern would not be present if (tails '...) turned into
-; a constant.  See the call of eval-ground-subexpressions1 in guard-clauses+
+; conjectures.  See the call of eval-ground-subexpressions1 in guard-clauses+
 ; for where we use this list.
 
 ; Before we avoided evaluating ground calls of these symbols we saw the
@@ -396,18 +397,6 @@
          until$ until$+ when$ when$+
          loop$-as tails from-to-by do$))
 
-(defun for-loop$-operator-scionp (fn alist)
-
-; Note that this function is explicitly about FOR loop$s (see the name of the
-; function!) and does not consider do$ a ``FOR loop$ operator scion''.
-
-  (cond ((endp alist) nil)
-        ((and (car (car alist)) ; operator?
-              (or (eq (cadr (car alist)) fn)    ; :plain?
-                  (eq (caddr (car alist)) fn))) ; :fancy?
-         t)
-        (t (for-loop$-operator-scionp fn (cdr alist)))))
-
 (defun loop$-scion-style1 (fn alist)
 
 ; Fn is a symbol and alist is a tail of *for-loop$-keyword-info*.  We determine
@@ -423,6 +412,10 @@
    (t (loop$-scion-style1 fn (cdr alist)))))
 
 (defun loop$-scion-style (fn)
+
+; Changes made in November 2022 caused this function to be called no longer in
+; the ACL2 sources.  However, it is still called in community book
+; books/projects/apply/definductor.lisp, so we retain this definition.
 
 ; Fn is a function symbol and if it is a loop$-scion we return its ``style''
 ; otherwise we return nil.  The style of FOR loop$ scions is either :plain
@@ -5688,7 +5681,6 @@
 ; the warrant for fn.
 
            (warrants-for-suitably-tamep-listp
-            (access apply$-badge bdg :arity)
             ilks
             (fargs x)
             wrld
@@ -5704,7 +5696,6 @@
            (mv-let (warrants1 unwarranteds1)
              (warrants-for-tamep-lambdap fn wrld warrants unwarranteds)
              (warrants-for-suitably-tamep-listp
-              (length (cadr fn))
 ; Given (tamep-lambdap fn), (cadr fn) = (lambda-object-formals fn).
               nil
               (cdr x)
@@ -5728,12 +5719,12 @@
                 unwarranteds)))
       (warrants-for-tamep-lambdap fn wrld warrants unwarranteds)))
 
-(defun warrants-for-suitably-tamep-listp (n flags args wrld warrants unwarranteds)
+(defun warrants-for-suitably-tamep-listp (flags args wrld warrants unwarranteds)
 ; We assume (executable-suitably-tamep-listp n flags args wrld).  See the
 ; discussion above about the ``warrants-for-tamep'' family of functions.
   (declare (xargs :mode :program))
   (cond
-   ((zp n) (mv warrants unwarranteds))
+   ((endp args) (mv warrants unwarranteds))
    (t (mv-let (warrants1 unwarranteds1)
         (let ((arg (car args)))
           (case (car flags)
@@ -5745,8 +5736,7 @@
                                  wrld warrants unwarranteds))
             (otherwise
              (warrants-for-tamep arg wrld warrants unwarranteds))))
-        (warrants-for-suitably-tamep-listp (- n 1)
-                                           (cdr flags)
+        (warrants-for-suitably-tamep-listp (cdr flags)
                                            (cdr args)
                                            wrld
                                            warrants1
@@ -7019,9 +7009,6 @@
 (defun untranslate-lambda-object-cheat ()
   (declare (xargs :guard t :mode :logic))
   :untranslate-lambda-object-cheat)
-
-(defconst *default-default-state-vars*
-  (default-state-vars nil))
 
 (defproxy translate11-lambda-object-proxy
   (* * * * * * * * * *) => (mv * * *))
@@ -8510,7 +8497,7 @@
                         nil ; cform
                         'untranslate1-lambda-objects-in-fn-slots
                         wrld
-                        *default-default-state-vars*
+                        *default-state-vars*
                         nil)
                        (declare (ignore bindings))
                        (cond
@@ -10584,12 +10571,6 @@
                 (declare (ignorable ,@(strip-cars sigma)))
                 ,body-term))))
 
-(defun make-do-measure-lambda$ (sigma mterm)
-  `(lambda$ (alist)
-            (if (alistp alist)
-                ,(sublis-var sigma mterm)
-                0)))
-
 (defun make-initial-do-body-alist (twvts vars alist)
 
 ; We return a term that evaluates to an alist the binds the vars in twvts to
@@ -12076,7 +12057,7 @@
 ; partly because it formed the abstract of a talk given to the ACL2 Seminar on
 ; 25 January, 2019, and we knew the audience wouldn't know what ``loop$'' was.
 ; Loop$ was added to the sources in late January, 2019.  DO loop$s were added
-; in October, 2021.]
+; in October, 2021.  Further revision has taken place since.]
 
 ; -----------------------------------------------------------------
 ; On ACL2 Support for LOOP
@@ -12206,7 +12187,7 @@
 ; eventually described below.
 
 ; But limitations (a) and (b) are currently insurmountable and directly cause a
-; practical restriction on the use of loop.  For example, the user may be
+; practical restriction on the use of loop$.  For example, the user may be
 ; tempted to type loop$ statements to interactively inspect aspects of the ACL2
 ; state or to print things, and this is generally impossible.
 
@@ -12310,7 +12291,7 @@
 ; means loop$ must translate the until, when, and loop body expressions.
 ; Macros can't call translate, so loop$ is built into translate.
 
-; (BTW: Since the until, when, and loop body expressions each become the body
+; (BTW: Since the UNTIL, WHEN, and loop body expressions each become the body
 ; of a lambda$ expression, it is confusing to call the ``loop body expression''
 ; simply the ``body.''  Instead, we call it the ``lobody expression.'')
 
@@ -12322,14 +12303,17 @@
 ;                   :verify-guards nil))
 ;   (mbe :logic (if (endp lst)
 ;                   0
-;                   (+ (fix (apply$ fn (list (car lst))))
+;                   (+ (ec-call (the-number (apply$ fn (list (car lst)))))
 ;                      (sum$ fn (cdr lst))))
 ;        :exec (sum$-ac fn lst 0)))
 
 ; Sum$'s guard just requires that fn be a function symbol or LAMBDA object of
 ; arity 1, and lst be a true-list.  Sum$ is guard verified, but first we have
 ; to prove that it returns a number so we can satisfy the guard on the +.  The
-; fix is necessary since we don't know fn returns a number.
+; fix is necessary since we don't know fn returns a number.  The somewhat
+; arcane way we fix the value v returned by apply$ allows both runtime
+; guard-checking that v is a number and a "Special Conjecture" described below
+; for guard verification.
 
 ; A ``loop$ scion'' is any scion used in the translation of loop$ statements.
 ; The plain ones are sum$, always$, thereis$, collect$, append$, until$, and
@@ -12343,7 +12327,7 @@
 ; The plain loop$ scions are informally described as follows, where the
 ; elements of lst are e1, ..., en:
 
-; (sum$ fn lst): sums all (fix (apply$ fn (list ei)))
+; (sum$ fn lst): sums all numeric fixes of (apply$ fn (list ei))
 
 ; (always$ fn lst): tests that all (apply$ fn (list ei)) are non-nil
 
@@ -12352,7 +12336,8 @@
 
 ; (collect$ fn lst): conses together all (apply$ fn (list ei))
 
-; (append$ fn lst): appends together all (true-list-fix (apply$ fn (list ei)))
+; (append$ fn lst): appends together all true-list fixes of
+;                   (apply$ fn (list ei)))
 
 ; (when$ fn lst): conses together all ei such that (apply$ fn (list ei))
 
@@ -12409,21 +12394,21 @@
 ; target, lst, is a true-listp.  So the actuals in [2] satisfy sum$'s guard.
 
 ; If this loop$ expression is typed at the top level of ACL2, *1* sum$ is
-; called, the guard successfully checked, and the fast raw Lisp sum$-ac is
-; called.  Sum$-ac calls the raw Lisp apply$-lambda on the LAMBDA object and
-; successive elements of the target.  Assuming, as we did, that the LAMBDA is
-; guard verified, each call of apply$-lambda checks whether the element under
-; consideration satisfies the guard of the LAMBDA object.  If so, the compiled
-; LAMBDA object is run; if not, either an guard violation is called or the
-; logical version of apply$-lambda is used to compute the value of the LAMBDA
-; object on the element (depending on set-guard-checking).  If a value is
-; computed, it is fixed and added to the running accumulator.  In no case is a
-; hard error caused: the guards of sum$ are satisfied by the actuals in [2].
+; called, the guard of sum$ is successfully checked, and the fast raw Lisp
+; sum$-ac is called.  Sum$-ac calls the raw Lisp apply$-lambda on the LAMBDA
+; object and successive elements of the target.  Assuming, as we did, that the
+; LAMBDA is guard verified, each call of apply$-lambda checks whether the
+; element under consideration satisfies the guard of the LAMBDA object.  If so,
+; the compiled LAMBDA object is run; if not, either a guard violation occurs or
+; the logical version of apply$-lambda is used to compute the value of the
+; LAMBDA object on the element (depending on set-guard-checking).  If a value
+; is computed, it is fixed and added to the running accumulator.  In no case is
+; a hard error caused: the guards of sum$ are satisfied by the actuals in [2].
 
-; On the other hand, if the loop$ expression is typed as part of a guard
-; verified defun, then the sum$ and the LAMBDA object are both guard verified
-; at defun-time.  Then, when the defun'd function is called, the loop$ is
-; executed as a raw Lisp loop:
+; On the other hand, suppose the loop$ expression is typed as part of a defun.
+; The sum$ and the LAMBDA object can both be guard verified.  If that suffices
+; for guard verification of the defun, then when defun'd function is called,
+; the loop$ will be executed as a raw Lisp loop:
 
 ; (loop for v of-type integer in '(1 2 3 IV) sum (foo 1 v))
 
@@ -12442,20 +12427,22 @@
 ; does not use apply$-lambda.
 
 ; Special Conjecture (b): The guard of (sum$ fn lst) does not include the test
-; that fn returns a number on every element of lst.  This is not necessary
-; for our sum$ because it wraps the apply$-lambda in a fix.  But the raw Lisp
-; loop expects the lobody to return a number and will cause a hard error
-; if it doesn't.  The root problem is that sum$ uses fix and loop doesn't.
+; that fn returns a number on every element of lst.  This is not necessary for
+; our sum$ because it wraps the apply$-lambda in a fixer.  But the raw Lisp
+; loop expects the lobody to return a number and will cause a hard error if it
+; doesn't.  The root problem is that sum$ uses fix and loop doesn't.
 
-; There is also a Special Conjecture (c).  Consider
+; There was formerly a Special Conjecture (c).  That has been replaced by a
+; type-check performed on the tails of the target as described in :DOC
+; for-loop$, but we describe the issue here.  Consider
 
 ; (loop for v of type type-spec on lst collect ...)
 
-; The semantics of this will be (collect$ (lambda$ ...) (tails lst)) where
-; tails collects the non-empty tails of lst.  The guard of collect$ will ensure
-; that lst is a true-listp.  But if you run this in Common Lisp you will find
-; that the type-spec is checked on EVERY tail of lst, including NIL, not just
-; the non-empty ones.  Here is an example, to be tried in raw CCL:
+; The logical semantics of this, ignoring guard checks, will be (collect$
+; (lambda$ ...) (tails lst)) where tails collects the non-empty tails of lst.
+; If you run this in Common Lisp you may find that the type-spec is checked on
+; EVERY tail of lst, including the final cdr (i.e., NIL if lst is a true list),
+; not just the non-empty ones.  Here is an example, to be tried in raw CCL:
 
 ; (declaim (optimize (safety 3))) ; to force CCL to test the type-spec
 ; (defun my-typep (x)             ; the type-spec we'll use
@@ -12491,8 +12478,8 @@
 ; Also, we see that the type-spec is called on iterations not seen by the
 ; operator expression (see [1]).
 
-; In addition, trying the same thing with a from-to-by shows that
-; special cases are considered:
+; In addition, trying the same thing with a from-to-by shows that special cases
+; are considered (again, here we use CCL).
 
 ; (defun test-type-spec (i j k)
 ;    (loop for x of-type (satisfies my-typep) from i to j by k
@@ -12531,6 +12518,11 @@
 ; books/system/apply/loop-scions.lisp where we show that (+ i (* k (floor (- j
 ; i) k))) is the last value at or below j.
 
+; Instead of generating Special Conjectures (c), we now replace the target by
+; an expression that forces suitable type checks; this is clear from the
+; definition of make-basic-loop$-target.  Let us return now to consideration of
+; the Special Conjectures for (a) and (b).
+
 ; The ``purist'' solution, at least to problems (a) and (b), is to strengthen
 ; the guard of sum$ to include Special Conjectures (a) and (b).  It is
 ; certainly possible to formalize (b): just define a scion that runs fn across
@@ -12557,13 +12549,6 @@
 ; of the guard check, so like the purist solution to conjecture (b), the purist
 ; solution to (a) further slows down guard checking.
 
-; But we don't see a purist solution to (c) because, for example, the guard on
-; (from-to-by i j k) can't express the idea that the arguments satisfy the
-; type-spec of the LAMBDA because (from-to-by i j k) doesn't contain the
-; LAMBDA.  And collect$ can't do it because by the time collect$ executes the
-; (from-to-by i j k) will have turned into a list of integers indistiguishable
-; from an IN iteration.
-
 ; We reject these purist solutions both for their logical complexity (or
 ; impossibility) (especially (a)) and the slowdown in execution in the ACL2
 ; loop.
@@ -12587,11 +12572,11 @@
 ; violates the whole goal of this project.  We want guard verified ACL2 loop$
 ; statements to execute at raw Lisp loop speeds.
 
-; We give our preferred solution in the next section but roughly put it
-; leaves the guard on sum$ unchanged so it is easy to check, it leaves the
-; fix in place so sum$ can be guard verified with that guard, but it changes
-; the guard conjecture generation routine, guard-clauses, to generate extra
-; guard conjectures for calls of sum$ on quoted function objects.
+; We give our preferred solution in the next section but roughly put it leaves
+; the guard on sum$ unchanged so it is easy to check, it leaves the fixing in
+; place so sum$ can be guard verified with that guard, but it changes the guard
+; conjecture generation routine, guard-clauses, to generate extra guard
+; conjectures for calls of sum$ on quoted function objects.
 
 ; One last note: It should be stressed that the above goal is limited to loop$
 ; statements in guard verified defuns.  While we want loop$ statements that are
@@ -12667,10 +12652,10 @@
 ; -----------------------------------------------------------------
 ; Section 3:  Our Solution to the Special Conjectures
 
-; The approach we advocate is to leave the guard of sum$ as is, with the fix in
-; the sum$, but we change guard generation so that in certain special cases we
-; generate (and thus have to prove) guard conjectures beyond those strictly
-; required by the scion's guard.
+; The approach we advocate is to leave the guard of sum$ as is, with the fixing
+; in the body of sum$, but we change guard generation so that in certain
+; special cases we generate (and thus have to prove) guard conjectures beyond
+; those strictly required by the scion's guard.
 
 ; The ACL2 system function guard-clauses is the basic function for generating
 ; guard conjectures for a term.  It is called in two situations in which the
@@ -12683,8 +12668,11 @@
 ; function symbol of the appropriate arity (depending on whether the loop$
 ; scion is plain or fancy) or is a quoted well-formed LAMBDA object of the
 ; appropriate arity, then guard-clauses adds possibly three guard conjectures
-; not actually required by the scion's guard.  These two conjectures formalize
-; Special Conjectures (a), (b) and (c) about the function object and target.
+; not actually required by the scion's guard.  These conjectures formalize
+; Special Conjectures (a) and (b) about the function object and target.  (As
+; noted above, there no longer are Special Conjectures (c), as the requisite
+; guards are generated by decorating the target term with type requirements
+; using function make-basic-loop$-target.)
 
 ;;; Possible Future Work on Loop$:
 
@@ -12700,15 +12688,11 @@
 ; produces a result of the right type, e.g., an acl2-number for SUM and a
 ; true-listp for APPEND.
 
-; Special Conjecture (c): For loops ON a target or over a FROM-TO-BY target
-; we also have to prove that the step AFTER the last one still satisfies the
-; type-spec.  This is illustrated below.
-
 ; Just focusing on a call of a plain loop$ scion, e.g., (sum$ 'fn target),
 ; where (i) there is one iteration variable, v, (ii) the quoted function
 ; object, fn, is a tame function symbol or LAMBDA object of arity 1, (iii) fn
 ; has a guard of guardexpr, and (iv) the loop$ scion expects a result of type
-; typep (e.g., acl2-numberp for sum$ and true-listp for append$), the two
+; typep (e.g., acl2-numberp for sum$ and true-listp for append$), the
 ; conjectures are:
 
 ; (a) (implies (and <hyps from clause>
@@ -12718,15 +12702,6 @@
 ; (b) (implies (and <hyps from clause>
 ;                   (member-equal newvar target))
 ;              (typep (apply$ 'fn (list newvar))))
-
-; (c1) (implies (and <hyps from clause>)        ; target (TAILS lst)
-;               type-spec-expr/{v <-- NIL})
-
-; (c2) (implies (and <hyps from clause>)        ; target (from-to-by i j k)
-;               (and type-spec-expr{v <-- i}
-;                    type-spec-expr{v <-- j}
-;                    type-spec-expr{v <-- k}
-;                    type-spec-expr{v <-- (+ i (* k (floor (- j i) k)) k)}))
 
 ; Here, <hyps from clause> are whatever guard and tests govern the occurrence
 ; of the call of the loop$ scion, and newvar is a completely new variable
@@ -12752,23 +12727,23 @@
 ; guard is satisfied by newvar and (b) says that fn applied to newvar returns a
 ; result of the right type.
 
-; These two special conjectures are only generated on terms that MIGHT HAVE
-; BEEN generated by loop$ statements, i.e., calls of loop$ scions on quoted
-; tame well-formed function objects.  Since the function object in question is
+; These special conjectures are only generated on terms that MIGHT HAVE BEEN
+; generated by loop$ statements, i.e., calls of loop$ scions on quoted tame
+; well-formed function objects.  Since the function object in question is
 ; quoted at guard generation time it is easy to extract the guard of the
 ; object.  (Note: the comparable problem in the so-called purist solution of
 ; Section 2 was practically daunting because we needed to express formula (a)
 ; for an unknown fn.)
 
 ; Since we generate the ``normal'' guard conjectures for the loop$ scion in
-; addition to these two, we know the loop$ scion can run in the ACL2 loop
-; without error.
+; addition to these, we know the loop$ scion can run in the ACL2 loop without
+; error.
 
 ; Since we generate (and have to prove) these guard conjectures for every
 ; term that might have been produced by a loop$ statement, we are assured that
 ; the corresponding loop can be executed without hard error in raw Lisp.
 
-; We generate (and thus must prove) conjectures (a) and (b) for all calls of
+; We generate (and thus must prove) the Special Conjectures for all calls of
 ; loop$ scions on quoted tame well-formed function objects even though the user
 ; might have entered them WITHOUT using loop$.  We rationalize this decision
 ; with the thought: the user will use loop$ statements when possible because
@@ -12798,17 +12773,21 @@
 ; To be utterly precise about what we mean by ``essentially'', the
 ; translation of (loop$ for v on lst sum (len v)) is actually
 
-; (sum$ '(lambda (v)
-;                (declare (ignorable v))
-;                (return-last 'progn
-;                             '(lambda$ (v)
-;                                       (declare (ignorable v))
-;                                       (len v))
-;                             (len v)))
-;       (tails lst))
+; (return-last
+;  'progn
+;  '(loop$ for v on lst sum (len v))
+;  (sum$ '(lambda (loop$-ivar)
+;           (declare (ignorable loop$-ivar))
+;           (return-last 'progn
+;                        '(lambda$ (loop$-ivar)
+;                                  (let ((v loop$-ivar))
+;                                    (declare (ignorable v))
+;                                    (len v)))
+;                        ((lambda (v) (len v)) loop$-ivar)))
+;        (tails lst)))
 
 ; where the (ignorable v) declaration is there just in case the body doesn't
-; use v, and the return-last is just the marker indicating that a lambda$
+; use v, and the inner return-last is just the marker indicating that a lambda$
 ; produced this quoted LAMBDA object.  But henceforth we will show
 ; ``translations'' that are just ``essentially translations,'' untranslating
 ; familiar terms like (binary-+ '1 x) and dropping parts that are irrelevant.
@@ -12826,7 +12805,7 @@
 ; the loop$ expression does not provide a BY k clause, BY 1 is understood.
 ; Unlike CLTL, we require that i, j, and k be integers.  CLTL already requires
 ; that k be positive.  This restriction makes it easier to admit from-to-by and
-; is tail-recursive counterpart.
+; its tail-recursive counterpart.
 
 ;;; Possible Future Work on Loop$: CLTL supports from/downfrom/upfrom and
 ;;; to/downto/upto/below/above.  Eventually we should change the parse-loop$ to
@@ -12871,17 +12850,22 @@
 ; -----------------------------------------------------------------
 ; Section 5:  Handling UNTIL and WHEN Clauses
 
-; Until and when clauses are handled in the same spirit as ON: copy the target
+; UNTIL and WHEN clauses are handled in the same spirit as ON: copy the target
 ; and select the relevant elements.
 
 ; Let's consider an example.  The constant *tenk-tenk* used below is the
 ; concatenation of the integers from 1 to 10,000, together with itself, i.e.,
 ; '(1 2 3 ... 10000 1 2 3 ... 10000).  However, in the translations below we
-; will show it as *tenk-tenk*.  This loop$
+; will show it as *tenk-tenk*.
+
+; (defconst *tenk* (from-to-by 1 10000 1))
+; (defconst *tenk-tenk* (append *tenk* *tenk*))
+
+; This loop$
 
 ; (loop$ for v on *tenk-tenk*
 ;        until (not (member (car v) (cdr v)))
-;        when (evenp (car v))
+;        when (and v (evenp (car v)))
 ;        collect (car v))
 
 ; collects the even elements of the target but stops as soon as the element no
@@ -12889,14 +12873,17 @@
 ; 10000 and the loop$ produces (2 4 6 ... 10000).  This, of course, is a silly
 ; way to collect the evens up to 10000 but stresses our evaluation mechanism.
 
-; The translation is
+; By using :tcp we come up with the following cleaned-up translation.
 
 ; (collect$
-;  (lambda$ (v) (car v))
+;  (lambda$ (loop$-ivar) (car loop$-ivar))
 ;  (when$
-;   (lambda$ (v) (evenp (car v)))
+;   (lambda$ (loop$-ivar)
+;            (and loop$-ivar (evenp (car loop$-ivar))))
 ;   (until$
-;    (lambda$ (v) (not (member (car v) (cdr v))))
+;    (lambda$ (loop$-ivar)
+;             (not (member-equal (car loop$-ivar)
+;                                (cdr loop$-ivar))))
 ;    (tails *tenk-tenk*))))
 
 ; That is, first we enumerate the tails of the target, then we cut it off at
@@ -12910,8 +12897,17 @@
 ; the ACL2 loop.  However, we're satisfied with the current top-level
 ; evaluation performance.
 
-; Let's put some numbers on that.  We start with an empty compiled LAMBDA
-; cache.
+; Let's put some numbers on that.  We first clear the cache by setting its size
+; in raw Lisp.  The default size is 1000, but we set the size below to 6.
+; There are three lambdas in in the translation above, but each one gets into
+; the cache twice, probably because of the slightly different versions of each
+; lambda being seen, some with the RETURN-LAST markers and some without those
+; markers.  So 6 is the minimal size to hold every lambda evaluation will see;
+; increasing the cache size seems unlikely to change anything.
+
+; (value :q)
+; (setq *cl-cache* 6)
+; (lp)
 
 ; The simplest version of our loop$, containing no declarations, is timed
 ; below.
@@ -12920,32 +12916,35 @@
 ;              (loop$ for v
 ;                     on *tenk-tenk*
 ;                     until (not (member (car v) (cdr v)))
-;                     when (evenp (car v))
+;                     when (and v (evenp (car v)))
 ;                     collect (car v))))
 
-; 2.48 seconds realtime, 2.48 seconds runtime
+; 1.66 seconds realtime, 1.66 seconds runtime
 
-; Printing the cache shows that each of the lambdas in the translation has
-; status :BAD because tau cannot prove the guard conjectures (e.g., on (car
-; v)), so the lambdas are interpreted.
+; Now print the cache:
+
+; (print-cl-cache)
+
+; This shows that each of the lambdas in the translation has status :BAD
+; because tau cannot prove the guard conjectures (e.g., on (car v)), so the
+; lambdas are interpreted.
 
 ; After clearing the cache, we try again, but this time with an appropriate
 ; OF-TYPE declaration:
 
+; (value :q)
+; (setq *cl-cache* 6)
+; (lp)
+
 ; ACL2 !>(len (time$
-;              (loop$ for v of-type (and cons (satisfies integer-listp))
+;              (loop$ for v of-type (satisfies integer-listp)
 ;                     on *tenk-tenk*
 ;                     until (not (member (car v) (cdr v)))
-;                     when (evenp (car v))
+;                     when (and v (evenp (car v)))
 ;                     collect (car v))))
 
-; 2.76 seconds realtime, 2.76 seconds runtime
-
-; The three lambdas in the translation of this loop$ each have a guard of (and
-; (consp v) (integer-listp v)).  Tau spends a little more time, proves the
-; guards on the outermost lambda, responsible for collecting (car v), but fails
-; on the other two (which involve the guards of member and evenp).  The total
-; time is a little more than the undeclared version.
+; 2.54 seconds realtime, 2.54 seconds runtime
+; Tau spends time trying to verify guards.
 
 ; [Note: Tau is weak and often fails in its role of verifying guards.  We
 ; live with it.  Perhaps we should worry more about strengthening guard
@@ -12956,12 +12955,15 @@
 ; After clearing the cache again, we define a function containing this same
 ; declared loop$ over a list of integers:
 
+; (value :q)
+; (setq *cl-cache* 6)
+; (lp)
 ; (defun bar (lst)
 ;   (declare (xargs :guard (integer-listp lst)))
-;   (loop$ for v of-type (and cons (satisfies integer-listp))
+;   (loop$ for v of-type (satisfies integer-listp)
 ;          on lst
 ;          until (not (member (car v) (cdr v)))
-;          when (evenp (car v))
+;          when (and v (evenp (car v)))
 ;          collect (car v)))
 
 ; This definition is guard verified, but the proofs of the special guard
@@ -12973,49 +12975,49 @@
 ; (i.e., they contain no fixers).  Here is conjecture (a) for the collect$
 ; term:
 
-; Special Conjecture (a) for the collect$ term:
+; Special Conjecture (a) for the collect$ term (cleaned up):
 ; (implies
 ;  (and (integer-listp lst)
 ;       (member-equal newv
-;                     (when$ (lambda$ (v) (evenp (car v)))
-;                            (until$ (lambda$ (v) (not (member (car v)
-;                                                              (cdr v))))
+;                     (when$ (lambda$ (loop$-ivar) (evenp (car loop$-ivar)))
+;                            (until$ (lambda$ (loop$-ivar)
+;                                             (not (member (car loop$-ivar)
+;                                                          (cdr loop$-ivar))))
 ;                                    (tails lst)))))
-;  (and (consp newv)
-;       (integer-listp newv)))
+;  (integer-listp newv))
 
 ; This requires showing that if lst is a list of integers and newv is a member
 ; of the target of the collect$, then newv is a non-empty list of integers.
 ; (This is true because the target of the collect$ is the list of non-empty
 ; tails of lst, filtered by the until$ and when$ lambdas.)
 
-; All the lambdas are added to the cache with status :GOOD and compiled.  But
-; that is irrelevant because executing bar on a list of integers will not
+; Now there are 3 lambdas in the cache and they're all GOOD and compiled.
+
+; (print-cl-cache)
+
+; But that is irrelevant because executing bar on a list of integers will not
 ; actually use apply$ or the lambdas but will run the raw Lisp loop instead.
 
-; ACL2 !>(len (time$ (bar *tenk-tenk*)))
-
-; 0.40 seconds realtime, 0.40 seconds runtime
+; (len (time$ (bar *tenk-tenk*)))
+; 0.24 seconds realtime, 0.24 seconds runtime
 
 ; Of course, this time includes checking the guard that *tenk-tenk* is a list
 ; of integers.  That however takes an insignificant amount of time; if we run
 ; bar in raw Lisp (which doesn't actually check the guard but just plows into
-; the compiled raw Lisp loop) the time is 0.38 seconds.
+; the compiled raw Lisp loop) the time is indistiguishable from the time in the
+; ACL2 read-eval-print loop.
 
-; One other fact of note: having verified the guards on the three lambdas and
-; entered them into the cache, we can expect
+; Running the loop$ in the loop is a little faster too, because all the lambdas
+; encountered by the top-level are :GOOD and compiled.  Recall that when guard
+; verification was left to tau alone we saw a time of 2.54 seconds.
 
-; ACL2 !>(len (time$
-;              (loop$ for v of-type (and cons (satisfies integer-listp))
-;                     on *tenk-tenk*
-;                     until (not (member (car v) (cdr v)))
-;                     when (evenp (car v))
-;                     collect (car v))))
-; 1.69 seconds realtime, 1.69 seconds runtime
-
-; to run faster because all the lambdas encountered by the top-level are :GOOD
-; and compiled.  Recall that when guard verification was left to tau alone
-; (which failed on two of the three) we saw a time of 2.48 seconds.
+; (len (time$
+;       (loop$ for v of-type (satisfies integer-listp)
+;          on *tenk-tenk*
+;          until (not (member (car v) (cdr v)))
+;          when (and v (evenp (car v)))
+;          collect (car v))))
+; 1.12 seconds realtime, 1.12 seconds runtime
 
 ; -----------------------------------------------------------------
 ; Section 6:  About Member-Equal and the Mempos Correspondence
@@ -13045,7 +13047,7 @@
 ; But the user might need the stronger fact that the value of x1, x2, x3, ...,
 ; are in correspondence with the elements of t1, t2, t3, ...
 
-; Books/projects/apply/mempos.lisp also includes a rewrite rule, named
+; File books/projects/apply/mempos.lisp also includes a rewrite rule, named
 ; mempos-correspondence, that rewrites the (member-equal newvar (loop$-as (list
 ; t1 ... ))) into the salient facts the components of newvar.  However, it only
 ; handles the first three cases, for (list t1), (list t1 t2), and (list t1 t2
@@ -13088,7 +13090,7 @@
 
 ; -----------------------------------------------------------------
 ; Section 7:  An Example Plain Loop$, the :Guard Clause,
-;            and Guard Conjectures
+;             and Guard Conjectures
 
 ; For this example we define three renamings of integerp: int1p, int2p, and
 ; int3p.  Each has a guard of t and just tests integerp.  We do this so we can
@@ -13138,7 +13140,7 @@
 ;          sum :guard (int3p v)
 ;              (isq v)))
 
-; We allow such :guard clauses immediately after the until, the when, and the
+; We allow such :guard clauses immediately after the UNTIL, the WHEN, and the
 ; loop$ operator symbols and before the corresponding expression.  The :guard
 ; term is inserted as an extra conjunct into the guard of the lambda$ generated
 ; for the corresponding expression.
@@ -13150,8 +13152,7 @@
 
 ; (sum$ (lambda$ (v)
 ;                (declare (type rational v)
-;                         (xargs :guard (and (rationalp v) (int3p v))
-;                                :split-types t))
+;                         (xargs :guard (int3p v)))
 ;                (isq v))
 ;       (when$ (lambda$ (v)
 ;                       (declare (type rational v))
@@ -13160,12 +13161,12 @@
 
 ; The two lambda$'s guards are different.  The first lambda$ retains the (type
 ; rationalp v) declaration from the of-type spec but its :guard now includes
-; (int3p v) as an extra conjunct from our added :guard clause in the body of
-; the loop$.  By allowing the user to extend the guards generated from the CLTL
-; type specs we allow the translation to produce verifiable lambda$
-; expressions.  (One could imagine producing this extra guard automatically
-; from the when clause, but as the when$ expression gets more complicated we
-; believe automatic guard inference will be inadequate.)
+; (int3p v) from our added :guard clause in the body of the loop$.  By allowing
+; the user to extend the guards generated from the CLTL type specs we allow the
+; translation to produce verifiable lambda$ expressions.  (One could imagine
+; producing this extra guard automatically from the when clause, but as the
+; when$ expression gets more complicated we believe automatic guard inference
+; will be inadequate.)
 
 ; The guard conjectures produced for sumsqints are enumerated below and then
 ; explained.  Both (when$ fn lst) and (sum$ fn lst) have the normal guard on
@@ -13185,23 +13186,29 @@
 ; (implies (and (rationalp v) (int3p v))                              ; [3]
 ;          (int1p v)))
 
-; (implies (and (rational-listp lst)                                  ; [4]
+; (implies (and (apply$-warrant-int2p)                                ; [4]
+;               (rational-listp lst)
 ;               (member-equal newv lst))
 ;          (rationalp newv))
 
 ; (implies                                                            ; [5]
-;  (and (rational-listp lst)
+;  (and (apply$-warrant-isq)
+;       (apply$-warrant-int2p)
+;       (rational-listp lst)
 ;       (member-equal newv
 ;                     (when$ (lambda$ (v) (int2p v))
 ;                            lst)))
 ;  (and (rationalp newv) (int3p newv)))
 
 ; (implies                                                            ; [6]
-;  (and (rational-listp lst)
+;  (and (apply$-warrant-isq)
+;       (apply$-warrant-int2p)
+;       (rational-listp lst)
 ;       (member-equal newv
 ;                     (when$ (lambda$ (v) (int2p v))
 ;                            lst)))
-;  (acl2-numberp (isq newv)))
+;  (acl2-numberp (apply$ (lambda$ (v) (isq newv))
+;                (list newv))
 
 ; Explanations:
 
@@ -13238,11 +13245,10 @@
 ; All of these must be proved in order to justify the use of the loop$ in
 ; sumsqints.
 
-; Unfortunately, [5] and [6] as written cannot be proved because a warrant on
-; int2p is needed to prove [5] and one on isq is needed for [6].  However,
-; since we only need that the guards hold in the evaluation theory, we can
-; assume the warrants.  Thus, as actually generated by the prover, guard
-; conjectures [5] and [6] provide warrant hypotheses.
+; Note the warrant hypotheses.  Neither [5] nor [6] as written can be proved
+; without warrant hypotheses, because a warrant on int2p is needed to prove [5]
+; and one on isq is needed for [6].  Since we only need that the guards hold in
+; the evaluation theory, we can assume the warrants.
 
 ; We don't need warrants for int1p and int3p because they are just used in
 ; guards.
@@ -13277,17 +13283,17 @@
 ;        as  i of-type integer from 1 to 10
 ;        collect :guard (stringp hdr) (list hdr x i))
 
-; The translation is
+; The (simplified) translation is
 
 ; (collect$+
 ;  (lambda$ (loop$-gvars loop$-ivars)
 ;           (declare (xargs :guard (and (true-listp loop$-gvars)
-;                                       (equal (len loop$-gvars) '1)
+;                                       (equal (len loop$-gvars) 1)
 ;                                       (true-listp loop$-ivars)
-;                                       (equal (len loop$-ivars) '2)
-;                                       (stringp (car loop$-gvars))
+;                                       (equal (len loop$-ivars) 2)
 ;                                       (symbolp (car loop$-ivars))
 ;                                       (integerp (car (cdr loop$-ivars)))
+;                                       (stringp (car loop$-gvars))
 ;                                       )))
 ;           (let ((hdr (car loop$-gvars))
 ;                 (x (car loop$-ivars))
@@ -13297,6 +13303,27 @@
 ;             (list hdr x i)))
 ;  (list hdr)
 ;  (loop$-as (list lst1 (from-to-by '1 '10 '1))))
+
+; Technical Note: the actual call of loop$-as is as follows.  This replaces
+; what used to be generated for this loop$ expression by the now-obsolete
+; Special Conjectures (c).  See make-basic-loop$-target.
+
+; (loop$-as
+;  (list
+;   lst1
+;   (let ((loop$-lo 1)
+;         (loop$-hi 10)
+;         (loop$-by 1))
+;     (declare (type integer loop$-lo loop$-hi loop$-by))
+;     (prog2$ (let ((loop$-final (+ loop$-lo loop$-by
+;                                   (* loop$-by
+;                                      (floor (+ loop$-hi (- loop$-lo))
+;                                             loop$-by)))))
+;               (declare (type integer loop$-final))
+;               loop$-final)
+;             (from-to-by loop$-lo loop$-hi loop$-by)))))
+
+; End of Technical Note.
 
 ; Collect$+ is the fancy version of collect$.  All fancy loop$ scions take
 ; three arguments, a function object of arity 2, a list of values for the
@@ -13379,14 +13406,14 @@
 ;          as i of-type integer in lst
 ;          sum (* (if (eq sign '+) +1 -1) i)))
 
-; The translation of the loop$ is
+; The (simplified) translation of the loop$ is
 
 ; (sum$+                                                              ; [2]
 ;  (lambda$ (loop$-gvars loop$-ivars)
 ;           (declare (xargs :guard (and (true-listp loop$-gvars)
-;                                       (equal (len loop$-gvars) '0)
+;                                       (equal (len loop$-gvars) 0)
 ;                                       (true-listp loop$-ivars)
-;                                       (equal (len loop$-ivars) '2)
+;                                       (equal (len loop$-ivars) 2)
 ;                                       (symbolp (car loop$-ivars))
 ;                                       (integerp (car (cdr loop$-ivars))))))
 ;           (let ((sign (car loop$-ivars))
@@ -13422,7 +13449,7 @@
 ;                     (let ((sign (car loop$-ivars))
 ;                           (i (cadr loop$-ivars)))
 ;                       (* (if (eq sign '+) 1 -1) i)))
-;            (list newv nil)))))
+;            (list nil newv)))))
 
 ; Conjecture [3] establishes the guard of the AS term in [2]: the hypothesis of
 ; [3] is the guard of sum-pos-or-neg, [1], and the conclusion is the guard of
@@ -13839,33 +13866,27 @@
 ; Appendix A:  An Oversight Requiring Additional Work
 
 ; Recall that for every for loop$ scion term that might have been generated by
-; a loop$ statement we generate three guard conjectures that are not required
+; a loop$ statement we may generate two guard conjectures that are not required
 ; by the guard of the scion.
 
 ; Special Conjecture (a): Every member of the target satisfies the guard of the
 ; function object.
 
 ; Special Conjecture (b): On every member of the target, the function object
-; produces a result of the right type, e.g., an acl2-number for SUM and a
+; produces a result of the right type, i.e., an acl2-number for SUM and a
 ; true-listp for APPEND.
 
-; Special Conjecture (c): the type-spec of each iteration var continues to hold
-; at the step BEYOND the last step!  For example, in
-
-; (LOOP$ FOR i OF-TYPE spec FROM 0 TO 23 BY 5 SUM ...)
-
-; Common Lisp requires that 25 satisfies the type spec.  This may seem
-; counterintuitive because the body of the loop only encounters the values 0,
-; 5, 10, 15, and 20.  But the compiler may add 5 to 20 to get 25, store that in
-; i and then test (> i 23) to terminate the loop.  Thus, conjecture (c) makes
-; sure the memory allocated for i will hold that unseen value.
+; (Special Conjectures (c) formerly said that the type-spec holds of specific
+; values, in particular at the step BEYOND the last step.  But as discussed
+; above, this is now handled by modifying the target; see
+; make-basic-loop$-target.)
 
 ; Suppose the user writes this at the top-level ACL2 loop:
 
 ; (loop$ for i of-type integer from 1 to 1000                         ; [1]
 ;        sum (loop$ for j of-type integer from 1 to i sum j))
 
-; This translates to
+; This (essentially) translates to
 
 ; (sum$                                                               ; [2]
 ;  '(lambda (i)
@@ -13932,10 +13953,9 @@
 
 ;;; Possible Future Work on Loop$: From time to time we've asked ourselves: is
 ;;; there a way to allow a loop$ written at the top-level to execute as a loop?
-;;; If apply$ could be used on program-mode functions, then perhaps the use of
-;;; loop$ could just signal a special error (from translate11), suggesting the
-;;; use of TOP-LEVEL.  Then we could avoid the more complicated ideas just
-;;; below.
+;;; Perhaps the use of loop$ could just signal a special error (from
+;;; translate11), suggesting the use of TOP-LEVEL.  Then we could avoid the
+;;; more complicated ideas just below.
 
 ;;; Alternatively, and this would be a fundamental change, we could somehow
 ;;; arrange to execute certain instances of loop$ scions as loops, perhaps by
@@ -14086,6 +14106,7 @@
   `((let ignore ignorable type)
     (mv-let ignore ignorable type)
     (flet ignore ignorable type) ; for each individual definition in the flet
+    (macrolet ignore ignorable type) ; for each individual def. in the macrolet
     (defmacro ignore ignorable type xargs)
     (defuns ignore ignorable irrelevant type optimize xargs)
     (lambda ignore ignorable type xargs)
@@ -14229,15 +14250,17 @@
                 ((not (member-eq dcl temp))
                  (er-cmp ctx
                          "The only acceptable declaration~#0~[~/s~] at the ~
-                          top-level of ~#1~[an FLET binding~/a ~x2 form~] ~
-                          ~#0~[is~/are~] ~*3.  The declaration ~x4 is thus ~
-                          unacceptable here.  ~#5~[~/ It is never necessary ~
-                          to make IGNORE or IGNORABLE declarations in lambda$ ~
-                          expressions because lambda$ automatically adds an ~
-                          IGNORABLE declaration for all of the formals.~]  ~
-                          See :DOC declare."
+                          top-level of ~#1~[an FLET binding~/a MACROLET ~
+                          binding~/a ~x2 form~] ~#0~[is~/are~] ~*3.  The ~
+                          declaration ~x4 is thus unacceptable here.  ~#5~[~/ ~
+                          It is never necessary to make IGNORE or IGNORABLE ~
+                          declarations in lambda$ expressions because lambda$ ~
+                          automatically adds an IGNORABLE declaration for all ~
+                          of the formals.~]  See :DOC declare."
                          temp
-                         (if (eq binder 'flet) 0 1)
+                         (cond ((eq binder 'flet) 0)
+                               ((eq binder 'macrolet) 1)
+                               (t 2))
                          binder
                          (tilde-*-conjunction-phrase temp
                                                      *dcl-explanation-alist*)
@@ -15580,53 +15603,67 @@
   (and (ffn-symb-p body 'return-last)
        (throw-nonexec-error-p1 (fargn body 1) (fargn body 2) name formals)))
 
-(defun chk-flet-declarations (names decls declare-form ctx)
+(defun chk-local-def-declarations (fletp names decls declare-form ctx)
+
+; Fletp is true if we are handling flet and false (nil) if we are handling
+; macrolet.
+
   (cond ((null decls)
          (value-cmp nil))
         ((atom decls)
          (er-cmp ctx
-                 "The DECLARE form for an FLET expression must be a ~
-                  true-list.  The form ~x0 is thus illegal.  See :DOC flet."
-                 declare-form))
+                 "The DECLARE form for ~@0 expression must be a ~
+                  true-list.  The form ~x1 is thus illegal.  See :DOC ~@2."
+                 (if fletp "an FLET" "a MACROLET")
+                 declare-form
+                 (if fletp "flet" "macrolet")))
         (t (let ((decl (car decls)))
              (cond ((and (consp decl)
                          (member-eq (car decl)
                                     '(inline notinline))
                          (true-listp (cdr decl))
                          (subsetp-eq (cdr decl) names))
-                    (chk-flet-declarations names (cdr decls) declare-form ctx))
+                    (chk-local-def-declarations fletp names (cdr decls)
+                                                declare-form ctx))
                    (t (er-cmp ctx
-                              "Each declaration in a DECLARE form of an flet ~
+                              "Each declaration in a DECLARE form of ~@0 ~
                                expression must be of the form (INLINE . fns) ~
                                or (NOTINLINE . fns), where fns is a true-list ~
-                               of names that are all defined by the FLET ~
-                               expression.  The declare form ~x0 is thus ~
-                               illegal because of its declaration, ~x1.  See ~
-                               :DOC flet."
+                               of names that are all defined by the ~x1 ~
+                               expression.  The declare form ~x2 is thus ~
+                               illegal because of its declaration, ~x3.  See ~
+                               :DOC ~@3."
+                              (if fletp "an FLET" "a MACROLET")
+                              (if fletp "FLET" "MACROLET")
                               declare-form
-                              decl)))))))
+                              decl
+                              (if fletp "flet" "macrolet"))))))))
 
-(defun chk-flet-declare-form (names declare-form ctx)
+(defun chk-local-def-declare-form (fletp names declare-form ctx)
   (cond
    ((null declare-form)
     (value-cmp nil))
    (t (case-match declare-form
         (('declare . decls)
-         (chk-flet-declarations names decls declare-form ctx))
+         (chk-local-def-declarations fletp names decls declare-form ctx))
         (&
          (er-cmp ctx
-                 "The optional DECLARE forms for an flet expression must each ~
+                 "The optional DECLARE forms for ~@0 expression must each ~
                   be of the form (DECLARE DCL1 DCL2 ... DCLk), where each ~
-                  DCLi is an INLINE or NOTINLINE declaration.  The form ~x0 ~
-                  is thus not a legal DECLARE form.  See :DOC flet."
-                 declare-form))))))
+                  DCLi is an INLINE or NOTINLINE declaration.  The form ~x1 ~
+                  is thus not a legal DECLARE form.  See :DOC ~@2."
+                 (if fletp "an FLET" "a MACROLET")
+                 declare-form
+                 (if fletp "flet" "macrolet")))))))
 
-(defun chk-flet-declare-form-list (names declare-form-list ctx)
+(defun chk-local-def-declare-form-list (fletp names declare-form-list ctx)
   (cond ((endp declare-form-list)
          (value-cmp nil))
-        (t (er-progn-cmp
-            (chk-flet-declare-form names (car declare-form-list) ctx)
-            (chk-flet-declare-form-list names (cdr declare-form-list) ctx)))))
+        (t
+         (er-progn-cmp
+          (chk-local-def-declare-form fletp names (car declare-form-list) ctx)
+          (chk-local-def-declare-form-list fletp names (cdr declare-form-list)
+                                           ctx)))))
 
 (defun stobj-updater-guess-from-accessor (accessor)
 
@@ -17561,6 +17598,39 @@
                              (ignorable ,@ignorables)))
                 ,(excart :untranslated :body carton)))))
 
+(defun make-basic-loop$-target (spec target)
+
+; We use DECLARE rather than THE below simply to get a more informative error
+; message when there is a guard violation during evaluation in the top-level
+; loop.
+
+  (case (car target)
+    (IN (cadr target))
+    (ON `(tails ,(if (eq spec t)
+                     (cadr target)
+                   `(let ((loop$-on ,(cadr target)))
+                      (prog2$
+                       (let ((loop$-last-cdr (last-cdr loop$-on)))
+                         (declare (type ,spec loop$-last-cdr))
+                         loop$-last-cdr)
+                       loop$-on)))))
+    (FROM-TO-BY (if (eq spec t)
+                    target
+                  `(let ((loop$-lo ,(cadr target))
+                         (loop$-hi ,(caddr target))
+                         (loop$-by ,(cadddr target)))
+                     (declare (type ,spec loop$-lo loop$-hi loop$-by))
+                     (prog2$ (let ((loop$-final
+                                    (+ loop$-lo
+                                       loop$-by
+                                       (* loop$-by
+                                          (floor (- loop$-hi loop$-lo)
+                                                 loop$-by)))))
+                               (declare (type ,spec loop$-final))
+                               loop$-final)
+                             (from-to-by loop$-lo loop$-hi loop$-by)))))
+    (otherwise target)))
+
 (defun make-plain-loop$ (v spec target untilc whenc op lobodyc)
 
 ; This function handles plain loop$s, e.g., where there a single iteration
@@ -17572,10 +17642,7 @@
 ; Of course, spec may be t meaning none was provided, the untilc and/or whenc
 ; cartons may be nil meaning no such clause was provided.
 
-  (let* ((target1 (case (car target)
-                    (IN (cadr target))
-                    (ON `(tails ,(cadr target)))
-                    (otherwise target)))
+  (let* ((target1 (make-basic-loop$-target spec target))
          (target2 (if untilc
                       `(until$
                         ,(make-plain-loop$-lambda-object v spec untilc)
@@ -17596,11 +17663,8 @@
 
 (defun make-fancy-loop$-target (tvsts)
   (cond ((endp tvsts) nil)
-        (t (cons (let ((target (cadddr (car tvsts))))
-                   (case (car target)
-                     (IN (cadr target))
-                     (ON `(tails ,(cadr target)))
-                     (otherwise target)))
+        (t (cons (make-basic-loop$-target (cadr (car tvsts))
+                                          (cadddr (car tvsts)))
                  (make-fancy-loop$-target (cdr tvsts))))))
 
 (defun make-fancy-loop$ (tvsts untilc until-free-vars
@@ -18987,7 +19051,1087 @@
                 path st upd wrld))))
        (t nil)))))
 
+; Next comes support for macrolet that also supports defmacro.
+
+(defun macro-vars-key (args)
+
+  (declare (xargs :guard (and (true-listp args)
+                              (macro-arglist-keysp args nil))))
+
+;  We have passed &key.
+
+  (cond ((endp args) nil)
+        ((eq (car args) '&allow-other-keys)
+         (cond ((null (cdr args))
+                nil)
+               (t (er hard nil "macro-vars-key"))))
+        ((atom (car args))
+         (cons (car args) (macro-vars-key (cdr args))))
+        (t (let ((formal (cond
+                          ((atom (car (car args)))
+                           (car (car args)))
+                          (t (cadr (car (car args)))))))
+             (cond ((int= (length (car args)) 3)
+                    (cons formal
+                          (cons (caddr (car args))
+                                (macro-vars-key (cdr args)))))
+                   (t (cons formal (macro-vars-key (cdr args)))))))))
+
+(defun macro-vars-after-rest (args)
+
+;  We have just passed &rest or &body.
+
+  (declare (xargs :guard
+                  (and (true-listp args)
+                       (macro-arglist-after-restp args))))
+
+  (cond ((endp args) nil)
+        ((eq (car args) '&key)
+         (macro-vars-key (cdr args)))
+        (t (er hard nil "macro-vars-after-rest"))))
+
+(defun macro-vars-optional (args)
+
+  (declare (xargs :guard (and (true-listp args)
+                              (macro-arglist-optionalp args))))
+
+;  We have passed &optional but not &key or &rest or &body.
+
+  (cond ((endp args) nil)
+        ((eq (car args) '&key)
+         (macro-vars-key (cdr args)))
+        ((member (car args) '(&rest &body))
+         (cons (cadr args) (macro-vars-after-rest (cddr args))))
+        ((symbolp (car args))
+         (cons (car args) (macro-vars-optional (cdr args))))
+        ((int= (length (car args)) 3)
+         (cons (caar args)
+               (cons (caddr (car args))
+                     (macro-vars-optional (cdr args)))))
+        (t (cons (caar args)
+                 (macro-vars-optional (cdr args))))))
+
+(defun macro-vars (args)
+  (declare
+   (xargs :guard
+          (macro-args-structurep args)
+          :guard-hints (("Goal" :in-theory (disable LAMBDA-KEYWORDP)))))
+  (cond ((endp args)
+         nil)
+        ((eq (car args) '&whole)
+         (cons (cadr args) (macro-vars (cddr args))))
+        ((member (car args) '(&rest &body))
+         (cons (cadr args) (macro-vars-after-rest (cddr args))))
+        ((eq (car args) '&optional)
+         (macro-vars-optional (cdr args)))
+        ((eq (car args) '&key)
+         (macro-vars-key (cdr args)))
+        ((or (not (symbolp (car args)))
+             (lambda-keywordp (car args)))
+         (er hard nil "macro-vars"))
+        (t (cons (car args) (macro-vars (cdr args))))))
+
+(defun chk-legal-init-msg (x)
+
+; See the note in chk-macro-arglist before changing this fn to
+; translate the init value.
+
+  (cond ((and (consp x)
+              (true-listp x)
+              (int= 2 (length x))
+              (eq (car x) 'quote))
+         nil)
+        (t (msg "Illegal initial value.  In ACL2 we require that initial ~
+                 values be quoted forms and you used ~x0.~#1~[  You should ~
+                 just write '~x0 instead.  Warren Teitelman once remarked ~
+                 that it was really dumb of a Fortran compiler to say ~
+                 ``missing comma!''  ``If it knows a comma is missing, why ~
+                 not just put one in?''  Indeed.~/~]  See :DOC macro-args."
+                x
+                (if (or (eq x nil)
+                        (eq x t)
+                        (acl2-numberp x)
+                        (stringp x)
+                        (characterp x))
+                    0
+                  1)))))
+
+(defun chk-macro-arglist-keys (args keys-passed)
+  (cond ((null args) nil)
+        ((eq (car args) '&allow-other-keys)
+         (cond ((null (cdr args)) nil)
+               (t (msg "&ALLOW-OTHER-KEYS may only occur as the last member ~
+                        of an arglist so it is illegal to follow it with ~x0.  ~
+                        See :DOC macro-args."
+                       (cadr args)))))
+        ((atom (car args))
+         (cond ((symbolp (car args))
+                (let ((new (intern (symbol-name (car args)) "KEYWORD")))
+                  (cond ((member new keys-passed)
+                         (msg "The symbol-name of each keyword parameter ~
+                               specifier must be distinct.  But you have used ~
+                               the symbol-name ~s0 twice.  See :DOC ~
+                               macro-args."
+                              (symbol-name (car args))))
+                        (t (chk-macro-arglist-keys
+                            (cdr args)
+                            (cons new keys-passed))))))
+               (t (msg "Each keyword parameter specifier must be either a ~
+                        symbol or a list.  Thus, ~x0 is illegal.  See :DOC ~
+                        macro-args."
+                       (car args)))))
+        ((or (not (true-listp (car args)))
+             (> (length (car args)) 3))
+         (msg "Each keyword parameter specifier must be either a symbol or a ~
+               truelist of length 1, 2, or 3.  Thus, ~x0 is illegal.  See ~
+               :DOC macro-args."
+              (car args)))
+        (t (or (cond ((symbolp (caar args)) nil)
+                     (t (cond ((or (not (true-listp (caar args)))
+                                   (not (equal (length (caar args))
+                                               2))
+                                   (not (keywordp (car (caar args))))
+                                   (not (symbolp (cadr (caar args)))))
+                               (msg "Keyword parameter specifiers in which ~
+                                     the keyword is specified explicitly, ~
+                                     e.g., specifiers of the form ((:key var) ~
+                                     init svar), must begin with a truelist ~
+                                     of length 2 whose first element is a ~
+                                     keyword and whose second element is a ~
+                                     symbol.  Thus, ~x0 is illegal.  See :DOC ~
+                                     macro-args."
+                                    (car args)))
+                              (t nil))))
+               (let ((new (cond ((symbolp (caar args))
+                                 (intern (symbol-name (caar args))
+                                         "KEYWORD"))
+                                (t (car (caar args))))))
+                 (or
+                  (cond ((member new keys-passed)
+                         (msg "The symbol-name of each keyword parameter ~
+                               specifier must be distinct.  But you have used ~
+                               the symbol-name ~s0 twice.  See :DOC ~
+                               macro-args."
+                              (symbol-name new)))
+                        (t nil))
+                  (cond ((> (length (car args)) 1)
+                         (chk-legal-init-msg (cadr (car args))))
+                        (t nil))
+                  (cond ((> (length (car args)) 2)
+                         (cond ((symbolp (caddr (car args)))
+                                nil)
+                               (t (msg "~x0 is an illegal keyword parameter ~
+                                        specifier because the ``svar'' ~
+                                        specified, ~x1, is not a symbol.  See ~
+                                        :DOC macro-args."
+                                       (car args)
+                                       (caddr (car args))))))
+                        (t nil))
+                  (chk-macro-arglist-keys (cdr args) (cons new keys-passed))))))))
+
+(defun chk-macro-arglist-after-rest (args)
+  (cond ((null args) nil)
+        ((eq (car args) '&key)
+         (chk-macro-arglist-keys (cdr args) nil))
+        (t (msg "Only keyword specs may follow &REST or &BODY.  See :DOC ~
+                 macro-args."))))
+
+(defun chk-macro-arglist-optional (args)
+  (cond ((null args) nil)
+        ((member (car args) '(&rest &body))
+         (cond ((and (cdr args)
+                     (symbolp (cadr args))
+                     (not (lambda-keywordp (cadr args))))
+                (chk-macro-arglist-after-rest (cddr args)))
+               (t (msg "~x0 must be followed by a variable symbol.  See :DOC ~
+                        macro-args."
+                       (car args)))))
+        ((eq (car args) '&key)
+         (chk-macro-arglist-keys (cdr args) nil))
+        ((symbolp (car args))
+         (chk-macro-arglist-optional (cdr args)))
+        ((or (atom (car args))
+             (not (true-listp (car args)))
+             (not (< (length (car args)) 4)))
+         (msg "Each optional parameter specifier must be either a symbol or a ~
+               true list of length 1, 2, or 3.  ~x0 is thus illegal.  See ~
+               :DOC macro-args."
+              (car args)))
+        ((not (symbolp (car (car args))))
+         (msg "~x0 is an illegal optional parameter specifier because the ~
+               ``variable symbol'' used is not a symbol.  See :DOC macro-args."
+              (car args)))
+        ((and (> (length (car args)) 1)
+              (chk-legal-init-msg (cadr (car args)))))
+        ((and (int= (length (car args)) 3)
+              (not (symbolp (caddr (car args)))))
+         (msg "~x0 is an illegal optional parameter specifier because the ~
+               ``svar'' specified, ~x1, is not a symbol.  See :DOC macro-args."
+              (car args)
+              (caddr (car args))))
+        (t (chk-macro-arglist-optional (cdr args)))))
+
+(defun chk-macro-arglist1 (args)
+  (cond ((null args) nil)
+        ((not (symbolp (car args)))
+         (msg "~x0 is illegal as the name of a required formal parameter.  ~
+               See :DOC macro-args."
+              (car args)))
+        ((member (car args) '(&rest &body))
+         (cond ((and (cdr args)
+                     (symbolp (cadr args))
+                     (not (lambda-keywordp (cadr args))))
+                (chk-macro-arglist-after-rest (cddr args)))
+               (t (msg "~x0 must be followed by a variable symbol.  See :DOC ~
+                        macro-args."
+                       (car args)))))
+        ((eq (car args) '&optional)
+         (chk-macro-arglist-optional (cdr args)))
+        ((eq (car args) '&key)
+         (chk-macro-arglist-keys (cdr args) nil))
+        (t (chk-macro-arglist1 (cdr args)))))
+
+(defun chk-macro-arglist-msg (args chk-state wrld)
+
+; This "-msg" function supports the community book books/misc/defmac.lisp.
+
+; Any modification to this function and its subordinates must cause
+; one to reflect on the two function nests bind-macro-args...  and
+; macro-vars... because they assume the presence of the structure that
+; this function checks for.  See the comment before macro-vars for the
+; restrictions we impose on macros.
+
+; The subordinates of this function do not check that symbols that
+; occur in binding spots are non-keywords and non-constants and
+; without duplicates.  That check is performed here, with chk-arglist,
+; as a final pass.
+
+; Important Note:  If ever we change this function so that instead of
+; just checking the args it "translates" the args, so that it returns
+; the translated form of a proper arglist, then we must visit a similar
+; change on the function primordial-event-macro-and-fn, which currently
+; assumes that if a defmacro will be processed without error then
+; the macro-args are exactly as presented in the defmacro.
+
+; The idea of translating macro args is not ludicrous.  For example,
+; the init-forms in keyword parameters must be quoted right now.  We might
+; want to allow naked numbers or strings or t or nil.  But then we'd
+; better go look at primordial-event-macro-and-fn.
+
+; It is very suspicious to think about allowing the init forms to be
+; anything but quoted constants because Common Lisp is very vague about
+; when you get the bindings for free variables in such expressions
+; or when such forms are evaluated.
+
+  (or
+   (and (not (true-listp args))
+        (msg "The arglist ~x0 is not a true list.  See :DOC macro-args."
+             args))
+   (let ((lambda-keywords (collect-lambda-keywordps args))
+         (err-string-for-&whole
+          "When the &whole lambda-list keyword is used it must be the first ~
+           element of the lambda-list and it must be followed by a variable ~
+           symbol.  This is not the case in ~x0.  See :DOC macro-args."))
+     (cond
+      ((or (subsequencep lambda-keywords
+                         '(&whole &optional &rest &key &allow-other-keys))
+           (subsequencep lambda-keywords
+                         '(&whole &optional &body &key &allow-other-keys)))
+       (cond (args
+              (cond ((member-eq '&whole (cdr args))
+                     (msg err-string-for-&whole args))
+                    ((and (member-eq '&allow-other-keys args)
+                          (not (member-eq '&allow-other-keys
+                                          (member-eq '&key args))))
+
+; The Common Lisp Hyperspec does not seem to guarantee the normal expected
+; functioning of &allow-other-keys unless it is preceded by &key.  We have
+; observed in Allegro CL 8.0, for example, that if we define,
+; (defmacro foo (x &allow-other-keys) (list 'quote x)), then we get an error
+; with (foo x :y 3).
+
+                     (msg "The use of ~x0 is only permitted when preceded by ~
+                            ~x1.  The argument list ~x2 is thus illegal."
+                          '&allow-other-keys
+                          '&key
+                          args))
+                    ((eq (car args) '&whole)
+                     (cond ((and (consp (cdr args))
+                                 (symbolp (cadr args))
+                                 (not (lambda-keywordp (cadr args))))
+                            (chk-macro-arglist1 (cddr args)))
+                           (t (msg err-string-for-&whole args))))
+                    (t (chk-macro-arglist1 args))))
+             (t nil)))
+      (t (msg "The lambda-list keywords allowed by ACL2 are &WHOLE, ~
+                &OPTIONAL, &REST, &BODY, &KEY, and &ALLOW-OTHER-KEYS.  These ~
+                must occur (if at all) in that order, with no duplicate ~
+                occurrences and at most one of &REST and &BODY.  The argument ~
+                list ~x0 is thus illegal."
+              args))))
+   (chk-arglist-msg (macro-vars args) chk-state wrld)))
+
+(defun chk-macro-arglist-cmp (args chk-state ctx wrld)
+  (let ((msg (chk-macro-arglist-msg args chk-state wrld)))
+    (cond (msg (er-cmp ctx "~@0" msg))
+          (t (value-cmp nil)))))
+
+(defun chk-macro-arglist (args chk-state ctx state)
+  (cmp-to-error-triple
+   (chk-macro-arglist-cmp args chk-state ctx (w state))))
+
+(defun chk-defmacro-width (rst)
+  (cond ((or (not (true-listp rst))
+             (not (> (length rst) 2)))
+         (mv "Defmacro requires at least 3 arguments.  ~x0 is ~
+              ill-formed.  See :DOC defmacro."
+             (cons 'defmacro rst)))
+        (t
+         (let ((name (car rst))
+               (args (cadr rst))
+               (value (car (last rst)))
+               (dcls-and-docs (butlast (cddr rst) 1)))
+           (mv nil
+               (list name args dcls-and-docs value))))))
+
+(defun chk-defmacro-untouchable-cmp (name ctx wrld state-vars)
+  (cond ((untouchable-fn-p name
+                           wrld
+                           (access state-vars state-vars :temp-touchable-fns))
+         (er-cmp ctx
+                 "The name ~x0 has been declared to be an untouchable ~
+                  function.  It is thus illegal to define this name as a ~
+                  macro.  See :DOC defmacro and see :DOC push-untouchable."
+                 name))
+        (t (value-cmp nil))))
+
+(defun chk-defmacro-untouchable (name ctx wrld state)
+  (cmp-to-error-triple
+   (chk-defmacro-untouchable-cmp name ctx wrld (default-state-vars t))))
+
+(defun chk-acceptable-defmacro-cmp (mdef local-p ctx wrld state-vars)
+
+; This is far from a complete check for a proposed defmacro or macrolet form
+; (local-p = nil or t, respectively).  It includes checks that can be made
+; before translate is defined, so that some code making checks for defmacro can
+; be made for macrolet as well.
+
+  (mv-let
+    (err-string four)
+    (chk-defmacro-width mdef)
+    (cond
+     (err-string (er-cmp ctx err-string four))
+     (t
+      (let ((name (car four))
+            (args (cadr four))
+            (dcls (caddr four))
+            (body (cadddr four)))
+        (er-progn-cmp
+         (chk-defmacro-untouchable-cmp name ctx wrld state-vars)
+         (chk-all-but-new-name-cmp name ctx 'macro wrld)
+
+; Important Note: In chk-macro-arglist-msg there is a comment warning us about
+; the idea of "translating" the args to a macro to obtain the "internal" form
+; of acceptable args.  See that comment before implementing any such change.
+
+         (chk-macro-arglist-cmp args nil ctx wrld)
+         (er-let*-cmp
+             ((edcls (collect-declarations-cmp
+                      dcls
+                      (macro-vars args)
+                      (if local-p 'macrolet 'defmacro)
+                      ctx wrld)))
+           (let* ((edcls (if (stringp (car edcls)) (cdr edcls) edcls))
+                  (guard (and (not local-p) ; else don't care:
+
+; If localp is true, guards will be handled by translate11-local-def, which
+; still has access to the guards by way of edcls.
+
+                              (conjoin-untranslated-terms
+                               (get-guards1 edcls '(guards types)
+                                            nil name wrld)))))
+             (value-cmp (list* name args edcls body guard))))))))))
+
+(defun chk-acceptable-defmacro (mdef local-p ctx wrld state)
+
+; See chk-acceptable-defmacro-cmp.
+
+  (cmp-to-error-triple
+   (chk-acceptable-defmacro-cmp mdef local-p ctx wrld (default-state-vars t))))
+
+(defun collect-non-apply$-primps2 (fns acc badge-prim-falist)
+
+; Collect those members of fns that are not apply$-primp and add to acc.
+
+  (cond
+   ((endp fns) acc)
+   ((hons-get (car fns) badge-prim-falist)
+    (collect-non-apply$-primps2 (cdr fns) acc badge-prim-falist))
+   (t (collect-non-apply$-primps2 (cdr fns)
+                                  (add-to-set-eq (car fns) acc)
+                                  badge-prim-falist))))
+
 (mutual-recursion
+
+(defun collect-non-apply$-primps1 (term ilk badge-prim-falist wrld acc)
+
+; Collect every function that is not an apply$ primitive that occurs in a
+; quoted object (symbol or lambda object) in any :FN slot of term.  We also
+; collect ill-formed lambda objects in such slots because they may cause
+; apply$-time errors too.
+
+  (cond ((variablep term) acc)
+        ((fquotep term)
+         (cond
+          ((or (eq ilk :FN) (eq ilk :FN?))
+           (let ((fn (unquote term)))
+             (cond
+              ((symbolp fn)
+               (if (hons-get fn badge-prim-falist)
+                   acc
+                   (add-to-set-eq fn acc)))
+              ((well-formed-lambda-objectp fn wrld)
+               (let ((fns (all-fnnames1
+                           nil
+                           (lambda-object-guard fn)
+                           (all-fnnames1
+                            nil
+                            (lambda-object-body fn)
+                            nil))))
+                 (collect-non-apply$-primps2 fns acc badge-prim-falist)))
+              (t (add-to-set-equal fn acc)))))
+          (t acc)))
+        ((flambdap (ffn-symb term))
+         (collect-non-apply$-primps1
+          (lambda-body (ffn-symb term))
+          nil badge-prim-falist wrld
+          (collect-non-apply$-primps1-lst (fargs term) nil badge-prim-falist
+                                          wrld acc)))
+        (t (collect-non-apply$-primps1-lst
+            (fargs term)
+            (ilks-per-argument-slot (ffn-symb term) wrld)
+            badge-prim-falist wrld acc))))
+
+(defun collect-non-apply$-primps1-lst (terms ilks badge-prim-falist wrld acc)
+  (cond ((endp terms) acc)
+        (t (collect-non-apply$-primps1 (car terms)
+                                       (car ilks)
+                                       badge-prim-falist
+                                       wrld
+                                       (collect-non-apply$-primps1-lst
+                                        (cdr terms)
+                                        (cdr ilks)
+                                        badge-prim-falist wrld acc)))))
+)
+
+(defun collect-non-apply$-primps (term wrld)
+  (cond
+   ((global-val 'boot-strap-flg wrld)
+    nil)
+   (t
+    (collect-non-apply$-primps1 term
+                                nil
+
+ ; *badge-prim-falist* is not yet defined!
+
+                                (unquote (getpropc '*badge-prim-falist* 'const
+                                                   nil wrld))
+
+                                wrld
+                                nil))))
+
+(defun lambda-object-guard-lst (objs)
+  (cond
+   ((endp objs) nil)
+   (t (let ((guard (lambda-object-guard (car objs))))
+        (if guard
+            (cons guard (lambda-object-guard-lst (cdr objs)))
+            (lambda-object-guard-lst (cdr objs)))))))
+
+(defun lambda-object-body-lst (objs)
+  (cond
+   ((endp objs) nil)
+   (t (cons (lambda-object-body (car objs))
+            (lambda-object-body-lst (cdr objs))))))
+
+(defun filter-lambda$-objects (lst)
+  (cond ((endp lst) nil)
+        ((lambda$-bodyp (lambda-object-body (car lst)))
+         (cons (car lst)
+               (filter-lambda$-objects (cdr lst))))
+        (t (filter-lambda$-objects (cdr lst)))))
+
+(mutual-recursion
+
+(defun collect-certain-lambda-objects (flg term wrld ans)
+
+; We walk through term looking for lambda objects and we collect into ans
+; certain ones of them as per flg:
+
+; :all -- every lambda object whether well-formed or not
+; :well-formed -- every well-formed lambda object
+; :lambda$ -- every well-formed lambda object tagged as having come from
+;             a lambda$ translation
+
+; We collect lambda objects within well-formed lambda objects but not within
+; ill-formed ones.  In particular, if a lambda object is well-formed we'll dive
+; into its :guard and body looking for other lambda objects.  But if we
+; encounter an ill-formed lambda object we will not attempt to explore its
+; :guard or body since they may be ill-formed.  This means that if a
+; well-formed lambda object is hidden inside an ill-formed one we do not
+; collect it.
+
+; Motivation: uses of this function include guard verification (where we try to
+; verify the guards of every well-formed lambda object in a defun) and the
+; pre-loading of the cl-cache.  What are the consequences of not collecting a
+; well-formed lambda object hidden inside an ill-formed one?  We wouldn't
+; verify the guards of the hidden well-formed lambda object at defun-time.  If
+; the ill-formed one is ever applied, the cache will force apply$ to use *1*
+; apply$.  As the axiomatic interpretion of the ill-formed lambda object
+; proceeds it may encounter the well-formed one and not find it in the
+; pre-loaded cache.  But the cache will add a line for the just-found lambda
+; object, attempting guard verification then and there just as though the user
+; had typed in a new lambda object to apply.  So the consequences of this
+; failure to collect is just the weakening of the proof techniques we bring to
+; bear while verifying guards on such lambda objects: Had they been collected,
+; the user would have the opportunity to add hints to get the guard
+; verification to go through, whereas by not collecting them we delay guard
+; verification to top-level eval time, where only weaker techniques are tried.
+
+  (cond
+   ((variablep term) ans)
+   ((fquotep term)
+    (let* ((evg (unquote term))
+           (lambda-objectp (and (consp evg)
+                                (eq (car evg) 'lambda)))
+           (well-formedp (and lambda-objectp
+                              (well-formed-lambda-objectp evg wrld)))
+           (collectp
+            (case flg
+              (:all lambda-objectp)
+              (:well-formed well-formedp)
+              (otherwise
+               (and well-formedp
+                    (lambda$-bodyp (lambda-object-body evg))))))
+           (ans1 (if collectp (add-to-set-equal evg ans) ans)))
+      (if well-formedp
+          (let* ((guard (lambda-object-guard evg))
+                 (body (lambda-object-body evg)))
+            (collect-certain-lambda-objects
+             flg guard wrld
+             (collect-certain-lambda-objects flg body wrld ans1)))
+          ans1)))
+   ((throw-nonexec-error-p term :non-exec nil)
+; This check holds when term is the translated version of a non-exec call, as
+; does a similar check using throw-nonexec-error-p1 in translate11.
+    ans)
+   ((flambda-applicationp term)
+    (collect-certain-lambda-objects
+     flg
+     (lambda-body (ffn-symb term))
+     wrld
+     (collect-certain-lambda-objects-lst flg (fargs term) wrld ans)))
+   (t (collect-certain-lambda-objects-lst flg (fargs term) wrld ans))))
+
+(defun collect-certain-lambda-objects-lst (flg terms wrld ans)
+  (cond
+   ((endp terms) ans)
+   (t (collect-certain-lambda-objects
+       flg
+       (car terms)
+       wrld
+       (collect-certain-lambda-objects-lst flg (cdr terms) wrld ans)))))
+)
+
+(mutual-recursion
+
+(defun ancestral-lambda$s-by-caller1 (caller guard body wrld alist)
+
+; Caller is a symbol or a string.  Guard and body should either both be terms
+; or both be nil.  If both are nil, caller must be a function symbol and guard
+; and body default to the guard and body of caller.  If guard and body are
+; non-nil, then they are used as the guard and body of some ficticious function
+; described by the string, caller (which will ultimately be printed by a ~s fmt
+; directive).
+
+; By ``ancestors'' in this function we mean function symbols reachable through
+; the guard, the body, or the guard or body of any well-formed lambda object in
+; caller or any of these ancestors.  We extend alist with pairs (fn
+; . lambda$-lst), where fn is any of these extended ancestors and lambda$-lst
+; is the list of every lambda object produced by a lambda$ expression in fn.
+; We use alist during this calculation to avoid repeated visits to the same fn,
+; thus, we will add the pair (fn . nil) whenever fn has no lambda$s in it.  We
+; filter out these empty pairs in ancestral-lambda$s-by-caller.
+
+; We do nothing during boot-strap (there should be no lambda$s) and, as an
+; optimization, we do not explore apply$-primp callers or the apply$ clique.
+
+  (cond
+   ((or (global-val 'boot-strap-flg wrld)
+; The following hons-get is equivalent to ; (apply$-primp caller).
+        (hons-get caller ; *badge-prim-falist* is not yet defined!
+                  (unquote
+                   (getpropc '*badge-prim-falist* 'const nil wrld)))
+        (eq caller 'apply$)
+        (eq caller 'ev$)
+        (assoc-eq caller alist))
+    alist)
+   (t
+    (let* ((guard (or guard (getpropc caller 'guard *t* wrld)))
+           (body (or body (getpropc caller 'unnormalized-body *nil* wrld)))
+           (objs (collect-certain-lambda-objects
+                  :well-formed
+                  body
+                  wrld
+                  (collect-certain-lambda-objects
+                   :well-formed
+                   guard
+                   wrld
+                   nil)))
+
+; Note: Objs is the list of all well-formed lambda objects in caller.  Objs
+; includes all lambda$ objects in caller but may include well-formed lambda
+; objects not generated by lambda$.
+
+; Fns is the list of all functions called in the guards or bodies of the just
+; collected well-formed lambda object in caller.  We have to explore them too.
+
+           (fns (all-fnnames1
+                 nil ; all-fnnames
+                 guard
+                 (all-fnnames1
+                  nil ; all-fnnames
+                  body
+                  (all-fnnames1
+                   t ; all-fnnames-lst
+                   (lambda-object-body-lst objs)
+                   (all-fnnames1
+                    t ; all-fnnames-lst
+                    (lambda-object-guard-lst objs)
+                    nil))))))
+      (ancestral-lambda$s-by-caller1-lst
+       fns wrld
+       (cons (cons caller (filter-lambda$-objects objs)) alist))))))
+
+(defun ancestral-lambda$s-by-caller1-lst (callers wrld alist)
+  (cond ((endp callers) alist)
+        (t (ancestral-lambda$s-by-caller1-lst
+            (cdr callers)
+            wrld
+            (ancestral-lambda$s-by-caller1 (car callers) nil nil wrld alist))))))
+
+(defun collect-non-empty-pairs (alist)
+  (cond ((endp alist) nil)
+        ((cdr (car alist))
+         (cons (car alist) (collect-non-empty-pairs (cdr alist))))
+        (t
+         (collect-non-empty-pairs (cdr alist)))))
+
+(defun ancestral-lambda$s-by-caller (caller term wrld)
+
+; Caller is a string (ultimately printed with a ~s fmt directive) describing
+; the context in which we found term.  Explore all function symbols reachable
+; from the guards and bodies of functions and well-formed lambda objects in
+; term and collect an alist mapping each such reachable function symbol to all
+; of the lambda$ expressions occurring in it.  The alist omits pairs for
+; function symbols having no lambda$s.  If the result is nil, there are no
+; reachable lambda$s.  Otherwise, the function
+; tilde-*-lambda$-replacement-phrase5 can create a ~* fmt phrase that
+; interprets the alist as a directive to replace, in certain functions, certain
+; lambda$s by quoted lambdas.
+
+  (let ((alist (ancestral-lambda$s-by-caller1 caller *T* term wrld nil)))
+    (collect-non-empty-pairs alist)))
+
+(defun strings-and-others (alist strings others)
+
+; Alist is an alist with strings and symbols as keys and we partition the keys
+; into the strings and everything else.  We just throw away the values in the
+; alist.
+
+  (cond
+   ((endp alist) (mv strings others))
+   ((stringp (car (car alist)))
+    (strings-and-others (cdr alist)
+                        (cons (car (car alist)) strings)
+                        others))
+   (t
+    (strings-and-others (cdr alist)
+                        strings
+                        (cons (car (car alist)) others)))))
+
+(defun prohibition-of-loop$-and-lambda$-msg (alist)
+
+; Alist was created by ancestral-lambda$s-by-caller.  Its keys are strings and
+; symbols indicating where lambda$s (and thus also loop$s) occur in some event.
+; The strings are things like "the guard of this event" and the others are
+; function names ancestral in the event.  The intent of our message is ``we
+; prohibit loop$ and lambda$ in certain events and here are the places you
+; should look...''  But the exact form of the phrase depends on how many
+; strings and others there are!  English grammar is tricky.  We know there is
+; at least one string or other because we wouldn't be causing an error if there
+; were none.
+
+  (mv-let (strings others)
+    (strings-and-others alist nil nil)
+    (let ((i (cond ((null strings)
+                    (if (null (cdr others)) 0 1))
+                   ((null others) 2)
+                   ((null (cdr others)) 3)
+                   (t 4))))
+      (msg "We prohibit certain events, including DEFCONST, DEFPKG, and ~
+            DEFMACRO, from being ancestrally dependent on loop$ and lambda$ ~
+            expressions.  But at least one of these prohibited expressions ~
+            occurs in ~#0~[~&2 which is ancestral here~/each of ~&2 which are ~
+            ancestral here~/~*1~/~*1 and in ~&2 which is ancestral here~/~*1 ~
+            and in each of ~&2 which are ancestral here~].  See :DOC ~
+            prohibition-of-loop$-and-lambda$."
+           i
+           (list "" "~s*" "~s* and " "~s*, " strings)
+           others))))
+
+(defun chk-macro-ancestors-cmp (name tguard tbody local-p ctx wrld)
+
+; Tguard and tbody are respectively the translated guard and body of a proposed
+; macro definition for name.  We collect any unsafe apply$ function objects
+; literally in the given guard or body and any ancestral lambda$s in the given
+; guard or body.  If unsafe function objects are found we'll cause an error.
+
+  (let ((non-apply$-primps-in-guard
+         (collect-non-apply$-primps tguard wrld))
+        (non-apply$-primps-in-body
+         (collect-non-apply$-primps tbody wrld))
+        (ancestral-lambda$s-in-guard
+         (and
+
+; The ruling out of quoteps is explained in a comment in
+; simple-translate-and-eval.  A translated guard is very unlikely to be a
+; quotep unless it is 't, but it seems harmless to include this criterion, for
+; consistency with other cases (simple-translate-and-eval and the case below).
+
+          (not (quotep tguard))
+          (ancestral-lambda$s-by-caller
+           (if local-p
+               "the guard of this event"
+             "the guard of this locally defined macro")
+           tguard wrld)))
+        (ancestral-lambda$s-in-body
+         (and
+
+; The ruling out of quoteps is explained in a comment in
+; simple-translate-and-eval.
+
+          (not (quotep tbody))
+          (ancestral-lambda$s-by-caller
+           (if local-p
+               "the body of this event"
+             "the body of this locally defined macro")
+           tbody wrld))))
+    (cond
+     ((or non-apply$-primps-in-guard
+          non-apply$-primps-in-body)
+      (er-cmp ctx
+              "All quoted function objects in :FN slots in the :guard and in ~
+               the body of a macro definition, such as in ~@0 for ~x1, must ~
+               be apply$ primitives.  Apply$ cannot run user-defined ~
+               functions or ill-formed or untame lambda objects while ~
+               expanding macros.   Because of logical considerations, ~
+               attachments (including DOPPELGANGER-APPLY$-USERFN) must not be ~
+               called in this context.  See :DOC ignored-attachment.  Thus it ~
+               is illegal to use the quoted function object~#2~[~/s~] ~
+               ~#3~[~&4 in the guard~/~&5 in the body~/~&4 in the guard and ~
+               ~&5 in the body~] of ~x1."
+              (if local-p "the MACROLET binding" "the DEFMACRO event")
+              name
+              (union-equal non-apply$-primps-in-guard
+                           non-apply$-primps-in-body)
+              (cond
+               ((and non-apply$-primps-in-guard
+                     non-apply$-primps-in-body)
+                2)
+               (non-apply$-primps-in-body 1)
+               (t 0))
+              non-apply$-primps-in-guard
+              non-apply$-primps-in-body))
+     ((or ancestral-lambda$s-in-guard
+          ancestral-lambda$s-in-body)
+      (er-cmp ctx
+              "~@0"
+              (prohibition-of-loop$-and-lambda$-msg
+               (union-equal ancestral-lambda$s-in-guard
+                            ancestral-lambda$s-in-body))))
+     (t (value-cmp nil)))))
+
+(defun chk-macro-ancestors (name tguard tbody ctx wrld state)
+  (cmp-to-error-triple
+   (chk-macro-ancestors-cmp name tguard tbody nil ctx wrld)))
+
+(defun macrolet-expand (x lam ctx wrld state-vars)
+
+; This is modified from macroexpand-1 to handle calls of macrolet-bound
+; symbols.
+
+; We macroexpand the call x of macrolet-defined m, which is bound to lam.
+; Lam is of the form (lambda args body), where args is a macro lambda list.
+
+  (let ((args (assert$ (and (true-listp lam)
+                            (= (length lam) 3)
+                            (eq (car lam) 'lambda))
+                       (cadr lam)))
+        (body (caddr lam)))
+    (er-let*-cmp
+        ((alist (bind-macro-args args x wrld state-vars)))
+
+; There is no guard to check.  Any type declaration has been folded into a
+; check in the body of the given lambda.
+
+      (mv-let (erp expansion)
+        (ev-w
+         body
+         alist wrld
+         nil ; user-stobj-alist
+         t   ; safe-mode
+         nil ; gc-off
+         nil nil)
+        (cond (erp (er-cmp ctx
+                           "In the attempt to macroexpand the call ~x0 of a ~
+                            macrolet-bound symbol, evaluation of the macro ~
+                            body caused the error below.~|~%~@1"
+                           x
+                           expansion))
+              (t (value-cmp expansion)))))))
+
+(defun chk-local-def-return-last-table (names fletp wrld ctx)
+  (cond
+   ((first-assoc-eq names (table-alist 'return-last-table wrld))
+
+; What horrors may lie ahead, for example, with
+; (flet ((ec-call1-raw ....)) (ec-call ...))?  The problem is that ec-call
+; expands to a call of ec-call1-raw, but only through several steps that the
+; user might not notice, and only in raw Lisp.  Of course it's doubtful that
+; someone would flet-bound ec-call1-raw; but it isn't hard to imagine a binding
+; whose error isn't so obvious.  Of course, someday a serious system hacker
+; might want to flet ec-call1-raw; in that case, with a trust tag that person
+; can also edit the code here!
+
+    (er-cmp ctx
+            "It is illegal for ~@0 to bind a symbol that is given special ~
+             handling by ~x1.  The ~@0-binding~#2~[ is~/s are~] thus illegal ~
+             for ~&2.  See :DOC return-last-table."
+            (if fletp "FLET" "MACROLET")
+            'return-last
+            (intersection-eq
+             names
+             (strip-cars (table-alist 'return-last-table wrld)))))
+   (t (value-cmp nil))))
+
+(mutual-recursion
+
+(defun translate11-local-def (form name bound-vars args edcls body
+                                   new-stobjs-out stobjs-out bindings
+                                   known-stobjs flet-alist ctx wrld state-vars)
+  (let* ((fletp (eq (car form) 'flet)) ; else (car form) is macrolet
+         (typ (if fletp "FLET" "MACROLET"))
+         (a-typ (if fletp "an FLET" "a MACROLET"))
+         (cap-a-typ (if fletp "An FLET" "A MACROLET")))
+    (cond
+     ((member-eq name '(flet macrolet with-local-stobj with-global-stobj
+                         throw-raw-ev-fncall untrace$-fn-general))
+
+; This check may not be necessary, because of our other checks.  But the
+; symbols above are not covered by our check for the 'predefined property.
+
+      (trans-er+ form ctx
+                 "~@0 form has attempted to bind ~x1.  However, this ~
+                  symbol must not be ~@2-bound."
+                 cap-a-typ name typ))
+     ((getpropc name 'predefined nil wrld)
+      (trans-er+ form ctx
+                 "~@0 form has attempted to bind ~x1, which is predefined ~
+                  in ACL2 hence may not be ~@2-bound."
+                 cap-a-typ name typ))
+     #-acl2-loop-only
+     ((or (special-form-or-op-p name)
+          (and (or (macro-function name)
+                   (fboundp name))
+               (not (getpropc name 'macro-body nil wrld))
+               (eq (getpropc name 'formals t wrld) t)))
+      (prog2$ (er hard ctx
+                  "It is illegal to ~@0-bind ~x1, because it is defined as a ~
+                   ~s2 in raw Lisp~#3~[~/ but not in the ACL2 loop~]."
+                  typ
+                  name
+                  (cond ((special-form-or-op-p name) "special operator")
+                        ((macro-function name) "macro")
+                        (t "function"))
+                  (if (special-form-or-op-p name) 0 1))
+              (mv t
+                  nil ; empty "message": see the Essay on Context-message Pairs
+                  nil)))
+     (t
+      (trans-er-let*
+       ((tdcls (translate11-lst (translate-dcl-lst edcls wrld)
+                                nil ;;; ilks = '(nil ... nil)
+                                nil ;;; stobjs-out = '(nil ... nil)
+                                bindings
+                                known-stobjs
+                                (if fletp
+                                    "in a DECLARE form in an FLET binding"
+                                  "in a DECLARE form in a MACROLET binding")
+                                flet-alist form ctx wrld state-vars))
+        (tbody (translate11 body
+                            nil ;;; ilk
+                            new-stobjs-out
+                            (if (or (not fletp)
+                                    (eq stobjs-out t))
+                                bindings
+                              (translate-bind new-stobjs-out new-stobjs-out
+                                              bindings))
+                            (if fletp known-stobjs nil)
+                            flet-alist form ctx wrld state-vars)))
+       (let ((used-vars (union-eq (all-vars tbody)
+                                  (all-vars1-lst tdcls nil)))
+             (ignore-vars (ignore-vars edcls))
+             (ignorable-vars (ignorable-vars edcls))
+             (stobjs-out (translate-deref new-stobjs-out bindings)))
+         (cond
+
+; We skip the following case, applicable only to flet (note that stobjs-out =
+; '(nil) in the macrolet case), where stobjs-out is not yet bound to a consp
+; and some formal is a stobj, in favor of the next, which removes the
+; stobjs-bound criterion.  But we leave this case here as a comment in case we
+; ultimately find a way to eliminate the more sweeping case after it.  Note:
+; unknown-binding-msg has been replaced by unknown-binding-msg-er, so a bit of
+; rework will be needed if this case is to be reinstalled.  Also note that we
+; will need to bind stobjs-bound to
+
+;         ((and (not (eq stobjs-out t))
+;               (not (consp stobjs-out))
+;               (collect-non-x ; stobjs-bound
+;                nil
+;                (compute-stobj-flags bound-vars
+;                                     known-stobjs
+;                                     wrld)))
+;          (trans-er ctx
+;                    "~@0"
+;                    (unknown-binding-msg
+;                     (collect-non-x ; stobjs-bound
+;                      nil
+;                      (compute-stobj-flags bound-vars
+;                                           known-stobjs
+;                                           wrld))
+;                     (msg "the formals of an FLET binding for function ~x0"
+;                          name)
+;                     "the body of this FLET binding"
+;                     "that body")))
+
+          ((and (not (eq stobjs-out t))
+                (not (consp stobjs-out))) ; hence flet, not macrolet
+
+; Warning: Before changing this case, see the comment above about the
+; commented-out preceding case.
+
+; We might be able to fix this case by using the :UNKNOWN-BINDINGS trick
+; employed by unknown-binding-msg-er; see that function and search for
+; :UNKNOWN-BINDINGS, to see how that works.
+
+           (trans-er+ form ctx
+                      "We are unable to determine the output signature for an ~
+                       FLET-binding of ~x0.  You may be able to remedy the ~
+                       situation by rearranging the order of the branches of ~
+                       an IF and/or rearranging the order of the presentation ~
+                       of a clique of mutually recursive functions.  If you ~
+                       believe you have found an example on which you believe ~
+                       ACL2 should be able to complete this translation, ~
+                       please send such an example to the ACL2 implementors."
+                      name))
+          ((intersectp-eq used-vars ignore-vars)
+           (trans-er+ form ctx
+                      "Contrary to the declaration that ~#0~[it is~/they ~
+                       are~] IGNOREd, the variable~#0~[ ~&0 is~/s ~&0 are~] ~
+                       used in the body of ~@1-binding of ~x2, whose formal ~
+                       parameter list includes ~&3."
+                      (intersection-eq used-vars ignore-vars)
+                      a-typ
+                      name
+                      bound-vars))
+          (t
+           (let* ((diff (set-difference-eq
+                         bound-vars
+                         (union-eq used-vars
+                                   (union-eq ignorable-vars
+                                             ignore-vars))))
+                  (ignore-ok
+                   (if (null diff)
+                       t
+                     (cdr (assoc-eq
+                           :ignore-ok
+                           (table-alist 'acl2-defaults-table wrld)))))
+                  (ignore-err-string
+                   "The variable~#0~[ ~&0 is~/s ~&0 are~] not used in the ~
+                    body of ~@1-binding of ~x2 that binds ~&3.  But ~&0 ~
+                    ~#0~[is~/are~] not declared IGNOREd or IGNORABLE.  See ~
+                    :DOC set-ignore-ok.")
+                  (guardian (dcl-guardian tdcls)))
+             (cond
+              ((null ignore-ok)
+               (trans-er+ form ctx
+                          ignore-err-string
+                          diff a-typ name bound-vars))
+              (t
+               (prog2$
+                (cond
+                 ((eq ignore-ok :warn)
+                  (warning$-cw1 ctx "Ignored-variables"
+                                ignore-err-string
+                                diff a-typ name bound-vars))
+                 (t nil))
+                (mv-let (erp val)
+                  (chk-macro-ancestors-cmp name guardian tbody t ctx wrld)
+                  (cond
+                   (erp (trans-er+ form ctx "~@0" val))
+                   (t
+                    (let* ((tbody
+                            (cond
+                             (tdcls
+                              (cond ((equal guardian *t*)
+
+; See the comment about THE in dcl-guardian.
+
+                                     tbody)
+                                    (t
+                                     (prog2$-call guardian tbody))))
+                             (t tbody)))
+                           (body-vars (all-vars tbody))
+                           (extra-body-vars (set-difference-eq
+                                             body-vars
+                                             bound-vars)))
+                      (cond
+                       (extra-body-vars
+
+; Warning: Do not eliminate this error without thinking about the possible role
+; of variables that are declared special in Common Lisp.  There might not be
+; such an issue, but we haven't thought about it.
+
+                        (trans-er+ form ctx
+                                   "The variable~#0~[ ~&0 is~/s ~&0 are~] ~
+                                    used in the body of ~@1-binding of ~x2 ~
+                                    that only binds ~&3.  In ACL2, every ~
+                                    variable occurring in the body of an FLET ~
+                                    or MACROLET binding, (sym vars body), ~
+                                    must be in vars, i.e., a formal parameter ~
+                                    of that binding."
+                                   extra-body-vars a-typ name bound-vars))
+                       (t
+                        (trans-value
+                         (list* name
+                                (make-lambda args tbody)
+                                (if fletp stobjs-out :macrolet))
+                         (if (or (eq new-stobjs-out t)
+                                 (not fletp))
+                             bindings
+                           (remove-assoc-eq new-stobjs-out
+                                            bindings)))))))))))))))))))))
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
                                     flet-alist ctx wrld state-vars)
@@ -19014,200 +20158,9 @@
           (if (eq stobjs-out t)
               t
             (genvar name (symbol-name name) nil (strip-cars bindings)))))
-    (cond
-     ((member-eq name '(flet with-local-stobj with-global-stobj
-                         throw-raw-ev-fncall untrace$-fn-general))
-
-; This check may not be necessary, because of our other checks.  But the
-; symbols above are not covered by our check for the 'predefined property.
-
-      (trans-er+ form ctx
-                 "An FLET form has attempted to bind ~x0.  However, this ~
-                  symbol must not be FLET-bound."
-                 name))
-     ((getpropc name 'predefined nil wrld)
-      (trans-er+ form ctx
-                 "An FLET form has attempted to bind ~x0, which is predefined ~
-                  in ACL2 hence may not be FLET-bound."
-                 name))
-     #-acl2-loop-only
-     ((or (special-form-or-op-p name)
-          (and (or (macro-function name)
-                   (fboundp name))
-               (not (getpropc name 'macro-body nil wrld))
-               (eq (getpropc name 'formals t wrld) t)))
-      (prog2$ (er hard ctx
-                  "It is illegal to FLET-bind ~x0, because it is defined as a ~
-                   ~s1 in raw Lisp~#2~[~/ but not in the ACL2 loop~]."
-                  name
-                  (cond ((special-form-or-op-p name) "special operator")
-                        ((macro-function name) "macro")
-                        (t "function"))
-                  (if (special-form-or-op-p name) 0 1))
-              (mv t
-                  nil ; empty "message": see the Essay on Context-message Pairs
-                  nil)))
-     (t
-      (trans-er-let*
-       ((tdcls (translate11-lst (translate-dcl-lst edcls wrld)
-                                nil           ;;; ilks = '(nil ... nil)
-                                nil           ;;; stobjs-out = '(nil ... nil)
-                                bindings
-                                known-stobjs
-                                "in a DECLARE form in an FLET binding"
-                                flet-alist form ctx wrld state-vars))
-        (tbody (translate11 body
-                            nil               ;;; ilk
-                            new-stobjs-out
-                            (if (eq stobjs-out t)
-                                bindings
-                              (translate-bind new-stobjs-out new-stobjs-out
-                                              bindings))
-                            known-stobjs
-                            flet-alist form ctx wrld state-vars)))
-       (let ((used-vars (union-eq (all-vars tbody)
-                                  (all-vars1-lst tdcls nil)))
-             (ignore-vars (ignore-vars edcls))
-             (ignorable-vars (ignorable-vars edcls))
-             (stobjs-out (translate-deref new-stobjs-out bindings)))
-         (cond
-
-; We skip the following case, where stobjs-out is not yet bound to a consp and
-; some formal is a stobj, in favor of the next, which removes the stobjs-bound
-; criterion.  But we leave this case here as a comment in case we ultimately
-; find a way to eliminate the more sweeping case after it.  Note:
-; unknown-binding-msg has been replaced by unknown-binding-msg-er, so a bit of
-; rework will be needed if this case is to be reinstalled.  Also note that we
-; will need to bind stobjs-bound to
-
-;         ((and (not (eq stobjs-out t))
-;               (collect-non-x ; stobjs-bound
-;                nil
-;                (compute-stobj-flags bound-vars
-;                                     known-stobjs
-;                                     wrld))
-;               (not (consp stobjs-out)))
-;          (trans-er ctx
-;                    "~@0"
-;                    (unknown-binding-msg
-;                     (collect-non-x ; stobjs-bound
-;                      nil
-;                      (compute-stobj-flags bound-vars
-;                                           known-stobjs
-;                                           wrld))
-;                     (msg "the formals of an FLET binding for function ~x0"
-;                          name)
-;                     "the body of this FLET binding"
-;                     "that body")))
-
-          ((and (not (eq stobjs-out t))
-                (not (consp stobjs-out)))
-
-; Warning: Before changing this case, see the comment above about the
-; commented-out preceding case.
-
-; We might be able to fix this case by using the :UNKNOWN-BINDINGS trick
-; employed by unknown-binding-msg-er; see that function and search for
-; :UNKNOWN-BINDINGS, to see how that works.
-
-           (trans-er+ form ctx
-                      "We are unable to determine the output signature for an ~
-                       FLET-binding of ~x0.  You may be able to remedy the ~
-                       situation by rearranging the order of the branches of ~
-                       an IF and/or rearranging the order of the presentation ~
-                       of a clique of mutually recursive functions.  If you ~
-                       believe you have found an example on which you believe ~
-                       ACL2 should be able to complete this translation, ~
-                       please send such an example to the ACL2 implementors."
-                     name))
-          ((intersectp-eq used-vars ignore-vars)
-           (trans-er+ form ctx
-                      "Contrary to the declaration that ~#0~[it is~/they ~
-                       are~] IGNOREd, the variable~#0~[ ~&0 is~/s ~&0 are~] ~
-                       used in the body of an FLET-binding of ~x1, whose ~
-                       formal parameter list includes ~&2."
-                     (intersection-eq used-vars ignore-vars)
-                     name
-                     bound-vars))
-          (t
-           (let* ((diff (set-difference-eq
-                         bound-vars
-                         (union-eq used-vars
-                                   (union-eq ignorable-vars
-                                             ignore-vars))))
-                  (ignore-ok
-                   (if (null diff)
-                       t
-                     (cdr (assoc-eq
-                           :ignore-ok
-                           (table-alist 'acl2-defaults-table wrld))))))
-             (cond
-              ((null ignore-ok)
-               (trans-er+ form ctx
-                          "The variable~#0~[ ~&0 is~/s ~&0 are~] not used in ~
-                           the body of the LET expression that binds ~&1.  ~
-                           But ~&0 ~#0~[is~/are~] not declared IGNOREd or ~
-                           IGNORABLE.  See :DOC set-ignore-ok."
-                         diff
-                         bound-vars))
-              (t
-               (prog2$
-                (cond
-                 ((eq ignore-ok :warn)
-                  (warning$-cw1 ctx "Ignored-variables"
-                                "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
-                                 used in the body of an FLET-binding of ~x1 ~
-                                 that binds ~&2.  But ~&0 ~#0~[is~/are~] not ~
-                                 declared IGNOREd or IGNORABLE.  See :DOC ~
-                                 set-ignore-ok."
-                                diff
-                                name
-                                bound-vars))
-                 (t nil))
-                (let* ((tbody
-                        (cond
-                         (tdcls
-                          (let ((guardian (dcl-guardian tdcls)))
-                            (cond ((equal guardian *t*)
-
-; See the comment about THE in dcl-guardian.
-
-                                   tbody)
-                                  (t
-                                   (prog2$-call guardian tbody)))))
-                         (t tbody)))
-                       (body-vars (all-vars tbody))
-                       (extra-body-vars (set-difference-eq
-                                         body-vars
-                                         bound-vars)))
-                  (cond
-                   (extra-body-vars
-
-; Warning: Do not eliminate this error without thinking about the possible role
-; of variables that are declared special in Common Lisp.  There might not be
-; such an issue, but we haven't thought about it.
-
-                    (trans-er+ form ctx
-                               "The variable~#0~[ ~&0 is~/s ~&0 are~] used in ~
-                                the body of an FLET-binding of ~x1 that only ~
-                                binds ~&2.  In ACL2, every variable occurring ~
-                                in the body of an FLET-binding, (fn vars ~
-                                body), must be in vars, i.e., a formal ~
-                                parameter of that binding.  The ACL2 ~
-                                implementors may be able to remove this ~
-                                restriction, with some effort, if you ask."
-                              extra-body-vars
-                              name
-                              bound-vars))
-                   (t
-                    (trans-value
-                     (list* name
-                            (make-lambda bound-vars tbody)
-                            stobjs-out)
-                     (if (eq new-stobjs-out t)
-                         bindings
-                       (remove-assoc-eq new-stobjs-out
-                                        bindings))))))))))))))))))
+    (translate11-local-def form name bound-vars bound-vars edcls body
+                           new-stobjs-out stobjs-out bindings known-stobjs
+                           flet-alist ctx wrld state-vars)))
 
 (defun translate11-flet (x stobjs-out bindings known-stobjs flet-alist
                            ctx wrld state-vars)
@@ -19231,60 +20184,125 @@
           (declare-form-list (butlast (cddr x) 1))
           (body (car (last x))))
       (mv-let
-       (erp fives)
-       (chk-defuns-tuples-cmp defs t ctx wrld)
-       (let ((names (and (not erp)
-                         (strip-cars fives))))
-         (mv-let
-          (erp msg)
-          (if erp ; erp is a ctx and fives is a msg
-              (mv erp fives)
+        (erp fives)
+        (chk-defuns-tuples-cmp defs t ctx wrld)
+        (let ((names (and (not erp)
+                          (strip-cars fives))))
+          (mv-let
+            (erp msg)
+            (if erp ; erp is a ctx and fives is a msg
+                (mv erp fives)
 
 ; Note that we do not need to call chk-xargs-keywords, since
-; *acceptable-dcls-alist* guarantees that xargs is illegal.
+; collect-declarations (called by way of chk-defuns-tuples-cmp, which is called
+; above) calls chk-dcl-lst to guarantee (using *acceptable-dcls-alist*) the
+; legality of the xargs.
 
-            (er-progn-cmp
-             (chk-no-duplicate-defuns-cmp names ctx)
-             (chk-flet-declare-form-list names declare-form-list ctx)))
-          (cond
-           (erp
+              (er-progn-cmp
+               (chk-no-duplicate-defuns-cmp names ctx)
+               (chk-local-def-declare-form-list t names declare-form-list ctx)
+               (chk-local-def-return-last-table names t wrld ctx)))
+            (cond
+             (erp
 
 ; Erp is a context that we are ignoring in the message below.  Probably it is
 ; ctx anyhow, but if not, there isn't an obvious problem with ignoring it.
 
-            (trans-er ctx
-                      "~@0~|~%The above error indicates a problem with the ~
-                       form ~p1."
-                      msg x))
-           ((first-assoc-eq names (table-alist 'return-last-table wrld))
+              (trans-er ctx
+                        "~@0~|~%The above error indicates a problem with the ~
+                         form ~x1."
+                        msg x))
+             (t
+              (trans-er-let*
+               ((flet-alist
+                 (translate11-flet-alist x fives stobjs-out bindings
+                                         known-stobjs flet-alist ctx wrld
+                                         state-vars)))
+               (translate11 body
+                            nil ; ilk
+                            stobjs-out bindings known-stobjs flet-alist x
+                            ctx wrld state-vars)))))))))))
 
-; What horrors may lie ahead, for example, with
-; (flet ((ec-call1-raw ....)) (ec-call ...))?  The problem is that ec-call
-; expands to a call of ec-call1-raw, but only through several steps that the
-; user might not notice, and only in raw Lisp.  Of course it's doubtful that
-; someone would flet-bound ec-call1-raw; but it isn't hard to imagine a binding
-; whose error isn't so obvious.  Of course, someday a serious system hacker
-; might want to flet ec-call1-raw; in that case, with a trust tag that person
-; can also edit the code here!
+(defun translate11-macrolet-alist (defs stobjs-out bindings known-stobjs
+                                    flet-alist form ctx wrld state-vars)
+  (cond
+   ((endp defs) (trans-value flet-alist))
+   (t (trans-er-let*
+       ((entry
+         (translate11-macrolet-alist1
+          (car defs) stobjs-out bindings known-stobjs flet-alist form ctx
+          wrld state-vars))
+        (entries 
+         (translate11-macrolet-alist
+          (cdr defs) stobjs-out bindings known-stobjs flet-alist form ctx
+          wrld state-vars)))
+       (trans-value (cons entry entries))))))
 
-            (trans-er ctx
-                      "It is illegal for FLET to bind a symbol that is given ~
-                       special handling by ~x0.  The FLET-binding~#1~[ is~/s ~
-                       are~] thus illegal for ~&1.  See :DOC ~
-                       return-last-table."
-                      'return-last
-                      (intersection-eq
-                       names
-                       (strip-cars (table-alist 'return-last-table wrld)))))
-           (t
-            (trans-er-let*
-             ((flet-alist (translate11-flet-alist x fives stobjs-out bindings
-                                                  known-stobjs flet-alist ctx wrld
-                                                  state-vars)))
-             (translate11 body
-                          nil ; ilk
-                          stobjs-out bindings known-stobjs flet-alist x
-                          ctx wrld state-vars)))))))))))
+(defun translate11-macrolet-alist1 (def stobjs-out bindings known-stobjs
+                                        flet-alist form ctx wrld state-vars)
+  (mv-let (erp val)
+    (chk-acceptable-defmacro-cmp def t ctx wrld state-vars)
+    (cond
+     (erp (trans-er ctx "~@0" val))
+     (t
+      (let ((name (car val))
+            (bound-vars (macro-vars (cadr val)))
+            (edcls (caddr val))
+            (body (cadddr val)))
+        (translate11-local-def form name bound-vars (cadr val) edcls body
+                               '(nil) ; new-stobjs-out
+                               stobjs-out bindings known-stobjs
+                               flet-alist ctx wrld
+                               (change state-vars state-vars
+                                       :in-macrolet-def name)))))))
+
+(defun translate11-macrolet (x stobjs-out bindings known-stobjs flet-alist
+                               ctx wrld state-vars)
+
+; Since the body of a macrolet definition cannot call any symbol defined in a
+; superior macrolet or flet, we can process the bindings sequentially.  Thus
+; for example we treat (macrolet ((m1 ...) (m2 ...)) term) as (macrolet ((m1
+; ...)) (macrolet ((m2 ...)) term)).  We will be careful not to extend the
+; flet-alist as we go, since m1 can be called in the body of m2 in this case if
+; m1 is globally defined.
+
+  (cond
+   ((< (length x) 3)
+    (trans-er ctx
+              "A MACROLET form must have the form (macrolet bindings body) or ~
+               (macrolet bindings declare-form1 ... declare-formk body), but ~
+               ~x0 does not have this form.  See :DOC flet."
+              x))
+   ((not (symbol-alistp (cadr x)))
+    (trans-er ctx
+              "A MACROLET form must have the form (macrolet bindings ...) ~
+               where bindings is of the form ((m1 ...) ... (mk ...)) and each ~
+               mi is a symbol, but ~x0 does not have this form.  See :DOC ~
+               flet."
+              x))
+   (t
+    (let* ((defs (cadr x))
+           (names (strip-cars defs))
+           (declare-form-list (butlast (cddr x) 1))
+           (body (car (last x))))
+      (mv-let (erp msg)
+        (er-progn-cmp
+         (chk-no-duplicate-defuns-cmp names ctx) 
+         (chk-local-def-declare-form-list nil names declare-form-list ctx)
+         (chk-local-def-return-last-table names nil wrld ctx))
+        (cond
+         (erp (trans-er ctx
+                        "~@0~|~%The above error indicates a problem with the ~
+                         form ~x1."
+                        msg x))
+         (t
+          (trans-er-let*
+           ((flet-alist
+             (translate11-macrolet-alist defs stobjs-out bindings known-stobjs
+                                         flet-alist x ctx wrld
+                                         state-vars)))
+           (translate11 body nil stobjs-out bindings known-stobjs flet-alist
+                        x ctx wrld state-vars)))))))))
 
 (defun translate-stobj-calls (calls creators accp bindings known-stobjs
                                     flet-alist cform ctx wrld state-vars)
@@ -20538,7 +21556,7 @@
                                         nil ; cform
                                         'translate11-lambda-object
                                         wrld
-                                        *default-default-state-vars*
+                                        *default-state-vars*
                                         nil)
                                        (declare (ignore bindings))
                                        (and (null erp)
@@ -20936,9 +21954,9 @@
      (flet-alist
       (trans-er+? cform x ctx
                   "It is illegal for a LOOP$ expression to be in the scope of ~
-                   function bindings of an FLET expression.  The occurrence ~
-                   of ~x0 in the context of the FLET form that binds function ~
-                   symbol~#1~[~/s~] ~&1 is thus illegal."
+                   function bindings of an FLET or MACROLET expression.  The ~
+                   occurrence of ~x0 in the context of the FLET/MACROLET ~
+                   bindings of symbols~#1~[~/s~] ~&1 is thus illegal."
                   x
                   (strip-cars flet-alist)))
      (t
@@ -21359,16 +22377,18 @@
                                        loop$."
                                       msg))
                           (t
-                           (let ((do-body-term (cmp-do-body translated-do-body
-                                                            twvts vars wrld))
-                                 (measure-term
-                                  (if mform
-                                      translated-mform
-                                    (guess-do-body-measure
-                                     translated-do-body)))
-                                 (fin-body-term (cmp-do-body
-                                                 translated-fin-body
-                                                 twvts vars wrld)))
+                           (let* ((do-body-term (cmp-do-body translated-do-body
+                                                             twvts vars wrld))
+                                  (measure-term
+                                   (if mform
+                                       translated-mform
+                                     (guess-do-body-measure
+                                      translated-do-body)))
+                                  (untrans-measure
+                                   (or mform measure-term))
+                                  (fin-body-term (cmp-do-body
+                                                  translated-fin-body
+                                                  twvts vars wrld)))
                              (cond
                               ((eq (car do-body-term) :fail)
                                (trans-er+? cform x ctx
@@ -21493,7 +22513,7 @@
                                                do-fn
                                                finally-fn
                                                (loop$-default values)
-                                               (kwote measure-term)
+                                               (kwote untrans-measure)
                                                (kwote x))))))))
                                       )))))))))))))))))))))))))))
 
@@ -21568,6 +22588,18 @@
 ; in wrld.  A name is considered a stobj iff it is in known-stobjs.  This
 ; allows us to implement the :STOBJS declaration in defuns, by which the user
 ; can declare the stobjs in a function.
+
+; The flet-alist argument was given that name when flet was first supported in
+; ACL2.  Now it includes information not only from superior flet bindings but
+; also from superior macrolet bindings.  Each entry is of the form (list* name
+; lam stobjs-out), where lam incorporates the specified guard and type for the
+; local function or macro and stobjs-out has the special value, :macrolet, when
+; name was defined by macrolet rather than flet.  Lam is a translated lambda,
+; thus interpreted relative to the global environment: applications of local
+; functions and local macros have been expanded away.  In the :macrolet case we
+; also check, as required by Common Lisp, that there are no calls of local
+; functions or local macros.  Our check may be a bit stronger than required;
+; see :DOC macrolet for relevant discussion.
 
 ; The cform argument is a form that provides context -- it is the one to be
 ; printed by trans-er+ when there isn't another obvious contextual form to
@@ -21742,6 +22774,58 @@
               nil ; ilk
               stobjs-out bindings known-stobjs flet-alist x ctx wrld
               state-vars))))
+   ((and (access state-vars state-vars :in-macrolet-def) ; inside macrolet body
+         (assoc-eq (car x) flet-alist)) ; call of locally-bound symbol
+
+; We are in a macrolet body, looking at a call of a symbol defined locally by a
+; superior FLET or MACROLET.  We cause an error below.  This restriction is
+; important for justifying our call of EVAL in oneify, to apply a local macro
+; definition.  But why is it a reasonable restriction?
+
+; The relevant passage from the CL HyperSpec documentation for macrolet
+; (http://www.lispworks.com/documentation/HyperSpec/Body/s_flet_.htm#macrolet)
+; is as follows.
+
+;   ... the consequences are undefined if the local macro definitions reference
+;   any local variable or function bindings that are visible in that lexical
+;   environment.
+
+; This justifies our causing an error in the FLET-bound case.  But is a
+; macrolet binding considered a function binding, thus justifying our causing
+; an error in the MACROLET-bound case?  Here's the HyperSpec definition of
+; "function".
+
+;   function n. 1. an object representing code, which can be called with zero
+;   or more arguments, and which produces zero or more values. 2. an object of
+;   type function.
+
+; One might argue that a macrolet binding is a function binding --
+; conceptually, it locally binds the macro-function of a symbol rather than the
+; symbol-function, but maybe that still qualifies as a function binding.  Or
+; maybe not.  We choose to take the more restrictive interpretation regardless
+; -- that is, disallowing the case of a superior MACROLET binding -- since we
+; need to do that at least in the case of GCL, as illustrated with the
+; following attempted definition.
+
+;   (defun h ()
+;     (macrolet ((f1 () 2))
+;       (macrolet ((f2 () (f1)))
+;         (f2))))
+
+; GCL accepts this definition, but both evaluation and compilation of (h) cause
+; an error, saying that f1 is undefined.
+
+    (trans-er ctx
+              "The call ~x0 is illegal in the body of a MACROLET binding of ~
+               the symbol ~x1, because that binding is in the scope of a ~
+               superior binding of ~x2 by ~@3.  See :DOC macrolet."
+              x
+              (access state-vars state-vars :in-macrolet-def)
+              (car x)
+              (let ((entry (assoc-eq (car x) flet-alist)))
+                (if (eq (cddr entry) :macrolet)
+                    "MACROLET"
+                  "FLET"))))
    ((and (access state-vars state-vars :do-expressionp)
          (or (eq (car x) 'progn)
              (assoc-eq (car x) *cltl-to-ersatz-fns*)))
@@ -21775,12 +22859,13 @@
                         (cadr x)))
             (t
              (trans-er-let*
-              ((body (translate11 (caddr x) ilk
-                                  (compute-stobj-flags (cadr x) known-stobjs
-                                                       wrld)
-                                  bindings known-stobjs flet-alist cform ctx wrld
-                                  (change state-vars state-vars
-                                          :do-expressionp nil))))
+              ((body
+                (translate11 (caddr x) ilk
+                             (compute-stobj-flags (cadr x) known-stobjs
+                                                  wrld)
+                             bindings known-stobjs flet-alist cform ctx wrld
+                             (change state-vars state-vars
+                                     :do-expressionp nil))))
               (trans-value (make-ersatz-mv-setq (cadr x) body))))))
           (setq
            (trans-er-let*
@@ -22048,44 +23133,54 @@
                         nil nil ; stobj info
                         flet-alist ctx wrld state-vars))
    ((assoc-eq (car x) flet-alist)
+    (let ((entry (assoc-eq (car x) flet-alist)))
+      (cond
+       ((eq (cddr entry) :macrolet) ; X is a call of a macrolet-bound symbol
+        (mv-let (erp expansion)
+          (macrolet-expand x (cadr entry) ctx wrld state-vars)          
+          (cond (erp ; expansion is a msg
+                 (trans-er+? cform x ctx "~@0" expansion))
+                (t (translate11 expansion ilk stobjs-out bindings known-stobjs
+                                flet-alist cform ctx wrld state-vars)))))
+       (t ; X is a call of an flet-bound symbol
 
 ; The lambda-bodies in flet-alist are already translated.  Our approach is to
 ; consider a call of an flet-bound function symbol to be a call of the lambda
 ; to which it is bound in flet-alist.
 
-    (let* ((entry (assoc-eq (car x) flet-alist))
-           (lambda-fn (cadr entry))
-           (formals (lambda-formals lambda-fn))
-           (stobjs-out (translate-deref stobjs-out bindings))
-           (stobjs-out2 (translate-deref (cddr entry) bindings)))
-      (cond ((not (eql (length formals) (length (cdr x))))
-             (trans-er ctx
-                       "FLET-bound local function ~x0 takes ~#1~[no ~
-                        arguments~/1 argument~/~x2 arguments~] but in the ~
-                        call ~x3 it is given ~#4~[no arguments~/1 ~
-                        argument~/~x5 arguments~].   The formal parameters ~
-                        list for the applicable FLET-binding of ~x0 is ~X67."
-                       (car x)
-                       (zero-one-or-more (length formals))
-                       (length formals)
-                       x
-                       (zero-one-or-more (length (cdr x)))
-                       (length (cdr x))
-                       formals
-                       nil))
-            ((eq stobjs-out t)
-             (trans-er-let*
-              ((args (translate11-lst (cdr x)
-                                      nil ;;; ilks = '(nil ... nil)
-                                      t bindings known-stobjs nil flet-alist x
-                                      ctx wrld state-vars)))
-              (trans-value (fcons-term lambda-fn args))))
-            (t
-             (translate11-call x lambda-fn (cdr x) stobjs-out stobjs-out2
-                               bindings known-stobjs
-                               (msg "a call of FLET-bound function ~x0"
-                                    (car x))
-                               flet-alist ctx wrld state-vars)))))
+        (let* ((lambda-fn (cadr entry))
+               (formals (lambda-formals lambda-fn))
+               (stobjs-out (translate-deref stobjs-out bindings))
+               (stobjs-out2 (translate-deref (cddr entry) bindings)))
+          (cond ((not (eql (length formals) (length (cdr x))))
+                 (trans-er ctx
+                           "FLET-bound local function ~x0 takes ~#1~[no ~
+                            arguments~/1 argument~/~x2 arguments~] but in the ~
+                            call ~x3 it is given ~#4~[no arguments~/1 ~
+                            argument~/~x5 arguments~].   The formal ~
+                            parameters list for the applicable FLET-binding ~
+                            of ~x0 is ~X67."
+                           (car x)
+                           (zero-one-or-more (length formals))
+                           (length formals)
+                           x
+                           (zero-one-or-more (length (cdr x)))
+                           (length (cdr x))
+                           formals
+                           nil))
+                ((eq stobjs-out t)
+                 (trans-er-let*
+                  ((args (translate11-lst (cdr x)
+                                          nil ;;; ilks = '(nil ... nil)
+                                          t bindings known-stobjs nil
+                                          flet-alist x ctx wrld state-vars)))
+                  (trans-value (fcons-term lambda-fn args))))
+                (t
+                 (translate11-call x lambda-fn (cdr x) stobjs-out stobjs-out2
+                                   bindings known-stobjs
+                                   (msg "a call of FLET-bound function ~x0"
+                                        (car x))
+                                   flet-alist ctx wrld state-vars))))))))
    ((and bindings
          (not (eq (caar bindings) :stobjs-out))
          (hons-get (car x) *syms-not-callable-in-code-fal*))
@@ -22130,9 +23225,7 @@
 ; bindings, so for now we simply punt.
 
       (trans-er+ x ctx
-                 "~x0 may not be called in the scope of ~x1.  If you want ~
-                  support for that capability, please contact the ACL2 ~
-                  implementors."
+                 "~x0 may not be called in the scope of ~x1."
                  'pargs
                  'flet))
      (t
@@ -22730,6 +23823,9 @@
    ((eq (car x) 'flet) ; (flet bindings form)
     (translate11-flet x stobjs-out bindings known-stobjs flet-alist ctx
                       wrld state-vars))
+   ((eq (car x) 'macrolet) ; (macrolet bindings form)
+    (translate11-macrolet x stobjs-out bindings known-stobjs flet-alist ctx
+                          wrld state-vars))
    ((eql (arity (car x) wrld) (length (cdr x)))
     (cond ((untouchable-fn-p (car x)
                              wrld
@@ -24200,109 +25296,6 @@
   (trans-eval0 form ctx state aok
                (f-get-global 'ld-user-stobjs-modified-warning state)))
 
-(defun lambda-object-guard-lst (objs)
-  (cond
-   ((endp objs) nil)
-   (t (let ((guard (lambda-object-guard (car objs))))
-        (if guard
-            (cons guard (lambda-object-guard-lst (cdr objs)))
-            (lambda-object-guard-lst (cdr objs)))))))
-
-(defun lambda-object-body-lst (objs)
-  (cond
-   ((endp objs) nil)
-   (t (cons (lambda-object-body (car objs))
-            (lambda-object-body-lst (cdr objs))))))
-
-(defun filter-lambda$-objects (lst)
-  (cond ((endp lst) nil)
-        ((lambda$-bodyp (lambda-object-body (car lst)))
-         (cons (car lst)
-               (filter-lambda$-objects (cdr lst))))
-        (t (filter-lambda$-objects (cdr lst)))))
-
-(mutual-recursion
-
-(defun collect-certain-lambda-objects (flg term wrld ans)
-
-; We walk through term looking for lambda objects and we collect into ans
-; certain ones of them as per flg:
-
-; :all -- every lambda object whether well-formed or not
-; :well-formed -- every well-formed lambda object
-; :lambda$ -- every well-formed lambda object tagged as having come from
-;             a lambda$ translation
-
-; We collect lambda objects within well-formed lambda objects but not within
-; ill-formed ones.  In particular, if a lambda object is well-formed we'll dive
-; into its :guard and body looking for other lambda objects.  But if we
-; encounter an ill-formed lambda object we will not attempt to explore its
-; :guard or body since they may be ill-formed.  This means that if a
-; well-formed lambda object is hidden inside an ill-formed one we do not
-; collect it.
-
-; Motivation: uses of this function include guard verification (where we try to
-; verify the guards of every well-formed lambda object in a defun) and the
-; pre-loading of the cl-cache.  What are the consequences of not collecting a
-; well-formed lambda object hidden inside an ill-formed one?  We wouldn't
-; verify the guards of the hidden well-formed lambda object at defun-time.  If
-; the ill-formed one is ever applied, the cache will force apply$ to use *1*
-; apply$.  As the axiomatic interpretion of the ill-formed lambda object
-; proceeds it may encounter the well-formed one and not find it in the
-; pre-loaded cache.  But the cache will add a line for the just-found lambda
-; object, attempting guard verification then and there just as though the user
-; had typed in a new lambda object to apply.  So the consequences of this
-; failure to collect is just the weakening of the proof techniques we bring to
-; bear while verifying guards on such lambda objects: Had they been collected,
-; the user would have the opportunity to add hints to get the guard
-; verification to go through, whereas by not collecting them we delay guard
-; verification to top-level eval time, where only weaker techniques are tried.
-
-  (cond
-   ((variablep term) ans)
-   ((fquotep term)
-    (let* ((evg (unquote term))
-           (lambda-objectp (and (consp evg)
-                                (eq (car evg) 'lambda)))
-           (well-formedp (and lambda-objectp
-                              (well-formed-lambda-objectp evg wrld)))
-           (collectp
-            (case flg
-              (:all lambda-objectp)
-              (:well-formed well-formedp)
-              (otherwise
-               (and well-formedp
-                    (lambda$-bodyp (lambda-object-body evg))))))
-           (ans1 (if collectp (add-to-set-equal evg ans) ans)))
-      (if well-formedp
-          (let* ((guard (lambda-object-guard evg))
-                 (body (lambda-object-body evg)))
-            (collect-certain-lambda-objects
-             flg guard wrld
-             (collect-certain-lambda-objects flg body wrld ans1)))
-          ans1)))
-   ((throw-nonexec-error-p term :non-exec nil)
-; This check holds when term is the translated version of a non-exec call, as
-; does a similar check using throw-nonexec-error-p1 in translate11.
-    ans)
-   ((flambda-applicationp term)
-    (collect-certain-lambda-objects
-     flg
-     (lambda-body (ffn-symb term))
-     wrld
-     (collect-certain-lambda-objects-lst flg (fargs term) wrld ans)))
-   (t (collect-certain-lambda-objects-lst flg (fargs term) wrld ans))))
-
-(defun collect-certain-lambda-objects-lst (flg terms wrld ans)
-  (cond
-   ((endp terms) ans)
-   (t (collect-certain-lambda-objects
-       flg
-       (car terms)
-       wrld
-       (collect-certain-lambda-objects-lst flg (cdr terms) wrld ans)))))
-)
-
 (defun tagged-loop$p (term)
 
 ; A marked loop$ is a term of the form (RETURN-LAST 'PROGN '(LOOP$ ...) term).
@@ -24375,106 +25368,6 @@
        (car terms)
        (collect-certain-tagged-loop$s-lst flg (cdr terms) ans)))))
 )
-
-(mutual-recursion
-
-(defun ancestral-lambda$s-by-caller1 (caller guard body wrld alist)
-
-; Caller is a symbol or a string.  Guard and body should either both be terms
-; or both be nil.  If both are nil, caller must be a function symbol and guard
-; and body default to the guard and body of caller.  If guard and body are
-; non-nil, then they are used as the guard and body of some ficticious function
-; described by the string, caller (which will ultimately be printed by a ~s fmt
-; directive).
-
-; By ``ancestors'' in this function we mean function symbols reachable through
-; the guard, the body, or the guard or body of any well-formed lambda object in
-; caller or any of these ancestors.  We extend alist with pairs (fn
-; . lambda$-lst), where fn is any of these extended ancestors and lambda$-lst
-; is the list of every lambda object produced by a lambda$ expression in fn.
-; We use alist during this calculation to avoid repeated visits to the same fn,
-; thus, we will add the pair (fn . nil) whenever fn has no lambda$s in it.  We
-; filter out these empty pairs in ancestral-lambda$s-by-caller.
-
-; We do nothing during boot-strap (there should be no lambda$s) and, as an
-; optimization, we do not explore apply$-primp callers or the apply$ clique.
-
-  (cond
-   ((or (global-val 'boot-strap-flg wrld)
-; The following hons-get is equivalent to ; (apply$-primp caller).
-        (hons-get caller ; *badge-prim-falist* is not yet defined!
-                  (unquote
-                   (getpropc '*badge-prim-falist* 'const nil wrld)))
-        (eq caller 'apply$)
-        (eq caller 'ev$)
-        (assoc-eq caller alist))
-    alist)
-   (t
-    (let* ((guard (or guard (getpropc caller 'guard *t* wrld)))
-           (body (or body (getpropc caller 'unnormalized-body *nil* wrld)))
-           (objs (collect-certain-lambda-objects
-                  :well-formed
-                  body
-                  wrld
-                  (collect-certain-lambda-objects
-                   :well-formed
-                   guard
-                   wrld
-                   nil)))
-
-; Note: Objs is the list of all well-formed lambda objects in caller.  Objs
-; includes all lambda$ objects in caller but may include well-formed lambda
-; objects not generated by lambda$.
-
-; Fns is the list of all functions called in the guards or bodies of the just
-; collected well-formed lambda object in caller.  We have to explore them too.
-
-           (fns (all-fnnames1
-                 nil ; all-fnnames
-                 guard
-                 (all-fnnames1
-                  nil ; all-fnnames
-                  body
-                  (all-fnnames1
-                   t ; all-fnnames-lst
-                   (lambda-object-body-lst objs)
-                   (all-fnnames1
-                    t ; all-fnnames-lst
-                    (lambda-object-guard-lst objs)
-                    nil))))))
-      (ancestral-lambda$s-by-caller1-lst
-       fns wrld
-       (cons (cons caller (filter-lambda$-objects objs)) alist))))))
-
-(defun ancestral-lambda$s-by-caller1-lst (callers wrld alist)
-  (cond ((endp callers) alist)
-        (t (ancestral-lambda$s-by-caller1-lst
-            (cdr callers)
-            wrld
-            (ancestral-lambda$s-by-caller1 (car callers) nil nil wrld alist))))))
-
-(defun collect-non-empty-pairs (alist)
-  (cond ((endp alist) nil)
-        ((cdr (car alist))
-         (cons (car alist) (collect-non-empty-pairs (cdr alist))))
-        (t
-         (collect-non-empty-pairs (cdr alist)))))
-
-(defun ancestral-lambda$s-by-caller (caller term wrld)
-
-; Caller is a string (ultimately printed with a ~s fmt directive) describing
-; the context in which we found term.  Explore all function symbols reachable
-; from the guards and bodies of functions and well-formed lambda objects in
-; term and collect an alist mapping each such reachable function symbol to all
-; of the lambda$ expressions occurring in it.  The alist omits pairs for
-; function symbols having no lambda$s.  If the result is nil, there are no
-; reachable lambda$s.  Otherwise, the function
-; tilde-*-lambda$-replacement-phrase5 can create a ~* fmt phrase that
-; interprets the alist as a directive to replace, in certain functions, certain
-; lambda$s by quoted lambdas.
-
-  (let ((alist (ancestral-lambda$s-by-caller1 caller *T* term wrld nil)))
-    (collect-non-empty-pairs alist)))
 
 ; The following block of code is currently obsolete but might have some useful
 ; functionality so we preserve it.  The block ends at the Note after
@@ -24583,53 +25476,6 @@
 ; replace (LAMBDA$ (LOOP$-IVAR) (LET ((E LOOP$-IVAR)) (CONS 'HI E))) by (LAMBDA
 ; (E) (CONS 'HI E)) is confusing when the lambda$ doesn't appear in what the
 ; user actually wrote: (loop$ for e in x collect (cons 'hi e)).
-
-(defun strings-and-others (alist strings others)
-
-; Alist is an alist with strings and symbols as keys and we partition the keys
-; into the strings and everything else.  We just throw away the values in the
-; alist.
-
-  (cond
-   ((endp alist) (mv strings others))
-   ((stringp (car (car alist)))
-    (strings-and-others (cdr alist)
-                        (cons (car (car alist)) strings)
-                        others))
-   (t
-    (strings-and-others (cdr alist)
-                        strings
-                        (cons (car (car alist)) others)))))
-
-(defun prohibition-of-loop$-and-lambda$-msg (alist)
-
-; Alist was created by ancestral-lambda$s-by-caller.  Its keys are strings and
-; symbols indicating where lambda$s (and thus also loop$s) occur in some event.
-; The strings are things like "the guard of this event" and the others are
-; function names ancestral in the event.  The intent of our message is ``we
-; prohibit loop$ and lambda$ in certain events and here are the places you
-; should look...''  But the exact form of the phrase depends on how many
-; strings and others there are!  English grammar is tricky.  We know there is
-; at least one string or other because we wouldn't be causing an error if there
-; were none.
-
-  (mv-let (strings others)
-    (strings-and-others alist nil nil)
-    (let ((i (cond ((null strings)
-                    (if (null (cdr others)) 0 1))
-                   ((null others) 2)
-                   ((null (cdr others)) 3)
-                   (t 4))))
-      (msg "We prohibit certain events, including DEFCONST, DEFPKG, and ~
-            DEFMACRO, from being ancestrally dependent on loop$ and lambda$ ~
-            expressions.  But at least one of these prohibited expressions ~
-            occurs in ~#0~[~&2 which is ancestral here~/each of ~&2 which are ~
-            ancestral here~/~*1~/~*1 and in ~&2 which is ancestral here~/~*1 ~
-            and in each of ~&2 which are ancestral here~].  See :DOC ~
-            prohibition-of-loop$-and-lambda$."
-           i
-           (list "" "~s*" "~s* and " "~s*, " strings)
-           others))))
 
 (defun simple-translate-and-eval (x alist ok-stobj-names msg ctx wrld state
                                     aok)

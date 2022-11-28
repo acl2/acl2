@@ -1160,8 +1160,16 @@ ACL2 from scratch.")
        #+unix
        (f-put-global 'tmp-dir "/tmp" state)
        #+gcl ; for every OS, including Windows (thanks to Camm Maguire)
-       (when (boundp 'si::*tmp-dir*)
-         (f-put-global 'tmp-dir si::*tmp-dir* state))
+       (when (and (boundp 'si::*tmp-dir*)
+                  (stringp si::*tmp-dir*)
+                  (not (equal si::*tmp-dir* "")))
+         (f-put-global
+          'tmp-dir
+          (if (eql (char si::*tmp-dir* (1- (length si::*tmp-dir*)))
+                   *directory-separator*)
+              (subseq si::*tmp-dir* 0 (1- (length si::*tmp-dir*)))
+            si::*tmp-dir*)
+          state))
        nil)))
 
 (defconstant *suppress-compile-build-time*
@@ -2724,4 +2732,3 @@ You are using version ~s.~s.~s."
 
 #+ccl ; originally for ACL2(h), but here we make behavior the same for ACL2
 (setq ccl::*quit-on-eof* t)
-

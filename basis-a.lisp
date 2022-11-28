@@ -6163,7 +6163,7 @@
   (((safe-mode . boot-strap-flg) . (temp-touchable-vars . guard-checking-on))
    .
    ((ld-skip-proofsp . temp-touchable-fns) .
-    (parallel-execution-enabled . do-expressionp)))
+    ((parallel-execution-enabled . in-macrolet-def) . do-expressionp)))
   nil)
 
 (defmacro default-state-vars
@@ -6175,6 +6175,8 @@
            (ld-skip-proofsp 'nil ld-skip-proofsp-p)
            (temp-touchable-fns 'nil temp-touchable-fns-p)
            (parallel-execution-enabled 'nil parallel-execution-enabled-p)
+           (in-macrolet-def ; not a state global, so avoid f-get-global below
+            'nil)
            (do-expressionp ; not a state global, so avoid f-get-global below
             'nil))
 
@@ -6215,6 +6217,8 @@
                 ,(if parallel-execution-enabled-p
                      parallel-execution-enabled
                    '(f-get-global 'parallel-execution-enabled state))
+                :in-macrolet-def
+                ,in-macrolet-def
                 :do-expressionp
                 ,do-expressionp))
         (t ; state-p is not t
@@ -6225,6 +6229,8 @@
                 :ld-skip-proofsp ,ld-skip-proofsp
                 :temp-touchable-fns ,temp-touchable-fns
                 :parallel-execution-enabled ,parallel-execution-enabled))))
+
+(defconst *default-state-vars* (default-state-vars nil))
 
 (defun warning1-body (ctx summary str+ alist state)
 
@@ -8846,7 +8852,10 @@
 ; comments).
 
 (defmacro make-sysfile (key str)
-  `(cons ,key ,str))
+  (cond ((and (keywordp key)
+              (stringp str))
+         `(quote (,key . ,str)))
+        (t `(cons ,key ,str))))
 
 (defun sysfile-p (x)
 

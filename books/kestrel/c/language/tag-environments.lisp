@@ -12,7 +12,6 @@
 (in-package "C")
 
 (include-book "types")
-(include-book "errors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,7 +113,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult tag-env "tag environments")
+(fty::defresult tag-env-result
+  :short "Fixtype of errors and tag environments."
+  :ok tag-env
+  :pred tag-env-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

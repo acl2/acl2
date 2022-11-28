@@ -1,6 +1,6 @@
 ; Standard Typed Alists Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,4 +21,13 @@
   :val (symbolp x)
   :true-listp t
   :keyp-of-nil t
-  :valp-of-nil t)
+  :valp-of-nil t
+  ///
+
+  (defthmd symbol-listp-of-strip-cdrs-when-symbol-symbol-alistp
+    (implies (symbol-symbol-alistp x)
+             (symbol-listp (strip-cdrs x))))
+
+  (defthmd symbol-alistp-when-symbol-symbol-alistp
+    (implies (symbol-symbol-alistp x)
+             (symbol-alistp x))))

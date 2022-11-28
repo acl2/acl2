@@ -10,16 +10,11 @@
 
 (in-package "ABNF")
 
-(include-book "../abstract-syntax")
-(include-book "../semantics")
-(include-book "../operations/well-formedness")
-(include-book "../operations/closure")
+(include-book "../grammar-definer/defgrammar")
+(include-book "../grammar-definer/deftreeops")
 (include-book "../operations/in-terminal-set")
 (include-book "../operations/plugging")
-(include-book "../core-rules")
-(include-book "../concrete-syntax")
-(include-book "../parser")
-(include-book "../abstractor")
+(include-book "../notation/core-rules")
 
 ; (depends-on "uri.abnf")
 
@@ -36,7 +31,9 @@
   :order-subtopics t
   :default-parent t)
 
-(defsection *uri-grammar-rules*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar *uri-grammar-rules*
   :short "The URI grammar rules from RFC 3986."
   :long
   (xdoc::topstring
@@ -51,17 +48,11 @@
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
+  :file "uri.abnf"
+  :untranslate t
+  :well-formed t)
 
-  (make-event
-   (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "uri.abnf") state)
-     (value `(defconst *uri-grammar-rules*
-               (abstract-rulelist ',tree)))))
-
-  (add-const-to-untranslate-preprocess *uri-grammar-rules*)
-
-  (defrule rulelist-wfp-of-*uri-grammar-rules*
-    (rulelist-wfp *uri-grammar-rules*)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *all-uri-grammar-rules*
   :short "All the URI grammar rules, including the referenced ABNF core rules."
@@ -111,3 +102,7 @@
                                              (char-code #\{)
                                              (char-code #\|)
                                              (char-code #\}))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::deftreeops *all-uri-grammar-rules* :prefix uri-cst)

@@ -27,7 +27,7 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system)) ; for EXPT-BOUND-LINEAR-2
 
 (defthmd bvplus-commutative-2-sizes-differ2-axe
-  (implies (and (axe-syntaxp (should-commute-args-dag 'bvplus x y dag-array)) ;gen?
+  (implies (and (axe-syntaxp (should-commute-axe-argsp 'bvplus x y dag-array)) ;gen?
                 (equal (+ 1 smallsize) bigsize) ;relax somehow?
                 (natp smallsize)
                 (unsigned-byte-p smallsize y) ;move to conc? by adding bvchops - or maybe adding bvchop would cause loops?

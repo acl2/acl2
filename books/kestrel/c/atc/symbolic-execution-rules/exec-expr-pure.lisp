@@ -11,7 +11,9 @@
 
 (in-package "C")
 
-(include-book "../execution")
+(include-book "../../language/dynamic-semantics")
+
+(include-book "../integers")
 
 (include-book "syntaxp")
 
@@ -54,55 +56,66 @@
                   (equal (expr-kind e) :arrsub)
                   (equal arr (expr-arrsub->arr e))
                   (not (expr-case arr :member))
-                  (not (expr-case arr :memberp)))
+                  (not (expr-case arr :memberp))
+                  (equal valarr (exec-expr-pure arr compst))
+                  (valuep valarr)
+                  (equal valsub (exec-expr-pure (expr-arrsub->sub e) compst))
+                  (valuep valsub))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub (exec-expr-pure arr compst)
-                                 (exec-expr-pure (expr-arrsub->sub e) compst)
-                                 compst)))
+                    (exec-arrsub valarr valsub compst)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-member
     (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :member))
+                  (equal (expr-kind e) :member)
+                  (equal val (exec-expr-pure (expr-member->target e) compst))
+                  (valuep val))
              (equal (exec-expr-pure e compst)
-                    (exec-member (exec-expr-pure (expr-member->target e)
-                                                 compst)
-                                 (expr-member->name e))))
+                    (exec-member val (expr-member->name e))))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-memberp
     (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :memberp))
+                  (equal (expr-kind e) :memberp)
+                  (equal val (exec-expr-pure (expr-memberp->target e) compst))
+                  (valuep val))
              (equal (exec-expr-pure e compst)
-                    (exec-memberp (exec-expr-pure (expr-memberp->target e)
-                                                  compst)
-                                  (expr-memberp->name e)
-                                  compst)))
+                    (exec-memberp val (expr-memberp->name e) compst)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-arrsub-of-member
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :arrsub)
                   (equal arr (expr-arrsub->arr e))
-                  (expr-case arr :member))
+                  (expr-case arr :member)
+                  (equal valstr
+                         (exec-expr-pure (expr-member->target arr) compst))
+                  (valuep valstr)
+                  (equal valsub
+                         (exec-expr-pure (expr-arrsub->sub e) compst))
+                  (valuep valsub))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub-of-member
-                     (exec-expr-pure (expr-member->target arr) compst)
-                     (expr-member->name arr)
-                     (exec-expr-pure (expr-arrsub->sub e) compst))))
+                    (exec-arrsub-of-member valstr
+                                           (expr-member->name arr)
+                                           valsub)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-arrsub-of-memberp
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :arrsub)
                   (equal arr (expr-arrsub->arr e))
-                  (expr-case arr :memberp))
+                  (expr-case arr :memberp)
+                  (equal valstr
+                         (exec-expr-pure (expr-memberp->target arr) compst))
+                  (valuep valstr)
+                  (equal valsub
+                         (exec-expr-pure (expr-arrsub->sub e) compst))
+                  (valuep valsub))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub-of-memberp
-                     (exec-expr-pure (expr-memberp->target arr) compst)
-                     (expr-memberp->name arr)
-                     (exec-expr-pure (expr-arrsub->sub e) compst)
-                     compst)))
+                    (exec-arrsub-of-memberp valstr
+                                            (expr-memberp->name arr)
+                                            valsub
+                                            compst)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-unary
@@ -116,10 +129,11 @@
 
   (defruled exec-expr-pure-when-cast
     (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :cast))
+                  (equal (expr-kind e) :cast)
+                  (equal val (exec-expr-pure (expr-cast->arg e) compst))
+                  (valuep val))
              (equal (exec-expr-pure e compst)
-                    (exec-cast (expr-cast->type e)
-                               (exec-expr-pure (expr-cast->arg e) compst))))
+                    (exec-cast (expr-cast->type e) val)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-strict-pure-binary
@@ -129,13 +143,13 @@
                   (member-equal (binop-kind op)
                                 '(:mul :div :rem :add :sub :shl :shr
                                   :lt :gt :le :ge :eq :ne
-                                  :bitand :bitxor :bitior)))
+                                  :bitand :bitxor :bitior))
+                  (equal val1 (exec-expr-pure (expr-binary->arg1 e) compst))
+                  (equal val2 (exec-expr-pure (expr-binary->arg2 e) compst))
+                  (valuep val1)
+                  (valuep val2))
              (equal (exec-expr-pure e compst)
-                    (exec-binary-strict-pure op
-                                             (exec-expr-pure (expr-binary->arg1 e)
-                                                             compst)
-                                             (exec-expr-pure (expr-binary->arg2 e)
-                                                             compst))))
+                    (exec-binary-strict-pure op val1 val2)))
     :enable (exec-expr-pure binop-purep))
 
   (defund sint-from-boolean-with-error (test)

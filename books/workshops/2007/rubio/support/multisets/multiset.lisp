@@ -8,7 +8,9 @@
 
 (in-package "ACL2")
 
-(defpkg "MUL" (union-eq *acl2-exports*
+; Matt K. mod, Nov. 2022: Added acl2::last-cdr to *acl2-exports* in ACL2
+; sources, so removed it here.
+(defpkg "MUL" (union-eq (remove1 'last-cdr *acl2-exports* :test 'eq)
 			(union-eq
 			 *common-lisp-symbols-from-main-lisp-package*
 			 '(remove-one multiset-diff ctoa atoc))))

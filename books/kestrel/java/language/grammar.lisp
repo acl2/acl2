@@ -12,10 +12,8 @@
 
 (include-book "unicode-characters")
 
-(include-book "kestrel/abnf/parser" :dir :system)
-(include-book "kestrel/abnf/abstractor" :dir :system)
-(include-book "kestrel/abnf/operations/well-formedness" :dir :system)
-(include-book "kestrel/abnf/operations/closure" :dir :system)
+(include-book "kestrel/abnf/grammar-definer/defgrammar" :dir :system)
+(include-book "kestrel/abnf/grammar-definer/deftreeops" :dir :system)
 (include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)
 
 ; (depends-on "lexical-grammar.abnf")
@@ -116,31 +114,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection *lexical-grammar*
+(abnf::defgrammar *lexical-grammar*
   :short "The Java lexical grammar, in ABNF."
   :long
   (xdoc::topstring-p
    "We parse the grammar file to obtain an ABNF grammar value.")
-  (make-event
-   (mv-let (tree state)
-     (abnf::parse-grammar-from-file (str::cat (cbd) "lexical-grammar.abnf")
-                                    state)
-     (value `(defconst *lexical-grammar*
-               (abnf::abstract-rulelist ',tree))))))
+  :file "lexical-grammar.abnf"
+  :untranslate t
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection *syntactic-grammar*
+(abnf::defgrammar *syntactic-grammar*
   :short "The Java syntactic grammar, in ABNF."
   :long
   (xdoc::topstring-p
    "We parse the grammar file to obtain an ABNF grammar value.")
-  (make-event
-   (mv-let (tree state)
-     (abnf::parse-grammar-from-file (str::cat (cbd) "syntactic-grammar.abnf")
-                                    state)
-     (value `(defconst *syntactic-grammar*
-               (abnf::abstract-rulelist ',tree))))))
+  :file "syntactic-grammar.abnf"
+  :untranslate t
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,6 +207,10 @@
     :prep-books
     ((local
       (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::deftreeops *grammar* :prefix cst)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

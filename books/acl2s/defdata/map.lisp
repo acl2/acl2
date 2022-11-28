@@ -55,7 +55,7 @@ data last modified: [2014-08-06]
         
         (defthm _pred_-DOMAIN-LEMMA
           (implies (and (_pred_ x)
-                        (mget a x))
+                        (g a x))
                    (_keypred_ a))
           :hints (("Goal" :in-theory (e/d 
                                       (_pred_ mget acl2::extensible-records)
@@ -67,7 +67,7 @@ data last modified: [2014-08-06]
         (defthm DELETING-AN-ENTRY-IN-_pred_
           (implies (and (_pred_ x)
                         (_keypred_ a))
-                   (_pred_ (mset a nil x)))
+                   (_pred_ (s a nil x)))
           :hints (("Goal" :in-theory (e/d (acl2::extensible-records)))))
 
 
@@ -77,8 +77,8 @@ data last modified: [2014-08-06]
 
         (defthm _pred_-SELECTOR
           (implies (and (_pred_ x)
-                        (mget acl2::a x))
-                   (_valpred_ (mget acl2::a x)))
+                        (g acl2::a x))
+                   (_valpred_ (g acl2::a x)))
           :hints (("Goal" :in-theory (e/d 
                                       (_pred_ mget acl2::extensible-records)
                                       (_keypred_ _valpred_)))))
@@ -86,10 +86,10 @@ data last modified: [2014-08-06]
 
         (defthm _pred_-SELECTOR-generalize
           (implies (and (_pred_ x)
-;(mget acl2::a x) shifted below
+;(g acl2::a x) shifted below
                         )
-                   (or (_valpred_ (mget acl2::a x))
-                       (equal (mget acl2::a x) nil)))
+                   (or (_valpred_ (g acl2::a x))
+                       (equal (g acl2::a x) nil)))
           :hints (("Goal" :in-theory (e/d 
                                       (_pred_ mget acl2::extensible-records)
                                       (_keypred_ _valpred_))))
@@ -108,7 +108,7 @@ data last modified: [2014-08-06]
           (implies (and (_pred_ x)
                         (_keypred_ acl2::a)
                         (_valpred_ v))
-                   (_pred_ (mset acl2::a v x)))
+                   (_pred_ (s acl2::a v x)))
           :hints (("Goal" :in-theory 
                    (e/d (_pred_ mset acl2::extensible-records)
                         (_keypred_ _valpred_ acl2::wf-keyp))))
@@ -135,14 +135,14 @@ data last modified: [2014-08-06]
                            (assoc-eq keybody M)
                            (predicate-name valbody A M))))
          `((defdata-attach ,name
-             :constraint (mget a x) ;x is the variable of this type
+             :constraint (g a x) ;x is the variable of this type
              :constraint-variable x
              :rule (implies (and (,keypred a)
                                  (,valpred x.a)
                                  (,pred x1))
-                            (equal x (mset a x.a x1)))
+                            (equal x (s a x.a x1)))
              :meta-precondition (or (acl2::variablep a)
-                                    (fquotep a)) ;not completely sound, since (mget a x) might be nil
+                                    (fquotep a)) ;not completely sound, since (g a x) might be nil
              :match-type :subterm-match))))
 
       (& '()))))
@@ -177,7 +177,7 @@ data last modified: [2014-08-06]
        (disabled (get1 :disabled kwd-alist))
        (curr-pkg (get1 :current-package kwd-alist))
        (pkg-sym (pkg-witness curr-pkg))
-       (disabled (cons 'acl2::mset-diff-mset disabled))
+       (disabled (append '(acl2::mset-diff-mset1 acl2::mset-diff-mset2)  disabled))
        (local-events-template *map-local-events*)
        (export-defthms-template *map-export-defthms*)
        (features (append (and keypred '(:key-is-typename)) (and valpred '(:val-is-typename))))
@@ -239,7 +239,7 @@ data last modified: [2014-08-06]
 (register-user-combinator map
                           :arity 2 :verbose t
                           :aliases (acl2::map)
-                          :expansion (lambda (_name _args) `(OR nil (mset ,(car _args) ,(cadr _args) ,_name)))
+                          :expansion (lambda (_name _args) `(OR nil (s ,(car _args) ,(cadr _args) ,_name)))
                           :syntax-restriction-fn proper-symbol-listp
                           :syntax-restriction-msg "map syntax restriction: ~x0 should be type names."
                           :polymorphic-type-form (alistof :a :b)

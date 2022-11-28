@@ -1,6 +1,6 @@
 ; Error Checking Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,6 +19,7 @@
 (include-book "ensure-list-has-no-duplicates")
 (include-book "ensure-symbol-is-fresh-event-name")
 (include-book "ensure-value-is-boolean")
+(include-book "ensure-value-is-constant-name")
 (include-book "ensure-value-is-function-name")
 (include-book "ensure-value-is-in-list")
 (include-book "ensure-value-is-legal-variable-name")

@@ -21,7 +21,9 @@
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/soft/defequal" :dir :system)
+(include-book "kestrel/std/system/apply-term" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 
 (include-book "utilities/input-processing")
 (include-book "utilities/input-processing-soft")

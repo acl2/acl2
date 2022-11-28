@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,13 +12,14 @@
 
 (include-book "abstract-syntax")
 
+(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-operations
   :parents (abstract-syntax prime-field-constraint-systems)
-  :short "Operations on the abstract syntax of PFCS."
+  :short "Operations on the abstract syntax of PFCSes."
   :order-subtopics t
   :default-parent t)
 
@@ -27,6 +28,10 @@
 (define expression-vars ((expr expressionp))
   :returns (vars symbol-listp)
   :short "Variables in an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variables are returned as a list without repetitions."))
   (expression-case
    expr
    :const nil
@@ -36,39 +41,67 @@
    :mul (union-eq (expression-vars expr.arg1)
                   (expression-vars expr.arg2)))
   :measure (expression-count expr)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  ///
+
+  (defrule no-duplicatesp-equal-of-expression-vars
+    (no-duplicatesp-equal (expression-vars expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expression-list-vars ((exprs expression-listp))
   :returns (vars symbol-listp)
   :short "Variables in a list of expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variables are returned as a list without repetitions."))
   (cond ((endp exprs) nil)
         (t (union-eq (expression-vars (car exprs))
                      (expression-list-vars (cdr exprs)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  ///
+
+  (defrule no-duplicatesp-equal-of-expression-list-vars
+    (no-duplicatesp-equal (expression-list-vars exprs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-vars ((constr constraintp))
   :returns (vars symbol-listp)
   :short "Variables in a constraint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variables are returned as a list without repetitions."))
   (constraint-case
    constr
    :equal (union-eq (expression-vars constr.left)
                     (expression-vars constr.right))
    :relation (expression-list-vars constr.args))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  ///
+
+  (defrule no-duplicatesp-equal-of-constraint-vars
+    (no-duplicatesp-equal (constraint-vars expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-list-vars ((constrs constraint-listp))
   :returns (vars symbol-listp)
   :short "Variables in a list of constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variables are returned as a list without repetitions."))
   (cond ((endp constrs) nil)
         (t (union-eq (constraint-vars (car constrs))
                      (constraint-list-vars (cdr constrs)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  ///
+
+  (defrule no-duplicatesp-equal-of-constraint-list-vars
+    (no-duplicatesp-equal (constraint-list-vars expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -78,9 +111,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the variables in the body minus the parameters."))
+    "These are the variables in the body minus the parameters.")
+   (xdoc::p
+    "The variables are returned as a list without repetitions."))
   (set-difference-eq (constraint-list-vars (definition->body def))
-                     (definition->para def)))
+                     (definition->para def))
+  ///
+
+  (defrule no-duplicatesp-equal-of-definition-free-vars
+    (no-duplicatesp-equal (definition-free-vars expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -122,7 +161,7 @@
     "We return the first definition found for that name.
      In a well-formed system of constraints,
      there is at most a definition for each name,
-     and thus returning the first one found is also the only one."))
+     and thus the first one found (if any) is also the only one."))
   (b* (((when (endp sys)) nil)
        (def (car sys))
        ((when (eq (definition->name def)

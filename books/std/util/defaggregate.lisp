@@ -87,7 +87,7 @@ Lisp.</p>
    [/// other-events])    ;; optional, starts with the symbol ///
 })
 
-<p>The @('name') acts like a prefix the function and theorem names we generate
+<p>The @('name') acts like a prefix; the function and theorem names we generate
 will be based on this name.</p>
 
 <p>The @('Fields') describe what fields each instance of the structure will

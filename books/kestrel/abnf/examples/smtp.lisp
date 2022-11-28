@@ -10,15 +10,9 @@
 
 (in-package "ABNF")
 
-(include-book "../abstract-syntax")
-(include-book "../semantics")
-(include-book "../operations/well-formedness")
-(include-book "../operations/closure")
+(include-book "../grammar-definer/defgrammar")
+(include-book "../grammar-definer/deftreeops")
 (include-book "../operations/in-terminal-set")
-(include-book "../core-rules")
-(include-book "../concrete-syntax")
-(include-book "../parser")
-(include-book "../abstractor")
 
 ; (depends-on "smtp.abnf")
 
@@ -35,7 +29,9 @@
   :order-subtopics t
   :default-parent t)
 
-(defsection *smtp-grammar-rules*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar *smtp-grammar-rules*
   :short "The SMTP grammar rules from RFC 5321."
   :long
   (xdoc::topstring
@@ -50,14 +46,10 @@
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
+  :file "smtp.abnf"
+  :untranslate t
+  :well-formed t)
 
-  (make-event
-   (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "smtp.abnf") state)
-     (value `(defconst *smtp-grammar-rules*
-               (abstract-rulelist ',tree)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (add-const-to-untranslate-preprocess *smtp-grammar-rules*)
-
-  (defrule rulelist-wfp-of-*smtp-grammar-rules*
-    (rulelist-wfp *smtp-grammar-rules*)))
+(abnf::deftreeops *smtp-grammar-rules* :prefix smtp-cst)

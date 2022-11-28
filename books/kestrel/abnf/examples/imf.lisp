@@ -10,15 +10,9 @@
 
 (in-package "ABNF")
 
-(include-book "../abstract-syntax")
-(include-book "../semantics")
-(include-book "../operations/well-formedness")
-(include-book "../operations/closure")
+(include-book "../grammar-definer/defgrammar")
+(include-book "../grammar-definer/deftreeops")
 (include-book "../operations/in-terminal-set")
-(include-book "../core-rules")
-(include-book "../concrete-syntax")
-(include-book "../parser")
-(include-book "../abstractor")
 
 ; (depends-on "imf.abnf")
 
@@ -35,7 +29,9 @@
   :order-subtopics t
   :default-parent t)
 
-(defsection *imf-grammar-rules*
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar *imf-grammar-rules*
   :short "The IMF grammar rules from RFC 5322."
   :long
   (xdoc::topstring
@@ -50,14 +46,10 @@
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
+  :file "imf.abnf"
+  :untranslate t
+  :well-formed t)
 
-  (make-event
-   (mv-let (tree state)
-     (parse-grammar-from-file (string-append (cbd) "imf.abnf") state)
-     (value `(defconst *imf-grammar-rules*
-               (abstract-rulelist ',tree)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (add-const-to-untranslate-preprocess *imf-grammar-rules*)
-
-  (defrule rulelist-wfp-of-*imf-grammar-rules*
-    (rulelist-wfp *imf-grammar-rules*)))
+(abnf::deftreeops *imf-grammar-rules* :prefix imf-cst)

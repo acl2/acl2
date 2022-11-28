@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,7 @@
 (include-book "abstract-syntax-operations")
 
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
+(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/std/util/defund-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
@@ -20,7 +21,7 @@
 
 (defxdoc+ semantics-shallowly-embedded
   :parents (semantics)
-  :short "Shallowly embedded semantics of PFCS."
+  :short "Shallowly embedded semantics of PFCSes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -66,12 +67,12 @@
                     the prime variable ~x1."
                    expr.name prime)
           expr.name)
-   :add `(pfield::add ,(sesem-expression expr.arg1 prime)
-                      ,(sesem-expression expr.arg2 prime)
-                      ,prime)
-   :mul `(pfield::mul ,(sesem-expression expr.arg1 prime)
-                      ,(sesem-expression expr.arg2 prime)
-                      ,prime))
+   :add `(add ,(sesem-expression expr.arg1 prime)
+              ,(sesem-expression expr.arg2 prime)
+              ,prime)
+   :mul `(mul ,(sesem-expression expr.arg1 prime)
+              ,(sesem-expression expr.arg2 prime)
+              ,prime))
   :measure (expression-count expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,7 +100,8 @@
     "We turn an equality constraint into an ACL2 equality
      of the terms denoted by the left and right expressions.
      We turn a relation constraint into an ACL2 call of the relation
-     on the terms denoted by the argument expressions."))
+     on the terms denoted by the argument expressions.
+     Note that we include the variable for the prime."))
   (constraint-case
    constr
    :equal `(equal ,(sesem-expression constr.left prime)
@@ -123,7 +125,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sesem-definition ((def definitionp) (prime symbolp))
-  :returns event
+  :returns (event pseudo-event-formp)
   :short "Shallowly embedded semantics of a definition."
   :long
   (xdoc::topstring
@@ -134,23 +136,26 @@
      If the definition has no free variables,
      we generate a @(tsee defun).
      Otherwise, we generate a @(tsee defun-sk)
-     with those free variables existentially quantified.")
+     with those free variables existentially quantified.
+     (More precisely, we generate @(tsee defund) or @tsee defund-sk).")
    (xdoc::p
-    "The existential quantification seems the ``right'' semantics
-     for the free variables in a relation definition,
+    "The existential quantification is the right semantics
+     for the free variables in a relation's definition,
      based on the intended use of these constraints in zero-knowledge proofs.
-     However, note that the quantification is avoided
+     However, the quantification is avoided
      if all the variables in the body are treated as parameters."))
   (b* (((definition def) def)
        ((when (member-eq prime def.para))
         (raise "The definition parameters ~x0 of ~x1 ~
                 include the prime variable ~x2."
-               def.para def.name prime))
+               def.para def.name prime)
+        '(_))
        (free (definition-free-vars def))
        ((when (member-eq prime free))
         (raise "The free variables ~x0 of ~x1 ~
                 include the prime variable ~x2."
-               free def.name prime))
+               free def.name prime)
+        '(_))
        (body `(and ,@(sesem-constraint-list def.body prime))))
     (if free
         `(defund-sk ,def.name (,@def.para ,prime)
@@ -161,7 +166,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sesem-system ((sys systemp) (prime symbolp))
-  :returns events
+  :returns (events pseudo-event-form-listp)
   :short "Shallowly embedded semanics of a system of constraints."
   :long
   (xdoc::topstring

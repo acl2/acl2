@@ -24,7 +24,13 @@
                          int
                          maybe-natp
                          nat
+                         pseudo-event-formp
+                         pseudo-event-form-listp
                          symbol-fix
                          symbol-list
+                         dm::primep
+                         pfield::add
                          pfield::fep
-                         pfield::fe-listp)))
+                         pfield::fe-listp
+                         pfield::inv
+                         pfield::mul)))

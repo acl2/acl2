@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -115,7 +115,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| |g| |h| |i| |j| |k| :output-file "assign.c")
+(c::atc |f| |g| |h| |i| |j| |k| :file-name "assign" :header t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -135,7 +135,7 @@
                 |x|)))
      (c::add-uint-uint |x| |y|)))
  (must-fail
-  (c::atc |foo| :output-file "foo.c" :proofs nil)))
+  (c::atc |foo| :file-name "foo" :proofs nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -152,7 +152,7 @@
                 |x|)))
      (c::add-uint-uint |x| (c::uint-dec-const 7))))
  (must-fail
-  (c::atc |foo| :output-file "foo.c")))
+  (c::atc |foo| :file-name "foo")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -173,4 +173,4 @@
                   |x|)))
        (c::bitand-sint-sint |x| |y|))))
  (must-fail
-  (c::atc |foo| :output-file "foo.c" :proofs nil)))
+  (c::atc |foo| :file-name "foo" :proofs nil)))

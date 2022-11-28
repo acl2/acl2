@@ -56,6 +56,7 @@
 (include-book "orelse")
 (include-book "oset-theorems")
 (include-book "osets")
+(include-book "print-levels")
 (include-book "proof-builder-macros")
 (include-book "signed-byte-fixing")
 (include-book "signed-byte-list-fixing")

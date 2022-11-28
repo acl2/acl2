@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "DM")
 
 ;; This book contains proofs of two theorems of Euclid:
 
@@ -7,6 +7,7 @@
 ;;   (2) If p is a prime divisor of a*b, then p divides either a or b.
 
 (include-book "std/util/defrule" :dir :system)
+(include-book "../portcullis")
 
 (include-book "rtl/rel11/support/basic" :dir :system) ;; Properties of fl and mod
 (include-book "rtl/rel11/support/util" :dir :system)  ;; Utility macros
@@ -85,7 +86,7 @@
                   (not (= n 0)))
 	     (iff (divides n (- a b))
 		  (= (mod a n) (mod b n))))
-  :use (mod-equal-int mod-equal-int-reverse)
+  :use (rtl::mod-equal-int rtl::mod-equal-int-reverse)
   :rule-classes ())
 
 (defthm divides-mod-0
@@ -400,4 +401,3 @@
 			(:instance divides-sum (x p) (y (* (r-int p a) p b)) (z (* (s-int p a) a b)))
 			(:instance divides-product (x p) (y (* a b)) (z (s-int p a)))
 			(:instance divides-product (x p) (y p) (z (* b (r-int p a))))))))
-

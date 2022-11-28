@@ -11,7 +11,8 @@
 
 (in-package "C")
 
-(include-book "../execution")
+(include-book "../../language/dynamic-semantics")
+
 (include-book "../types")
 
 (include-book "syntaxp")

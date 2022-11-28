@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -42,6 +42,7 @@
 (include-book "lambda-guard-verified-exec-fnsp")
 (include-book "lambda-guard-verified-fnsp")
 (include-book "lambda-logic-fnsp")
+(include-book "one-way-unify-dollar")
 (include-book "term-guard-obligation")
 (include-book "term-possible-numbers-of-results")
 

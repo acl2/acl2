@@ -1,0 +1,18 @@
+; ABNF (Augmented Backus-Naur Form) Library
+;
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (coglio@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "../portcullis")
+
+; Certification has been observed to fail for semantics.lisp
+; in ACL2(p) with waterfall-parallelism enabled,
+; but the log didn't seem to show why.
+; So we just disable waterfall-parallelism here for now.
+#+acl2-par
+(set-waterfall-parallelism nil)

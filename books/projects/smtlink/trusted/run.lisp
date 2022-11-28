@@ -57,7 +57,7 @@
                 (mv t state)
               (mv (er hard? 'SMT-run=>SMT-interpret "Remove file error.~% ~p0~%" lines-rm)
                   state))))
-         ((mv err str state) (read-string (car lines) :state state))
+         ((mv err str state) (read-string (car lines) nil :state state))
          ((unless (equal err nil))
           (prog2$ (er hard? 'SMT-run=>SMT-interpret "Read-string error.~%~p0~%" err)
                   (mv nil state)))

@@ -51,7 +51,7 @@
 ;(include-book "centaur/svl/portcullis" :dir :system) ; todo: this includes an include-book !
 (include-book "centaur/sv/portcullis" :dir :system)
 (include-book "centaur/truth/portcullis" :dir :system)
-(include-book "centaur/vl2014/portcullis" :dir :system)
+;(include-book "centaur/vl2014/portcullis" :dir :system) ; todo: brings in extra stuff
 (include-book "centaur/vl/portcullis" :dir :system)
 (include-book "coi/adviser/portcullis" :dir :system)
 (include-book "coi/alists/portcullis" :dir :system)
@@ -99,6 +99,7 @@
 (include-book "kestrel/jvm/portcullis" :dir :system)
 (include-book "kestrel/number-theory/portcullis" :dir :system)
 (include-book "kestrel/prime-fields/portcullis" :dir :system)
+(include-book "kestrel/risc-v/portcullis" :dir :system)
 (include-book "kestrel/simpl-imp/portcullis" :dir :system)
 (include-book "kestrel/soft/portcullis" :dir :system)
 (include-book "kestrel/solidity/portcullis" :dir :system)

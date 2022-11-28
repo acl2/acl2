@@ -113,11 +113,12 @@ syntax and features to cover, and we address them in turn.</p>
 
 <p>The formals have many features; see @(see extended-formals).  Besides the
 ordinary extended-formals utilities, they can also include @(':type')
-declarations; see @(see acl2::type-spec).  For instance:</p>
+declarations (see @(see acl2::type-spec)) and XDOC descriptions.  For instance:</p>
 
 @({
   (x oddp :type integer)
   (y evenp :type (integer 0 *))
+  (z stringp \"The name of something.\")
 })
 
 

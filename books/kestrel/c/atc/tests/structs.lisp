@@ -322,4 +322,5 @@
         |write_aggreg_by_value|
         |write_aggreg_by_pointer|
         |write_flex_last|
-        :output-file "structs.c")
+        :file-name "structs"
+        :header t)

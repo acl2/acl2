@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,7 +26,7 @@
      @('CHAR_BIT') bits [C:6.2.6.1/3, Footnote 50],
      which must be at least 8 [C:5.2.4.2.1].")
    (xdoc::p
-    "Our C formalization is paramterized
+    "Our C formalization is parameterized
      over the specific value of @('CHAR_BIT')."))
   :order-subtopics t
   :default-parent t)

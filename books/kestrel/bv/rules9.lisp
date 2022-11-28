@@ -36,7 +36,7 @@
          (bvchop size x))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-(defthm getbit-of-bvplus-tighten-to-32
+(defthmd getbit-of-bvplus-tighten-to-32
   (implies (and (< 32 size) ; prevent loops
                 (< n 32)
                 (natp n)

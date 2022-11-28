@@ -49,7 +49,9 @@
 
     (xdoc::codeblock
      "(atc t1 ... tp"
-     "     :output-file     ...  ; no default"
+     "     :output-dir      ...  ; default \".\""
+     "     :file-name       ...  ; no default"
+     "     :header          ...  ; default nil"
      "     :pretty-printing ...  ; default nil"
      "     :proofs          ...  ; default t"
      "     :const-name      ...  ; default :auto"
@@ -101,19 +103,57 @@
        the section `Representation of C Code in ACL2'."))
 
     (xdoc::desc
-     "@(':output-file') &mdash; no default"
+     "@(':output-dir') &mdash; default \".\""
      (xdoc::p
-      "Path of the file where the generated C code goes.")
+      "Path of the directory where the generated C code goes.")
      (xdoc::p
-      "This must be an ACL2 string that is a file path.
-       The path may be absolute,
-       or relative to the current working directory.")
+      "This must be an ACL2 string that is
+       a valid path to an existing directory in the file system;
+       the path may be absolute,
+       or relative to the "
+      (xdoc::seetopic "cbd" "connected book directory")
+      ". The default is the connected book directory."))
+
+    (xdoc::desc
+     "@(':file-name') &mdash; no default"
      (xdoc::p
-      "The directory must exist.
-       The file may or may not exist:
-       if it does not exist, it is created;
-       if it exists, it is overwritten.
-       The file name must include a @('.c') extension."))
+      "Name of the files that contain the generated C code,
+       without the @('.h') or @('.c') extension.")
+     (xdoc::p
+      "This must be a non-empty ACL2 string that consists of
+       ASCII letters, digits, underscores, and dashes.
+       The full names of the generated files are obtained
+       by appending the extension @('.h') or @('.c') to this string.")
+     (xdoc::p
+      "The files are generated
+       in the directory specified by @(':output-dir').
+       The files may or may not exist:
+       if they do not exist, they are created;
+       if they exist, they are overwritten."))
+
+    (xdoc::desc
+     "@(':header') &mdash; default @('nil')"
+     (xdoc::p
+      "Specifies whether a header (i.e. a @('.h') file)
+       should be generated or not.")
+     (xdoc::p
+      "This must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@('t'), to generate a header.")
+      (xdoc::li
+       "@('nil'), to not generate a header."))
+     (xdoc::p
+      "A source file (i.e. a @('.c') file is always generated;
+       the @(':header') input only affects the generation of the header.")
+     (xdoc::p
+      "If ATC is used to generate C code that is not standalone
+       but is meant to be called by external C code,
+       the @(':header') input should be @('t'),
+       so that the external C code can include the header.
+       If ATC is used to generate standalone C code,
+       presumably including a function called @('main') with appropriate types,
+       then @(':header') input should be @('nil')."))
 
     (xdoc::desc
      "@(':pretty-printing') &mdash; default @('nil')"
@@ -198,11 +238,24 @@
     "Representation of C Code in ACL2"
 
     (xdoc::p
-     "Currently ATC supports the ACL2 representation of a single C file.
-      This file consists of
+     "Currently ATC supports the ACL2 representation of a single source file,
+      optionally accompanied by a header (based on the @(':header') input).
+      If @(':header') is @('nil'),
+      the source file consists of
       one or more C function definitions,
-      zero or more C external object definitions,
-      and zero or more C structure type declarations.")
+      zero or more C external object declarations,
+      and zero or more C structure type declarations.
+      If @(':header') is @('t'),
+      the header consists of
+      one or more function declarations,
+      zero or more C external object declarations without initializers,
+      and zero or more C structure type declarations,
+      while the source file consists of
+      one or more function definitions
+      and zero or more C external object declarations with initializers,
+      corresponding to
+      the function declarations and the external object declarations
+      in the header.")
 
     (xdoc::p
      "Each C structure type declaration is represented by a @(tsee defstruct),
@@ -213,7 +266,7 @@
       represents the tag of the C structure type.")
 
     (xdoc::p
-     "Each C external object definition is represented by a @(tsee defobject),
+     "Each C external object declaration is represented by a @(tsee defobject),
       whose name is passed as one of the target @('ti') to ATC.
       The symbol name, which is a "
      (xdoc::seetopic "portable-ascii-identifiers" "portable ASCII C identifier")
@@ -221,14 +274,15 @@
       represents the name of the C external object.")
 
     (xdoc::p
-     "Each C function definition is represented by an ACL2 function definition.
+     "Each C function definition (and declaration in the header, if present)
+      is represented by an ACL2 function definition.
       These are the non-recursive target ACL2 functions @('ti') passed to ATC;
       the recursive target ACL2 functions @('ti') passed as inputs
       represent loops in the C functions instead, as explained below.")
 
     (xdoc::p
      "The order of the C structure types and external objects and functions
-      in the file
+      in the files
       is the same as the order of the corresponding targets
       in the list @('(t1 ... tp)') passed to ATC.")
 
@@ -352,11 +406,11 @@
        The @('<tag>') target must precede @('fn')
        in the list of targets @('(t1 ... tp)').")
      (xdoc::li
-      "@('object-<name>-p x)'),
+      "@('(object-<name>-p x)'),
        where @('<name>') is one of the @(tsee defobject) targets @('ti'),
        representing an access to the external object,
        which must be an explicit formal parameter in functional ACL2,
-       while the C function accesses directly.
+       while the C function accesses it directly.
        The @('<name>') target must precede @('fn')
        in the list of targets @('(t1 ... tp)')."))
     (xdoc::p
@@ -434,7 +488,7 @@
        returning @('T') and affecting no variables,
        @('L') is @('nil'),
        @('T') is a non-@('void') non-pointer type,
-       @('vars') is the list @('(var1 ... varn)') with @('n') &gt; 1.
+       @('vars') is the list @('(var1 ... varn)') with @('n') &ge; 1.
        This represents a C @('return') statement
        whose expression is represented by @('ret');
        the @(tsee mv) and the variables in @('vars') represent no actual C code:
@@ -1400,9 +1454,10 @@
      (xdoc::codeblock
       "(defconst *program* ...)")
      (xdoc::p
-      "where @('...') is the abstract syntax tree of the generated C file,
+      "where @('...') is the abstract syntax tree of the generated C files,
        which ATC also pretty-prints and writes
-       to the path specified by the @(':output-file') input.")
+       to the path(s) specified by
+       the @(':output-dir') and @(':file-name') inputs.")
      (xdoc::p
       "If the @(':proofs') input is @('nil'),
        this constant is not generated."))
@@ -1418,7 +1473,7 @@
       "(defthm *program*-well-formed ...)")
      (xdoc::p
       "where @('...') is an assertion about @('*program*') stating that
-       the generated (abstract syntax tree of the) file
+       the generated (abstract syntax tree of the) files
        is statically well-formed,
        i.e. it compiles according to [C].")
      (xdoc::p
@@ -1457,11 +1512,8 @@
     "Generated C Code"
 
     (xdoc::p
-     "ATC generates a single C file that contains
-      a C function definition
-      or C external object definition
-      or C structure type declaration
-      for each target @('ti') (except recursive target functions),
+     "ATC generates a single source file,
+      optionally accompanied  by a header,
       as explained in Section `Representation of C Code in ACL2'.")
 
     (xdoc::p
@@ -1481,13 +1533,13 @@
        For instance, one can use @('gcc') on macOS or Linux.")
 
      (xdoc::p
-      "Just compiling the generated C file may result in an error
-       due to the lack of a @('main') function in the file.
-       The code generated by ATC is meant to be called by external C code,
-       where presumably a @('main') function will exist.
+      "As mention in the description of the @(':header') input above,
+       if a header is generated, external code should include the header,
+       and the generated source file should be compiled and linked
+       with the external code to obtain a full application.
        To test the generated code,
-       one can write a separate C file with a @('main') function,
-       and compile both files together.
+       one can write a separate source file with a @('main') function,
+       and compile all files together.
        By default, an executable @('a.out') is generated
        (if using @('gcc') on macOS or Linux).")
 

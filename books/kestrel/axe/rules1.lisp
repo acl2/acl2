@@ -51,11 +51,12 @@
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 
-(defthmd even-when-power-of-2-and-at-least-2
-  (implies (and (<= 2 n)
-                (power-of-2p n))
-           (integerp (* 1/2 n)))
-  :hints (("Goal" :in-theory (e/d (power-of-2p natp) (exponents-add)))))
+(local
+ (defthmd even-when-power-of-2-and-at-least-2
+   (implies (and (<= 2 n)
+                 (power-of-2p n))
+            (integerp (* 1/2 n)))
+   :hints (("Goal" :in-theory (e/d (power-of-2p natp) (exponents-add))))))
 
 (local
  ;;gen
@@ -268,32 +269,32 @@
 
 ;dups among rules??: :pl  (unsigned-byte-p 8 (bvcat 8 x 1 y))
 
-(defthmd nth-of-slice-becomes-nth2
-  (implies (and (natp high)
-                (natp low)
-                (<= low high))
-           (equal (nth (slice high low index)  lst)
-                  (nth2 (+ 1 high (- low)) (slice high low index) lst)))
-  :hints (("Goal" :in-theory (enable nth2))))
+;; (defthmd nth-of-slice-becomes-nth2
+;;   (implies (and (natp high)
+;;                 (natp low)
+;;                 (<= low high))
+;;            (equal (nth (slice high low index)  lst)
+;;                   (nth2 (+ 1 high (- low)) (slice high low index) lst)))
+;;   :hints (("Goal" :in-theory (enable nth2))))
 
-(defthmd nth-of-bvchop-becomes-nth2
-  (equal (nth (bvchop size index)  lst)
-         (nth2 size (bvchop size index) lst))
-  :hints (("Goal" :in-theory (enable nth2))))
+;; (defthmd nth-of-bvchop-becomes-nth2
+;;   (equal (nth (bvchop size index)  lst)
+;;          (nth2 size (bvchop size index) lst))
+;;   :hints (("Goal" :in-theory (enable nth2))))
 
-(defthmd nth-of-bvxor-becomes-nth2
-  (implies (and (natp size))
-           (equal (nth (bvxor size x y)  lst)
-                  (nth2 size (bvxor size x y) lst)))
-  :hints (("Goal" :in-theory (enable nth2))))
+;; (defthmd nth-of-bvxor-becomes-nth2
+;;   (implies (and (natp size))
+;;            (equal (nth (bvxor size x y)  lst)
+;;                   (nth2 size (bvxor size x y) lst)))
+;;   :hints (("Goal" :in-theory (enable nth2))))
 
-(defthm nth-of-bvcat-becomes-nth2
-  (implies (and (natp highsize)
-                (natp lowsize)
-                (<= lowsize highsize))
-           (equal (nth (bvcat highsize highval lowsize lowval)  lst)
-                  (nth2 (+ highsize lowsize) (bvcat highsize highval lowsize lowval) lst)))
-  :hints (("Goal" :in-theory (enable nth2))))
+;; (defthmd nth-of-bvcat-becomes-nth2
+;;   (implies (and (natp highsize)
+;;                 (natp lowsize)
+;;                 (<= lowsize highsize))
+;;            (equal (nth (bvcat highsize highval lowsize lowval)  lst)
+;;                   (nth2 (+ highsize lowsize) (bvcat highsize highval lowsize lowval) lst)))
+;;   :hints (("Goal" :in-theory (enable nth2))))
 
 (defthm nth2-becomes-bvnth-for-natps
   (implies (and (all-natp vals)
@@ -349,7 +350,7 @@
   (("Goal"
     :CASES ((<= (BVCHOP INDEXSIZE INDEX) INDEX))
     :IN-THEORY (E/d (NTH2 BVNTH
-                          ALL-INTEGERP-WHEN-ALL-NATP) (NTH-OF-BVCHOP-BECOMES-NTH2)))))
+                          ALL-INTEGERP-WHEN-ALL-NATP) ()))))
 
 ;Thu Mar  4 15:56:21 2010
 ;; (skip -proofs
@@ -396,7 +397,7 @@
   (("Goal"
     :CASES ((<= (BVCHOP INDEXSIZE INDEX) INDEX))
     :IN-THEORY (E/d (NTH2 BVNTH
-                       ALL-INTEGERP-WHEN-ALL-NATP) (NTH-OF-BVCHOP-BECOMES-NTH2)))))
+                       ALL-INTEGERP-WHEN-ALL-NATP) ()))))
 
 ;bbozo gross
 (defthm bvnth-tighten-32-8
@@ -1053,7 +1054,6 @@
                    (and (equal 1 (getbit 0 a)) (not (equal 1 (getbit 0 b)))))
            :in-theory (disable ;GETBIT-WHEN-NOT-0
                        ;;GETBIT-WHEN-NOT-1
-                               NTH-OF-BVCAT-BECOMES-NTH2
                                ))))
 
 (defthmd nth-of-if-arg2

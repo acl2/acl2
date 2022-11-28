@@ -263,7 +263,7 @@
 
 (mutual-recursion
 
-(defun non-recursive-fnnames-alist-rec (term ens wrld acc)
+(defun non-recursive-fnnames-alist-rec (term ens wrld ilk acc)
 
 ; Accumulate, into acc, an alist that associates each enabled non-recursive
 ; function symbol fn of term either with the base-symbol of its most recent
@@ -278,15 +278,60 @@
                               (alistp acc))))
   (cond
    ((variablep term) acc)
-   ((fquotep term) acc)
+   ((fquotep term)
+
+; Below we look for calls of non-recursive functions that may be rewritten by
+; rewrite-lambda-object.  We don't consider the more general rewriting done by
+; rewrite-quoted-constant.  That's because we want our warnings to be
+; appropriate in most cases, yet rewriting of constants other than well-formed
+; lambda objects requires lemmas of class rewrite-quoted-constant, so
+; non-recursive function calls will generally not be opened up.
+
+    (cond ((or (eq ilk :FN?) ; for apply$, from ilks-per-argument-slot
+               (eq ilk :FN))
+           (let ((evg (unquote term)))
+             (cond ((and (not (symbolp evg))
+                         (well-formed-lambda-objectp evg wrld)
+                         (enabled-numep *rewrite-lambda-modep-xnume* ens)
+
+; Without the indicated enabled rule below, we only call
+; clean-up-dirty-lambda-object-body on the lambda-object's body rather than
+; rewriting it.  That same cleaning up takes place, or close enough to it, when
+; processing the rewrite rule; so we don't bother looking to warn here merely
+; for constructs that aren't cleaned up, as we don't expect to see much or any
+; of that.
+
+                         (enabled-numep *rewrite-lambda-modep-def-nume* ens))
+
+; We are ready to rewrite the body of the lambda object.  The present function,
+; non-recursive-fnnames-alist, is called (either directly or by way of
+; non-recursive-fnnames-alist-lst) by chk-rewrite-rule-warnings,
+; chk-acceptable-linear-rule2, chk-triggers, and
+; warned-non-rec-fns-alist-for-tp.  So rules of class :rewrite, :linear,
+; :forward-chaining, and :type-prescription (respectively) will provide
+; suitable warnings for non-recursive functions called within well-formed
+; lambda objects.
+
+                    (non-recursive-fnnames-alist-rec (lambda-object-body evg)
+                                                     ens wrld nil acc))
+                   (t acc))))
+          (t acc)))
    ((flambda-applicationp term)
     (non-recursive-fnnames-alist-rec-lst
-     (fargs term) ens wrld
+     (fargs term) ens wrld nil
      (if (assoc-equal (ffn-symb term) acc)
          acc
        (acons (ffn-symb term) nil acc))))
    (t (non-recursive-fnnames-alist-rec-lst
        (fargs term) ens wrld
+
+; The following call of ilks-per-argument-slot is responsible for considering
+; :FN? above, which it returns as a slot for for apply$.  So it might be nice
+; to have a version of ilks-per-argument-slot that does not make a special case
+; for apply$, using :FN in place of :FN?.  But the resulting trivial runtime
+; benefit and code simplification didn't seem worth making another definition.
+
+       (ilks-per-argument-slot (ffn-symb term) wrld)
        (cond
         ((assoc-eq (ffn-symb term) acc)
          acc)
@@ -304,15 +349,16 @@
                         acc)))
               (t acc)))))))))
 
-(defun non-recursive-fnnames-alist-rec-lst (lst ens wrld acc)
+(defun non-recursive-fnnames-alist-rec-lst (lst ens wrld ilks acc)
   (declare (xargs :guard (and (pseudo-term-listp lst)
                               (enabled-structure-p ens)
                               (plist-worldp wrld)
                               (alistp acc))))
   (cond ((endp lst) acc)
         (t (non-recursive-fnnames-alist-rec-lst
-            (cdr lst) ens wrld
-            (non-recursive-fnnames-alist-rec (car lst) ens wrld acc)))))
+            (cdr lst) ens wrld (cdr ilks)
+            (non-recursive-fnnames-alist-rec (car lst) ens wrld (car ilks)
+                                             acc)))))
 )
 
 (defun non-recursive-fnnames-alist (term ens wrld)
@@ -320,8 +366,7 @@
 ; See non-recursive-fnnames-alist-rec.  (The present function reverses the
 ; result, to respect the original order of appearance of function symbols.)
 
-  (reverse (non-recursive-fnnames-alist-rec term ens wrld nil)))
-
+  (reverse (non-recursive-fnnames-alist-rec term ens wrld nil nil)))
 
 (defun non-recursive-fnnames-alist-lst (lst ens wrld)
 
@@ -329,7 +374,7 @@
 ; terms; it also reverses the result, to respect the original order of
 ; appearance of function symbols.)
 
-  (reverse (non-recursive-fnnames-alist-rec-lst lst ens wrld nil)))
+  (reverse (non-recursive-fnnames-alist-rec-lst lst ens wrld nil nil)))
 
 ; The alist just constructed is odd because it may contain some lambda
 ; expressions posing as function symbols.  We use the following function
@@ -1568,7 +1613,7 @@
                      (:rule-class ,token))
                    token name free-vars
                    inst-hyps
-                   (tilde-*-untranslate-lst-phrase inst-hyps t wrld))
+                   (tilde-*-untranslate-lst-phrase inst-hyps nil t wrld))
          (free-variable-error? token name ctx wrld state)))
        (t (value nil)))
       (pprogn
@@ -1597,8 +1642,8 @@
                     possibility that the free variables of this rewrite rule ~
                     were forced into the conjecture."
                    (if (null (cdr (forced-hyps inst-hyps))) 0 1)
-                   (tilde-*-untranslate-lst-phrase (forced-hyps inst-hyps) t
-                                                   wrld)))
+                   (tilde-*-untranslate-lst-phrase (forced-hyps inst-hyps)
+                                                   nil t wrld)))
         (t state))
        (cond
         ((set-difference-eq rhs-vars lhs-vars)
@@ -3309,7 +3354,7 @@
               ((and free-vars forced-hyps)
                (warning$ ctx "Free"
                          "Forward chaining rule ~x0 has forced (or ~
-                          case-split) ~#1~[hypothesis~/hypotheses~], ~*2, ~
+                          case-split) ~#1~[hypothesis~/hypotheses~], ~*2 ~
                           which will be used to instantiate one or more free ~
                           variables.  We will search for suitable ~
                           instantiations (of the term inside the FORCE or ~
@@ -3336,8 +3381,8 @@
                           were forced into the conjecture."
                          name
                          (if (null (cdr forced-hyps)) 0 1)
-                         (tilde-*-untranslate-lst-phrase forced-hyps t
-                                                         wrld)))
+                         (tilde-*-untranslate-lst-phrase forced-hyps
+                                                         #\, t wrld)))
               (t state))
              (cond
               (non-rec-fns
@@ -10531,16 +10576,29 @@
    (standard-co state)
    state))
 
-(defun pr-fn (name state)
-  (cond ((and (symbolp name)
-              (not (keywordp name)))
+(defun pr-fn (name0 state)
+  (cond ((and (symbolp name0)
+              (not (keywordp name0)))
          (let* ((wrld (w state))
-                (name (deref-macro-name name (macro-aliases wrld)))
-                (numes (strip-cars
-                        (getpropc name 'runic-mapping-pairs nil wrld)))
-                (wrld-segment (world-to-next-event
-                               (cdr (decode-logical-name name wrld)))))
-           (pr-body wrld-segment numes wrld state)))
+                (name (deref-macro-name name0 (macro-aliases wrld))))
+           (cond
+            ((assoc-eq name *primitive-formals-and-guards*)
+             (pprogn
+              (if (eq name name0)
+                  state
+                (fms "~x0 is a macro alias for ~x1."
+                     (list (cons #\0 name0)
+                           (cons #\1 name))
+                     (standard-co state) state nil))
+              (print-undefined-primitive-msg name
+                                             (standard-co state)
+                                             wrld state)
+              (value :invisible)))
+            (t (let* ((numes (strip-cars
+                              (getpropc name 'runic-mapping-pairs nil wrld)))
+                      (wrld-segment (world-to-next-event
+                                     (cdr (decode-logical-name name wrld)))))
+                 (pr-body wrld-segment numes wrld state))))))
         (t (er soft 'pr
                "The argument to PR must be a non-keyword symbol.  Perhaps you ~
                 should use PR! instead."))))
@@ -11015,6 +11073,7 @@
                                           :wonp
                                           :rewritten-rhs
                                           :poly-list
+                                          :pot-lst
                                           :failure-reason
                                           :lemma
                                           :type-alist
@@ -11028,6 +11087,7 @@
         (:wonp '(get-brr-local 'wonp state))
         (:rewritten-rhs '(get-brr-local 'brr-result state))
         (:poly-list '(brr-result state))
+        (:pot-list '(get-brr-local 'pot-list state))
         (:failure-reason '(get-brr-local 'failure-reason state))
         (:lemma '(get-brr-local 'lemma state))
         (:type-alist '(get-brr-local 'type-alist state))

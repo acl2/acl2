@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "ACL2")
 
 (local (include-book "rtl/rel11/lib/top" :dir :system))
 (include-book "calendar")
@@ -26,12 +26,12 @@
 (defthm momentp+
   (implies (and (momentp x) (momentp y))
            (momentp (addtime x y)))
-  :hints (("Goal" :in-theory (enable fl momentp day hour part addtime))))
+  :hints (("Goal" :in-theory (enable rtl::fl momentp day hour part addtime))))
 
 (defthm momentp*
   (implies (and (natp n) (momentp x))
            (momentp (multime n x)))
-  :hints (("Goal" :in-theory (enable fl momentp multime))))
+  :hints (("Goal" :in-theory (enable rtl::fl momentp multime))))
 
 ;; Every molad or delayed-molad is a moment:
 
@@ -82,16 +82,16 @@
            (equal (expand (addtime x y))
 	          (+ (expand x) (expand y))))
   :hints (("Goal" :in-theory (enable momentp addtime expand)
-                  :use ((:instance mod-def (x (+ (part x) (part y))) (y 1080))
-		        (:instance mod-def (x (+ (hour x) (hour y) (fl (/ (+ (part x) (part y)) 1080)))) (y 24))))))
+                  :use ((:instance rtl::mod-def (x (+ (part x) (part y))) (y 1080))
+		        (:instance rtl::mod-def (x (+ (hour x) (hour y) (fl (/ (+ (part x) (part y)) 1080)))) (y 24))))))
 
 (defthmd expand*
   (implies (and (natp m) (momentp x))
            (equal (expand (multime m x))
 	          (* m (expand x))))
   :hints (("Goal" :in-theory (enable momentp multime expand)
-                  :use ((:instance mod-def (x (* m (part x))) (y 1080))
-		        (:instance mod-def (x (+ (* m (hour x)) (fl (/ (* m (part x)) 1080)))) (y 24))))))
+                  :use ((:instance rtl::mod-def (x (* m (part x))) (y 1080))
+		        (:instance rtl::mod-def (x (+ (* m (hour x)) (fl (/ (* m (part x)) 1080)))) (y 24))))))
 
 ;; molad-loop-0 decomposition:
 
@@ -190,13 +190,13 @@
   (implies (posp y)
            (equal (mod (1- y) 19)
 	          (mod (1- (mod y 19)) 19)))
-  :hints (("Goal" :use ((:instance mod-sum (a -1) (b y) (n 19))))))
+  :hints (("Goal" :use ((:instance rtl::mod-sum (a -1) (b y) (n 19))))))
 
 (defthmd mod-y+1
   (implies (posp y)
            (equal (mod (1+ y) 19)
 	          (mod (1+ (mod y 19)) 19)))
-  :hints (("Goal" :use ((:instance mod-sum (a 1) (b y) (n 19))))))
+  :hints (("Goal" :use ((:instance rtl::mod-sum (a 1) (b y) (n 19))))))
 
 ;; Thus, years y and yt have the same length under the following conditions:
 
@@ -232,7 +232,7 @@
            (equal (monthsinyear (+ k (mod y 19)))
 	          (monthsinyear (+ k y))))
   :hints (("Goal" :in-theory (e/d (monthsinyear leap) (ACL2::MOD-SUMS-CANCEL-1))
-                  :use ((:instance mod-sum (a k) (b y) (n 19))))))
+                  :use ((:instance rtl::mod-sum (a k) (b y) (n 19))))))
 
 (defthmd monthsinyear-sum-mod
   (implies (and (natp y) (< y 19))
@@ -244,8 +244,8 @@
 	             (monthsinyear (+ y 15)) (monthsinyear (+ y 16)) (monthsinyear (+ y 17))
 	             (monthsinyear (+ y 18)))
 		  235))
-  :hints (("Goal" :in-theory (enable bvecp)
-                  :use ((:instance bvecp-member (x y) (n 5))))))
+  :hints (("Goal" :in-theory (enable rtl::bvecp)
+                  :use ((:instance rtl::bvecp-member (x y) (n 5))))))
 
 (defthmd monthsinyear-sum
   (implies (natp y)
@@ -344,7 +344,7 @@
 	          (if (integerp (/ y 689472))
 		      (yearlength 689472)
 		    (yearlength (mod y 689472)))))
-  :hints (("Goal" :use ((:instance mod-def (x y) (y 689472))
+  :hints (("Goal" :use ((:instance rtl::mod-def (x y) (y 689472))
                         (:instance yearlength-equal-mul (y (mod y 689472)) (k (fl (/ y 689472))))
                         (:instance yearlength-equal-mul (y 689472) (k (1- (/ y 689472))))))))
 
@@ -413,8 +413,8 @@
                   :use (yearlength-equal-mod
                         (:instance check-small-yearlength (y 689472))
 			(:instance check-small-yearlength (y (mod y 689472)))
-			(:instance mod-of-mod (x y) (k 36288) (n 19))
-			(:instance mod-0-int (m y) (n 19))))))
+			(:instance rtl::mod-of-mod (x y) (k 36288) (n 19))
+			(:instance rtl::mod-0-int (m y) (n 19))))))
 
 
 ;;-----------------------------------------------------------------------------------------------------------
@@ -550,9 +550,9 @@
 		  :nonlinearp t
 		  :cases ((= (earlier (molad y) 18 0) 0))
                   :use (momentp-molad
-		        (:instance fl-unique (x (/ (part (molad y)) 1080)) (n 0))
-		        (:instance fl-unique (x (/ (+ (hour (molad y)) 6) 24)) (n 1))
-		        (:instance fl-unique (x (/ (+ (hour (molad y)) 6) 24)) (n 0))))))
+		        (:instance rtl::fl-unique (x (/ (part (molad y)) 1080)) (n 0))
+		        (:instance rtl::fl-unique (x (/ (+ (hour (molad y)) 6) 24)) (n 1))
+		        (:instance rtl::fl-unique (x (/ (+ (hour (molad y)) 6) 24)) (n 0))))))
 
 ;; This bound is required for year lengths 353, 354, and 383:
 

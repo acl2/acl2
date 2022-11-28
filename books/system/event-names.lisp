@@ -126,7 +126,7 @@
  Example:
 
  ACL2 !>(defmacro with-output-off (form)
-          `(with-output :off :all ,form))
+          `(with-output :off :all :gag-mode t ,form))
 
  Summary
  Form:  ( DEFMACRO WITH-OUTPUT-OFF ...)

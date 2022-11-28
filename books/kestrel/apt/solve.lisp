@@ -30,6 +30,7 @@
 (include-book "kestrel/soft/defun-inst" :dir :system)
 (include-book "kestrel/soft/defthm-inst" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "kestrel/std/system/fsublis-fn" :dir :system)
 (include-book "kestrel/std/system/if-tree-leaf-terms" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/runes" :dir :system)

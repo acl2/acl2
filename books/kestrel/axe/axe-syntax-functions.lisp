@@ -241,9 +241,9 @@
 ;; DAG-ARRAY is the entire DAG
 ;; If term2 is a call of FN, it should not be commuted (that would mess up associativity)
 ;; Also, TERM1 should not be a call to FN?
-;example of use: (axe-syntaxp (should-commute-args-dag 'bvxor x y dag-array)) <- note that the FN is quoted
+;example of use: (axe-syntaxp (should-commute-axe-argsp 'bvxor x y dag-array)) <- note that the FN is quoted
 ;bozo should we check that a bvuminus has the same size as the enclosing bvplus before ignoring the bvuminus?
-(defund should-commute-args-dag (quoted-fn term1 term2 dag-array)
+(defund should-commute-axe-argsp (quoted-fn term1 term2 dag-array)
   (declare (xargs :guard (and (or (myquotep term1)
                                   (and (natp term1)
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term1))))
@@ -267,7 +267,7 @@
       (let ((expr2 (aref1 'dag-array dag-array term2)))
         (if (not (and (myquotep quoted-fn)
                       (symbolp (unquote quoted-fn))))
-            (er hard? 'should-commute-args-dag "Bad fn argument: ~x0." quoted-fn)
+            (er hard? 'should-commute-axe-argsp "Bad fn argument: ~x0." quoted-fn)
           (let ((fn (unquote quoted-fn)))
             (if (call-of fn expr2)
                 nil ;IF TERM2 is a call to FN, commuting it forward will mess up the associativity, so refrain. (FFIXME check the size too?  otherwise, this will not apply to a bvplus 64 nest when an argument is a bvplus 32, even though associativity would not apply when one size is 32 and the other is 64)
@@ -281,9 +281,9 @@
                 (< term2 term1)))))))))
 
 ;move?
-;same as should-commute-args-dag except it puts bigger nodenums first (matches what simplify-bitxors does)
+;same as should-commute-axe-argsp except it puts bigger nodenums first (matches what simplify-bitxors does)
 ;ffixme maybe we should always put bigger nodenums first and so always just use this?
-(defund should-commute-args-increasing-dag (quoted-fn term1 term2 dag-array)
+(defund should-commute-axe-args-increasingp (quoted-fn term1 term2 dag-array)
   (declare (xargs :guard (and (or (myquotep term1)
                                   (and (natp term1)
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term1))))
@@ -309,9 +309,8 @@
       (let ((expr2 (aref1 'dag-array dag-array term2)))
         (if (not (and (myquotep quoted-fn)
                       (symbolp (unquote quoted-fn))))
-            (er hard? 'should-commute-args-increasing-dag "Bad fn argument: ~x0." quoted-fn)
+            (er hard? 'should-commute-axe-args-increasingp "Bad fn argument: ~x0." quoted-fn)
           (let ((fn (unquote quoted-fn)))
-
             (if (call-of fn expr2)
                 nil ;IF TERM2 is a call to FN, commuting it forward will mess up the associativity, so refrain.
               ;; If term2 isn't a call to FN (TERM1 shouldn't be one because of associativity), then just compare the nodenums (but first strip off invisible fns)

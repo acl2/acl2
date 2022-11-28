@@ -826,10 +826,12 @@ No longer needed.
                    (acl2-count x))
                 (< (acl2-count (car x))
                    (acl2-count x)))))
+
 (defthm termination-tree-enum-dec
   (implies (< (acl2-count x1) (acl2-count x2))
            (and (< (acl2-count (car x1)) (acl2-count x2))
                 (< (acl2-count (cdr x1)) (acl2-count x2)))))
+
 (defthm terminination-tree-enum-nth
   (<= (acl2-count (nth i x))
       (acl2-count x))
@@ -978,8 +980,6 @@ The corresponding rules do not seem to help, at all.
                :enumerator nth-proper-cons-builtin
                :enum/acc nth-proper-cons-uniform-builtin
                :predicate proper-consp)
-
-
 
 (defdata nat-list (listof nat))
 (defdata non-empty-nat-list (cons nat nat-list))
@@ -1475,11 +1475,18 @@ The corresponding rules do not seem to help, at all.
                :enumerator nth-all-but-zero-nil-t-builtin
                :predicate all-but-zero-nil-tp)
 
+(defun all-but-nilp (x)
+  (declare (xargs :guard t))
+  (not (equal x 'nil)))
             
 (defun nth-wf-key-builtin (n) ;;since nth-all-but-zero-nil-t has strings of length less than 8, it cannot include the ill-formed-key
   (declare (xargs :guard (natp n)))
   (declare (xargs :mode :program))
   (nth-all-but-zero-nil-t n))
+
+(defun wf-keyp (x)
+  (declare (xargs :guard t))
+  (all-but-nilp x))
 
 (register-custom-type wf-key t nth-wf-key-builtin wf-keyp)
 
@@ -1491,20 +1498,19 @@ The corresponding rules do not seem to help, at all.
 ;;        (good-map x)))
 
 
-(defun all-but-nilp (x)
-  (declare (xargs :guard t))
-  (not (equal x 'nil)))
-
 ; TODO: this is a major hiccup of our map and record implementation, disallowing nil explicitly!!
-;; (register-data-constructor (non-empty-good-map mset)
+;; (register-data-constructor (non-empty-good-map s)
 ;;                            ((wf-keyp caar) (all-but-nilp cdar) (good-map cdr))
 ;;                            :proper nil)
 
 
-(register-data-constructor (good-map mset)
-                           ((wf-keyp caar) (allp cdar) (good-map cdr))
-                           :hints (("Goal" :in-theory (enable good-map)))
+#|
+; This isn't going to go through since I don't want to allow nil as key
+(register-data-constructor (rcdp s)
+                           ((wf-keyp caar) (wf-keyp cdar) (rcdp cdr))
+                           :hints (("Goal" :in-theory (enable rcdp)))
                            :proper nil)
+|#
 
 (defun nth-all-but-nil-builtin (n)
   (declare (xargs :mode :program))

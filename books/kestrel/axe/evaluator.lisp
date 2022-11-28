@@ -541,7 +541,7 @@
                          (bvxor-list bvxor-list-unguarded arg1 arg2 arg3))
                        (acons 4
                               '((update-subrange update-subrange arg1 arg2 arg3 arg4) ;new
-                                ;(bv-array-write-nest-with-val-at-index bv-array-write-nest-with-val-at-index arg1 arg2 arg3 arg4)
+                                ;(bv-array-write-nest-with-val-at-indexp-axe bv-array-write-nest-with-val-at-indexp-axe arg1 arg2 arg3 arg4)
                                 (update-nth2 update-nth2 arg1 arg2 arg3 arg4)
                                 (bv-array-clear bv-array-clear arg1 arg2 arg3 arg4)
                                 (bvcat bvcat-unguarded arg1 arg2 arg3 arg4)

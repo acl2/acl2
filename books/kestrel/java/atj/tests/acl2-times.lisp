@@ -17,8 +17,8 @@
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
-; (depends-on "../../../abnf/core-rules.abnf")
-; (depends-on "../../../abnf/concrete-syntax-rules.abnf")
+; (depends-on "../../../abnf/notation/core-rules.abnf")
+; (depends-on "../../../abnf/notation/concrete-syntax-rules.abnf")
 ; (depends-on "../../../abnf/examples/uri.abnf")
 ; (depends-on "../../../abnf/examples/http.abnf")
 ; (depends-on "../../../abnf/examples/imf.abnf")
@@ -286,11 +286,11 @@
 (progn
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/core-rules.abnf" state)
+     (get-input-from-file "../../../abnf/notation/core-rules.abnf" state)
      (value `(defconst *abnf-core* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/concrete-syntax-rules.abnf" state)
+     (get-input-from-file "../../../abnf/notation/concrete-syntax-rules.abnf" state)
      (value `(defconst *abnf-syntax* ',nats))))
   (make-event
    (mv-let (nats state)

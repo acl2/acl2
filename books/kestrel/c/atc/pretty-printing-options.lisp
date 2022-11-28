@@ -41,3 +41,12 @@
      The meaning of this is explained in more detail
      in the user documentation and in the pretty-printer."))
   ((parenthesize-nested-conditionals bool)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-pprint-options ()
+  :returns (irr pprint-options-p)
+  :short "An irrelevant value of pretty-printing options."
+  (make-pprint-options :parenthesize-nested-conditionals nil)
+  ///
+  (in-theory (disable (:e irr-pprint-options))))

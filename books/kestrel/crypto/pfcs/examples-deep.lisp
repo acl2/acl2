@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,7 +15,7 @@
 
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 
-(local (in-theory (disable rtl::primep)))
+(local (in-theory (disable primep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,7 +27,7 @@
 ; using the PFCS deeply embedded semantics.
 
 ; These are simple examples for now,
-; but they should demonstrate how PFCS can support
+; but they should demonstrate how PFCSes can support
 ; the modular verification of hierarchical gadgets.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -43,14 +43,14 @@
           (expression-var b-var))
    :right (expression-const 0)))
 
-(define spec-boolean ((b (fep b p)) (p rtl::primep))
+(define spec-boolean ((b (fep b p)) (p primep))
   :returns (yes/no booleanp)
   (declare (ignore p))
   (or (equal b 0)
       (equal b 1)))
 
 (defruled constraint-boolean-to-spec-boolean
-  (implies (and (rtl::primep p)
+  (implies (and (primep p)
                 (symbolp b-var)
                 (fep b p))
            (iff (constraint-satp (omap::update b-var b nil)

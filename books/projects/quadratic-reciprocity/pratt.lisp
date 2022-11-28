@@ -2,7 +2,7 @@
 ;; david@russinoff.com
 ;; http://www.russinoff.com
 
-(in-package "RTL")
+(in-package "DM")
 
 (include-book "euclid")
 (include-book "fermat")

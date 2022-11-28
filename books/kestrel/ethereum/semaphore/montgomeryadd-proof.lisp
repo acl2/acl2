@@ -1,6 +1,6 @@
 ; Ethereum Semaphore Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -210,7 +210,7 @@
 ; We prove that CIRCOM implies SPEC, which, as noted above,
 ; amounts to dividing both sides of an equality.
 ; We do not really have an explicit way to tell ACL2 to do that:
-; we take a prime field rule and instantiate accordingly.
+; we take a prime field rule and instantiate it accordingly.
 
 (defruled circom-implies-spec
   (implies (and (precond x1 y1 x2 y2 x3 y3)
@@ -276,7 +276,7 @@
            montgomery-add
            (:e baby-jubjub-prime))
   :disable pfield::move-negation-1
-  :use (:instance PFIELD::EQUAL-OF-MUL-CANCEL
+  :use (:instance pfield::equal-of-mul-cancel
         (y (lambda-witness x1 y1 x2 y2))
         (z (pfsub x2 x1))
         (x (pfsub y2 y1))

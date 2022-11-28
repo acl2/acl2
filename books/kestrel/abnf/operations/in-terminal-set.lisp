@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "../semantics")
+(include-book "../notation/semantics")
 
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
 (include-book "kestrel/utilities/osets" :dir :system)
@@ -201,7 +201,8 @@
           denote values in a set."
   (rule-in-termset-p x termset)
   :true-listp nil
-  :elementp-of-nil :unknown
+  :elementp-of-nil t
+  :prepwork ((local (in-theory (enable rule-in-termset-p))))
   ///
 
   (defrule alternation-in-termset-p-of-lookup-rulename
@@ -251,7 +252,8 @@
   :short "Check if a string consists of terminals in a set and rule names."
   (symbol-in-termset-p x termset)
   :true-listp nil
-  :elementp-of-nil :unknown
+  :elementp-of-nil t
+  :prepwork ((local (in-theory (enable symbol-in-termset-p))))
   ///
 
   (defrule string-in-termset-p-when-nat-listp

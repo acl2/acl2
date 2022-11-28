@@ -12088,41 +12088,11 @@
   :hints (("Goal" :use (:instance bvlt-of-bvmult-of-expt-arg3 (k y) (lowsize (lg k)))
            :in-theory (disable bvlt-of-bvmult-of-expt-arg3))))
 
-(defthm append-of-take-and-subrange-alt
-  (implies (and (natp n)
-                (< m n) ;gen?
-                (natp m))
-           (equal (append (take m x) (subrange m n x) y)
-                  (append (take (+ 1 n) x) y)))
-  :hints (("Goal" :use (:instance append-of-take-and-subrange)
-           :in-theory (e/d (;list::car-append list::cdr-append LIST::NTH-APPEND
-                            )
-                           (append-of-take-and-subrange
-                            ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
-                            )))))
-
-(DEFTHM APPEND-SUBRANGE-SUBRANGE-ADJACENT-alt
-  (IMPLIES (AND (< E2 (LEN LST))
-                (EQUAL S2 (+ 1 E1))
-                (<= S1 E1)
-                (<= S2 E2)
-                (NATP E1)
-                (NATP S1)
-                (NATP S2)
-                (NATP E2))
-           (EQUAL (APPEND (SUBRANGE S1 E1 LST) (SUBRANGE S2 E2 LST) y)
-                  (append (SUBRANGE S1 E2 LST) y)))
-  :hints (("Goal" :in-theory (enable  ;LIST::EQUAL-APPEND-REDUCTION!-ALT ;why isn't the non-alt one enough?
-                              equal-of-append
-                                      ))))
-
 (defthm equal-of-+-of-unary-minus
   (implies (and (acl2-numberp x)
                 (acl2-numberp y))
            (equal (equal '0 (binary-+ x (unary-- y)))
                   (equal y x))))
-
-
 
 ;see LIST::NTHCDR-WHEN-<=
 ;seemed quite slow!  do we need it?
@@ -15428,19 +15398,6 @@
             (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN LOWINDEX INDEX1 LST)))
   :hints (("Goal" :in-theory (enable ARRAY-WRITE-of-0))))
 
-;move
-(defthm subrange-of-repeat
-  (implies (and (< end n)
-;                (<= start end)
-                (natp start)
-                (natp end)
-                (natp n))
-           (equal (subrange start end (repeat n x))
-                  (repeat (+ 1 (- end start)) x)))
-  :hints (("Goal" :in-theory (e/d (subrange repeat)
-                                  (;anti-subrange
-                                   )))))
-
 (theory-invariant (incompatible (:rewrite equal-of-repeat-of-len-same) (:rewrite all-equal$-when-true-listp)))
 
 ;gen!
@@ -16732,6 +16689,7 @@
                                           val lst)))))
   :hints (("Goal" :use (:instance cdr-of-bv-array-write-better (lst (cons x lst))))))
 
+;move
 (defthm update-subrange-from-end
   (implies (and (natp end)
                 (true-listp lst) ;drop?
@@ -17167,20 +17125,6 @@
            (equal (equal (bv-array-read ELEMENT-SIZE LEN INDEX1 DATA) (bv-array-read ELEMENT-SIZE LEN INDEX2 DATA))
                   t)))
 
-;fixme could combine with the regular rule..
-(defthm take-of-subrange-too-big
-  (implies (and (< (+ 1 (- end start)) i)
-                (natp start)
-                (natp end)
-                (natp i))
-           (equal (take i (subrange start end lst))
-                  (if (< end (nfix start))
-                      (repeat i nil)
-                    ;;usual case:
-                    (append (subrange start end lst)
-                            (repeat (- i (+ 1 (- end start)))
-                                    nil))))))
-
 ;move?
 ;use defforall?
 (defthm all-unsigned-byte-p-of-subrange
@@ -17225,8 +17169,6 @@
                     (or (equal i 0)
                         (< (+ start i -1) (len x)))))))
 
-
-
 ;; ;gen the 1 that gets added
 ;; (thm
 ;;  (implies (not (equal (bvchop 31 x) (+ -1 (expt 2 31))))
@@ -17248,9 +17190,8 @@
 ;;   :rule-classes ((:linear))
 ;;   )
 
-
 ;used below
-(defthmd <-of-+-and-0
+(defthmd not-<-of-+-and-0
   (implies (and (<= 0 x)
                 (<= 0 y))
            (not (< (+ x y) 0))))
@@ -17267,7 +17208,7 @@
            :use ((:instance bvchop-identity (size 31) (i (+ K (MOD X (BVCHOP 31 Y)))))
                  (:instance bvchop-identity (size 31) (i (+ K x)))
                  (:instance bvchop-identity (size 32) (i (+ K x))))
-           :in-theory (e/d (bvmod bvplus bvlt <-of-+-and-0)
+           :in-theory (e/d (bvmod bvplus bvlt not-<-of-+-and-0)
                            ( ;SIMPLIFY-MOD-+-MOD ;fixme improve
                             bvchop-identity
                             BVCHOP-DOES-NOTHING-REWRITE
@@ -17319,8 +17260,6 @@
   :hints (("Goal" :in-theory (e/d (bv-array-write-opener
                                    update-nth2
                                    bvplus) (update-nth-becomes-update-nth2-extend-gen)))))
-
-
 
 (defthm <-of-bvchop-when-<-of-bvchop-smaller
   (implies (and (< k (bvchop freesize x))

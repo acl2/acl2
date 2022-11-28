@@ -154,7 +154,7 @@
 ;;                                    UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
 (defthmd myif-of-bv-array-write-arg1-safe
-  (implies (and (axe-syntaxp (bv-array-write-nest-ending-inp thenpart lst dag-array))
+  (implies (and (axe-syntaxp (bv-array-write-nest-ending-inp-axe thenpart lst dag-array))
                 (< key len)
                 (all-unsigned-byte-p element-size thenpart) ;i guess we do need this...
                 (natp key)
@@ -172,7 +172,7 @@
                      )))))
 
 (defthmd myif-of-bv-array-write-arg2-safe
-  (implies (and (axe-syntaxp (bv-array-write-nest-ending-inp thenpart lst dag-array))
+  (implies (and (axe-syntaxp (bv-array-write-nest-ending-inp-axe thenpart lst dag-array))
                 (all-unsigned-byte-p element-size thenpart)
                 (natp key)
                 (equal len (len lst))
@@ -233,7 +233,7 @@
                                    )))))
 
 (defthmd bv-array-write-does-nothing-cheap
-  (implies (and (axe-syntaxp (bv-array-write-nest-with-val-at-index lst val key dag-array)) ;this seemed very expensive in one situation (but it was because of huge bv-array-write nests due to some problem -- not this rule's fault)
+  (implies (and (axe-syntaxp (bv-array-write-nest-with-val-at-indexp-axe lst val key dag-array)) ;this seemed very expensive in one situation (but it was because of huge bv-array-write nests due to some problem -- not this rule's fault)
                 ;; this can be expensive, so we only do it when the test above indicates that it will succeed:
                 (equal val (bv-array-read element-size len key lst))
                 (equal len (len lst))

@@ -17,6 +17,7 @@
 (include-book "split-chars-repeatedly")
 (include-book "split-string")
 (include-book "split-string-repeatedly")
+(include-book "split-string-last")
 (include-book "reverse")
 (include-book "parse-binary-digits")
 (include-book "parse-decimal-digits")
@@ -25,4 +26,5 @@
 (include-book "add-prefix-to-strings")
 (include-book "strcar")
 (include-book "strcdr")
+(include-book "strnthcdr")
 (include-book "subseq")

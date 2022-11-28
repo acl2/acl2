@@ -1899,7 +1899,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             the following nested sequence of included books (outermost~%~
             to innermost):~%~{  ~a~%~}~;.~]"
            name
-           (book-name-to-filename (caar stk) project-dir-alist ctx)
+           (book-name-to-filename-1 (caar stk) project-dir-alist ctx)
            (null (cdr stk))
            (book-name-lst-to-filename-lst
             (reverse-strip-cars stk nil)
@@ -6261,6 +6261,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       l
     (last (cdr l))))
 
+(defun last-cdr (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      x
+    (cdr (last x))))
+
+(defthm last-cdr-is-nil
+  (implies (true-listp x)
+           (equal (last-cdr x) nil)))
+
 (defun first-n-ac (i l ac)
   (declare (type (integer 0 *) i)
            (xargs :guard (and (true-listp l)
@@ -8130,7 +8140,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq (car x) 'quote)
          (and (consp (cdr x))
               (null (cdr (cdr x)))))
-        ((not (true-listp x)) nil)
         ((not (pseudo-term-listp (cdr x))) nil)
         (t (or (symbolp (car x))
 
@@ -8156,6 +8165,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (pseudo-term-listp (cdr lst))))))
 
 )
+
+(defthm pseudo-termp-consp-forward
+    (implies (and (pseudo-termp x)
+		  (consp x))
+	     (true-listp x))
+  :hints (("Goal" :expand ((pseudo-termp x))))
+  :rule-classes :forward-chaining)
 
 (defthm pseudo-term-listp-forward-to-true-listp
   (implies (pseudo-term-listp x)
@@ -11655,7 +11671,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (equal (length x) 2)
               (integerp (cadr x))
               (> (cadr x) 0))
-         (list 'signed-byte-p (cadr x) var))
+         (list 'signed-byte-p (kwote? tflg (cadr x)) var))
         ((eq x 'unsigned-byte)
          (translate-declaration-to-guard/integer-gen 0 var '* tflg))
         ((and (consp x)
@@ -11664,7 +11680,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (equal (length x) 2)
               (integerp (cadr x))
               (> (cadr x) 0))
-         (list 'unsigned-byte-p (cadr x) var))
+         (list 'unsigned-byte-p (kwote? tflg (cadr x)) var))
         ((eq x 'atom) (list 'atom var))
         ((eq x 'character) (list 'characterp var))
         ((eq x 'cons) (list 'consp var))
@@ -13903,7 +13919,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev-lst ; *ev-shortcut-okp*
     allegro-allocate-slowly-fn ; sys:gsgc-parameter
     certify-book-fn ; si::sgc-on
-    translate11-flet-alist1 ; special-form-or-op-p
+    translate11-local-def ; special-form-or-op-p
     include-book-fn1
     include-book-fn
     set-w ; retract-world1, extend-world1, ...
@@ -13979,6 +13995,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     accp-info
     read-file-iterate-safe
     #+acl2-devel plist-worldp-with-formals ; *the-live-state* (performance)
+    set-cbd-fn1
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -28822,6 +28839,10 @@ Lisp definition."
   (declare (xargs :mode :logic :guard t))
   nil)
 
+(defun constant-all-function-arity-0 ()
+  (declare (xargs :mode :logic :guard t))
+  :all)
+
 (encapsulate
   ()
 
@@ -29255,3 +29276,19 @@ Lisp definition."
                              internal-time-units-per-second)
                           state))))
   (read-run-time state))
+
+(defun the-number (x)
+  (declare (xargs :guard (acl2-numberp x)))
+  (mbe :logic (fix x)
+       :exec x))
+
+(defun the-true-list (x)
+  (declare (xargs :guard (true-listp x)))
+  (mbe :logic (true-list-fix x)
+       :exec x))
+
+(defthm acl2-count-car-cdr-linear
+  (implies (consp x)
+	   (equal (acl2-count x)
+		  (+ 1 (acl2-count (car x)) (acl2-count (cdr x)))))
+  :rule-classes :linear)

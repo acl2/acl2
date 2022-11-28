@@ -256,8 +256,8 @@
     "In essence, this generates C code for
      a term used in the initializer of the external object."))
   (b* (((acl2::fun (irrelevant)) (list (irr-expr) (irr-type)))
-       ((er (list okp const out-type) :iferr (irrelevant))
-        (atc-check-iconst term ctx state))
+       ((mv erp okp const out-type) (atc-check-iconst term))
+       ((when erp) (er-soft+ ctx t (irrelevant) "~@0" erp))
        ((when okp)
         (acl2::value
          (list (expr-const (const-int const))
@@ -462,7 +462,6 @@
        (type-arrayp (pack fixtype '-arrayp))
        (type-array-length (pack fixtype '-array-length))
        (type-array-of (pack fixtype '-array-of))
-       (type-dec-const (pack fixtype '-dec-const))
        (recognizer-event
         `(define ,recognizer-name (x)
            :returns (yes/no booleanp)
@@ -473,7 +472,7 @@
            :returns (object ,recognizer-name)
            (,type-array-of ,(if (consp init)
                                 `(list ,@init)
-                              `(repeat ,size (,type-dec-const 0))))))
+                              `(repeat ,size (,fixtype 0))))))
        (info (make-defobject-info :name-ident name-ident
                                   :name-symbol name
                                   :type type

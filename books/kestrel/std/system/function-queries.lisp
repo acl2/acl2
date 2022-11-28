@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -46,6 +46,7 @@
 (include-book "stobjs-in-plus")
 (include-book "stobjs-out-plus")
 (include-book "tail-recursive-p")
+(include-book "termination-theorem-dollar")
 (include-book "ubody")
 (include-book "ubody-plus")
 (include-book "uguard")

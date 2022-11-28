@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "loops.h"
+
 int main(void) {
   printf("%u! = %u\n", 0, f(0));
   printf("%u! = %u\n", 1, f(1));

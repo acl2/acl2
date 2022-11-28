@@ -10,7 +10,7 @@
 
 (in-package "ABNF")
 
-(include-book "../semantics")
+(include-book "../notation/semantics")
 
 (include-book "kestrel/std/strings/letter-chars" :dir :system)
 (include-book "kestrel/std/strings/letter-digit-dash-chars" :dir :system)

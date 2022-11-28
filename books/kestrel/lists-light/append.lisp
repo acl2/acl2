@@ -99,6 +99,14 @@
    (implies (not (equal (len x) (len y)))
             (not (equal x y)))))
 
+;can be improved if we have finalcdr
+;see equal-of-append-same-arg1 in finalcdr.lisp
+(defthm equal-of-append-same-arg1-when-true-listp
+  (implies (true-listp x)
+           (equal (equal x (append x y))
+                  (equal y nil)))
+  :hints (("Goal" :in-theory (enable append))))
+
 (defthm equal-of-append-same-arg2
   (equal (equal y (append x y))
          (not (consp x)))

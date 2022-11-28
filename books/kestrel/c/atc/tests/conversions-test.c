@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "conversions.h"
+
 void f_test(unsigned char x, unsigned char y) {
   int r = f(x, y);
   printf("f(%d, %d) = %d\n", x, y, r);

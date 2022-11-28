@@ -14,7 +14,7 @@
 ;; in which infix.lisp has already been loaded.
 ;; #+akcl (load-base "akcl-patch.lisp")
 
-(in-package "user")
+(in-package "USER")
 
 (format *terminal-io* "Loading the ainfix scribe-init file.")
 

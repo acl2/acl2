@@ -39,7 +39,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection pos-fix
-  :parents (posp)
+  :parents (posp std/basic)
   :short "@(call pos-fix) is a fixing function for @(see posp): it is the
 identity for positive integers, or returns 1 for any other object."
 

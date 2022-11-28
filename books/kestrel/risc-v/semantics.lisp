@@ -22,6 +22,8 @@
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 
+; cert_param: (non-acl2r)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrulel dab-digit-list-of-256-when-ubyte8-listp

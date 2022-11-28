@@ -15,6 +15,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/std/system/fundef-enabledp" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 

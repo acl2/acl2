@@ -13,6 +13,7 @@
 
 (include-book "errors")
 
+(include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 
 ; to generate more typed list theorems:
@@ -345,6 +346,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum scspecseq
+  :short "Fixtype of sequences of storage class specifuers [C:6.7.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A declaration allows a sequence of 0, 1, or 2 storage class specifiers,
+     subject to some constraints.
+     For now we just capture the empty sequence (i.e. no specifiers),
+     and the sequence consisting of the @('extern') specifier."))
+  (:none ())
+  (:extern ())
+  :pred scspecseqp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum obj-declor
   :short "Fixtype of object declarators [C:6.7.6]."
   :long
@@ -552,7 +568,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum expr
-    :parents (atc-abstract-syntax expr-fixtypes)
+    :parents (abstract-syntax expr-fixtypes)
     :short "Fixtype of expressions [C:6.5]."
     :long
     (xdoc::topstring
@@ -640,6 +656,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist expr-list
+    :parents (abstract-syntax expr-fixtypes)
     :short "Fixtype of lists of expressions."
     :elt-type expr
     :true-listp t
@@ -834,24 +851,28 @@
      to differentiate them from other kinds of declarators.")
    (xdoc::p
     "For now we define an object declaration as consisting of
+     a storage class specification sequence,
      a type specification sequence,
      an object declarator,
      and an optional initializer.")
    (xdoc::p
     "For now we model
-     no storage class specifiers
      no type qualifiers,
      no function specifiers,
-     and no alignment specifiers.")
-   (xdoc::p
-    "An object declaration as defined here is like
-     a parameter declaration (as defined in our abstract syntax)
-     with an optional initializer."))
-  ((tyspec tyspecseq)
+     and no alignment specifiers."))
+  ((scspec scspecseq)
+   (tyspec tyspecseq)
    (declor obj-declor)
    (init? initer-optionp))
   :tag :obj-declon
   :pred obj-declonp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption obj-declon-option
+  obj-declon
+  :short "Fixtype of optional object declarations."
+  :pred obj-declon-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1003,9 +1024,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We support declarations for objects
+    "Besides function definitions,
+     we support declarations of
+     functions,
+     objects,
      and tags (i.e. structure, union, and enumeration types."))
   (:fundef ((get fundef)))
+  (:fun-declon ((get fun-declon)))
   (:obj-declon ((get obj-declon)))
   (:tag-declon ((get tag-declon)))
   :pred ext-declonp)
@@ -1038,7 +1063,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult transunit "translation units")
+(fty::defresult transunit-result
+  :short "Fixtype of errors and translation units."
+  :ok transunit
+  :pred transunit-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1058,9 +1086,9 @@
      (which may involve copying contents of included files).
      As discussed in @(see abstract-syntax),
      the purpose of this abstract syntax is to capture the content of files
-     neither before nor after preprocessing.
-     Thus, we use the more ``neutral'' term `file' here,
-     which can capture constructs from both before and after preprocessing.")
+     neither  before nor exactly after preprocessing,
+     but rather that includes construct
+     from both before and after preprocessing.")
    (xdoc::p
     "A file consists of a list of external declarations currently.
      This is actually the same as a translation unit (see @(tsee transunit)),
@@ -1075,3 +1103,51 @@
   ((declons ext-declon-list))
   :tag :file
   :pred filep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption file-option
+  file
+  :short "Fixtype of optional files."
+  :pred file-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod fileset
+  :short "Fixtype of file sets."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A file set is a collection of related files.
+     This is not an explicit notion in [C],
+     but it is a useful one in a language formalization:
+     a program, or a portion of a program,
+     is contained in a set of related files.
+     This notion is not quite the same as that of C program,
+     which, according to [C], is a complete executable application:
+     a library would not qualify as a program in this sense.")
+   (xdoc::p
+    "For now, a file set consists of one or two files (see @(tsee file),
+     namely an optional header and a source file,
+     which have the same name except for the extension.
+     (The preceding sentence uses the terminology in [C:5.1.1/1],
+     which appears to call `headers' the @('.h') files
+     and `source files' the @('.c') files.)
+     The idea is that for now we model (portions of) programs
+     that consist of a single source file,
+     optionally with its own header that is @('#include')d in the source file.
+     We do not explicitly model the @('#include') directive: it is implicit.
+     The @('path-wo-ext') component of this fixtype
+     is the common path of both files without the extension.
+     The @('dot-h') and @('dot-c') components of this fixtype
+     are (the contents of) the @('.h') and @('.c') files,
+     where the first one is optional.")
+   (xdoc::p
+    "In the future, we may extend this notion of file ste
+     to be something like
+     a finite map from file system paths to (contents of) files."))
+  ((path-wo-ext string)
+   (dot-h file-option)
+   (dot-c file))
+  :tag :fileset
+  :pred filesetp)

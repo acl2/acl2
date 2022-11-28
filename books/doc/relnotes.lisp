@@ -127,10 +127,25 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
+
+   (xdoc::p
+    "@(tsee Read-string) and @('read-string-light-fn') now take a required package
+     argument, which can be @('nil') to represent the @(see current-package),
+     thus providing the previous behavior.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
 
    (xdoc::p
-    "The parsing generation tools have been slightly improved.")
+    "The library has been refactored to organize its constituents more clearly.
+     Some parts of the documentation have also been improved and extended
+     in the process of doing this refactoring.")
+
+   (xdoc::p
+    "The parsing generation tools
+     have been significantly extended and improved.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,12 +169,24 @@
    (xdoc::h5 (xdoc::seetopic "c::language" "C Language Formalization"))
 
    (xdoc::p
+    "The language formalization has been simplified
+     and moved out of ATC and into the C formalization proper,
+     i.e. into the deep embedding of C in ACL2,
+     which is now independent from the shallow embedding of C in ACL2.")
+
+   (xdoc::p
     "Support has been added for
      external object definitions (i.e. global variables) of array types.")
 
    (xdoc::p
-    "Some parts of the formalization have been simplified
-     and moved out of ATC and into the C formalization proper.")
+    "Support has been added for structures with flexible array members.")
+
+   (xdoc::p
+    "An initial simple model of preprocessing has been added,
+     along with support for file sets consisting of headers and source files.")
+
+   (xdoc::p
+    "An ABNF grammar for a subset of C has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
@@ -167,11 +194,34 @@
 
    (xdoc::p
     "Support has been added for
-     external object definitions (i.e. global variables) of array types.")
+     external object definitions (i.e. global variables) of array types,
+     via a new @(tsee c::defobject) event macro.")
 
    (xdoc::p
     "The user documentation of @(tsee c::defstruct)
      has been extended and improved.")
+
+   (xdoc::p
+    "The event macro @(tsee c::defstruct) has been extended
+     to support flexible array members.")
+
+   (xdoc::p
+    "Support has been added to represent and generate
+     code that handles structures by value,
+     in addition to by pointer.")
+
+   (xdoc::p
+    "An option to generate header files has been added.
+     The previous keyed option to specify the output file path
+     has been replaced with two keyed options to specify
+     the output directory path and the file name without the extension.")
+
+   (xdoc::p
+    "A new proof generation approach has been started,
+     where smaller, more modular proofs are generated
+     for each generated C construct.
+     This new approach will co-exist with the current one,
+     until the former will replace the latter.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -191,6 +241,44 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
+
+   (xdoc::p
+    "A new utility @(tsee untranslate$) has been added,
+     which is a logic-mode guard-verified version of @(tsee untranslate).
+     See the documentation for details,
+     including functional differences with @(tsee untranslate).")
+
+   (xdoc::p
+    "A new utility @(tsee genvar$) has been added,
+     which is a logic-mode guard-verified version of @(tsee genvar).
+     See the documentation for details,
+     including functional differences with @(tsee genvar).")
+
+   (xdoc::p
+    "A new utility @(tsee one-way-unify$) has been added,
+     which is a logic-mode guard-verified version
+     of the built-in @('one-way-unify').
+     See the documentation for details,
+     including functional differences with @('one-way-unify').")
+
+   (xdoc::p
+    "A new utility @(tsee termination-theorem$) has been added,
+     which is a logic-mode guard-verified version
+     of the built-in @('termination-theorem').
+     See the documentation for details,
+     including functional differences with @('termination-theorem').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/typed-alists"
+                             "Standard Typed Alists Library"))
+
+   (xdoc::p
+    "Some theorems have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
@@ -200,6 +288,20 @@
      an option @(':iferr') to return an alternative value
      in the error triple in case of error.
      See the latest documentation for details.")
+
+   (xdoc::p
+    "New utilities for "
+    (xdoc::seetopic "error-value-tuples" "error-value tuples")
+    " have been added, to facilitate the
+     generation, propagation, and catching of errors
+     in statically strongly typed code that implements tools.")
+
+   (xdoc::p
+    "A new event macro @(tsee defirrelevant) has been added,
+     which automates some of the boilerplate related to
+     defining an irrelevant value of a given type
+     (usable as a dummy value, but of appropriate type).
+     Typically useful for irrelevant values of structured fixtypes.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

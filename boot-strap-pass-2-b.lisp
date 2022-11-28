@@ -486,7 +486,6 @@
  (defwarrant collect$)
  (defwarrant collect$+-ac)
  (defwarrant collect$+)
- (defwarrant revappend-true-list-fix)
  (defwarrant append$-ac)
  (defwarrant append$)
  (defwarrant append$+-ac)

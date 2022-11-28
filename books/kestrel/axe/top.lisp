@@ -161,7 +161,6 @@
 (include-book "packbv-axe")
 (include-book "possibly-negated-nodenums")
 (include-book "print-constant")
-(include-book "print-levels")
 (include-book "print-dag-to-file")
 (include-book "print-dag-array-to-file")
 (include-book "prover-common")

@@ -53,7 +53,10 @@
 (include-book "kestrel/utilities/make-and-nice" :dir :system)
 ;(include-book "kestrel/untranslated-terms-old/untranslated-terms-apply" :dir :system)
 
+(include-book "kestrel/std/system/classes" :dir :system)
 (include-book "kestrel/std/system/defun-sk-queries" :dir :system)
+(include-book "kestrel/std/system/fundef-enabledp" :dir :system)
+(include-book "kestrel/std/system/rune-enabledp" :dir :system)
 
 (set-state-ok t)
 

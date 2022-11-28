@@ -22,11 +22,21 @@
                           bool
                           char-fix
                           chars=>nats
+                          constant-value
                           defmacro+
                           defxdoc+
+                          ensure-symbol-is-fresh-event-name$
+                          ensure-value-is-boolean$
+                          ensure-value-is-constant-name$
+                          ensure-value-is-string$
+                          ensure-value-is-symbol$
+                          er-soft+
                           explode
+                          fun
                           implode
                           integers-from-to
+                          keyword-listp
+                          known-packages+
                           legal-constantp
                           lnfix
                           maybe-msgp
@@ -45,6 +55,7 @@
                           nat-list-resultp
                           nats=>chars
                           nats=>string
+                          packn-pos
                           patbind-fun
                           pos-list
                           pos-listp
@@ -55,6 +66,7 @@
                           seq
                           seq-backtrack
                           string=>nats
+                          table-alist+
                           unsigned-byte-listp
                           fty::reserrf
                           fty::reserrf-push

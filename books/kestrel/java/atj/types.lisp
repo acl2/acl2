@@ -83,7 +83,7 @@
      with the type of the corresponding formal argument of the function
      (this type is retrieved from the table of function types):
      if they differ, ATJ inserts code to convert from the former to the latter,
-     unless the former is a subtype of the latter in Java.
+     unless the former is a subtype of (including equal to) the latter in Java.
      The conversion may be a type cast,
      e.g. to convert from @('Acl2Value') to @('Acl2String');
      the cast is guaranteed to succeed,
@@ -229,7 +229,7 @@
      It is not the case that
      just the @(':acl2') types denote ACL2 types
      and just the @(':jprim') and @(':jprimarr') types denote Java types:
-     each type denotes both an ACL2 and a Java type.
+     each type denotes both an ACL2 type and a Java type.
      The distinction is just that
      the @(':acl2') types denote built-in ACL2 types,
      which are therefore independent from Java
@@ -287,7 +287,7 @@
    (xdoc::p
     "This is useful, for instance, to print ATJ types in a more readable form
      that hides the internal representation of their fixtype.
-     We also these keywords to refer to the types
+     We also use these keywords to refer to the types
      in the developer documentation.")
    (xdoc::p
     "Also see @(tsee atj-type-from-keyword)."))
@@ -617,7 +617,7 @@
      we keep the @(':jprim') and @(':jprimarr') types
      all separate from each other and from the @(':acl2') types.")
    (xdoc::p
-    "More precisely, a type is less than another type if and only if
+    "More precisely, a type is less than another type if and only if,
      in the generated Java code,
      values of the Java type denoted by the smaller ATJ type
      can be automatically converted (possibly via a no-op, but not necessarily)
@@ -628,7 +628,7 @@
      ATJ's type analysis would disallow the function call.")
    (xdoc::p
     "Furthermore, a type may be less than another type only if
-     the ACL2 predicate denoted by the first ATJ type
+     the ACL2 predicate denoted by the first type
      is a subset of the ACL2 predicate denoted by the second ATJ type;
      this is a necessary but not sufficient condition.
      The reason for this necessary condition is that, in ATJ's type analysis,
@@ -651,10 +651,10 @@
      Java primitive values and arrays be turned into
      (Java representations of) the ACL2 values.
      This shows why the necessary condition described above
-     is not also a sufficient one:
+     is not a sufficient one:
      of course the ACL2 values that model Java primitive values and arrays
      are in the ACL2 predicate denoted by the type @(':avalue'),
-     but despite that any @(':j...') is not a subtype of @(':avalue').")
+     but despite that, any @(':j...') is not a subtype of @(':avalue').")
    (xdoc::p
     "To validate this definition of partial order,
      we prove that the relation is indeed a partial order,
@@ -665,14 +665,14 @@
      also satisfies the supertype's predicate;
      we generate a theorem for each such pair,
      because the predicate inclusion relation is at the meta level.
-     The motonocity theorem validates that the partial order
+     The monotonicity theorem validates that the partial order
      satisfies the necessary condition described above.")
    (xdoc::p
     "While @(tsee atj-type-to-pred) is order-presering (i.e. monotonic),
      it is not order-reflecting (and thus not an order embedding):
      if @('(atj-type-to-pred x)') is included in @('(atj-type-to-pred y)'),
      @('(atj-type-<= x y)') does not necessarily hold.
-     The counterexample to being order-reflective consists of
+     The counterexample to being order-reflecting consists of
      @('x') being a @(':jprim') or @(':jprimarr') type and
      @('y') being the @(':acl2') type of all ACL2 values.
      In other words, as explained above,
@@ -727,7 +727,7 @@
       nil)
     :hooks (:fix))
 
-  ;; monotonicity theorems for all (SUB, SUP) with SUP' in SUPS:
+  ;; monotonicity theorems for all (SUB, SUP) with SUP in SUPS:
   (define atj-type-to-pred-gen-mono-thms-1 ((sub atj-typep)
                                             (sups atj-type-listp))
     (cond ((endp sups) nil)
@@ -917,7 +917,7 @@
      the first two are obvious,
      while the remaining three are motivated by the fact that
      @(':acons'), @(':avalue'), and @('nil') are the only elements
-     each of which has more than one elements that are strictly smaller.")
+     that have more than one element that is strictly smaller.")
    (xdoc::p
     "To validate this definition of least upper bound,
      we prove that the this operation indeed returns an upper bound
@@ -1371,15 +1371,15 @@
      otherwise, only the type @(':avalue') is used.
      In other words, we represent
      ACL2 booleans/characters/strings as Java booleans/characters/strings
-     only when @(':guards') is @('t').
+     only when @(':deep') is @('nil') and @(':guards') is @('t').
      Even though Java @('char') values (which consist of 16 bits)
      are not isomorphic to ACL2 characters (which consist of 8 bits),
      when @(':guards') is @('t') the satisfaction of all guards is assumed;
      thus, if external code calls the generated Java code
      with values that satisfy the guards,
      and in particular with @('char') values below 256,
-     the generate code should manipulate only @('char') values below 256,
-     which are isomorphic to Java characters.
+     the generated code should manipulate only @('char') values below 256,
+     which are isomorphic to ACL2 characters.
      The same consideration applies to ACL2 strings vs. Java strings;
      only Java strings with characters below 256
      should be passed to ATJ-generated code,
@@ -1476,7 +1476,7 @@
      whose length must match the length of the output type list
      (this length constraint is not explicitly captured in this fixtype,
      but it is an expected invariant).
-     The @('nil') symbol may be used in any position of the list,
+     The @('nil') symbol may be used in any position of the array name list,
      meaning that there is no array name for the corresponding output type.
      A non-@('nil') symbol may be used only in a position
      whose corresponding output type is a @(':jprimarr') type.
@@ -1682,7 +1682,7 @@
      we retrieve the type information from the table
      via @(tsee atj-get-function-type-info-from-table).
      If the @(':guards') input is @('nil'),
-     we return the defult function type information,
+     we return the default function type information,
      because in this case types are effectively ignored."))
   (if guards$
       (b* ((fn-info? (atj-get-function-type-info-from-table fn wrld)))
@@ -1710,7 +1710,9 @@
      If no such function type is found, we return @('nil').
      If instead some exist, we select the one with the  minimum input types,
      which always exists because of the closure property
-     enforced by @(tsee atj-other-function-type),
+     enforced by @(tsee atj-other-function-type)
+     (see the documentation of @(tsee atj-other-function-type)
+     for details on this closure property),
      and we return that function type.
      In other words, given the types of the actual arguments,
      the output types of the returned function type (if any)
