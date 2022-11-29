@@ -1,4 +1,4 @@
-; Proof of correctness of expand-lambdas-in-term
+; Checking that NIL never appears as a variable in a term or list of terms
 ;
 ; Copyright (C) 2021-2022 Kestrel Institute
 ;
