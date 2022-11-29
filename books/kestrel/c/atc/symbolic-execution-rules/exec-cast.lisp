@@ -170,8 +170,8 @@
     :parents nil
     (b* (((mv names events)
           (atc-exec-cast-rules-gen-loop-dtypes
-           *nonchar-integer-types**
-           *nonchar-integer-types**)))
+           *nonchar-integer-types*
+           *nonchar-integer-types*)))
       `(progn
          (defsection atc-exec-cast-rules
            :short "Rules for executing casts."
