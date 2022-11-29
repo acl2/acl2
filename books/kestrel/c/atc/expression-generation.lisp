@@ -176,7 +176,7 @@
                             (type typep)
                             (type-base-const symbolp)
                             (gin pexpr-ginp)
-                            state)
+                            (wrld plist-worldp))
   :guard (type-integerp type)
   :returns (gout pexpr-goutp)
   :short "Generate a C expression and theorem from an ACL2 term
@@ -196,7 +196,6 @@
     "The hints cover all possible integer constants,
      but we could make them more nuanced to the specifics of the constant."))
   (b* (((pexpr-gin gin) gin)
-       (wrld (w state))
        (expr (expr-const (const-int const)))
        ((when (not gin.proofs))
         (make-pexpr-gout :expr expr
@@ -213,7 +212,6 @@
        (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
                              ,term)
                       (,typep ,term)))
-       (formula (untranslate$ formula nil state))
        (fixtype (pack (type-kind type)))
        (exec-const-to-fixtype (pack 'exec-const-to- fixtype))
        (fixtype-integerp (pack fixtype '-integerp))
@@ -350,11 +348,12 @@
        all the code satisfies the C static semantics."))
     (b* (((reterr) (irr-pexpr-gout))
          ((pexpr-gin gin) gin)
+         (wrld (w state))
          ((when (pseudo-term-case term :var))
-          (retok (atc-gen-expr-var (pseudo-term-var->name term) gin (w state))))
+          (retok (atc-gen-expr-var (pseudo-term-var->name term) gin wrld)))
          ((erp okp const type type-base-const) (atc-check-iconst term))
          ((when okp) (retok (atc-gen-expr-const
-                             term const type type-base-const gin state)))
+                             term const type type-base-const gin wrld)))
          ((mv okp op arg-term in-type out-type) (atc-check-unop term))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
