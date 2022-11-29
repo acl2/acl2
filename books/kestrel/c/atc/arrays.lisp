@@ -99,7 +99,7 @@
      Since all these functions follow a common pattern,
      we generate arary types and functions programmatically,
      as done for the "
-    (xdoc::seetopic "integers" "integers")
+    (xdoc::seetopic "representation-of-integers" "integers")
     ".")
    (xdoc::p
     "[C:6.2.5/20] requires arrays to be non-empty,
