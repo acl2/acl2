@@ -24,6 +24,8 @@
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/untranslate-dollar" :dir :system)
 
+(local (in-theory (disable state-p)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-expression-generation
@@ -246,6 +248,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-expr-unary ((term pseudo-termp)
+                            (op unopp)
+                            (in-type typep)
+                            (out-type typep)
+                            (arg-term pseudo-termp)
+                            (arg-expr exprp)
+                            (arg-type typep)
+                            (arg-events pseudo-event-form-listp)
+                            (arg-thm symbolp)
+                            (gin pexpr-ginp)
+                            (wrld plist-worldp))
+  (declare (ignore term arg-thm wrld))
+  :returns (mv erp
+               (gout pexpr-goutp))
+  :short "Generate a C expression and theorem from an ACL2 term
+          that represents a unary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expression and theorem for the argument expression
+     are generated in the caller, and passed here."))
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       ((unless (equal arg-type in-type))
+        (reterr
+         (msg "The unary operator ~x0 is applied ~
+               to an expression term ~x1 returning ~x2, ~
+               but a ~x3 operand is expected. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              op arg-term arg-type in-type)))
+       (expr (make-expr-unary :op op :arg arg-expr)))
+    (retok
+     (make-pexpr-gout :expr expr
+                      :type out-type
+                      :events arg-events
+                      :thm-name nil
+                      :thm-index gin.thm-index
+                      :names-to-avoid gin.names-to-avoid
+                      :proofs nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atc-gen-expr-pure/bool
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -352,29 +397,20 @@
          ((when (pseudo-term-case term :var))
           (retok (atc-gen-expr-var (pseudo-term-var->name term) gin wrld)))
          ((erp okp const type type-base-const) (atc-check-iconst term))
-         ((when okp) (retok (atc-gen-expr-const
-                             term const type type-base-const gin wrld)))
+         ((when okp) (retok (atc-gen-expr-const term const type type-base-const
+                                                gin wrld)))
          ((mv okp op arg-term in-type out-type) (atc-check-unop term))
          ((when okp)
-          (b* (((erp (pexpr-gout arg))
-                (atc-gen-expr-pure arg-term gin state))
-               ((unless (equal arg.type in-type))
-                (reterr
-                 (msg "The unary operator ~x0 is applied ~
-                       to an expression term ~x1 returning ~x2, ~
-                       but a ~x3 operand is expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      op arg-term arg.type in-type))))
-            (retok (make-pexpr-gout
-                    :expr (make-expr-unary :op op
-                                           :arg arg.expr)
-                    :type out-type
-                    :events arg.events
-                    :thm-name nil
-                    :thm-index arg.thm-index
-                    :names-to-avoid arg.names-to-avoid
-                    :proofs nil))))
+          (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state)))
+            (atc-gen-expr-unary term op in-type out-type
+                                arg-term arg.expr arg.type
+                                arg.events arg.thm-name
+                                (change-pexpr-gin
+                                 gin
+                                 :thm-index arg.thm-index
+                                 :names-to-avoid arg.names-to-avoid
+                                 :proofs arg.proofs)
+                                wrld)))
          ((mv okp op arg1-term arg2-term in-type1 in-type2 out-type)
           (atc-check-binop term))
          ((when okp)
