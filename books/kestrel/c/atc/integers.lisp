@@ -71,7 +71,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-values ((type typep))
+(define def-integer-values ((type typep))
   :guard (type-nonchar-integerp type)
   :returns (event pseudo-event-formp)
   :short "Event to generate the model of the values of a C integer type."
@@ -219,19 +219,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-values-loop ((types type-listp))
+(define def-integer-values-loop ((types type-listp))
   :guard (type-nonchar-integer-listp types)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the models of the values of some C integer types."
   (cond ((endp types) nil)
-        (t (cons (atc-def-integer-values (car types))
-                 (atc-def-integer-values-loop (cdr types)))))
+        (t (cons (def-integer-values (car types))
+                 (def-integer-values-loop (cdr types)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(progn ,@(atc-def-integer-values-loop *nonchar-integer-types**)))
+ `(progn ,@(def-integer-values-loop *nonchar-integer-types**)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
