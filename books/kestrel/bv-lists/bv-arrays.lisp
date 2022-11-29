@@ -198,7 +198,7 @@
   :hints
   (("Goal"
     :cases ((<= (len data) (bvchop isize index)))
-    :in-theory (enable ;bvnth
+    :in-theory (enable
                 bvchop-when-i-is-not-an-integer
 ;list::nth-with-large-index
                 ))))

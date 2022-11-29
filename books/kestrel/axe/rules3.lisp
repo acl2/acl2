@@ -348,7 +348,7 @@
 ;;   :hints (("Goal" :in-theory (enable sbvdiv floor-by-4))))
 
 ;move
-(defthm bvchop-of-nth2-becomes-bv-array-read
+(defthmd bvchop-of-nth2-becomes-bv-array-read
   (implies (and (unsigned-byte-p n x)
                 (natp n)
                 (natp size))
@@ -16855,7 +16855,7 @@
            :use (:instance split-bv (y (bvchop 2 x)) (m 1) (n 2))
            :in-theory (enable bvlt bvcat logapp))))
 
-(defthm equal-of-nth2-and-bv-array-read
+(defthmd equal-of-nth2-and-bv-array-read
   (implies (and (natp len)
                 (natp index)
                 (< index len)
@@ -16868,7 +16868,7 @@
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener nth2) (nth-becomes-bv-array-read2)))))
 
 ;rename?
-(defthm equal-of-nth2-and-bv-array-read-alt
+(defthmd equal-of-nth2-and-bv-array-read-alt
   (implies (and (natp len)
                 (natp index)
                 (< index len)
