@@ -582,7 +582,8 @@ then restart the ACL2-Doc browser to view that manual."
 ;;; every time.
 
   (acl2-doc-mode)
-  (setq default-directory *acl2-doc-directory*)
+  (when *acl2-doc-directory*
+    (setq default-directory *acl2-doc-directory*))
   t)
 
 (defun acl2-doc-kill-buffers (&optional do-not-ask)
