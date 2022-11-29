@@ -121,13 +121,14 @@
 ;; TODO: Skip ACL2s stuff (don't even train on it!) since it can't be replayed in regular acl2?
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
 ;; Rec names should not include slash or digits?
-(defmacro replay-books-with-advice (book-to-theorems-alist ; maps book names (relativee to books/, with .lisp extension) to lists of defthm names.
-                                    base-dir
+(defmacro replay-books-with-advice (book-to-theorems-alist ; maps book names (relative to BASE-DIR, with .lisp extension) to lists of defthm names.
+                                    base-dir ; no trailing slash
                                     &key
                                     (seed ':random)
-                                    (excluded-prefixes 'nil)
-                                    (n '10) ; number of rec from each model
-                                    (num-books ':all)
+                                    (excluded-prefixes 'nil) ; relative to BASE-DIR
+                                    (n '10) ; number of recs from each model
+                                    (num-books ':all) ; how many books to evaluate (TODO: Better to chose a random subset of theorems, rather than books?)
                                     (server-url 'nil) ; nil means get from environment var
-                                    (models ':all))
+                                    (models ':all) ; which ML models to use
+                                    )
   `(make-event (replay-books-with-advice-fn ,book-to-theorems-alist ,base-dir ,excluded-prefixes ,seed ,n ,server-url ,models ,num-books state)))
