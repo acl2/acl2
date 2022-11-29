@@ -32,7 +32,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
-                              (help::rec-modelsp models))
+                              (help::model-namesp models))
                   :stobjs state))
   (b* ((defthm-variant (car defthm)) ; defthm or defthmd, etc.
        (theorem-name (cadr defthm))
@@ -122,7 +122,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
-                              (help::rec-modelsp models))
+                              (help::model-namesp models))
                   :mode :program
                   :stobjs state))
   (if (endp events)
@@ -206,7 +206,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
-                              (help::rec-modelsp models))
+                              (help::model-namesp models))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (b* ( ;; We must avoid including the current book (or an other book that includes it) when trying to find advice:
@@ -286,7 +286,7 @@
         ;; Elaborate options:
        (models (if (eq models :all)
                    help::*known-models*
-                 (if (help::rec-modelp models)
+                 (if (help::model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
        ((mv erp

@@ -92,14 +92,14 @@
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
                               (or (eq :all models)
-                                  (help::rec-modelsp models))
+                                  (help::model-namesp models))
                               (or (eq :all num-books)
                                   (natp num-books)))
                   :stobjs state))
   (b* ( ;; Elaborate options:
        (models (if (eq models :all)
                    help::*known-models*
-                 (if (help::rec-modelp models)
+                 (if (help::model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
        (book-to-theorems-alist (clear-keys-with-matching-prefixes book-to-theorems-alist excluded-prefixes nil))
