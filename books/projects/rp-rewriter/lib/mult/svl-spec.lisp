@@ -544,7 +544,7 @@
     :hints (("Goal"
              :in-theory (e/d (svl-sum-pps-bycol-bybit) ()))))
 
-  (defthm-lambda svl-sum-pps-bycol-bybit-opener
+  (defthm svl-sum-pps-bycol-bybit-opener
     (implies (not (zp (- out-size col-index)))
              (equal (svl-sum-pps-bycol-bybit mult mcand carry-in
                                              out-size col-index)
@@ -663,7 +663,7 @@
     :hints (("Goal"
              :in-theory (e/d (4vec-adder) ()))))
 
-  (defthm-lambda 4vec-adder-opener-size>0
+  (defthm 4vec-adder-opener-size>0
     (implies (not (zp size))
              (equal (4vec-adder x y carry-in size)
                     (LET ((SUM (MERGE-SUM (SVL::BITS x 0 1)
