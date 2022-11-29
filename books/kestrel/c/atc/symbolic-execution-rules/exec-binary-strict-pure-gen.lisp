@@ -326,8 +326,8 @@
     :parents nil
     (b* (((mv names events)
           (atc-exec-binary-rules-gen (list op)
-                                     *nonchar-integer-types**
-                                     *nonchar-integer-types**))
+                                     *nonchar-integer-types*
+                                     *nonchar-integer-types*))
          (atc-exec-op-rules (pack '*atc-exec- (binop-kind op) '-rules*))
          (defconst-names `(defconst ,atc-exec-op-rules ',names))
          (atc-exec-op-events (pack '*atc-exec- (binop-kind op) '-events*))
@@ -365,8 +365,8 @@
 ;;                     (binop-bitior)))
 ;;          ((mv names events)
 ;;           (atc-exec-binary-rules-gen ops
-;;                                      *nonchar-integer-types**
-;;                                      *nonchar-integer-types**)))
+;;                                      *nonchar-integer-types*
+;;                                      *nonchar-integer-types*)))
 ;;       `(progn
 ;;          (defsection atc-exec-binary-strict-pure-rules
 ;;            :short "Rules for executing strict pure binary operations."

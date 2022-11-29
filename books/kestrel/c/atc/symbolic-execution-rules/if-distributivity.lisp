@@ -12,7 +12,8 @@
 (in-package "C")
 
 (include-book "../../language/computation-states")
-(include-book "../integers")
+
+(include-book "../../representation/integers")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
