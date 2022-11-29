@@ -1549,8 +1549,8 @@
              bvlt-of-floor-arg3
              bvlt-of-floor-arg2
              bvchop-numeric-bound ;applied for even non-constant widths Fri Sep  3 10:19:33 2010
-             equal-of-nth2-and-bv-array-read ;Tue Aug 31 03:44:49 2010 drop?
-             equal-of-nth2-and-bv-array-read-alt ;Tue Aug 31 03:44:49 2010 drop?
+             ;; equal-of-nth2-and-bv-array-read ;Tue Aug 31 03:44:49 2010 drop?
+             ;; equal-of-nth2-and-bv-array-read-alt ;Tue Aug 31 03:44:49 2010 drop?
              unsigned-byte-p-of-nth2 ;Tue Aug 31 03:44:58 2010 drop?
              sbvrem-when-positive-work-hard ;added work-hard Sat Dec 18 23:31:50 2010 ;was just in axe-prover-rules ;Fri Aug 13 00:51:36 2010
              equal-of-0-and-sbvrem-when-small
