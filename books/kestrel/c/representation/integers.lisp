@@ -101,6 +101,36 @@
     (implies type
              (type-arithmeticp type))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection integer-type-to/from-fixtype-theorems
+  :short "Inversion theorems about the mappings between
+          integer types and fixtype symbols."
+
+  (defrule fixtype-to-integer-type-of-integer-type-to-fixtype
+    (implies (type-nonchar-integerp type)
+             (equal (fixtype-to-integer-type (integer-type-to-fixtype type))
+                    (type-fix type)))
+    :enable (fixtype-to-integer-type
+             integer-type-to-fixtype
+             type-nonchar-integerp))
+
+  (defrule integer-type-to-fixtype-of-fixtype-to-integer-type
+    (implies (member-eq fixtype '(schar
+                                  uchar
+                                  sshort
+                                  ushort
+                                  sint
+                                  uint
+                                  slong
+                                  ulong
+                                  sllong
+                                  ullong))
+             (equal (integer-type-to-fixtype (fixtype-to-integer-type fixtype))
+                    fixtype))
+    :enable (fixtype-to-integer-type
+             integer-type-to-fixtype)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define def-integer-values ((type typep))
