@@ -367,8 +367,6 @@
 ;;                                                 CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
 ;;                                                 take-of-logext-list))))))
 
-
-
 ;; (defthmd update-nth2-becomes-bv-array-write32-signed-case
 ;;   (implies (and (all-signed-byte-p 32 lst)
 ;;                 (signed-byte-p 32 val)
@@ -447,14 +445,6 @@
                                val lst)))
   :hints (("Goal" :in-theory (enable update-nth2 true-listp))))
 
-;move
-(defthm update-nth-of-take-of-+-of-1-same
-  (implies (and (<= (len lst) n)
-                (natp n))
-           (equal (update-nth n val (take (+ 1 n) lst))
-                  (update-nth n val lst)))
-  :hints (("Goal" :in-theory (enable update-nth))))
-
 (defthmd update-nth-becomes-update-nth2-extend-gen
   (implies (and (true-listp lst)
                 (>= key (len lst))
@@ -467,10 +457,10 @@
   :hints (("Goal" :in-theory (enable update-nth2 ;LIST::LEN-UPDATE-NTH-BETTER
                                      equal-of-append))))
 
-;drop? expensive?
-(defthmd usbp8-implies-sbp32-2
-  (implies (unsigned-byte-p 8 x)
-           (signed-byte-p 32 x)))
+;; ;drop? expensive?
+;; (defthmd usbp8-implies-sbp32-2
+;;   (implies (unsigned-byte-p 8 x)
+;;            (signed-byte-p 32 x)))
 
 ;; ;fixme the same as append-of-cons?
 ;; (DEFTHM LIST::xAPPEND-OF-CONS-BETTER2
