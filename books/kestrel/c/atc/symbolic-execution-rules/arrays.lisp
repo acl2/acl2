@@ -545,5 +545,5 @@
                                                                itypes)))))
 
   (defval *atc-array-length-write-rules*
-    (atc-array-length-write-rules-loop-atypes *nonchar-integer-types**
-                                              *nonchar-integer-types**)))
+    (atc-array-length-write-rules-loop-atypes *nonchar-integer-types*
+                                              *nonchar-integer-types*)))

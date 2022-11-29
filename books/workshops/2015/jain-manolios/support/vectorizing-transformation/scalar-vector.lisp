@@ -8,13 +8,13 @@
 ;  :input-contract (mix-instp inst)
 ;  :output-contract (imemp (scalarize inst))
   (cond ((vecinstp inst)
-         (let ((op (mget :op inst))
-               (ra1 (car (mget :ra inst)))
-               (ra2 (cdr (mget :ra inst)))
-               (rb1 (car (mget :rb inst)))
-               (rb2 (cdr (mget :rb inst)))
-               (rc1 (car (mget :rc inst)))
-               (rc2 (cdr (mget :rc inst))))
+         (let ((op (g :op inst))
+               (ra1 (car (g :ra inst)))
+               (ra2 (cdr (g :ra inst)))
+               (rb1 (car (g :rb inst)))
+               (rb2 (cdr (g :rb inst)))
+               (rc1 (car (g :rc inst)))
+               (rc2 (cdr (g :rc inst))))
           (case op
             (vadd (list (inst 'add rc1 ra1 rb1)
                         (inst 'add rc2 ra2 rb2)))
@@ -67,9 +67,9 @@
   "refinement map"
 ;  :input-contract (vecisa-statep s)
 ;  :output-contract (isa-statep (ref-map s))
-  (let* ((regs (mget :regs s))
+  (let* ((regs (g :regs s))
          (V (vecisa-state-vecinmem s))
-         (isapc (get-num-inst (1- (mget :prc s)) V)))
+         (isapc (get-num-inst (1- (g :prc s)) V)))
     (isa-state isapc regs (scalarize-mem (len V) V))))
 
 (defun spec-run-upto-2 (s n)
@@ -151,9 +151,9 @@
 
 (defthm opcode-case-analysis
   (implies (and (instp i)
-                (not (equal (mget :op i) 'add))
-                (not (equal (mget :op i) 'sub)))
-           (equal (mget :op i) 'mul))
+                (not (equal (g :op i) 'add))
+                (not (equal (g :op i) 'sub)))
+           (equal (g :op i) 'mul))
   :hints (("goal" :in-theory (enable op-codep instp))))
 
 (defthm nth-=>len 
@@ -210,9 +210,9 @@
 
 (defthm vecopcode-case-analysis
   (implies (and (vecinstp i)
-                (not (equal (mget :op i) 'vadd))
-                (not (equal (mget :op i) 'vsub)))
-           (equal (mget :op i) 'vmul))
+                (not (equal (g :op i) 'vadd))
+                (not (equal (g :op i) 'vsub)))
+           (equal (g :op i) 'vmul))
   :hints (("goal" :in-theory (enable vecinstp vec-op-codep))))
 
 ; relate the length after flatten and gen-num-inst  
@@ -261,10 +261,10 @@
 ; in particular k = (len vecimem)
  (local
   ; alternate definition of scalarize starting from the first instruction
-  (defun S (L)
+  (defun Sc (L)
     (if (endp L)
         nil
-      (append (scalarize (car L)) (S (cdr L)))))
+      (append (scalarize (car L)) (Sc (cdr L)))))
   )
 
  (local
@@ -283,7 +283,7 @@
     (implies (and (vecimemp V)
                   (natp k))
              (equal (scalarize-mem k V)
-                    (S (seg k V))))
+                    (Sc (seg k V))))
     :hints (("goal" :in-theory (disable scalarize))))
   )
 
@@ -323,7 +323,7 @@
  (local
   (defthm S-sewgf
     (implies (vecimemp V)
-             (segmentp (S (seg k V)) (S V))))
+             (segmentp (Sc (seg k V)) (Sc V))))
   )
 
  (local
@@ -332,7 +332,7 @@
                   (vecimemp V)
                   (natp j)
                   (< j (len (scalarize-mem k V))))
-             (equal (nth j (S V))
+             (equal (nth j (Sc V))
                     (nth j (scalarize-mem k V)))))
   )
  
@@ -454,42 +454,42 @@
   (defthmd lemma-5-1
     (implies (and (vecisa-statep s)
                   (vecimemp (vecisa-state-vecinmem s))
-                  (instp (nth (mget :prc s) (vecisa-state-vecinmem s)))
-                  (not (vecinstp (nth (mget :prc s) (vecisa-state-vecinmem s))))
-                  (< (mget :prc s) (len (vecisa-state-vecinmem s))))
-             (equal (nth (get-num-inst (1- (mget :prc s)) (vecisa-state-vecinmem s))
+                  (instp (nth (g :prc s) (vecisa-state-vecinmem s)))
+                  (not (vecinstp (nth (g :prc s) (vecisa-state-vecinmem s))))
+                  (< (g :prc s) (len (vecisa-state-vecinmem s))))
+             (equal (nth (get-num-inst (1- (g :prc s)) (vecisa-state-vecinmem s))
                          (scalarize-mem (len (vecisa-state-vecinmem s))
                                         (vecisa-state-vecinmem s)))
-                    (nth (mget :prc s) (vecisa-state-vecinmem s))))
+                    (nth (g :prc s) (vecisa-state-vecinmem s))))
     :hints (("goal"  :in-theory (disable scalarize-mem get-num-inst scalarize inst vecopcode-case-analysis lemma-5-aux-k)
-             :use ((:instance get-num-inst-scalarize-mem-reduction (k (mget :prc s)) (vecimem (vecisa-state-vecinmem s)))
-                   (:instance lemma-5-aux-k (k (mget :prc s))
+             :use ((:instance get-num-inst-scalarize-mem-reduction (k (g :prc s)) (vecimem (vecisa-state-vecinmem s)))
+                   (:instance lemma-5-aux-k (k (g :prc s))
                               (vecimem (vecisa-state-vecinmem s)))))))
 
   )
  (local
   (defthmd lemma-5-2
     (implies (and (vecisa-statep s)
-                  (instp (nth (mget :prc s) (vecisa-state-vecinmem s)))
-                  (not (vecinstp (nth (mget :prc s) (vecisa-state-vecinmem s))))
-                  (>= (mget :prc s) (len (vecisa-state-vecinmem s))))
-             (equal (nth (get-num-inst (1- (mget :prc s)) (vecisa-state-vecinmem s))
+                  (instp (nth (g :prc s) (vecisa-state-vecinmem s)))
+                  (not (vecinstp (nth (g :prc s) (vecisa-state-vecinmem s))))
+                  (>= (g :prc s) (len (vecisa-state-vecinmem s))))
+             (equal (nth (get-num-inst (1- (g :prc s)) (vecisa-state-vecinmem s))
                          (scalarize-mem (len (vecisa-state-vecinmem s))
                                         (vecisa-state-vecinmem s)))
-                    (nth (mget :prc s) (vecisa-state-vecinmem s))))
+                    (nth (g :prc s) (vecisa-state-vecinmem s))))
     :hints (("goal" :in-theory (disable scalarize-mem get-num-inst scalarize inst vecopcode-case-analysis lemma-5-aux-k)
-             :use ((:instance nth-=>len (j (mget :prc s)) (l (vecisa-state-vecinmem s)))))))
+             :use ((:instance nth-=>len (j (g :prc s)) (l (vecisa-state-vecinmem s)))))))
   )
 
  (defthmd lemma-5
    (implies (and (vecisa-statep s)
-                 (instp (nth (mget :prc s) (vecisa-state-vecinmem s)))
-                 (not (vecinstp (nth (mget :prc s) (vecisa-state-vecinmem s)))))
-            (equal (nth (get-num-inst (1- (mget :prc s)) (vecisa-state-vecinmem s))
+                 (instp (nth (g :prc s) (vecisa-state-vecinmem s)))
+                 (not (vecinstp (nth (g :prc s) (vecisa-state-vecinmem s)))))
+            (equal (nth (get-num-inst (1- (g :prc s)) (vecisa-state-vecinmem s))
                         (scalarize-mem (len (vecisa-state-vecinmem s))
                                        (vecisa-state-vecinmem s)))
-                   (nth (mget :prc s) (vecisa-state-vecinmem s))))
-   :hints (("goal" :cases ((>= (mget :prc s) (len (vecisa-state-vecinmem s))) (< (mget :prc s) (len (vecisa-state-vecinmem s))))
+                   (nth (g :prc s) (vecisa-state-vecinmem s))))
+   :hints (("goal" :cases ((>= (g :prc s) (len (vecisa-state-vecinmem s))) (< (g :prc s) (len (vecisa-state-vecinmem s))))
             :in-theory (disable vecinstp instp vecisa-statep scalarize-mem flatten-len-get-num-inst))
            ("Subgoal 2" :use (:instance lemma-5-2))
            ("Subgoal 1" :use ((:instance lemma-5-1)))))
@@ -537,39 +537,39 @@
   (defthmd lemma-6-1
     (implies (and (vecisa-statep s)
                   (vecimemp (vecisa-state-vecinmem s))
-                  (vecinstp (nth (mget :prc s) (vecisa-state-vecinmem s)))
-                  (< (mget :prc s) (len (vecisa-state-vecinmem s))))
-             (equal (nth (get-num-inst (1- (mget :prc s)) (vecisa-state-vecinmem s))
+                  (vecinstp (nth (g :prc s) (vecisa-state-vecinmem s)))
+                  (< (g :prc s) (len (vecisa-state-vecinmem s))))
+             (equal (nth (get-num-inst (1- (g :prc s)) (vecisa-state-vecinmem s))
                          (scalarize-mem (len (vecisa-state-vecinmem s))
                                         (vecisa-state-vecinmem s)))
-                    (car (scalarize (nth (mget :prc s) (vecisa-state-vecinmem s))))))
+                    (car (scalarize (nth (g :prc s) (vecisa-state-vecinmem s))))))
     :hints (("goal"  :in-theory (disable scalarize-mem get-num-inst scalarize inst vecopcode-case-analysis)
-             :use ((:instance get-num-inst-scalarize-mem-reduction (k (mget :prc s)) (vecimem (vecisa-state-vecinmem s)))
-                   (:instance lemma-6-aux-k (k (mget :prc s))
+             :use ((:instance get-num-inst-scalarize-mem-reduction (k (g :prc s)) (vecimem (vecisa-state-vecinmem s)))
+                   (:instance lemma-6-aux-k (k (g :prc s))
                               (vecimem (vecisa-state-vecinmem s)))))))
   )
 
  (local
   (defthmd lemma-6-2
     (implies (and (vecisa-statep s)
-                  (vecinstp (nth (mget :prc s) (vecisa-state-vecinmem s)))
-                  (>= (mget :prc s) (len (vecisa-state-vecinmem s))))
-             (equal (nth (get-num-inst (1- (mget :prc s)) (vecisa-state-vecinmem s))
+                  (vecinstp (nth (g :prc s) (vecisa-state-vecinmem s)))
+                  (>= (g :prc s) (len (vecisa-state-vecinmem s))))
+             (equal (nth (get-num-inst (1- (g :prc s)) (vecisa-state-vecinmem s))
                          (scalarize-mem (len (vecisa-state-vecinmem s))
                                         (vecisa-state-vecinmem s)))
-                    (car (scalarize (nth (mget :prc s) (vecisa-state-vecinmem s))))))
+                    (car (scalarize (nth (g :prc s) (vecisa-state-vecinmem s))))))
     :hints (("goal" :in-theory (disable scalarize-mem get-num-inst scalarize inst vecopcode-case-analysis)
-             :use ((:instance nth-=>len (j (mget :prc s)) (l (vecisa-state-vecinmem s)))))))
+             :use ((:instance nth-=>len (j (g :prc s)) (l (vecisa-state-vecinmem s)))))))
   )
 
  (defthmd lemma-6
     (implies (and (vecisa-statep s)
-                  (vecinstp (nth (mget :prc s) (vecisa-state-vecinmem s))))
-             (equal (nth (get-num-inst (1- (mget :prc s)) (vecisa-state-vecinmem s))
+                  (vecinstp (nth (g :prc s) (vecisa-state-vecinmem s))))
+             (equal (nth (get-num-inst (1- (g :prc s)) (vecisa-state-vecinmem s))
                          (scalarize-mem (len (vecisa-state-vecinmem s))
                                         (vecisa-state-vecinmem s)))
-                    (car (scalarize (nth (mget :prc s) (vecisa-state-vecinmem s))))))
-    :hints (("goal" :cases ((>= (mget :prc s) (len (vecisa-state-vecinmem s))) (< (mget :prc s) (len (vecisa-state-vecinmem s))))
+                    (car (scalarize (nth (g :prc s) (vecisa-state-vecinmem s))))))
+    :hints (("goal" :cases ((>= (g :prc s) (len (vecisa-state-vecinmem s))) (< (g :prc s) (len (vecisa-state-vecinmem s))))
              :in-theory (disable vecinstp instp vecisa-statep scalarize-mem flatten-len-get-num-inst))
             ("Subgoal 2" :use (:instance lemma-6-2))
             ("Subgoal 1" :use ((:instance lemma-6-1)))))
@@ -620,59 +620,59 @@
  (local
    (defthmd lemma-7-1
      (implies (and (vecisa-statep s)
-                   (natp (mget :prc s))
+                   (natp (g :prc s))
                    (vecimemp (vecisa-state-vecinmem s))
                    (vecimemp (vecisa-state-vecinmem s))
-                   (nth (mget :prc s) (vecisa-state-vecinmem s))
-                   (vecinstp (nth (mget :prc s) (vecisa-state-vecinmem s)))
-                   (< (mget :prc s) (len (vecisa-state-vecinmem s))))
-              (equal (nth (1+ (get-num-inst (1- (mget :prc s)) (vecisa-state-vecinmem s)))
+                   (nth (g :prc s) (vecisa-state-vecinmem s))
+                   (vecinstp (nth (g :prc s) (vecisa-state-vecinmem s)))
+                   (< (g :prc s) (len (vecisa-state-vecinmem s))))
+              (equal (nth (1+ (get-num-inst (1- (g :prc s)) (vecisa-state-vecinmem s)))
                           (scalarize-mem (len (vecisa-state-vecinmem s))
                                          (vecisa-state-vecinmem s)))
-                     (cadr (scalarize (nth (mget :prc s) (vecisa-state-vecinmem s))))))
+                     (cadr (scalarize (nth (g :prc s) (vecisa-state-vecinmem s))))))
      :hints (("goal" :in-theory (union-theories (theory 'my-th) nil)))))
     
  (local
   (defthmd lemma-7-2
     (implies (and (vecisa-statep s)
-                  (vecinstp (nth (mget :prc s) (vecisa-state-vecinmem s)))
-                  (>= (mget :prc s) (len (vecisa-state-vecinmem s))))
-             (equal (nth (1+ (get-num-inst (1- (mget :prc s)) (vecisa-state-vecinmem s)))
+                  (vecinstp (nth (g :prc s) (vecisa-state-vecinmem s)))
+                  (>= (g :prc s) (len (vecisa-state-vecinmem s))))
+             (equal (nth (1+ (get-num-inst (1- (g :prc s)) (vecisa-state-vecinmem s)))
                          (scalarize-mem (len (vecisa-state-vecinmem s))
                                         (vecisa-state-vecinmem s)))
-                    (cadr (scalarize (nth (mget :prc s) (vecisa-state-vecinmem s))))))
+                    (cadr (scalarize (nth (g :prc s) (vecisa-state-vecinmem s))))))
     :hints (("goal" :in-theory (disable scalarize-mem get-num-inst scalarize inst vecopcode-case-analysis)
-             :use ((:instance nth-=>len (j (mget :prc s)) (l (vecisa-state-vecinmem s)))))))
+             :use ((:instance nth-=>len (j (g :prc s)) (l (vecisa-state-vecinmem s)))))))
   )
  
  (defthmd lemma-7
    (implies (and (vecisa-statep s)
-                 (vecinstp (nth (mget :prc s) (vecisa-state-vecinmem s))))
-            (equal (nth (1+ (get-num-inst (1- (mget :prc s)) (vecisa-state-vecinmem s)))
+                 (vecinstp (nth (g :prc s) (vecisa-state-vecinmem s))))
+            (equal (nth (1+ (get-num-inst (1- (g :prc s)) (vecisa-state-vecinmem s)))
                         (scalarize-mem (len (vecisa-state-vecinmem s))
                                        (vecisa-state-vecinmem s)))
-                   (cadr (scalarize (nth (mget :prc s) (vecisa-state-vecinmem s))))))
-   :hints (("goal" :cases ((>= (mget :prc s) (len (vecisa-state-vecinmem s))) (< (mget :prc s) (len (vecisa-state-vecinmem s))))
+                   (cadr (scalarize (nth (g :prc s) (vecisa-state-vecinmem s))))))
+   :hints (("goal" :cases ((>= (g :prc s) (len (vecisa-state-vecinmem s))) (< (g :prc s) (len (vecisa-state-vecinmem s))))
             :in-theory (disable vecinstp instp vecisa-statep scalarize-mem flatten-len-get-num-inst))
            ("Subgoal 2" :use (:instance lemma-7-2))
            ("Subgoal 1" :use ((:instance lemma-7-1)))))
  )
 
 (defun case-inst-1 (s)
-  (equal (mget :op (nth (mget :prc s) (vecisa-state-vecinmem s)))
+  (equal (g :op (nth (g :prc s) (vecisa-state-vecinmem s)))
          'add))
 
 (defun case-inst-2 (s)
-  (equal (mget :op (nth (mget :prc s) (vecisa-state-vecinmem s)))
+  (equal (g :op (nth (g :prc s) (vecisa-state-vecinmem s)))
          'sub))
 
 (defun case-inst-3 (s)
-  (equal (mget :op (nth (mget :prc s) (vecisa-state-vecinmem s)))
+  (equal (g :op (nth (g :prc s) (vecisa-state-vecinmem s)))
          'mul))
 
 (defthm case-inst-exhaustive
   (implies (and (vecisa-statep s)
-                (instp (nth (mget :prc s) (vecisa-state-vecinmem s)))
+                (instp (nth (g :prc s) (vecisa-state-vecinmem s)))
                 (not (case-inst-1 s))
                 (not (case-inst-2 s)))
            (case-inst-3 s))
@@ -682,7 +682,7 @@
 
 (defthm simulation-inst
   (implies (and (vecisa-statep s)
-                (instp (nth (mget :prc s) (vecisa-state-vecinmem s)))
+                (instp (nth (g :prc s) (vecisa-state-vecinmem s)))
                 (equal (vecisa-step s) u)
                 (equal w (ref-map s))
                 )
@@ -690,23 +690,24 @@
                   (ref-map u)))
   :hints (("goal" :use ((:instance lemma-5)
                         (:instance case-inst-exhaustive))
+           :in-theory (e/d (isa-state vecinst vecisa-state) ())
            :cases ((case-inst-1 s) (case-inst-2 s) (case-inst-3 s)))))
 
 (defun case-vinst-1 (s)
-  (equal (mget :op (nth (mget :prc s) (vecisa-state-vecinmem s)))
+  (equal (g :op (nth (g :prc s) (vecisa-state-vecinmem s)))
          'vadd))
 
 (defun case-vinst-2 (s)
-  (equal (mget :op (nth (mget :prc s) (vecisa-state-vecinmem s)))
+  (equal (g :op (nth (g :prc s) (vecisa-state-vecinmem s)))
          'vsub))
 
 (defun case-vinst-3 (s)
-  (equal (mget :op (nth (mget :prc s) (vecisa-state-vecinmem s)))
+  (equal (g :op (nth (g :prc s) (vecisa-state-vecinmem s)))
          'vmul))
 
 (defthm case-vecinst-exhaustive
   (implies (and (vecisa-statep s)
-                (vecinstp (nth (mget :prc s) (vecisa-state-vecinmem s)))
+                (vecinstp (nth (g :prc s) (vecisa-state-vecinmem s)))
                 (not (case-vinst-1 s))
                 (not (case-vinst-2 s)))
            (case-vinst-3 s))
@@ -716,14 +717,16 @@
 
 (defthm simulation-vecinst
   (implies (and (vecisa-statep s)
-                (vecinstp (nth (mget :prc s) (vecisa-state-vecinmem s)))
+                (vecinstp (nth (g :prc s) (vecisa-state-vecinmem s)))
                 (equal (vecisa-step s) u)
                 (equal w (ref-map s)))
            (equal (isa-step (isa-step w))
                   (ref-map u)))
-  :hints (("goal"   :use ((:instance case-vecinst-exhaustive)
-                          (:instance lemma-6)
-                          (:instance lemma-7))
+  :hints (("goal"
+           :use ((:instance case-vecinst-exhaustive)
+                 (:instance lemma-6)
+                 (:instance lemma-7))
+           :in-theory (e/d (isa-state vecinst vecisa-state inst) ())
            :cases ((case-vinst-1 s) (case-vinst-2 s) (case-vinst-3 s)))))
 
 (defun case-1-inst (k v)
@@ -747,18 +750,17 @@
                 
 (defthm impl-simulates-vecinst-run-lemma
   (implies (and (vecisa-statep s)
-                (nth (mget :prc s) (vecisa-state-vecinmem s))
+                (nth (g :prc s) (vecisa-state-vecinmem s))
                 (equal (vecisa-step s) u)
                 (equal w (ref-map s)))
            (spec-run-upto-2-rel w (ref-map u)))
-  :hints (("goal" :cases ((case-1-inst (mget :prc s) (vecisa-state-vecinmem s))
-                          (case-2-inst (mget :prc s) (vecisa-state-vecinmem s)))
-           :use ((:instance case-exhaustive (k (mget :prc s)) (v (vecisa-state-vecinmem s))))
+  :hints (("goal" :cases ((case-1-inst (g :prc s) (vecisa-state-vecinmem s))
+                          (case-2-inst (g :prc s) (vecisa-state-vecinmem s)))
+           :use ((:instance case-exhaustive (k (g :prc s)) (v (vecisa-state-vecinmem s))))
            )
           ("subgoal 3" :in-theory (disable case-1-inst case-2-inst))
           ("subgoal 1" :use (:instance simulation-inst))
           ("subgoal 2" :use (:instance simulation-vecinst))))
-
 
 (defthm impl-simulates-spec
   (implies (and (vecisa-statep s)
@@ -766,7 +768,7 @@
                 (isa-statep w)
                 (isa-statep (ref-map u))
                 (equal w (ref-map s))
-                (nth (mget :prc s) (vecisa-state-vecinmem s))
+                (nth (g :prc s) (vecisa-state-vecinmem s))
                 (equal (vecisa-step s) u))
            (spec-step+ (ref-map s) (ref-map u)))
   :hints (("goal" :use ((:instance finite-step-implies-exists 

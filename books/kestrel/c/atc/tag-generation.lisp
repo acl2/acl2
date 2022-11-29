@@ -66,7 +66,7 @@
      to calls of the readers.
      The generation of these theorems relies on the fact that
      the order of the readers and the checkers matches the order of
-     the types in @(tsee *nonchar-integer-types**).
+     the types in @(tsee *nonchar-integer-types*).
      Note that the @(tsee defstruct-member-info)
      contains 11 readers and 11 checkers,
      where the first reader and checker operate on ACL2 integers,
@@ -173,7 +173,7 @@
                                       fixer-recognizer-thm
                                       memname
                                       elemtype
-                                      *nonchar-integer-types**
+                                      *nonchar-integer-types*
                                       (car readers)
                                       (car checkers)
                                       (cdr readers)
@@ -443,7 +443,7 @@
      to calls of the writers.
      The generation of these theorems relies on the fact that
      the order of the writers and the checkers matches the order of
-     the types in @(tsee *nonchar-integer-types**).
+     the types in @(tsee *nonchar-integer-types*).
      Note that the @(tsee defstruct-member-info)
      contains 11 writers and 11 checkers,
      where the first writer and checker operate on ACL2 integers,
@@ -671,7 +671,7 @@
                                        fixer-recognizer-thm
                                        memname
                                        elemtype
-                                       *nonchar-integer-types**
+                                       *nonchar-integer-types*
                                        (car writers)
                                        (car checkers)
                                        (cdr writers)

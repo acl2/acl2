@@ -567,7 +567,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *nonchar-integer-types**
+(defval *nonchar-integer-types*
   :short "List of the (supported) C integer types except plain @('char')."
   (list (type-schar)
         (type-uchar)
@@ -585,7 +585,7 @@
 
   (defruled member-nonchar-integer-types-as-pred
     (implies (typep type)
-             (iff (member-equal type *nonchar-integer-types**)
+             (iff (member-equal type *nonchar-integer-types*)
                   (type-nonchar-integerp type)))
     :enable (type-nonchar-integerp
              type-kind

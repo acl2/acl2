@@ -4,7 +4,8 @@
 (defdata reg nat) 
 (defdata address nat) 
 (defdata data integer) 
-(defdata register-file (oneof nil (acons address data register-file)))
+(defdata register-file
+  (oneof nil (acons address data register-file)))
 ; no jump, branch and indirect store (consider only a basic block)
 (defdata op-code (enum '(add sub mul)))
 (defdata vec-op-code (enum '(vadd vsub vmul)))

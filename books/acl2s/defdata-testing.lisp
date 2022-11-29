@@ -188,6 +188,19 @@ Skipping for now.
 (defdata loi (listof int))
 (defdata r1 (record (a . loi)))
 
+(defdata data (listof nat))
+(defdata receiver-state (record (received . data)))
+
+(definec bax (rs :data) :receiver-state
+  (receiver-state rs))
+
+(property (rs :data)
+  (receiver-statep (receiver-state rs)))
+
+(property (rs :receiver-state a b c :all)
+  (equal (g :received (ss rs :received a :received b :received c))
+         c))
+         
 (must-fail
  (defdata-alias r2 r1))
 

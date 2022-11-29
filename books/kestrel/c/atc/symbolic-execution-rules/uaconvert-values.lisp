@@ -93,8 +93,8 @@
     :parents nil
     (b* (((mv names events)
           (atc-uaconvert-values-rules-gen-loop-ltypes
-           *nonchar-integer-types**
-           *nonchar-integer-types**)))
+           *nonchar-integer-types*
+           *nonchar-integer-types*)))
       `(progn
          (defsection atc-uaconvert-values-rules
            :short "Rules about @(tsee uaconvert-values)

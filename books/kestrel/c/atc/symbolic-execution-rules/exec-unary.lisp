@@ -153,7 +153,7 @@
                     (unop-lognot)))
          ((mv names events)
           (atc-exec-unary-rules-gen-loop-ops ops
-                                             *nonchar-integer-types**)))
+                                             *nonchar-integer-types*)))
       `(progn
          (defsection atc-exec-unary-rules
            :short "Rules for executing unary operations"
