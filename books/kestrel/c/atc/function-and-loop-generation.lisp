@@ -3512,7 +3512,7 @@
                                            :prec-objs prec-objs
                                            :thm-index 1
                                            :names-to-avoid names-to-avoid
-                                           :proofs proofs)
+                                           :proofs nil)
                            state))
        (names-to-avoid loop.names-to-avoid)
        ((erp local-events

@@ -451,7 +451,7 @@
              ((erp (bexpr-gout test))
               (atc-gen-expr-bool test-term
                                  (make-bexpr-gin
-                                  :context nil
+                                  :context gin.context
                                   :inscope gin.inscope
                                   :prec-tags gin.prec-tags
                                   :fn gin.fn
@@ -468,7 +468,7 @@
                              :inscope (cons nil gin.inscope)
                              :thm-index test.thm-index
                              :names-to-avoid test.names-to-avoid
-                             :proofs test.proofs)
+                             :proofs nil)
                             state))
              ((erp (stmt-gout else))
               (atc-gen-stmt else-term
@@ -477,7 +477,7 @@
                              :inscope (cons nil gin.inscope)
                              :thm-index then.thm-index
                              :names-to-avoid then.names-to-avoid
-                             :proofs then.proofs)
+                             :proofs nil)
                             state))
              ((unless (equal then.type else.type))
               (reterr
@@ -559,7 +559,7 @@
                    ((erp (expr-gout init))
                     (atc-gen-expr val-term
                                   (make-expr-gin
-                                   :context nil
+                                   :context gin.context
                                    :var-term-alist gin.var-term-alist
                                    :inscope gin.inscope
                                    :fn gin.fn
@@ -608,7 +608,8 @@
                                    :var-term-alist var-term-alist-body
                                    :inscope inscope-body
                                    :thm-index init.thm-index
-                                   :names-to-avoid init.names-to-avoid)
+                                   :names-to-avoid init.names-to-avoid
+                                   :proofs nil)
                                   state))
                    (type body.type)
                    (limit (pseudo-term-fncall
@@ -644,7 +645,7 @@
                    ((erp (expr-gout rhs))
                     (atc-gen-expr val-term
                                   (make-expr-gin
-                                   :context nil
+                                   :context gin.context
                                    :var-term-alist gin.var-term-alist
                                    :inscope gin.inscope
                                    :fn gin.fn
@@ -697,7 +698,7 @@
                                    :var-term-alist var-term-alist-body
                                    :thm-index rhs.thm-index
                                    :names-to-avoid rhs.names-to-avoid
-                                   :proofs rhs.proofs)
+                                   :proofs nil)
                                   state))
                    (type body.type)
                    (limit (pseudo-term-fncall
@@ -765,7 +766,7 @@
                              :var-term-alist var-term-alist-body
                              :thm-index xform.thm-index
                              :names-to-avoid xform.names-to-avoid
-                             :proofs xform.proofs)
+                             :proofs nil)
                             state))
              (items (append xform.items body.items))
              (type body.type)
@@ -803,7 +804,7 @@
                    ((erp (pexpr-gout arr))
                     (atc-gen-expr-pure var
                                        (make-pexpr-gin
-                                        :context nil
+                                        :context gin.context
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -816,7 +817,7 @@
                    ((erp (pexpr-gout sub))
                     (atc-gen-expr-pure sub-term
                                        (make-pexpr-gin
-                                        :context nil
+                                        :context gin.context
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -829,7 +830,7 @@
                    ((erp (pexpr-gout elem))
                     (atc-gen-expr-pure elem-term
                                        (make-pexpr-gin
-                                        :context nil
+                                        :context gin.context
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -880,7 +881,8 @@
                                    gin
                                    :var-term-alist var-term-alist-body
                                    :thm-index elem.thm-index
-                                   :names-to-avoid elem.names-to-avoid)
+                                   :names-to-avoid elem.names-to-avoid
+                                   :proofs nil)
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
                                               (list (pseudo-term-quote 4)
@@ -908,7 +910,7 @@
                    ((erp (pexpr-gout struct))
                     (atc-gen-expr-pure var
                                        (make-pexpr-gin
-                                        :context nil
+                                        :context gin.context
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -945,7 +947,7 @@
                    ((erp (pexpr-gout member))
                     (atc-gen-expr-pure member-term
                                        (make-pexpr-gin
-                                        :context nil
+                                        :context gin.context
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -983,7 +985,7 @@
                                    :var-term-alist var-term-alist-body
                                    :thm-index member.thm-index
                                    :names-to-avoid member.names-to-avoid
-                                   :proofs member.proofs)
+                                   :proofs nil)
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
                                               (list (pseudo-term-quote 4)
@@ -1009,7 +1011,7 @@
                    ((erp (pexpr-gout struct))
                     (atc-gen-expr-pure var
                                        (make-pexpr-gin
-                                        :context nil
+                                        :context gin.context
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -1046,7 +1048,7 @@
                    ((erp (pexpr-gout index))
                     (atc-gen-expr-pure index-term
                                        (make-pexpr-gin
-                                        :context nil
+                                        :context gin.context
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -1069,7 +1071,7 @@
                    ((erp (pexpr-gout elem))
                     (atc-gen-expr-pure elem-term
                                        (make-pexpr-gin
-                                        :context nil
+                                        :context gin.context
                                         :inscope gin.inscope
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
@@ -1108,7 +1110,7 @@
                                    :var-term-alist var-term-alist-body
                                    :thm-index elem.thm-index
                                    :names-to-avoid elem.names-to-avoid
-                                   :proofs elem.proofs)
+                                   :proofs nil)
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
                                               (list (pseudo-term-quote 4)
@@ -1150,7 +1152,7 @@
                    ((erp (expr-gout init))
                     (atc-gen-expr val-term
                                   (make-expr-gin
-                                   :context nil
+                                   :context gin.context
                                    :var-term-alist gin.var-term-alist
                                    :inscope gin.inscope
                                    :fn gin.fn
@@ -1194,7 +1196,7 @@
                                    :inscope inscope-body
                                    :thm-index init.thm-index
                                    :names-to-avoid init.names-to-avoid
-                                   :proofs init.proofs)
+                                   :proofs nil)
                                   state))
                    (type body.type)
                    (limit (pseudo-term-fncall
@@ -1226,7 +1228,7 @@
                    ((erp (expr-gout rhs))
                     (atc-gen-expr val-term
                                   (make-expr-gin
-                                   :context nil
+                                   :context gin.context
                                    :var-term-alist gin.var-term-alist
                                    :inscope gin.inscope
                                    :fn gin.fn
@@ -1274,7 +1276,7 @@
                                    :var-term-alist var-term-alist-body
                                    :thm-index rhs.thm-index
                                    :names-to-avoid rhs.names-to-avoid
-                                   :proofs rhs.proofs)
+                                   :proofs nil)
                                   state))
                    (type body.type)
                    (limit (pseudo-term-fncall
@@ -1330,7 +1332,7 @@
                              :var-term-alist var-term-alist-body
                              :thm-index xform.thm-index
                              :names-to-avoid xform.names-to-avoid
-                             :proofs xform.proofs)
+                             :proofs nil)
                             state))
              (items (append xform.items body.items))
              (type body.type)
@@ -1386,7 +1388,7 @@
             (b* (((erp (expr-gout first))
                   (atc-gen-expr (car terms)
                                 (make-expr-gin
-                                 :context nil
+                                 :context gin.context
                                  :var-term-alist gin.var-term-alist
                                  :inscope gin.inscope
                                  :fn gin.fn
@@ -1518,7 +1520,7 @@
              ((erp (pexprs-gout args))
               (atc-gen-expr-pure-list arg-terms
                                       (make-pexprs-gin
-                                       :context nil
+                                       :context gin.context
                                        :inscope gin.inscope
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn
@@ -1548,7 +1550,7 @@
                   :proofs nil))))
        ((erp (expr-gout term))
         (atc-gen-expr term
-                      (make-expr-gin :context nil
+                      (make-expr-gin :context gin.context
                                      :var-term-alist gin.var-term-alist
                                      :inscope gin.inscope
                                      :fn gin.fn
@@ -1743,7 +1745,7 @@
        ((erp (bexpr-gout test))
         (atc-gen-expr-bool test-term
                            (make-bexpr-gin
-                            :context nil
+                            :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
                             :fn gin.fn
@@ -1771,7 +1773,7 @@
        ((erp (stmt-gout body))
         (atc-gen-stmt then-term
                       (make-stmt-gin
-                       :context nil
+                       :context gin.context
                        :var-term-alist nil
                        :typed-formals gin.typed-formals
                        :inscope (cons nil gin.inscope)

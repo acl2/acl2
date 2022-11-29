@@ -113,7 +113,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-var ((var symbolp)
-                          (gin pexpr-ginp))
+                          (gin pexpr-ginp)
+                          (wrld plist-worldp))
   :returns (gout pexpr-goutp)
   :short "Generate a C expression from an ACL2 variable."
   (b* (((pexpr-gin gin) gin)
@@ -122,15 +123,51 @@
         (raise "Internal error: the variable ~x0 in function ~x1 ~
                 has no associated information." var gin.fn)
         (irr-pexpr-gout))
-       (type (atc-var-info->type info)))
-    (make-pexpr-gout
-     :expr (expr-ident (make-ident :name (symbol-name var)))
-     :type type
-     :events nil
-     :thm-name nil
-     :thm-index gin.thm-index
-     :names-to-avoid gin.names-to-avoid
-     :proofs nil)))
+       (type (atc-var-info->type info))
+       (thm (atc-var-info->thm info))
+       (expr (expr-ident (make-ident :name (symbol-name var))))
+       ((when (not gin.proofs))
+        (make-pexpr-gout
+         :expr expr
+         :type type
+         :events nil
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :proofs nil))
+       (thm-name (pack gin.fn '-expr gin.thm-index '-correct))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil gin.names-to-avoid wrld))
+       (type-pred (type-to-recognizer type wrld))
+       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
+                             ,var)
+                      (,type-pred ,var)))
+       (formula (atc-contextualize formula gin.context))
+       (formula `(implies (and (compustatep ,gin.compst-var)
+                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
+                          ,formula))
+       (value-kind-when-type-pred (pack 'value-kind-when- type-pred))
+       (hints
+        `(("Goal" :in-theory '(,thm
+                               exec-expr-pure-when-ident
+                               (:e expr-kind)
+                               (:e expr-ident->get)
+                               exec-ident-open
+                               read-var-of-const-identifier
+                               (:e identp)
+                               (:e ident->name)
+                               ,value-kind-when-type-pred))))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (make-pexpr-gout :expr expr
+                     :type type
+                     :events (list event)
+                     :thm-name thm-name
+                     :thm-index (1+ gin.thm-index)
+                     :names-to-avoid names-to-avoid
+                     :proofs t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -314,7 +351,7 @@
     (b* (((reterr) (irr-pexpr-gout))
          ((pexpr-gin gin) gin)
          ((when (pseudo-term-case term :var))
-          (retok (atc-gen-expr-var (pseudo-term-var->name term) gin)))
+          (retok (atc-gen-expr-var (pseudo-term-var->name term) gin (w state))))
          ((erp okp const type type-base-const) (atc-check-iconst term))
          ((when okp) (retok (atc-gen-expr-const
                              term const type type-base-const gin state)))
@@ -535,7 +572,7 @@
           (b* (((erp (bexpr-gout arg))
                 (atc-gen-expr-bool arg-term
                                    (make-bexpr-gin
-                                    :context nil
+                                    :context gin.context
                                     :inscope gin.inscope
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
@@ -543,7 +580,7 @@
                                     :compst-var gin.compst-var
                                     :thm-index gin.thm-index
                                     :names-to-avoid gin.names-to-avoid
-                                    :proofs nil)
+                                    :proofs gin.proofs)
                                    state)))
             (retok (make-pexpr-gout :expr arg.expr
                                     :type (type-sint)
@@ -557,7 +594,7 @@
           (b* (((erp (bexpr-gout test))
                 (atc-gen-expr-bool test-term
                                    (make-bexpr-gin
-                                    :context nil
+                                    :context gin.context
                                     :inscope gin.inscope
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
@@ -565,21 +602,23 @@
                                     :compst-var gin.compst-var
                                     :thm-index gin.thm-index
                                     :names-to-avoid gin.names-to-avoid
-                                    :proofs nil)
+                                    :proofs gin.proofs)
                                    state))
                ((erp (pexpr-gout then))
                 (atc-gen-expr-pure then-term
                                    (change-pexpr-gin
                                     gin
                                     :thm-index test.thm-index
-                                    :names-to-avoid test.names-to-avoid)
+                                    :names-to-avoid test.names-to-avoid
+                                    :proofs nil)
                                    state))
                ((erp (pexpr-gout else))
                 (atc-gen-expr-pure else-term
                                    (change-pexpr-gin
                                     gin
                                     :thm-index then.thm-index
-                                    :names-to-avoid then.names-to-avoid)
+                                    :names-to-avoid then.names-to-avoid
+                                    :proofs nil)
                                    state))
                ((unless (equal then.type else.type))
                 (reterr
@@ -667,7 +706,8 @@
                                    (change-bexpr-gin
                                     gin
                                     :thm-index arg1.thm-index
-                                    :names-to-avoid arg1.names-to-avoid)
+                                    :names-to-avoid arg1.names-to-avoid
+                                    :proofs nil)
                                    state)))
             (retok (make-bexpr-gout
                     :expr (make-expr-binary :op (binop-logand)
@@ -686,7 +726,8 @@
                                    (change-bexpr-gin
                                     gin
                                     :thm-index arg1.thm-index
-                                    :names-to-avoid arg1.names-to-avoid)
+                                    :names-to-avoid arg1.names-to-avoid
+                                    :proofs nil)
                                    state)))
             (retok (make-bexpr-gout
                     :expr (make-expr-binary :op (binop-logor)
@@ -701,7 +742,7 @@
           (b* (((erp (pexpr-gout arg))
                 (atc-gen-expr-pure arg-term
                                    (make-pexpr-gin
-                                    :context nil
+                                    :context gin.context
                                     :inscope gin.inscope
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
@@ -709,7 +750,7 @@
                                     :compst-var gin.compst-var
                                     :thm-index gin.thm-index
                                     :names-to-avoid gin.names-to-avoid
-                                    :proofs nil)
+                                    :proofs gin.proofs)
                                    state))
                ((unless (equal arg.type in-type))
                 (reterr
@@ -804,7 +845,7 @@
        ((erp (pexpr-gout first))
         (atc-gen-expr-pure (car terms)
                            (make-pexpr-gin
-                            :context nil
+                            :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
                             :fn gin.fn
@@ -937,7 +978,7 @@
              ((erp (pexprs-gout args))
               (atc-gen-expr-pure-list arg-terms
                                       (make-pexprs-gin
-                                       :context nil
+                                       :context gin.context
                                        :inscope gin.inscope
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn
@@ -968,7 +1009,7 @@
             :proofs nil))))
        ((erp (pexpr-gout pure))
         (atc-gen-expr-pure term
-                           (make-pexpr-gin :context nil
+                           (make-pexpr-gin :context gin.context
                                            :inscope gin.inscope
                                            :prec-tags gin.prec-tags
                                            :fn gin.fn
