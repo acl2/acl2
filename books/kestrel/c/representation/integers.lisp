@@ -23,13 +23,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-integers
-  :parents (atc-shallow-embedding)
-  :short "A model of C integers for ATC."
+(defxdoc+ representation-of-integers
+  :parents (representation)
+  :short "A representation of C integers in ACL2."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a model of the C standard signed and unsigned integer values,
+    "This is part of the "
+    (xdoc::seetopic "representation" "shallow embedding")
+    ".")
+   (xdoc::p
+    "We define a representation of
+     the C standard signed and unsigned integer values,
      except @('_Bool') for now,
      based on their "
     (xdoc::seetopic "integer-formats" "format definitions")
@@ -39,7 +44,7 @@
      the definitions of values we give here
      should still work if the format definitions are changed.")
    (xdoc::p
-    "For each C integer type covered by our model,
+    "For each C integer type covered by our representation,
      we define the C values as wrappers of ACL2 integers in appropriate ranges.
      We also define lists of these C values,
      and some operations between these lists
@@ -55,7 +60,7 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-type-to-fixtype ((type typep))
   :guard (type-nonchar-integerp type)
@@ -69,9 +74,66 @@
   (intern$ (symbol-name (type-kind type)) "C")
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fixtype-to-integer-type ((fixtype symbolp))
+  :returns (type type-optionp)
+  :short "Integer type corresponding to a fixtype name, if any."
+  (case fixtype
+    (schar (type-schar))
+    (uchar (type-uchar))
+    (sshort (type-sshort))
+    (ushort (type-ushort))
+    (sint (type-sint))
+    (uint (type-uint))
+    (slong (type-slong))
+    (ulong (type-ulong))
+    (sllong (type-sllong))
+    (ullong (type-ullong))
+    (t nil))
+  ///
+
+  (defret type-nonchar-integerp-of-fixtype-to-integer-type
+    (implies type
+             (type-nonchar-integerp type)))
+
+  (defret type-arithmeticp-of-fixtype-to-integer-type
+    (implies type
+             (type-arithmeticp type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection integer-type-to/from-fixtype-theorems
+  :short "Inversion theorems about the mappings between
+          integer types and fixtype symbols."
+
+  (defrule fixtype-to-integer-type-of-integer-type-to-fixtype
+    (implies (type-nonchar-integerp type)
+             (equal (fixtype-to-integer-type (integer-type-to-fixtype type))
+                    (type-fix type)))
+    :enable (fixtype-to-integer-type
+             integer-type-to-fixtype
+             type-nonchar-integerp))
+
+  (defrule integer-type-to-fixtype-of-fixtype-to-integer-type
+    (implies (member-eq fixtype '(schar
+                                  uchar
+                                  sshort
+                                  ushort
+                                  sint
+                                  uint
+                                  slong
+                                  ulong
+                                  sllong
+                                  ullong))
+             (equal (integer-type-to-fixtype (fixtype-to-integer-type fixtype))
+                    fixtype))
+    :enable (fixtype-to-integer-type
+             integer-type-to-fixtype)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-values ((type typep))
+(define def-integer-values ((type typep))
   :guard (type-nonchar-integerp type)
   :returns (event pseudo-event-formp)
   :short "Event to generate the model of the values of a C integer type."
@@ -219,43 +281,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-values-loop ((types type-listp))
+(define def-integer-values-loop ((types type-listp))
   :guard (type-nonchar-integer-listp types)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the models of the values of some C integer types."
   (cond ((endp types) nil)
-        (t (cons (atc-def-integer-values (car types))
-                 (atc-def-integer-values-loop (cdr types)))))
+        (t (cons (def-integer-values (car types))
+                 (def-integer-values-loop (cdr types)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(progn ,@(atc-def-integer-values-loop *nonchar-integer-types*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define fixtype-to-integer-type ((fixtype symbolp))
-  :returns (type type-optionp)
-  :short "Integer type corresponding to a fixtype name, if any."
-  (case fixtype
-    (schar (type-schar))
-    (uchar (type-uchar))
-    (sshort (type-sshort))
-    (ushort (type-ushort))
-    (sint (type-sint))
-    (uint (type-uint))
-    (slong (type-slong))
-    (ulong (type-ulong))
-    (sllong (type-sllong))
-    (ullong (type-ullong))
-    (t nil))
-  ///
-
-  (defret type-nonchar-integerp-of-fixtype-to-integer-type
-    (implies type
-             (type-nonchar-integerp type)))
-
-  (defret type-arithmeticp-of-fixtype-to-integer-type
-    (implies type
-             (type-arithmeticp type))))
+ `(progn ,@(def-integer-values-loop *nonchar-integer-types*)))

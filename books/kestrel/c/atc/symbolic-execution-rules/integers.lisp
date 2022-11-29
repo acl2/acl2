@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "../integers")
+(include-book "../../representation/integers")
 
 (include-book "../../language/values")
 
