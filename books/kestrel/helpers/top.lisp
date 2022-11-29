@@ -18,3 +18,5 @@
 (include-book "replay-book")
 (include-book "improve-book")
 (include-book "advice")
+(include-book "replay-book-with-advice")
+(include-book "replay-books-with-advice")
