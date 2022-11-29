@@ -23,6 +23,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -177,8 +178,8 @@
 
 ;nice!  use more above
 (defthm mv-nth-0-of-FILTER-FORMALS-AND-ACTUALS
-  (equal (MV-NTH 0 (FILTER-FORMALS-AND-ACTUALS FORMALS ACTUALS vars))
-         (intersection-equal formals vars))
+  (equal (MV-NTH 0 (FILTER-FORMALS-AND-ACTUALS FORMALS ACTUALS formals-to-keep))
+         (intersection-equal formals formals-to-keep))
   :hints (("Goal" :in-theory (enable FILTER-FORMALS-AND-ACTUALS) )))
 
 
@@ -397,3 +398,31 @@
                 (alistp a))
            (equal (empty-eval (make-lambda-application-simple formals actuals body) a)
                   (empty-eval body (pairlis$ formals (empty-eval-list actuals a))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "lambdas-closed-in-termp")
+
+(defthm lambdas-closed-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
+  (implies (lambdas-closed-in-termsp actuals)
+           (lambdas-closed-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
+
+;; todo: move, dup in letify
+(defthm subsetp-equal-of-append-of-intersection-equal-and-set-difference-equal-swapped
+  (subsetp-equal x
+                 (append (intersection-equal y x)
+                         (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal set-difference-equal))))
+
+(defthm lambdas-closed-in-termp-of-make-lambda-application-simple
+  (implies (and (pseudo-termp body)
+                (symbol-listp formals)
+                (pseudo-term-listp actuals)
+                (lambdas-closed-in-termsp actuals)
+                (lambdas-closed-in-termp body))
+           (lambdas-closed-in-termp (make-lambda-application-simple formals actuals body)))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (enable make-lambda-application-simple
+                              lambdas-closed-in-termp ;todo
+                              ))))
