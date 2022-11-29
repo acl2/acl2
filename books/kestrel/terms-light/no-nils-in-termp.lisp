@@ -52,11 +52,7 @@
     :flag free-vars-in-terms)
   :hints (("Goal" :expand ((FREE-VARS-IN-TERM TERM))
            :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (
-
-                            free-vars-in-terms
-                            )
-                           ()))))
+           :in-theory (enable free-vars-in-terms))))
 
 (defthm no-nils-in-termp-when-symbolp
   (implies (symbolp term)
