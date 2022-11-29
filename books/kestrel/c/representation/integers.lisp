@@ -23,11 +23,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-integers
-  :parents (atc-shallow-embedding)
-  :short "A model of C integers for ATC."
+(defxdoc+ representation-of-integers
+  :parents (representation)
+  :short "A representation of C integers in ACL2."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is part of the "
+    (xdoc::seetopic "representation" "shallow embedding")
+    ".")
    (xdoc::p
     "We define a model of the C standard signed and unsigned integer values,
      except @('_Bool') for now,

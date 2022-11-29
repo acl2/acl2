@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "integers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

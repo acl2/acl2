@@ -13,7 +13,8 @@
 
 (include-book "abstract-syntax")
 (include-book "types")
-(include-book "integers")
+
+(include-book "../representation/integers")
 
 (include-book "../language/static-semantics")
 
