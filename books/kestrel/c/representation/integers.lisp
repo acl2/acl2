@@ -60,7 +60,7 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-type-to-fixtype ((type typep))
   :guard (type-nonchar-integerp type)
@@ -73,6 +73,33 @@
     (e.g. it is @('uchar') for @('(type-uchar)')).")
   (intern$ (symbol-name (type-kind type)) "C")
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fixtype-to-integer-type ((fixtype symbolp))
+  :returns (type type-optionp)
+  :short "Integer type corresponding to a fixtype name, if any."
+  (case fixtype
+    (schar (type-schar))
+    (uchar (type-uchar))
+    (sshort (type-sshort))
+    (ushort (type-ushort))
+    (sint (type-sint))
+    (uint (type-uint))
+    (slong (type-slong))
+    (ulong (type-ulong))
+    (sllong (type-sllong))
+    (ullong (type-ullong))
+    (t nil))
+  ///
+
+  (defret type-nonchar-integerp-of-fixtype-to-integer-type
+    (implies type
+             (type-nonchar-integerp type)))
+
+  (defret type-arithmeticp-of-fixtype-to-integer-type
+    (implies type
+             (type-arithmeticp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -237,30 +264,3 @@
 
 (make-event
  `(progn ,@(def-integer-values-loop *nonchar-integer-types**)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define fixtype-to-integer-type ((fixtype symbolp))
-  :returns (type type-optionp)
-  :short "Integer type corresponding to a fixtype name, if any."
-  (case fixtype
-    (schar (type-schar))
-    (uchar (type-uchar))
-    (sshort (type-sshort))
-    (ushort (type-ushort))
-    (sint (type-sint))
-    (uint (type-uint))
-    (slong (type-slong))
-    (ulong (type-ulong))
-    (sllong (type-sllong))
-    (ullong (type-ullong))
-    (t nil))
-  ///
-
-  (defret type-nonchar-integerp-of-fixtype-to-integer-type
-    (implies type
-             (type-nonchar-integerp type)))
-
-  (defret type-arithmeticp-of-fixtype-to-integer-type
-    (implies type
-             (type-arithmeticp type))))
