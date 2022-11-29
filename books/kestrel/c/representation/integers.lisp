@@ -62,6 +62,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *nonchar-integer-fixtypes*
+  :short "List of the fixtype names of
+          the (supported) C integer types except plain @('char')."
+  (list 'schar
+        'uchar
+        'sshort
+        'ushort
+        'sint
+        'uint
+        'slong
+        'ulong
+        'sllong
+        'ullong)
+  ///
+  (assert-event (no-duplicatesp-eq *nonchar-integer-fixtypes*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define integer-type-to-fixtype ((type typep))
   :guard (type-nonchar-integerp type)
   :returns (fixtype symbolp)
@@ -72,7 +90,15 @@
     with the same name as the keyword kind of the type
     (e.g. it is @('uchar') for @('(type-uchar)')).")
   (intern$ (symbol-name (type-kind type)) "C")
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defret integer-type-to-fixtype-in-list-or-nil
+    (or (member-eq fixtype *nonchar-integer-fixtypes*)
+        (null fixtype))
+    :hyp (type-nonchar-integerp type)
+    :rule-classes nil
+    :hints (("Goal" :in-theory (enable type-nonchar-integerp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,16 +142,7 @@
              type-nonchar-integerp))
 
   (defrule integer-type-to-fixtype-of-fixtype-to-integer-type
-    (implies (member-eq fixtype '(schar
-                                  uchar
-                                  sshort
-                                  ushort
-                                  sint
-                                  uint
-                                  slong
-                                  ulong
-                                  sllong
-                                  ullong))
+    (implies (member-eq fixtype *nonchar-integer-fixtypes*)
              (equal (integer-type-to-fixtype (fixtype-to-integer-type fixtype))
                     fixtype))
     :enable (fixtype-to-integer-type
