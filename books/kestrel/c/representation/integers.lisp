@@ -33,7 +33,8 @@
     (xdoc::seetopic "representation" "shallow embedding")
     ".")
    (xdoc::p
-    "We define a model of the C standard signed and unsigned integer values,
+    "We define a representation of
+     the C standard signed and unsigned integer values,
      except @('_Bool') for now,
      based on their "
     (xdoc::seetopic "integer-formats" "format definitions")
@@ -43,7 +44,7 @@
      the definitions of values we give here
      should still work if the format definitions are changed.")
    (xdoc::p
-    "For each C integer type covered by our model,
+    "For each C integer type covered by our representation,
      we define the C values as wrappers of ACL2 integers in appropriate ranges.
      We also define lists of these C values,
      and some operations between these lists
