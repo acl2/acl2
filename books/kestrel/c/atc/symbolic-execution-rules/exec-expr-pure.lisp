@@ -13,7 +13,7 @@
 
 (include-book "../../language/dynamic-semantics")
 
-(include-book "../integers")
+(include-book "../../representation/integers")
 
 (include-book "syntaxp")
 

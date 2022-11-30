@@ -175,8 +175,8 @@
     :parents nil
     (b* (((mv names events)
           (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes
-           *nonchar-integer-types**
-           *nonchar-integer-types**)))
+           *nonchar-integer-types*
+           *nonchar-integer-types*)))
       `(progn
          (defsection atc-exec-expr-asg-arrsub-rules
            :short "Rules for executing assignment expressions to

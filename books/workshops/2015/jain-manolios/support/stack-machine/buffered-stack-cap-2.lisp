@@ -196,12 +196,12 @@
         (istate imem nxt-pc nxt-stk nxt-ibuf)))))
 
 (defthm mset-ibuf-nil
-  (equal (mset :ibuf
-               nil (mset :imem (mget :imem s) nil))
-         (mset :imem (mget :imem s) nil))
-  :hints (("goal" :use (:instance acl2::mset-diff-mset (b :ibuf) (a :imem) (x (mget :imem s)) (y nil)
+  (equal (s :ibuf
+            nil (s :imem (g :imem s) nil))
+         (s :imem (g :imem s) nil))
+  :hints (("goal" :use (:instance acl2::s-diff-s1 (b :ibuf) (a :imem) (x (g :imem s)) (y nil)
                                   (r nil))
-           :in-theory (disable acl2::mset-diff-mset))))
+           :in-theory (disable acl2::s-diff-s1))))
 
 (defun commited-state (s)
   (let* ((stk (istate-stk s))
@@ -241,8 +241,8 @@
 (defthm good-state-inductive
   (implies (good-statep s)
            (good-statep (impl-step s)))
-  :hints (("goal" :in-theory (e/d (istatep)(instp)))))
-          
+  :hints (("goal" :in-theory (e/d (istate istatep)
+                                  (instp)))))
 
 (defun ref-map (s)
   "refinement map returns the observable state of istate. This version
@@ -266,14 +266,12 @@ assumes the capacity of ibuf = 2"
   "rank of an istate s is capacity of ibuf - #inst in ibuf"
   (nfix (- (ibuf-capacity) (len (istate-ibuf s)))))
 
-
 (defun spec-step-skip-rel (w v)
   "is v reachable from w in <= 4 (= (ibuf-capacity) + 1) steps. Plus 1
 is to account for the case when the current inst is a TOP
 instruction."
   (or (equal v (spec-step (spec-step w)))
       (equal v (spec-step (spec-step (spec-step w))))))
-
 
 ;; Final theorem BSTK refines STK
 (defthm bstk-skip-refines-stk
@@ -289,5 +287,8 @@ instruction."
                 (not (and (equal w (ref-map u))
                           (< (rank u) (rank s)))))
            (spec-step-skip-rel w (ref-map u)))
-  :hints (("goal" :in-theory (e/d (stk-step-inst) (instp )))))
+  :hints (("goal" :in-theory
+           (e/d (stk-step-inst
+                 istate sstate)
+                (instp )))))
 

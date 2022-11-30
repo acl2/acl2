@@ -219,12 +219,12 @@
         (istate imem nxt-pc nxt-stk nxt-ibuf)))))
 
 (defthm mset-ibuf-nil
-  (equal (mset :ibuf
-               nil (mset :imem (mget :imem s) nil))
-         (mset :imem (mget :imem s) nil))
-  :hints (("goal" :use (:instance acl2::mset-diff-mset (b :ibuf) (a :imem) (x (mget :imem s)) (y nil)
+  (equal (s :ibuf
+               nil (s :imem (g :imem s) nil))
+         (s :imem (g :imem s) nil))
+  :hints (("goal" :use (:instance acl2::s-diff-s1 (b :ibuf) (a :imem) (x (g :imem s)) (y nil)
                                   (r nil))
-           :in-theory (disable acl2::mset-diff-mset))))
+           :in-theory (disable acl2::s-diff-s1))))
 
 (defun commited-state (s)
   (let* ((stk (istate-stk s))
@@ -265,7 +265,8 @@
 (defthm good-state-inductive
   (implies (good-statep s)
            (good-statep (impl-step s)))
-  :hints (("goal" :in-theory (e/d (istatep)(instp)))))
+  :hints (("goal" :in-theory (e/d (istatep istate)
+                                  (instp)))))
           
 
 (defun ref-map (s)
@@ -320,6 +321,8 @@ instruction."
                                                ; decreases
                           (< (rank u) (rank s)))))
            (spec-step-skip-rel w (ref-map u)))
-  :hints (("goal" :in-theory (e/d (stk-step-inst) (instp )))))
+  :hints (("goal" :in-theory (e/d (stk-step-inst
+                                   istate sstate)
+                                  (instp )))))
 
 |#

@@ -2,7 +2,7 @@
 (include-book "std/lists/top" :dir :system)
 (include-book "std/alists/top" :dir :system)
 (include-book "std/strings/top" :dir :system)
-(include-book "defexec/other-apps/records/records" :dir :system)
+(include-book "acl2s/defdata/records" :dir :system)
 
 (defun cons-size (x)
   (declare (xargs :guard t))
@@ -130,34 +130,34 @@
   :rule-classes :linear)
 
 (defthm records-lemma-cons-size
-  (implies (and (acl2::ifmp v)
-                (acl2::well-formed-map v))
-           (< (cons-size (acl2::mget-wf x v))
+  (implies (and (acl2::ifrp v)
+                (acl2::rcdp v))
+           (< (cons-size (acl2::g-aux x v))
               (cons-size v)))
-  :hints (("goal" :in-theory (enable acl2::mget-wf)))
+  :hints (("goal" :in-theory (enable acl2::g-aux ifrp)))
   :rule-classes :linear)
 
 (defthm records-cons-size-linear-arith-<=
-  (<= (cons-size (mget k v))
+  (<= (cons-size (g k v))
       (cons-size v))
-  :hints (("goal" :in-theory (enable mget acl2::acl2->map)))
+  :hints (("goal" :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
   :rule-classes :linear)
 
 (defthm records-cons-size-linear-arith-<
-  (implies (and (not (equal k (acl2::ill-formed-key)))
-                (mget k v))
-           (< (cons-size (mget k v))
+  (implies (and k
+                (g k v))
+           (< (cons-size (g k v))
               (cons-size v)))
-  :hints (("goal" :in-theory (enable mget acl2::acl2->map)))
+  :hints (("goal" :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
   :rule-classes :linear)
 
 (defthm records-cons-size
-  (implies (and (consp v)
-                (not (equal x (acl2::ill-formed-key))))
-           (< (cons-size (mget x v))
+  (implies (and x
+                (consp v))
+           (< (cons-size (g x v))
               (cons-size v)))
-  :hints (("goal" :induct (acl2::mget-wf x v)
-           :in-theory (enable mget acl2::acl2->map)))
+  :hints (("goal" :induct (g-aux x v)
+           :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
   :rule-classes :linear)
 
 (defthm len-<=-cons-size
