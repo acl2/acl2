@@ -296,7 +296,7 @@
            (<input-unbound-svassocs> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
                                          x.input-vars-1 x.pkg-sym 1))
            (<input-binding-hyp> .  ,(svtv-equiv-thm-input-binding-hyp-termlist x.input-var-bindings-1 x.pkg-sym 1))
-           (<override-svassocs> . ,(svtv-equiv-thm-override-svassocs x.override-vars-1 x.triples-val-1 x.triples-name-1 x.pkg-sym 2)))
+           (<override-svassocs> . ,(svtv-equiv-thm-override-svassocs x.override-vars-1 x.triples-val-1 x.triples-name-1 x.pkg-sym 1)))
        `((<input-var-svassocs> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
                                    (strip-cars x.input-var-bindings-2) x.pkg-sym 2))
          (<input-unbound-svassocs> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
