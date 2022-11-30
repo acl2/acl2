@@ -230,7 +230,8 @@
         (mv nil ; no error, but nothing to do for this book
             (list 0 0 0 0 0) state))
        ((when erp) (cw "Error: ~x0.~%" erp) (mv erp (list 0 0 0 0 0) state))
-       ;; Ensure we are working in the same dir as the book:
+       ;; Ensures we are working in the same dir as the book:
+       ;; TODO: Ensure this gets rest upon failure, such as a package name clash.
        ((mv erp & state)
         (set-cbd-fn dir state))
        ((when erp) (mv erp (list 0 0 0 0 0) state))
