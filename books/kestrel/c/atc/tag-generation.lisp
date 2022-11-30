@@ -215,7 +215,7 @@
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
           (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
           (valuep-when-indextype (pack 'valuep-when- indextypep))
-          (type-thm (pack indexfixtype '->get$inline))
+          (type-thm (pack indexfixtype '->get))
           (thm-member-name (pack 'exec-member-read-when-
                                  recognizer
                                  '-and-
@@ -722,7 +722,7 @@
           (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
           (valuep-when-indextype (pack 'valuep-when- indextypep))
           (valuep-when-elemtypep (pack 'valuep-when- elemtypep))
-          (type-thm (pack indexfixtype '->get$inline))
+          (type-thm (pack indexfixtype '->get))
           (thm-member-name (pack 'exec-member-write-when-
                                  recognizer
                                  '-and-
