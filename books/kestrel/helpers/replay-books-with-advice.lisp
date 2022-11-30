@@ -92,6 +92,7 @@
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
                               (or (eq :all models)
+                                  (help::model-namep models) ; special case for a single model
                                   (help::model-namesp models))
                               (or (eq :all num-books)
                                   (natp num-books)))
