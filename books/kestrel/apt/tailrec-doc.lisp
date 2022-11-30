@@ -246,7 +246,7 @@
         for the combination operator.
         In the " *tailrec-design-notes* ",
         this variant is described in the section
-        `Associative-Only Variant,Extended outside the Domain'."))
+        `Associative-Only Variant, Extended outside the Domain'."))
      (xdoc::p
       "The associative variants of the transformation is more widely applicable,
        but the monoidal variants yield simpler new functions.
@@ -255,7 +255,8 @@
        so these two variants apply to different cases.
        Similarly,
        the applicability conditions for the alternative associative variant
-       are neither stronger nor weaker than the ones for the associative variant,
+       are neither stronger nor weaker
+       than the ones for the associative variant,
        so these two variants apply to different cases.")
      (xdoc::p
       "While the " *tailrec-design-notes*
