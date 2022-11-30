@@ -2,6 +2,16 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; NOTE: READ THIS FIRST.  In late November, 2022, books
+; remove-guard-holders-strong-1.lisp and remove-guard-holders-strong-2.lisp
+; were added, as progress towards verifying termination and even guards for
+; remove-guard-holders.  This file was already around at that point, as
+; remove-guard-holders-strong.lsp.  I haven't much looked at it since but I've
+; renamed it remove-guard-holders-strong-3.lsp since it represents further
+; progress towards verifying termination and guards for remove-guard-holders.
+
+; .....
+
 ; This file represents work towards converting ACL2 source function
 ; remove-guard-holders from :program mode to guard-verified :logic mode.  Note
 ; that :logic mode ACL2 source functions must be guard-verified.
