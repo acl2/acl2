@@ -358,13 +358,14 @@
                 (alistp a))
            (equal (empty-eval (make-lambda-application-simple formals actuals body) a)
                   (empty-eval body (append (pairlis$ formals (empty-eval-list actuals a))
-                                           a ; todo: show that this is irrelevant
-                                           ))))
+                                           a))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (make-lambda-application-simple
                             intersection-equal-of-set-difference-equal-when-subsetp-equal)
                            ()))))
 
+;true of any evaluator
+;move or drop?
 (defthm equal-of-empty-eval-and-empty-eval-when-not-consp-of-free-vars-in-term
   (implies (and (not (consp (free-vars-in-term body)))
                 (pseudo-termp body) ;drop?
@@ -385,6 +386,7 @@
 ;; ; :hints (("Goal" :in-theory (enable strip-cars SUBSETP-EQUAL append)))
 ;;  )
 
+;; Special case for when the formals include all the free vars in the body
 (defthm empty-eval-of-make-lambda-application-simple-correct-2
   (implies (and (subsetp-equal (free-vars-in-term body) formals) ; this case
                 (pseudo-termp body)
