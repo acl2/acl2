@@ -1,6 +1,6 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -288,7 +288,10 @@
       "@(':print') &mdash; default @(':result')"
       (xdoc::p
        "Specifies what is printed on the screen
-        (see @(see acl2::event-macro-screen-printing)).")
+        (see "
+       (xdoc::seetopic "acl2::event-macro-screen-printing"
+                       "screen printing")
+       ").")
       (xdoc::p
        "It must be one of the following:")
       (xdoc::ul
@@ -538,10 +541,15 @@
       "The name of a "
       ,(if 1arg "unary " "")
       "logic-mode function.
-         This function must have no input or output @(see acl2::stobj)s."
+       This function must have no input or output "
+      (xdoc::seetopic "acl2::stobj" "stobjs")
+      "."
       ,(if 1res
-           " This function must return
-              a single (i.e. non-@(tsee acl2::mv)) result."
+           `(xdoc::&&
+             " This function must return
+              a single (i.e. non-"
+             (xdoc::seetopic "acl2::mv" "@('mv')")
+             " result.")
          "")
       ,(cond ((eq guard t) " This function must be guard-verified.")
              ((eq guard nil) "")
@@ -561,30 +569,44 @@
       "A "
       ,(if 1arg "unary " "")
       "closed lambda expression
-         that only references logic-mode functions.
-         This lambda expression must have
-         no input or output @(see acl2::stobj)s."
+       that only references logic-mode functions.
+       This lambda expression must have no input or output "
+      (xdoc::seetopic "acl2::stobj" "stobjs")
+      "."
       ,(if 1res
-           " This lambda expression must return
-              a single (i.e. non-@(tsee acl2::mv)) result."
+           `(xdoc::&&
+             " This lambda expression must return
+              a single (i.e. non-"
+             (xdoc::seetopic "acl2::mv" "@('mv')")
+             " result.")
          "")
-      ,(cond ((eq guard t) " The body of this lambda expression
-                              must only call guard-verified functions,
-                              except possibly
-                              in the @(':logic') subterms of @(tsee acl2::mbe)s
-                              or via @(tsee acl2::ec-call).")
+      ,(cond ((eq guard t)
+              `(xdoc::&&
+                " The body of this lambda expression
+                 must only call guard-verified functions,
+                 except possibly
+                 in the @(':logic') subterms of "
+                (xdoc::seetopic "acl2::mbe" "@('mbe')")
+                "s or via "
+                (xdoc::seetopic "acl2::ec-call" "@('ec-call')")
+                "."))
              ((eq guard nil) "")
              (t `(xdoc::&&
-                  " If " ,guard ", then the body of this lambda expression
-                     must only call guard-verified functions,
-                     except possibly
-                     in the @(':logic') subterms of @(tsee acl2::mbe)s
-                     or via @(tsee acl2::ec-call).")))
+                  " If "
+                  ,guard
+                  ", then the body of this lambda expression
+                   must only call guard-verified functions,
+                   except possibly
+                   in the @(':logic') subterms of "
+                  (xdoc::seetopic "acl2::mbe" "@('mbe')")
+                  "s or via "
+                  (xdoc::seetopic "acl2::ec-call" "@('ec-call')")
+                  ".")))
       " As an abbreviation, the name @('mac') of a macro stands for
-         the lambda expression @('(lambda (z1 z2 ...) (mac z1 z2 ...))'),
-         where @('z1'), @('z2'), ... are the required parameters of @('mac');
-         that is, a macro name abbreviates its eta-expansion
-         (considering only the macro's required parameters)."
+       the lambda expression @('(lambda (z1 z2 ...) (mac z1 z2 ...))'),
+       where @('z1'), @('z2'), ... are the required parameters of @('mac');
+       that is, a macro name abbreviates its eta-expansion
+       (considering only the macro's required parameters)."
       ,(if dont-be-or-call
            `(xdoc::&& " This lambda expression must not reference "
                       ,dont-be-or-call
@@ -662,16 +684,26 @@
            " and that includes no free variables other than "
            ,free-vars)
        "")
-    ". This term must have no output @(see acl2::stobj)s."
+    ". This term must have no output "
+    (xdoc::seetopic "acl2::stobj" "stobjs")
+    "."
     ,(if 1res
-         " This term must return
-          a single (i.e. non-@(tsee acl2::mv)) value."
+         `(xdoc::&&
+           " This term must return
+            a single (i.e. non-"
+           (xdoc::seetopic "acl2::mv" "@('mv')")
+           " value.")
        "")
-    ,(cond ((eq guard t) " This term
-                          must only call guard-verified functions,
-                          except possibly
-                          in the @(':logic') subterms of @(tsee acl2::mbe)s
-                          or via @(tsee acl2::ec-call).")
+    ,(cond ((eq guard t)
+            `(xdoc::&&
+              " This term
+               must only call guard-verified functions,
+               except possibly
+               in the @(':logic') subterms of "
+              (xdoc::seetopic "acl2::mbe" "@('mbe')")
+              "s or via "
+              (xdoc::seetopic "acl2::ec-call" "@('ec-call')")
+              "."))
            ((eq guard nil) "")
            (t `(xdoc::&&
                 " If "
@@ -679,8 +711,11 @@
                 ", then this term
                  must only call guard-verified functions,
                  except possibly
-                 in the @(':logic') subterms of @(tsee acl2::mbe)s
-                 or via @(tsee acl2::ec-call).")))
+                 in the @(':logic') subterms of "
+                (xdoc::seetopic "acl2::mbe" "@('mbe')")
+                "s or via "
+                (xdoc::seetopic "acl2::ec-call" "@('ec-call')")
+                ".")))
     ,(if dont-call
          `(xdoc::&& " This term must not reference " ,dont-call ".")
        "")
@@ -1040,20 +1075,20 @@
              '((xdoc::p
                 "Some events are generated in two slightly different variants:
                  one that is local to the generated "
-                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                (xdoc::seetopic "acl2::encapsulate" "@('encapsulate')")
                 ", and one that is exported from the "
-                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                (xdoc::seetopic "acl2::encapsulate" "@('encapsulate')")
                 ". Proof hints are in the former but not in the latter,
                  thus keeping the ACL2 history ``clean'';
                  some proof hints may refer to events
                  that are generated only locally to the "
-                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                (xdoc::seetopic "acl2::encapsulate" "@('encapsulate')")
                 "."))))
        (para-local?
         (and some-local-p
              '((xdoc::p
                 "Some events are generated only locally to the generated "
-                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                (xdoc::seetopic "acl2::encapsulate" "@('encapsulate')")
                 ". These are auxiliary events
                  needed to introduce the non-local (i.e. exported) events,
                  but whose presence in the ACL2 history is no longer needed
@@ -1065,7 +1100,7 @@
         (and some-nonlocal-p
              '((xdoc::p
                 "Some events are generated only non-locally to the generated "
-                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                (xdoc::seetopic "acl2::encapsulate" "@('encapsulate')")
                 ", i.e. they are exported,
                  without local counterparts."))))
        (long? (and (or some-local-nonlocal-p
