@@ -16,12 +16,15 @@
 (include-book "tag-tables")
 (include-book "term-checkers-atc")
 (include-book "types-to-recognizers")
+(include-book "generation-contexts")
 
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/untranslate-dollar" :dir :system)
+
+(local (in-theory (disable state-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,9 +38,12 @@
 
 (fty::defprod pexpr-gin
   :short "Inputs for @(tsee atc-gen-expr-pure)."
-  ((inscope atc-symbol-varinfo-alist-list)
+  ((context atc-contextp)
+   (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
+   (fn-guard symbol)
+   (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -50,6 +56,7 @@
   ((expr expr)
    (type type)
    (events pseudo-event-form-list)
+   (thm-name symbolp)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -63,6 +70,7 @@
   :body (make-pexpr-gout :expr (irr-expr)
                          :type (irr-type)
                          :events nil
+                         :thm-name nil
                          :thm-index 1
                          :names-to-avoid nil
                          :proofs nil))
@@ -71,9 +79,12 @@
 
 (fty::defprod bexpr-gin
   :short "Inputs for @(tsee atc-gen-expr-bool)."
-  ((inscope atc-symbol-varinfo-alist-list)
+  ((context atc-contextp)
+   (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
+   (fn-guard symbol)
+   (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -103,43 +114,115 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr-const-correct-thm ((fn symbolp)
-                                        (term pseudo-termp)
-                                        (expr exprp)
-                                        (type typep)
-                                        (thm-index posp)
-                                        (names-to-avoid symbol-listp)
-                                        state)
+(define atc-gen-expr-var ((var symbolp)
+                          (gin pexpr-ginp)
+                          (wrld plist-worldp))
+  :returns (gout pexpr-goutp)
+  :short "Generate a C expression from an ACL2 variable."
+  (b* (((pexpr-gin gin) gin)
+       (info (atc-get-var var gin.inscope))
+       ((when (not info))
+        (raise "Internal error: the variable ~x0 in function ~x1 ~
+                has no associated information." var gin.fn)
+        (irr-pexpr-gout))
+       (type (atc-var-info->type info))
+       (thm (atc-var-info->thm info))
+       (expr (expr-ident (make-ident :name (symbol-name var))))
+       ((when (not gin.proofs))
+        (make-pexpr-gout
+         :expr expr
+         :type type
+         :events nil
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :proofs nil))
+       (thm-name (pack gin.fn '-expr gin.thm-index '-correct))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil gin.names-to-avoid wrld))
+       (type-pred (type-to-recognizer type wrld))
+       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
+                             ,var)
+                      (,type-pred ,var)))
+       (formula (atc-contextualize formula gin.context))
+       (formula `(implies (and (compustatep ,gin.compst-var)
+                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
+                          ,formula))
+       (value-kind-when-type-pred (pack 'value-kind-when- type-pred))
+       (hints
+        `(("Goal" :in-theory '(,thm
+                               exec-expr-pure-when-ident
+                               (:e expr-kind)
+                               (:e expr-ident->get)
+                               exec-ident-open
+                               read-var-of-const-identifier
+                               (:e identp)
+                               (:e ident->name)
+                               ,value-kind-when-type-pred))))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (make-pexpr-gout :expr expr
+                     :type type
+                     :events (list event)
+                     :thm-name thm-name
+                     :thm-index (1+ gin.thm-index)
+                     :names-to-avoid names-to-avoid
+                     :proofs t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-const ((term pseudo-termp)
+                            (const iconstp)
+                            (type typep)
+                            (type-base-const symbolp)
+                            (gin pexpr-ginp)
+                            (wrld plist-worldp))
   :guard (type-integerp type)
-  :returns (mv (event pseudo-event-formp)
-               (name symbolp)
-               (updated-names-to-avoid symbol-listp
-                                       :hyp (symbol-listp names-to-avoid)))
-  :short "Generate a correctness theorem for the execution of
-          a constant expression."
+  :returns (gout pexpr-goutp)
+  :short "Generate a C expression and theorem from an ACL2 term
+          that represents an integer constant expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "The theorem says that the execution yields the term.
      It also says that the term satisfies
-     the applicable shallowly embedded type predicate."))
-  (b* ((name (pack fn '-expr thm-index '-correct))
-       ((mv name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix name nil names-to-avoid (w state)))
-       (typep (type-to-recognizer type (w state)))
-       (formula `(and (equal (exec-expr-pure ',expr compst)
+     the applicable shallowly embedded type predicate.")
+   (xdoc::p
+    "This theorem holds unconditionally;
+     it does not actually depend on the computation state.
+     We do not need to contextualize the theorem,
+     i.e. we ignore the @(tsee atc-context).")
+   (xdoc::p
+    "The hints cover all possible integer constants,
+     but we could make them more nuanced to the specifics of the constant."))
+  (b* (((pexpr-gin gin) gin)
+       (expr (expr-const (const-int const)))
+       ((when (not gin.proofs))
+        (make-pexpr-gout :expr expr
+                         :type type
+                         :events nil
+                         :thm-name nil
+                         :thm-index gin.thm-index
+                         :names-to-avoid gin.names-to-avoid
+                         :proofs nil))
+       (thm-name (pack gin.fn '-expr gin.thm-index '-correct))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil gin.names-to-avoid wrld))
+       (typep (type-to-recognizer type wrld))
+       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
                              ,term)
                       (,typep ,term)))
-       (formula (untranslate$ formula nil state))
+       (fixtype (pack (type-kind type)))
+       (exec-const-to-fixtype (pack 'exec-const-to- fixtype))
+       (fixtype-integerp (pack fixtype '-integerp))
+       (recognizer (pack fixtype 'p))
+       (recognizer-of-fixtype (pack recognizer '-of- fixtype))
        (hints `(("Goal" :in-theory '(exec-expr-pure-when-const
                                      (:e expr-kind)
                                      (:e expr-const->get)
-                                     exec-const-to-sint
-                                     exec-const-to-uint
-                                     exec-const-to-slong
-                                     exec-const-to-ulong
-                                     exec-const-to-sllong
-                                     exec-const-to-ullong
+                                     ,exec-const-to-fixtype
                                      (:e const-kind)
                                      (:e const-int->get)
                                      (:e iconst->unsignedp)
@@ -148,41 +231,230 @@
                                      (:e iconst->base)
                                      (:e iconst-length-kind)
                                      (:e iconst-base-kind)
-                                     (:e sint-integerp)
-                                     (:e uint-integerp)
-                                     (:e slong-integerp)
-                                     (:e ulong-integerp)
-                                     (:e sllong-integerp)
-                                     (:e ullong-integerp)
-                                     sint-dec-const
-                                     sint-oct-const
-                                     sint-hex-const
-                                     uint-dec-const
-                                     uint-oct-const
-                                     uint-hex-const
-                                     slong-dec-const
-                                     slong-oct-const
-                                     slong-hex-const
-                                     ulong-dec-const
-                                     ulong-oct-const
-                                     ulong-hex-const
-                                     sllong-dec-const
-                                     sllong-oct-const
-                                     sllong-hex-const
-                                     ullong-dec-const
-                                     ullong-oct-const
-                                     ullong-hex-const
-                                     sintp-of-sint
-                                     uintp-of-uint
-                                     slongp-of-slong
-                                     ulongp-of-ulong
-                                     sllongp-of-sllong
-                                     ullongp-of-ullong))))
-       ((mv event &) (evmac-generate-defthm name
+                                     (:e ,fixtype-integerp)
+                                     ,type-base-const
+                                     ,recognizer-of-fixtype))))
+       ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv event name names-to-avoid)))
+    (make-pexpr-gout :expr expr
+                     :type type
+                     :events (list event)
+                     :thm-name thm-name
+                     :thm-index (1+ gin.thm-index)
+                     :names-to-avoid names-to-avoid
+                     :proofs t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-unary ((term pseudo-termp)
+                            (op unopp)
+                            (in-type typep)
+                            (out-type typep)
+                            (arg-term pseudo-termp)
+                            (arg-expr exprp)
+                            (arg-type typep)
+                            (arg-events pseudo-event-form-listp)
+                            (arg-thm symbolp)
+                            (gin pexpr-ginp)
+                            (wrld plist-worldp))
+  :returns (mv erp
+               (gout pexpr-goutp))
+  :short "Generate a C expression and theorem from an ACL2 term
+          that represents a unary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expression and theorem for the argument
+     are generated in the caller, and passed here.")
+   (xdoc::p
+    "We do not yet support operations with an associated @('okp') predicate.
+     We will add support for them soon."))
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       ((unless (equal arg-type in-type))
+        (reterr
+         (msg "The unary operator ~x0 is applied ~
+               to an expression term ~x1 returning ~x2, ~
+               but a ~x3 operand is expected. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              op arg-term arg-type in-type)))
+       (expr (make-expr-unary :op op :arg arg-expr))
+       (proofs (and gin.proofs
+                    (or (not (unop-case op :minus))
+                        (member-eq (type-kind in-type)
+                                   '(:uint :ulong :ullong)))))
+       ((when (not proofs))
+        (retok
+         (make-pexpr-gout :expr expr
+                          :type out-type
+                          :events arg-events
+                          :thm-name nil
+                          :thm-index gin.thm-index
+                          :names-to-avoid gin.names-to-avoid
+                          :proofs nil)))
+       (thm-name (pack gin.fn '-expr gin.thm-index '-correct))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil gin.names-to-avoid wrld))
+       (type-pred (type-to-recognizer out-type wrld))
+       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
+                             ,term)
+                      (,type-pred ,term)))
+       (formula (atc-contextualize formula gin.context))
+       (formula `(implies (and (compustatep ,gin.compst-var)
+                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
+                          ,formula))
+       (arg-type-pred (type-to-recognizer arg-type wrld))
+       (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
+       (op-name (pack (unop-kind op)))
+       (exec-unary-when-op-and-arg-type-pred
+        (pack op-name '-value-when- arg-type-pred))
+       ((unless (type-nonchar-integerp arg-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg-type)))
+       (arg-fixtype (integer-type-to-fixtype arg-type))
+       (op-arg-type (pack op-name '- arg-fixtype))
+       (type-pred-of-op-arg-type (pack type-pred '-of- op-arg-type))
+       (hints `(("Goal" :in-theory '(exec-expr-pure-when-unary
+                                     (:e expr-kind)
+                                     (:e expr-unary->op)
+                                     (:e expr-unary->arg)
+                                     ,arg-thm
+                                     ,valuep-when-arg-type-pred
+                                     ,exec-unary-when-op-and-arg-type-pred
+                                     (:e ,(pack 'unop- op-name))
+                                     ,type-pred-of-op-arg-type))))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (retok
+     (make-pexpr-gout :expr expr
+                      :type out-type
+                      :events (append arg-events (list event))
+                      :thm-name thm-name
+                      :thm-index (1+ gin.thm-index)
+                      :names-to-avoid names-to-avoid
+                      :proofs t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-binary ((term pseudo-termp)
+                             (op binopp)
+                             (in1-type typep)
+                             (in2-type typep)
+                             (out-type typep)
+                             (arg1-term pseudo-termp)
+                             (arg2-term pseudo-termp)
+                             (arg1-expr exprp)
+                             (arg2-expr exprp)
+                             (arg1-type typep)
+                             (arg2-type typep)
+                             (arg1-events pseudo-event-form-listp)
+                             (arg2-events pseudo-event-form-listp)
+                             (arg1-thm symbolp)
+                             (arg2-thm symbolp)
+                             (gin pexpr-ginp)
+                             (wrld plist-worldp))
+  :returns (mv erp
+               (gout pexpr-goutp))
+  :short "Generate a C expression and theorem from an ACL2 term
+          that represents a binary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expressions and theorems for the arguments
+     are generated in the caller, and passed here.")
+   (xdoc::p
+    "We do not yet support operations with an associated @('okp') predicate.
+     We will add support for them soon."))
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       ((unless (and (equal arg1-type in1-type)
+                     (equal arg2-type in2-type)))
+        (reterr
+         (msg "The binary operator ~x0 is applied ~
+               to an expression term ~x1 returning ~x2 ~
+               and to an expression term ~x3 returning ~x4, ~
+               but a ~x5 operand and a ~x6 operand are expected. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              op arg1-term arg1-type arg2-term arg2-type in1-type in2-type)))
+       (expr (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr))
+       (proofs (and gin.proofs
+                    (not (member-eq (binop-kind op) '(:div :rem :shl :shr)))
+                    (or (not (member-eq (binop-kind op) '(:add :sub :mul)))
+                        (type-unsigned-integerp out-type))))
+       ((when (not proofs))
+        (retok
+         (make-pexpr-gout :expr expr
+                          :type out-type
+                          :events (append arg1-events arg2-events)
+                          :thm-name nil
+                          :thm-index gin.thm-index
+                          :names-to-avoid gin.names-to-avoid
+                          :proofs nil)))
+       (thm-name (pack gin.fn '-expr gin.thm-index '-correct))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil gin.names-to-avoid wrld))
+       (type-pred (type-to-recognizer out-type wrld))
+       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
+                             ,term)
+                      (,type-pred ,term)))
+       (formula (atc-contextualize formula gin.context))
+       (formula `(implies (and (compustatep ,gin.compst-var)
+                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
+                          ,formula))
+       (arg1-type-pred (type-to-recognizer arg1-type wrld))
+       (arg2-type-pred (type-to-recognizer arg2-type wrld))
+       (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
+       (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
+       (op-name (pack (binop-kind op)))
+       (exec-binary-strict-pure-when-op
+        (pack 'exec-binary-strict-pure-when- op-name))
+       ((unless (type-nonchar-integerp arg1-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg1-type)))
+       (arg1-fixtype (integer-type-to-fixtype arg1-type))
+       ((unless (type-nonchar-integerp arg2-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg2-type)))
+       (arg2-fixtype (integer-type-to-fixtype arg2-type))
+       (op-values-when-arg2-type (pack op-name '-values-when- arg1-fixtype))
+       (op-arg1-type-and-value-when-arg2-type
+        (pack op-name '- arg1-fixtype '-and-value-when- arg2-fixtype))
+       (op-arg1-type-arg2-type (pack op-name '- arg1-fixtype '- arg2-fixtype))
+       (type-pred-of-op-arg1-type-arg2-type
+        (pack type-pred '-of- op-arg1-type-arg2-type))
+       (hints `(("Goal" :in-theory '(exec-expr-pure-when-strict-pure-binary
+                                     (:e expr-kind)
+                                     (:e expr-binary->op)
+                                     (:e expr-binary->arg1)
+                                     (:e expr-binary->arg2)
+                                     (:e binop-kind)
+                                     (:e member-equal)
+                                     ,arg1-thm
+                                     ,arg2-thm
+                                     ,valuep-when-arg1-type-pred
+                                     ,valuep-when-arg2-type-pred
+                                     ,exec-binary-strict-pure-when-op
+                                     (:e ,(pack 'binop- op-name))
+                                     ,op-values-when-arg2-type
+                                     ,op-arg1-type-and-value-when-arg2-type
+                                     ,type-pred-of-op-arg1-type-arg2-type))))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (retok
+     (make-pexpr-gout :expr expr
+                      :type out-type
+                      :events (append arg1-events
+                                      arg2-events
+                                      (list event))
+                      :thm-name thm-name
+                      :thm-index (1+ gin.thm-index)
+                      :names-to-avoid names-to-avoid
+                      :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -288,92 +560,45 @@
        all the code satisfies the C static semantics."))
     (b* (((reterr) (irr-pexpr-gout))
          ((pexpr-gin gin) gin)
+         (wrld (w state))
          ((when (pseudo-term-case term :var))
-          (b* ((var (pseudo-term-var->name term))
-               (info (atc-get-var var gin.inscope))
-               ((when (not info))
-                (reterr
-                 (raise "Internal error: the variable ~x0 in function ~x1 ~
-                         has no associated information." var gin.fn)))
-               (type (atc-var-info->type info)))
-            (retok
-             (make-pexpr-gout
-              :expr (expr-ident (make-ident :name (symbol-name var)))
-              :type type
-              :events nil
-              :thm-index gin.thm-index
-              :names-to-avoid gin.names-to-avoid
-              :proofs nil))))
-         ((erp okp const out-type) (atc-check-iconst term))
-         ((when okp)
-          (b* ((expr (expr-const (const-int const)))
-               ((mv event & names-to-avoid)
-                (atc-gen-expr-const-correct-thm gin.fn
-                                                term
-                                                expr
-                                                out-type
-                                                gin.thm-index
-                                                gin.names-to-avoid
-                                                state)))
-            (retok
-             (make-pexpr-gout :expr expr
-                              :type out-type
-                              :events (list event)
-                              :thm-index (1+ gin.thm-index)
-                              :names-to-avoid names-to-avoid
-                              :proofs gin.proofs))))
+          (retok (atc-gen-expr-var (pseudo-term-var->name term) gin wrld)))
+         ((erp okp const type type-base-const) (atc-check-iconst term))
+         ((when okp) (retok (atc-gen-expr-const term const type type-base-const
+                                                gin wrld)))
          ((mv okp op arg-term in-type out-type) (atc-check-unop term))
          ((when okp)
-          (b* (((erp (pexpr-gout arg))
-                (atc-gen-expr-pure arg-term gin state))
-               ((unless (equal arg.type in-type))
-                (reterr
-                 (msg "The unary operator ~x0 is applied ~
-                       to an expression term ~x1 returning ~x2, ~
-                       but a ~x3 operand is expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      op arg-term arg.type in-type))))
-            (retok (make-pexpr-gout
-                    :expr (make-expr-unary :op op
-                                           :arg arg.expr)
-                    :type out-type
-                    :events arg.events
-                    :thm-index arg.thm-index
-                    :names-to-avoid arg.names-to-avoid
-                    :proofs nil))))
-         ((mv okp op arg1-term arg2-term in-type1 in-type2 out-type)
+          (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state))
+               (gin (change-pexpr-gin gin
+                                      :thm-index arg.thm-index
+                                      :names-to-avoid arg.names-to-avoid
+                                      :proofs arg.proofs)))
+            (atc-gen-expr-unary term op in-type out-type
+                                arg-term arg.expr arg.type
+                                arg.events arg.thm-name
+                                gin wrld)))
+         ((mv okp op arg1-term arg2-term in1-type in2-type out-type)
           (atc-check-binop term))
          ((when okp)
           (b* (((erp (pexpr-gout arg1))
                 (atc-gen-expr-pure arg1-term gin state))
+               (gin (change-pexpr-gin gin
+                                      :thm-index arg1.thm-index
+                                      :names-to-avoid arg1.names-to-avoid
+                                      :proofs arg1.proofs))
                ((erp (pexpr-gout arg2))
-                (atc-gen-expr-pure arg2-term
-                                   (change-pexpr-gin
-                                    gin
-                                    :thm-index arg1.thm-index
-                                    :names-to-avoid arg1.names-to-avoid)
-                                   state))
-               ((unless (and (equal arg1.type in-type1)
-                             (equal arg2.type in-type2)))
-                (reterr
-                 (msg "The binary operator ~x0 is applied ~
-                       to an expression term ~x1 returning ~x2 ~
-                       and to an expression term ~x3 returning ~x4, ~
-                       but a ~x5 and a ~x6 operand is expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      op arg1-term arg1.type arg2-term arg2.type
-                      in-type1 in-type2))))
-            (retok (make-pexpr-gout
-                    :expr (make-expr-binary :op op
-                                            :arg1 arg1.expr
-                                            :arg2 arg2.expr)
-                    :type out-type
-                    :events (append arg1.events arg2.events)
-                    :thm-index arg2.thm-index
-                    :names-to-avoid arg2.names-to-avoid
-                    :proofs nil))))
+                (atc-gen-expr-pure arg2-term gin state))
+               (gin (change-pexpr-gin gin
+                                      :thm-index arg2.thm-index
+                                      :names-to-avoid arg2.names-to-avoid
+                                      :proofs arg2.proofs)))
+            (atc-gen-expr-binary term op in1-type in2-type out-type
+                                 arg1-term arg2-term
+                                 arg1.expr arg2.expr
+                                 arg1.type arg2.type
+                                 arg1.events arg2.events
+                                 arg1.thm-name arg2.thm-name
+                                 gin wrld)))
          ((mv okp tyname arg-term in-type out-type) (atc-check-conv term))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
@@ -391,6 +616,7 @@
                                           :arg arg.expr)
                     :type out-type
                     :events arg.events
+                    :thm-name nil
                     :thm-index arg.thm-index
                     :names-to-avoid arg.names-to-avoid
                     :proofs nil))))
@@ -423,6 +649,7 @@
                                             :sub sub.expr)
                     :type out-type
                     :events (append arr.events sub.events)
+                    :thm-name nil
                     :thm-index sub.thm-index
                     :names-to-avoid sub.names-to-avoid
                     :proofs nil))))
@@ -437,6 +664,7 @@
                                                    :name member)
                            :type mem-type
                            :events arg.events
+                           :thm-name nil
                            :thm-index arg.thm-index
                            :names-to-avoid arg.names-to-avoid
                            :proofs nil)))
@@ -446,6 +674,7 @@
                                                     :name member)
                            :type mem-type
                            :events arg.events
+                           :thm-name nil
                            :thm-index arg.thm-index
                            :names-to-avoid arg.names-to-avoid
                            :proofs nil)))
@@ -497,6 +726,7 @@
                                   :sub index.expr)
                            :type elem-type
                            :events (append index.events struct.events)
+                           :thm-name nil
                            :thm-index struct.thm-index
                            :names-to-avoid struct.names-to-avoid
                            :proofs nil)))
@@ -509,6 +739,7 @@
                                   :sub index.expr)
                            :type elem-type
                            :events (append index.events struct.events)
+                           :thm-name nil
                            :thm-index struct.thm-index
                            :names-to-avoid struct.names-to-avoid
                            :proofs nil)))
@@ -531,16 +762,20 @@
           (b* (((erp (bexpr-gout arg))
                 (atc-gen-expr-bool arg-term
                                    (make-bexpr-gin
+                                    :context gin.context
                                     :inscope gin.inscope
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
+                                    :fn-guard gin.fn-guard
+                                    :compst-var gin.compst-var
                                     :thm-index gin.thm-index
                                     :names-to-avoid gin.names-to-avoid
-                                    :proofs nil)
+                                    :proofs gin.proofs)
                                    state)))
             (retok (make-pexpr-gout :expr arg.expr
                                     :type (type-sint)
                                     :events arg.events
+                                    :thm-name nil
                                     :thm-index arg.thm-index
                                     :names-to-avoid arg.names-to-avoid
                                     :proofs nil))))
@@ -549,26 +784,31 @@
           (b* (((erp (bexpr-gout test))
                 (atc-gen-expr-bool test-term
                                    (make-bexpr-gin
+                                    :context gin.context
                                     :inscope gin.inscope
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
+                                    :fn-guard gin.fn-guard
+                                    :compst-var gin.compst-var
                                     :thm-index gin.thm-index
                                     :names-to-avoid gin.names-to-avoid
-                                    :proofs nil)
+                                    :proofs gin.proofs)
                                    state))
                ((erp (pexpr-gout then))
                 (atc-gen-expr-pure then-term
                                    (change-pexpr-gin
                                     gin
                                     :thm-index test.thm-index
-                                    :names-to-avoid test.names-to-avoid)
+                                    :names-to-avoid test.names-to-avoid
+                                    :proofs nil)
                                    state))
                ((erp (pexpr-gout else))
                 (atc-gen-expr-pure else-term
                                    (change-pexpr-gin
                                     gin
                                     :thm-index then.thm-index
-                                    :names-to-avoid then.names-to-avoid)
+                                    :names-to-avoid then.names-to-avoid
+                                    :proofs nil)
                                    state))
                ((unless (equal then.type else.type))
                 (reterr
@@ -585,6 +825,7 @@
                                     :else else.expr)
               :type then.type
               :events (append test.events then.events else.events)
+              :thm-name nil
               :thm-index else.thm-index
               :names-to-avoid else.names-to-avoid
               :proofs nil)))))
@@ -655,7 +896,8 @@
                                    (change-bexpr-gin
                                     gin
                                     :thm-index arg1.thm-index
-                                    :names-to-avoid arg1.names-to-avoid)
+                                    :names-to-avoid arg1.names-to-avoid
+                                    :proofs nil)
                                    state)))
             (retok (make-bexpr-gout
                     :expr (make-expr-binary :op (binop-logand)
@@ -674,7 +916,8 @@
                                    (change-bexpr-gin
                                     gin
                                     :thm-index arg1.thm-index
-                                    :names-to-avoid arg1.names-to-avoid)
+                                    :names-to-avoid arg1.names-to-avoid
+                                    :proofs nil)
                                    state)))
             (retok (make-bexpr-gout
                     :expr (make-expr-binary :op (binop-logor)
@@ -689,12 +932,15 @@
           (b* (((erp (pexpr-gout arg))
                 (atc-gen-expr-pure arg-term
                                    (make-pexpr-gin
+                                    :context gin.context
                                     :inscope gin.inscope
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
+                                    :fn-guard gin.fn-guard
+                                    :compst-var gin.compst-var
                                     :thm-index gin.thm-index
                                     :names-to-avoid gin.names-to-avoid
-                                    :proofs nil)
+                                    :proofs gin.proofs)
                                    state))
                ((unless (equal arg.type in-type))
                 (reterr
@@ -728,9 +974,12 @@
 
 (fty::defprod pexprs-gin
   :short "Inputs for @(tsee atc-gen-expr-pure-list)."
-  ((inscope atc-symbol-varinfo-alist-list)
+  ((context atc-contextp)
+   (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
+   (fn-guard symbol)
+   (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -786,9 +1035,12 @@
        ((erp (pexpr-gout first))
         (atc-gen-expr-pure (car terms)
                            (make-pexpr-gin
+                            :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
                             :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
                             :proofs gin.proofs)
@@ -816,9 +1068,12 @@
 
 (fty::defprod expr-gin
   :short "Inputs for @(tsee atc-gen-expr)."
-  ((var-term-alist symbol-pseudoterm-alist)
+  ((context atc-contextp)
+   (var-term-alist symbol-pseudoterm-alist)
    (inscope atc-symbol-varinfo-alist-list)
    (fn symbol)
+   (fn-guard symbol)
+   (compst-var symbol)
    (prec-fns atc-symbol-fninfo-alist)
    (prec-tags atc-string-taginfo-alist)
    (thm-index pos)
@@ -913,9 +1168,12 @@
              ((erp (pexprs-gout args))
               (atc-gen-expr-pure-list arg-terms
                                       (make-pexprs-gin
+                                       :context gin.context
                                        :inscope gin.inscope
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn
+                                       :fn-guard gin.fn-guard
+                                       :compst-var gin.compst-var
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
                                        :proofs gin.proofs)
@@ -941,9 +1199,12 @@
             :proofs nil))))
        ((erp (pexpr-gout pure))
         (atc-gen-expr-pure term
-                           (make-pexpr-gin :inscope gin.inscope
+                           (make-pexpr-gin :context gin.context
+                                           :inscope gin.inscope
                                            :prec-tags gin.prec-tags
                                            :fn gin.fn
+                                           :fn-guard gin.fn-guard
+                                           :compst-var gin.compst-var
                                            :thm-index gin.thm-index
                                            :names-to-avoid gin.names-to-avoid
                                            :proofs gin.proofs)

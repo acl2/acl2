@@ -2396,7 +2396,7 @@
  :trig-fnc casesplit-from-context-trig
  :valid-syntaxp t
  :rw-direction :outside-in
- :disabledp t
+ :disabled t
  :returns (mv term dont-rw)
  :hints (("Goal"
           :in-theory (e/d (casesplit-from-context

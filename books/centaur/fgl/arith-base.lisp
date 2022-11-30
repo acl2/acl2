@@ -298,6 +298,10 @@ sign bit, which we must implicitly extend out to infinity.</p>"
   (((fgl-toplevel-sat-check-config) => *))
   (local (defun fgl-toplevel-sat-check-config () nil)))
 
+(encapsulate
+  (((fgl-toplevel-vacuity-check-config) => *))
+  (local (defun fgl-toplevel-vacuity-check-config () nil)))
+
 
 (define fgl-sat-check ((params "Parameters for the SAT check -- depending on the
                                 attachment for the pluggable checker.")
@@ -330,6 +334,23 @@ term is encountered.</p>
 
 <p>See also @(see fgl-sat-check/print-counterexample) for a version that prints
 counterexample info for the stack frame from which it is called.</p>"
+  (declare (ignore params))
+  (if x t nil))
+
+
+(define fgl-vacuity-check ((params "Parameters for the SAT check -- depending on the
+                                attachment for the pluggable checker.")
+                           (x "Object to check for vacuity"))
+  :parents (fgl-solving)
+  :short "Check that the given object is satisfiable and report an error if not."
+  :long "
+
+<p>Logically, @('(fgl-vacuity-check params x)') just returns @('x') fixed to a
+Boolean value.  But when FGL symbolic execution encounters an
+@('fgl-vacuity-check') term, it checks Boolean satisfiability of @('x') and if
+it is able to prove that all evaluations of @('x') are NIL, then it produces an
+error; otherwise, it returns @('x') unchanged. This is useful for checking that
+the hypotheses of a conjecture aren't contradictory.</p>"
   (declare (ignore params))
   (if x t nil))
 

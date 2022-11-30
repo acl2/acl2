@@ -34,11 +34,25 @@
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "centaur/fty/baselists" :dir :system)
 
+
+(fty::defmap vl-string/int-alist :key-type stringp :val-type integerp :true-listp t)
+(fty::defprod vl-user-paramsetting
+  ((modname stringp)
+   (unparam-name stringp)
+   (settings vl-string/int-alist))
+  :layout :list)
+
+(fty::deflist vl-user-paramsettings :elt-type vl-user-paramsetting :true-listp t)
+
+(defenum vl-user-paramsettings-mode-p
+  (:user-only :default :include-toplevel))
+
 (defprod vl-simpconfig
   :parents (vl-design->sv-design)
   :short "Options for how to simplify Verilog modules."
   :tag :vl-simpconfig
 
+  :layout :list
   ((compress-p
     booleanp
     "Hons the modules at various points.  This takes some time, but can produce
@@ -163,7 +177,66 @@
     symbol-listp :default nil
     "Treat the listed warnings as non-fatal during vl-design-propagate-errors.
      Such warnings will still show up as fatal, but the modules in which they exist
-     will not be labeled \"bad\".")))
+     will not be labeled \"bad\".")
+
+   (user-paramsettings
+    vl-user-paramsettings :default nil
+    "Gives a list of modules to build with particular parameter settings. The
+     argument should be list of vl-user-paramsetting objects, containing a
+     module name (string), a name for the module after elaboration (string),
+     and an alist mapping parameter names (strings) to integer values.
+     Currently this doesn't allow for setting parameters to non-integer values,
+     e.g. type parameters.  Modules may be listed more than once with different
+     parameter settings.")
+
+   (user-paramsettings-mode
+    vl-user-paramsettings-mode-p :default ':default
+    "Determines how top-level modules are parameterized in elaboration.  The
+     default setting is @(':default'), under which each top-level module is
+     elaborated with its default parameters unless that module is listed in the
+     user-paramsettings.  With the @(':user-only') setting, top-level modules
+     are only elaborated according to the user-paramsettings; if a top-level
+     module doesn't appear in the user-paramsettings, it isn't elaborated at
+     all and is omitted from the design after elaboration.  With the
+     @(':include-toplevel') setting, top-level modules are built with their
+     default parameter settings as well as whatever settings they appear with
+     in the user-paramsettings.  Note that the top-level modules present at
+     elaboration time is influenced by the settings of @('pre-elab-topmods')
+     and @('pre-elab-filter').")
+
+   (pre-elab-topmods
+    string-listp
+    "List of module names to be preserved after annotation and before
+     elaboration.  When @('pre-elab-filter') is set, a pass of @(see
+     vl-remove-unnecessary-elements) will be used to omit from the design any
+     elements not used by one of these modules.  The module names in the
+     @('user-paramsettings') are automatically included in this list.")
+
+   (pre-elab-filter
+    booleanp :default t
+    "Filter out unnecessary elements (according to @('pre-elab-topmods') and
+     @('user-paramsettings')) before elaboration.")
+
+   (post-elab-topmods
+    string-listp
+    "List of module names to be preserved after elaboration.  When
+     @('post-elab-filter') is set, a pass of @(see
+     vl-remove-unnecessary-elements) will be used to omit from the design any
+     elements not used by one of these modules. Note that these names may need
+     to have parameter settings appended. The unparam-names included in the
+     @('user-paramsettings') are automatically included in this list.")
+
+   (post-elab-filter
+    booleanp :default t
+    "Filter out unnecessary elements (according to @('post-elab-topmods') and
+     @('user-paramsettings')) after elaboration.")
+
+   (allow-bad-topmods
+    booleanp
+    "In @(see vl-to-sv), return an error message after elaboration if any
+     modules required by @('post-elab-topmods') or @('user-paramsettings') had
+     fatal warnings.")))
+
 
 (defconst *vl-default-simpconfig*
   (make-vl-simpconfig))

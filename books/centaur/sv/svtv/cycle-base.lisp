@@ -307,4 +307,8 @@
   (if (atom ins)
       nil
     (append (svtv-cycle-fsm-inputs (car ins) phases)
-            (svtv-cycle-run-fsm-inputs (cdr ins) phases))))
+            (svtv-cycle-run-fsm-inputs (cdr ins) phases)))
+  ///
+  (defret len-of-<fn>
+    (equal (len fsm-ins)
+           (* (len ins) (len phases)))))

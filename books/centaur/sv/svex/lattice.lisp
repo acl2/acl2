@@ -31,9 +31,11 @@
 (in-package "SV")
 (include-book "eval")
 (include-book "xeval")
+(include-book "lists")
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+(local (std::add-default-post-define-hook :fix))
 
 (define 4vec-<<= ((a 4vec-p) (b 4vec-p))
   :returns approxp
@@ -572,6 +574,24 @@ an approximation of its value in @('y')?"
     (svex-env-<<= nil x)
     :hints ((witness))))
 
+(define svex-envlist-<<= ((x svex-envlist-p) (y svex-envlist-p))
+  :hooks (:fix)
+  (if (atom x)
+      t ;; if lengths differ, all bindings in x would be considered to be X at this point
+    (and (ec-call (svex-env-<<= (car x) (car y)))
+         (svex-envlist-<<= (Cdr x) (cdr y))))
+  ///
+  (local (defun nth-x-y-ind (n x y)
+           (if (zp n)
+               (list x y)
+             (nth-x-y-ind (1- n) (cdr x) (cdr y)))))
+  
+  (defthm svex-envlist-<<=-implies-nth
+    (implies (svex-envlist-<<= x y)
+             (svex-env-<<= (nth n x) (nth n y)))
+    :hints (("goal" :induct (nth-x-y-ind n x y)))))
+
+
 (defsection svex-apply-monotonocity
   :parents (svex-apply 4vec-<<=)
   :short "@(see svex-apply) is almost always monotonic :-("
@@ -768,6 +788,13 @@ any environment."
       :hints ('(:expand ((:free (env) (svexlist-mono-eval x env)))))
       :flag svexlist-mono-eval))
 
+  (defthm svex-alist-mono-eval-monotonic
+    (implies (svex-env-<<= env1 env2)
+             (svex-env-<<= (svex-alist-mono-eval x env1)
+                           (svex-alist-mono-eval x env2)))
+    :hints(("Goal" :expand ((svex-env-<<= (svex-alist-mono-eval x env1)
+                                          (svex-alist-mono-eval x env2))))))
+  
   (defthm-svex-eval-flag
     (defthm svex-eval-gte-mono-eval
       (4vec-<<= (svex-mono-eval x env)
@@ -835,6 +862,11 @@ any environment."
                          (svexlist-mono-eval x env))))
       :flag list))
 
+  (defthm svex-alist-eval-gte-mono-eval
+    (svex-env-<<= (svex-alist-mono-eval x env)
+                  (svex-alist-eval x env))
+    :hints (("goal" :in-theory (enable svex-env-<<=))))
+
   (defthm svex-eval-gte-xeval
     (4vec-<<= (svex-xeval x) (svex-eval x env))
     :hints (("goal" :in-theory (e/d (svex-xeval-is-mono-eval
@@ -848,6 +880,11 @@ any environment."
                                      4veclist-<<=-transitive-2)
                                     (svexlist-eval-gte-mono-eval))
              :use svexlist-eval-gte-mono-eval)))
+
+  (defthm svex-alist-eval-gte-xeval
+    (svex-env-<<= (svex-alist-xeval x)
+                  (svex-alist-eval x env))
+    :hints (("goal" :in-theory (enable svex-env-<<=))))
 
   "<p>Accordingly, we can often use @(see svex-mono-eval) in place of @(see
   svex-eval).</p>"

@@ -613,9 +613,6 @@
                                            major-frame-bfrlist)
                  :expand ((major-stack-bfrlist stack))))))
 
-(define fgl-toplevel-sat-check-config-wrapper (override)
-  (or override (fgl-toplevel-sat-check-config)))
-
 (local (defthm iff?-forall-extensions-of-nil
          (equal (iff?-forall-extensions nil obj term eval-alist)
                 (iff-forall-extensions obj term eval-alist))

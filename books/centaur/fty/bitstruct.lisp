@@ -1236,6 +1236,9 @@ rather than an unsigned one.  (Signed and unsigned fields can be used inside
 unsigned and signed bitstructs -- they are simply sign- or zero-extended as
 necessary when accessed.)</li>
 
+<li>@(':msb-first') -- when non-NIL, reverses the order of the top-level fields,
+it does not reverse @(':subfield') accessors/updaters.</li>
+
 </ul>
 
 <h5>Field Syntax</h5>

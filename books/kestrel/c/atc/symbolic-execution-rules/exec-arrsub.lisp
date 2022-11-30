@@ -115,8 +115,8 @@
     :parents nil
     (b* (((mv names events)
           (atc-exec-arrsub-rules-gen-loop-atypes
-           *nonchar-integer-types**
-           *nonchar-integer-types**)))
+           *nonchar-integer-types*
+           *nonchar-integer-types*)))
       `(progn
          (defsection atc-exec-arrsub-rules
            :short "Rules for executing array subscript expressions."

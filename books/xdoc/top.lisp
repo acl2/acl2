@@ -357,6 +357,7 @@
          (extension   (cdr (extract-keyword-from-args :extension args)))
          (pkg         (cdr (extract-keyword-from-args :pkg args)))
          (no-xdoc-override (cdr (extract-keyword-from-args :no-xdoc-override args)))
+         (set-as-default-parent (cdr (extract-keyword-from-args :set-as-default-parent args)))
          (extension
           (cond ((symbolp extension) extension)
                 ((and (consp extension)
@@ -400,6 +401,18 @@
               '(:stack :pop)
             nil))
 
+         ;; Insert  (local (xdoc::set-default-parents  name))  when wrapper  is
+         ;; encapsulate and set-as-default-parent is t.
+         (new-args
+          (if set-as-default-parent
+              (progn$ (and (not (equal (car wrapper) 'encapsulate))
+                           (er hard?  'defsection "In section  ~x0, set-as-default-parent ~
+                     cannot be  set to  t when the  wrapper is  not encapsulate."
+                               name))
+                      (cons `(local (xdoc::set-default-parents ,name))
+                            new-args))
+            new-args))
+         
          (wrapper
           ;; ACL2 wants an encapsulate to have at least one event, so things
           ;; like (encapsulate nil) cause an error.  To make empty defsections

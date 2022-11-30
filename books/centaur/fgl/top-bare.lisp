@@ -41,7 +41,6 @@
 (include-book "ctrex-utils")
 (include-book "doc")
 (include-book "pathcond-fix")
-(include-book "def-fgl-thm")
 (include-book "centaur/aignet/transform-utils" :dir :system)
 (local (in-theory (disable w)))
 
@@ -499,6 +498,21 @@ be a string or message identifying the particular SAT check.</p>"
 (defmacro fgl-error (&key msg debug-obj)
   `(fgl-prog2 (fgl-error! :msg ,msg :debug-obj ,debug-obj)
               nil))
+
+(def-fgl-rewrite fgl-vacuity-check-impl
+  (equal (fgl-vacuity-check config x)
+         (let ((obj (fgl-sat-check config x)))
+           (fgl-prog2 (syntax-interp
+                       (and (not obj)
+                            (fgl-interp-store-debug-info "Vacuity check failed"
+                                                         x 'interp-st)))
+                      obj)))
+  :hints(("Goal" :in-theory (enable fgl-vacuity-check
+                                    fgl-sat-check))))
+
+(remove-fgl-rewrite fgl-vacuity-check)
+(disable-execution fgl-vacuity-check)
+
 
 (defmacro fgl-assert! (cond &key msg debug-obj)
   `(if ,cond

@@ -36,6 +36,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defsection svex-<<=
+  :parents (4vec-<<=)
   (defun-sk svex-<<= (x y)
     (forall env
             (4vec-<<= (svex-eval x env)
@@ -115,6 +116,7 @@
            (nth-ind (1- n) (cdr x)))))
 
 (defsection svexlist-<<=
+  :parents (4vec-<<=)
   (defun-sk svexlist-<<= (x y)
     (forall env
             (4veclist-<<= (svexlist-eval x env)
@@ -338,6 +340,7 @@
                 (svex-env-lookup k (svex-alist-eval x env)))))
 
 (defsection svex-alist-<<=
+  :parents (4vec-<<=)
   (defun-sk svex-alist-<<= (x y)
     (forall env
             (svex-env-<<= (svex-alist-eval x env)
@@ -595,6 +598,7 @@
                           (var (svex-alist-compose-equiv-witness y x)))))))))
 
 (defsection svex-monotonic-p
+  :parents (4vec-<<=)
   (defcong svex-eval-equiv equal (svex-monotonic-p x) 1
     :hints(("Goal" :in-theory (e/d (svex-monotonic-p)
                                    (svex-monotonic-p-necc))
@@ -611,6 +615,7 @@
     :hints(("Goal" :in-theory (enable svex-monotonic-p svex-eval)))))
 
 (defsection svexlist-monotonic-p
+  :parents (4vec-<<=)
   (defcong svexlist-eval-equiv equal (svexlist-monotonic-p x) 1
     :hints(("Goal" :in-theory (e/d (svexlist-monotonic-p)
                                    (svexlist-monotonic-p-necc))
@@ -647,6 +652,7 @@
              :in-theory (e/d (nth-redef) (nth))))))
 
 (defsection svex-alist-monotonic-p
+  :parents (4vec-<<=)
   (defun-sk svex-alist-monotonic-p (x)
     (forall (env1 env2)
             (implies (svex-env-<<= env1 env2)
