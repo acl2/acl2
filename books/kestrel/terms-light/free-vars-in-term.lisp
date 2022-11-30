@@ -13,6 +13,7 @@
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
+(local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 
 ;; This utility is similiar to all-vars but simpler.
 
@@ -118,3 +119,13 @@
     (no-duplicatesp (free-vars-in-terms terms))
     :flag free-vars-in-terms)
   :hints (("Goal" :in-theory (enable free-vars-in-term free-vars-in-terms))))
+
+(defthm-flag-free-vars-in-term
+  (defthmd free-vars-in-terms-when-symbol-listp
+    (implies (symbol-listp terms)
+             (equal (free-vars-in-terms terms)
+                    (remove-duplicates-equal terms)))
+    :flag free-vars-in-terms)
+  :skip-others t
+  :hints (("Goal" :in-theory (enable free-vars-in-term free-vars-in-terms
+                                     remove-duplicates-equal))))
