@@ -259,7 +259,6 @@
                             (arg-thm symbolp)
                             (gin pexpr-ginp)
                             (wrld plist-worldp))
-  (declare (ignore term arg-thm wrld))
   :returns (mv erp
                (gout pexpr-goutp))
   :short "Generate a C expression and theorem from an ACL2 term
@@ -268,7 +267,10 @@
   (xdoc::topstring
    (xdoc::p
     "The expression and theorem for the argument expression
-     are generated in the caller, and passed here."))
+     are generated in the caller, and passed here.")
+   (xdoc::p
+    "We do not yet support operations with an associated @('okp') predicate.
+     We will add support for them soon."))
   (b* (((reterr) (irr-pexpr-gout))
        ((pexpr-gin gin) gin)
        ((unless (equal arg-type in-type))
@@ -279,15 +281,62 @@
                This is indicative of provably dead code, ~
                given that the code is guard-verified."
               op arg-term arg-type in-type)))
-       (expr (make-expr-unary :op op :arg arg-expr)))
+       (expr (make-expr-unary :op op :arg arg-expr))
+       (proofs (and gin.proofs
+                    (or (not (unop-case op :minus))
+                        (member-eq (type-kind in-type)
+                                   '(:uint :ulong :ullong)))))
+       ((when (not proofs))
+        (retok
+         (make-pexpr-gout :expr expr
+                          :type out-type
+                          :events arg-events
+                          :thm-name nil
+                          :thm-index gin.thm-index
+                          :names-to-avoid gin.names-to-avoid
+                          :proofs nil)))
+       (thm-name (pack gin.fn '-expr gin.thm-index '-correct))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil gin.names-to-avoid wrld))
+       (type-pred (type-to-recognizer out-type wrld))
+       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
+                             ,term)
+                      (,type-pred ,term)))
+       (formula (atc-contextualize formula gin.context))
+       (formula `(implies (and (compustatep ,gin.compst-var)
+                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
+                          ,formula))
+       (arg-type-pred (type-to-recognizer arg-type wrld))
+       (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
+       (op-name (pack (unop-kind op)))
+       (exec-unary-when-op-and-arg-type-pred
+        (pack op-name '-value-when- arg-type-pred))
+       ((unless (type-nonchar-integerp arg-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg-type)))
+       (arg-fixtype (integer-type-to-fixtype arg-type))
+       (op-arg-type (pack op-name '- arg-fixtype))
+       (type-pred-of-op-arg-type (pack type-pred '-of- op-arg-type))
+       (hints `(("Goal" :in-theory '(exec-expr-pure-when-unary
+                                     (:e expr-kind)
+                                     (:e expr-unary->op)
+                                     (:e expr-unary->arg)
+                                     ,arg-thm
+                                     ,valuep-when-arg-type-pred
+                                     ,exec-unary-when-op-and-arg-type-pred
+                                     (:e ,(pack 'unop- op-name))
+                                     ,type-pred-of-op-arg-type))))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
     (retok
      (make-pexpr-gout :expr expr
                       :type out-type
-                      :events arg-events
-                      :thm-name nil
-                      :thm-index gin.thm-index
-                      :names-to-avoid gin.names-to-avoid
-                      :proofs nil))))
+                      :events (append arg-events (list event))
+                      :thm-name thm-name
+                      :thm-index (1+ gin.thm-index)
+                      :names-to-avoid names-to-avoid
+                      :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
