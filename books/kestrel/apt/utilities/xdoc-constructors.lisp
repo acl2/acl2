@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -70,7 +70,7 @@
       "Any other symbol, to use as the name of the function."))
     (xdoc::p
      "In the rest of this documentation page,
-      let @('new') be this function.")
+      let @('new') be the name of this function.")
     ,@additional))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -132,7 +132,7 @@
      "This input may be present only if the @(':wrapper') input is @('t').")
     (xdoc::p
      "In the rest of this documentation page,
-      let @('wrapper') be this function.")
+      let @('wrapper') be the name of this function.")
     ,@additional))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
