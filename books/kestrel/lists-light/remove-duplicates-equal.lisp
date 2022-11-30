@@ -23,3 +23,16 @@
   (no-duplicatesp-equal (remove-duplicates-equal x))
   :hints (("Goal" :in-theory (enable remove-duplicates-equal
                                      no-duplicatesp-equal))))
+
+(defthmd remove-duplicates-equal-when-no-duplicatesp-equal
+  (implies (no-duplicatesp-equal x)
+           (equal (remove-duplicates-equal x)
+                  (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable remove-duplicates-equal))))
+
+(defthm remove-duplicates-equal-when-no-duplicatesp-equal-cheap
+  (implies (no-duplicatesp-equal x)
+           (equal (remove-duplicates-equal x)
+                  (true-list-fix x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable remove-duplicates-equal))))
