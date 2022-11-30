@@ -56,6 +56,7 @@
 
 ;; Check that the TERMS and (mv-nth '0 <core>), (mv-nth '1 <core>), etc.
 ;; except allow HIDES to appear around the mv-nths.
+;; TODO: Consider allowing gaps in the numbering, for when some values got dropped.
 (defund numbered-mv-nthsp (terms curr core)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (natp curr)
