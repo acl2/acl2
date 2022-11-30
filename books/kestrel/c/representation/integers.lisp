@@ -14,6 +14,7 @@
 (include-book "../language/integer-ranges")
 
 (local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 
 ;; to have FTY::DEFLIST generate theorems about NTH:
 (local (include-book "std/lists/nth" :dir :system))
@@ -159,6 +160,9 @@
        (signedp (type-signed-integerp type))
        (<type> (integer-type-to-fixtype type))
        (<type>p (pack <type> 'p))
+       (<type>-fix (pack <type> '-fix))
+       (<type>-fix-when-<type>p (pack <type>-fix '-when- <type>p))
+       (<type>-equiv (pack <type> '-equiv))
        (<type>-integer (pack <type> '-integer))
        (<type>-integerp (pack <type>-integer 'p))
        (<type>-integerp-alt-def (pack <type>-integerp '-alt-def))
@@ -169,6 +173,10 @@
        (<type>-max (pack <type> '-max))
        (<type>-min (pack <type> '-min))
        (<type>->get (pack <type> '->get))
+       (<type>-of-fields (pack <type> '-of-fields))
+       (<type>->get-of-<type> (pack <type>->get '-of- <type>))
+       (equal-of-<type> (pack 'equal-of- <type>))
+       (consp-when-<type>p (pack 'consp-when- <type>p))
        (<type>-list (pack <type> '-list))
        (<type>-listp (pack <type>-list 'p))
        (<type>-list-fix (pack <type>-list '-fix))
@@ -201,13 +209,75 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (fty::defprod ,<type>
-         :short ,(str::cat "Fixtype of values of " type-string ".")
-         ((get ,<type>-integer))
-         :tag ,(type-kind type)
-         :layout :list
-         :pred ,<type>p
+       (define ,<type>p (x)
+         :returns (yes/no booleanp)
+         :short ,(str::cat "Recognizer of values of " type-string ".")
+         (and (consp x)
+              (eq (car x) ,(type-kind type))
+              (true-listp (cdr x))
+              (eql (len (cdr x)) 1)
+              (b* ((get (std::da-nth 0 (cdr x))))
+                (,<type>-integerp get)))
          ///
+         (defrule ,consp-when-<type>p
+           (implies (,<type>p x)
+                    (consp x))
+           :rule-classes :compound-recognizer))
+
+       (define ,<type>-fix ((x ,<type>p))
+         :returns (fixed-x ,<type>p)
+         :short ,(str::cat "Fixer for values of " type-string ".")
+         (mbe :logic (b* ((get (,<type>-integer-fix (std::da-nth 0 (cdr x)))))
+                       (cons ,(type-kind type) (list get)))
+              :exec x)
+         :prepwork ((local (in-theory (enable ,<type>p))))
+         ///
+         (defrule ,<type>-fix-when-<type>p
+           (implies (,<type>p x)
+                    (equal (,<type>-fix x)
+                           x))))
+
+       (fty::deffixtype ,<type>
+         :pred ,<type>p
+         :fix ,<type>-fix
+         :equiv ,<type>-equiv
+         :define t
+         :topic ,<type>p)
+
+       (define ,<type> ((get ,<type>-integerp))
+         :returns (y ,<type>p
+                     :hints (("Goal" :in-theory (enable ,<type>p))))
+         :short ,(str::cat "Constructor for values of " type-string ".")
+         :long
+         (xdoc::topstring
+          (xdoc::p
+           ,(str::cat
+             "This is also the name of the fixtype of values of "
+             type-string ".")))
+         (b* ((get (mbe :logic (,<type>-integer-fix get)
+                        :exec get)))
+           (cons ,(type-kind type) (list get)))
+         :hooks (:fix))
+
+       (define ,<type>->get ((x ,<type>p))
+         :returns (y ,<type>-integerp)
+         :short ,(str::cat "Accessor for values of " type-string ".")
+         (mbe :logic (b* ((x (and t x)))
+                       (,<type>-integer-fix (std::da-nth 0 (cdr x))))
+              :exec (std::da-nth 0 (cdr x)))
+         :prepwork ((local (in-theory (enable ,<type>p ,<type>-fix))))
+         :hooks (:fix)
+         ///
+
+         (defrule ,<type>-of-fields
+           (equal (,<type> (,<type>->get x))
+                  (,<type>-fix x))
+           :enable (,<type> ,<type>-fix))
+
+         (defrule ,<type>->get-of-<type>
+           (equal (,<type>->get (,<type> get))
+                  (,<type>-integer-fix get))
+           :enable ,<type>)
 
          (defrule ,(pack <type>->get '-upper-bound)
            (<= (,<type>->get x) (,<type>-max))
@@ -224,6 +294,15 @@
                 :enable (,<type>->get
                          ,<type>-integer-fix
                          ,<type>-integerp-alt-def)))))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (defrule ,equal-of-<type>
+         (equal (equal (,<type> get) x)
+                (and (,<type>p x)
+                     (equal (,<type>->get x)
+                            (,<type>-integer-fix get))))
+         :enable (,<type> ,<type>p ,<type>->get))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
