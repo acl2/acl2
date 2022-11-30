@@ -357,7 +357,6 @@
                              (arg2-thm symbolp)
                              (gin pexpr-ginp)
                              (wrld plist-worldp))
-  (declare (ignore term arg1-thm arg2-thm wrld))
   :returns (mv erp
                (gout pexpr-goutp))
   :short "Generate a C expression and theorem from an ACL2 term
@@ -382,15 +381,80 @@
                This is indicative of provably dead code, ~
                given that the code is guard-verified."
               op arg1-term arg1-type arg2-term arg2-type in1-type in2-type)))
-       (expr (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr)))
+       (expr (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr))
+       (proofs (and gin.proofs
+                    (not (member-eq (binop-kind op) '(:div :rem :shl :shr)))
+                    (or (not (member-eq (binop-kind op) '(:add :sub :mul)))
+                        (type-unsigned-integerp out-type))))
+       ((when (not proofs))
+        (retok
+         (make-pexpr-gout :expr expr
+                          :type out-type
+                          :events (append arg1-events arg2-events)
+                          :thm-name nil
+                          :thm-index gin.thm-index
+                          :names-to-avoid gin.names-to-avoid
+                          :proofs nil)))
+       (thm-name (pack gin.fn '-expr gin.thm-index '-correct))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil gin.names-to-avoid wrld))
+       (type-pred (type-to-recognizer out-type wrld))
+       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
+                             ,term)
+                      (,type-pred ,term)))
+       (formula (atc-contextualize formula gin.context))
+       (formula `(implies (and (compustatep ,gin.compst-var)
+                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
+                          ,formula))
+       (arg1-type-pred (type-to-recognizer arg1-type wrld))
+       (arg2-type-pred (type-to-recognizer arg2-type wrld))
+       (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
+       (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
+       (op-name (pack (binop-kind op)))
+       (exec-binary-strict-pure-when-op
+        (pack 'exec-binary-strict-pure-when- op-name))
+       ((unless (type-nonchar-integerp arg1-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg1-type)))
+       (arg1-fixtype (integer-type-to-fixtype arg1-type))
+       ((unless (type-nonchar-integerp arg2-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg2-type)))
+       (arg2-fixtype (integer-type-to-fixtype arg2-type))
+       (op-values-when-arg2-type (pack op-name '-values-when- arg1-fixtype))
+       (op-arg1-type-and-value-when-arg2-type
+        (pack op-name '- arg1-fixtype '-and-value-when- arg2-fixtype))
+       (op-arg1-type-arg2-type (pack op-name '- arg1-fixtype '- arg2-fixtype))
+       (type-pred-of-op-arg1-type-arg2-type
+        (pack type-pred '-of- op-arg1-type-arg2-type))
+       (hints `(("Goal" :in-theory '(exec-expr-pure-when-strict-pure-binary
+                                     (:e expr-kind)
+                                     (:e expr-binary->op)
+                                     (:e expr-binary->arg1)
+                                     (:e expr-binary->arg2)
+                                     (:e binop-kind)
+                                     (:e member-equal)
+                                     ,arg1-thm
+                                     ,arg2-thm
+                                     ,valuep-when-arg1-type-pred
+                                     ,valuep-when-arg2-type-pred
+                                     ,exec-binary-strict-pure-when-op
+                                     (:e ,(pack 'binop- op-name))
+                                     ,op-values-when-arg2-type
+                                     ,op-arg1-type-and-value-when-arg2-type
+                                     ,type-pred-of-op-arg1-type-arg2-type))))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
     (retok
      (make-pexpr-gout :expr expr
                       :type out-type
-                      :events (append arg1-events arg2-events)
-                      :thm-name nil
-                      :thm-index gin.thm-index
-                      :names-to-avoid gin.names-to-avoid
-                      :proofs nil))))
+                      :events (append arg1-events
+                                      arg2-events
+                                      (list event))
+                      :thm-name thm-name
+                      :thm-index (1+ gin.thm-index)
+                      :names-to-avoid names-to-avoid
+                      :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -520,12 +584,14 @@
                 (atc-gen-expr-pure arg1-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg1.thm-index
-                                      :names-to-avoid arg1.names-to-avoid))
+                                      :names-to-avoid arg1.names-to-avoid
+                                      :proofs arg1.proofs))
                ((erp (pexpr-gout arg2))
                 (atc-gen-expr-pure arg2-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg2.thm-index
-                                      :names-to-avoid arg2.names-to-avoid)))
+                                      :names-to-avoid arg2.names-to-avoid
+                                      :proofs arg2.proofs)))
             (atc-gen-expr-binary term op in1-type in2-type out-type
                                  arg1-term arg2-term
                                  arg1.expr arg2.expr
