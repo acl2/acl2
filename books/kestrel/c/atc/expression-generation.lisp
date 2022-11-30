@@ -266,7 +266,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The expression and theorem for the argument expression
+    "The expression and theorem for the argument
      are generated in the caller, and passed here.")
    (xdoc::p
     "We do not yet support operations with an associated @('okp') predicate.
@@ -337,6 +337,60 @@
                       :thm-index (1+ gin.thm-index)
                       :names-to-avoid names-to-avoid
                       :proofs t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-binary ((term pseudo-termp)
+                             (op binopp)
+                             (in1-type typep)
+                             (in2-type typep)
+                             (out-type typep)
+                             (arg1-term pseudo-termp)
+                             (arg2-term pseudo-termp)
+                             (arg1-expr exprp)
+                             (arg2-expr exprp)
+                             (arg1-type typep)
+                             (arg2-type typep)
+                             (arg1-events pseudo-event-form-listp)
+                             (arg2-events pseudo-event-form-listp)
+                             (arg1-thm symbolp)
+                             (arg2-thm symbolp)
+                             (gin pexpr-ginp)
+                             (wrld plist-worldp))
+  (declare (ignore term arg1-thm arg2-thm wrld))
+  :returns (mv erp
+               (gout pexpr-goutp))
+  :short "Generate a C expression and theorem from an ACL2 term
+          that represents a binary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expressions and theorems for the arguments
+     are generated in the caller, and passed here.")
+   (xdoc::p
+    "We do not yet support operations with an associated @('okp') predicate.
+     We will add support for them soon."))
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       ((unless (and (equal arg1-type in1-type)
+                     (equal arg2-type in2-type)))
+        (reterr
+         (msg "The binary operator ~x0 is applied ~
+               to an expression term ~x1 returning ~x2 ~
+               and to an expression term ~x3 returning ~x4, ~
+               but a ~x5 operand and a ~x6 operand are expected. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              op arg1-term arg1-type arg2-term arg2-type in1-type in2-type)))
+       (expr (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr)))
+    (retok
+     (make-pexpr-gout :expr expr
+                      :type out-type
+                      :events (append arg1-events arg2-events)
+                      :thm-name nil
+                      :thm-index gin.thm-index
+                      :names-to-avoid gin.names-to-avoid
+                      :proofs nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -450,49 +504,35 @@
                                                 gin wrld)))
          ((mv okp op arg-term in-type out-type) (atc-check-unop term))
          ((when okp)
-          (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state)))
+          (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state))
+               (gin (change-pexpr-gin gin
+                                      :thm-index arg.thm-index
+                                      :names-to-avoid arg.names-to-avoid
+                                      :proofs arg.proofs)))
             (atc-gen-expr-unary term op in-type out-type
                                 arg-term arg.expr arg.type
                                 arg.events arg.thm-name
-                                (change-pexpr-gin
-                                 gin
-                                 :thm-index arg.thm-index
-                                 :names-to-avoid arg.names-to-avoid
-                                 :proofs arg.proofs)
-                                wrld)))
-         ((mv okp op arg1-term arg2-term in-type1 in-type2 out-type)
+                                gin wrld)))
+         ((mv okp op arg1-term arg2-term in1-type in2-type out-type)
           (atc-check-binop term))
          ((when okp)
           (b* (((erp (pexpr-gout arg1))
                 (atc-gen-expr-pure arg1-term gin state))
+               (gin (change-pexpr-gin gin
+                                      :thm-index arg1.thm-index
+                                      :names-to-avoid arg1.names-to-avoid))
                ((erp (pexpr-gout arg2))
-                (atc-gen-expr-pure arg2-term
-                                   (change-pexpr-gin
-                                    gin
-                                    :thm-index arg1.thm-index
-                                    :names-to-avoid arg1.names-to-avoid)
-                                   state))
-               ((unless (and (equal arg1.type in-type1)
-                             (equal arg2.type in-type2)))
-                (reterr
-                 (msg "The binary operator ~x0 is applied ~
-                       to an expression term ~x1 returning ~x2 ~
-                       and to an expression term ~x3 returning ~x4, ~
-                       but a ~x5 and a ~x6 operand is expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      op arg1-term arg1.type arg2-term arg2.type
-                      in-type1 in-type2))))
-            (retok (make-pexpr-gout
-                    :expr (make-expr-binary :op op
-                                            :arg1 arg1.expr
-                                            :arg2 arg2.expr)
-                    :type out-type
-                    :events (append arg1.events arg2.events)
-                    :thm-name nil
-                    :thm-index arg2.thm-index
-                    :names-to-avoid arg2.names-to-avoid
-                    :proofs nil))))
+                (atc-gen-expr-pure arg2-term gin state))
+               (gin (change-pexpr-gin gin
+                                      :thm-index arg2.thm-index
+                                      :names-to-avoid arg2.names-to-avoid)))
+            (atc-gen-expr-binary term op in1-type in2-type out-type
+                                 arg1-term arg2-term
+                                 arg1.expr arg2.expr
+                                 arg1.type arg2.type
+                                 arg1.events arg2.events
+                                 arg1.thm-name arg2.thm-name
+                                 gin wrld)))
          ((mv okp tyname arg-term in-type out-type) (atc-check-conv term))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
