@@ -11714,7 +11714,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq x 't) (kwote? tflg t))
         ((and (weak-satisfies-type-spec-p x)
               (or (symbolp wrld)
-                  (eql (length (getpropc (cadr x) 'formals nil wrld))
+; The next line uses len instead of length for the sake of guard verification.
+                  (eql (len (getpropc (cadr x) 'formals nil wrld))
                        1)))
          (list (cadr x) var))
         ((and (consp x)
@@ -11829,7 +11830,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs ; :measure (acl2-count l)
             :guard (and (true-listp l)
                         (consp l)
-                        (or (null wrld)
+                        (or (symbolp wrld)
                             (plist-worldp wrld)))
             :mode :program))
   (and (consp l)
