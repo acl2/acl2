@@ -751,7 +751,9 @@ pertains to the usual situation where its attachment is
 theorem, the @(see fgl-sat-config) object that is used is the result of calling
 the attachable stub function @('fgl-toplevel-sat-check-config').  When FGL
 rewrite rules or top-level theorems call SAT using @(see fgl-sat-check), the
-configuration object is provided as an argument to that function.</p>
+configuration object is provided as an argument to that function.  FGL also
+checks vacuity of hypotheses by default, and the default configuration for this
+uses another attachable stub function @('fgl-toplevel-vacuity-check-config').</p>
 
 <p>An @(see fgl-sat-config) object is either an @(see
 fgl-satlink-monolithic-sat-config) or an @(see fgl-ipasir-config) object.  When

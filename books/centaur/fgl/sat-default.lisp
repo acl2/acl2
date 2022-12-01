@@ -93,7 +93,8 @@
 (defmacro fgl-use-default-sat-check ()
   `(progn (defattach interp-st-sat-check fgl-default-sat-check-impl)
           (defattach interp-st-sat-counterexample fgl-default-sat-counterexample-impl)
-          (defattach fgl-toplevel-sat-check-config fgl-satlink-default-toplevel-sat-check-config)))
+          (defattach fgl-toplevel-sat-check-config fgl-satlink-default-toplevel-sat-check-config)
+          (defattach fgl-toplevel-vacuity-check-config fgl-satlink-default-toplevel-sat-check-config)))
 
 (fgl-use-default-sat-check)
 

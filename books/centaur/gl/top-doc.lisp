@@ -49,7 +49,7 @@
    (acl2::ifdef "OS_HAS_GLUCOSE"
                 (acl2::ifdef "OS_HAS_ABC"
                              (include-book "centaur/glmc/glmc-test" :dir :system)
-                             (include-book "centaur/glmc/counter" :dir :system)
+                             ;; (include-book "centaur/glmc/counter" :dir :system)
                              :endif)
                 :endif)))
 

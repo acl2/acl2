@@ -94,6 +94,9 @@
                  :mintime 1))
               (defattach gl::gl-satlink-config my-satlink-config)))
 
+
+(set-inhibit-warnings "Theory")
+
 (local
  (progn
    (fgl::remove-fgl-rewrite sv::svex-env-lookup)
@@ -156,10 +159,40 @@
    (fgl::add-fgl-rewrite sv::svtv-fsm-run-is-base-fsm-run)
    (fgl::remove-fgl-rewrites sv::svtv-fsm-run)
 
-   (fgl::remove-fgl-rewrites sv::svtv-env-to-values)
-   (fgl::remove-fgl-rewrites sv::join-val/test-envs)
+   (defun svtv-fsm-input-alist-wrap (inputs map updates)
+     (with-fast-alist inputs
+       (svtv-name-lhs-map-eval-x
+        (svtv-fsm-values-inversemap (alist-keys (svex-env-fix inputs))
+                                    map updates)
+        inputs)))
 
-   (fgl::add-fgl-rewrite sv::lookup-in-join-val/test-envs)
+   (fgl::remove-fgl-rewrite svtv-fsm-input-alist-wrap)
+   
+   (fgl::def-fgl-rewrite svtv-fsm-phase-inputs-fgl
+     (equal (svtv-fsm-phase-inputs inputs override-tests map updates)
+            (append (svtv-name-lhs-map-eval-x
+                     (svtv-fsm-tests-inversemap (alist-keys (svex-env-fix override-tests))
+                                                map updates)
+                     (make-fast-alist override-tests))
+                    (svtv-fsm-input-alist-wrap inputs map updates)))
+     :hints(("Goal" :in-theory (enable svtv-fsm-phase-inputs))))
+
+   (fgl::remove-fgl-rewrite svtv-fsm-phase-inputs)
+
+   (local (defthm boundp-override-test-in-svtv-fsm-input-alist-wrap
+            (implies (svar->override-test v)
+                     (not (svex-env-boundp v (svtv-fsm-input-alist-wrap inputs map updates))))))
+            
+   
+   (fgl::def-fgl-rewrite lookup-override-test-in-svtv-fsm-input-alist-wrap
+     (implies (svar->override-test v)
+              (equal (svex-env-lookup v (svtv-fsm-input-alist-wrap inputs map updates))
+                     (4vec-x))))
+   
+   ;; (fgl::remove-fgl-rewrites sv::svtv-env-to-values)
+   ;; (fgl::remove-fgl-rewrites sv::join-val/test-envs)
+
+   ;; (fgl::add-fgl-rewrite sv::lookup-in-join-val/test-envs)
 
    ;; (fgl::def-fgl-rewrite integerp-of-svex-env-lookup
    ;;   (equal (integerp (sv::svex-env-lookup k x))

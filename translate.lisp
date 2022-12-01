@@ -3659,6 +3659,9 @@
 ; Successively substitute each element of new-lst for the variable old in term
 ; and collect the results.
 
+  (declare (xargs :guard (and (pseudo-term-listp new-lst)
+                              (variablep old)
+                              (pseudo-termp term))))
   (cond
    ((endp new-lst) nil)
    (t (cons (subst-var (car new-lst) old term)
@@ -3701,6 +3704,9 @@
 ; substitution to get the rest of the expressions.  The legality of a type spec
 ; is independent of the var constrained.
 
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (or (symbolp wrld)
+                                  (plist-worldp wrld)))))
   (cond ((null vars) nil)
         (t (let ((expr (translate-declaration-to-guard-gen
                         x (car vars) t wrld)))
@@ -3736,6 +3742,8 @@
 ; case could be made that a lambda expression with a nil guard is pretty
 ; useless).
 
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (true-listp satisfies-exprs))))
   (cond
    ((atom edcls)
 
@@ -3848,6 +3856,7 @@
                        (t (list term))))))
 
 (defun flatten-ands-in-lit-lst (x)
+  (declare (xargs :guard (pseudo-term-listp x)))
   (if (endp x)
       nil
     (append (flatten-ands-in-lit (car x))
@@ -4058,6 +4067,7 @@
 ; quoted lambda-like objects found), or a list of all the splo-extracts-tuples
 ; that need further checking by well-formed-lambda-objectp1.
 
+  (declare (xargs :guard (pseudo-termp body)))
   (cond
    ((variablep body) t)
    ((fquotep body)
@@ -4086,8 +4096,9 @@
        (fargs body)))))
 
 (defun syntactically-plausible-lambda-objectsp-within-lst (gflg args)
+  (declare (xargs :guard (pseudo-term-listp args)))
   (cond
-   ((null args) t)
+   ((endp args) t)
    (t (let* ((ans1
               (syntactically-plausible-lambda-objectsp-within
                gflg
@@ -5708,16 +5719,16 @@
 ; We assume (executable-tamep-functionp x wrld).  See the discussion above
 ; about the ``warrants-for-tamep'' family of functions.
   (declare (xargs :mode :program))
-  (if (symbolp fn)
-      (let ((warrant-name (find-warrant-function-name fn wrld)))
-        (mv (if (or (eq warrant-name t)
-                    (eq warrant-name nil))
-                warrants
-                (add-to-set-equal (list warrant-name) warrants))
-            (if (eq warrant-name nil)
-                (add-to-set-eq fn unwarranteds)
-                unwarranteds)))
-      (warrants-for-tamep-lambdap fn wrld warrants unwarranteds)))
+  (if (flambdap fn)
+      (warrants-for-tamep-lambdap fn wrld warrants unwarranteds)
+    (let ((warrant-name (find-warrant-function-name fn wrld)))
+      (mv (if (or (eq warrant-name t)
+                  (eq warrant-name nil))
+              warrants
+            (add-to-set-equal (list warrant-name) warrants))
+          (if (eq warrant-name nil)
+              (add-to-set-eq fn unwarranteds)
+            unwarranteds)))))
 
 (defun warrants-for-suitably-tamep-listp (flags args wrld warrants unwarranteds)
 ; We assume (executable-suitably-tamep-listp n flags args wrld).  See the
@@ -5874,7 +5885,11 @@
 ; term) since if term contains no dirty lambda objects this function needlessly
 ; copies term.
 
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (plist-worldp wrld))))
   (cond
+   ((not (mbt (pseudo-termp term))) ; always false; useful for termination
+    term)
    ((variablep term) term)
    ((fquotep term)
     (let ((evg (unquote term)))
@@ -5946,7 +5961,12 @@
                      lamp))))))
 
 (defun clean-up-dirty-lambda-objects-lst (hyps terms ilks wrld lamp)
+  (declare (xargs :guard (and (pseudo-term-listp terms)
+                              (plist-worldp wrld))))
   (cond
+   ((not (mbt (pseudo-term-listp terms)))
+; This case is always false, but is potentially useful for termination.
+    terms)
    ((endp terms) nil)
    (t (cons (clean-up-dirty-lambda-objects hyps
                                            (car terms) (car ilks) wrld lamp)

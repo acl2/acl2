@@ -498,8 +498,8 @@
                            (* (loghead mult-size mult)
                               (loghead mcand-size mcand)))
                   (svl-mult-final-spec
-                   (svl::4vec-concat$ mult-size mult 0)
-                   (svl::4vec-concat$ mcand-size mcand 0)
+                   (loghead out-size (svl::4vec-concat$ mult-size mult 0))
+                   (loghead out-size (svl::4vec-concat$ mcand-size mcand 0))
                    out-size)))
   :hints (("Goal"
            :use ((:instance loghead-of-*-is-mult-final-spec
@@ -524,8 +524,8 @@
                            (* (logapp mult-size mult (- mult-msb))
                               (logapp mcand-size mcand (- mcand-msb))))
                   (svl-mult-final-spec
-                   (svl::4vec-concat$ mult-size mult (- mult-msb))
-                   (svl::4vec-concat$ mcand-size mcand (- mcand-msb))
+                   (loghead out-size (svl::4vec-concat$ mult-size mult (- mult-msb)))
+                   (loghead out-size (svl::4vec-concat$ mcand-size mcand (- mcand-msb)))
                    out-size)))
   :hints (("Goal"
            :use ((:instance loghead-of-*-is-mult-final-spec
@@ -544,7 +544,9 @@
                 (not (cw "WARNING! Proof will be faster if var name ~p0 ~
                 came before var name ~p1 as determined by rp::pp-and$-order ~%" mult mcand))))||#)
            (equal (svl::bits (* mult mcand) 0 out-size)
-                  (svl-mult-final-spec mult mcand out-size)))
+                  (svl-mult-final-spec (loghead out-size mult)
+                                       (loghead out-size mcand)
+                                       out-size)))
   :hints (("Goal"
            :use ((:instance loghead-of-*-is-mult-final-spec))
            :in-theory (e/d (mult-final-spec-is-svl-mult-final-spec
@@ -849,7 +851,6 @@
                               mod2-is-m2
                               floor2-if-f2))))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (Local
@@ -926,7 +927,6 @@
                                (ACL2::LOGCDR$INLINE
                                 +-IS-SUM)))))
 
-
     (defthm integerp-of-*-recursive
       (implies (and (integerp x)
                     (integerp y))
@@ -945,8 +945,7 @@
       (if (zp x)
           0
         (+ y (*-recursive2 (1- x) y))))
-    
-    
+
 
     (defthmd *-to-recursive2-redef
       (implies (and (natp x)
@@ -958,12 +957,10 @@
                                (ACL2::LOGCDR$INLINE
                                 +-IS-SUM)))))
 
-
     (defthm integerp-of-*-recursive2
       (implies (and (integerp x)
                     (integerp y))
                (integerp (*-recursive2 x y))))))
-
 
 
 
@@ -989,8 +986,8 @@
   (local
    (defun dec-dec-induct (n m)
      (if (or (zp n) (zp m))
-         nil (dec-dec-induct (- n 1) (- m 1))))) 
-  
+         nil (dec-dec-induct (- n 1) (- m 1)))))
+
   (Local
    (defthm *-boundry-lemma1
      (implies (and (natp x)
@@ -1098,6 +1095,27 @@
                               SV::4VEC)
                              (+-is-SUM)))))
 
+  (local
+   (defthm 4VEC-CONCAT$-of-bits-with-smaller-size
+     (implies (and (natp size1)
+                   (natp size2)
+                   (<= size2 size1)
+                   (integerp x)
+                   (natp start))
+              (equal (SVL::4VEC-CONCAT$ size1
+                                        (SVL::BITS X start SIZE2)
+                                        0)
+                     (SVL::BITS X start SIZE2)))
+     :hints (("Goal"
+              :in-theory (e/d (SVL::4VEC-CONCAT$
+                               SVL::BITS
+                               SV::4VEC-PART-SELECT
+                               SV::4VEC-CONCAT
+                               SV::4VEC->LOWER
+                               SV::4VEC->UPPER
+                               SV::4VEC-RSH)
+                              (+-is-SUM))))))
+
   (def-rp-rule *-of-bits
     (implies (and (natp start1)
                   (natp start2)
@@ -1117,7 +1135,32 @@
                               (out-size (+ size1 size2))))
              :in-theory (e/d () (bits-*-IS-MULT-FINAL-SPEC
                                  svl-mult-final-spec
-                                 +-is-SUM)))))
+                                 +-is-SUM
+                                 ACL2::LOGHEAD$INLINE)))))
+
+  (local
+   (defthmd unsigned-byte-p-implies
+     (implies (unsigned-byte-p size x)
+              (and (natp size)
+                   (equal (loghead size x) x)))))
+
+  (local
+   (defthm remove-4VEC-CONCAT$-with-zero-when-unsigned-byte-p
+     (implies (and (equal (loghead size1 x) x)
+                   (<= size1 size2)
+                   (natp size2)
+                   (natp size1))
+     (equal (SVL::4VEC-CONCAT$ size2 x 0)
+            x))
+     :hints (("Goal"
+              :in-theory (e/d (SVL::4VEC-CONCAT$
+                               SV::4VEC-RSH
+                               SV::4VEC-CONCAT
+                               SV::4VEC->UPPER
+                               sv::4vec->lower)
+                              ())))))
+
+  
 
   (defthm *-of-known-sized-vecs
     (implies (and (unsigned-byte-p size1 x)
@@ -1126,10 +1169,25 @@
                     (svl-mult-final-spec x y
                                          (+ size1 size2))))
     :hints (("Goal"
-             :use ((:instance bits-*-IS-MULT-FINAL-SPEC
+             :use ((:instance remove-4VEC-CONCAT$-with-zero-when-unsigned-byte-p
+                              (size2 (+ SIZE1 SIZE2))
+                              )
+                   (:instance remove-4VEC-CONCAT$-with-zero-when-unsigned-byte-p
+                              (size2 (+ SIZE1 SIZE2))
+                              (size1 size2)
+                              (x y)
+                              )
+                   (:instance unsigned-byte-p-implies
+                              (size size1))
+                   (:instance unsigned-byte-p-implies
+                              (size size2)
+                              (x y))
+                   (:instance bits-*-IS-MULT-FINAL-SPEC
                               (mult x)
                               (mcand y)
                               (out-size (+ size1 size2))))
-             :in-theory (e/d () (bits-*-IS-MULT-FINAL-SPEC
+             :in-theory (e/d () (loghead
+                                 unsigned-byte-p
+                                 bits-*-IS-MULT-FINAL-SPEC
                                  svl-mult-final-spec
                                  +-is-SUM))))))

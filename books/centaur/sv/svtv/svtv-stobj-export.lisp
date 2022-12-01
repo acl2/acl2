@@ -417,7 +417,10 @@
                   ((flatnorm-res spec) (svtv-normalize-assigns res aliases
                                                                (svtv-data-obj->flatnorm-setup
                                                                 x))))
-               (and (svex-alist-eval-equiv flatnorm.assigns spec.assigns)
+               (and (svex-alist-eval-equiv! flatnorm.assigns spec.assigns)
+                    (subsetp-equal (svex-alist-vars flatnorm.assigns)
+                                   (svex-alist-vars spec.assigns))
+                    ;; (no-duplicatesp-equal (svex-alist-keys flatnorm.assigns))
                     (equal flatnorm.delays spec.delays)
                     (equal flatnorm.constraints spec.constraints))))
     :Hints(("Goal" :in-theory (enable svtv-data$ap
@@ -483,10 +486,11 @@
                   ((pipeline-setup x.pipeline-setup))
                   (run (svtv-fsm-run
                         (svex-alistlist-eval x.pipeline-setup.inputs env)
-                        (svex-alistlist-eval x.pipeline-setup.overrides env)
                         (svex-alist-eval x.pipeline-setup.initst env)
                         rename-fsm
-                        (svtv-probealist-outvars x.pipeline-setup.probes))))
+                        (svtv-probealist-outvars x.pipeline-setup.probes)
+                        :override-vals (svex-alistlist-eval x.pipeline-setup.override-vals env)
+                        :override-tests (svex-alistlist-eval x.pipeline-setup.override-tests env))))
                (and (equal (svex-alist-keys x.pipeline-setup.initst)
                            (svex-alist-keys (base-fsm->nextstate x.cycle-fsm)))
                     (svex-envs-equivalent

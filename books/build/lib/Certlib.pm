@@ -140,7 +140,12 @@ sub read_projects_dirs {
 	    my @parts = $pline =~ m/^\s*:(\S*)\s+"([^"]*)"/;
 	    if (@parts) {
 		my ($key, $dir) = @parts;
-		my $dirfull = File::Spec->catfile(dirname($acl2_projects), $dir);
+		my $dirfull;
+		if (File::Spec->file_name_is_absolute($dir)) {
+		    $dirfull = $dir;
+		} else {
+		    $dirfull = File::Spec->catfile(dirname($acl2_projects), $dir);
+		}
 		certlib_add_dir(uc($key), abs_canonical_path($dirfull));
 	    } else {
 		print(STDERR

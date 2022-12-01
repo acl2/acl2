@@ -5261,6 +5261,17 @@
   (add-svex-simplify-rule integer-p-of-unary--)
 
   (def-rp-rule :disabled-for-acl2 t
+    logapp-to-4vec-concat-without-hyps
+    (implies (and )
+             (and (equal (logapp size x y)
+                         (sv::4vec-concat (nfix size)
+                                          (ifix x)
+                                          (ifix y)))))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-concat)
+                             ()))))
+  
+  (def-rp-rule :disabled-for-acl2 t
     logapp-to-4vec-concat
     (implies (and (integerp x)
                   (natp size)
