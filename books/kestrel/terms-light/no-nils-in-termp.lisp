@@ -79,3 +79,22 @@
            (no-nils-in-termsp (intersection-equal terms1 terms2)))
   :hints (("Goal" :in-theory (enable no-nils-in-termsp
                                      intersection-equal))))
+
+(defthm no-nils-in-termsp-of-set-difference-equal
+  (implies (no-nils-in-termsp terms)
+           (no-nils-in-termsp (set-difference-equal terms terms2)))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+(make-flag no-nils-in-termp)
+
+(defthm-flag-no-nils-in-termp
+  (defthm no-nils-in-termp-of-free-vars-in-term
+    (implies (no-nils-in-termp term)
+             (no-nils-in-termsp (free-vars-in-term term)))
+    :flag no-nils-in-termp)
+  (defthm no-nils-in-termsp-of-free-vars-in-terms
+    (implies (no-nils-in-termsp terms)
+             (no-nils-in-termsp (free-vars-in-terms terms)))
+    :flag no-nils-in-termsp)
+  :hints (("Goal" :expand (free-vars-in-terms terms)
+           :in-theory (enable free-vars-in-term no-nils-in-termsp))))
