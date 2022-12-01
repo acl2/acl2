@@ -142,12 +142,35 @@ svex-assigns-compose)).</li>
        (pair (cons x next-x)))
     (cons pair (delay-svar->delays next-x)))
   ///
-  (more-returns
-   (delays :name vars-of-delay-svar->delays
-           (implies (svar-addr-p x)
-                    (svarlist-addr-p (svar-map-vars delays)))
-           :hints(("Goal" :in-theory (enable svar-map-vars
-                                             svar-addr-p))))))
+  (defret vars-of-delay-svar->delays
+    (implies (svar-addr-p x)
+             (svarlist-addr-p (svar-map-vars delays)))
+    :hints(("Goal" :in-theory (enable svar-map-vars
+                                      svar-addr-p))))
+
+  (defret vars-of-delay-svar->delays-keys
+    (implies (svar-addr-p x)
+             (svarlist-addr-p (alist-keys delays)))
+    :hints(("Goal" :in-theory (enable svar-map-vars
+                                      svar-addr-p
+                                      alist-keys))))
+
+  (defret vars-of-delay-svar->delays-vals
+    (implies (svar-addr-p x)
+             (svarlist-addr-p (alist-vals delays)))
+    :hints(("Goal" :in-theory (enable svar-map-vars
+                                      svar-addr-p
+                                      alist-vals)))))
+
+(local (defthm alist-keys-of-append
+         (equal (alist-keys (append x y))
+                (append (alist-keys x) (alist-keys y)))
+         :hints(("Goal" :in-theory (enable alist-keys)))))
+
+(local (defthm alist-vals-of-append
+         (equal (alist-vals (append x y))
+                (append (alist-vals x) (alist-vals y)))
+         :hints(("Goal" :in-theory (enable alist-vals)))))
 
 
 (define delay-svarlist->delays ((x svarlist-p))
@@ -158,10 +181,17 @@ svex-assigns-compose)).</li>
     (append-without-guard delays1 rest))
   ///
 
-  (more-returns
-   (delays :name vars-of-delay-svarlist->delays
-           (implies (svarlist-addr-p x)
-                    (svarlist-addr-p (svar-map-vars delays))))))
+  (defret vars-of-delay-svarlist->delays
+    (implies (svarlist-addr-p x)
+             (svarlist-addr-p (svar-map-vars delays))))
+
+  (defret vars-of-delay-svarlist->delays-alist-vals
+    (implies (svarlist-addr-p x)
+             (svarlist-addr-p (alist-vals delays))))
+
+  (defret vars-of-delay-svarlist->delays-alist-keys
+    (implies (svarlist-addr-p x)
+             (svarlist-addr-p (alist-keys delays)))))
 
 (define svarlist-collect-delays ((x svarlist-p))
   :returns (delayvars svarlist-p)
@@ -981,6 +1011,36 @@ svex-assigns-compose)).</li>
     :hints(("Goal" :in-theory (enable assigns-vars)))))
 
 
+(define svar-map-truncate-by-var-decls ((x svar-map-p)
+                                        (var-decls var-decl-map-p)
+                                        (acc svex-alist-p))
+  :returns (new-x svex-alist-p)
+  (b* (((when (atom x)) (svex-alist-fix acc))
+       ((unless (mbt (and (consp (car x)) (svar-p (caar x)))))
+        (svar-map-truncate-by-var-decls (cdr x) var-decls acc))
+       ((cons delay-var var) (car x))
+       (wire (cdr (hons-get (svar-fix var) (var-decl-map-fix var-decls))))
+       ((unless wire)
+        (svar-map-truncate-by-var-decls (cdr x) var-decls acc))
+       ((wire wire))
+       (acc (cons (cons delay-var (svcall zerox (svex-quote (2vec wire.width)) (svex-var var)))
+                  (svex-alist-fix acc))))
+    (svar-map-truncate-by-var-decls (cdr x) var-decls acc))
+  ///
+  (defret vars-of-<fn>
+    (implies (and (svarlist-addr-p (alist-vals (svar-map-fix x)))
+                  (svarlist-addr-p (svex-alist-vars acc)))
+             (svarlist-addr-p (svex-alist-vars new-x)))
+    :hints(("Goal" :in-theory (enable svex-alist-vars alist-vals svar-map-fix))))
+
+  (defret keys-of-<fn>
+    (implies (and (svarlist-addr-p (alist-keys (svar-map-fix x)))
+                  (svarlist-addr-p (svex-alist-keys acc)))
+             (svarlist-addr-p (svex-alist-keys new-x)))
+    :hints(("Goal" :in-theory (enable svex-alist-keys alist-keys svar-map-fix))))
+
+  (local (in-theory (enable svar-map-fix))))
+
 (define svex-alist-truncate-by-var-decls ((x svex-alist-p)
                                           (var-decls var-decl-map-p)
                                           (acc svex-alist-p))
@@ -1008,6 +1068,13 @@ svex-assigns-compose)).</li>
              (not (svex-lookup v new-x)))
     :hints(("Goal" :in-theory (enable svex-lookup))))
 
+  (defret no-duplicate-keys-of-<fn>
+    (implies (and (no-duplicatesp-equal (svex-alist-keys acc))
+                  (no-duplicatesp-equal (svex-alist-keys x))
+                  (not (intersectp-equal (svex-alist-keys x) (svex-alist-keys acc))))
+             (no-duplicatesp-equal (svex-alist-keys new-x)))
+    :hints(("Goal" :in-theory (enable svex-alist-keys))))
+
   (local (in-theory (enable svex-alist-fix))))
 
 
@@ -1025,7 +1092,7 @@ svex-assigns-compose)).</li>
           )
   :verify-guards nil
   :returns (mv (res-assigns svex-alist-p)
-               (res-delays svar-map-p)
+               (res-delays svex-alist-p)
                (res-constraints constraintlist-p))
   :prepwork ((local (defthm cdr-last-of-svex-alist
                       (implies (svex-alist-p x)
@@ -1071,8 +1138,9 @@ svex-assigns-compose)).</li>
        (final-assigns (svex-alist-truncate-by-var-decls final-assigns1 var-decls nil))
        ;; Collect all variables referenced and add delays as needed.
        (delayvars (svarlist-collect-delays (svexlist-collect-vars (svex-alist-vals res-assigns))))
-       (res-delays (delay-svarlist->delays delayvars)))
-    (mv final-assigns res-delays norm-constraints svexarr))
+       (res-delays (delay-svarlist->delays delayvars))
+       (trunc-delays (fast-alist-clean (svar-map-truncate-by-var-decls res-delays var-decls nil))))
+    (mv final-assigns trunc-delays norm-constraints svexarr))
   ///
   (deffixequiv svex-normalize-assigns)
 
@@ -1080,11 +1148,26 @@ svex-assigns-compose)).</li>
     (equal (svexlist-vars (svex-alist-vals x))
            (svex-alist-vars x))
     :hints(("Goal" :in-theory (enable svex-alist-vals svex-alist-vars svexlist-vars))))
-
+  
   (verify-guards svex-normalize-assigns
     :guard-debug t
     :hints (("goal" :do-not-induct t
              :in-theory (disable member-equal))))
+
+  ;; (local (defthm vars-of-fast-alist-fork
+  ;;          (implies (and (svarlist-addr-p (svex-alist-vars x))
+  ;;                        (svarlist-addr-p (svex-alist-vars y)))
+  ;;                   (svarlist-addr-p (svex-alist-vars (fast-alist-fork x y))))))
+
+  (local (defthm svex-alist-vars-of-cdr-last
+           (equal (svex-alist-vars (cdr (last x))) nil)
+           :hints(("Goal" :in-theory (enable last svex-alist-vars)))))
+  
+  (local (defthm vars-of-fast-alist-clean
+           (implies (svarlist-addr-p (svex-alist-vars x))
+                    (svarlist-addr-p (svex-alist-vars (fast-alist-clean x))))))
+  
+  (local (in-theory (disable fast-alist-clean)))
 
   (defret vars-of-svex-normalize-assigns
     (implies (svarlist-addr-p (aliases-vars aliases))
@@ -1098,6 +1181,30 @@ svex-assigns-compose)).</li>
                 (svex-lookup k x))
          :hints(("Goal" :in-theory (e/d (svex-lookup)
                                         (fast-alist-clean))))))
+
+  (local (defthm svex-lookup-badguy-when-svarlist-addr-p-keys
+           (implies (svarlist-addr-p (svex-alist-keys x))
+                    (not (svex-lookup (svarlist-addr-p-badguy y) x)))
+           :hints(("Goal" :in-theory (enable svex-lookup svex-alist-keys svarlist-addr-p)))))
+  
+  (local (defthm svarlist-addr-p-keys-of-fast-alist-clean
+           (implies (svarlist-addr-p (svex-alist-keys x))
+                    (svarlist-addr-p (svex-alist-keys (fast-alist-clean x))))))
+
+  (local (defthm no-duplicate-keys-of-fast-alist-fork
+           (implies (no-duplicatesp-equal (svex-alist-keys acc))
+                    (no-duplicatesp-equal (svex-alist-keys (fast-alist-fork x acc))))
+           :hints(("Goal" :in-theory (enable svex-alist-keys
+                                             svex-lookup)))))
+  
+  (local (defthm no-duplicate-keys-of-fast-alist-clean
+           (no-duplicatesp-equal (svex-alist-keys (fast-alist-clean x)))
+           :hints(("Goal" :in-theory (enable svex-alist-keys
+                                             fast-alist-clean)))))
+  
+  (local (defthm no-duplicate-keys-of-fast-alist-clean
+           (no-duplicatesp-equal (svex-alist-keys (fast-alist-clean x)))
+           :hints(("Goal" :in-theory (enable svex-alist-keys)))))
   
   (defret keys-of-svex-normalize-assigns
     (implies (svarlist-addr-p (aliases-vars aliases))
@@ -1107,52 +1214,63 @@ svex-assigns-compose)).</li>
 
   (defret vars-of-svex-normalize-assigns-delays
     (implies (svarlist-addr-p (aliases-vars aliases))
-             (svarlist-addr-p (svar-map-vars res-delays))))
+             (svarlist-addr-p (svex-alist-vars res-delays))))
+
+  (defret vars-of-svex-normalize-assigns-delays-keys
+    (implies (svarlist-addr-p (aliases-vars aliases))
+             (svarlist-addr-p (svex-alist-keys res-delays))))
 
   (defret vars-of-svex-normalize-assigns-constraints
     (implies (svarlist-addr-p (aliases-vars aliases))
-             (svarlist-addr-p (constraintlist-vars res-constraints)))))
+             (svarlist-addr-p (constraintlist-vars res-constraints))))
 
-(define svar-map-compose ((x svar-map-p) (al svex-alist-p))
-  :returns (xx svex-alist-p)
-  :measure (len (svar-map-fix x))
-  (b* ((x (svar-map-fix x))
-       ((when (atom x)) nil)
-       ((cons key val) (car x))
-       (expr (svex-lookup val al)))
-    (cons (cons key (or expr (make-svex-var :name val)))
-          (svar-map-compose (cdr x) al))))
+  (defret no-duplicate-keys-of-<fn>-assigns
+    (no-duplicatesp-equal (svex-alist-keys res-assigns)))
 
-(define svex-compose-delays ((x svar-map-p)
-                             (updates svex-alist-p)
-                             (masks svex-mask-alist-p))
-  :short "Compose delays with updates."
-  :long "<p>X is the delay map, that is, an alist mapping (delay-1) svars
-to (delay-0) svars.  Updates maps svars to their update functions.  Masks is
-the mask alist for the updates.  Usually, the undelayed variable is present in
-the updates, so we just say that is the update function.  If it isn't present,
-though, then it should be treated as basically a PI.  But it still needs to be
-properly masked.  So for the moment, we look up the delayed variable in the
-mask alist and mask the RHS by that care mask.  This isn't the greatest
-solution because don't-care bits won't match their expected values, so we
-should address this again later.</p>"
-  :returns (xx svex-alist-p)
-  :measure (len (svar-map-fix x))
-  (b* ((x (svar-map-fix x))
-       ((when (atom x)) nil)
-       ((cons key val) (car x))
-       (expr (svex-fastlookup val updates))
-       (expr (or expr
-                 ;; Bozo -- convert this to a zero-extend when possible?
-                 (make-svex-call
-                  :fn 'bit?
-                  :args (list (svex-quote (2vec (sparseint-val (svex-mask-lookup (make-svex-var :name key) masks)))) 
-                              ;; care
-                              (make-svex-var :name val)
-                              ;; don't-care
-                              (svex-quote (2vec 0)))))))
-    (cons (cons key expr)
-          (svex-compose-delays (cdr x) updates masks))))
+  (defret no-duplicate-keys-of-<fn>-delays
+    (no-duplicatesp-equal (svex-alist-keys res-delays))))
+
+
+;; (define svar-map-compose ((x svar-map-p) (al svex-alist-p))
+;;   :returns (xx svex-alist-p)
+;;   :measure (len (svar-map-fix x))
+;;   (b* ((x (svar-map-fix x))
+;;        ((when (atom x)) nil)
+;;        ((cons key val) (car x))
+;;        (expr (svex-lookup val al)))
+;;     (cons (cons key (or expr (make-svex-var :name val)))
+;;           (svar-map-compose (cdr x) al))))
+
+;; (define svex-compose-delays ((x svar-map-p)
+;;                              (updates svex-alist-p)
+;;                              (masks svex-mask-alist-p))
+;;   :short "Compose delays with updates."
+;;   :long "<p>X is the delay map, that is, an alist mapping (delay-1) svars
+;; to (delay-0) svars.  Updates maps svars to their update functions.  Masks is
+;; the mask alist for the updates.  Usually, the undelayed variable is present in
+;; the updates, so we just say that is the update function.  If it isn't present,
+;; though, then it should be treated as basically a PI.  But it still needs to be
+;; properly masked.  So for the moment, we look up the delayed variable in the
+;; mask alist and mask the RHS by that care mask.  This isn't the greatest
+;; solution because don't-care bits won't match their expected values, so we
+;; should address this again later.</p>"
+;;   :returns (xx svex-alist-p)
+;;   :measure (len (svar-map-fix x))
+;;   (b* ((x (svar-map-fix x))
+;;        ((when (atom x)) nil)
+;;        ((cons key val) (car x))
+;;        (expr (svex-fastlookup val updates))
+;;        (expr (or expr
+;;                  ;; Bozo -- convert this to a zero-extend when possible?
+;;                  (make-svex-call
+;;                   :fn 'bit?
+;;                   :args (list (svex-quote (2vec (sparseint-val (svex-mask-lookup (make-svex-var :name key) masks)))) 
+;;                               ;; care
+;;                               (make-svex-var :name val)
+;;                               ;; don't-care
+;;                               (svex-quote (2vec 0)))))))
+;;     (cons (cons key expr)
+;;           (svex-compose-delays (cdr x) updates masks))))
 
 
 
@@ -1197,7 +1315,7 @@ should address this again later.</p>"
          functions.</p>"
   :returns (mv err
                (flat-assigns svex-alist-p)
-               (flat-delays svar-map-p)
+               (flat-delays svex-alist-p)
                (flat-constraints constraintlist-p)
                (new-moddb (and (moddb-basics-ok new-moddb)
                                (moddb-mods-ok new-moddb)))
@@ -1253,7 +1371,12 @@ should address this again later.</p>"
   (defret vars-of-svex-design-flatten-and-normalize-delays
     (implies (and (modalist-addr-p (design->modalist x))
                   (not indexedp))
-             (svarlist-addr-p (svar-map-vars flat-delays))))
+             (svarlist-addr-p (svex-alist-vars flat-delays))))
+
+  (defret vars-of-svex-design-flatten-and-normalize-delays-keys
+    (implies (and (modalist-addr-p (design->modalist x))
+                  (not indexedp))
+             (svarlist-addr-p (svex-alist-keys flat-delays))))
 
   (defret vars-of-svex-design-flatten-and-normalize-constraints
     (implies (and (modalist-addr-p (design->modalist x))
@@ -1273,7 +1396,7 @@ should address this again later.</p>"
 
 
 (define svex-compose-assigns/delays ((assigns svex-alist-p)
-                                     (delays svar-map-p)
+                                     (delays svex-alist-p)
                                      (constraints constraintlist-p)
                                      &key
                                      (rewrite 't)
@@ -1282,9 +1405,8 @@ should address this again later.</p>"
                (nextstates svex-alist-p)
                (full-constraints constraintlist-p))
   (b* ((updates (cwtime (svex-assigns-compose assigns :rewrite rewrite) :mintime 1))
-       (masks (svexlist-mask-alist (svex-alist-vals updates)))
        ((with-fast updates))
-       (next-states (cwtime (svex-compose-delays delays updates masks) :mintime 1))
+       (next-states (cwtime (svex-alist-compose delays updates) :mintime 1))
        (full-constraints (cwtime (constraintlist-compose constraints updates) :mintime 1))
        (- (clear-memoize-table 'svex-compose))
        ((unless rewrite)
@@ -1312,7 +1434,7 @@ should address this again later.</p>"
                (state-updates svex-alist-p)
                (composed-constraints constraintlist-p)
                (flat-assigns svex-alist-p)
-               (flat-delays svar-map-p)
+               (flat-delays svex-alist-p)
                (flat-constraints constraintlist-p)
                (new-moddb (and (moddb-basics-ok new-moddb)
                              (moddb-mods-ok new-moddb)))

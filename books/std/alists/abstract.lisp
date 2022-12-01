@@ -149,6 +149,7 @@ about keyval-alistp."
     `(def-generic-rule alistp-rules . ,args)))
 
 
+
 (defsection keyval-alist-p
   :short "Generic typed list recognizer function."
 
@@ -393,6 +394,16 @@ about keyval-alistp."
                   (keyval-alist-p y))
              (keyval-alist-p (hons-shrink-alist x y)))
     :name keyval-alist-p-of-hons-shrink-alist)
+
+  (local (defthm keyval-alist-p-of-cdr-last
+           (implies (keyval-alist-p x)
+                    (keyval-alist-p (cdr (last x))))))
+  
+  (def-alistp-rule keyval-alist-p-of-fast-alist-clean
+    (implies (keyval-alist-p x)
+             (keyval-alist-p (fast-alist-clean x)))
+    :hints(("Goal" :in-theory (enable fast-alist-fork)))
+    :name keyval-alist-p-of-fast-alist-clean)
 
   (def-alistp-rule alistp-of-put-assoc
     (implies (and (keyval-alist-p x)

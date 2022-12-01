@@ -208,6 +208,8 @@
 ;;            :in-theory (disable svtv-lines-fix-of-outputs-fix))))
 
 (defprod svtv
+  :parents (svex-stvs)
+  :short "A shorter name for @(see svex-stvs), i.e. SVEX Symbolic Test Vectors."
   ((name           symbolp)
    (outexprs       svex-alist-p)
    (nextstate      svex-alist-p "NIL if not defined with :state-machine t or :keep-final-state t")

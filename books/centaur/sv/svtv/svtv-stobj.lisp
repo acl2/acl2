@@ -73,7 +73,8 @@
 (defprod pipeline-setup
   ((probes svtv-probealist)
    (inputs svex-alistlist)
-   (overrides svex-alistlist)
+   (override-vals svex-alistlist)
+   (override-tests svex-alistlist)
    (initst svex-alist)))
 
 (defconst *svtv-data-nonstobj-fields*
@@ -237,7 +238,9 @@
                    (svtv-normalize-assigns flatten aliases setup)
                    spec))
        ((flatnorm-res flatnorm)))
-    (and (ec-call (svex-alist-eval-equiv flatnorm.assigns spec.assigns))
+    (and (ec-call (svex-alist-eval-equiv! flatnorm.assigns spec.assigns))
+         (subsetp-equal (svex-alist-vars flatnorm.assigns) (svex-alist-vars spec.assigns))
+         ;; (no-duplicatesp-equal (svex-alist-keys flatnorm.assigns))
          (equal flatnorm.delays spec.delays)
          (equal flatnorm.constraints spec.constraints)))
   ///
@@ -475,9 +478,10 @@
                   ((pipeline-setup pipe) (svtv-data$c->pipeline-setup svtv-data$c))
                   (run (svtv-fsm-run
                         (svex-alistlist-eval pipe.inputs env)
-                        (svex-alistlist-eval pipe.overrides env)
                         (svex-alist-eval pipe.initst env)
-                        rename-fsm (svtv-probealist-outvars pipe.probes))))
+                        rename-fsm (svtv-probealist-outvars pipe.probes)
+                        :override-vals (svex-alistlist-eval pipe.override-vals env)
+                        :override-tests (svex-alistlist-eval pipe.override-tests env))))
                (and (equal (svex-alist-keys pipe.initst)
                            (svex-alist-keys (base-fsm->nextstate fsm)))
                     (ec-call
@@ -525,23 +529,6 @@
                         (env ,(hq witness))))
                  :in-theory (disable svtv-data$c-pipeline-okp-necc)))))))
   
-
-;; (define svtv-data$c-pipeline-okp (svtv-data$c (results svex-alist-p))
-;;   :enabled t
-;;   (non-exec
-;;    (b* ((fsm (svtv-data$c->cycle-fsm svtv-data$c))
-;;         (probes (svtv-data$c->pipeline-probes svtv-data$c))
-;;         (result
-;;          (svtv-probealist-extract-alist
-;;           probes
-;;           (svtv-fsm-run-compile
-;;            (svtv-data$c->pipeline-inputs svtv-data$c)
-;;            (svtv-data$c->pipeline-overrides svtv-data$c)
-;;            (svtv-data$c->pipeline-initst svtv-data$c)
-;;            fsm
-;;            (svtv-probealist-outvars probes) nil))))
-;;      (ec-call (svex-alist-eval-equiv results result)))))
-
 
 (define svtv-data$a-pipeline-okp (x (results svex-alist-p))
   :enabled t :hooks nil
@@ -610,6 +597,11 @@
                   (svtv-data$c->pipeline-validp x))
              (svtv-data$c-pipeline-okp x (svtv-data$c->pipeline x))))
 
+  (local (defthm svex-alist-keys-when-alist-eval-equiv!-normalize-assigns
+           (implies (svex-alist-eval-equiv! x (flatnorm-res->assigns (svtv-normalize-assigns flatten aliases setup)))
+                    (equal (svex-alist-keys x)
+                           (svex-alist-keys (flatnorm-res->assigns (svtv-normalize-assigns flatten aliases setup)))))))
+  
   (defthm no-duplicatesp-nextstate-keys-of-svtv-data->phase-fsm
     (implies (and (svtv-data$ap x)
                   (svtv-data$a->phase-fsm-validp x)
@@ -618,11 +610,12 @@
              (no-duplicatesp-equal
               (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm x)))))
     :hints(("Goal" :in-theory (e/d (svtv-data$ap)
-                                   (no-duplicate-nextstates-of-svtv-compose-assigns/delays))
-            :use ((:instance no-duplicate-nextstates-of-svtv-compose-assigns/delays
-                   (flatnorm (svtv-normalize-assigns (svtv-data$c->flatten x)
-                                                     (svtv-data$c->aliases x)
-                                                     (svtv-data$c->flatnorm-setup x))))))))
+                                   (no-duplicate-nextstates-of-svtv-compose-assigns/delays
+                                    phase-fsm-composition-p-implies-no-duplicate-nextstate-keys))
+            :use ((:instance phase-fsm-composition-p-implies-no-duplicate-nextstate-keys
+                   (phase-fsm (svtv-data$c->phase-fsm x))
+                   (flatnorm (svtv-data$c->flatnorm x))
+                   (config (svtv-data$c->phase-fsm-setup x)))))))
 
   (defthm moddb-ok-when-svtv-data$ap
     (implies (and (svtv-data$ap x)
@@ -1341,6 +1334,8 @@
                 (svtv-normalize-assigns flatten aliases flatnorm-setup)
                 assigns))
    :msg "; Svtv-data flatnorm: ~st seconds, ~sa bytes.~%"))
+
+(local (include-book "std/lists/sets" :dir :system))
 
 (define svtv-data-compute-flatnorm (svtv-data)
   :guard (and (svtv-data->flatten-validp svtv-data)

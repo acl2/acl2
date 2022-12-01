@@ -210,7 +210,22 @@
                       (:free (x y) (svex-envlists-equivalent y (cdr x)))))))
 
   (defcong svex-envlists-equivalent svex-envs-equivalent (nth n x) 2
-    :hints ((witness))))
+    :hints ((witness)))
+
+  (defthmd svex-envlists-equivalent-redef
+    (equal (svex-envlists-equivalent x y)
+           (if (atom x)
+               (atom y)
+             (and (consp y)
+                  (svex-envs-equivalent (car x) (car y))
+                  (svex-envlists-equivalent (cdr x) (cdr y)))))
+    :hints (("goal" :cases ((svex-envlists-equivalent x y)))
+            (and stable-under-simplificationp
+                 (b* ((lit (assoc-equal 'svex-envlists-equivalent clause)))
+                   `(:expand (,lit
+                              (:free (n) (nth n x))
+                              (:free (n) (nth n y)))))))
+    :rule-classes ((:definition :install-body nil))))
 
 
 

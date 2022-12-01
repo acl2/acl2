@@ -171,12 +171,14 @@
                                                        (rfix (f-get-global 'boundrw-trace-multiply state)))
                                                   1))))
          (upper-str (hexify-rational upper-bound-adj))
-         (lower-str (hexify-rational lower-bound-adj)))
-       (cw "Lower bound: ~t0~s1~%" (- 90 (length lower-str)) lower-str)
-       (cw "Upper bound: ~t0~s1~%" (- 90 (length upper-str)) upper-str))))
+         (lower-str (hexify-rational lower-bound-adj))
+         (margin (min (nfix (and (boundp-global 'fmt-hard-right-margin state)
+                                 (f-get-global 'fmt-hard-right-margin state)))
+                      90)))
+       (cw "Lower bound: ~t0~s1~%" (- margin (length lower-str)) lower-str)
+       (cw "Upper bound: ~t0~s1~%" (- margin (length upper-str)) upper-str))))
   ///
-  (defattach (defbounds-print-case-bounds defbounds-print-case-bounds-default)))      
-       
+  (defattach (defbounds-print-case-bounds defbounds-print-case-bounds-default)))
 
 (define simplify-and-bound-case (term simp-hints case-conjunct hyp skip-lower skip-upper state)
   :mode :program
@@ -447,3 +449,4 @@
 rewrite-bounds) to find an upper and lower bound for the resulting expression.
 Then it replicates these steps in a @('defthm') to prove the bounds, creating a
 linear rule by default (but the rule-classes may be overridden).</p>")
+

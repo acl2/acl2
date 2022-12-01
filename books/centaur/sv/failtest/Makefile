@@ -46,11 +46,17 @@ FAILING_TEST_TARGETS := \
   fn1.vok fn1.svok \
   gates2.svok \
   gates5.svok \
+  enum2.svok \
   iface8.svok \
+  iface2.svok \
+  implicit4.svok \
+  implicit6.svok \
   inc8.svok \
   inc9.svok \
+  inc15.svok \
   inst9.svok \
   inst12.svok \
+  param1.svok \
   param9.svok \
   param10.svok \
   param11.svok \
