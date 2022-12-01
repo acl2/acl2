@@ -30,6 +30,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "We are in the process of moving this shallow embedding
+     from the @('atc') subdirectory to the @('representation') subdirectory.
+     See the documentation in @(see representation) for details.")
+   (xdoc::p
     "The ACL2 representation of C constructs,
      which ATC recognizes and translates to C,
      constitutes a shallow embedding of C in ACL2.

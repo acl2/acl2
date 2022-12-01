@@ -110,19 +110,23 @@
   (implies (natp x)
            (not (< x -1))))
 
-;also in merge-sort
-(defthmd len-of-cdr-better-for-axe-prover
-  (equal (len (cdr x))
-         (if (equal 0 (len x))
-             0 (+ -1 (len x)))))
+;; ;also in merge-sort
+;; (defthmd len-of-cdr-better-for-axe-prover
+;;   (equal (len (cdr x))
+;;          (if (equal 0 (len x))
+;;              0 (+ -1 (len x)))))
 
-;also in merge-sort
-(defthmd consp-when-len-equal-for-axe-prover
-  (implies (and (equal (len x) free)
-                (syntaxp (quotep free)))
-           (equal (consp x) (< 0 free)))
-  :hints (("Goal" :in-theory (e/d ((:i len)) ( ;len-of-cdr
-                                              )))))
+;; ;also in merge-sort
+;; (defthmd consp-when-len-equal-for-axe-prover
+;;   (implies (and (equal (len x) free)
+;;                 (syntaxp (quotep free)))
+;;            (equal (consp x) (< 0 free)))
+;;   :hints (("Goal" :in-theory (e/d ((:i len)) ( ;len-of-cdr
+;;                                               )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Put these into a separate book and just locally include that book:
 
 (defthmd rationalp-when-natp-for-axe
   (implies (natp x)
@@ -145,6 +149,8 @@
   (implies (nat-listp x)
            (rational-listp x))
   :rule-classes :forward-chaining)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd axe-treep-of-cadr
   (implies (and (axe-treep tree)

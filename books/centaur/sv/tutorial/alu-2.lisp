@@ -332,7 +332,7 @@ full:</p>
   (svtv-run (alu-test-vector)
             `((op . ,*op-mult*)
               (a  . 5)
-              (b  . 3))
+              (b  . 3))))
 
 ; Now the output is provided as an ALIST of values for the STV's
 ; output variables.  In this case we see that RES2 has value 35, so

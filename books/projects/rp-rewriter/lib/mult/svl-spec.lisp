@@ -34,7 +34,6 @@
 ; Original Author(s):
 ; Mertcan Temel         <mert@utexas.edu>
 
-
 (in-package "RP")
 
 (include-book "centaur/svl/top" :dir :system)
@@ -83,7 +82,7 @@
 
 (encapsulate
   nil
-  
+
   (local
    (use-arithmetic-5 t))
 
@@ -104,9 +103,9 @@
                               SV::4VEC-RSH
                               SV::4VEC->UPPER
                               SV::4VEC-ZERO-EXT
-                              
+
                               SV::4VEC
-                              ;SV::4VEC-CONCAT
+;SV::4VEC-CONCAT
                               SV::4VEC-SHIFT-CORE
 ;LOGHEAD
                               logbitp
@@ -120,16 +119,16 @@
                              (SVL::BITP-BITS-SIZE=1
                               ;;loghead
                               (:REWRITE SV::4VEC-EQUAL)
-                              
+
                               (:DEFINITION ACL2::EXPT2$INLINE)
-                              ;(:DEFINITION ACL2::IMOD$INLINE)
-                              
+;(:DEFINITION ACL2::IMOD$INLINE)
+
                               (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
                               SVL::CONVERT-4VEC-CONCAT-TO-4VEC-CONCAT$
                               SVL::4VEC-ZERO-EXT-IS-BITS
                               SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
                               SVL::4VEC-CONCAT$-OF-TERM2=0
-                            
+
                               SVL::4VEC-PART-SELECT-IS-BITS)))))
 
   (def-rp-rule bits-is-bit-of
@@ -146,7 +145,6 @@
                   (natp start))
              (equal (bit-of num start)
                     (svl::bits num start 1)))))
-
 
 ;; multiplier-spec:
 (progn
@@ -411,8 +409,6 @@
              :in-theory (e/d (mult-final-spec
                               svl-mult-final-spec) ())))))
 
-
-
 (def-rp-rule loghead-of-*-is-svl-mult-final-spec-1 ;;for unsigned multiplication
   (implies (and (integerp mult)
                 (integerp mcand)
@@ -436,9 +432,6 @@
            :in-theory (e/d (mult-final-spec-is-svl-mult-final-spec)
                            (nfix loghead
                                  loghead-of-*-is-mult-final-spec)))))
-
-
-
 
 (def-rp-rule loghead-of-*-is-svl-mult-final-spec-2 ;;for signed multiplication.
   (implies (and (integerp mult)
@@ -486,7 +479,6 @@
                             SVL::4VEC-CONCAT$)
                            (nfix loghead
                                  loghead-of-*-is-mult-final-spec)))))
-
 
 (def-rp-rule integerp-of-*
   (implies (and (integerp x)
@@ -544,7 +536,7 @@
     :hints (("Goal"
              :in-theory (e/d (svl-sum-pps-bycol-bybit) ()))))
 
-  (defthm-lambda svl-sum-pps-bycol-bybit-opener
+  (def-rp-rule svl-sum-pps-bycol-bybit-opener
     (implies (not (zp (- out-size col-index)))
              (equal (svl-sum-pps-bycol-bybit mult mcand carry-in
                                              out-size col-index)
@@ -652,7 +644,7 @@
              :do-not-induct t
              :expand ((svl::4vec-plus++ x y carry-in size))
              :in-theory (e/d (svl::4vec-plus++
-                              
+
                               4vec-adder
                               ifix)
                              ()))))
@@ -663,7 +655,7 @@
     :hints (("Goal"
              :in-theory (e/d (4vec-adder) ()))))
 
-  (defthm-lambda 4vec-adder-opener-size>0
+  (def-rp-rule 4vec-adder-opener-size>0
     (implies (not (zp size))
              (equal (4vec-adder x y carry-in size)
                     (LET ((SUM (MERGE-SUM (SVL::BITS x 0 1)

@@ -143,11 +143,11 @@
         If @('old') has form 2,
         let @('test<x1,...,xn>') be:
         either (i) the negation of @('ntest<x1,...,xn>'),
-        i.e. @('(not ntest<x1,...,xn>)')
+        i.e. @('(not ntest<x1,...,xn>)'),
         if @('ntest<x1,...,xn>') is not a call of @(tsee not);
         or (ii) the argument of @('ntest<x1,...,xn>')
         if @('ntest<x1,...,xn>') is a call of @(tsee not),
-        i.e. @('ntest<x1,...,xn>') is @('(not test<x1,...,xn>)').
+        i.e. if @('ntest<x1,...,xn>') is @('(not test<x1,...,xn>)').
         Thus, in the rest of this documentation,
         we can assume that @('old') has form 1 without loss of generality.
         In the " *tailrec-design-notes* ",
@@ -246,7 +246,7 @@
         for the combination operator.
         In the " *tailrec-design-notes* ",
         this variant is described in the section
-        `Associative-Only Variant,Extended outside the Domain'."))
+        `Associative-Only Variant, Extended outside the Domain'."))
      (xdoc::p
       "The associative variants of the transformation is more widely applicable,
        but the monoidal variants yield simpler new functions.
@@ -255,7 +255,8 @@
        so these two variants apply to different cases.
        Similarly,
        the applicability conditions for the alternative associative variant
-       are neither stronger nor weaker than the ones for the associative variant,
+       are neither stronger nor weaker
+       than the ones for the associative variant,
        so these two variants apply to different cases.")
      (xdoc::p
       "While the " *tailrec-design-notes*

@@ -1,6 +1,6 @@
 ; Finding lambda bindings where vars are not bound to themselves
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -30,7 +30,11 @@
            (symbol-alistp (non-trivial-bindings vars vals)))
   :hints (("Goal" :in-theory (enable non-trivial-bindings))))
 
-(defthm symbol-listp-of-strio-cars-of-non-trivial-bindings
+(defthm alistp-of-non-trivial-bindings
+  (alistp (non-trivial-bindings vars vals))
+  :hints (("Goal" :in-theory (enable non-trivial-bindings))))
+
+(defthm symbol-listp-of-strip-cars-of-non-trivial-bindings
   (implies (symbol-listp vars)
            (symbol-listp (strip-cars (non-trivial-bindings vars vals))))
   :hints (("Goal" :in-theory (enable non-trivial-bindings))))

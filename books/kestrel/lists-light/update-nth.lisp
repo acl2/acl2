@@ -172,3 +172,11 @@
                               (nthcdr (+ 1 n) y)))))
   :hints (("Goal" :induct (sub1-cdr-cdr-induct n x y)
            :in-theory (e/d (update-nth) ()))))
+
+(defthm update-nth-of-take-of-+-of-1-same
+  (implies (and (<= (len lst) n)
+                (integerp n))
+           (equal (update-nth n val (take (+ 1 n) lst))
+                  (update-nth n val lst)))
+  :hints (("Goal" :induct t
+           :in-theory (enable update-nth))))
