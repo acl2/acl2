@@ -1074,6 +1074,7 @@
    (fn symbol)
    (fn-guard symbol)
    (compst-var symbol)
+   (fenv-var symbol)
    (prec-fns atc-symbol-fninfo-alist)
    (prec-tags atc-string-taginfo-alist)
    (thm-index pos)
@@ -1159,7 +1160,7 @@
        (type-pred (type-to-recognizer pure.type wrld))
        (formula `(and (equal (exec-expr-call-or-pure ',pure.expr
                                                      ,gin.compst-var
-                                                     fenv
+                                                     ,gin.fenv-var
                                                      limit)
                              (mv ,term ,gin.compst-var))
                       (,type-pred ,term)))

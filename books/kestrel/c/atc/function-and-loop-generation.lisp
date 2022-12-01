@@ -2248,6 +2248,7 @@
                        :fn fn
                        :fn-guard fn-guard
                        :compst-var compst-var
+                       :fenv-var fenv-var
                        :prec-fns prec-fns
                        :prec-tags prec-tags
                        :prec-objs prec-objs
@@ -3505,6 +3506,7 @@
                                            :fn fn
                                            :fn-guard nil
                                            :compst-var nil
+                                           :fenv-var nil
                                            :measure-for-fn measure-of-fn
                                            :measure-formals measure-formals
                                            :prec-fns prec-fns
