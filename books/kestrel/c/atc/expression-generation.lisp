@@ -1113,9 +1113,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr-not-call ((term pseudo-termp)
-                               (gin expr-ginp)
-                               state)
+(define atc-gen-expr-noncall ((term pseudo-termp)
+                              (gin expr-ginp)
+                              state)
   :returns (mv erp
                (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
@@ -1277,4 +1277,4 @@
             :thm-index args.thm-index
             :names-to-avoid args.names-to-avoid
             :proofs nil)))))
-    (atc-gen-expr-not-call term gin state)))
+    (atc-gen-expr-noncall term gin state)))
