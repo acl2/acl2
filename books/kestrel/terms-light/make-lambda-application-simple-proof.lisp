@@ -23,6 +23,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -164,30 +165,30 @@
 ;;         nil)
 ;;  :hints (("Goal" :in-theory (enable FILTER-FORMALS-AND-ACTUALS))))
 
-(defthm subsetp-equal-of-mv-nth-0-of-FILTER-FORMALS-AND-ACTUALS
-  (subsetp-equal (MV-NTH 0 (FILTER-FORMALS-AND-ACTUALS FORMALS ACTUALS vars)) formals)
-  :hints (("Goal" :in-theory (enable FILTER-FORMALS-AND-ACTUALS) )))
+(defthm subsetp-equal-of-mv-nth-0-of-filter-formals-and-actuals
+  (subsetp-equal (mv-nth 0 (filter-formals-and-actuals formals actuals vars)) formals)
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals) )))
 
-(defthmd INTERSECTION-EQUAL-of-SET-DIFFERENCE-EQUAL-when-subsetp-equal
+(defthmd intersection-equal-of-set-difference-equal-when-subsetp-equal
   (implies (subsetp-equal vars2 formals)
-           (equal (INTERSECTION-EQUAL (SET-DIFFERENCE-EQUAL vars FORMALS)
+           (equal (intersection-equal (set-difference-equal vars formals)
                                       vars2)
                   nil))
-  :hints (("Goal" :in-theory (enable INTERSECTION-EQUAL SET-DIFFERENCE-EQUAL))))
+  :hints (("Goal" :in-theory (enable intersection-equal set-difference-equal))))
 
 ;nice!  use more above
-(defthm mv-nth-0-of-FILTER-FORMALS-AND-ACTUALS
-  (equal (MV-NTH 0 (FILTER-FORMALS-AND-ACTUALS FORMALS ACTUALS vars))
-         (intersection-equal formals vars))
-  :hints (("Goal" :in-theory (enable FILTER-FORMALS-AND-ACTUALS) )))
+(defthm mv-nth-0-of-filter-formals-and-actuals
+  (equal (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))
+         (intersection-equal formals formals-to-keep))
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals) )))
 
-
-
+;move
 (defthm set-difference-equal-of-intersection-equal-and-intersection-equal-swapped
   (equal (set-difference-equal (intersection-equal x y)
                                (intersection-equal y x))
          nil))
 
+;move
 (defthm intersection-equal-when-subsetp-equal
   (implies (subsetp-equal x y)
            (equal (intersection-equal x y)
@@ -195,6 +196,7 @@
   :hints (("Goal" ;:induct (intersection-equal y x)
            :in-theory (enable intersection-equal))))
 
+;move or gen to a subsetp fact
 (defthm intersection-equal-of-intersection-equal-and-intersection-equal-swapped
   (equal (intersection-equal (intersection-equal x y)
                              (intersection-equal y x))
@@ -202,17 +204,18 @@
   :hints (("Goal" ;:induct (intersection-equal y x)
            :in-theory (enable intersection-equal))))
 
-(defthm SET-DIFFERENCE-EQUAL-of-SET-DIFFERENCE-EQUAL-when-subsetp-equal
-  (implies (subsetp-equal z formals)
-           (equal (SET-DIFFERENCE-EQUAL (SET-DIFFERENCE-EQUAL x FORMALS)
-                                        z)
-                  (SET-DIFFERENCE-EQUAL x FORMALS)))
-  :hints (("Goal" :in-theory (enable SET-DIFFERENCE-EQUAL))))
+;move
+(defthm set-difference-equal-of-set-difference-equal-when-subsetp-equal
+  (implies (subsetp-equal z y)
+           (equal (set-difference-equal (set-difference-equal x y) z)
+                  (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
 
-(defthm SET-DIFFERENCE-EQUAL-helper
-  (equal (SET-DIFFERENCE-EQUAL (SET-DIFFERENCE-EQUAL x FORMALS)
-                               (INTERSECTION-EQUAL FORMALS x))
-         (SET-DIFFERENCE-EQUAL x FORMALS)))
+;move ;or gen to a subset fact?
+(defthm set-difference-equal-helper
+  (equal (set-difference-equal (set-difference-equal x y)
+                               (intersection-equal y x))
+         (set-difference-equal x y)))
 
 (defund map-lookup-equal (terms a)
   (if (endp terms)
@@ -224,7 +227,6 @@
   (equal (len (map-lookup-equal terms a))
          (len terms))
   :hints (("Goal" :in-theory (enable map-lookup-equal))))
-
 
 ;true for any evaluator
 (defthm empty-eval-list-when-symbol-listp
@@ -240,7 +242,7 @@
            (no-nils-in-termsp (set-difference-equal x y)))
   :hints (("Goal" :in-theory (enable set-difference-equal))))
 
-(make-flag NO-NILS-IN-TERMP)
+(make-flag no-nils-in-termp)
 
 (defthm-flag-no-nils-in-termp
   (defthm no-nils-in-termp-of-free-vars-in-term
@@ -399,3 +401,31 @@
                 (alistp a))
            (equal (empty-eval (make-lambda-application-simple formals actuals body) a)
                   (empty-eval body (pairlis$ formals (empty-eval-list actuals a))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "lambdas-closed-in-termp")
+
+(defthm lambdas-closed-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
+  (implies (lambdas-closed-in-termsp actuals)
+           (lambdas-closed-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
+
+;; todo: move, dup in letify
+(defthm subsetp-equal-of-append-of-intersection-equal-and-set-difference-equal-swapped
+  (subsetp-equal x
+                 (append (intersection-equal y x)
+                         (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal set-difference-equal))))
+
+(defthm lambdas-closed-in-termp-of-make-lambda-application-simple
+  (implies (and (pseudo-termp body)
+                (symbol-listp formals)
+                (pseudo-term-listp actuals)
+                (lambdas-closed-in-termsp actuals)
+                (lambdas-closed-in-termp body))
+           (lambdas-closed-in-termp (make-lambda-application-simple formals actuals body)))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (enable make-lambda-application-simple
+                              lambdas-closed-in-termp ;todo
+                              ))))
