@@ -1075,6 +1075,7 @@
    (fn-guard symbol)
    (compst-var symbol)
    (fenv-var symbol)
+   (limit-var symbol)
    (prec-fns atc-symbol-fninfo-alist)
    (prec-tags atc-string-taginfo-alist)
    (thm-index pos)
@@ -1161,14 +1162,14 @@
        (formula `(and (equal (exec-expr-call-or-pure ',pure.expr
                                                      ,gin.compst-var
                                                      ,gin.fenv-var
-                                                     limit)
+                                                     ,gin.limit-var)
                              (mv ,term ,gin.compst-var))
                       (,type-pred ,term)))
        (formula (atc-contextualize formula gin.context))
        (formula `(implies (and (compustatep ,gin.compst-var)
                                (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                               (integerp limit)
-                               (>= limit 1))
+                               (integerp ,gin.limit-var)
+                               (>= ,gin.limit-var 1))
                           ,formula))
        (hints `(("Goal" :in-theory '(compustatep-of-add-var
                                      compustatep-of-add-frame

@@ -185,6 +185,7 @@
    (fn-guard symbol)
    (compst-var symbol)
    (fenv-var symbol)
+   (limit-var symbol)
    (prec-fns atc-symbol-fninfo-alist)
    (prec-tags atc-string-taginfo-alist)
    (prec-objs atc-string-objinfo-alist)
@@ -567,6 +568,7 @@
                                    :fn-guard gin.fn-guard
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
+                                   :limit-var gin.limit-var
                                    :prec-fns gin.prec-fns
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
@@ -654,6 +656,7 @@
                                    :fn-guard gin.fn-guard
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
+                                   :limit-var gin.limit-var
                                    :prec-fns gin.prec-fns
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
@@ -1162,6 +1165,7 @@
                                    :fn-guard gin.fn-guard
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
+                                   :limit-var gin.limit-var
                                    :prec-fns gin.prec-fns
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
@@ -1239,6 +1243,7 @@
                                    :fn-guard gin.fn-guard
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
+                                   :limit-var gin.limit-var
                                    :prec-fns gin.prec-fns
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
@@ -1400,6 +1405,7 @@
                                  :fn-guard gin.fn-guard
                                  :compst-var gin.compst-var
                                  :fenv-var gin.fenv-var
+                                 :limit-var gin.limit-var
                                  :prec-fns gin.prec-fns
                                  :prec-tags gin.prec-tags
                                  :thm-index gin.thm-index
@@ -1563,6 +1569,7 @@
                                      :fn-guard gin.fn-guard
                                      :compst-var gin.compst-var
                                      :fenv-var gin.fenv-var
+                                     :limit-var gin.limit-var
                                      :prec-fns gin.prec-fns
                                      :prec-tags gin.prec-tags
                                      :thm-index gin.thm-index
@@ -1632,6 +1639,7 @@
    (fn-guard symbol)
    (compst-var symbol)
    (fenv-var symbol)
+   (limit-var symbol)
    (measure-for-fn symbol)
    (measure-formals symbol-list)
    (prec-fns atc-symbol-fninfo-alist)
