@@ -161,6 +161,7 @@
                pseudo-term-lambda->args
                pseudo-term-lambda->body
                pseudo-term-lambda->formals
+               pseudo-term-list
                pseudo-term-list-count
                pseudo-term-list-fix
                pseudo-term-null
