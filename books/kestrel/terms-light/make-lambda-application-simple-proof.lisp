@@ -217,11 +217,14 @@
                                (intersection-equal y x))
          (set-difference-equal x y)))
 
-(defund map-lookup-equal (terms a)
-  (if (endp terms)
+;; Look up all of the KEYS in the ALIST, returning a list of the results.
+(defund map-lookup-equal (keys alist)
+  (declare (xargs :guard (and (true-listp keys)
+                              (alistp alist))))
+  (if (endp keys)
       nil
-    (cons (lookup-equal (first terms) a)
-          (map-lookup-equal (rest terms) a))))
+    (cons (lookup-equal (first keys) alist)
+          (map-lookup-equal (rest keys) alist))))
 
 (defthm len-of-map-lookup-equal
   (equal (len (map-lookup-equal terms a))
@@ -370,8 +373,7 @@
 ;move or drop?
 (defthm equal-of-empty-eval-and-empty-eval-when-not-consp-of-free-vars-in-term
   (implies (and (not (consp (free-vars-in-term body)))
-                (pseudo-termp body) ;drop?
-                )
+                (pseudo-termp body))
            (equal (equal (empty-eval body a2)
                          (empty-eval body a1))
                   t)))
