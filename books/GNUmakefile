@@ -1344,7 +1344,6 @@ tau: $(filter tau/%, $(OK_CERTS))
 .PHONY: textbook
 textbook: $(filter textbook/%, $(OK_CERTS))
 
-OK_CERTS := $(CERT_PL_CERTS)
 TOOLS_BOOKS := $(filter tools/%, $(OK_CERTS))
 
 .PHONY: tools
