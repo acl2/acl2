@@ -1111,6 +1111,84 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-expr-not-call ((term pseudo-termp)
+                               (gin expr-ginp)
+                               state)
+  :returns (mv erp
+               (gout expr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that is not a function call."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called by @(tsee atc-gen-expr),
+     when given an expression term that is not a function call,
+     in which case it must be a pure expression term.
+     This is not the same as just @(tsee atc-gen-expr-pure),
+     because that function generates a theorem
+     involving @(tsee exec-expr-pure),
+     while this function generates a theorem
+     involving @(tsee exec-expr-call-or-pure)."))
+  (b* (((reterr) (irr-expr-gout))
+       ((expr-gin gin) gin)
+       (wrld (w state))
+       ((erp (pexpr-gout pure))
+        (atc-gen-expr-pure term
+                           (make-pexpr-gin :context gin.context
+                                           :inscope gin.inscope
+                                           :prec-tags gin.prec-tags
+                                           :fn gin.fn
+                                           :fn-guard gin.fn-guard
+                                           :compst-var gin.compst-var
+                                           :thm-index gin.thm-index
+                                           :names-to-avoid gin.names-to-avoid
+                                           :proofs gin.proofs)
+                           state))
+       ((when (not pure.proofs))
+        (retok (make-expr-gout :expr pure.expr
+                               :type pure.type
+                               :affect nil
+                               :limit nil
+                               :events pure.events
+                               :thm-index pure.thm-index
+                               :names-to-avoid pure.names-to-avoid
+                               :proofs nil)))
+       (thm-name (pack gin.fn '-expr pure.thm-index '-correct))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil pure.names-to-avoid wrld))
+       (type-pred (type-to-recognizer pure.type wrld))
+       (formula `(and (equal (exec-expr-call-or-pure ',pure.expr
+                                                     ,gin.compst-var
+                                                     fenv
+                                                     limit)
+                             (mv ,term ,gin.compst-var))
+                      (,type-pred ,term)))
+       (formula (atc-contextualize formula gin.context))
+       (formula `(implies (and (compustatep ,gin.compst-var)
+                               (,gin.fn-guard ,@(formals+ gin.fn wrld))
+                               (integerp limit)
+                               (>= limit 1))
+                          ,formula))
+       (hints `(("Goal" :in-theory '(compustatep-of-add-var
+                                     compustatep-of-add-frame
+                                     exec-expr-call-or-pure-when-pure
+                                     (:e expr-kind)
+                                     not-zp-of-limit-variable
+                                     ,pure.thm-name))))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (retok (make-expr-gout :expr pure.expr
+                           :type pure.type
+                           :limit '(quote 1)
+                           :events (append pure.events (list event))
+                           :thm-index (1+ pure.thm-index)
+                           :names-to-avoid names-to-avoid
+                           :proofs t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-expr ((term pseudo-termp)
                       (gin expr-ginp)
                       state)
@@ -1196,24 +1274,5 @@
             :events args.events
             :thm-index args.thm-index
             :names-to-avoid args.names-to-avoid
-            :proofs nil))))
-       ((erp (pexpr-gout pure))
-        (atc-gen-expr-pure term
-                           (make-pexpr-gin :context gin.context
-                                           :inscope gin.inscope
-                                           :prec-tags gin.prec-tags
-                                           :fn gin.fn
-                                           :fn-guard gin.fn-guard
-                                           :compst-var gin.compst-var
-                                           :thm-index gin.thm-index
-                                           :names-to-avoid gin.names-to-avoid
-                                           :proofs gin.proofs)
-                           state)))
-    (retok (make-expr-gout :expr pure.expr
-                           :type pure.type
-                           :affect affect
-                           :limit '(quote 1)
-                           :events pure.events
-                           :thm-index pure.thm-index
-                           :names-to-avoid pure.names-to-avoid
-                           :proofs pure.proofs))))
+            :proofs nil)))))
+    (atc-gen-expr-not-call term gin state)))
