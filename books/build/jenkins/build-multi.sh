@@ -87,7 +87,7 @@ cd books
 NICENESS=13
 OOM_KILLER_ADJUSTMENT=1000 # high value for the build-multi case
 # inherit USE_QUICKLISP for the following make call
-CMD="nice -n $NICENESS time make $TARGET ACL2=$WORKSPACE/saved_acl2$ACL2_SUFFIX -j $BOOK_PARALLELISM_LEVEL $MAKEOPTS"
+CMD="nice -n $NICENESS time make $TARGET ACL2=$WORKSPACE/saved_acl2$ACL2_SUFFIX -j $BOOK_PARALLELISM_LEVEL -l $BOOK_PARALLELISM_LEVEL $MAKEOPTS"
 CMD_WITH_OOM_KILLER_ADJUSTMENT="(echo ${OOM_KILLER_ADJUSTMENT} > /proc/self/oom_score_adj && exec ${CMD})"
 $STARTJOB -c "${CMD_WITH_OOM_KILLER_ADJUSTMENT}"
 
