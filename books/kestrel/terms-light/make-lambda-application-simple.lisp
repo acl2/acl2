@@ -59,6 +59,9 @@
          (len (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))))
   :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Make a term that wraps BODY in a binding of the FORMALS to the ACTUALS, but make a LAMBDA instead of a LET.
 ;; Similar to make-lambda-application, but make-lambda-application is worse because of the accumulator in all-vars1.
 (defund make-lambda-application-simple (formals actuals body)
   (declare (xargs :guard (and (pseudo-termp body)
