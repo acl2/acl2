@@ -93,10 +93,17 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable intersection-equal))))
 
-(defthmd intersection-equal-when-subsetp-equal-iff
+(defthmd intersection-equal-when-subsetp-equal-swapped-iff
   (implies (subsetp-equal y x)
            (iff (intersection-equal x y)
                 (consp y))))
+
+(defthm intersection-equal-when-subsetp-equal
+  (implies (subsetp-equal x y)
+           (equal (intersection-equal x y)
+                  (true-list-fix x)))
+  :hints (("Goal" ;:induct (intersection-equal y x)
+           :in-theory (enable intersection-equal))))
 
 (defthm intersection-equal-of-remove1-equal-arg1-irrel-arg1
   (implies (not (member-equal a y))
