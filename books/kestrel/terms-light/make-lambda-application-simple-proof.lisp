@@ -13,7 +13,7 @@
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "make-lambda-application-simple")
 (include-book "no-nils-in-termp")
-(include-book "kestrel/alists-light/lookup-equal" :dir :system) ; make local?
+(include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -217,20 +217,6 @@
                                (intersection-equal y x))
          (set-difference-equal x y)))
 
-;; Look up all of the KEYS in the ALIST, returning a list of the results.
-(defund map-lookup-equal (keys alist)
-  (declare (xargs :guard (and (true-listp keys)
-                              (alistp alist))))
-  (if (endp keys)
-      nil
-    (cons (lookup-equal (first keys) alist)
-          (map-lookup-equal (rest keys) alist))))
-
-(defthm len-of-map-lookup-equal
-  (equal (len (map-lookup-equal terms a))
-         (len terms))
-  :hints (("Goal" :in-theory (enable map-lookup-equal))))
-
 ;true for any evaluator
 (defthm empty-eval-list-when-symbol-listp
   (implies (and (symbol-listp terms)
@@ -322,13 +308,6 @@
 ;;  (equal (INTERSECTION-EQUAL (SET-DIFFERENCE-EQUAL x y)
 ;;                             (INTERSECTION-EQUAL y z))
 ;;         nil))
-
-(defthm MAP-LOOKUP-EQUAL-of-cons-of-cons-irrel
-  (implies (not (member-equal key keys))
-           (equal (MAP-LOOKUP-EQUAL keys (CONS (cons key val) alist))
-                  (MAP-LOOKUP-EQUAL keys alist)))
-  :hints (("Goal" :in-theory (enable MAP-LOOKUP-EQUAL))))
-
 
 (defthm mv-nth-1-of-FILTER-FORMALS-AND-ACTUALS
   (implies (no-duplicatesp-equal formals)
