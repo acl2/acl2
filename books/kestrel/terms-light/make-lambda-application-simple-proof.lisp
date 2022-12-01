@@ -1,4 +1,4 @@
-; A lightweight book about TODO.
+; Proofs of properties of make-lambda-application-simple
 ;
 ; Copyright (C) 2013-2022 Kestrel Institute
 ;
