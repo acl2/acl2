@@ -197,10 +197,10 @@
                   (set-difference-equal x y)))
   :hints (("Goal" :in-theory (enable set-difference-equal))))
 
-;move ;or gen to a subset fact?
+;move or drop?
 (defthm set-difference-equal-helper
   (equal (set-difference-equal (set-difference-equal x y)
-                               (intersection-equal y x))
+                               (intersection-equal y z))
          (set-difference-equal x y)))
 
 ;true for any evaluator
