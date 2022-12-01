@@ -182,21 +182,7 @@
          (intersection-equal formals formals-to-keep))
   :hints (("Goal" :in-theory (enable filter-formals-and-actuals) )))
 
-;move
-(defthm set-difference-equal-of-intersection-equal-and-intersection-equal-swapped
-  (equal (set-difference-equal (intersection-equal x y)
-                               (intersection-equal y x))
-         nil))
-
-;move
-(defthm intersection-equal-when-subsetp-equal
-  (implies (subsetp-equal x y)
-           (equal (intersection-equal x y)
-                  (true-list-fix x)))
-  :hints (("Goal" ;:induct (intersection-equal y x)
-           :in-theory (enable intersection-equal))))
-
-;move or gen to a subsetp fact
+;move or gen to a subsetp fact, or gen the second x to z
 (defthm intersection-equal-of-intersection-equal-and-intersection-equal-swapped
   (equal (intersection-equal (intersection-equal x y)
                              (intersection-equal y x))
