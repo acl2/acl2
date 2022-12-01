@@ -238,8 +238,8 @@
                                      lookup-equal))))
 
 (defthm no-nils-in-termsp-of-set-difference-equal
-  (implies (no-nils-in-termsp x)
-           (no-nils-in-termsp (set-difference-equal x y)))
+  (implies (no-nils-in-termsp terms)
+           (no-nils-in-termsp (set-difference-equal terms terms2)))
   :hints (("Goal" :in-theory (enable set-difference-equal))))
 
 (make-flag no-nils-in-termp)
