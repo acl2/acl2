@@ -37,17 +37,17 @@
 
 ;; todo: add this to defevaluator+
 (defthm-flag-free-vars-in-term
-  ;; Bind a variable in the alist has no effect if it is not one of the free vars in the term.
+  ;; Adding a pair to the alist has no effect if the key is not one of the free vars in the term.
   (defthm empty-eval-of-cons-irrel
-    (implies (and (not (member-equal var (free-vars-in-term term)))
+    (implies (and (not (member-equal (car pair) (free-vars-in-term term)))
                   (pseudo-termp term))
-             (equal (empty-eval term (cons (cons var val) a))
+             (equal (empty-eval term (cons pair a))
                     (empty-eval term a)))
     :flag free-vars-in-term)
   (defthm empty-eval-list-of-cons-irrel
-    (implies (and (not (member-equal var (free-vars-in-terms terms)))
+    (implies (and (not (member-equal (car pair) (free-vars-in-terms terms)))
                   (pseudo-term-listp terms))
-             (equal (empty-eval-list terms (cons (cons var val) a))
+             (equal (empty-eval-list terms (cons pair a))
                     (empty-eval-list terms a)))
     :flag free-vars-in-terms)
   :hints (("Goal" :in-theory (e/d (empty-eval-of-fncall-args)
