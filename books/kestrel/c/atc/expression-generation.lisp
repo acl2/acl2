@@ -1090,7 +1090,7 @@
   ((expr exprp)
    (type typep)
    (affect symbol-listp)
-   (limit pseudo-termp)
+   (limit pseudo-term)
    (events pseudo-event-form-list)
    (thm-index pos)
    (names-to-avoid symbol-list)
@@ -1150,7 +1150,7 @@
         (retok (make-expr-gout :expr pure.expr
                                :type pure.type
                                :affect nil
-                               :limit nil
+                               :limit '(quote 1)
                                :events pure.events
                                :thm-index pure.thm-index
                                :names-to-avoid pure.names-to-avoid
