@@ -85,6 +85,12 @@
            (no-nils-in-termsp (set-difference-equal terms terms2)))
   :hints (("Goal" :in-theory (enable set-difference-equal))))
 
+(defthm no-nils-in-termsp-of-append
+  (equal (no-nils-in-termsp (append terms1 terms2))
+         (and (no-nils-in-termsp terms1)
+              (no-nils-in-termsp terms2)))
+  :hints (("Goal" :in-theory (enable append))))
+
 (make-flag no-nils-in-termp)
 
 (defthm-flag-no-nils-in-termp
