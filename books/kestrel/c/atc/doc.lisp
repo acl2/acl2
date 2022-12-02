@@ -475,8 +475,7 @@
        returning @('T') and affecting @('vars'),
        when @('L') is @('nil'),
        @('T') is a non-@('void') non-pointer C type,
-       @('vars') is @('nil'),
-       and @('fn') is not recursive.
+       and @('vars') is @('nil').
        That is, an expression term returning a C value is also
        a statement term returning that C value.
        This represents a C @('return') statement
