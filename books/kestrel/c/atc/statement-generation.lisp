@@ -223,8 +223,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-stmt ((term pseudo-termp) (gin stmt-ginp) state)
-  :returns (mv erp
-               (gout stmt-goutp))
+  :returns (mv erp (gout stmt-goutp))
   :short "Generate a C statement from an ACL2 term."
   :long
   (xdoc::topstring
@@ -1685,8 +1684,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-stmt ((term pseudo-termp) (gin lstmt-ginp) state)
-  :returns (mv erp
-               (gout lstmt-goutp))
+  :returns (mv erp (gout lstmt-goutp))
   :short "Generate a C loop statement from an ACL2 term."
   :long
   (xdoc::topstring

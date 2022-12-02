@@ -259,8 +259,7 @@
                             (arg-thm symbolp)
                             (gin pexpr-ginp)
                             (wrld plist-worldp))
-  :returns (mv erp
-               (gout pexpr-goutp))
+  :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression and theorem from an ACL2 term
           that represents a unary expression."
   :long
@@ -357,8 +356,7 @@
                              (arg2-thm symbolp)
                              (gin pexpr-ginp)
                              (wrld plist-worldp))
-  :returns (mv erp
-               (gout pexpr-goutp))
+  :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression and theorem from an ACL2 term
           that represents a binary expression."
   :long
@@ -482,8 +480,7 @@
   (define atc-gen-expr-pure ((term pseudo-termp)
                              (gin pexpr-ginp)
                              state)
-    :returns (mv erp
-                 (gout pexpr-goutp))
+    :returns (mv erp (gout pexpr-goutp))
     :parents (atc-event-and-code-generation atc-gen-expr-pure/bool)
     :short "Generate a C expression from an ACL2 term
             that must be a pure expression term."
@@ -842,8 +839,7 @@
   (define atc-gen-expr-bool ((term pseudo-termp)
                              (gin bexpr-ginp)
                              state)
-    :returns (mv erp
-                 (gout bexpr-goutp))
+    :returns (mv erp (gout bexpr-goutp))
     :parents (atc-event-and-code-generation atc-gen-expr-pure/bool)
     :short "Generate a C expression from an ACL2 term
             that must be an expression term returning a boolean."
@@ -1014,8 +1010,7 @@
 (define atc-gen-expr-pure-list ((terms pseudo-term-listp)
                                 (gin pexprs-ginp)
                                 state)
-  :returns (mv erp
-               (gout pexprs-goutp))
+  :returns (mv erp (gout pexprs-goutp))
   :short "Generate a list of C expressions from a list of ACL2 terms
           that must be pure expression terms returning C values."
   :long
@@ -1116,8 +1111,7 @@
 (define atc-gen-expr-noncall ((term pseudo-termp)
                               (gin expr-ginp)
                               state)
-  :returns (mv erp
-               (gout expr-goutp))
+  :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
           that is not a function call."
   :long
@@ -1200,8 +1194,7 @@
 (define atc-gen-expr ((term pseudo-termp)
                       (gin expr-ginp)
                       state)
-  :returns (mv erp
-               (gout expr-goutp))
+  :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
           that must be an expression term."
   :long
