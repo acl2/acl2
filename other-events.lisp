@@ -13585,30 +13585,20 @@
 ; included?  E.g., defwarrant needs that to succeed in its fn-equal congruence
 ; proofs.  And the rewriter asks that when considering optimizing the use of
 ; EV$-OPENER on calls of EV$ on quoted terms.  So we memoize the answer here.
-; We set the world global projects/apply/base-includedp to t or nil according to
-; whether the book is in include-book-alist.  Actually, we only do the set
-; if it changes the value of projects/apply/base-includedp.
+; We arrange that the world global projects/apply/base-includedp is t or nil
+; according to whether the book is in include-book-alist.  Note that
+; include-book-alist and projects/apply/base-includedp are both world globals,
+; so they will stay in sync even with :ube and local include-book events.
 
-                                           (let
-                                               ((apply-lemmas-book-name
-                                                 (make-sysfile :system
-                                                               "projects/apply/base.lisp")))
-                                             (if
-                                                 (assoc-equal apply-lemmas-book-name
-                                                              (global-val 'include-book-alist
-                                                                          wrld7))
-                                                 (if (global-val 'projects/apply/base-includedp
-                                                                 wrld7)
-                                                     wrld7
-                                                   (global-set 'projects/apply/base-includedp
-                                                               t
-                                                               wrld7))
-                                               (if (global-val 'projects/apply/base-includedp
-                                                               wrld7)
-                                                   (global-set 'projects/apply/base-includedp
-                                                               nil
-                                                               wrld7)
-                                                 wrld7)))))
+                                           (if (equal full-book-name
+                                                      (make-sysfile
+                                                       :system
+                                                       "projects/apply/base.lisp"))
+                                               (global-set
+                                                'projects/apply/base-includedp
+                                                t
+                                                wrld7)
+                                             wrld7)))
                                      wrld8)
                                    state)))))))))))))))))))))))
 
