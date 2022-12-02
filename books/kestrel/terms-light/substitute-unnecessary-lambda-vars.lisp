@@ -23,6 +23,7 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
 ;; TODO: Add tests, especially for lambdas
 (mutual-recursion
