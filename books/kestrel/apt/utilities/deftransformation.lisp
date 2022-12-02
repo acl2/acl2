@@ -16,8 +16,8 @@
 ;; exist called XXX-event, which takes the following arguments:
 ;; - the transformation's required args (in the order given in the call to deftransformation)
 ;; - and transformation's keyword args (in the order given in the call to deftransformation)
-;; - a verbose arg, if deftransformation is called with :pass-print t)
-;; - a ctx, if deftransformation is called with :pass-context t
+;; - a verbose arg, if deftransformation is called with :pass-print t
+;; - a ctx arg, if deftransformation is called with :pass-context t
 ;;
 ;; The XXX-event function must return an error triple including the generated
 ;; event (usually an encapsulate or progn).

@@ -1,6 +1,6 @@
 ; A simpler utility to find all the vars in a term
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 
@@ -110,6 +111,12 @@
   (equal (free-vars-in-terms (true-list-fix terms))
          (free-vars-in-terms terms))
   :hints (("Goal" :in-theory (enable true-list-fix free-vars-in-terms))))
+
+(defthm free-vars-in-terms-of-append
+  (equal (free-vars-in-terms (append terms1 terms2))
+         (union-equal (free-vars-in-terms terms1)
+                      (free-vars-in-terms terms2)))
+  :hints (("Goal" :in-theory (enable append free-vars-in-terms))))
 
 (defthm-flag-free-vars-in-term
   (defthm no-duplicatesp-of-free-vars-in-term
