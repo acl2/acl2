@@ -222,6 +222,93 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-return-stmt ((term pseudo-termp)
+                             (gin stmt-ginp)
+                             (must-affect symbol-listp)
+                             state)
+  :returns (mv erp (gout stmt-goutp))
+  :short "Generate a C return statement from an ACL2 term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The term passed here as parameter is the one representing
+     the expression to be returned by the statement.
+     The @('must-affect') parameter contains the variables
+     that must be affected by the expression:
+     it is set differently in the two circumstances in @(tsee atc-gen-stmt)
+     in which this @('atc-gen-return-stmt') is called,
+     corresponding to the two possible representations of @('return') statements
+     according to the user documentation.")
+   (xdoc::p
+    "The limit bound is set to 3 more than the limit for the expression.
+     This limit bound refers to @(tsee exec-block-item-list):
+     we need 1 to go from there to @(tsee exec-block-item),
+     another 1 to go from there to the @(':stmt') case and @(tsee exec-stmt),
+     and another 1 to go from there to the @(':return') case
+     and @(tsee exec-expr-call-or-pure),
+     for which we use the recursively calculated limit for the expression."))
+  (b* (((reterr) (irr-stmt-gout))
+       ((stmt-gin gin) gin)
+       ((erp (expr-gout term))
+        (atc-gen-expr term
+                      (make-expr-gin :context gin.context
+                                     :var-term-alist gin.var-term-alist
+                                     :inscope gin.inscope
+                                     :fn gin.fn
+                                     :fn-guard gin.fn-guard
+                                     :compst-var gin.compst-var
+                                     :fenv-var gin.fenv-var
+                                     :limit-var gin.limit-var
+                                     :prec-fns gin.prec-fns
+                                     :prec-tags gin.prec-tags
+                                     :thm-index gin.thm-index
+                                     :names-to-avoid gin.names-to-avoid
+                                     :proofs gin.proofs)
+                      state))
+       ((unless (equal term.affect must-affect))
+        (reterr
+         (msg "When generating code for the function ~x0, ~
+               a term ~x1 was encountered at the end of the computation, ~
+               which represents a return statement
+               whose expression affects the variables ~x2, ~
+               but ~@3 must be affected here instead."
+              gin.fn
+              term
+              term.affect
+              (if (consp must-affect)
+                  (if (consp (cdr must-affect))
+                      (msg "the variables ~&0" must-affect)
+                    (msg "the variable ~x0" (car must-affect)))
+                "no variables"))))
+       ((when (type-case term.type :void))
+        (reterr
+         (raise "Internal error: return term ~x0 has type void." term)))
+       ((when (type-case term.type :array))
+        (reterr
+         (raise "Internal error: retun term ~x0 has type ~x1." term.type)))
+       ((when (type-case term.type :pointer))
+        (reterr
+         (msg "When generating a return statement for function ~x0, ~
+               the term ~x1 that represents the return expression ~
+               has pointer type ~x2, which is disallowed."
+              gin.fn term term.type)))
+       (stmt (make-stmt-return :value term.expr))
+       (items (list (block-item-stmt stmt)))
+       (limit (pseudo-term-fncall
+               'binary-+
+               (list (pseudo-term-quote 3)
+                     term.limit))))
+    (retok (make-stmt-gout
+            :items items
+            :type term.type
+            :limit limit
+            :events term.events
+            :thm-index term.thm-index
+            :names-to-avoid term.names-to-avoid
+            :proofs nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-stmt ((term pseudo-termp) (gin stmt-ginp) state)
   :returns (mv erp (gout stmt-goutp))
   :short "Generate a C statement from an ACL2 term."
@@ -1394,55 +1481,7 @@
                                    :names-to-avoid gin.names-to-avoid
                                    :proofs nil)))
            ((equal (cdr terms) gin.affect)
-            (b* (((erp (expr-gout first))
-                  (atc-gen-expr (car terms)
-                                (make-expr-gin
-                                 :context gin.context
-                                 :var-term-alist gin.var-term-alist
-                                 :inscope gin.inscope
-                                 :fn gin.fn
-                                 :fn-guard gin.fn-guard
-                                 :compst-var gin.compst-var
-                                 :fenv-var gin.fenv-var
-                                 :limit-var gin.limit-var
-                                 :prec-fns gin.prec-fns
-                                 :prec-tags gin.prec-tags
-                                 :thm-index gin.thm-index
-                                 :names-to-avoid gin.names-to-avoid
-                                 :proofs gin.proofs)
-                                state))
-                 ((when (consp first.affect))
-                  (reterr
-                   (msg "The first argument ~x0 of the term ~x1 ~
-                         in the function ~x2 ~
-                         affects the variables ~x3, which is disallowed."
-                        (car terms) term gin.fn first.affect)))
-                 ((when (type-case first.type :void))
-                  (reterr
-                   (raise "Internal error: return term ~x0 has type void."
-                          term)))
-                 ((when (type-case first.type :array))
-                  (reterr
-                   (raise "Internal error: array type ~x0." first.type)))
-                 ((when (type-case first.type :pointer))
-                  (reterr
-                   (msg "When generating a return statement for function ~x0, ~
-                         the term ~x1 that represents the return expression ~
-                         has pointer type ~x2, which is disallowed."
-                        gin.fn term first.type)))
-                 (limit (pseudo-term-fncall
-                         'binary-+
-                         (list (pseudo-term-quote 3)
-                               first.limit))))
-              (retok (make-stmt-gout
-                      :items (list (block-item-stmt
-                                    (make-stmt-return :value first.expr)))
-                      :type first.type
-                      :limit limit
-                      :events first.events
-                      :thm-index first.thm-index
-                      :names-to-avoid first.names-to-avoid
-                      :proofs nil))))
+            (atc-gen-return-stmt (car terms) gin nil state))
            (t (reterr
                (msg "When generating C code for the function ~x0, ~
                      a term ~x0 has been encountered, ~
@@ -1577,55 +1616,8 @@
          (msg "A loop body must end with ~
                a recursive call on every path, ~
                but in the function ~x0 it ends with ~x1 instead."
-              gin.fn term)))
-       ((erp (expr-gout term))
-        (atc-gen-expr term
-                      (make-expr-gin :context gin.context
-                                     :var-term-alist gin.var-term-alist
-                                     :inscope gin.inscope
-                                     :fn gin.fn
-                                     :fn-guard gin.fn-guard
-                                     :compst-var gin.compst-var
-                                     :fenv-var gin.fenv-var
-                                     :limit-var gin.limit-var
-                                     :prec-fns gin.prec-fns
-                                     :prec-tags gin.prec-tags
-                                     :thm-index gin.thm-index
-                                     :names-to-avoid gin.names-to-avoid
-                                     :proofs gin.proofs)
-                      state))
-       ((unless (equal gin.affect term.affect))
-        (reterr
-         (msg "When generating code for the non-recursive function ~x0, ~
-               a term ~x1 was encountered at the end of the computation, ~
-               that affects the variables ~x2, ~
-               but ~x0 affects the variables ~x3 instead."
-              gin.fn term term.affect gin.affect)))
-       ((when (type-case term.type :void))
-        (reterr
-         (raise "Internal error: return term ~x0 has type void." term)))
-       ((when (type-case term.type :array))
-        (reterr
-         (raise "Internal error: array type ~x0." term.type)))
-       ((when (type-case term.type :pointer))
-        (reterr
-         (msg "When generating a return statement for function ~x0, ~
-               the term ~x1 that represents the return expression ~
-               has pointer type ~x2, which is disallowed."
-              gin.fn term term.type)))
-       (limit (pseudo-term-fncall
-               'binary-+
-               (list (pseudo-term-quote 3)
-                     term.limit))))
-    (retok (make-stmt-gout
-            :items (list (block-item-stmt
-                          (make-stmt-return :value term.expr)))
-            :type term.type
-            :limit limit
-            :events term.events
-            :thm-index term.thm-index
-            :names-to-avoid term.names-to-avoid
-            :proofs nil)))
+              gin.fn term))))
+    (atc-gen-return-stmt term gin gin.affect state))
 
   :measure (pseudo-term-count term)
 
