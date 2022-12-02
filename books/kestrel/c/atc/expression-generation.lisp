@@ -1146,11 +1146,12 @@
                                            :names-to-avoid gin.names-to-avoid
                                            :proofs gin.proofs)
                            state))
+       (bound '(quote 1))
        ((when (not pure.proofs))
         (retok (make-expr-gout :expr pure.expr
                                :type pure.type
                                :affect nil
-                               :limit '(quote 1)
+                               :limit bound
                                :events pure.events
                                :thm-index pure.thm-index
                                :names-to-avoid pure.names-to-avoid
@@ -1183,7 +1184,7 @@
                                             :enable nil)))
     (retok (make-expr-gout :expr pure.expr
                            :type pure.type
-                           :limit '(quote 1)
+                           :limit bound
                            :events (append pure.events (list event))
                            :thm-index (1+ pure.thm-index)
                            :names-to-avoid names-to-avoid
