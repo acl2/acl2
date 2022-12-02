@@ -1,6 +1,6 @@
 ; A nicer interface to defevaluator
 ;
-; Copyright (C) 2014-2021 Kestrel Institute
+; Copyright (C) 2014-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,75 +22,75 @@
 ;; 4. automatically generates various theorems
 ;; 5. generates improved versions of some constraints (currently, just one)
 
-(defun defevaluator+-fn (name fns state)
-  (declare (xargs :guard (and (symbolp name)
+(defun defevaluator+-fn (eval-name fns state)
+  (declare (xargs :guard (and (symbolp eval-name)
                               (symbol-listp fns))
                   :stobjs state))
-  (let* ((list-name (add-suffix-to-fn name "-LIST"))
-         (all-true-name (pack$ 'all-eval-to-true-with- name))
-         (all-false-name (pack$ 'all-eval-to-false-with- name)))
+  (let* ((eval-list-name (add-suffix-to-fn eval-name "-LIST"))
+         (all-true-name (pack$ 'all-eval-to-true-with- eval-name))
+         (all-false-name (pack$ 'all-eval-to-false-with- eval-name)))
     `(progn
        ;; The main defevaluator call generated:
-       (defevaluator ,name ,list-name
+       (defevaluator ,eval-name ,eval-list-name
          ,(make-function-calls-on-formals fns (w state))
          :namedp t)
 
        ;; Improved constraint(s):
 
-       (defthm ,(pack$ name '-of-lambda-better)
+       (defthm ,(pack$ eval-name '-of-lambda-better)
          (implies (consp (car x)) ;; no need to assume (consp x) since it's implied by this
-                  (equal (,name x a)
-                         (,name (caddr (car x))
+                  (equal (,eval-name x a)
+                         (,eval-name (caddr (car x))
                                 (pairlis$ (cadr (car x))
-                                          (,list-name (cdr x) a))))))
+                                          (,eval-list-name (cdr x) a))))))
 
        ;; Ours is better:
-       (in-theory (disable ,(pack$ name '-of-lambda)))
+       (in-theory (disable ,(pack$ eval-name '-of-lambda)))
 
        ;; Extra theorems:
 
-       (defthm ,(add-suffix-to-fn list-name "-OF-APPEND")
-         (equal (,list-name (append terms1 terms2) a)
-                (append (,list-name terms1 a)
-                        (,list-name terms2 a)))
+       (defthm ,(add-suffix-to-fn eval-list-name "-OF-APPEND")
+         (equal (,eval-list-name (append terms1 terms2) a)
+                (append (,eval-list-name terms1 a)
+                        (,eval-list-name terms2 a)))
          :hints (("Goal" :in-theory (enable append))))
 
-       (defthm ,(pack$ 'len-of- list-name)
-         (equal (len (,list-name terms a))
+       (defthm ,(pack$ 'len-of- eval-list-name)
+         (equal (len (,eval-list-name terms a))
                 (len terms))
          :hints (("Goal" :in-theory (enable append (:I len)))))
 
-       (defthm ,(add-suffix-to-fn list-name "-OF-TRUE-LIST_FIX")
-         (equal (,list-name (true-list-fix terms) a)
-                (,list-name terms a))
+       (defthm ,(add-suffix-to-fn eval-list-name "-OF-TRUE-LIST_FIX")
+         (equal (,eval-list-name (true-list-fix terms) a)
+                (,eval-list-name terms a))
          :hints (("Goal" :in-theory (enable append (:I len)))))
 
        ;; Helps prove the :functional-instance used to switch a theorem to a richer evaluator.
        ;; TODO: Consider disabling by default and instead providing a tool to lift a rule to a richer evaluator.
-       (defthm ,(pack$ name '-of-fncall-args-back)
+       (defthm ,(pack$ eval-name '-of-fncall-args-back)
          (implies (and (consp x)
                        (not (equal (car x) 'quote)))
-                  (equal (,name (cons (car x) (kwote-lst (,list-name (cdr x) a))) nil)
-                         (,name x a)))
-         :hints (("Goal" :use (:instance ,(pack$ name '-of-fncall-args))
+                  (equal (,eval-name (cons (car x) (kwote-lst (,eval-list-name (cdr x) a))) nil)
+                         (,eval-name x a)))
+         :hints (("Goal" :use (:instance ,(pack$ eval-name '-of-fncall-args))
                   :in-theory nil)))
 
-       (theory-invariant (incompatible (:rewrite ,(pack$ name '-of-fncall-args))
-                                       (:rewrite ,(pack$ name '-of-fncall-args-back))))
+       (theory-invariant (incompatible (:rewrite ,(pack$ eval-name '-of-fncall-args))
+                                       (:rewrite ,(pack$ eval-name '-of-fncall-args-back))))
 
        ;; These help with clause-processors.  We only generate them if the
        ;; evaluator knows about IF:
        ,@(and (member-eq 'if fns)
-              `((defthm ,(add-suffix-to-fn list-name "-OF-DISJOIN2-IFF")
-                  (iff (,name (disjoin2 term1 term2) a)
-                       (or (,name term1 a)
-                           (,name term2 a)))
+              `((defthm ,(add-suffix-to-fn eval-list-name "-OF-DISJOIN2-IFF")
+                  (iff (,eval-name (disjoin2 term1 term2) a)
+                       (or (,eval-name term1 a)
+                           (,eval-name term2 a)))
                   :hints (("Goal" :in-theory (enable disjoin2))))
 
-                (defthm ,(add-suffix-to-fn list-name "-OF-DISJOIN-OF-CONS-IFF")
-                  (iff (,name (disjoin (cons term terms)) a)
-                       (or (,name term a)
-                           (,name (disjoin terms) a)))
+                (defthm ,(add-suffix-to-fn eval-list-name "-OF-DISJOIN-OF-CONS-IFF")
+                  (iff (,eval-name (disjoin (cons term terms)) a)
+                       (or (,eval-name term a)
+                           (,eval-name (disjoin terms) a)))
                   :hints (("Goal" :in-theory (enable disjoin))))
 
 
@@ -103,7 +103,7 @@
                                               (alistp a))))
                   (if (endp terms)
                       t
-                    (and (,name (first terms) a)
+                    (and (,eval-name (first terms) a)
                          (,all-true-name (rest terms) a))))
 
                 (defthm ,(pack$ all-true-name '-when-not-consp)
@@ -113,7 +113,7 @@
 
                 (defthm ,(pack$ all-true-name '-of-cons)
                   (equal (,all-true-name (cons term terms) a)
-                         (and (,name term a)
+                         (and (,eval-name term a)
                               (,all-true-name terms a)))
                   :hints (("Goal" :in-theory (enable ,all-true-name))))
 
@@ -123,15 +123,15 @@
                               (,all-true-name terms2 a)))
                   :hints (("Goal" :in-theory (enable ,all-true-name))))
 
-                (defthm ,(pack$ name '-of-conjoin)
-                  (iff (,name (conjoin terms) a)
+                (defthm ,(pack$ eval-name '-of-conjoin)
+                  (iff (,eval-name (conjoin terms) a)
                        (,all-true-name terms a))
                   :hints (("Goal" :in-theory (enable ,all-true-name))))
 
-                (defthm ,(pack$ name '-when- all-true-name '-and-member-equal)
+                (defthm ,(pack$ eval-name '-when- all-true-name '-and-member-equal)
                   (implies (and (,all-true-name terms a)
                                 (member-equal term terms))
-                           (,name term a))
+                           (,eval-name term a))
                   :hints (("Goal" :in-theory (enable ,all-true-name))))
 
                 ;;
@@ -143,7 +143,7 @@
                                               (alistp a))))
                   (if (endp terms)
                       t
-                    (and (not (,name (first terms) a))
+                    (and (not (,eval-name (first terms) a))
                          (,all-false-name (rest terms) a))))
 
                 (defthm ,(pack$ all-false-name '-when-not-consp)
@@ -153,7 +153,7 @@
 
                 (defthm ,(pack$ all-false-name '-of-cons)
                   (equal (,all-false-name (cons term terms) a)
-                         (and (not (,name term a))
+                         (and (not (,eval-name term a))
                               (,all-false-name terms a)))
                   :hints (("Goal" :in-theory (enable ,all-false-name))))
 
@@ -163,15 +163,15 @@
                               (,all-false-name terms2 a)))
                   :hints (("Goal" :in-theory (enable ,all-false-name))))
 
-                (defthm ,(pack$ name '-of-disjoin)
-                  (iff (,name (disjoin terms) a)
+                (defthm ,(pack$ eval-name '-of-disjoin)
+                  (iff (,eval-name (disjoin terms) a)
                        (not (,all-false-name terms a)))
                   :hints (("Goal" :in-theory (enable ,ALL-FALSE-NAME))))
 
-                (defthm ,(pack$ 'not- name '-when- all-false-name '-and-member-equal)
+                (defthm ,(pack$ 'not- eval-name '-when- all-false-name '-and-member-equal)
                   (implies (and (,all-false-name terms a)
                                 (member-equal term terms))
-                           (not (,name term a)))
+                           (not (,eval-name term a)))
                   :hints (("Goal" :in-theory (enable ,all-false-name))))
 
                 (defthm ,(pack$ all-false-name '-when-equal-of-disjoin-and-quote-nil)
@@ -189,5 +189,5 @@
 ;; Example call (defevaluator+ math-and-if-ev binary-+ binary-* if).
 ;; Takes the name of the evaluator to create, followed by the names of all the
 ;; functions it should "know" about.
-(defmacro defevaluator+ (name &rest fns)
-  `(make-event (defevaluator+-fn ',name ',fns state)))
+(defmacro defevaluator+ (eval-name &rest fns)
+  `(make-event (defevaluator+-fn ',eval-name ',fns state)))

@@ -35,3 +35,15 @@
   (equal (set-difference-equal (intersection-equal x y)
                                (intersection-equal y x))
          nil))
+
+(defthm set-difference-equal-of-set-difference-equal-when-subsetp-equal
+  (implies (subsetp-equal z y)
+           (equal (set-difference-equal (set-difference-equal x y) z)
+                  (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+;rename
+(defthm set-difference-equal-helper
+  (equal (set-difference-equal (set-difference-equal x y)
+                               (intersection-equal y z))
+         (set-difference-equal x y)))
