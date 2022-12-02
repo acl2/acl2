@@ -1,3 +1,6 @@
+; (depends-on "build/rewrite-constant.certdep" :dir :system)
+; (depends-on "build/prove-spec-var.certdep" :dir :system)
+
 (in-package "ACL2")
 
 (set-ignore-ok t)

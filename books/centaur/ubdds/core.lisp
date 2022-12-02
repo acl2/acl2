@@ -11,6 +11,9 @@
 
 ; core.lisp - fundamental operations, e.g., ubddp, eval-bdd, q-not, and q-ite.
 
+; (depends-on "build/rewrite-constant.certdep" :dir :system)
+; (depends-on "build/prove-spec-var.certdep" :dir :system)
+
 (in-package "ACL2")
 (include-book "misc/definline" :dir :system)
 (include-book "../misc/memory-mgmt-logic")

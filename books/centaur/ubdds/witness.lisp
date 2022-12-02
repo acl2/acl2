@@ -9,6 +9,9 @@
 ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
 ;   http://www.centtech.com/
 
+; (depends-on "build/rewrite-constant.certdep" :dir :system)
+; (depends-on "build/prove-spec-var.certdep" :dir :system)
+
 (in-package "ACL2")
 
 (set-inhibit-warnings "theory")

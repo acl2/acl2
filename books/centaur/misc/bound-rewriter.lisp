@@ -25,6 +25,9 @@
 ; Original authors: Sol Swords <sswords@centtech.com>
 ;                   Jared Davis <jared@centtech.com>
 
+; (depends-on "build/rewrite-constant.certdep" :dir :system)
+; (depends-on "build/prove-spec-var.certdep" :dir :system)
+
 (in-package "ACL2")
 
 (include-book "std/util/define" :dir :system)
@@ -76,7 +79,7 @@
    (not a)
    (iff a b)
    (implies a b)
-   
+
    (cons a b) ;; required for unify
 
    ;; required for sublis-var
@@ -167,7 +170,7 @@
                  '(:expand ((simple-term-vars-lst x)))))
     :flag simple-term-vars-lst))
 
-  
+
 
 
 (local (in-theory (disable sublis-var)))
@@ -175,7 +178,7 @@
 (std::defaggregate boundrw-subst
   ((lhs pseudo-termp)
    (rhs pseudo-termp)
-   (alist pseudo-term-substp))) 
+   (alist pseudo-term-substp)))
 
 (std::deflist boundrw-substlist-p (x)
   (boundrw-subst-p x))
@@ -221,7 +224,7 @@
                     (not (equal 0 (logand x y))))
            :hints (("goal" :in-theory (enable* bitops::ihsext-recursive-redefs
                                                bitops::ihsext-inductions)))))
-  
+
   (defret ts-check-sign-nonnegative-correct
     (b* ((val (boundrw-ev x a)))
       (implies (and (equal category :nonnegative)
@@ -282,7 +285,7 @@
                     (not (equal 0 (logand x y))))
            :hints (("goal" :in-theory (enable* bitops::ihsext-recursive-redefs
                                                bitops::ihsext-inductions)))))
-  
+
   (defret ts-check-sign-strict-positive-correct
     (b* ((val (boundrw-ev x a)))
       (implies (and (equal category :positive)
@@ -337,7 +340,7 @@
                     (not (equal 0 (logand x y))))
            :hints (("goal" :in-theory (enable* bitops::ihsext-recursive-redefs
                                                bitops::ihsext-inductions)))))
-  
+
   (defret ts-check-sign-nonzero-correct
     (b* ((val (boundrw-ev x a)))
       (implies (and nonzerop
@@ -371,7 +374,7 @@
                     (not (equal 0 (logand x y))))
            :hints (("goal" :in-theory (enable* bitops::ihsext-recursive-redefs
                                                bitops::ihsext-inductions)))))
-  
+
   (defret ts-check-rational-correct
     (b* ((val (boundrw-ev x a)))
       (implies (and rationalp
@@ -407,7 +410,7 @@
                     (equal (< val 0)
                            (not (equal val 0)))))))
 
-  
+
   (defret ts-check-sign/rational-rational-correct
     (b* ((val (boundrw-ev x a)))
       (implies (and category
@@ -506,7 +509,7 @@
     (declare (xargs :stobjs state
                     :verify-guards nil))
     (boundrw-check-bound x bound-term direction mfc state))
-  
+
   (defthmd boundrw-check-bound-correct-rw
     (implies (and (rewriting-negative-literal `(boundrw-check-bound ,x ,bound-term ,direction ,mf ,st))
                   (bind-free '((a . a)) (a))
@@ -690,10 +693,10 @@
        ((unless hyps-ok)
         best))
     bound-value))
-        
-       
-        
-        
+
+
+
+
 
 
 (define boundrw-try-linear-lemmas (lemmas
@@ -750,7 +753,7 @@
                            (<= (boundrw-ev new-x a) (boundrw-ev x a)))))
     :hints (("goal" :expand (<call>)
              :in-theory (enable boundrw-check-bound-correct-rw)))))
-       
+
 
 
 (define boundrw-find-bound ((x pseudo-termp)
@@ -832,7 +835,7 @@
   :prepwork ((local (defthmd cdr-when-equal-cons
                       (implies (equal x (cons a b))
                                (equal (cdr x) b))))
-             
+
              (local (defthmd car-when-equal-cons
                       (implies (equal x (cons a b))
                                (equal (car x) a))))
@@ -862,7 +865,7 @@
 
             ((binary-* (:? a) (:? b))
              (+ 1 (boundrw-rewrite-measure a) (boundrw-rewrite-measure b)))
-            
+
             (& 0))))
   ///
   (local (in-theory (disable (:d boundrw-rewrite-measure))))
@@ -920,7 +923,7 @@
                          (not (equal `(binary-* ,a ,a) x))))))
 
 
-  
+
 
   (local (defthm binary-*-matches
            (implies (and (consp x)
@@ -932,7 +935,7 @@
            :hints(("Goal" :in-theory (enable match-tree-open
                                              match-tree-opener-theory)))))
 
-  
+
 
 
   (local (defthm binary-*-a-a-matches
@@ -942,7 +945,7 @@
                                              match-tree-opener-theory
                                              match-tree-alist-opener-theory)))))
 
-  
+
   (local (defthm boundrw-rewrite-measure-of-special
            (implies (equal x `(binary-* ,a ,a))
                     (equal (boundrw-rewrite-measure x)
@@ -980,8 +983,8 @@
                    ;; (and stable-under-simplificationp
                    ;;      '(:in-theory (enable match-tree-opener-theory)))
                    ))
-                                            
-  
+
+
   (defthm boundrw-rewrite-measure-square-assoc-case-1
     (b* (((mv match ?alist) (match-tree '(binary-* (:? a) (binary-* (:? a) (:? b))) x nil)))
       (implies match
@@ -1014,7 +1017,7 @@
             :in-theory (disable boundrw-rewrite-measure-square-assoc-case-1))))
 
 
-  
+
   (defthm boundrw-rewrite-measure-decr-on-*-subterm
     (b* (((mv match ?alist) (match-tree '(binary-* (:? a) (:? b)) x nil)))
       (implies match
@@ -1027,13 +1030,13 @@
              :do-not-induct t))
     :otf-flg t
     :rule-classes :linear))
-              
+
 
 
 ;; (local (in-theory (e/d (match-tree-obj-equals-subst-when-successful
 ;;                         ;; match-tree-equals-match-tree-matchedp-when-successful
 ;;                         match-tree-alist-opener-theory
-                        
+
 ;;                         )
 ;;                        (match-tree-opener-theory)
 ;;                        ;; (match-tree-obj-equals-subst-when-successful)
@@ -1102,7 +1105,7 @@
                          (<= (boundrw-ev bound2 a) (boundrw-ev original a)))
                     (<= (boundrw-ev new-bound a) (boundrw-ev original a)))))
     :rule-classes :linear))
-           
+
 
 
 (defines boundrw-rewrite
@@ -1124,7 +1127,7 @@
          (new-x2 (boundrw-rewrite-operator x direction bound-alist negative-bound-alist))
          ((unless changed) new-x2))
       (boundrw-choose-best-bound new-x1 new-x2 x direction)))
-  
+
   (define boundrw-rewrite-operator ((x pseudo-termp)
                                     (direction booleanp)
                                     (bound-alist boundrw-substlist-p)
@@ -1230,7 +1233,7 @@
                   ;; (b-type (ts-check-sign new-b mfc state))
                   ((mv new-a ?b-type) (boundrw-rewrite-factor a new-b direction bound-alist negative-bound-alist)))
                (boundrw-apply 'binary-* (list new-a new-b))))
-            
+
             (& x)))))
 
   (define boundrw-rewrite-factor ((x pseudo-termp)
@@ -1260,7 +1263,7 @@
                   x))
             x)
           y-type)))
-    
+
   ///
   (local (in-theory (disable (:d boundrw-rewrite)
                              (:t ts-check-rational)
@@ -1270,7 +1273,7 @@
                              rationalp-implies-acl2-numberp
                              ;; not
                              )))
-  
+
   (verify-guards+ boundrw-rewrite
                   :hints(("Goal" :in-theory (disable boundrw-rewrite))))
 
@@ -1284,7 +1287,7 @@
                         '(:nonlinearp t)))))
 
 
-  
+
   (local (defthm reciprocal-antimonotonic-neg
            (implies (and (case-split (< b 0))
                          (<= a b)
@@ -1553,9 +1556,9 @@
 
   (local (defund-nx ts-check-sign-hide (x mfc state)
            (ts-check-sign x mfc state)))
-           
-  
-  
+
+
+
   (local (defret ts-check-sign-nonnegative-correct-rw
            :pre-bind ((mfc mf)
                       (state st))
@@ -1615,7 +1618,7 @@
                            (pseudo-term-listp args)))
            :hints(("Goal" :in-theory (enable pseudo-termp-opener)))))
   (local (in-theory (disable (:t pseudo-termp))))
-  
+
   (std::defret-mutual boundrw-rewrite-correct
     (defret <fn>-correct
       (b* ((old (boundrw-ev x a))
@@ -1764,7 +1767,7 @@
                      (boundrw-substlist-p lower-bounds)))
         (cw "Bound-rewrite: Bounds lists are not both boundrw-substlist-ps.~%")
         x)
-       
+
        ((list a b) (cdr x))
        (new-a (if hyp-p
                   ;; (not (< a b)) case -- replace a by lower bound
@@ -1799,7 +1802,7 @@
               `(<= ,(unquote new-b) ,(unquote new-a))))
         ;; Reduced it to NIL -- skip instead.
         x))
-        
+
     (if hyp-p
         ;; (not (< a b)) -- use AND
         `(if (hide ,x)
@@ -1818,7 +1821,7 @@
                     (boundrw-ev (bound-rewrite-metafn x mfc state) a)))
     :hints (("Goal" :do-not-induct t))
     :rule-classes ((:meta :trigger-fns (<)))))
-             
+
 
 (define boundrw-translate-subst (cmp lhs rhs freevars state)
   :returns (mv upperp (subst t))
@@ -1870,7 +1873,7 @@
     (if upperp
         (mv (cons bound rest-upper) rest-lower)
       (mv rest-upper (cons bound rest-lower)))))
-       
+
 
 
 
@@ -1924,7 +1927,7 @@
                acc)
        acc))))
 
-  
+
 
 
 (define boundrw-clause-auto-bounds ((clause "clause we're parsing for assumptions")
@@ -2050,7 +2053,7 @@
   :prepwork ((local (defthmd cdr-when-equal-cons
                       (implies (equal x (cons a b))
                                (equal (cdr x) b))))
-             
+
              (local (defthmd car-when-equal-cons
                       (implies (equal x (cons a b))
                                (equal (car x) a))))
@@ -2081,7 +2084,7 @@
       (b* (((mv upper-bound-acc lower-bound-acc)
             (boundrw-find-linear-lemmas-rec a omit upper-bound-acc lower-bound-acc ens state)))
         (boundrw-find-linear-lemmas-rec b omit upper-bound-acc lower-bound-acc ens state)))
-            
+
      (& (mv upper-bound-acc lower-bound-acc)))))
 
 
@@ -2135,7 +2138,7 @@
                                     state)
   :returns (mv new-upper-bound-acc new-lower-bound-acc)
   (boundrw-find-linear-lemmas-clause clause auto-bounds-omit upper-bound-acc lower-bound-acc ens state))
-    
+
 
 (define boundrw-auto-bounds ((clause pseudo-term-listp)
                              (auto-bounds-omit pseudo-term-listp)
@@ -2157,7 +2160,7 @@
           (mv upper-bound-acc lower-bound-acc))))
     (mv (boundrw-const-bound-alist-to-substlist (fast-alist-clean upper-bound-acc) nil)
         (boundrw-const-bound-alist-to-substlist (fast-alist-clean lower-bound-acc) nil))))
-    
+
 
 (define boundrw-translate-omits (omits state)
   :returns (omit-terms)
@@ -2219,8 +2222,8 @@
                       ,linear-auto-bounds
                       ,auto-bounds-omit
                       clause pspv state))
-                    
-    
+
+
 
 
 
@@ -2621,7 +2624,7 @@ dead code
      (b* ((lower-bound-term (boundrw-rewrite trans-term nil lower-bounds upper-bounds))
           (upper-bound-term (boundrw-rewrite trans-term t upper-bounds lower-bounds)))
        (value (list lower-bound-term upper-bound-term))))))
-    
+
 
 (defmacro rewrite-bounds-find-bounds (term
                                       &key
@@ -2637,7 +2640,7 @@ dead code
 
 
 (encapsulate nil
-  
+
   (local
    (progn
      (defthm loghead-upper-bound
@@ -2646,7 +2649,7 @@ dead code
                               (size1 (nfix n)) (size n) (i x)))
                 :in-theory (e/d (unsigned-byte-p) (unsigned-byte-p-of-loghead))))
        :rule-classes :linear)
-     
+
      (defthm loghead-lower-bound
        (<= 0 (loghead n x))
        :rule-classes :linear)))
@@ -2662,7 +2665,7 @@ dead code
    :stobjs-out :auto))
 
 (encapsulate nil
-  
+
   (local
    (progn
      (defthm loghead-upper-bound
@@ -2671,7 +2674,7 @@ dead code
                               (size1 (nfix n)) (size n) (i x)))
                 :in-theory (e/d (unsigned-byte-p) (unsigned-byte-p-of-loghead))))
        :rule-classes :linear)
-     
+
      (defthm loghead-lower-bound
        (<= 0 (loghead n x))
        :rule-classes :linear)))
@@ -2687,6 +2690,6 @@ dead code
    :stobjs-out :auto))
 
 
-       
-       
+
+
 
