@@ -1559,6 +1559,12 @@
                   :thm-index args.thm-index
                   :names-to-avoid args.names-to-avoid
                   :proofs nil))))
+       ((when gin.loop-flag)
+        (reterr
+         (msg "A loop body must end with ~
+               a recursive call on every path, ~
+               but in the function ~x0 it ends with ~x1 instead."
+              gin.fn term)))
        ((erp (expr-gout term))
         (atc-gen-expr term
                       (make-expr-gin :context gin.context
@@ -1575,12 +1581,6 @@
                                      :names-to-avoid gin.names-to-avoid
                                      :proofs gin.proofs)
                       state))
-       ((when gin.loop-flag)
-        (reterr
-         (msg "A loop body must end with ~
-               a recursive call on every path, ~
-               but in the function ~x0 it ends with ~x1 instead."
-              gin.fn term)))
        ((unless (equal gin.affect term.affect))
         (reterr
          (msg "When generating code for the non-recursive function ~x0, ~
