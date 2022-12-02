@@ -1,4 +1,4 @@
-; A lightweight book about TODO.
+; Proofs of properties of make-lambda-application-simple
 ;
 ; Copyright (C) 2013-2022 Kestrel Institute
 ;
@@ -13,7 +13,7 @@
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "make-lambda-application-simple")
 (include-book "no-nils-in-termp")
-(include-book "kestrel/alists-light/lookup-equal" :dir :system) ; make local?
+(include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -37,17 +37,17 @@
 
 ;; todo: add this to defevaluator+
 (defthm-flag-free-vars-in-term
-  ;; Bind a variable in the alist has no effect if it is not one of the free vars in the term.
+  ;; Adding a pair to the alist has no effect if the key is not one of the free vars in the term.
   (defthm empty-eval-of-cons-irrel
-    (implies (and (not (member-equal var (free-vars-in-term term)))
+    (implies (and (not (member-equal (car pair) (free-vars-in-term term)))
                   (pseudo-termp term))
-             (equal (empty-eval term (cons (cons var val) a))
+             (equal (empty-eval term (cons pair a))
                     (empty-eval term a)))
     :flag free-vars-in-term)
   (defthm empty-eval-list-of-cons-irrel
-    (implies (and (not (member-equal var (free-vars-in-terms terms)))
+    (implies (and (not (member-equal (car pair) (free-vars-in-terms terms)))
                   (pseudo-term-listp terms))
-             (equal (empty-eval-list terms (cons (cons var val) a))
+             (equal (empty-eval-list terms (cons pair a))
                     (empty-eval-list terms a)))
     :flag free-vars-in-terms)
   :hints (("Goal" :in-theory (e/d (empty-eval-of-fncall-args)
@@ -182,21 +182,7 @@
          (intersection-equal formals formals-to-keep))
   :hints (("Goal" :in-theory (enable filter-formals-and-actuals) )))
 
-;move
-(defthm set-difference-equal-of-intersection-equal-and-intersection-equal-swapped
-  (equal (set-difference-equal (intersection-equal x y)
-                               (intersection-equal y x))
-         nil))
-
-;move
-(defthm intersection-equal-when-subsetp-equal
-  (implies (subsetp-equal x y)
-           (equal (intersection-equal x y)
-                  (true-list-fix x)))
-  :hints (("Goal" ;:induct (intersection-equal y x)
-           :in-theory (enable intersection-equal))))
-
-;move or gen to a subsetp fact
+;move or gen to a subsetp fact, or gen the second x to z
 (defthm intersection-equal-of-intersection-equal-and-intersection-equal-swapped
   (equal (intersection-equal (intersection-equal x y)
                              (intersection-equal y x))
@@ -217,17 +203,6 @@
                                (intersection-equal y x))
          (set-difference-equal x y)))
 
-(defund map-lookup-equal (terms a)
-  (if (endp terms)
-      nil
-    (cons (lookup-equal (first terms) a)
-          (map-lookup-equal (rest terms) a))))
-
-(defthm len-of-map-lookup-equal
-  (equal (len (map-lookup-equal terms a))
-         (len terms))
-  :hints (("Goal" :in-theory (enable map-lookup-equal))))
-
 ;true for any evaluator
 (defthm empty-eval-list-when-symbol-listp
   (implies (and (symbol-listp terms)
@@ -236,25 +211,6 @@
                   (map-lookup-equal terms a)))
   :hints (("Goal" :in-theory (enable map-lookup-equal
                                      lookup-equal))))
-
-(defthm no-nils-in-termsp-of-set-difference-equal
-  (implies (no-nils-in-termsp x)
-           (no-nils-in-termsp (set-difference-equal x y)))
-  :hints (("Goal" :in-theory (enable set-difference-equal))))
-
-(make-flag no-nils-in-termp)
-
-(defthm-flag-no-nils-in-termp
-  (defthm no-nils-in-termp-of-free-vars-in-term
-    (implies (no-nils-in-termp term)
-             (no-nils-in-termsp (free-vars-in-term term)))
-    :flag no-nils-in-termp)
-  (defthm no-nils-in-termsp-of-free-vars-in-terms
-    (implies (no-nils-in-termsp terms)
-             (no-nils-in-termsp (free-vars-in-terms terms)))
-    :flag no-nils-in-termsp)
-  :hints (("Goal" :expand (free-vars-in-terms terms)
-           :in-theory (enable free-vars-in-term no-nils-in-termsp))))
 
 (defthm equal-of-cons-of-cdr-of-assoc-equal-and-assoc-equal-iff
   (implies (alistp a)
@@ -320,13 +276,6 @@
 ;;                             (INTERSECTION-EQUAL y z))
 ;;         nil))
 
-(defthm MAP-LOOKUP-EQUAL-of-cons-of-cons-irrel
-  (implies (not (member-equal key keys))
-           (equal (MAP-LOOKUP-EQUAL keys (CONS (cons key val) alist))
-                  (MAP-LOOKUP-EQUAL keys alist)))
-  :hints (("Goal" :in-theory (enable MAP-LOOKUP-EQUAL))))
-
-
 (defthm mv-nth-1-of-FILTER-FORMALS-AND-ACTUALS
   (implies (no-duplicatesp-equal formals)
            (equal (mv-nth 1 (filter-formals-and-actuals formals actuals vars))
@@ -370,8 +319,7 @@
 ;move or drop?
 (defthm equal-of-empty-eval-and-empty-eval-when-not-consp-of-free-vars-in-term
   (implies (and (not (consp (free-vars-in-term body)))
-                (pseudo-termp body) ;drop?
-                )
+                (pseudo-termp body))
            (equal (equal (empty-eval body a2)
                          (empty-eval body a1))
                   t)))

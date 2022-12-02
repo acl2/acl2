@@ -32,6 +32,7 @@
 (include-book "lookup-safe")
 (include-book "lookup-eq-lst")
 (include-book "lookup-equal-lst")
+(include-book "map-lookup-equal")
 (include-book "pairlis-dollar")
 (include-book "pairlis-dollar-fast")
 (include-book "uniquify-alist-eq")

@@ -297,7 +297,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (defrule ,equal-of-<type>
+       (defruled ,equal-of-<type>
          (equal (equal (,<type> get) x)
                 (and (,<type>p x)
                      (equal (,<type>->get x)
