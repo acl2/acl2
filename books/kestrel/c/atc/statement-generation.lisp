@@ -1417,6 +1417,19 @@
                          in the function ~x2 ~
                          affects the variables ~x3, which is disallowed."
                         (car terms) term gin.fn first.affect)))
+                 ((when (type-case first.type :void))
+                  (reterr
+                   (raise "Internal error: return term ~x0 has type void."
+                          term)))
+                 ((when (type-case first.type :array))
+                  (reterr
+                   (raise "Internal error: array type ~x0." first.type)))
+                 ((when (type-case first.type :pointer))
+                  (reterr
+                   (msg "When generating a return statement for function ~x0, ~
+                         the term ~x1 that represents the return expression ~
+                         has pointer type ~x2, which is disallowed."
+                        gin.fn term first.type)))
                  (limit (pseudo-term-fncall
                          'binary-+
                          (list (pseudo-term-quote 3)
