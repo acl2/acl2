@@ -321,6 +321,7 @@ I commented out some disabled theorems that seem fine to me.
         ;;  |(mod (- x) y)|
         ;;  mod-sums-cancel-1
         ;;  |(equal (mod a n) (mod b n))|
+        acl2::|(* 2 (floor x y))|
         )))
 
 (defthm acl2s-default-mod-ratio
@@ -771,4 +772,5 @@ I commented out some disabled theorems that seem fine to me.
         ;;  |(mod (- x) y)|
         ;;  mod-sums-cancel-1
         ;;  |(equal (mod a n) (mod b n))|
+        acl2::|(* 2 (floor x y))|
         ))
