@@ -1130,7 +1130,12 @@
      because that function generates a theorem
      involving @(tsee exec-expr-pure),
      while this function generates a theorem
-     involving @(tsee exec-expr-call-or-pure)."))
+     involving @(tsee exec-expr-call-or-pure).")
+   (xdoc::p
+    "The limit bound is set to 1,
+     which suffices, in @(tsee exec-expr-call-or-pure),
+     to go from there to @(tsee exec-expr-pure),
+     which does not use any limit."))
   (b* (((reterr) (irr-expr-gout))
        ((expr-gin gin) gin)
        (wrld (w state))
