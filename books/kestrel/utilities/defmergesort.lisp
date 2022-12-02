@@ -18,12 +18,19 @@
 
 (include-book "pack")
 
-(defun defmergesort-fn (merge-name merge-sort-name comparison-fn ;fixme allow an expression?
-                                   pred
-                                   verify-guards
-                                   extra-theorems
-                                   )
-  (declare (xargs :guard (booleanp extra-theorems))) ;todo: flesh this out
+(defun defmergesort-fn (merge-name
+                        merge-sort-name
+                        comparison-fn ;fixme allow an expression?
+                        pred
+                        verify-guards
+                        extra-theorems
+                        )
+  (declare (xargs :guard (and (symbolp merge-name)
+                              (symbolp merge-sort-name)
+                              (symbolp comparison-fn) ; todo: allow a lambda?
+                              (symbolp pred)
+                              (booleanp verify-guards)
+                              (booleanp extra-theorems)))) ;todo: flesh this out
   (let* ((list-pred (pack$ 'all- pred))
          (list-pred-of-mv-nth-0-of-split-list-fast-aux-theorem-name (pack$ list-pred '-of-mv-nth-0-of-split-list-fast-aux))
          (list-pred-of-mv-nth-0-of-split-list-fast-theorem-name (pack$ list-pred '-of-mv-nth-0-of-split-list-fast))
