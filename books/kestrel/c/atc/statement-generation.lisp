@@ -184,6 +184,8 @@
    (fn symbolp)
    (fn-guard symbol)
    (compst-var symbol)
+   (fenv-var symbol)
+   (limit-var symbol)
    (prec-fns atc-symbol-fninfo-alist)
    (prec-tags atc-string-taginfo-alist)
    (prec-objs atc-string-objinfo-alist)
@@ -221,8 +223,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-stmt ((term pseudo-termp) (gin stmt-ginp) state)
-  :returns (mv erp
-               (gout stmt-goutp))
+  :returns (mv erp (gout stmt-goutp))
   :short "Generate a C statement from an ACL2 term."
   :long
   (xdoc::topstring
@@ -565,6 +566,8 @@
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
                                    :compst-var gin.compst-var
+                                   :fenv-var gin.fenv-var
+                                   :limit-var gin.limit-var
                                    :prec-fns gin.prec-fns
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
@@ -651,6 +654,8 @@
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
                                    :compst-var gin.compst-var
+                                   :fenv-var gin.fenv-var
+                                   :limit-var gin.limit-var
                                    :prec-fns gin.prec-fns
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
@@ -1158,6 +1163,8 @@
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
                                    :compst-var gin.compst-var
+                                   :fenv-var gin.fenv-var
+                                   :limit-var gin.limit-var
                                    :prec-fns gin.prec-fns
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
@@ -1234,6 +1241,8 @@
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
                                    :compst-var gin.compst-var
+                                   :fenv-var gin.fenv-var
+                                   :limit-var gin.limit-var
                                    :prec-fns gin.prec-fns
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
@@ -1394,6 +1403,8 @@
                                  :fn gin.fn
                                  :fn-guard gin.fn-guard
                                  :compst-var gin.compst-var
+                                 :fenv-var gin.fenv-var
+                                 :limit-var gin.limit-var
                                  :prec-fns gin.prec-fns
                                  :prec-tags gin.prec-tags
                                  :thm-index gin.thm-index
@@ -1406,6 +1417,19 @@
                          in the function ~x2 ~
                          affects the variables ~x3, which is disallowed."
                         (car terms) term gin.fn first.affect)))
+                 ((when (type-case first.type :void))
+                  (reterr
+                   (raise "Internal error: return term ~x0 has type void."
+                          term)))
+                 ((when (type-case first.type :array))
+                  (reterr
+                   (raise "Internal error: array type ~x0." first.type)))
+                 ((when (type-case first.type :pointer))
+                  (reterr
+                   (msg "When generating a return statement for function ~x0, ~
+                         the term ~x1 that represents the return expression ~
+                         has pointer type ~x2, which is disallowed."
+                        gin.fn term first.type)))
                  (limit (pseudo-term-fncall
                          'binary-+
                          (list (pseudo-term-quote 3)
@@ -1548,6 +1572,12 @@
                   :thm-index args.thm-index
                   :names-to-avoid args.names-to-avoid
                   :proofs nil))))
+       ((when gin.loop-flag)
+        (reterr
+         (msg "A loop body must end with ~
+               a recursive call on every path, ~
+               but in the function ~x0 it ends with ~x1 instead."
+              gin.fn term)))
        ((erp (expr-gout term))
         (atc-gen-expr term
                       (make-expr-gin :context gin.context
@@ -1556,18 +1586,14 @@
                                      :fn gin.fn
                                      :fn-guard gin.fn-guard
                                      :compst-var gin.compst-var
+                                     :fenv-var gin.fenv-var
+                                     :limit-var gin.limit-var
                                      :prec-fns gin.prec-fns
                                      :prec-tags gin.prec-tags
                                      :thm-index gin.thm-index
                                      :names-to-avoid gin.names-to-avoid
                                      :proofs gin.proofs)
                       state))
-       ((when gin.loop-flag)
-        (reterr
-         (msg "A loop body must end with ~
-               a recursive call on every path, ~
-               but in the function ~x0 it ends with ~x1 instead."
-              gin.fn term)))
        ((unless (equal gin.affect term.affect))
         (reterr
          (msg "When generating code for the non-recursive function ~x0, ~
@@ -1624,6 +1650,8 @@
    (fn symbol)
    (fn-guard symbol)
    (compst-var symbol)
+   (fenv-var symbol)
+   (limit-var symbol)
    (measure-for-fn symbol)
    (measure-formals symbol-list)
    (prec-fns atc-symbol-fninfo-alist)
@@ -1669,8 +1697,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-stmt ((term pseudo-termp) (gin lstmt-ginp) state)
-  :returns (mv erp
-               (gout lstmt-goutp))
+  :returns (mv erp (gout lstmt-goutp))
   :short "Generate a C loop statement from an ACL2 term."
   :long
   (xdoc::topstring
