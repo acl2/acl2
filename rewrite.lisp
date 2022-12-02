@@ -6537,11 +6537,14 @@
 ; books/arithmetic-5/lib/basic-ops/default-hint.lisp  -- one occurrence
 ; books/hints/basic-tests.lisp -- two occurrences
 
+; At the default-hint.lisp occurrence there is a handy comment explaining
+; how to get the new guard.
+
 ; WARNING: The name "rewrite-constant" is a misnomer because it is not really
 ; constant during rewriting.  For example, the active-theory is frequently
 ; toggled.
 
-; The Rewriter's Constant Argument -- rcnst
+; The Rewriter's ``Constant Argument'' -- rcnst
 
 ; In nqthm the rewriter accessed many "special variables" -- variables
 ; bound outside the rewriter.  Some of these were true specials in the
@@ -6561,8 +6564,7 @@
 
 ;    field                           where set        soundness
 ; pt                               rewrite-clause         *
-; current-literal not-flg          rewrite-clause
-; current-literal atm              rewrite-clause
+; current-literal                  rewrite-clause
 
 ; top-clause                       simplify-clause1
 ; current-clause                   simplify-clause1
@@ -6577,18 +6579,27 @@
 ; The fields marked with *'s are involved in the soundness of the result
 ; of rewriting.  The rest are of heuristic use only.
 
-; The current-literal not-flg and atm are always used together so we bundle
-; them so we can extract them both at once:
+; This is a balanced binary tree of depth 4 (first 12 fields) and 5 (last 8
+; fields), constructed by the utility in books/tools/btree.lisp. The order in
+; this record is based on a heuristic (syntactic, not dynamic) judgement of the
+; frequency and cost of access and change (assuming change is about 3 times
+; more expensive than access.  But changes to this ordering of tips has had
+; almost insignificant impact on the time to do full regressions.  So don't
+; overthink this.  Indeed, we adopted the balanced tree approach simply because
+; it is just rational and doesn't strongly suggest that we've dynamically
+; determined the frequency of access and change (as an ad hoc layout might).
 
-  ((active-theory . (rewriter-state . rw-cache-state))
-   current-enabled-structure
-   (pt restrictions-alist . expand-lst)
-   (force-info fns-to-be-ignored-by-rewrite . terms-to-be-ignored-by-rewrite)
-   (top-clause . current-clause)
-   ((splitter-output . current-literal) . oncep-override)
-   (nonlinearp . heavy-linearp)
-   (case-split-limitations . forbidden-fns)
-   . backchain-limit-rw)
+  ((((CURRENT-ENABLED-STRUCTURE . PT)
+     NONLINEARP . FORBIDDEN-FNS)
+    (HEAVY-LINEARP . ONCEP-OVERRIDE)
+    REWRITER-STATE . BACKCHAIN-LIMIT-RW)
+   ((RESTRICTIONS-ALIST . CURRENT-LITERAL)
+    CASE-SPLIT-LIMITATIONS . EXPAND-LST)
+   ((TERMS-TO-BE-IGNORED-BY-REWRITE . ACTIVE-THEORY)
+    FNS-TO-BE-IGNORED-BY-REWRITE
+    . TOP-CLAUSE)
+   (FORCE-INFO . CURRENT-CLAUSE)
+   RW-CACHE-STATE . SPLITTER-OUTPUT)
   t)
 
 ; Active-theory is either :standard or :arithmetic.  (It was added first to
@@ -6691,6 +6702,13 @@
 ; TYPE-ALIST| and the other record functions, because that form comes about by
 ; macroexpanding this defrec.  But if you don't change that PROGN, however, the
 ; build will fail loudly (via a redefinition error).
+
+; WARNING: You must also change (at least) the definition of mfc-obj in
+; books/arithmetic-5/lib/basic-ops/building-blocks.lisp.  Note that mfc-obj is
+; guard-veriable because it builds in the proper guard for (access
+; metafunction-context mfc :obj) and then uses (cadr mfc) instead of the access
+; form.  Similar issues arise around the rewrite-constant.  See the warning
+; there about nonlinearp-default-hint.
 
 ; See the Essay on Metafunction Support, Part 1 for an explanation of the use
 ; of this record.
@@ -13198,6 +13216,79 @@
 (defconst *rewrite-lambda-modep-def-rune*
   '(:DEFINITION REWRITE-LAMBDA-MODEP))
 
+(defun formal-cons-to-components (term)
+
+; Term is a translated term.  This function returns (mv flg car cdr).  If flg
+; is nil, term does not represent a CONS term.  Otherwise it does and car and
+; cdr are the first and second args of that CONS term.  The only tricky thing
+; about this function is that term might be a quoted constant.
+
+  (cond ((variablep term) (mv nil nil nil))
+        ((fquotep term)
+         (let ((evg (unquote term)))
+           (if (consp evg)
+               (mv t
+                   (kwote (car evg))
+                   (kwote (cdr evg)))
+               (mv nil nil nil))))
+        ((eq (ffn-symb term) 'cons)
+         (mv t (fargn term 1) (fargn term 2)))
+        (t (mv nil nil nil))))
+
+(defun recover-subst-from-formal-var-alist (term)
+
+; We return (mv flg sigma).  If flg is t then term is the translation of (list
+; (cons 'var1 val1) ... (cons 'vark valk)), where each vari is a legal variable
+; name and sigma is the substitution ((var1 . val1) ... (vark . valk)).  Else,
+; we return (mv nil nil).  (Technically, a substitution should have no
+; duplicate keys, but sublis-var ignores all but the first binding.)
+
+; Note the similarity of this function with formal-alist-to-alist-on-vars.  But
+; that function also strips out assoc-eq-safe calls from the vals!  So don't be
+; confused!
+
+  (cond
+   ((variablep term) (mv nil nil))
+   ((equal term *nil*) (mv t nil))
+   (t (mv-let (flg pair rest)
+        (formal-cons-to-components term)
+        (cond
+         ((null flg) (mv nil nil))
+         (t (mv-let (flg key val)
+              (formal-cons-to-components pair)
+              (cond
+               ((null flg) (mv nil nil))
+               ((and (quotep key)
+                     (eq (legal-variable-or-constant-namep (unquote key))
+                         'variable))
+                (mv-let (flg sigma)
+                  (recover-subst-from-formal-var-alist rest)
+                  (cond
+                   ((null flg) (mv nil nil))
+                   (t (mv t (cons (cons (unquote key) val) sigma))))))
+               (t (mv nil nil))))))))))
+
+(defun extend-subst-on-unbound-vars (vars alist)
+
+; For every var in vars that is not already bound in alist we add (var . 'nil)
+; to alist.
+
+  (cond
+   ((endp vars) alist)
+   ((assoc-eq (car vars) alist)
+    (extend-subst-on-unbound-vars (cdr vars) alist))
+   (t (cons (cons (car vars) *nil*)
+            (extend-subst-on-unbound-vars (cdr vars) alist)))))
+
+(defmacro rewrite-standard-exit (fn rewritten-args)
+  `(sl-let
+    (rewritten-term ttree)
+    (rewrite-entry
+     (rewrite-primitive ,fn ,rewritten-args))
+    (rewrite-entry
+     (rewrite-with-lemmas
+      rewritten-term))))
+
 (mutual-recursion
 
 ; State is an argument of rewrite only to permit us to call ev.  In general,
@@ -13772,14 +13863,72 @@
                                       (push-lemma
                                        (fn-rune-nume fn nil t wrld)
                                        ttree))))))))))
-                     (t
-                      (sl-let
-                       (rewritten-term ttree)
-                       (rewrite-entry
-                        (rewrite-primitive fn rewritten-args))
-                       (rewrite-entry
-                        (rewrite-with-lemmas
-                         rewritten-term))))))))))))))))))
+                     ((and (eq fn 'EV$)
+                           (global-val 'projects/apply/base-includedp wrld)
+                           (active-runep '(:rewrite ev$-opener)) ; uses ens!
+                           (quotep (car rewritten-args)))
+
+; We're looking at (EV$ 'x y).  Under certain conditions we'll rewrite this EV$
+; call by rewriting x under sigma'.  If those conditions are not met we just
+; ``fall through'' to the rewriter's normal handling of a non-special-case
+; function call.
+
+; The conditions are that x must be a tame term, every function in it has been
+; warranted, all the warrants are true in type-alist or can be forced, we can
+; recover from y a substitution, sigma.  Sigma', mentioned above, is just the
+; extension of sigma obtained by binding to 'nil all free variables of x that
+; are not bound in sigma.
+
+; This special processing of certain EV$ calls can be skipped by disabling
+; (:rewrite ev$-opener), a rewrite rule in projects/apply/base.lisp.  We
+; confirm that that book has been included so that we know the rewrite rule of
+; that name really is our rule.
+
+                     (let ((x (unquote (car rewritten-args)))
+                           (y (cadr rewritten-args)))
+                       (mv-let (flg sigma)
+                         (recover-subst-from-formal-var-alist y)
+                         (cond
+                          ((null flg)
+                           (rewrite-standard-exit fn rewritten-args))
+                          ((not (and (termp x wrld)
+                                     (executable-tamep x wrld)))
+                           (rewrite-standard-exit fn rewritten-args))
+                          (t (mv-let (warranted-fns unwarranted-fns)
+                             (partition-userfns-by-warrantp (all-fnnames x)
+                                                            wrld nil nil)
+                             (cond
+                              (unwarranted-fns
+                               (rewrite-standard-exit fn rewritten-args))
+                              (t (let ((new-alist
+                                        (extend-subst-on-unbound-vars
+                                         (all-vars x)
+                                         sigma)))
+                                   (mv-let (erp ttree1)
+                                     (push-warrants
+                                      warranted-fns
+                                      term type-alist ens wrld
+                                      (ok-to-force rcnst)
+                                      (push-lemma?
+                                       (active-runep '(:rewrite ev$-opener))
+                                       ttree)
+                                      ttree)
+                                  (cond
+                                   (erp
+                                    (rewrite-standard-exit fn rewritten-args))
+                                   (t
+
+; Note that every variable in x is bound in new-alist to a term that has been
+; recovered from rewritten-args, so the type-alist and the other data being
+; passed into this recursive call of rewrite legitimately describes the current
+; context.  Note also that as soon as rewrite sees a variable symbol it looks
+; it up in alist, transferring its attention to the binding.
+
+                                    (rewrite-entry
+                                     (rewrite x new-alist
+                                              'expansion)
+                                     :ttree ttree1)))))))))))))
+                     (t (rewrite-standard-exit fn rewritten-args))))))))))))))))
 
 (defun rewrite-solidify-plus (term ; &extra formals
                               rdepth step-limit

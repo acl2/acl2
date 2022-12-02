@@ -1872,6 +1872,7 @@
     (PROJECT-DIR-ALIST (and (alistp val)
                             (keyword-listp (strip-cars val))
                             (string-listp (strip-cdrs val))))
+    (PROJECTS/APPLY/BASE-INCLUDEDP (booleanp val))
     (otherwise nil)))
 
 ;-----------------------------------------------------------------

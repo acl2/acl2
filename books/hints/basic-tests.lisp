@@ -1190,13 +1190,9 @@
       (and (consp pspv)
            (consp (car pspv))
            (consp (car (car pspv)))
-           (consp (cdr (car (car pspv))))
-           (consp (cdr (cdr (car (car pspv)))))
-           (consp (cdr (cdr (cdr (car (car pspv))))))
-           (consp (cdr (cdr (cdr (cdr (car (car pspv)))))))
-           (consp (cdr (cdr (cdr (cdr (cdr (car (car pspv))))))))
-           (consp (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))
-           (consp (car (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))))))
+           (consp (car (car (car pspv))))
+           (consp (car (car (car (car pspv)))))
+           (consp (cdr (car (car (car (car pspv)))))))))
     (cond (stable-under-simplificationp
            (if (not (access rewrite-constant
                             (access prove-spec-var pspv :rewrite-constant)
@@ -1240,15 +1236,11 @@
      (xargs
       :guard ; Guard change for tau after ACL2 Version 5.0 by J Moore:
       (and (consp pspv)
-           (consp (car pspv))
-           (consp (car (car pspv)))
-           (consp (cdr (car (car pspv))))
-           (consp (cdr (cdr (car (car pspv)))))
-           (consp (cdr (cdr (cdr (car (car pspv))))))
-           (consp (cdr (cdr (cdr (cdr (car (car pspv)))))))
-           (consp (cdr (cdr (cdr (cdr (cdr (car (car pspv))))))))
-           (consp (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))
-           (consp (car (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))))))
+         (consp (car pspv))
+         (consp (car (car pspv)))
+         (consp (car (car (car pspv))))
+         (consp (car (car (car (car pspv)))))
+         (consp (cdr (car (car (car (car pspv)))))))))
     (cond (stable-under-simplificationp
            (if (not (access rewrite-constant
                             (access prove-spec-var pspv :rewrite-constant)

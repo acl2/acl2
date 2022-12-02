@@ -140,7 +140,11 @@
   (declare (ignore state))
   (ugly-unhide-hack-loop-stopper-1 `(INTEGERP (BINARY-* '1/2 (FLOOR ,x ,y)))
 				   (mfc-clause mfc)
-				   (car (caaddr (cadr (cddddr (cddddr mfc)))))))
+				   (car (access rewrite-constant
+                                                (access metafunction-context
+                                                        mfc
+                                                        :rcnst)
+                                                :pt))))
 
 (defthm |(* 1/2 (floor x y))|
   (implies (and (syntaxp (rewriting-goal-literal x mfc state))
