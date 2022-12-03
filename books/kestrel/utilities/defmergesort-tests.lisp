@@ -1,7 +1,7 @@
 ; Tests for defmergesort
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,12 @@
 
 (deftest
   (defmergesort merge-< merge-sort-< < real/rationalp))
+
+;; Same but with no extra theorems:
+(deftest
+  (defmergesort merge-< merge-sort-< < real/rationalp :extra-theorems nil)
+  (defun perm (x) x) ; fake, just checks that perm didn't get brought in
+  )
 
 (deftest
   (in-theory nil) ;make sure the proofs still work with no rules enabled
