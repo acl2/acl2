@@ -397,17 +397,49 @@
        ((mv item-event &) (evmac-generate-defthm item-thm-name
                                                  :formula item-formula
                                                  :hints item-hints
-                                                 :enable nil)))
+                                                 :enable nil))
+       (items-thm-name (pack gin.fn '-blockitems thm-index '-correct))
+       (thm-index (1+ thm-index))
+       ((mv items-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         items-thm-name nil names-to-avoid wrld))
+       (items-formula `(and (equal (exec-block-item-list ',items
+                                                         ,gin.compst-var
+                                                         ,gin.fenv-var
+                                                         ,gin.limit-var)
+                                   (mv ,term ,gin.compst-var))
+                            (,type-pred ,term)))
+       (items-formula (atc-contextualize items-formula gin.context))
+       (items-formula `(implies (and (compustatep ,gin.compst-var)
+                                     (,gin.fn-guard ,@(formals+ gin.fn wrld))
+                                     (integerp ,gin.limit-var)
+                                     (>= ,gin.limit-var ,items-limit))
+                                ,items-formula))
+       (items-hints
+        `(("Goal" :in-theory '(exec-block-item-list-when-consp
+                               not-zp-of-limit-variable
+                               mv-nth-of-cons
+                               (:e zp)
+                               value-optionp-when-valuep
+                               ,valuep-when-type-pred
+                               ,item-thm-name
+                               exec-block-item-list-of-nil
+                               not-zp-of-limit-minus-const))))
+       ((mv items-event &) (evmac-generate-defthm items-thm-name
+                                                  :formula items-formula
+                                                  :hints items-hints
+                                                  :enable nil)))
     (retok (make-stmt-gout :items items
                            :type expr.type
                            :limit items-limit
                            :events (append expr.events
                                            (list stmt-event)
-                                           (list item-event))
+                                           (list item-event)
+                                           (list items-event))
                            :thm-name nil
                            :thm-index thm-index
                            :names-to-avoid names-to-avoid
-                           :proofs nil))))
+                           :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
