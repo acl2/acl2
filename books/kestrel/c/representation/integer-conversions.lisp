@@ -11,22 +11,22 @@
 
 (in-package "C")
 
-(include-book "../representation/integers")
+(include-book "integers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-integer-conversions
-  :parents (atc-shallow-embedding)
-  :short "A model of C integer conversions for ATC."
+(defxdoc+ representation-of-integer-conversions
+  :parents (representation)
+  :short "A representation of C integer conversions in ACL2."
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is part of the "
+    (xdoc::seetopic "representation" "shallow embedding")
+    ".")
+   (xdoc::p
     "We define ACL2 functions that convert
-     between values of different C integer types.
-     In the ACL2 representation of C code for ATC,
-     these explicit conversions are necessary,
-     because the ACL2 representations of different C integer types
-     are disjoint, i.e. there are no automatic inclusions.")
+     between values of different C integer types.")
    (xdoc::p
     "Conversions between C types are described in [C:6.3].
      Here we define conversions among the integer types supported by our model;

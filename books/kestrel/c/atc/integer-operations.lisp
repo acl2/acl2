@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "integer-conversions")
+(include-book "../representation/integer-conversions")
 
 (include-book "../language/static-semantics")
 
