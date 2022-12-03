@@ -56,7 +56,7 @@
   ((expr expr)
    (type type)
    (events pseudo-event-form-list)
-   (thm-name symbolp)
+   (thm-name symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -96,6 +96,7 @@
   :short "Outputs for @(tsee atc-gen-expr-bool)."
   ((expr expr)
    (events pseudo-event-form-list)
+   (thm-name symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -108,6 +109,7 @@
   :type bexpr-goutp
   :body (make-bexpr-gout :expr (irr-expr)
                          :events nil
+                         :thm-name nil
                          :thm-index 1
                          :names-to-avoid nil
                          :proofs nil))
@@ -880,6 +882,7 @@
                     :expr (make-expr-unary :op (unop-lognot)
                                            :arg arg.expr)
                     :events arg.events
+                    :thm-name nil
                     :thm-index arg.thm-index
                     :names-to-avoid arg.names-to-avoid
                     :proofs nil))))
@@ -900,6 +903,7 @@
                                             :arg1 arg1.expr
                                             :arg2 arg2.expr)
                     :events (append arg1.events arg2.events)
+                    :thm-name nil
                     :thm-index arg2.thm-index
                     :names-to-avoid arg2.names-to-avoid
                     :proofs nil))))
@@ -920,6 +924,7 @@
                                             :arg1 arg1.expr
                                             :arg2 arg2.expr)
                     :events (append arg1.events arg2.events)
+                    :thm-name nil
                     :thm-index arg2.thm-index
                     :names-to-avoid arg2.names-to-avoid
                     :proofs nil))))
@@ -949,6 +954,7 @@
             (retok
              (make-bexpr-gout :expr arg.expr
                               :events arg.events
+                              :thm-name nil
                               :thm-index arg.thm-index
                               :names-to-avoid arg.names-to-avoid
                               :proofs nil)))))
@@ -988,6 +994,7 @@
   ((exprs expr-list)
    (types type-list)
    (events pseudo-event-form-list)
+   (thm-name symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -1001,6 +1008,7 @@
   :body (make-pexprs-gout :exprs nil
                           :types nil
                           :events nil
+                          :thm-name nil
                           :thm-index 1
                           :names-to-avoid nil
                           :proofs nil))
@@ -1024,6 +1032,7 @@
         (retok (make-pexprs-gout :exprs nil
                                  :types nil
                                  :events nil
+                                 :thm-name nil
                                  :thm-index gin.thm-index
                                  :names-to-avoid gin.names-to-avoid
                                  :proofs gin.proofs)))
@@ -1052,6 +1061,7 @@
             :exprs (cons first.expr rest.exprs)
             :types (cons first.type rest.types)
             :events (append first.events rest.events)
+            :thm-name nil
             :thm-index rest.thm-index
             :names-to-avoid rest.names-to-avoid
             :proofs rest.proofs)))
@@ -1087,6 +1097,7 @@
    (affect symbol-listp)
    (limit pseudo-term)
    (events pseudo-event-form-list)
+   (thm-name symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -1102,6 +1113,7 @@
                         :affect nil
                         :limit nil
                         :events nil
+                        :thm-name nil
                         :thm-index 1
                         :names-to-avoid nil
                         :proofs nil))
@@ -1152,6 +1164,7 @@
                                :affect nil
                                :limit bound
                                :events pure.events
+                               :thm-name nil
                                :thm-index pure.thm-index
                                :names-to-avoid pure.names-to-avoid
                                :proofs nil)))
@@ -1185,6 +1198,7 @@
                            :type pure.type
                            :limit bound
                            :events (append pure.events (list event))
+                           :thm-name thm-name
                            :thm-index (1+ pure.thm-index)
                            :names-to-avoid names-to-avoid
                            :proofs t))))
@@ -1273,6 +1287,7 @@
             :affect affect
             :limit `(binary-+ '2 ,limit)
             :events args.events
+            :thm-name nil
             :thm-index args.thm-index
             :names-to-avoid args.names-to-avoid
             :proofs nil)))))

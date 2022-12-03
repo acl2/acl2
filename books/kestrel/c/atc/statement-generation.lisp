@@ -202,6 +202,7 @@
    (type type)
    (limit pseudo-term)
    (events pseudo-event-form-list)
+   (thm-name symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -216,6 +217,7 @@
                         :type (irr-type)
                         :limit nil
                         :events nil
+                        :thm-name nil
                         :thm-index 1
                         :names-to-avoid nil
                         :proofs nil))
@@ -303,6 +305,7 @@
             :type term.type
             :limit limit
             :events term.events
+            :thm-name nil
             :thm-index term.thm-index
             :names-to-avoid term.names-to-avoid
             :proofs nil))))
@@ -594,6 +597,7 @@
             :type type
             :limit limit
             :events (append test.events then.events else.events)
+            :thm-name nil
             :thm-index else.thm-index
             :names-to-avoid else.names-to-avoid
             :proofs nil))))
@@ -713,6 +717,7 @@
                         :type type
                         :limit limit
                         :events (append init.events body.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -804,6 +809,7 @@
                         :type type
                         :limit limit
                         :events (append rhs.events body.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -869,6 +875,7 @@
                   :type type
                   :limit limit
                   :events (append xform.events body.events)
+                  :thm-name nil
                   :thm-index body.thm-index
                   :names-to-avoid body.names-to-avoid
                   :proofs nil))))
@@ -987,6 +994,7 @@
                                         sub.events
                                         elem.events
                                         body.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -1088,6 +1096,7 @@
                         :limit limit
                         :events (append struct.events
                                         member.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -1215,6 +1224,7 @@
                                         index.events
                                         elem.events
                                         body.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -1304,6 +1314,7 @@
                         :type type
                         :limit limit
                         :events (append init.events body.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -1386,6 +1397,7 @@
                         :type type
                         :limit limit
                         :events (append rhs.events body.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -1440,6 +1452,7 @@
                   :type type
                   :limit limit
                   :events (append xform.events body.events)
+                  :thm-name nil
                   :thm-index body.thm-index
                   :names-to-avoid body.names-to-avoid
                   :proofs nil))))
@@ -1457,6 +1470,7 @@
                   :type (type-void)
                   :limit (pseudo-term-quote 1)
                   :events nil
+                  :thm-name nil
                   :thm-index gin.thm-index
                   :names-to-avoid gin.names-to-avoid
                   :proofs nil))))
@@ -1477,6 +1491,7 @@
                                    :type (type-void)
                                    :limit (pseudo-term-quote 1)
                                    :events nil
+                                   :thm-name nil
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
                                    :proofs nil)))
@@ -1537,6 +1552,7 @@
                   :type (type-void)
                   :limit limit
                   :events nil
+                  :thm-name nil
                   :thm-index gin.thm-index
                   :names-to-avoid gin.names-to-avoid
                   :proofs nil))))
@@ -1547,6 +1563,7 @@
                     :type (type-void)
                     :limit (pseudo-term-quote 1)
                     :events nil
+                    :thm-name nil
                     :thm-index gin.thm-index
                     :names-to-avoid gin.names-to-avoid
                     :proofs nil))
@@ -1608,6 +1625,7 @@
                   :type (type-void)
                   :limit `(binary-+ '5 ,limit)
                   :events args.events
+                  :thm-name nil
                   :thm-index args.thm-index
                   :names-to-avoid args.names-to-avoid
                   :proofs nil))))
@@ -1665,6 +1683,7 @@
    (limit-body pseudo-term)
    (limit-all pseudo-term)
    (events pseudo-event-form-list)
+   (thm-name symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -1682,6 +1701,7 @@
                          :limit-body nil
                          :limit-all nil
                          :events nil
+                         :thm-name nil
                          :thm-index 1
                          :names-to-avoid nil
                          :proofs nil))
@@ -1827,6 +1847,7 @@
                             :affect affect
                             :limit-body body.limit
                             :limit-all limit
+                            :thm-name nil
                             :thm-index body.thm-index
                             :names-to-avoid body.names-to-avoid
                             :proofs nil)))
