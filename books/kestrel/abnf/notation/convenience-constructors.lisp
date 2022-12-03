@@ -249,7 +249,8 @@
                          ((acl2::stringp x)
                           (make-repetition :range range1
                                            :element (element-char-val
-                                                     (char-val-insensitive x))))
+                                                     (char-val-insensitive nil
+                                                                           x))))
                          (t (repetition-fix x)))))
                (cons repetition (/_-fn (cdr xs))))))
     :hooks (:fix)
