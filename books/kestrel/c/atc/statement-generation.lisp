@@ -242,14 +242,6 @@
      corresponding to the two possible representations of @('return') statements
      according to the user documentation.")
    (xdoc::p
-    "The limit bound is set to 3 more than the limit for the expression.
-     This limit bound refers to @(tsee exec-block-item-list):
-     we need 1 to go from there to @(tsee exec-block-item),
-     another 1 to go from there to the @(':stmt') case and @(tsee exec-stmt),
-     and another 1 to go from there to the @(':return') case
-     and @(tsee exec-expr-call-or-pure),
-     for which we use the recursively calculated limit for the expression.")
-   (xdoc::p
     "We generate three theorems, which build upon each other:
      one for @(tsee exec-stmt) applied to the return statement,
      one for @(tsee exec-block-item) applied to
@@ -259,7 +251,22 @@
      It is the latter term that refers to the list of block items
      returned as the @('gout') result of this ACL2 function.
      We start with the first of the three theorems,
-     we will add the other two next."))
+     we will add the other two next.")
+   (xdoc::p
+    "The limit for the @(tsee exec-stmt) theorem is set to
+     1 more than the limit for the expression theorem,
+     because we need 1 to go from @(tsee exec-stmt)
+     to the @(':return') case and @(tsee exec-expr-call-or-pure).
+     The limit for the @(tsee exec-block-item) theorem is set to
+     1 more than the limit for the previous theorem,
+     because we need 1 to go from @(tsee exec-block-item)
+     to the @(':stmt') case and @(tsee exec-stmt).
+     The limit for the @(tsee exec-block-item-list) theorem is set to
+     1 more than the limit for the previous theorem,
+     because we need 1 to go from @(tsee exec-block-item-list)
+     to @(tsee exec-block-item).
+     The limit returned from this ACL2 function is the latter,
+     because it refers to @(tsee exec-block-item-list)."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -308,15 +315,23 @@
               gin.fn term expr.type)))
        (stmt (make-stmt-return :value expr.expr))
        (items (list (block-item-stmt stmt)))
-       (limit (pseudo-term-fncall
-               'binary-+
-               (list (pseudo-term-quote 3)
-                     expr.limit)))
+       (stmt-limit (pseudo-term-fncall
+                    'binary-+
+                    (list (pseudo-term-quote 1)
+                          expr.limit)))
+       (item-limit (pseudo-term-fncall
+                    'binary-+
+                    (list (pseudo-term-quote 1)
+                          stmt-limit)))
+       (items-limit (pseudo-term-fncall
+                     'binary-+
+                     (list (pseudo-term-quote 1)
+                           item-limit)))
        ((when (not expr.proofs))
         (retok (make-stmt-gout
                 :items items
                 :type expr.type
-                :limit limit
+                :limit items-limit
                 :events expr.events
                 :thm-index expr.thm-index
                 :names-to-avoid expr.names-to-avoid
@@ -340,7 +355,7 @@
        (stmt-formula `(implies (and (compustatep ,gin.compst-var)
                                     (,gin.fn-guard ,@(formals+ gin.fn wrld))
                                     (integerp ,gin.limit-var)
-                                    (>= ,gin.limit-var ,limit))
+                                    (>= ,gin.limit-var ,stmt-limit))
                                ,stmt-formula))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (stmt-hints
@@ -358,7 +373,7 @@
                                                  :enable nil)))
     (retok (make-stmt-gout :items items
                            :type expr.type
-                           :limit limit
+                           :limit items-limit
                            :events (append expr.events
                                            (list stmt-event))
                            :thm-name nil
