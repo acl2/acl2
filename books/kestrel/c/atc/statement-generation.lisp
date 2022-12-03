@@ -314,7 +314,8 @@
                has pointer type ~x2, which is disallowed."
               gin.fn term expr.type)))
        (stmt (make-stmt-return :value expr.expr))
-       (items (list (block-item-stmt stmt)))
+       (item (block-item-stmt stmt))
+       (items (list item))
        (stmt-limit (pseudo-term-fncall
                     'binary-+
                     (list (pseudo-term-quote 1)
@@ -338,13 +339,13 @@
                 :proofs nil)))
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
-       ((mv stmt-thm-name thm-index)
-        (mv (pack gin.fn '-stmt thm-index '-correct)
-            (1+ thm-index)))
+       (type-pred (type-to-recognizer expr.type wrld))
+       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (stmt-thm-name (pack gin.fn '-stmt thm-index '-correct))
+       (thm-index (1+ thm-index))
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
          stmt-thm-name nil names-to-avoid wrld))
-       (type-pred (type-to-recognizer expr.type wrld))
        (stmt-formula `(and (equal (exec-stmt ',stmt
                                              ,gin.compst-var
                                              ,gin.fenv-var
@@ -357,7 +358,6 @@
                                     (integerp ,gin.limit-var)
                                     (>= ,gin.limit-var ,stmt-limit))
                                ,stmt-formula))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-return
                                (:e stmt-kind)
@@ -370,14 +370,42 @@
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
+                                                 :enable nil))
+       (item-thm-name (pack gin.fn '-blockitem thm-index '-correct))
+       (thm-index (1+ thm-index))
+       ((mv item-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         item-thm-name nil names-to-avoid wrld))
+       (item-formula `(and (equal (exec-block-item ',item
+                                                   ,gin.compst-var
+                                                   ,gin.fenv-var
+                                                   ,gin.limit-var)
+                                  (mv ,term ,gin.compst-var))
+                           (,type-pred ,term)))
+       (item-formula (atc-contextualize item-formula gin.context))
+       (item-formula `(implies (and (compustatep ,gin.compst-var)
+                                    (,gin.fn-guard ,@(formals+ gin.fn wrld))
+                                    (integerp ,gin.limit-var)
+                                    (>= ,gin.limit-var ,item-limit))
+                               ,item-formula))
+       (item-hints
+        `(("Goal" :in-theory '(exec-block-item-when-stmt
+                               (:e block-item-kind)
+                               not-zp-of-limit-variable
+                               (:e block-item-stmt->get)
+                               ,stmt-thm-name))))
+       ((mv item-event &) (evmac-generate-defthm item-thm-name
+                                                 :formula item-formula
+                                                 :hints item-hints
                                                  :enable nil)))
     (retok (make-stmt-gout :items items
                            :type expr.type
                            :limit items-limit
                            :events (append expr.events
-                                           (list stmt-event))
+                                           (list stmt-event)
+                                           (list item-event))
                            :thm-name nil
-                           :thm-index (1+ thm-index)
+                           :thm-index thm-index
                            :names-to-avoid names-to-avoid
                            :proofs nil))))
 
