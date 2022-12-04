@@ -202,6 +202,7 @@
    (type type)
    (limit pseudo-term)
    (events pseudo-event-form-list)
+   (thm-name symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -216,9 +217,229 @@
                         :type (irr-type)
                         :limit nil
                         :events nil
+                        :thm-name nil
                         :thm-index 1
                         :names-to-avoid nil
                         :proofs nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-return-stmt ((term pseudo-termp)
+                             (gin stmt-ginp)
+                             (must-affect symbol-listp)
+                             state)
+  :returns (mv erp (gout stmt-goutp))
+  :short "Generate a C return statement from an ACL2 term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The term passed here as parameter is the one representing
+     the expression to be returned by the statement.
+     The @('must-affect') parameter contains the variables
+     that must be affected by the expression:
+     it is set differently in the two circumstances in @(tsee atc-gen-stmt)
+     in which this @('atc-gen-return-stmt') is called,
+     corresponding to the two possible representations of @('return') statements
+     according to the user documentation.")
+   (xdoc::p
+    "We generate three theorems, which build upon each other:
+     one for @(tsee exec-stmt) applied to the return statement,
+     one for @(tsee exec-block-item) applied to
+     the block item that consists of the return statement,
+     and one for @(tsee exec-block-item-list) applied to
+     the singleton list of that block item.
+     It is the latter term that refers to the list of block items
+     returned as the @('gout') result of this ACL2 function.
+     We start with the first of the three theorems,
+     we will add the other two next.")
+   (xdoc::p
+    "The limit for the @(tsee exec-stmt) theorem is set to
+     1 more than the limit for the expression theorem,
+     because we need 1 to go from @(tsee exec-stmt)
+     to the @(':return') case and @(tsee exec-expr-call-or-pure).
+     The limit for the @(tsee exec-block-item) theorem is set to
+     1 more than the limit for the previous theorem,
+     because we need 1 to go from @(tsee exec-block-item)
+     to the @(':stmt') case and @(tsee exec-stmt).
+     The limit for the @(tsee exec-block-item-list) theorem is set to
+     1 more than the limit for the previous theorem,
+     because we need 1 to go from @(tsee exec-block-item-list)
+     to @(tsee exec-block-item).
+     The limit returned from this ACL2 function is the latter,
+     because it refers to @(tsee exec-block-item-list)."))
+  (b* (((reterr) (irr-stmt-gout))
+       ((stmt-gin gin) gin)
+       (wrld (w state))
+       ((erp (expr-gout expr))
+        (atc-gen-expr term
+                      (make-expr-gin :context gin.context
+                                     :var-term-alist gin.var-term-alist
+                                     :inscope gin.inscope
+                                     :fn gin.fn
+                                     :fn-guard gin.fn-guard
+                                     :compst-var gin.compst-var
+                                     :fenv-var gin.fenv-var
+                                     :limit-var gin.limit-var
+                                     :prec-fns gin.prec-fns
+                                     :prec-tags gin.prec-tags
+                                     :thm-index gin.thm-index
+                                     :names-to-avoid gin.names-to-avoid
+                                     :proofs gin.proofs)
+                      state))
+       ((unless (equal expr.affect must-affect))
+        (reterr
+         (msg "When generating code for the function ~x0, ~
+               a term ~x1 was encountered at the end of the computation, ~
+               which represents a return statement
+               whose expression affects the variables ~x2, ~
+               but ~@3 must be affected here instead."
+              gin.fn
+              term
+              expr.affect
+              (if (consp must-affect)
+                  (if (consp (cdr must-affect))
+                      (msg "the variables ~&0" must-affect)
+                    (msg "the variable ~x0" (car must-affect)))
+                "no variables"))))
+       ((when (type-case expr.type :void))
+        (reterr
+         (raise "Internal error: return term ~x0 has type void." term)))
+       ((when (type-case expr.type :array))
+        (reterr
+         (raise "Internal error: retun term ~x0 has type ~x1." expr.type)))
+       ((when (type-case expr.type :pointer))
+        (reterr
+         (msg "When generating a return statement for function ~x0, ~
+               the term ~x1 that represents the return expression ~
+               has pointer type ~x2, which is disallowed."
+              gin.fn term expr.type)))
+       (stmt (make-stmt-return :value expr.expr))
+       (item (block-item-stmt stmt))
+       (items (list item))
+       (stmt-limit (pseudo-term-fncall
+                    'binary-+
+                    (list (pseudo-term-quote 1)
+                          expr.limit)))
+       (item-limit (pseudo-term-fncall
+                    'binary-+
+                    (list (pseudo-term-quote 1)
+                          stmt-limit)))
+       (items-limit (pseudo-term-fncall
+                     'binary-+
+                     (list (pseudo-term-quote 1)
+                           item-limit)))
+       ((when (not expr.proofs))
+        (retok (make-stmt-gout
+                :items items
+                :type expr.type
+                :limit items-limit
+                :events expr.events
+                :thm-index expr.thm-index
+                :names-to-avoid expr.names-to-avoid
+                :proofs nil)))
+       (thm-index expr.thm-index)
+       (names-to-avoid expr.names-to-avoid)
+       (type-pred (type-to-recognizer expr.type wrld))
+       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (stmt-thm-name (pack gin.fn '-stmt thm-index '-correct))
+       (thm-index (1+ thm-index))
+       ((mv stmt-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         stmt-thm-name nil names-to-avoid wrld))
+       (stmt-formula `(and (equal (exec-stmt ',stmt
+                                             ,gin.compst-var
+                                             ,gin.fenv-var
+                                             ,gin.limit-var)
+                                  (mv ,term ,gin.compst-var))
+                           (,type-pred ,term)))
+       (stmt-formula (atc-contextualize stmt-formula gin.context))
+       (stmt-formula `(implies (and (compustatep ,gin.compst-var)
+                                    (,gin.fn-guard ,@(formals+ gin.fn wrld))
+                                    (integerp ,gin.limit-var)
+                                    (>= ,gin.limit-var ,stmt-limit))
+                               ,stmt-formula))
+       (stmt-hints
+        `(("Goal" :in-theory '(exec-stmt-when-return
+                               (:e stmt-kind)
+                               not-zp-of-limit-variable
+                               (:e stmt-return->value)
+                               mv-nth-of-cons
+                               (:e zp)
+                               ,valuep-when-type-pred
+                               ,expr.thm-name))))
+       ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
+                                                 :formula stmt-formula
+                                                 :hints stmt-hints
+                                                 :enable nil))
+       (item-thm-name (pack gin.fn '-blockitem thm-index '-correct))
+       (thm-index (1+ thm-index))
+       ((mv item-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         item-thm-name nil names-to-avoid wrld))
+       (item-formula `(and (equal (exec-block-item ',item
+                                                   ,gin.compst-var
+                                                   ,gin.fenv-var
+                                                   ,gin.limit-var)
+                                  (mv ,term ,gin.compst-var))
+                           (,type-pred ,term)))
+       (item-formula (atc-contextualize item-formula gin.context))
+       (item-formula `(implies (and (compustatep ,gin.compst-var)
+                                    (,gin.fn-guard ,@(formals+ gin.fn wrld))
+                                    (integerp ,gin.limit-var)
+                                    (>= ,gin.limit-var ,item-limit))
+                               ,item-formula))
+       (item-hints
+        `(("Goal" :in-theory '(exec-block-item-when-stmt
+                               (:e block-item-kind)
+                               not-zp-of-limit-variable
+                               (:e block-item-stmt->get)
+                               ,stmt-thm-name))))
+       ((mv item-event &) (evmac-generate-defthm item-thm-name
+                                                 :formula item-formula
+                                                 :hints item-hints
+                                                 :enable nil))
+       (items-thm-name (pack gin.fn '-blockitems thm-index '-correct))
+       (thm-index (1+ thm-index))
+       ((mv items-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         items-thm-name nil names-to-avoid wrld))
+       (items-formula `(and (equal (exec-block-item-list ',items
+                                                         ,gin.compst-var
+                                                         ,gin.fenv-var
+                                                         ,gin.limit-var)
+                                   (mv ,term ,gin.compst-var))
+                            (,type-pred ,term)))
+       (items-formula (atc-contextualize items-formula gin.context))
+       (items-formula `(implies (and (compustatep ,gin.compst-var)
+                                     (,gin.fn-guard ,@(formals+ gin.fn wrld))
+                                     (integerp ,gin.limit-var)
+                                     (>= ,gin.limit-var ,items-limit))
+                                ,items-formula))
+       (items-hints
+        `(("Goal" :in-theory '(exec-block-item-list-when-consp
+                               not-zp-of-limit-variable
+                               mv-nth-of-cons
+                               (:e zp)
+                               value-optionp-when-valuep
+                               ,valuep-when-type-pred
+                               ,item-thm-name
+                               exec-block-item-list-of-nil
+                               not-zp-of-limit-minus-const))))
+       ((mv items-event &) (evmac-generate-defthm items-thm-name
+                                                  :formula items-formula
+                                                  :hints items-hints
+                                                  :enable nil)))
+    (retok (make-stmt-gout :items items
+                           :type expr.type
+                           :limit items-limit
+                           :events (append expr.events
+                                           (list stmt-event)
+                                           (list item-event)
+                                           (list items-event))
+                           :thm-name nil
+                           :thm-index thm-index
+                           :names-to-avoid names-to-avoid
+                           :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -507,6 +728,7 @@
             :type type
             :limit limit
             :events (append test.events then.events else.events)
+            :thm-name nil
             :thm-index else.thm-index
             :names-to-avoid else.names-to-avoid
             :proofs nil))))
@@ -626,6 +848,7 @@
                         :type type
                         :limit limit
                         :events (append init.events body.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -717,6 +940,7 @@
                         :type type
                         :limit limit
                         :events (append rhs.events body.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -782,6 +1006,7 @@
                   :type type
                   :limit limit
                   :events (append xform.events body.events)
+                  :thm-name nil
                   :thm-index body.thm-index
                   :names-to-avoid body.names-to-avoid
                   :proofs nil))))
@@ -900,6 +1125,7 @@
                                         sub.events
                                         elem.events
                                         body.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -1001,6 +1227,7 @@
                         :limit limit
                         :events (append struct.events
                                         member.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -1128,6 +1355,7 @@
                                         index.events
                                         elem.events
                                         body.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -1217,6 +1445,7 @@
                         :type type
                         :limit limit
                         :events (append init.events body.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -1299,6 +1528,7 @@
                         :type type
                         :limit limit
                         :events (append rhs.events body.events)
+                        :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
@@ -1353,6 +1583,7 @@
                   :type type
                   :limit limit
                   :events (append xform.events body.events)
+                  :thm-name nil
                   :thm-index body.thm-index
                   :names-to-avoid body.names-to-avoid
                   :proofs nil))))
@@ -1370,6 +1601,7 @@
                   :type (type-void)
                   :limit (pseudo-term-quote 1)
                   :events nil
+                  :thm-name nil
                   :thm-index gin.thm-index
                   :names-to-avoid gin.names-to-avoid
                   :proofs nil))))
@@ -1390,59 +1622,13 @@
                                    :type (type-void)
                                    :limit (pseudo-term-quote 1)
                                    :events nil
+                                   :thm-name nil
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
                                    :proofs nil)))
            ((equal (cdr terms) gin.affect)
-            (b* (((erp (expr-gout first))
-                  (atc-gen-expr (car terms)
-                                (make-expr-gin
-                                 :context gin.context
-                                 :var-term-alist gin.var-term-alist
-                                 :inscope gin.inscope
-                                 :fn gin.fn
-                                 :fn-guard gin.fn-guard
-                                 :compst-var gin.compst-var
-                                 :fenv-var gin.fenv-var
-                                 :limit-var gin.limit-var
-                                 :prec-fns gin.prec-fns
-                                 :prec-tags gin.prec-tags
-                                 :thm-index gin.thm-index
-                                 :names-to-avoid gin.names-to-avoid
-                                 :proofs gin.proofs)
-                                state))
-                 ((when (consp first.affect))
-                  (reterr
-                   (msg "The first argument ~x0 of the term ~x1 ~
-                         in the function ~x2 ~
-                         affects the variables ~x3, which is disallowed."
-                        (car terms) term gin.fn first.affect)))
-                 ((when (type-case first.type :void))
-                  (reterr
-                   (raise "Internal error: return term ~x0 has type void."
-                          term)))
-                 ((when (type-case first.type :array))
-                  (reterr
-                   (raise "Internal error: array type ~x0." first.type)))
-                 ((when (type-case first.type :pointer))
-                  (reterr
-                   (msg "When generating a return statement for function ~x0, ~
-                         the term ~x1 that represents the return expression ~
-                         has pointer type ~x2, which is disallowed."
-                        gin.fn term first.type)))
-                 (limit (pseudo-term-fncall
-                         'binary-+
-                         (list (pseudo-term-quote 3)
-                               first.limit))))
-              (retok (make-stmt-gout
-                      :items (list (block-item-stmt
-                                    (make-stmt-return :value first.expr)))
-                      :type first.type
-                      :limit limit
-                      :events first.events
-                      :thm-index first.thm-index
-                      :names-to-avoid first.names-to-avoid
-                      :proofs nil))))
+            (b* ((gin (change-stmt-gin gin :proofs nil)))
+              (atc-gen-return-stmt (car terms) gin nil state)))
            (t (reterr
                (msg "When generating C code for the function ~x0, ~
                      a term ~x0 has been encountered, ~
@@ -1498,6 +1684,7 @@
                   :type (type-void)
                   :limit limit
                   :events nil
+                  :thm-name nil
                   :thm-index gin.thm-index
                   :names-to-avoid gin.names-to-avoid
                   :proofs nil))))
@@ -1508,6 +1695,7 @@
                     :type (type-void)
                     :limit (pseudo-term-quote 1)
                     :events nil
+                    :thm-name nil
                     :thm-index gin.thm-index
                     :names-to-avoid gin.names-to-avoid
                     :proofs nil))
@@ -1569,6 +1757,7 @@
                   :type (type-void)
                   :limit `(binary-+ '5 ,limit)
                   :events args.events
+                  :thm-name nil
                   :thm-index args.thm-index
                   :names-to-avoid args.names-to-avoid
                   :proofs nil))))
@@ -1577,55 +1766,8 @@
          (msg "A loop body must end with ~
                a recursive call on every path, ~
                but in the function ~x0 it ends with ~x1 instead."
-              gin.fn term)))
-       ((erp (expr-gout term))
-        (atc-gen-expr term
-                      (make-expr-gin :context gin.context
-                                     :var-term-alist gin.var-term-alist
-                                     :inscope gin.inscope
-                                     :fn gin.fn
-                                     :fn-guard gin.fn-guard
-                                     :compst-var gin.compst-var
-                                     :fenv-var gin.fenv-var
-                                     :limit-var gin.limit-var
-                                     :prec-fns gin.prec-fns
-                                     :prec-tags gin.prec-tags
-                                     :thm-index gin.thm-index
-                                     :names-to-avoid gin.names-to-avoid
-                                     :proofs gin.proofs)
-                      state))
-       ((unless (equal gin.affect term.affect))
-        (reterr
-         (msg "When generating code for the non-recursive function ~x0, ~
-               a term ~x1 was encountered at the end of the computation, ~
-               that affects the variables ~x2, ~
-               but ~x0 affects the variables ~x3 instead."
-              gin.fn term term.affect gin.affect)))
-       ((when (type-case term.type :void))
-        (reterr
-         (raise "Internal error: return term ~x0 has type void." term)))
-       ((when (type-case term.type :array))
-        (reterr
-         (raise "Internal error: array type ~x0." term.type)))
-       ((when (type-case term.type :pointer))
-        (reterr
-         (msg "When generating a return statement for function ~x0, ~
-               the term ~x1 that represents the return expression ~
-               has pointer type ~x2, which is disallowed."
-              gin.fn term term.type)))
-       (limit (pseudo-term-fncall
-               'binary-+
-               (list (pseudo-term-quote 3)
-                     term.limit))))
-    (retok (make-stmt-gout
-            :items (list (block-item-stmt
-                          (make-stmt-return :value term.expr)))
-            :type term.type
-            :limit limit
-            :events term.events
-            :thm-index term.thm-index
-            :names-to-avoid term.names-to-avoid
-            :proofs nil)))
+              gin.fn term))))
+    (atc-gen-return-stmt term gin gin.affect state))
 
   :measure (pseudo-term-count term)
 
@@ -1673,6 +1815,7 @@
    (limit-body pseudo-term)
    (limit-all pseudo-term)
    (events pseudo-event-form-list)
+   (thm-name symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
@@ -1690,6 +1833,7 @@
                          :limit-body nil
                          :limit-all nil
                          :events nil
+                         :thm-name nil
                          :thm-index 1
                          :names-to-avoid nil
                          :proofs nil))
@@ -1835,6 +1979,7 @@
                             :affect affect
                             :limit-body body.limit
                             :limit-all limit
+                            :thm-name nil
                             :thm-index body.thm-index
                             :names-to-avoid body.names-to-avoid
                             :proofs nil)))

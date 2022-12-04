@@ -707,7 +707,7 @@
       "This is generated only if the @(':wrapper') input is @('t').")
      (xdoc::p
       "In the " *tailrec-design-notes* ",
-       @('new') is denoted by @($\\tilde{f}$)."))
+       @('wrapper') is denoted by @($\\tilde{f}$)."))
 
     (xdoc::desc
      "@('old-to-new')"

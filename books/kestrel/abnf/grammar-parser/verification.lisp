@@ -999,7 +999,7 @@
     "                ((:repetition (:repeat 1 (:finite 1))"
     "                  (:rulename (:rulename \"digit\"))))"
     "                 ((:repetition (:repeat 1 (:finite 1))"
-    "                  (:char-val (:insensitive \"-\")))))) ...)")
+    "                  (:char-val (:insensitive nil \"-\")))))) ...)")
 
    (xdoc::p
     "and then reduces to, among others, the subgoal")
@@ -1136,6 +1136,7 @@
     (implies (and (not error?)
                   (equal element (element-char-val
                                   (char-val-insensitive
+                                   nil
                                    (implode (list char))))))
              (tree-match-element-p tree? element *grammar*)))
   :enable (parse-ichar
@@ -1150,6 +1151,7 @@
     (implies (and (not error?)
                   (equal element (element-char-val
                                   (char-val-insensitive
+                                   nil
                                    (implode (list char1 char2))))))
              (tree-match-element-p tree? element *grammar*)))
   :enable (parse-ichar2
@@ -3072,7 +3074,7 @@
           a case-insensitive character value notation."
   (implies (tree-match-element-p tree
                                  (element-char-val
-                                  (char-val-insensitive charstring))
+                                  (char-val-insensitive nil charstring))
                                  *grammar*)
            (nats-match-insensitive-chars-p (tree->string tree)
                                            (explode charstring)))
@@ -3295,7 +3297,7 @@
                 (equal (car (car (element-group->get element)))
                        (repetition (repeat-range 1 (nati-finite 1))
                                    (element-char-val
-                                    (char-val-insensitive ".")))))
+                                    (char-val-insensitive nil ".")))))
            (equal (car (tree->string tree))
                   (char-code #\.)))
   :rule-classes nil
@@ -3323,7 +3325,7 @@
                 (equal (car (car (element-group->get element)))
                        (repetition (repeat-range 1 (nati-finite 1))
                                    (element-char-val
-                                    (char-val-insensitive "-")))))
+                                    (char-val-insensitive nil "-")))))
            (equal (car (tree->string tree)) (char-code #\-)))
   :rule-classes nil
   :expand ((:free (rules) (tree-match-element-p tree element rules))
@@ -4456,7 +4458,8 @@
   :parents (grammar-parser-disambiguation)
   :short "Disambiguation between @('\"0\"') and @('\"1\"')."
   (implies (tree-match-element-p tree
-                                 (element-char-val (char-val-insensitive "1"))
+                                 (element-char-val
+                                  (char-val-insensitive nil "1"))
                                  *grammar*)
            (mv-nth 0 (parse-ichar #\0 (append (tree->string tree)
                                               rest-input))))
@@ -4482,6 +4485,9 @@
                        :char-val)
                 (equal (char-val-kind (element-char-val->get element))
                        :insensitive)
+                (equal (char-val-insensitive->iprefix
+                        (element-char-val->get element))
+                       nil)
                 (member-equal (char-val-insensitive->get
                                (element-char-val->get element))
                               '("A" "B" "C" "D" "E" "F")))
@@ -4490,7 +4496,27 @@
                    (charstring (char-val-insensitive->get
                                 (element-char-val->get element))))
         (:instance constraints-from-parse-digit
-                   (input (append (tree->string tree) rest-input)))))
+                   (input (append (tree->string tree) rest-input)))
+        (:instance lemma (charstring "A"))
+        (:instance lemma (charstring "B"))
+        (:instance lemma (charstring "C"))
+        (:instance lemma (charstring "D"))
+        (:instance lemma (charstring "E"))
+        (:instance lemma (charstring "F")))
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (elementp element)
+                   (equal (element-kind element) :char-val)
+                   (b* ((charval (element-char-val->get element)))
+                     (and (equal (char-val-kind charval)
+                                 :insensitive)
+                          (equal (char-val-insensitive->iprefix charval)
+                                 nil)
+                          (equal (char-val-insensitive->get charval)
+                                 charstring))))
+              (equal element
+                     (element-char-val (char-val-insensitive nil charstring))))
+     :rule-classes nil)))
 
 (defruled fail-a/b/c/d/e/f-when-match-other-a/b/c/d/e/f
   :parents (grammar-parser-disambiguation)
@@ -4507,6 +4533,9 @@
                        :char-val)
                 (equal (char-val-kind (element-char-val->get element))
                        :insensitive)
+                (equal (char-val-insensitive->iprefix
+                        (element-char-val->get element))
+                       nil)
                 (member-equal (char-val-insensitive->get
                                (element-char-val->get element))
                               '("A" "B" "C" "D" "E" "F"))
@@ -4520,7 +4549,27 @@
                    (charstring (char-val-insensitive->get
                                 (element-char-val->get element))))
         (:instance constraints-from-parse-ichar
-                   (input (append (tree->string tree) rest-input)))))
+                   (input (append (tree->string tree) rest-input)))
+        (:instance lemma (charstring "A"))
+        (:instance lemma (charstring "B"))
+        (:instance lemma (charstring "C"))
+        (:instance lemma (charstring "D"))
+        (:instance lemma (charstring "E"))
+        (:instance lemma (charstring "F")))
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (elementp element)
+                   (equal (element-kind element) :char-val)
+                   (b* ((charval (element-char-val->get element)))
+                     (and (equal (char-val-kind charval)
+                                 :insensitive)
+                          (equal (char-val-insensitive->iprefix charval)
+                                 nil)
+                          (equal (char-val-insensitive->get charval)
+                                 charstring))))
+              (equal element
+                     (element-char-val (char-val-insensitive nil charstring))))
+     :rule-classes nil)))
 
 (defruled fail-sp-when-match-htab
   :parents (grammar-parser-disambiguation)
@@ -4538,7 +4587,8 @@
   :parents (grammar-parser-disambiguation)
   :short "Disambiguation between @('(%x20-3D / %x3F-7E)') and @('\">\"')."
   (implies (tree-match-element-p tree
-                                 (element-char-val (char-val-insensitive ">"))
+                                 (element-char-val
+                                  (char-val-insensitive nil ">"))
                                  *grammar*)
            (mv-nth 0 (parse-in-either-range #x20 #x3d #x3f #x7e
                                             (append (tree->string tree)
@@ -4622,7 +4672,7 @@
                 (equal (car (car (element-group->get element)))
                        (repetition (repeat-range 1 (nati-finite 1))
                                    (element-char-val
-                                    (char-val-insensitive "-")))))
+                                    (char-val-insensitive nil "-")))))
            (mv-nth 0 (parse-ichar #\. (append (tree->string tree) rest-input))))
   :use (constraints-from-tree-match-dash-etc
         (:instance constraints-from-parse-ichar
@@ -4804,9 +4854,9 @@
           any of @('\"*\"') and @('\"-\"')."
   (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
-                                             (char-val-insensitive "*"))
+                                             (char-val-insensitive nil "*"))
                                             (element-char-val
-                                             (char-val-insensitive "-")))))
+                                             (char-val-insensitive nil "-")))))
            (mv-nth 0 (parse-digit (append (tree->string tree) rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
                    (charstring "*"))
@@ -4824,7 +4874,7 @@
                                       *grammar*)
                 (member-equal element (list (element-rulename *digit*)
                                             (element-char-val
-                                             (char-val-insensitive "-"))))
+                                             (char-val-insensitive nil "-"))))
                 (tree-terminatedp tree))
            (mv-nth 0 (parse-alpha (append (tree->string tree) rest-input))))
   :use (constraints-from-tree-match-digit
@@ -4839,11 +4889,11 @@
           any of @('\"/\"'), @('\")\"'), and @('\"]\"')."
   (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
-                                             (char-val-insensitive "/"))
+                                             (char-val-insensitive nil "/"))
                                             (element-char-val
-                                             (char-val-insensitive ")"))
+                                             (char-val-insensitive nil ")"))
                                             (element-char-val
-                                             (char-val-insensitive "]")))))
+                                             (char-val-insensitive nil "]")))))
            (mv-nth 0 (parse-cwsp (append (tree->string tree) rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
                    (charstring "/"))
@@ -4901,11 +4951,11 @@
           any of @('\"/\"'), @('\")\"'), and @('\"]\"')."
   (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
-                                             (char-val-insensitive "/"))
+                                             (char-val-insensitive nil "/"))
                                             (element-char-val
-                                             (char-val-insensitive ")"))
+                                             (char-val-insensitive nil ")"))
                                             (element-char-val
-                                             (char-val-insensitive "]")))))
+                                             (char-val-insensitive nil "]")))))
            (mv-nth 0 (parse-1*cwsp (append (tree->string tree) rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
                    (charstring "/"))
@@ -4922,11 +4972,11 @@
           any of @('\"/\"'), @('\")\"'), and @('\"]\"')."
   (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
-                                             (char-val-insensitive "/"))
+                                             (char-val-insensitive nil "/"))
                                             (element-char-val
-                                             (char-val-insensitive ")"))
+                                             (char-val-insensitive nil ")"))
                                             (element-char-val
-                                             (char-val-insensitive "]")))))
+                                             (char-val-insensitive nil "]")))))
            (mv-nth 0 (parse-repetition (append (tree->string tree)
                                                rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
@@ -4944,11 +4994,11 @@
           any of @('\"/\"'), @('\")\"'), and @('\"]\"')."
   (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
-                                             (char-val-insensitive "/"))
+                                             (char-val-insensitive nil "/"))
                                             (element-char-val
-                                             (char-val-insensitive ")"))
+                                             (char-val-insensitive nil ")"))
                                             (element-char-val
-                                             (char-val-insensitive "]")))))
+                                             (char-val-insensitive nil "]")))))
            (mv-nth 0 (parse-alpha/digit/dash (append (tree->string tree)
                                                      rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
@@ -5088,9 +5138,9 @@
                 (tree-list-terminatedp trees)
                 (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
-                                             (char-val-insensitive ")"))
+                                             (char-val-insensitive nil ")"))
                                             (element-char-val
-                                             (char-val-insensitive "]")))))
+                                             (char-val-insensitive nil "]")))))
            (mv-nth 0 (parse-alpha/digit/dash
                       (append (tree-list->string trees)
                               (tree->string tree)
@@ -5120,7 +5170,8 @@
           @('BIT'), @('DIGIT'), @('HEXDIG'), @('\".\"'), and @('\"-\"') and
           (ii) @('\"/\"')."
   (implies (tree-match-element-p tree
-                                 (element-char-val (char-val-insensitive "/"))
+                                 (element-char-val
+                                  (char-val-insensitive nil "/"))
                                  *grammar*)
            (and (mv-nth 0 (parse-bit (append (tree->string tree)
                                              rest-input)))
@@ -5282,9 +5333,9 @@
           (ii) any of @('\")\"') and @('\"]\"')."
   (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
-                                             (char-val-insensitive ")"))
+                                             (char-val-insensitive nil ")"))
                                             (element-char-val
-                                             (char-val-insensitive "]")))))
+                                             (char-val-insensitive nil "]")))))
            (and (mv-nth 0 (parse-bit (append (tree->string tree)
                                              rest-input)))
                 (mv-nth 0 (parse-digit (append (tree->string tree)
@@ -5323,9 +5374,9 @@
                 (tree-list-terminatedp trees)
                 (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
-                                             (char-val-insensitive ")"))
+                                             (char-val-insensitive nil ")"))
                                             (element-char-val
-                                             (char-val-insensitive "]")))))
+                                             (char-val-insensitive nil "]")))))
            (and (mv-nth 0 (parse-bit (append (tree-list->string trees)
                                              (tree->string tree)
                                              rest-input)))
@@ -5736,9 +5787,9 @@
           any of @('\")\"') and @('\"]\"')."
   (implies (and (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
-                                             (char-val-insensitive ")"))
+                                             (char-val-insensitive nil ")"))
                                             (element-char-val
-                                             (char-val-insensitive "]")))))
+                                             (char-val-insensitive nil "]")))))
            (mv-nth 0 (parse-ichar #\/ (append (tree->string tree) rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
                    (charstring ")"))
@@ -5754,7 +5805,7 @@
           @('\"=\"') not followed by @('\"/\"')."
   (implies (and (tree-match-element-p tree
                                       (element-char-val
-                                       (char-val-insensitive "="))
+                                       (char-val-insensitive nil "="))
                                       *grammar*)
                 (mv-nth 0 (parse-ichar #\/ rest-input)))
            (mv-nth 0 (parse-ichar2 #\= #\/ (append (tree->string tree)
@@ -6716,6 +6767,7 @@
   :short "Completeness theorem for @(tsee parse-ichar)."
   (implies (tree-match-element-p tree
                                  (element-char-val (char-val-insensitive
+                                                    nil
                                                     (implode (list char))))
                                  *grammar*)
            (equal (parse-ichar char (append (tree->string tree)
@@ -6731,6 +6783,7 @@
   :short "Completeness theorem for @(tsee parse-ichar2)."
   (implies (tree-match-element-p tree
                                  (element-char-val (char-val-insensitive
+                                                    nil
                                                     (implode (list char1
                                                                    char2))))
                                  *grammar*)
@@ -7615,9 +7668,9 @@
                 (tree-list-terminatedp trees)
                 (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
-                                             (char-val-insensitive ")"))
+                                             (char-val-insensitive nil ")"))
                                             (element-char-val
-                                             (char-val-insensitive "]")))))
+                                             (char-val-insensitive nil "]")))))
            (mv-nth 0 (parse-alt-rest-comp
                       (append (tree-list->string trees)
                               (tree->string tree)
@@ -7670,9 +7723,9 @@
                 (tree-list-terminatedp trees)
                 (tree-match-element-p tree element *grammar*)
                 (member-equal element (list (element-char-val
-                                             (char-val-insensitive ")"))
+                                             (char-val-insensitive nil ")"))
                                             (element-char-val
-                                             (char-val-insensitive "]")))))
+                                             (char-val-insensitive nil "]")))))
            (mv-nth 0 (parse-conc-rest-comp
                       (append (tree-list->string trees)
                               (tree->string tree)
