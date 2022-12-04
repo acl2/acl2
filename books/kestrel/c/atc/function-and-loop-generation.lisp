@@ -746,12 +746,12 @@
                   *atc-array-write-type-prescription-rules*
                   *atc-array-length-write-rules*
                   *atc-wrapper-rules*
-                  ',(atc-string-taginfo-alist-to-reader-return-thms prec-tags)
-                  ',(atc-string-taginfo-alist-to-writer-return-thms prec-tags)
-                  ',(atc-string-objinfo-alist-to-recognizers prec-objs)
                   '(,fn
                     ,@(atc-symbol-fninfo-alist-to-result-thms
                        prec-fns (all-fnnames (ubody+ fn wrld)))
+                    ,@(atc-string-taginfo-alist-to-reader-return-thms prec-tags)
+                    ,@(atc-string-taginfo-alist-to-writer-return-thms prec-tags)
+                    ,@(atc-string-objinfo-alist-to-recognizers prec-objs)
                     sintp-of-sint-dec-const
                     sintp-of-sint-oct-const
                     sintp-of-sint-hex-const
@@ -2235,7 +2235,7 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
-       ((erp typed-formals formals-events proofs names-to-avoid)
+       ((erp typed-formals formals-events modular-proofs names-to-avoid)
         (atc-typed-formals
          fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
        ((erp params) (atc-gen-param-declon-list typed-formals fn prec-objs))
@@ -2250,9 +2250,10 @@
             init-scope-scopep-event
             & ; init-scope-scopep-thm
             omap-update-nest
-            proofs
+            modular-proofs
             names-to-avoid)
-        (if proofs
+        (if (and proofs
+                 modular-proofs)
             (atc-gen-init-scope-thms fn fn-guard typed-formals prog-const
                                      fn-fun-env-thm compst-var fenv-var
                                      names-to-avoid state)
@@ -2261,14 +2262,16 @@
             & ; push-init-thm-name
             add-var-nest
             names-to-avoid)
-        (if proofs
+        (if (and proofs
+                 modular-proofs)
             (atc-gen-push-init-thm fn fn-guard typed-formals omap-update-nest
                                    compst-var names-to-avoid wrld)
           (mv '(_) nil nil names-to-avoid)))
        (context (list (make-atc-premise-compustate :var compst-var
                                                    :term add-var-nest)))
        ((mv inscope init-inscope-events names-to-avoid)
-        (if proofs
+        (if (and proofs
+                 modular-proofs)
             (atc-gen-init-inscope fn fn-guard formals typed-formals
                                   compst-var context names-to-avoid wrld)
           (mv (list typed-formals) nil names-to-avoid)))
@@ -2302,7 +2305,8 @@
                        :prec-objs prec-objs
                        :thm-index 1
                        :names-to-avoid names-to-avoid
-                       :proofs proofs)
+                       :proofs (and proofs
+                                    modular-proofs))
                       state))
        (names-to-avoid body.names-to-avoid)
        ((when (and (type-case body.type :void)
@@ -2321,7 +2325,8 @@
        ((mv pop-frame-event
             & ; pop-frame-thm
             names-to-avoid)
-        (if proofs
+        (if (and proofs
+                 modular-proofs)
             (atc-gen-pop-frame-thm
              fn fn-guard context compst-var names-to-avoid wrld)
           (mv '(_) nil names-to-avoid)))
@@ -2384,12 +2389,14 @@
                                        (list fn-fun-env-event)
                                        (list fn-guard-event)
                                        formals-events
-                                       (list init-scope-expand-event)
-                                       (list init-scope-scopep-event)
-                                       (list push-init-thm-event)
+                                       (and modular-proofs
+                                            (list init-scope-expand-event
+                                                  init-scope-scopep-event
+                                                  push-init-thm-event))
                                        init-inscope-events
                                        body.events
-                                       (list pop-frame-event)
+                                       (and modular-proofs
+                                            (list pop-frame-event))
                                        fn-result-events
                                        fn-correct-local-events
                                        progress-end?))
@@ -3550,7 +3557,7 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
-       ((erp typed-formals formals-events proofs names-to-avoid)
+       ((erp typed-formals formals-events & names-to-avoid)
         (atc-typed-formals
          fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
        (body (ubody+ fn wrld))
