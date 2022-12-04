@@ -2135,6 +2135,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-pop-frame-thm ((fn symbolp)
+                               (fn-guard symbolp)
+                               (context atc-contextp)
+                               (compst-var symbolp)
+                               (names-to-avoid symbol-listp)
+                               (wrld plist-worldp))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate the theorem about
+          popping the frame at the end of a function execution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This theorem says that popping the (top) frame
+     in the computation state at the end of the function execution
+     yields the initial computation state;
+     this is only the case for the functions
+     for which we support the generation of this theorem, of course;
+     it is not true in general, and we will need to generalize it.")
+   (xdoc::p
+    "we ``save'' the initial computation state
+     in a variable that we obtain by adding @('0')
+     at the end of the symbol of the variable for the computation state.
+     We should refine this to ensure that the variable does not interfere
+     with other variables."))
+  (b* ((compst0-var (pack compst-var "0"))
+       (name (pack fn '-pop-frame))
+       ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                  name nil names-to-avoid wrld))
+       (formula `(equal (pop-frame ,compst-var)
+                        ,compst0-var))
+       (formula (atc-contextualize formula context))
+       (formula `(implies (and (compustatep ,compst-var)
+                               (,fn-guard ,@(formals+ fn wrld)))
+                          (let ((,compst0-var ,compst-var))
+                            ,formula)))
+       (hints `(("Goal" :in-theory '(pop-frame-of-add-var
+                                     pop-frame-of-add-frame))))
+       ((mv event &) (evmac-generate-defthm name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (mv event name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fundef ((fn symbolp)
                         (prec-fns atc-symbol-fninfo-alistp)
                         (prec-tags atc-string-taginfo-alistp)
@@ -2271,6 +2318,13 @@
          (raise "Internal error: ~
                  the function ~x0 has return type ~x1."
                 fn body.type)))
+       ((mv pop-frame-event
+            & ; pop-frame-thm
+            names-to-avoid)
+        (if proofs
+            (atc-gen-pop-frame-thm
+             fn fn-guard context compst-var names-to-avoid wrld)
+          (mv '(_) nil names-to-avoid)))
        (id (make-ident :name name))
        ((mv tyspec &) (ident+type-to-tyspec+declor id body.type))
        (fundef (make-fundef :tyspec tyspec
@@ -2335,6 +2389,7 @@
                                        (list push-init-thm-event)
                                        init-inscope-events
                                        body.events
+                                       (list pop-frame-event)
                                        fn-result-events
                                        fn-correct-local-events
                                        progress-end?))
