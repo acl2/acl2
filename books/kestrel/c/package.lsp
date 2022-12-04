@@ -188,6 +188,7 @@
                symbol-symbol-alistp
                table-alist+
                termination-theorem$
+               theorem-symbolp
                tuple
                ubody+
                uguard+
