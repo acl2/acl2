@@ -139,7 +139,7 @@
          :thm-index gin.thm-index
          :names-to-avoid gin.names-to-avoid
          :proofs nil))
-       (thm-name (pack gin.fn '-expr gin.thm-index '-correct))
+       (thm-name (pack gin.fn '-expr- gin.thm-index '-correct))
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil gin.names-to-avoid wrld))
        (type-pred (type-to-recognizer type wrld))
@@ -209,7 +209,7 @@
                          :thm-index gin.thm-index
                          :names-to-avoid gin.names-to-avoid
                          :proofs nil))
-       (thm-name (pack gin.fn '-expr gin.thm-index '-correct))
+       (thm-name (pack gin.fn '-expr- gin.thm-index '-correct))
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil gin.names-to-avoid wrld))
        (typep (type-to-recognizer type wrld))
@@ -296,7 +296,7 @@
                           :thm-index gin.thm-index
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
-       (thm-name (pack gin.fn '-expr gin.thm-index '-correct))
+       (thm-name (pack gin.fn '-expr- gin.thm-index '-correct))
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil gin.names-to-avoid wrld))
        (type-pred (type-to-recognizer out-type wrld))
@@ -395,7 +395,7 @@
                           :thm-index gin.thm-index
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
-       (thm-name (pack gin.fn '-expr gin.thm-index '-correct))
+       (thm-name (pack gin.fn '-expr- gin.thm-index '-correct))
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil gin.names-to-avoid wrld))
        (type-pred (type-to-recognizer out-type wrld))
@@ -1168,7 +1168,7 @@
                                :thm-index pure.thm-index
                                :names-to-avoid pure.names-to-avoid
                                :proofs nil)))
-       (thm-name (pack gin.fn '-expr pure.thm-index '-correct))
+       (thm-name (pack gin.fn '-expr- pure.thm-index '-correct))
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil pure.names-to-avoid wrld))
        (type-pred (type-to-recognizer pure.type wrld))
