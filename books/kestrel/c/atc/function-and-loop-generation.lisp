@@ -40,6 +40,8 @@
 
 (local (in-theory (disable state-p)))
 
+(local (in-theory (disable pseudo-event-form-listp)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; move to a more general library:
@@ -2182,6 +2184,89 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-fun-correct-thm ((fn symbolp)
+                                 (fn-guard symbolp)
+                                 (prog-const symbolp)
+                                 (compst-var symbolp)
+                                 (fenv-var symbolp)
+                                 (limit-var symbolp)
+                                 (fn-fun-env-thm symbolp)
+                                 (init-scope-expand-thm symbolp)
+                                 (init-scope-scopep-thm symbolp)
+                                 (push-init-thm symbolp)
+                                 (pop-frame-thm symbolp)
+                                 (body-thm symbolp)
+                                 (body-type typep)
+                                 (body-limit pseudo-termp)
+                                 (names-to-avoid symbol-listp)
+                                 state)
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate the correctness theorem for a C function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This will eventually replace @(tsee atc-gen-cfun-correct-thm),
+     once the modular proof generation approach is completed.")
+   (xdoc::p
+    "We make use of other modular theorems,
+     whose names are passed to this ACL2 function.
+     We use 1 more than the limit for the body as limit bound,
+     because we need 1 to go from @(tsee exec-fun)
+     to @(tsee exec-block-item-list),
+     which is what the body's theorem refers to."))
+  (b* ((wrld (w state))
+       (name (pack fn '-correct))
+       ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                  name nil names-to-avoid wrld))
+       (formals (formals+ fn wrld))
+       (result-var (genvar$ 'atc "RESULT" nil formals state))
+       (limit `(binary-+ '1 ,body-limit))
+       (type-pred (type-to-recognizer body-type wrld))
+       (formula
+        `(implies (and (compustatep ,compst-var)
+                       (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
+                       (,fn-guard ,@formals)
+                       (integerp ,limit-var)
+                       (>= ,limit-var ,limit))
+                  (let ((,result-var (,fn ,@formals)))
+                    (and (equal (exec-fun (ident ,(symbol-name fn))
+                                          (list ,@formals)
+                                          ,compst-var
+                                          ,fenv-var
+                                          ,limit-var)
+                                (mv ,result-var ,compst-var))
+                         (,type-pred ,result-var)))))
+       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (type-of-value-when-type-pred (pack 'type-of-value-when- type-pred))
+       (hints `(("Goal" :in-theory '(exec-fun-open
+                                     not-zp-of-limit-variable
+                                     ,fn-fun-env-thm
+                                     ,init-scope-expand-thm
+                                     ,init-scope-scopep-thm
+                                     ,push-init-thm
+                                     ,body-thm
+                                     (:e fun-info->body)
+                                     mv-nth-of-cons
+                                     (:e zp)
+                                     value-optionp-when-valuep
+                                     ,valuep-when-type-pred
+                                     type-of-value-option-when-valuep
+                                     ,type-of-value-when-type-pred
+                                     (:e fun-info->result)
+                                     (:e tyname-to-type)
+                                     (:e ,(pack 'type- (type-kind body-type)))
+                                     ,pop-frame-thm
+                                     ,fn))))
+       ((mv event &) (evmac-generate-defthm name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (mv event name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fundef ((fn symbolp)
                         (prec-fns atc-symbol-fninfo-alistp)
                         (prec-tags atc-string-taginfo-alistp)
@@ -2246,9 +2331,9 @@
        ((mv fn-fun-env-thm names-to-avoid)
         (atc-gen-cfun-fun-env-thm-name fn names-to-avoid wrld))
        ((mv init-scope-expand-event
-            & ; init-scope-expand-thm
+            init-scope-expand-thm
             init-scope-scopep-event
-            & ; init-scope-scopep-thm
+            init-scope-scopep-thm
             omap-update-nest
             modular-proofs
             names-to-avoid)
@@ -2259,7 +2344,7 @@
                                      names-to-avoid state)
           (mv '(_) nil '(_) nil nil nil names-to-avoid)))
        ((mv push-init-thm-event
-            & ; push-init-thm-name
+            push-init-thm
             add-var-nest
             names-to-avoid)
         (if (and proofs
@@ -2322,13 +2407,37 @@
          (raise "Internal error: ~
                  the function ~x0 has return type ~x1."
                 fn body.type)))
+       (modular-proofs (and modular-proofs
+                            body.proofs))
        ((mv pop-frame-event
-            & ; pop-frame-thm
+            pop-frame-thm
             names-to-avoid)
         (if (and proofs
                  modular-proofs)
             (atc-gen-pop-frame-thm
              fn fn-guard context compst-var names-to-avoid wrld)
+          (mv '(_) nil names-to-avoid)))
+       ((mv correct-event
+            & ; correct-thm
+            names-to-avoid)
+        (if (and proofs
+                 modular-proofs)
+            (atc-gen-fun-correct-thm fn
+                                     fn-guard
+                                     prog-const
+                                     compst-var
+                                     fenv-var
+                                     limit-var
+                                     fn-fun-env-thm
+                                     init-scope-expand-thm
+                                     init-scope-scopep-thm
+                                     push-init-thm
+                                     pop-frame-thm
+                                     body.thm-name
+                                     body.type
+                                     body.limit
+                                     names-to-avoid
+                                     state)
           (mv '(_) nil names-to-avoid)))
        (id (make-ident :name name))
        ((mv tyspec &) (ident+type-to-tyspec+declor id body.type))
@@ -2396,7 +2505,8 @@
                                        init-inscope-events
                                        body.events
                                        (and modular-proofs
-                                            (list pop-frame-event))
+                                            (list pop-frame-event
+                                                  correct-event))
                                        fn-result-events
                                        fn-correct-local-events
                                        progress-end?))
