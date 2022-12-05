@@ -1136,10 +1136,11 @@
   :short "Tree matching theorem for @(tsee parse-ichar)."
   (b* (((mv error? tree? &) (parse-ichar char input)))
     (implies (and (not error?)
-                  (equal element (element-char-val
-                                  (char-val-insensitive
-                                   nil
-                                   (implode (list char))))))
+                  (element-case element :char-val)
+                  (char-val-case (element-char-val->get element) :insensitive)
+                  (equal (char-val-insensitive->get
+                          (element-char-val->get element))
+                         (implode (list char))))
              (tree-match-element-p tree? element *grammar*)))
   :enable (parse-ichar
            tree-match-char-val-p
