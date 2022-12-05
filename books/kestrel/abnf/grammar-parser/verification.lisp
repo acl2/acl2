@@ -1156,12 +1156,7 @@
                   (char-val-case (element-char-val->get element) :insensitive)
                   (equal (char-val-insensitive->get
                           (element-char-val->get element))
-                         (implode (list char1 char2)))
-                  ;; (equal element (element-char-val
-                  ;;                 (char-val-insensitive
-                  ;;                  nil
-                  ;;                  (implode (list char1 char2)))))
-                  )
+                         (implode (list char1 char2))))
              (tree-match-element-p tree? element *grammar*)))
   :enable (parse-ichar2
            tree-match-char-val-p
@@ -3083,7 +3078,7 @@
           a case-insensitive character value notation."
   (implies (tree-match-element-p tree
                                  (element-char-val
-                                  (char-val-insensitive nil charstring))
+                                  (char-val-insensitive iprefix charstring))
                                  *grammar*)
            (nats-match-insensitive-chars-p (tree->string tree)
                                            (explode charstring)))
@@ -3256,6 +3251,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-ichars
                   (tree (car (car (tree-nonleaf->branches tree))))
+                  (iprefix nil)
                   (charstring "<")))
 
 (defrule constraints-from-tree-list-match-*digit-when-nonempty
@@ -3319,6 +3315,7 @@
                    (tree-nonleaf->branches tree) concatenation rules)))
   :use (:instance constraints-from-tree-match-ichars
                   (tree (car (car (tree-nonleaf->branches tree))))
+                  (iprefix nil)
                   (charstring ".")))
 
 (defrule constraints-from-tree-match-dash-etc
@@ -3346,6 +3343,7 @@
                    (tree-nonleaf->branches tree) concatenation rules)))
   :use (:instance constraints-from-tree-match-ichars
                   (tree (car (car (tree-nonleaf->branches tree))))
+                  (iprefix nil)
                   (charstring "-")))
 
 (defrule constraints-from-tree-match-bin-val-rest-when-nonempty
@@ -3439,6 +3437,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-ichars
                   (tree (car (car (tree-nonleaf->branches tree))))
+                  (iprefix nil)
                   (charstring "b")))
 
 (defrule constraints-from-tree-match-dec-val
@@ -3454,6 +3453,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-ichars
                   (tree (car (car (tree-nonleaf->branches tree))))
+                  (iprefix nil)
                   (charstring "d")))
 
 (defrule constraints-from-tree-match-hex-val
@@ -3469,6 +3469,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-ichars
                   (tree (car (car (tree-nonleaf->branches tree))))
+                  (iprefix nil)
                   (charstring "x")))
 
 (defrule constraints-from-tree-match-bin/dec/hex-val
@@ -3507,6 +3508,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use ((:instance constraints-from-tree-match-ichars
                    (tree (car (car (tree-nonleaf->branches tree))))
+                   (iprefix nil)
                    (charstring "%"))
         (:instance constraints-from-tree-match-bin/dec/hex-val
                    (tree (car (cadr (tree-nonleaf->branches tree)))))))
@@ -3542,6 +3544,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-ichars
                   (tree (car (car (tree-nonleaf->branches tree))))
+                  (iprefix nil)
                   (charstring "%s")))
 
 (defrule constraints-from-tree-match-?-%i-when-nonempty
@@ -3561,6 +3564,7 @@
   :enable tree-match-element-p
   :use (:instance constraints-from-tree-match-ichars
                   (tree (car (car (tree-nonleaf->branches tree))))
+                  (iprefix nil)
                   (charstring "%i")))
 
 (defrule constraints-from-tree-match-case-insensitive-string
@@ -3614,6 +3618,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-ichars
                   (tree (car (car (tree-nonleaf->branches tree))))
+                  (iprefix nil)
                   (charstring ";")))
 
 (defrule constraints-from-tree-match-cnl
@@ -3697,6 +3702,7 @@
   :enable tree-match-element-p
   :use ((:instance constraints-from-tree-match-ichars
                    (tree (car (cadr (tree-nonleaf->branches tree))))
+                   (iprefix nil)
                    (charstring "*"))
         (:instance constraints-from-tree-list-match-*digit-when-nonempty
                    (trees (car (tree-nonleaf->branches tree))))))
@@ -3775,6 +3781,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-ichars
                   (tree (car (car (tree-nonleaf->branches tree))))
+                  (iprefix nil)
                   (charstring "(")))
 
 (defrule constraints-from-tree-match-option
@@ -3790,6 +3797,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-ichars
                   (tree (car (car (tree-nonleaf->branches tree))))
+                  (iprefix nil)
                   (charstring "[")))
 
 (defrule constraints-from-tree-match-element
@@ -3947,9 +3955,11 @@
   :enable tree-match-element-p
   :use ((:instance constraints-from-tree-match-ichars
                    (tree (car (car (tree-nonleaf->branches tree))))
+                   (iprefix nil)
                    (charstring "="))
         (:instance constraints-from-tree-match-ichars
                    (tree (car (car (tree-nonleaf->branches tree))))
+                   (iprefix nil)
                    (charstring "=/"))))
 
 (defrule constraints-from-tree-match-defined-as
@@ -4473,6 +4483,7 @@
            (mv-nth 0 (parse-ichar #\0 (append (tree->string tree)
                                               rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "1"))
         (:instance constraints-from-parse-ichar
                    (char #\0)
@@ -4502,6 +4513,7 @@
                               '("A" "B" "C" "D" "E" "F")))
            (mv-nth 0 (parse-digit (append (tree->string tree) rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring (char-val-insensitive->get
                                 (element-char-val->get element))))
         (:instance constraints-from-parse-digit
@@ -4555,6 +4567,7 @@
            (mv-nth 0 (parse-ichar char (append (tree->string tree)
                                                rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring (char-val-insensitive->get
                                 (element-char-val->get element))))
         (:instance constraints-from-parse-ichar
@@ -4603,6 +4616,7 @@
                                             (append (tree->string tree)
                                                     rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring ">"))
         (:instance constraints-from-parse-in-either-range
                    (min1 #x20)
@@ -4868,8 +4882,10 @@
                                              (char-val-insensitive nil "-")))))
            (mv-nth 0 (parse-digit (append (tree->string tree) rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "*"))
         (:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "-"))
         (:instance constraints-from-parse-digit
                    (input (append (tree->string tree) rest-input)))))
@@ -4888,6 +4904,7 @@
            (mv-nth 0 (parse-alpha (append (tree->string tree) rest-input))))
   :use (constraints-from-tree-match-digit
         (:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "-"))
         (:instance constraints-from-parse-alpha
                    (input (append (tree->string tree) rest-input)))))
@@ -4905,10 +4922,13 @@
                                              (char-val-insensitive nil "]")))))
            (mv-nth 0 (parse-cwsp (append (tree->string tree) rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "/"))
         (:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring ")"))
         (:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "]"))
         (:instance constraints-from-parse-cwsp
                    (input (append (tree->string tree) rest-input)))))
@@ -4967,10 +4987,13 @@
                                              (char-val-insensitive nil "]")))))
            (mv-nth 0 (parse-1*cwsp (append (tree->string tree) rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "/"))
         (:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring ")"))
         (:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "]"))
         (:instance constraints-from-parse-1*cwsp
                    (input (append (tree->string tree) rest-input)))))
@@ -4989,10 +5012,13 @@
            (mv-nth 0 (parse-repetition (append (tree->string tree)
                                                rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "/"))
         (:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring ")"))
         (:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "]"))
         (:instance constraints-from-parse-repetition
                    (input (append (tree->string tree) rest-input)))))
@@ -5011,10 +5037,13 @@
            (mv-nth 0 (parse-alpha/digit/dash (append (tree->string tree)
                                                      rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "/"))
         (:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring ")"))
         (:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "]"))
         (:instance constraints-from-parse-alpha/digit/dash
                    (input (append (tree->string tree) rest-input)))))
@@ -5193,6 +5222,7 @@
                 (mv-nth 0 (parse-ichar #\- (append (tree->string tree)
                                                    rest-input)))))
   :use ((:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "/"))
         (:instance constraints-from-parse-bit
                    (input (append (tree->string tree) rest-input)))
@@ -5356,8 +5386,10 @@
                 (mv-nth 0 (parse-ichar #\- (append (tree->string tree)
                                                    rest-input)))))
   :use ((:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring ")"))
         (:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "]"))
         (:instance constraints-from-parse-bit
                    (input (append (tree->string tree) rest-input)))
@@ -5801,8 +5833,10 @@
                                              (char-val-insensitive nil "]")))))
            (mv-nth 0 (parse-ichar #\/ (append (tree->string tree) rest-input))))
   :use ((:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring ")"))
         (:instance constraints-from-tree-match-ichars
+                   (iprefix nil)
                    (charstring "]"))
         (:instance constraints-from-parse-ichar
                    (char #\/)
