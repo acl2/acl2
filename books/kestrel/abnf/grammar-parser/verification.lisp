@@ -16,6 +16,8 @@
 (local (include-book "kestrel/utilities/lists/primitive-theorems" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
+(set-induction-depth-limit 1)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ grammar-parser-correctness
@@ -7166,7 +7168,8 @@
            tree-list-match-repetition-p-of-0+-reps-when-consp
            fail-bit-when-match-*-dot-1*bit
            fail-dot-1*bit-when-fail-dot)
-  :disable acl2::nat-list-fix-of-append)
+  :disable acl2::nat-list-fix-of-append
+  :hints ('(:expand (parse-*-dot-1*bit rest-input))))
 
 (defrule parse-*-dot-1*digit-when-tree-list-match
   :parents (grammar-parser-completeness)
@@ -7186,7 +7189,8 @@
            tree-list-match-repetition-p-of-0+-reps-when-consp
            fail-digit-when-match-*-dot-1*digit
            fail-dot-1*digit-when-fail-dot)
-  :disable acl2::nat-list-fix-of-append)
+  :disable acl2::nat-list-fix-of-append
+  :hints ('(:expand (parse-*-dot-1*digit rest-input))))
 
 (defrule parse-*-dot-1*hexdig-when-tree-list-match
   :parents (grammar-parser-completeness)
@@ -7206,7 +7210,8 @@
            tree-list-match-repetition-p-of-0+-reps-when-consp
            fail-hexdig-when-match-*-dot-1*hexdig
            fail-dot-1*hexdig-when-fail-dot)
-  :disable acl2::nat-list-fix-of-append)
+  :disable acl2::nat-list-fix-of-append
+  :hints ('(:expand (parse-*-dot-1*hexdig rest-input))))
 
 (defrule parse-1*-dot-1*bit-when-tree-list-match
   :parents (grammar-parser-completeness)
