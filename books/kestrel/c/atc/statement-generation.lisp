@@ -436,7 +436,7 @@
                                            (list stmt-event)
                                            (list item-event)
                                            (list items-event))
-                           :thm-name nil
+                           :thm-name items-thm-name
                            :thm-index thm-index
                            :names-to-avoid names-to-avoid
                            :proofs t))))
@@ -667,9 +667,13 @@
        ((mv okp test-term then-term else-term) (fty-check-if-call term))
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test-term))
-             ((when mbtp) (atc-gen-stmt then-term gin state))
+             ((when mbtp)
+              (b* (((erp out) (atc-gen-stmt then-term gin state)))
+                (retok (change-stmt-gout out :proofs nil))))
              ((mv mbt$p &) (check-mbt$-call test-term))
-             ((when mbt$p) (atc-gen-stmt then-term gin state))
+             ((when mbt$p)
+              (b* (((erp out) (atc-gen-stmt then-term gin state)))
+                (retok (change-stmt-gout out :proofs nil))))
              ((erp (bexpr-gout test))
               (atc-gen-expr-bool test-term
                                  (make-bexpr-gin
