@@ -1756,7 +1756,7 @@
 ; The basic idea is that we ``decompile'' the do body lambda into a pseudo
 ; function definition, e.g.,
 
-; (defun hint-fn (val1 ... valn) 
+; (defun hint-fn (val1 ... valn)
 ;   (declare (xargs :measure <measure>))
 ;   (if <base>
 ;       <ans>
@@ -6722,10 +6722,10 @@
                        (clausify-input
                         (car (car cl-set))
                         (access rewrite-constant
-                                (access prove-spec-var pspv
+                                (access prove-spec-var new-pspv
                                         :rewrite-constant)
                                 :fns-to-be-ignored-by-rewrite)
-                        (ens-from-pspv pspv)
+                        (ens-from-pspv new-pspv)
                         wrld
                         state
                         nil
