@@ -41,8 +41,10 @@
 (include-book "all-fnnames")
 (include-book "observation1-cw")
 (include-book "defstobj")
+(include-book "remove-guard-holders-strong-1")
 
-; Below are the books not included by includeing all of the above (at least, as
+
+; Below are the books not included by including all of the above (at least, as
 ; of 10/23/2022).  See the warning near the top of this file before including
 ; any of these.
 
@@ -103,6 +105,13 @@
 
 ; Locally included in remove-guard-holders.lisp
 ; remove-guard-holders-lemmas.lisp
+
+; Contains invalid skip-proofs (see comment in that file)
+; remove-guard-holders-strong-2.lisp
+
+; Contains verify-termination events without guard verification, which may slow
+; down ACL2 significantly
+; remove-guard-holders-strong-ideal-mode.lisp
 
 ; Termination and guard proofs now included in sources, saved
 ; in this book for historical reasons:

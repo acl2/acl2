@@ -596,9 +596,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define abstract-case-sensitive/insensitive-string ((tree treep))
+(define abstract-case-sensitive-string ((tree treep))
   :returns (charstring acl2::stringp)
-  :short "A @('case-sensitive') or @('case-insensitive') parse tree
+  :short "A @('case-sensitive-string') parse tree
           is abstracted to its character string."
   (b* (((fun (fail)) (prog2$ (abstract-fail) ""))
        ((unless (tree-case tree :nonleaf)) (fail))
@@ -609,6 +609,30 @@
        ((unless (consp trees)) (fail))
        (subtree (car trees)))
     (abstract-quoted-string subtree))
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abstract-case-insensitive-string ((tree treep))
+  :returns (mv (charstring acl2::stringp) (iprefix booleanp))
+  :short "A @('case-insensitive-string') parse tree
+          is abstracted to its character string and to a boolean flag
+          saying whether the @('%i') prefix is present or not."
+  (b* (((fun (fail)) (prog2$ (abstract-fail) (mv "" nil)))
+       ((unless (tree-case tree :nonleaf)) (fail))
+       (treess (tree-nonleaf->branches tree))
+       ((unless (and (consp treess)
+                     (consp (cdr treess)))) (fail))
+       (trees (cadr treess))
+       ((unless (consp trees)) (fail))
+       (subtree (car trees))
+       (charstring (abstract-quoted-string subtree))
+       (trees (car treess))
+       ((unless (consp trees)) (fail))
+       (subtree (car trees))
+       ((unless (tree-case subtree :nonleaf)) (fail))
+       (iprefix (consp (tree-nonleaf->branches subtree))))
+    (mv charstring iprefix))
   :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -625,12 +649,11 @@
        ((unless (consp trees)) (fail))
        (subtree (car trees))
        ((unless (tree-case subtree :nonleaf)) (fail))
-       (rulename (tree-nonleaf->rulename? subtree))
-       (charstring
-        (abstract-case-sensitive/insensitive-string subtree)))
+       (rulename (tree-nonleaf->rulename? subtree)))
     (if (equal rulename (rulename "case-sensitive-string"))
-        (char-val-sensitive charstring)
-      (char-val-insensitive charstring)))
+        (char-val-sensitive (abstract-case-sensitive-string subtree))
+      (b* (((mv charstring iprefix) (abstract-case-insensitive-string subtree)))
+        (char-val-insensitive iprefix charstring))))
   :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

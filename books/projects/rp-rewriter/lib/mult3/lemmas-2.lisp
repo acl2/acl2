@@ -36,6 +36,8 @@
 ; Original Author(s):
 ; Mertcan Temel         <mert@utexas.edu>
 
+; (depends-on "build/rewrite-constant.certdep" :dir :system)
+
 (in-package "RP")
 
 (include-book "projects/rp-rewriter/top" :dir :system)

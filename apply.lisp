@@ -2297,9 +2297,7 @@
         (apply-lemmas-book-name (make-sysfile :system
                                               "projects/apply/base.lisp")))
     (cond
-     ((and (not (assoc-equal
-                 apply-lemmas-book-name
-                 (global-val 'include-book-alist wrld)))
+     ((and (not (global-val 'projects/apply/base-includedp wrld))
            (not (equal apply-lemmas-book-name
                        (active-book-name wrld state)))
            (not (global-val 'boot-strap-flg wrld)))
