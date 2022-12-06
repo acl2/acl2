@@ -302,7 +302,7 @@
        (arg-fixtype (integer-type-to-fixtype arg-type))
        (op-arg-type (pack op-name '- arg-fixtype))
        (op-arg-type-okp (and (unop-case op :minus)
-                             (not (member-eq (type-kind arg-type)
+                             (not (member-eq (type-kind in-type)
                                              '(:uint :ulong :ullong)))
                              (pack op-arg-type '-okp)))
        ((mv okp-lemma-event?
@@ -419,11 +419,7 @@
                given that the code is guard-verified."
               op arg1-term arg1-type arg2-term arg2-type in1-type in2-type)))
        (expr (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr))
-       (proofs (and gin.proofs
-                    (not (member-eq (binop-kind op) '(:div :rem :shl :shr)))
-                    (or (not (member-eq (binop-kind op) '(:add :sub :mul)))
-                        (type-unsigned-integerp out-type))))
-       ((when (not proofs))
+       ((when (not gin.proofs))
         (retok
          (make-pexpr-gout :expr expr
                           :type out-type
@@ -432,9 +428,53 @@
                           :thm-index gin.thm-index
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
+       (fn-formals (formals+ gin.fn wrld))
+       (op-name (pack (binop-kind op)))
+       ((unless (type-nonchar-integerp arg1-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg1-type)))
+       (arg1-fixtype (integer-type-to-fixtype arg1-type))
+       ((unless (type-nonchar-integerp arg2-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg2-type)))
+       (arg2-fixtype (integer-type-to-fixtype arg2-type))
+       (op-arg1-type-arg2-type (pack op-name '- arg1-fixtype '- arg2-fixtype))
+       (op-arg1-type-arg2-type-okp
+        (and (or (member-eq (binop-kind op) '(:div :rem :shl :shr))
+                 (and (member-eq (binop-kind op) '(:add :sub :mul))
+                      (type-signed-integerp out-type)))
+             (pack op-arg1-type-arg2-type '-okp)))
+       ((mv okp-lemma-event?
+            okp-lemma-name
+            gin.thm-index
+            gin.names-to-avoid)
+        (if op-arg1-type-arg2-type-okp
+            (b* ((okp-lemma-name
+                  (pack gin.fn '-expr- gin.thm-index '-okp-lemma))
+                 ((mv okp-lemma-name gin.names-to-avoid)
+                  (fresh-logical-name-with-$s-suffix okp-lemma-name
+                                                     nil
+                                                     gin.names-to-avoid
+                                                     wrld))
+                 (okp-lemma-formula
+                  `(implies (,gin.fn-guard ,@fn-formals)
+                            (,op-arg1-type-arg2-type-okp ,arg1-term
+                                                         ,arg2-term)))
+                 (okp-lemma-hints
+                  `(("Goal"
+                     :in-theory '(,gin.fn-guard)
+                     :use (:guard-theorem ,gin.fn))))
+                 ((mv okp-lemma-event &)
+                  (evmac-generate-defthm okp-lemma-name
+                                         :formula okp-lemma-formula
+                                         :hints okp-lemma-hints
+                                         :enable nil)))
+              (mv (list okp-lemma-event)
+                  okp-lemma-name
+                  (1+ gin.thm-index)
+                  gin.names-to-avoid))
+          (mv nil nil gin.thm-index gin.names-to-avoid)))
        (thm-name (pack gin.fn '-expr- gin.thm-index '-correct))
-       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
-                                      thm-name nil gin.names-to-avoid wrld))
+       ((mv thm-name gin.names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                          thm-name nil gin.names-to-avoid wrld))
        (type-pred (type-to-recognizer out-type wrld))
        (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
                              ,term)
@@ -447,19 +487,11 @@
        (arg2-type-pred (type-to-recognizer arg2-type wrld))
        (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
        (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
-       (op-name (pack (binop-kind op)))
        (exec-binary-strict-pure-when-op
         (pack 'exec-binary-strict-pure-when- op-name))
-       ((unless (type-nonchar-integerp arg1-type))
-        (reterr (raise "Internal error: non-integer type ~x0." arg1-type)))
-       (arg1-fixtype (integer-type-to-fixtype arg1-type))
-       ((unless (type-nonchar-integerp arg2-type))
-        (reterr (raise "Internal error: non-integer type ~x0." arg2-type)))
-       (arg2-fixtype (integer-type-to-fixtype arg2-type))
        (op-values-when-arg2-type (pack op-name '-values-when- arg1-fixtype))
        (op-arg1-type-and-value-when-arg2-type
         (pack op-name '- arg1-fixtype '-and-value-when- arg2-fixtype))
-       (op-arg1-type-arg2-type (pack op-name '- arg1-fixtype '- arg2-fixtype))
        (type-pred-of-op-arg1-type-arg2-type
         (pack type-pred '-of- op-arg1-type-arg2-type))
        (hints `(("Goal" :in-theory '(exec-expr-pure-when-strict-pure-binary
@@ -477,7 +509,9 @@
                                      (:e ,(pack 'binop- op-name))
                                      ,op-values-when-arg2-type
                                      ,op-arg1-type-and-value-when-arg2-type
-                                     ,type-pred-of-op-arg1-type-arg2-type))))
+                                     ,type-pred-of-op-arg1-type-arg2-type
+                                     ,@(and op-arg1-type-arg2-type-okp
+                                            (list okp-lemma-name))))))
        ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints
@@ -487,10 +521,11 @@
                       :type out-type
                       :events (append arg1-events
                                       arg2-events
+                                      okp-lemma-event?
                                       (list event))
                       :thm-name thm-name
                       :thm-index (1+ gin.thm-index)
-                      :names-to-avoid names-to-avoid
+                      :names-to-avoid gin.names-to-avoid
                       :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
