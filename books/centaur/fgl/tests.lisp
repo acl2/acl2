@@ -61,17 +61,25 @@
       (fgl-thm ,form)
       :with-output-off nil)
      (make-event
-      (b* (((mv err (cons ?stobjs-out values) state)
+      (b* ((debug-info (interp-st->debug-info interp-st))
+           (form ',form)
+           ((unless (and (consp debug-info)
+                         (equal (car debug-info) "Counterexample.")
+                         (symbol-alistp (cdr debug-info))))
+            (er hard? 'check-counterexample
+                "No counterexample stored in debug-info for ~x0~%" form)
+            (mv t nil state))
+           ((mv err (cons ?stobjs-out values) state)
             (with-guard-checking-error-triple nil
               (trans-eval `(let ,(alist-to-let-bindings (interp-st->debug-info interp-st))
                              ,',form)
                           '(check-counterexample ,form)
                           state t)))
            ((when err)
-            (er hard? 'check-counterexample "Failed to evaluate the counterexample for ~x0~%" ',form)
+            (er hard? 'check-counterexample "Failed to evaluate the counterexample for ~x0~%" form)
             (mv t nil state))
            ((when values)
-            (er hard? 'check-counterexample "False counterexample for ~x0~%" ',form)
+            (er hard? 'check-counterexample "False counterexample for ~x0~%" form)
             (mv t nil state)))
         (value '(value-triple :ok))))))
 
