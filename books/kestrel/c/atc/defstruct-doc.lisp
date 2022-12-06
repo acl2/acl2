@@ -115,18 +115,18 @@
       (xdoc::li "@('ulong')")
       (xdoc::li "@('sllong')")
       (xdoc::li "@('ullong')")
-      (xdoc::li "@('(schar <pos?>)')")
-      (xdoc::li "@('(uchar <pos?>)')")
-      (xdoc::li "@('(sshort <pos?>)')")
-      (xdoc::li "@('(ushort <pos?>)')")
-      (xdoc::li "@('(sint <pos?>)')")
-      (xdoc::li "@('(uint <pos?>)')")
-      (xdoc::li "@('(slong <pos?>)')")
-      (xdoc::li "@('(ulong <pos?>)')")
-      (xdoc::li "@('(sllong <pos?>)')")
-      (xdoc::li "@('(ullong <pos?>)')"))
+      (xdoc::li "@('(schar <size?>)')")
+      (xdoc::li "@('(uchar <size?>)')")
+      (xdoc::li "@('(sshort <size?>)')")
+      (xdoc::li "@('(ushort <size?>)')")
+      (xdoc::li "@('(sint <size?>)')")
+      (xdoc::li "@('(uint <size?>)')")
+      (xdoc::li "@('(slong <size?>)')")
+      (xdoc::li "@('(ulong <size?>)')")
+      (xdoc::li "@('(sllong <size?>)')")
+      (xdoc::li "@('(ullong <size?>)')"))
      (xdoc::p
-      "where @('<pos?>') is an optional positive integer
+      "where @('<size?>') is an optional positive integer
        which, if present, must not exceed @(tsee ullong-max).
        The first ten specify C integer types:
        each is the name of an ACL2 fixtype that models a C integer type,
@@ -247,7 +247,7 @@
        this function checks if the index is
        within the range of the array.
        If the length of the array is known
-       (specified by the @('<pos?>')
+       (specified by the @('<size?>')
        in the @('<typei>') that specifies the type of the member),
        the checker only needs the integer.
        For the flexible array member (if present),
@@ -288,7 +288,7 @@
       "This function checks if the index is
        within the range of the array.
        If the length of the array is known
-       (specified by the @('<pos?>')
+       (specified by the @('<size?>')
        in the @('<typei>') that specifies the type of the member),
        the checker only needs the integer.
        For the flexible array member (if present),

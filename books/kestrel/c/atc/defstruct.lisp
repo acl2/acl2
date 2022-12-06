@@ -299,7 +299,7 @@
     "The second component of the doublet represents the member type.
      It must be
      either one of the fixtype names of the C integer types,
-     or a doublet @('(<type> <pos>)')
+     or a doublet @('(<type> <size>)')
      consisting of one of the fixtype names of the C integer types
      followed by a positive integer,
      or a singleton @('(<type>)')

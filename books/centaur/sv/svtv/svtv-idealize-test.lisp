@@ -32,6 +32,8 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (in-theory (disable unsigned-byte-p)))
 
+; cert_param: (uses-glucose)
+
 (define simple-lhs ((var svar-p)
                     (width posp))
   :returns (lhs lhs-p)
@@ -155,7 +157,7 @@
   :concl (equal res3 (loghead 4 (* (- (loghead 4 (+ a b))) (- (loghead 4 (+ a b))))))
   :no-lemmas t)
 
-  
+
 (def-svtv-idealized-thm mod-run-res1-correct-2
   :override-vars (b)
   :spec-override-vars (a)
@@ -235,9 +237,9 @@
                                                    svtv-override-triplemaplist-envs-match-checks-when-variable-free
                                                    4vec-p-when-integerp
                                                   (:ruleset svtv-idealized-thm-rules))))))
-                    
-                    
 
 
-                               
+
+
+
 

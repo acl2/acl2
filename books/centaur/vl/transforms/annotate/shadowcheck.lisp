@@ -548,7 +548,7 @@ object.</p>
   :returns (entry (iff (vl-lexscope-entry-p entry) entry))
   :parents (vl-lexscope)
   :short "Look up a name in a (single) lexical scope."
-  :inline t
+  ;; :inline t
   (b* (((vl-lexscope scope))
        (entry1 (cdr (hons-get (string-fix name) scope.decls)))
        (packages (vl-packagemap-find-packages-for-name name scope.wildpkgs))
