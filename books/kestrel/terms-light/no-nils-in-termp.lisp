@@ -94,7 +94,7 @@
 (make-flag no-nils-in-termp)
 
 (defthm-flag-no-nils-in-termp
-  (defthm no-nils-in-termp-of-free-vars-in-term
+  (defthm no-nils-in-termsp-of-free-vars-in-term
     (implies (no-nils-in-termp term)
              (no-nils-in-termsp (free-vars-in-term term)))
     :flag no-nils-in-termp)
