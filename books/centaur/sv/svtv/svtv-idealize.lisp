@@ -1371,6 +1371,8 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
     (:meta svtv-override-triplemaplist-check-muxtest-subsetp-when-variable-free)
     (:meta svtv-override-subst-matches-env-meta)
     (:REWRITE 4VEC-<<=-2VEC)
+    (:rewrite 4vec-<<=-self)
+    
     (:REWRITE 4VEC-BIT?!-MONOTONIC-ON-NONTEST-ARGS)
     (:REWRITE 4VEC-FIX-OF-4VEC)
     (:REWRITE 4VEC-FIX-UNDER-4VEC-EQUIV)
@@ -1527,10 +1529,12 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                                     <override-var-instantiation>
                                     <input-var-instantiation>))
                       :in-theory (acl2::e/d**
-                                  ((:EXECUTABLE-COUNTERPART <SVTV>-TRIPLEMAPLIST)
+                                  (;; (:EXECUTABLE-COUNTERPART <SVTV>-TRIPLEMAPLIST)
                                    (:REWRITE SVARLIST-P-OF-<SVTV>-INPUT-VARS)
                                    (:ruleset svtv-idealized-thm-rules))
                                   )
+                      :do-not '(generalize fertilize eliminate-destructors)
+                      :do-not-induct t
                       )
                      . <hints>))
             :rule-classes <rule-classes>)))
