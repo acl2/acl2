@@ -6808,11 +6808,12 @@
 (defrule parse-ichar-when-tree-match
   :parents (grammar-parser-completeness)
   :short "Completeness theorem for @(tsee parse-ichar)."
-  (implies (tree-match-element-p tree
-                                 (element-char-val (char-val-insensitive
-                                                    nil
-                                                    (implode (list char))))
-                                 *grammar*)
+  (implies (and (tree-match-element-p tree element *grammar*)
+                (element-case element :char-val)
+                (char-val-case (element-char-val->get element) :insensitive)
+                (equal (char-val-insensitive->get
+                        (element-char-val->get element))
+                       (implode (list char))))
            (equal (parse-ichar char (append (tree->string tree)
                                             rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
@@ -6824,12 +6825,12 @@
 (defrule parse-ichar2-when-tree-match
   :parents (grammar-parser-completeness)
   :short "Completeness theorem for @(tsee parse-ichar2)."
-  (implies (tree-match-element-p tree
-                                 (element-char-val (char-val-insensitive
-                                                    nil
-                                                    (implode (list char1
-                                                                   char2))))
-                                 *grammar*)
+  (implies (and (tree-match-element-p tree element *grammar*)
+                (element-case element :char-val)
+                (char-val-case (element-char-val->get element) :insensitive)
+                (equal (char-val-insensitive->get
+                        (element-char-val->get element))
+                       (implode (list char1 char2))))
            (equal (parse-ichar2 char1 char2 (append (tree->string tree)
                                                     rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
