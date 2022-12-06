@@ -214,16 +214,6 @@
                              ifix
                              ;; the following are disabled for speed:
                              equal-of-error
-                             equal-of-schar
-                             equal-of-uchar
-                             equal-of-sshort
-                             equal-of-ushort
-                             equal-of-sint
-                             equal-of-uint
-                             equal-of-slong
-                             equal-of-ulong
-                             equal-of-sllong
-                             equal-of-ullong
                              equal-of-value-schar
                              equal-of-value-uchar
                              equal-of-value-sshort

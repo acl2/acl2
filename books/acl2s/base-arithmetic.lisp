@@ -3,6 +3,9 @@
  "portcullis")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
+; (depends-on "build/rewrite-constant.certdep" :dir :system)
+; (depends-on "build/prove-spec-var.certdep" :dir :system)
+
 (in-package "ACL2S")
 
 (include-book "defdata/top" :ttags :all)
@@ -13,7 +16,7 @@
 ; Pete 9/27/2018: Include utilities book
 (include-book "definec" :ttags :all)
 
-(include-book "acl2s/ccg/ccg" :dir :system 
+(include-book "acl2s/ccg/ccg" :dir :system
   :uncertified-okp nil :ttags ((:ccg))
   :load-compiled-file nil)
 
@@ -40,18 +43,18 @@ Decided to leave out for now because
   "rtl/rel11/lib/top" :dir :system)
 (in-theory
  (disable
-  acl2::|(mod (+ x y) z) where (<= 0 z)| 
+  acl2::|(mod (+ x y) z) where (<= 0 z)|
   acl2::|(mod (+ x (- (mod a b))) y)|
-  acl2::|(mod (mod x y) z)| 
-  acl2::|(mod (+ x (mod a b)) y)| 
+  acl2::|(mod (mod x y) z)|
+  acl2::|(mod (+ x (mod a b)) y)|
   acl2::cancel-mod-+
-  acl2::mod-cancel-*-const 
+  acl2::mod-cancel-*-const
   acl2::simplify-products-gather-exponents-equal
   acl2::simplify-products-gather-exponents-<
-  acl2::cancel-mod-+ 
-  acl2::reduce-additive-constant-< 
+  acl2::cancel-mod-+
+  acl2::reduce-additive-constant-<
   acl2::|(floor x 2)|
-  acl2::|(equal x (if a b c))| 
+  acl2::|(equal x (if a b c))|
   acl2::|(equal (if a b c) x)|))
 |#
 
@@ -306,7 +309,7 @@ I commented out some disabled theorems that seem fine to me.
         cancel-mod-+
         prefer-positive-addends-<
         prefer-positive-addends-equal
-        reduce-additive-constant-< 
+        reduce-additive-constant-<
         reduce-additive-constant-equal
         default-mod-ratio
         ash-to-floor
@@ -321,6 +324,7 @@ I commented out some disabled theorems that seem fine to me.
         ;;  |(mod (- x) y)|
         ;;  mod-sums-cancel-1
         ;;  |(equal (mod a n) (mod b n))|
+        acl2::|(* 2 (floor x y))|
         )))
 
 (defthm acl2s-default-mod-ratio
@@ -518,7 +522,7 @@ I commented out some disabled theorems that seem fine to me.
                    :nonlinearp))
        (prog2$
         nil ;;harshrc 14Jan2012- The following gives a nasty error when run inside of ld
-        ;; (observation-cw 'my-nonlinearp-default-hint 
+        ;; (observation-cw 'my-nonlinearp-default-hint
         ;;                 "~%~%[Note: We now enable non-linear arithmetic.]~%~%")
         '(:computed-hint-replacement t
                      :nonlinearp t))
@@ -537,7 +541,7 @@ I commented out some disabled theorems that seem fine to me.
           (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE)))
          (prog2$
           nil ;;The following gives a nasty error when run inside of ld
-          ;; (observation-cw 'my-nonlinearp-default-hint 
+          ;; (observation-cw 'my-nonlinearp-default-hint
           ;;                 "~%~%[Note: We now disable non-linear arithmetic.]~%~%")
            '(:computed-hint-replacement t
                         :nonlinearp nil))
@@ -642,7 +646,7 @@ I commented out some disabled theorems that seem fine to me.
            (equal (< a (* a b))
                   (< 1 b)))
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
-     
+
 (defthm numerator-n-decreases
   (implies (and (rationalp r)
                 (<= n r)
@@ -683,7 +687,7 @@ I commented out some disabled theorems that seem fine to me.
          cancel-mod-+
          prefer-positive-addends-<
          prefer-positive-addends-equal
-         reduce-additive-constant-< 
+         reduce-additive-constant-<
          reduce-additive-constant-equal
          default-mod-ratio
          ash-to-floor
@@ -756,7 +760,7 @@ I commented out some disabled theorems that seem fine to me.
         cancel-mod-+
         prefer-positive-addends-<
         prefer-positive-addends-equal
-        reduce-additive-constant-< 
+        reduce-additive-constant-<
         reduce-additive-constant-equal
         default-mod-ratio
         ash-to-floor
@@ -771,4 +775,5 @@ I commented out some disabled theorems that seem fine to me.
         ;;  |(mod (- x) y)|
         ;;  mod-sums-cancel-1
         ;;  |(equal (mod a n) (mod b n))|
+        acl2::|(* 2 (floor x y))|
         ))

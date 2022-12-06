@@ -39,6 +39,11 @@
 (include-book "all-fnnames")
 (include-book "observation1-cw")
 (include-book "defstobj")
+(include-book "remove-guard-holders-strong-1")
+; Do not include "remove-guard-holders-strong-2", which has an invalid
+; skip-proofs as noted there; or "remove-guard-holders-strong-ideal-mode.lisp",
+; which puts some system functions into :logic mode without guard verification,
+; and has been seen to slow down regressions a lot.
 
 ; The following is commented out because we aren't currently motivated to put
 ; its functions into ACL2 system constant *system-verify-guards-alist*, which

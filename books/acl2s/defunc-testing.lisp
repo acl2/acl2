@@ -34,3 +34,9 @@
   (if (< x y)
       z
     (foo (- x 2) (1- y) z)))
+
+; Was leading to infinite looping in arithmetic-5 which led me to
+; disable acl2::|(* 2 (floor x y))|
+(definec m4 (x :rational) :nat
+  (abs (ceiling (* x 2) 1)))
+

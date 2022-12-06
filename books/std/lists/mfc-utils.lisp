@@ -35,6 +35,7 @@
 ; BOZO probably belongs in std/ks, but, surprise surprise, circular dependencies
 ; would arise, so we're putting it in lists.
 
+; (depends-on "build/rewrite-constant.certdep" :dir :system)
 
 (in-package "ACL2")
 (program)

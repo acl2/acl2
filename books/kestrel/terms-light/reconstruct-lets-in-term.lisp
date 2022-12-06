@@ -181,8 +181,10 @@
          (mv term nil)
        (if (translated-mv-letp term)
            ;; It's (the translation of) an MV-LET:
+           ;; Apply recursively to the multi-valued term:
            (mv-let (new-mv-term mv-term-vars)
              (reconstruct-lets-in-term-aux (term-of-translated-mv-let term))
+             ;; Apply recursively to the MV-LET body:
              (mv-let (new-body-term body-vars)
                (reconstruct-lets-in-term-aux (body-of-translated-mv-let term))
                (let* ((vars (vars-of-translated-mv-let term))
@@ -260,37 +262,3 @@
     (reconstruct-lets-in-term-aux term)
     (declare (ignore vars))
     term))
-
-;; This proves that the free vars returned are correct:
-(local
- (progn
-   (include-book "free-vars-in-term")
-   (include-book "kestrel/lists-light/perm" :dir :system)
-   (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system)
-   (include-book "no-duplicate-lambda-formals-in-termp")
-
-   ;; (defthm symbol-listp-of-cdr-type
-   ;;    (implies (symbol-listp x)
-   ;;             (symbol-listp (cdr x)))
-   ;;    :rule-classes :type-prescription)
-
-   (defthm-flag-reconstruct-lets-in-term-aux
-     (defthm mv-nth-1-of-reconstruct-lets-in-term-aux-under-perm
-       (implies (and (pseudo-termp term)
-                     (no-duplicate-lambda-formals-in-termp term))
-                (perm (mv-nth 1 (reconstruct-lets-in-term-aux term))
-                      (free-vars-in-term term)))
-       :flag reconstruct-lets-in-term-aux)
-     (defthm mv-nth-1-of-reconstruct-lets-in-terms-aux-under-perm
-       (implies (and (pseudo-term-listp terms)
-                     (no-duplicate-lambda-formals-in-termsp terms))
-                (perm (mv-nth 1 (reconstruct-lets-in-terms-aux terms))
-                      (free-vars-in-terms terms)))
-       :flag reconstruct-lets-in-terms-aux)
-     :hints (("subgoal *1/3" :use (:instance free-vars-in-terms-when-symbol-listp (terms (cddr term))))
-             ("subgoal *1/2" :use (:instance free-vars-in-terms-when-symbol-listp (terms (cddr term))))
-             ("Goal" :expand ((free-vars-in-term term)
-                              (free-vars-in-terms (cdr term)))
-              :in-theory (enable reconstruct-lets-in-term-aux
-                                 reconstruct-lets-in-terms-aux
-                                 no-duplicate-lambda-formals-in-termp))))))

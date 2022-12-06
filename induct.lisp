@@ -1904,25 +1904,6 @@
 ; clause-set into a non-trivial one even though we form the instance of the do$
 ; induction scheme with the unit clause set.
 
-(defun formal-cons-to-components (term)
-
-; Term is a translated term.  This function returns (mv flg car cdr).  If flg
-; is nil, term does not represent a CONS term.  Otherwise it does and car and
-; cdr are the first and second args of that CONS term.  The only tricky thing
-; about this function is that term might be a quoted constant.
-
-  (cond ((variablep term) (mv nil nil nil))
-        ((fquotep term)
-         (let ((evg (unquote term)))
-           (if (consp evg)
-               (mv t
-                   (kwote (car evg))
-                   (kwote (cdr evg)))
-               (mv nil nil nil))))
-        ((eq (ffn-symb term) 'cons)
-         (mv t (fargn term 1) (fargn term 2)))
-        (t (mv nil nil nil))))
-
 (mutual-recursion
 
 (defun eliminate-cdr-assoc-eq-safe (term)

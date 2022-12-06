@@ -15,6 +15,28 @@
 #+acl2-devel
 (include-book "system/apply/loop-scions" :dir :system)
 
+; Simplifying (ASSOC-EQ-SAFE 'key (LIST (CONS 'k1 v1) ... (CONS 'kn vn)))
+
+; ASSOC-EQ-SAFE calls occur frequently in DO loop$ guard proofs.  E.g., in the
+; A lot of time is wasted considering whether to expand (ASSOC-EQ-SAFE 'key
+; ALIST), where ALIST is literally that variable symbol, when all we need is to
+; reduce calls when the alist is semi-concrete as shown in the title of this
+; section.  The two :rewrite rules above do that and allow us to disable
+; assoc-eq-safe.
+
+(defthm assoc-eq-safe-cons-cons
+  (implies (syntaxp (and (quotep key1)
+                         (quotep key2)))
+           (equal (assoc-eq-safe key1 (cons (cons key2 val2) rest))
+                  (if (equal key1 key2)
+                      (cons key2 val2)
+                      (assoc-eq-safe key1 rest)))))
+
+(defthm assoc-eq-safe-nil
+  (equal (assoc-eq-safe key1 nil) nil))
+
+(in-theory (disable (:definition assoc-eq-safe)))
+
 ; Lemmas for Relieving Routine Loop$ Guards
 
 ; Preservation of true-list-listp

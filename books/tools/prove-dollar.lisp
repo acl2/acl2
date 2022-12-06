@@ -4,6 +4,9 @@
 
 (in-package "ACL2")
 
+; (depends-on "build/rewrite-constant.certdep" :dir :system)
+; (depends-on "build/prove-spec-var.certdep" :dir :system)
+
 (include-book "xdoc/top" :dir :system)
 
 (include-book "kestrel/utilities/tables" :dir :system)
