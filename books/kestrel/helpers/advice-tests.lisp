@@ -28,3 +28,12 @@
     :models nil ; don't contact the server
     )
   )
+
+;; TODO: How can I test (advice) in a book, given that it requires a failed theorem in the command history?
+;; ;; Check for issues like guard violations:
+;; ;(deftest
+;; (set-guard-checking :all)
+;; (must-fail (defthm mod-test (implies (natp x) (< (mod x 8) 200))))
+;; (advice :models nil ; don't contact the server
+;;         )
+;; ;)
