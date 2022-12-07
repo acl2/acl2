@@ -4228,36 +4228,18 @@
            (equal (myif test x y)
                   (bif (bool-to-bit test) x y))))
 
-(defthm bool-to-bit-of-equal
+(defthmd bool-to-bit-of-equal-becomes-bitxnor
   (implies (and (unsigned-byte-p 1 x)
                 (unsigned-byte-p 1 y))
            (equal (bool-to-bit (equal x y))
-                  (bitxnor x y))))
+                  (bitxnor x y)))
+  :hints (("Goal" :in-theory (enable bitxnor))))
 
 (defthm bif-x-y-0
   (implies (and (unsigned-byte-p 1 x)
                 (unsigned-byte-p 1 y))
            (equal (bif x y 0)
                   (bitand x y))))
-
-(defthm bitxnor-of-getbit-0
-  (equal (bitxnor (getbit 0 x) y)
-         (bitxnor x y))
-  :hints (("Goal" :in-theory (enable bitxnor))))
-
-(defthm bitxnor-of-getbit-0-alt
-  (equal (bitxnor y (getbit 0 x))
-         (bitxnor y x))
-  :hints (("Goal" :in-theory (enable bitxnor))))
-
-(defthm bitxnor-of-1
-  (equal (bitxnor 1 x)
-         (getbit 0 x)))
-
-(defthm bitxnor-of-1-arg2
-  (equal (bitxnor x 1)
-         (getbit 0 x)))
-
 
  ;bozo gen the 1
 (defthm unsigned-byte-p-of-bif
@@ -6397,7 +6379,8 @@
   (implies (and (unsigned-byte-p 1 x)
                 (unsigned-byte-p 1 y))
            (equal (bvif 1 (equal x y) 1 0)
-                  (bitxor 1 (bitxor x y)))))
+                  (bitxor 1 (bitxor x y))))
+  :hints (("Goal" :in-theory (enable bitnot))))
 
 (defthm bvif-of-equal-0-1
   (implies (and (unsigned-byte-p 1 x)
