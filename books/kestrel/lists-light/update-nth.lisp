@@ -107,6 +107,8 @@
            (not (< (nfix key) (len l)))))
   :hints (("Goal" :in-theory (enable update-nth))))
 
+(in-theory (disable true-listp-update-nth)) ;true-listp-of-update-nth-2 is stronger
+
 (defthm update-nth-0-equal-rewrite
   (equal (equal (update-nth 0 v1 lst)
                 (cons v2 rst))

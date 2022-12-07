@@ -310,7 +310,8 @@
 
 (defthm not-memberp-of-take
   (implies (and (not (memberp a l))
-                (<= n (len l)))
+                (or a
+                    (<= n (len l))))
            (not (memberp a (take n l))))
   :hints (("Goal" :in-theory (enable take))))
 
