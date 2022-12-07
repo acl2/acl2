@@ -1209,7 +1209,7 @@
            (< (len (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)))
               (len literal-nodenums)))
   :hints (("Goal" :in-theory (enable substitute-var-set
-                                     intersection-equal-when-subsetp-equal-iff))))
+                                     intersection-equal-when-subsetp-equal-swapped-iff))))
 
 (defthm len-of-mv-nth-3-of-substitute-var-set-gen
   (implies (and ;(consp literal-nodenums)
@@ -1218,7 +1218,7 @@
            (< (len (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)))
               bound))
   :hints (("Goal" :in-theory (enable substitute-var-set
-                                     intersection-equal-when-subsetp-equal-iff))))
+                                     intersection-equal-when-subsetp-equal-swapped-iff))))
 
 (defthm mv-nth-3-of-substitute-var-set-when-not-consp
   (implies (not (consp literal-nodenums))

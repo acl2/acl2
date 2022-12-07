@@ -279,12 +279,6 @@
      including the numeric bases (decimal, hexadecimal, binary),
      also to make this printing more faithful.")
    (xdoc::p
-    "We print case-insensitive strings without the @('%i') prefix.
-     See previous paragraph about our consideration to
-     extend the abstract syntax to preserve more concrete syntax information:
-     this could also apply to whether case-insensitive strings
-     have the prefix or not.")
-   (xdoc::p
     "For the repetition prefix of a repetition,
      we print nothing for it if it is just one.
      If minimum and maximum are the same,
@@ -313,6 +307,9 @@
      :char-val (char-val-case
                 elem.get
                 :insensitive (str::cat
+                              (if (char-val-insensitive->iprefix elem.get)
+                                  "%i"
+                                "")
                               "\""
                               (char-val-insensitive->get elem.get)
                               "\"")

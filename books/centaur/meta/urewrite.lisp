@@ -28,6 +28,9 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
+; (depends-on "build/rewrite-constant.certdep" :dir :system)
+; (depends-on "build/prove-spec-var.certdep" :dir :system)
+
 (in-package "CMR")
 
 (include-book "pseudo-rewrite-rule")
@@ -269,7 +272,7 @@
        ((when successp) (mv successp rhs subst)))
     (try-uncond-rewrite-rules fn args iff-p (cdr rules)))
   ///
-  
+
   (defret <fn>-correct
     (implies (and successp
                   (urw-ev-good-rewrite-rulesp rules))
@@ -342,7 +345,7 @@
                              (and (eql n 0) (atom x))
                            (and (consp x)
                                 (len-is (cdr x) (1- n))))))))
-                         
+
 
 (local (defthm equal-len-hyp
          (implies (syntaxp (and (or (acl2::rewriting-negative-literal-fn `(equal (len ,x) ,n) mfc state)
@@ -450,7 +453,7 @@
                                       a iff-p reclimit state))
                    (args (urewrite-termlist x.args a reclimit state)))
                 (urewrite-fncall x.fn args iff-p reclimit state))
-      
+
       :lambda (b* ((args (urewrite-termlist x.args a reclimit state))
                    (new-a (pair-vars-with-terms x.formals args)))
                 (urewrite-term x.body new-a iff-p reclimit state))))
@@ -642,7 +645,7 @@
            :in-theory (enable urw-ev-disjoin-when-consp)
            :expand ((termlist-vars x)))))
 
-                       
+
 (define urewrite-clause ((clause pseudo-term-listp)
                          (a pseudo-term-subst-p)
                          state)
@@ -703,7 +706,7 @@
   (defret <fn>-correct
     (iff (urw-ev (conjoin-clauses clauses) a)
          (urw-ev (disjoin clause) a))))
-     
+
 
 
 (define urewrite-clause-proc ((clause pseudo-term-listp)
@@ -727,7 +730,7 @@
   `(:clause-processor
     (urewrite-clause-proc
      clause
-     ',(access acl2::rewrite-constant 
+     ',(access acl2::rewrite-constant
                (access acl2::prove-spec-var pspv :rewrite-constant)
                :current-enabled-structure)
      state)))

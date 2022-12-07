@@ -144,11 +144,12 @@
                             empty-eval-of-fncall-args)
                            (empty-eval-of-fncall-args-back)))))
 
-(defthm equal-of-car-of-assoc-equal-same
-  (implies (alistp alist)
-           (iff (equal key (car (assoc-equal key alist)))
-                (or (equal key nil)
-                    (assoc-equal key alist)))))
+;; In case car-of-assoc-equal-strong is too strong?
+;; (defthm equal-of-car-of-assoc-equal-same
+;;   (implies (alistp alist)
+;;            (iff (equal key (car (assoc-equal key alist)))
+;;                 (or (equal key nil)
+;;                     (assoc-equal key alist)))))
 
 ;; (defun cdr-remove-caar-induct-2 (x y)
 ;;   (if (or (endp x)

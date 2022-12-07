@@ -71,6 +71,7 @@
 (include-book "bin-digit-char")
 (include-book "string-stringlist-alist")
 (include-book "symbol-pseudoterm-alist")
+(include-book "string-option")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

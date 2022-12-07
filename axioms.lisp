@@ -11714,7 +11714,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq x 't) (kwote? tflg t))
         ((and (weak-satisfies-type-spec-p x)
               (or (symbolp wrld)
-                  (eql (length (getpropc (cadr x) 'formals nil wrld))
+; The next line uses len instead of length for the sake of guard verification.
+                  (eql (len (getpropc (cadr x) 'formals nil wrld))
                        1)))
          (list (cadr x) var))
         ((and (consp x)
@@ -11829,7 +11830,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs ; :measure (acl2-count l)
             :guard (and (true-listp l)
                         (consp l)
-                        (or (null wrld)
+                        (or (symbolp wrld)
                             (plist-worldp wrld)))
             :mode :program))
   (and (consp l)
@@ -25543,16 +25544,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; WARNING: This  definition must be kept in sync with the defrec for
 ; rewrite-constant!
 
-; This form comes from the definition of the :current-clause accessor of defrec
-; rewrite-constant, by using trans1 to eliminate defabbrev in favor of defmacro.
+; The form was obtained by
+; (getpropc '|Access REWRITE-CONSTANT record field CURRENT-CLAUSE|
+;           'macro-body nil (w state))
+; after a redef+ and execution of the new defrec rewrite-constant!
 
-; (access rewrite-constant
-;         (access metafunction-context mfc :rcnst)
-;         :current-clause)
-
-  (LIST 'LET
-        (LIST (LIST 'CURRENT-CLAUSE CURRENT-CLAUSE))
-        '(CDR (CAR (CDR (CDR (CDR (CDR CURRENT-CLAUSE))))))))
+  (CONS 'LET
+        (CONS (CONS (CONS 'CURRENT-CLAUSE
+                          (CONS CURRENT-CLAUSE 'NIL))
+                    'NIL)
+              (CONS '(CDR (CAR (CDR (CDR (CDR CURRENT-CLAUSE)))))
+                    'NIL))))
 
 (defun record-error (name rec)
   (declare (xargs :guard t :mode :logic))

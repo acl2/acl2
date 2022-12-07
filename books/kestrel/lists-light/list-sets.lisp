@@ -13,16 +13,37 @@
 (in-package "ACL2")
 
 (local (include-book "intersection-equal"))
+(local (include-book "set-difference-equal"))
+(local (include-book "subsetp-equal"))
 
 (defthm not-intersection-equal-of-set-difference-equal-arg1
-  (not (intersection-equal (set-difference-equal x y) y)))
+  (not (intersection-equal (set-difference-equal x y) y))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
 
 (defthm not-intersection-equal-of-set-difference-equal-arg2
   (not (intersection-equal y (set-difference-equal x y)))
-  :hints (("Goal" :in-theory (enable intersection-equal-commutative-iff))))
+  :hints (("Goal" :in-theory (enable intersection-equal-commutative-iff
+                                     set-difference-equal))))
 
 (defthm intersection-equal-of-union-equal-iff
   (iff (intersection-equal x (union-equal y z))
        (or (intersection-equal x y)
            (intersection-equal x z)))
   :hints (("Goal" :in-theory (enable union-equal))))
+
+(defthm set-difference-equal-of-intersection-equal-and-intersection-equal-swapped
+  (equal (set-difference-equal (intersection-equal x y)
+                               (intersection-equal y x))
+         nil))
+
+(defthm set-difference-equal-of-set-difference-equal-when-subsetp-equal
+  (implies (subsetp-equal z y)
+           (equal (set-difference-equal (set-difference-equal x y) z)
+                  (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+;rename
+(defthm set-difference-equal-helper
+  (equal (set-difference-equal (set-difference-equal x y)
+                               (intersection-equal y z))
+         (set-difference-equal x y)))

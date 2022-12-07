@@ -25,6 +25,7 @@
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/std/system/function-symbolp" :dir :system)
+(include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 (include-book "std/strings/strprefixp" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
@@ -32,6 +33,9 @@
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+
+(local (include-book "projects/apply/loop" :dir :system))
+(local (in-theory (disable acl2::loop-book-theory)))
 
 (local (in-theory (disable state-p)))
 
@@ -683,6 +687,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-thm-assert-events ((wf-thm symbolp)
+                                   (fn-thms symbol-symbol-alistp)
+                                   (proofs booleanp))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate assertion events to double-check that
+          all the correctness theorems were generated."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is to ensure that we do not accidentally
+     miss the generation of some theorems.")
+   (xdoc::p
+    "We generate these assetions only if the @(':proofs') input is @('t')."))
+  (b* (((when (not proofs)) nil)
+       (wf-thm-assert `(assert-event (acl2::theorem-symbolp ',wf-thm (w state))))
+       (fn-thms-assert
+        (loop$ for fn-thm of-type cons
+               in fn-thms
+               collect `(assert-event
+                         (acl2::theorem-symbolp ',(cdr fn-thm) (w state))))))
+    (cons wf-thm-assert
+          fn-thms-assert))
+  :prepwork ((local (in-theory (enable acl2::loop-book-theory)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-everything ((targets symbol-listp)
                             (file-name stringp)
                             (path-wo-ext stringp)
@@ -728,6 +758,7 @@
                                                  print))
        (print-events (and (evmac-input-print->= print :result)
                           (atc-gen-print-result exported-events fileset)))
+       (assert-events (atc-gen-thm-assert-events wf-thm fn-thms proofs))
        (encapsulate
            `(encapsulate ()
               (evmac-prepare-proofs)
@@ -735,6 +766,7 @@
               (set-ignore-ok t)
               ,@local-events
               ,@exported-events
+              ,@assert-events
               ,fileset-gen-event))
        (encapsulate+ (restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))

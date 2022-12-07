@@ -9253,20 +9253,20 @@
                   (t (value val))))))))
 
 (defun replace-project-dir-alist (project-dir-alist)
-  (let ((doublet (assoc-eq 'global-value
-                           (get 'project-dir-alist *current-acl2-world-key*))))
-    (assert (and (consp doublet)
-                 (consp (cdr doublet))
-                 (not (eq (cadr doublet) *acl2-property-unbound*))))
-    (setf (cadr doublet) project-dir-alist))
-  (loop for trip in (lookup-world-index 'event 0 (w *the-live-state*))
-        when (and (eq (car trip) 'project-dir-alist)
-                  (eq (cadr trip) 'global-value))
-        do (progn (setf (cddr trip)
-                        (merge-sort-length>=-cdr project-dir-alist))
-                  (return t))
-        finally (error "Implementation error: Failure in ~
-                        replace-project-dir-alist!")))
+  (let ((sorted-project-dir-alist (merge-sort-length>=-cdr project-dir-alist)))
+    (let ((doublet (assoc-eq 'global-value
+                             (get 'project-dir-alist *current-acl2-world-key*))))
+      (assert (and (consp doublet)
+                   (consp (cdr doublet))
+                   (not (eq (cadr doublet) *acl2-property-unbound*))))
+      (setf (cadr doublet) sorted-project-dir-alist))
+    (loop for trip in (lookup-world-index 'event 0 (w *the-live-state*))
+          when (and (eq (car trip) 'project-dir-alist)
+                    (eq (cadr trip) 'global-value))
+          do (progn (setf (cddr trip) sorted-project-dir-alist)
+                    (return t))
+          finally (error "Implementation error: Failure in ~
+                          replace-project-dir-alist!"))))
 
 (defun establish-project-dir-alist (system-dir0 ctx state)
 

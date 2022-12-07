@@ -405,6 +405,16 @@ Does not seem to be used.
 
 (logic)
 
+(defun substitute-sym (new old form)
+  (declare (xargs :guard (symbolp old)))
+  (cond ((symbolp form)
+         (cond ((eq form old) new)
+               (t form)))
+        ((atom form) form)
+        ((quotep form) form)
+        (t (cons (substitute-sym new old (car form))
+                 (substitute-sym new old (cdr form))))))
+
 (defun match-alist (name key val A)
   (declare (xargs :guard (and (symbolp name) (eqlable-2-alistp A))))
   (if (endp A)
@@ -414,7 +424,12 @@ Does not seem to be used.
           (match-alist name key val (cdr A)))
          (Aval (cdr lookup))
          (Aname (caar A))
-         (nval (acl2::subst Aname name val)))
+         ;; This is substitute-sym because subst also replaces constants
+         ;; and that is a problem.
+         (nval (if (symbolp Aname) ;;should be a symbol, but guard
+                   ;;checking for substitute-sym
+                   (substitute-sym Aname name val)
+                 val)))
       (if (equal Aval nval)
           Aname
         (match-alist name key val (cdr A))))))
@@ -426,7 +441,7 @@ Does not seem to be used.
       nil
     (b* ((Aval (get1 key (cdar A)))
          (Aname (caar A))
-         (nval (acl2::subst Aname name val)))
+         (nval (acl2::subst-var Aname name val)))
       (if (equal Aval nval)
           Aname
         (match-alist name key val (cdr A))))))

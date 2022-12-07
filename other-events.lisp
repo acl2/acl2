@@ -1049,6 +1049,7 @@
                     (common-lisp-compliant-lambdas nil)
                     (rewrite-quoted-constant-rules nil)
                     (project-dir-alist ,project-dir-alist)
+                    (projects/apply/base-includedp nil)
                     )))
              (list* `(operating-system ,operating-system)
                     `(command-number-baseline-info
@@ -13577,8 +13578,28 @@
                                                     (list :include-book
                                                           full-book-name)
                                                     wrld6)
-                                                 wrld6))))))
-                                     wrld7)
+                                                 wrld6)))))
+                                          (wrld8
+
+; Various events need the answer to the question: have the apply$ books been
+; included?  E.g., defwarrant needs that to succeed in its fn-equal congruence
+; proofs.  And the rewriter asks that when considering optimizing the use of
+; EV$-OPENER on calls of EV$ on quoted terms.  So we memoize the answer here.
+; We arrange that the world global projects/apply/base-includedp is t or nil
+; according to whether the book is in include-book-alist.  Note that
+; include-book-alist and projects/apply/base-includedp are both world globals,
+; so they will stay in sync even with :ube and local include-book events.
+
+                                           (if (equal full-book-name
+                                                      (make-sysfile
+                                                       :system
+                                                       "projects/apply/base.lisp"))
+                                               (global-set
+                                                'projects/apply/base-includedp
+                                                t
+                                                wrld7)
+                                             wrld7)))
+                                     wrld8)
                                    state)))))))))))))))))))))))
 
 (defun chk-include-book-inputs (load-compiled-file

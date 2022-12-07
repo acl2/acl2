@@ -92,14 +92,15 @@
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
                               (or (eq :all models)
-                                  (help::rec-modelsp models))
+                                  (help::model-namep models) ; special case for a single model
+                                  (help::model-namesp models))
                               (or (eq :all num-books)
                                   (natp num-books)))
                   :stobjs state))
   (b* ( ;; Elaborate options:
        (models (if (eq models :all)
                    help::*known-models*
-                 (if (help::rec-modelp models)
+                 (if (help::model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
        (book-to-theorems-alist (clear-keys-with-matching-prefixes book-to-theorems-alist excluded-prefixes nil))
@@ -107,7 +108,8 @@
         (if (eq :random seed)
             (random$ *m31* state)
           (mv seed state)))
-       (- (cw "Using random seed of ~x0.~%" seed)))
+       (- (cw "Using random seed of ~x0.~%" seed))
+       (- (cw "Trying ~x0 recommendations per model set.~%" n)))
     (if (and (not (eq :all num-books))
              (> num-books (len book-to-theorems-alist)))
         (mv :not-enough-books nil state)
@@ -121,13 +123,14 @@
 ;; TODO: Skip ACL2s stuff (don't even train on it!) since it can't be replayed in regular acl2?
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
 ;; Rec names should not include slash or digits?
-(defmacro replay-books-with-advice (book-to-theorems-alist ; maps book names (relativee to books/, with .lisp extension) to lists of defthm names.
-                                    base-dir
+(defmacro replay-books-with-advice (book-to-theorems-alist ; maps book names (relative to BASE-DIR, with .lisp extension) to lists of defthm names.
+                                    base-dir ; no trailing slash
                                     &key
                                     (seed ':random)
-                                    (excluded-prefixes 'nil)
-                                    (n '10) ; number of rec from each model
-                                    (num-books ':all)
+                                    (excluded-prefixes 'nil) ; relative to BASE-DIR
+                                    (n '10) ; number of recs from each model
+                                    (num-books ':all) ; how many books to evaluate (TODO: Better to chose a random subset of theorems, rather than books?)
                                     (server-url 'nil) ; nil means get from environment var
-                                    (models ':all))
+                                    (models ':all) ; which ML models to use
+                                    )
   `(make-event (replay-books-with-advice-fn ,book-to-theorems-alist ,base-dir ,excluded-prefixes ,seed ,n ,server-url ,models ,num-books state)))

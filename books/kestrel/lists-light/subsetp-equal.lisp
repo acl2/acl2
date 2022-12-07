@@ -152,6 +152,12 @@
            (subsetp-equal (remove-equal a x) y))
   :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))
 
+;; This is like moving -x to the other side of an equality and removing the minus sign.
+(defthmd subsetp-equal-of-remove-equal-arg1-alt
+  (equal (subsetp-equal (remove-equal a x) y)
+         (subsetp-equal x (cons a y)))
+  :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))
+
 (defthm subsetp-equal-of-remove-equal-arg1-same
   (subsetp-equal (remove-equal a x) x)
   :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))

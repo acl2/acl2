@@ -91,7 +91,7 @@
                   (value-optionp val?)
                   (equal compst1 (mv-nth 1 val?+compst1)))
              (equal (exec-block-item-list items compst fenv limit)
-                    (if val?
+                    (if (valuep val?)
                         (mv val? compst1)
                       (exec-block-item-list (cdr items)
                                             compst1
