@@ -19,6 +19,13 @@
 ;; that the advice tool can give advice even when the failing theorem is not
 ;; the most recent event.
 
+;; Usage:
+;;
+;; This book provides 3 tools: defthm-advice, thm-advice, and advice.
+;; - defthm-advice is like defthm but tries advice if the given hints don't prove the theorem
+;; - thm-advice is like thm but tries advice if the given hints don't prove the theorem
+;; - advice attempts to find the user's most recent failed proof attempt and try advice to prove it
+
 ;; TODO: Add filtering of unhelpful recommendations:
 ;; - (maybe) skip use-lemma when the rule had nothing to do with the goal
 ;; - skip add-disable-hint when the rule is already disabled (or not present?)
@@ -1890,6 +1897,7 @@
                (if provedp (cw-success-message rec) (cw-failure-message ":hints didn't help" failure-info)))))
     (mv nil (if provedp rec nil) state)))
 
+;; Tries to find rec(s) which, together with the supplied THEOREM-HINTS, suffices to prove the theorem.
 ;; Tries each of the RECS in turn until MAX-WINS successful ones are found or there are none left.
 ;; Returns (mv erp successful-recs state)
 (defun try-recommendations (recs
@@ -2373,7 +2381,7 @@
         state)))
 
 ;; Returns (mv erp rec-lists state).
-(defun get-recs-from-models (models num-recs-per-model checkpoint-clauses server-url debug print acc state)
+(defun get-recs-from-models-aux (models num-recs-per-model checkpoint-clauses server-url debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
                               (natp num-recs-per-model)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
@@ -2387,9 +2395,33 @@
     (b* (((mv erp recs state)
           (get-recs-from-model (first models) num-recs-per-model checkpoint-clauses server-url debug print state))
          ((when erp) (mv erp nil state)))
-      (get-recs-from-models (rest models) num-recs-per-model checkpoint-clauses server-url debug print
-                            (cons recs acc)
-                            state))))
+      (get-recs-from-models-aux (rest models) num-recs-per-model checkpoint-clauses server-url debug print
+                                (cons recs acc)
+                                state))))
+
+;; Returns (mv erp rec-lists state).
+(defun get-recs-from-models (models num-recs-per-model checkpoint-clauses server-url debug print acc state)
+  (declare (xargs :guard (and (model-namesp models)
+                              (natp num-recs-per-model)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses)
+                              (or (null server-url) ; get url from environment variable
+                                  (stringp server-url))
+                              (booleanp debug)
+                              (acl2::print-levelp print))
+                  :mode :program
+                  :stobjs state))
+  (b* ( ;; Get server info:
+       ((mv erp server-url state)
+        (if (null models)
+            (mv nil "NONE" state)
+          (if server-url
+              (mv nil server-url state)
+            (getenv$ "ACL2_ADVICE_SERVER" state))))
+       ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
+       ((when (not (stringp server-url)))
+        (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
+        (mv :no-server nil state)))
+    (get-recs-from-models-aux models num-recs-per-model checkpoint-clauses server-url debug print acc state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2433,6 +2465,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns (mv erp provedp rec checkpoint-clauses state) where if PROVEDP determines whether REC or CHECKPOINTS is meaningful.
+(defun try-proof-and-get-checkpoint-clauses (theorem-name
+                                             theorem-body
+                                             translated-theorem-body
+                                             theorem-hints
+                                             theorem-otf-flg
+                                             step-limit
+                                             suppress-trivial-warningp
+                                             state)
+  (declare (xargs :guard (and (symbolp theorem-name)
+                              ;; theorem-body is an untranslated term
+                              (pseudo-termp translated-theorem-body)
+                              ;; theorem-hints
+                              (booleanp theorem-otf-flg)
+                              (or (null step-limit)
+                                  (natp step-limit))
+                              (booleanp suppress-trivial-warningp))
+                  :stobjs state
+                  :mode :program))
+  (b* ( ;; Try the theorem with the given hints (todo: consider also getting rid of any existng hints):
+       ((mv provedp state)
+        (prove$-no-error 'try-proof-and-get-checkpoints theorem-body theorem-hints theorem-otf-flg step-limit state))
+       ;; TODO: What if the step-limit applied?  We may want to see how many steps this attempt uses, to decide how many steps to allow in future attempts.
+       ((when provedp)
+        ;; The original hints worked!
+        (and (not suppress-trivial-warningp)
+             (if (not theorem-hints)
+                 (cw "WARNING: Proved ~x0 with no hints.~%" theorem-name)
+               (cw "WARNING: Proved ~x0 with original hints.~%" theorem-name)))
+        (mv nil ; no error
+            t   ; proved (with the original hints)
+            (make-successful-rec "original" :exact-hints theorem-hints nil theorem-body theorem-hints theorem-otf-flg)
+            nil ; checkpoints, meaningless
+            state))
+       ;; The proof failed, so get the checkpoints:
+       (raw-checkpoint-clauses (acl2::checkpoint-list ;-pretty
+                                t                     ; todo: consider non-top
+                                state))
+       ((when (eq :unavailable raw-checkpoint-clauses))
+        ;; Can this happen?  :doc Checkpoint-list indicates that :unavailable means the proof succeeded.
+        (cw "WARNING: Unavailable checkpoints after failed proof of ~x0.~%" theorem-name)
+        (mv :no-checkpoints nil nil nil state))
+       ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
+       ;; TODO: Or use :otf-flg to get the real checkpoints?
+       (checkpoint-clauses (if (equal raw-checkpoint-clauses '((acl2::<goal>)))
+                               (clausify-term translated-theorem-body (w state))
+                             raw-checkpoint-clauses))
+       ((when (null checkpoint-clauses))
+        ;; A step-limit may fire before checkpoints can be generated:
+        (cw "WARNING: No checkpoints after failed proof of ~x0 (perhaps a limit fired).~%" theorem-name)
+        (mv :no-checkpoints nil nil nil state)))
+    (mv nil ; no error
+        nil ; didn't prove
+        nil ; meaningless
+        checkpoint-clauses
+        state)))
+
 ;; Returns (mv erp successp best-rec state).
 (defun get-and-try-advice-for-checkpoints (checkpoint-clauses
                                            theorem-name
@@ -2472,19 +2561,7 @@
                               (model-namesp models))
                   :stobjs state
                   :mode :program))
-  (b* ((wrld (w state))
-       ;; Get server info:
-       ((mv erp server-url state)
-        (if (null models)
-            (mv nil "NONE" state)
-          (if server-url
-              (mv nil server-url state)
-            (getenv$ "ACL2_ADVICE_SERVER" state))))
-       ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil nil state))
-       ((when (not (stringp server-url)))
-        (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
-        (mv :no-server nil nil state))
-       ;; Get the recommendations:
+  (b* (;; Get the recommendations:
        ((mv erp ml-recommendation-lists state)
         (get-recs-from-models models num-recs-per-model checkpoint-clauses server-url debug print nil state))
        ;; Removes duplicates:
@@ -2496,8 +2573,8 @@
        (enable-recommendations (if (member-equal :enable disallowed-rec-sources)
                                    nil
                                  ;; todo: translate outside make-enable-recs?:
-                                 (make-enable-recs theorem-body wrld)))
-       ;; Make recs try to hints given to recent theorems:
+                                 (make-enable-recs theorem-body (w state))))
+       ;; Make recs based on hints given to recent theorems:
        ((mv erp recs-from-history state) (if (member-equal :history disallowed-rec-sources)
                                              (mv nil nil state)
                                            (make-recs-from-history state)))
@@ -2560,6 +2637,7 @@
         (first sorted-successful-recs)
         state)))
 
+;; Tries the theorem with the supplied hints.  If that doesn't prove the theorem, this requests and tries advice.
 ;; Returns (mv erp successp best-rec state).
 (defun get-and-try-advice-for-theorem (theorem-name
                                        theorem-body
@@ -2595,71 +2673,44 @@
                               (rec-type-listp disallowed-rec-types)
                               (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
                               (or ;; (eq :auto max-wins)
-                                  (null max-wins)
-                                  (natp max-wins))
+                               (null max-wins)
+                               (natp max-wins))
                               (model-namesp models)
                               (booleanp suppress-trivial-warningp))
                   :stobjs state
                   :mode :program))
-  (b* ((wrld (w state))
-       ;; Try the theorem with the given hints:
-       ;; Or we could try it first with no hints...
-       ((mv provedp state)
-        (prove$-no-error 'get-and-try-advice-for-theorem
-                         theorem-body
-                         theorem-hints
-                         theorem-otf-flg
-                         step-limit
-                         state))
-       ;; TODO: What if the step-limit applied?
-       ((when provedp)
-        ;; The original hints worked!
-        (and (not suppress-trivial-warningp)
-             (if (not theorem-hints)
-                 (cw "WARNING: Proved ~x0 with no hints.~%" theorem-name)
-               (cw "WARNING: Proved ~x0 with original hints.~%" theorem-name)))
+  (b* (((mv erp provedp rec checkpoint-clauses state)
+        (try-proof-and-get-checkpoint-clauses theorem-name
+                                              theorem-body
+                                              translated-theorem-body
+                                              theorem-hints
+                                              theorem-otf-flg
+                                              step-limit
+                                              suppress-trivial-warningp
+                                              state))
+       ((when erp) (mv erp nil nil state)))
+    (if provedp
         (mv nil ; no error
-            t   ; proved (with the original hints)
-            (make-successful-rec "original"
-                                 :exact-hints
-                                 theorem-hints
-                                 nil
-                                 theorem-body
-                                 theorem-hints
-                                 theorem-otf-flg)
-            state))
-       (raw-checkpoint-clauses (acl2::checkpoint-list ;-pretty
-                                t               ; todo: consider non-top
-                                state))
-       ((when (eq :unavailable raw-checkpoint-clauses))
-        ;; Can this happen?  :doc Checkpoint-list indicates that :unavailable means the proof succeeded.
-        (cw "WARNING: Unavailable checkpoints after failed proof of ~x0.~%" theorem-name)
-        (mv :no-checkpoints nil nil state))
-       ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
-       ;; TODO: Or use :otf-flg to get the real checkpoints?
-       (checkpoint-clauses (if (equal raw-checkpoint-clauses '((acl2::<goal>)))
-                               (clausify-term translated-theorem-body wrld) ; todo: why is wrld needed?
-                             raw-checkpoint-clauses))
-       ((when (null checkpoint-clauses))
-        ;; A step-limit may fire before checkpoints can be generated:
-        (cw "WARNING: No checkpoints after failed proof of ~x0 (perhaps a limit fired).~%" theorem-name)
-        (mv :no-checkpoints nil nil state)))
-    (get-and-try-advice-for-checkpoints checkpoint-clauses
-                                        theorem-name
-                                        theorem-body
-                                        theorem-hints
-                                        theorem-otf-flg
-                                        num-recs-per-model
-                                        book-to-avoid-absolute-path
-                                        print
-                                        server-url
-                                        debug
-                                        step-limit
-                                        disallowed-rec-types
-                                        disallowed-rec-sources
-                                        max-wins
-                                        models
-                                        state)))
+            t   ; success
+            rec
+            state)
+      ;; Didn't prove using the supplied hints, so try advice:
+      (get-and-try-advice-for-checkpoints checkpoint-clauses
+                                          theorem-name
+                                          theorem-body
+                                          theorem-hints
+                                          theorem-otf-flg
+                                          num-recs-per-model
+                                          book-to-avoid-absolute-path
+                                          print
+                                          server-url
+                                          debug
+                                          step-limit
+                                          disallowed-rec-types
+                                          disallowed-rec-sources
+                                          max-wins
+                                          models
+                                          state))))
 
 ;; Returns (mv erp event state).
 (defun defthm-advice-fn (theorem-name
