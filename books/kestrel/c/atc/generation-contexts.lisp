@@ -29,7 +29,7 @@
      there is a growing logical context consisting of
      conditional tests and of @(tsee let) and @(tsee mv-let) bindings.
      We call these tests and bindings `premises',
-     which is not an ideal term because
+     which is not ideal terminology because
      it is essentially synonmous of `hypotheses',
      which in ACL2 refers specifically to terms (conditions) and not bindings.
      So we use `premises' because it is not used as much in ACL2;
@@ -49,19 +49,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only consider bindings of the computation state.
+    "We include bindings of the computation state.
      Each such binding consists of
      a variable for the computation state
      (contained in @('compst-var') in the code generation code),
      and a term that must represent a computation state.
      The meaning is that the variable is bound to the term.")
    (xdoc::p
-    "There are clearly more kinds of premises to add here,
-     which we will add as we extend our modular proof generation approach.
-     We add a dummy kind just so there are at least two tags,
-     otherwise currently there may be downstream errors."))
+    "We also include terms that are tests of @(tsee if)s.")
+   (xdoc::p
+    "We may add more kinds later."))
   (:compustate ((var symbolp)
                 (term any)))
+  (:test ((get pseudo-term)))
   (:other ())
   :pred atc-premisep)
 
@@ -95,4 +95,6 @@
      premise
      :compustate `(let ((,premise.var ,premise.term))
                     ,(atc-contextualize term (cdr context)))
+     :test `(and ,premise.get
+                 ,(atc-contextualize term (cdr context)))
      :other (raise "Internal error: reached :OTHER case of ATC-PREMISE."))))
