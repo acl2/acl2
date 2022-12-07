@@ -668,12 +668,12 @@
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test-term))
              ((when mbtp)
-              (b* (((erp out) (atc-gen-stmt then-term gin state)))
-                (retok (change-stmt-gout out :proofs nil))))
+              (b* ((gin (change-stmt-gin gin :proofs nil)))
+                (atc-gen-stmt then-term gin state)))
              ((mv mbt$p &) (check-mbt$-call test-term))
              ((when mbt$p)
-              (b* (((erp out) (atc-gen-stmt then-term gin state)))
-                (retok (change-stmt-gout out :proofs nil))))
+              (b* ((gin (change-stmt-gin gin :proofs nil)))
+                (atc-gen-stmt then-term gin state)))
              ((erp (bexpr-gout test))
               (atc-gen-expr-bool test-term
                                  (make-bexpr-gin
