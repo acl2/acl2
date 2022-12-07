@@ -1996,62 +1996,79 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; not looking at anything but the type and object
-(defun rec-presentp (type object recs)
-  (declare (xargs :guard (and (rec-typep type)
-                              ;; object
-                              (recommendation-listp recs))
-                  :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
-  (if (endp recs)
-      nil
-    (let ((rec (first recs)))
-      (if (and (eq type (nth 1 rec))
-               (equal object (nth 2 rec)))
-          t
-        (rec-presentp type object (rest recs))))))
+;; ;; not looking at anything but the type and object
+;; (defun rec-presentp (type object recs)
+;;   (declare (xargs :guard (and (rec-typep type)
+;;                               ;; object
+;;                               (recommendation-listp recs))
+;;                   :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
+;;   (if (endp recs)
+;;       nil
+;;     (let ((rec (first recs)))
+;;       (if (and (eq type (nth 1 rec))
+;;                (equal object (nth 2 rec)))
+;;           t
+;;         (rec-presentp type object (rest recs))))))
 
 (mutual-recursion
- ;; Look for hints in theorems in the history
- ;; Returns a list of recs not already present in SEEN-RECS.
- (defun make-recs-from-history-event (event num seen-recs)
+ ;; Extends ACC with hint-lists from the EVENT.
+ (defun hint-lists-from-history-event (event acc)
    (declare (xargs :guard (and ;; event
-                               (posp num)
-                               (recommendation-listp seen-recs))
+                           (true-listp acc)
+                           )
                    :verify-guards nil ; todo
                    ))
    (if (not (consp event))
-       (er hard? 'make-recs-from-history-event "Unexpected command (not a cons!): ~x0." event)
+       (er hard? 'hint-lists-from-history-event "Unexpected command (not a cons!): ~x0." event)
      (if (eq 'local (acl2::ffn-symb event)) ; (local e1)
-         (make-recs-from-history-event (acl2::farg1 event) num seen-recs)
+         (hint-lists-from-history-event (acl2::farg1 event) acc)
        (if (eq 'encapsulate (acl2::ffn-symb event)) ; (encapsulate <sigs> e1 e2 ...)
-           (make-recs-from-history-events (rest (acl2::fargs event)) num seen-recs)
+           (hint-lists-from-history-events (rest (acl2::fargs event)) acc)
          (if (eq 'progn (acl2::ffn-symb event)) ; (progn e1 e2 ...)
-             (make-recs-from-history-events (acl2::fargs event) num seen-recs)
-           (and ;; todo: what else can we harvest hints from?
-                (member-eq (acl2::ffn-symb event) '(defthm defthmd))
-                (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
-                  (and res
-                       (let ((hints (cadr res)))
-                         (and (not (rec-presentp :exact-hints hints seen-recs)) ; todo: also look for equivalent recs?
-                              ;; make a new rec:
-                              (list
-                               (make-rec (concatenate 'string "history" (acl2::nat-to-string num))
-                                         :exact-hints ; new kind of rec, to replace all hints (todo: if the rec is expressible as something simpler, use that)
-                                         (cadr res)
-                                         0
-                                         nil))))))))))))
+             (hint-lists-from-history-events (acl2::fargs event) acc)
+           (if ;; todo: what else can we harvest hints from?
+               (not (member-eq (acl2::ffn-symb event) '(defthm defthmd)))
+               acc
+             (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
+               (if (not res)
+                   acc
+                 (let ((hints (cadr res)))
+                   (if (member-equal hints acc) ; todo: also look for equivalent recs?
+                       acc
+                     (cons hints acc)))))))))))
 
- (defun make-recs-from-history-events (events num acc)
+ ;; Extends ACC with hint-lists from the EVENTS.  Hint lists from earlier EVENTS end up deeper in the result,
+ ;; which seems good because more recent events are likely to be more relevant (todo: but what about dups).
+ (defun hint-lists-from-history-events (events acc)
    (declare (xargs :guard (and (true-listp events)
-                               (posp num)
-                               (recommendation-listp acc))))
+                               (true-listp acc))))
    (if (endp events)
-       (reverse acc)
-     (let* ((event (first events))
-            (recs (make-recs-from-history-event event num acc))
-            (acc (append recs acc))
-            (num (+ (len recs) num)))
-       (make-recs-from-history-events (rest events) num acc)))))
+       acc
+     (hint-lists-from-history-events (rest events)
+                                     (hint-lists-from-history-event (first events) acc)))))
+
+(defun make-exact-hint-recs (hint-lists base-name num acc)
+  (declare (xargs :guard (and (true-listp hint-lists)
+                              (stringp base-name)
+                              (posp num)
+                              (true-listp acc))))
+  (if (endp hint-lists)
+      (reverse acc)
+    (make-exact-hint-recs (rest hint-lists)
+                          base-name
+                          (+ 1 num)
+                          (cons (make-rec (concatenate 'string base-name (acl2::nat-to-string num))
+                                          :exact-hints ; new kind of rec, to replace all hints (todo: if the rec is expressible as something simpler, use that)
+                                          (first hint-lists)
+                                          0 ; confidence percent (TODO: What should we put in here?)
+                                          nil ; no book-map (TODO: What about for things inside encapsulates?)
+                                          )
+                                acc))))
+
+;; Extracts hints from events in the command history.  In the result, hints for more recent events come first and have higher numbers.
+;; The result should contain no exact duplicates, but the recs (which are all of type :exact-hints) might effectively duplicate other recommendations.
+(defund make-recs-from-history-events (events)
+  (make-exact-hint-recs (hint-lists-from-history-events events nil) "history" 1 nil))
 
 ;; Returns (mv erp val state).
 ;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
@@ -2060,7 +2077,7 @@
                   :stobjs state))
   (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state)) ; todo: how to get events, not commands (e.g., get what make-events expanded to)?
        ((when erp) (mv erp nil state)))
-    (mv nil (make-recs-from-history-events events 1 nil) state)))
+    (mv nil (make-recs-from-history-events events) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2443,8 +2460,8 @@
        ((when erp) (mv erp nil nil state))
        ;; todo: remove duplicate recs from multiple sources:
        ;; TODO: Can any of these 3 lists contain dups?
-       (recommendations (merge-recs-into-recs enable-recommendations
-                                              (merge-recs-into-recs recs-from-history
+       (recommendations (merge-recs-into-recs (reverse enable-recommendations)  ; reverse to preserve the order, though it's not very meaningful
+                                              (merge-recs-into-recs (reverse recs-from-history) ; reverse to preserve the order
                                                                     ml-recommendations)))
        ;; Remove any recs whose types have been disallowed:
        (rec-count-before-removal (len recommendations))
