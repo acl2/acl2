@@ -2373,9 +2373,9 @@
         state)))
 
 ;; Returns (mv erp rec-lists state).
-(defun get-recs-from-models (models num-recs checkpoint-clauses server-url debug print acc state)
+(defun get-recs-from-models (models num-recs-per-model checkpoint-clauses server-url debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
-                              (natp num-recs)
+                              (natp num-recs-per-model)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (stringp server-url)
                               (booleanp debug)
@@ -2385,9 +2385,9 @@
   (if (endp models)
       (mv nil acc state) ; no error
     (b* (((mv erp recs state)
-          (get-recs-from-model (first models) num-recs checkpoint-clauses server-url debug print state))
+          (get-recs-from-model (first models) num-recs-per-model checkpoint-clauses server-url debug print state))
          ((when erp) (mv erp nil state)))
-      (get-recs-from-models (rest models) num-recs checkpoint-clauses server-url debug print
+      (get-recs-from-models (rest models) num-recs-per-model checkpoint-clauses server-url debug print
                             (cons recs acc)
                             state))))
 
@@ -2439,7 +2439,7 @@
                                            theorem-body
                                            theorem-hints
                                            theorem-otf-flg
-                                           n ; number of recommendations from ML requested
+                                           num-recs-per-model
                                            book-to-avoid-absolute-path
                                            print
                                            server-url
@@ -2457,7 +2457,7 @@
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
-                              (natp n)
+                              (natp num-recs-per-model)
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
@@ -2486,7 +2486,7 @@
         (mv :no-server nil nil state))
        ;; Get the recommendations:
        ((mv erp ml-recommendation-lists state)
-        (get-recs-from-models models n checkpoint-clauses server-url debug print nil state))
+        (get-recs-from-models models num-recs-per-model checkpoint-clauses server-url debug print nil state))
        ;; Removes duplicates:
        (ml-recommendations (merge-rec-lists-into-recs ml-recommendation-lists nil))
        ((when erp) (mv erp nil nil state))
@@ -2566,7 +2566,7 @@
                                        translated-theorem-body
                                        theorem-hints
                                        theorem-otf-flg
-                                       n ; number of recommendations from ML requested
+                                       num-recs-per-model
                                        book-to-avoid-absolute-path
                                        print
                                        server-url
@@ -2583,7 +2583,7 @@
                               (pseudo-termp translated-theorem-body)
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
-                              (natp n)
+                              (natp num-recs-per-model)
                               (or (null book-to-avoid-absolute-path)
                                   (stringp book-to-avoid-absolute-path))
                               (acl2::print-levelp print)
@@ -2649,7 +2649,7 @@
                                         theorem-body
                                         theorem-hints
                                         theorem-otf-flg
-                                        n ; number of recommendations from ML requested
+                                        num-recs-per-model
                                         book-to-avoid-absolute-path
                                         print
                                         server-url
@@ -2667,7 +2667,7 @@
                          theorem-hints
                          theorem-otf-flg
                          rule-classes
-                         n ; number of recommendations from ML requested
+                         num-recs-per-model
                          print
                          server-url
                          debug
@@ -2682,7 +2682,7 @@
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               ;; rule-classes
-                              (natp n)
+                              (natp num-recs-per-model)
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
@@ -2716,7 +2716,7 @@
                                         translated-theorem-body
                                         theorem-hints
                                         theorem-otf-flg
-                                        n ; number of recommendations from ML requested
+                                        num-recs-per-model
                                         nil ; no book to avoid
                                         print
                                         server-url
@@ -2745,7 +2745,7 @@
                          (hints 'nil)
                          (otf-flg 'nil)
                          ;; options for the advice:
-                         (n '10)
+                         (n '10) ; num-recs-per-model
                          (print 't)
                          (server-url 'nil)
                          (debug 'nil)
@@ -2768,7 +2768,7 @@
 (defun thm-advice-fn (theorem-body ; an untranslated term
                       theorem-hints
                       theorem-otf-flg
-                      n ; number of recommendations from ML requested
+                      num-recs-per-model
                       print
                       server-url
                       debug
@@ -2781,7 +2781,7 @@
   (declare (xargs :guard (and ;; theorem-body
                           ;; theorem-hints
                           (booleanp theorem-otf-flg)
-                          (natp n)
+                          (natp num-recs-per-model)
                           (acl2::print-levelp print)
                           (or (null server-url) ; get url from environment variable
                               (stringp server-url))
@@ -2815,7 +2815,7 @@
                                         translated-theorem-body
                                         theorem-hints
                                         theorem-otf-flg
-                                        n ; number of recommendations from ML requested
+                                        num-recs-per-model
                                         nil ; no book to avoid
                                         print
                                         server-url
@@ -2840,7 +2840,7 @@
                       (hints 'nil)
                       (otf-flg 'nil)
                       ;; options for the advice:
-                      (n '10)
+                      (n '10) ; num-recs-per-model
                       (print 't)
                       (server-url 'nil)
                       (debug 'nil)
@@ -2988,7 +2988,15 @@
         '(value-triple :invisible) state)))
 
 ;; Generate advice for the most recent failed theorem.
-(defmacro advice (&key (n '10) (print 't) (server-url 'nil) (debug 'nil) (step-limit ':auto) (disallowed-rec-types 'nil) (disallowed-rec-sources 'nil) (max-wins ':auto) (models ':all))
+(defmacro advice (&key (n '10) ; num-recs-per-model
+                       (print 't)
+                       (server-url 'nil)
+                       (debug 'nil)
+                       (step-limit ':auto)
+                       (disallowed-rec-types 'nil)
+                       (disallowed-rec-sources 'nil)
+                       (max-wins ':auto)
+                       (models ':all))
   `(acl2::make-event-quiet (advice-fn ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package

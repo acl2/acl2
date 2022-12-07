@@ -38,11 +38,11 @@
         (clear-keys-with-matching-prefixes (rest alist) prefixes (cons pair acc))))))
 
 ;; Returns (mv erp event state).
-(defun replay-books-with-advice-fn-aux (book-to-theorems-alist base-dir n server-url models yes-count no-count maybe-count trivial-count error-count done-book-count state)
+(defun replay-books-with-advice-fn-aux (book-to-theorems-alist base-dir num-recs-per-model server-url models yes-count no-count maybe-count trivial-count error-count done-book-count state)
   (declare (xargs :mode :program
                   :guard (and (alistp book-to-theorems-alist)
                               (stringp base-dir)
-                              (natp n)
+                              (natp num-recs-per-model)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
                               (natp done-book-count))
@@ -58,7 +58,7 @@
          ((mv erp counts state)
           (revert-world (replay-book-with-advice-fn-aux (concatenate 'string base-dir "/" book)
                                                         theorems-to-try
-                                                        n
+                                                        num-recs-per-model
                                                         nil ; print
                                                         server-url
                                                         models
@@ -77,18 +77,18 @@
                     ;; (cw "ADD HYP ADVICE FOUND : ~x0~%" maybe-count)
                     (cw "NO HINTS NEEDED : ~x0~%" trivial-count)
                     (cw "ERROR           : ~x0~%~%" error-count))))
-      (replay-books-with-advice-fn-aux (rest book-to-theorems-alist) base-dir n server-url models yes-count no-count maybe-count trivial-count error-count done-book-count state))))
+      (replay-books-with-advice-fn-aux (rest book-to-theorems-alist) base-dir num-recs-per-model server-url models yes-count no-count maybe-count trivial-count error-count done-book-count state))))
 
 ;; Returns (mv erp event state).
 ;; TODO: Need a way to set and use a random seed?
-(defun replay-books-with-advice-fn (book-to-theorems-alist base-dir excluded-prefixes seed n server-url models num-books state)
+(defun replay-books-with-advice-fn (book-to-theorems-alist base-dir excluded-prefixes seed num-recs-per-model server-url models num-books state)
   (declare (xargs :mode :program
                   :guard (and (alistp book-to-theorems-alist)
                               (stringp base-dir)
                               (string-listp excluded-prefixes)
                               (or (eq :random seed)
                                   (minstd-rand0p seed))
-                              (natp n)
+                              (natp num-recs-per-model)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
                               (or (eq :all models)
@@ -109,7 +109,7 @@
             (random$ *m31* state)
           (mv seed state)))
        (- (cw "Using random seed of ~x0.~%" seed))
-       (- (cw "Trying ~x0 recommendations per model set.~%" n)))
+       (- (cw "Trying ~x0 recommendations per model set.~%" num-recs-per-model)))
     (if (and (not (eq :all num-books))
              (> num-books (len book-to-theorems-alist)))
         (mv :not-enough-books nil state)
@@ -118,7 +118,7 @@
             (if (eq :all num-books)
                 shuffled-book-to-theorems-alist
               (take num-books shuffled-book-to-theorems-alist))))
-        (replay-books-with-advice-fn-aux final-book-to-theorems-alist base-dir n server-url models 0 0 0 0 0 0 state)))))
+        (replay-books-with-advice-fn-aux final-book-to-theorems-alist base-dir num-recs-per-model server-url models 0 0 0 0 0 0 state)))))
 
 ;; TODO: Skip ACL2s stuff (don't even train on it!) since it can't be replayed in regular acl2?
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
