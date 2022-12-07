@@ -11,22 +11,22 @@
 
 (in-package "C")
 
-(include-book "../representation/integers")
+(include-book "integers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-integer-conversions
-  :parents (atc-shallow-embedding)
-  :short "A model of C integer conversions for ATC."
+(defxdoc+ representation-of-integer-conversions
+  :parents (representation)
+  :short "A representation of C integer conversions in ACL2."
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is part of the "
+    (xdoc::seetopic "representation" "shallow embedding")
+    ".")
+   (xdoc::p
     "We define ACL2 functions that convert
-     between values of different C integer types.
-     In the ACL2 representation of C code for ATC,
-     these explicit conversions are necessary,
-     because the ACL2 representations of different C integer types
-     are disjoint, i.e. there are no automatic inclusions.")
+     between values of different C integer types.")
    (xdoc::p
     "Conversions between C types are described in [C:6.3].
      Here we define conversions among the integer types supported by our model;
@@ -49,7 +49,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-conversion ((stype typep) (dtype typep))
+(define def-integer-conversion ((stype typep) (dtype typep))
   :guard (and (type-nonchar-integerp stype)
               (type-nonchar-integerp dtype)
               (not (equal stype dtype)))
@@ -133,8 +133,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-conversions-loop-inner ((stype typep)
-                                                (dtypes type-listp))
+(define def-integer-conversions-loop-inner ((stype typep)
+                                            (dtypes type-listp))
   :guard (and (type-nonchar-integerp stype)
               (type-nonchar-integer-listp dtypes))
   :returns (events pseudo-event-form-listp)
@@ -146,15 +146,15 @@
     for all combinations of source and destination types.")
   (cond ((endp dtypes) nil)
         ((equal stype (car dtypes))
-         (atc-def-integer-conversions-loop-inner stype (cdr dtypes)))
+         (def-integer-conversions-loop-inner stype (cdr dtypes)))
         (t (cons
-            (atc-def-integer-conversion stype (car dtypes))
-            (atc-def-integer-conversions-loop-inner stype (cdr dtypes))))))
+            (def-integer-conversion stype (car dtypes))
+            (def-integer-conversions-loop-inner stype (cdr dtypes))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-conversions-loop-outer ((stypes type-listp)
-                                                (dtypes type-listp))
+(define def-integer-conversions-loop-outer ((stypes type-listp)
+                                            (dtypes type-listp))
   :guard (and (type-nonchar-integer-listp stypes)
               (type-nonchar-integer-listp dtypes))
   :returns (events pseudo-event-form-listp)
@@ -167,19 +167,19 @@
     for all combinations of source and destination types.")
   (cond ((endp stypes) nil)
         (t (append
-            (atc-def-integer-conversions-loop-inner (car stypes) dtypes)
-            (atc-def-integer-conversions-loop-outer (cdr stypes) dtypes)))))
+            (def-integer-conversions-loop-inner (car stypes) dtypes)
+            (def-integer-conversions-loop-outer (cdr stypes) dtypes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(progn ,@(atc-def-integer-conversions-loop-outer
-            *nonchar-integer-types*
-            *nonchar-integer-types*)))
+ `(progn ,@(def-integer-conversions-loop-outer
+             *nonchar-integer-types*
+             *nonchar-integer-types*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-integer-conversions-signed-from-unsigned-okp
+(defsection integer-conversions-signed-from-unsigned-okp
   :short "Theorems about certain conversions from unsigned to signed
           being always allowed for certain integer type sizes."
   :long

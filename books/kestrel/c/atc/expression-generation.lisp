@@ -37,7 +37,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pexpr-gin
-  :short "Inputs for @(tsee atc-gen-expr-pure)."
+  :short "Inputs for C pure expression generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not include the term, which is passed as a separate input."))
   ((context atc-contextp)
    (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
@@ -52,7 +56,12 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pexpr-gout
-  :short "Outputs for @(tsee atc-gen-expr-pure)."
+  :short "Outputs for C pure expression generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The generated expression is @('expr'),
+     and its type is @('type')."))
   ((expr expr)
    (type type)
    (events pseudo-event-form-list)
@@ -65,7 +74,7 @@
 ;;;;;;;;;;
 
 (defirrelevant irr-pexpr-gout
-  :short "An irrelevant output for @(tsee atc-gen-expr-pure)."
+  :short "An irrelevant output for C pure expression generation."
   :type pexpr-goutp
   :body (make-pexpr-gout :expr (irr-expr)
                          :type (irr-type)
@@ -78,7 +87,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod bexpr-gin
-  :short "Inputs for @(tsee atc-gen-expr-bool)."
+  :short "Inputs for C boolean expression generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not include the term, which is passed as a separate input."))
   ((context atc-contextp)
    (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
@@ -93,7 +106,15 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod bexpr-gout
-  :short "Outputs for @(tsee atc-gen-expr-bool)."
+  :short "Outputs for C boolean expression generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The generated expression is @('expr').")
+   (xdoc::p
+    "Unlike @(tsee pexpr-gout), there is no type,
+     because these are boolean expressions,
+     so in a way the type is known."))
   ((expr expr)
    (events pseudo-event-form-list)
    (thm-name symbol)
@@ -105,7 +126,7 @@
 ;;;;;;;;;;
 
 (defirrelevant irr-bexpr-gout
-  :short "An irrelevant output for @(tsee atc-gen-expr-bool)."
+  :short "An irrelevant output for C boolean expression generation."
   :type bexpr-goutp
   :body (make-bexpr-gout :expr (irr-expr)
                          :events nil
@@ -120,7 +141,11 @@
                           (gin pexpr-ginp)
                           (wrld plist-worldp))
   :returns (gout pexpr-goutp)
-  :short "Generate a C expression from an ACL2 variable."
+  :short "Generate a C expression from an ACL2 variable.":long
+  (xdoc::topstring
+   (xdoc::p
+    "An ACL2 variable is translated to a C variable.
+     Its information is looked up in the symbol table."))
   (b* (((pexpr-gin gin) gin)
        (info (atc-get-var var gin.inscope))
        ((when (not info))
@@ -187,6 +212,9 @@
           that represents an integer constant expression."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The C integer constant is actually calculated by the caller,
+     and passed as input here.")
    (xdoc::p
     "The theorem says that the execution yields the term.
      It also says that the term satisfies
@@ -270,8 +298,11 @@
     "The expression and theorem for the argument
      are generated in the caller, and passed here.")
    (xdoc::p
-    "We do not yet support operations with an associated @('okp') predicate.
-     We will add support for them soon."))
+    "If the operation has an associated @('okp') predicate,
+     we also generate a theorem saying that
+     the @('okp') predicate holds under the guard.
+     For now this does not consider any contextual information,
+     but it will be extended to consider it."))
   (b* (((reterr) (irr-pexpr-gout))
        ((pexpr-gin gin) gin)
        ((unless (equal arg-type in-type))
@@ -283,11 +314,7 @@
                given that the code is guard-verified."
               op arg-term arg-type in-type)))
        (expr (make-expr-unary :op op :arg arg-expr))
-       (proofs (and gin.proofs
-                    (or (not (unop-case op :minus))
-                        (member-eq (type-kind in-type)
-                                   '(:uint :ulong :ullong)))))
-       ((when (not proofs))
+       ((when (not gin.proofs))
         (retok
          (make-pexpr-gout :expr expr
                           :type out-type
@@ -296,26 +323,60 @@
                           :thm-index gin.thm-index
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
+       (fn-formals (formals+ gin.fn wrld))
+       (op-name (pack (unop-kind op)))
+       ((unless (type-nonchar-integerp arg-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg-type)))
+       (arg-fixtype (integer-type-to-fixtype arg-type))
+       (op-arg-type (pack op-name '- arg-fixtype))
+       (op-arg-type-okp (and (unop-case op :minus)
+                             (not (member-eq (type-kind in-type)
+                                             '(:uint :ulong :ullong)))
+                             (pack op-arg-type '-okp)))
+       ((mv okp-lemma-event?
+            okp-lemma-name
+            gin.thm-index
+            gin.names-to-avoid)
+        (if op-arg-type-okp
+            (b* ((okp-lemma-name
+                  (pack gin.fn '-expr- gin.thm-index '-okp-lemma))
+                 ((mv okp-lemma-name gin.names-to-avoid)
+                  (fresh-logical-name-with-$s-suffix okp-lemma-name
+                                                     nil
+                                                     gin.names-to-avoid
+                                                     wrld))
+                 (okp-lemma-formula
+                  `(implies (,gin.fn-guard ,@fn-formals)
+                            (,op-arg-type-okp ,arg-term)))
+                 (okp-lemma-hints
+                  `(("Goal"
+                     :in-theory '(,gin.fn-guard)
+                     :use (:guard-theorem ,gin.fn))))
+                 ((mv okp-lemma-event &)
+                  (evmac-generate-defthm okp-lemma-name
+                                         :formula okp-lemma-formula
+                                         :hints okp-lemma-hints
+                                         :enable nil)))
+              (mv (list okp-lemma-event)
+                  okp-lemma-name
+                  (1+ gin.thm-index)
+                  gin.names-to-avoid))
+          (mv nil nil gin.thm-index gin.names-to-avoid)))
        (thm-name (pack gin.fn '-expr- gin.thm-index '-correct))
-       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
-                                      thm-name nil gin.names-to-avoid wrld))
+       ((mv thm-name gin.names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                          thm-name nil gin.names-to-avoid wrld))
        (type-pred (type-to-recognizer out-type wrld))
        (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
                              ,term)
                       (,type-pred ,term)))
        (formula (atc-contextualize formula gin.context))
        (formula `(implies (and (compustatep ,gin.compst-var)
-                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
+                               (,gin.fn-guard ,@fn-formals))
                           ,formula))
        (arg-type-pred (type-to-recognizer arg-type wrld))
        (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
-       (op-name (pack (unop-kind op)))
        (exec-unary-when-op-and-arg-type-pred
         (pack op-name '-value-when- arg-type-pred))
-       ((unless (type-nonchar-integerp arg-type))
-        (reterr (raise "Internal error: non-integer type ~x0." arg-type)))
-       (arg-fixtype (integer-type-to-fixtype arg-type))
-       (op-arg-type (pack op-name '- arg-fixtype))
        (type-pred-of-op-arg-type (pack type-pred '-of- op-arg-type))
        (hints `(("Goal" :in-theory '(exec-expr-pure-when-unary
                                      (:e expr-kind)
@@ -325,7 +386,9 @@
                                      ,valuep-when-arg-type-pred
                                      ,exec-unary-when-op-and-arg-type-pred
                                      (:e ,(pack 'unop- op-name))
-                                     ,type-pred-of-op-arg-type))))
+                                     ,type-pred-of-op-arg-type
+                                     ,@(and op-arg-type-okp
+                                            (list okp-lemma-name))))))
        ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints
@@ -333,10 +396,12 @@
     (retok
      (make-pexpr-gout :expr expr
                       :type out-type
-                      :events (append arg-events (list event))
+                      :events (append arg-events
+                                      okp-lemma-event?
+                                      (list event))
                       :thm-name thm-name
                       :thm-index (1+ gin.thm-index)
-                      :names-to-avoid names-to-avoid
+                      :names-to-avoid gin.names-to-avoid
                       :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -382,11 +447,7 @@
                given that the code is guard-verified."
               op arg1-term arg1-type arg2-term arg2-type in1-type in2-type)))
        (expr (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr))
-       (proofs (and gin.proofs
-                    (not (member-eq (binop-kind op) '(:div :rem :shl :shr)))
-                    (or (not (member-eq (binop-kind op) '(:add :sub :mul)))
-                        (type-unsigned-integerp out-type))))
-       ((when (not proofs))
+       ((when (not gin.proofs))
         (retok
          (make-pexpr-gout :expr expr
                           :type out-type
@@ -395,9 +456,53 @@
                           :thm-index gin.thm-index
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
+       (fn-formals (formals+ gin.fn wrld))
+       (op-name (pack (binop-kind op)))
+       ((unless (type-nonchar-integerp arg1-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg1-type)))
+       (arg1-fixtype (integer-type-to-fixtype arg1-type))
+       ((unless (type-nonchar-integerp arg2-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg2-type)))
+       (arg2-fixtype (integer-type-to-fixtype arg2-type))
+       (op-arg1-type-arg2-type (pack op-name '- arg1-fixtype '- arg2-fixtype))
+       (op-arg1-type-arg2-type-okp
+        (and (or (member-eq (binop-kind op) '(:div :rem :shl :shr))
+                 (and (member-eq (binop-kind op) '(:add :sub :mul))
+                      (type-signed-integerp out-type)))
+             (pack op-arg1-type-arg2-type '-okp)))
+       ((mv okp-lemma-event?
+            okp-lemma-name
+            gin.thm-index
+            gin.names-to-avoid)
+        (if op-arg1-type-arg2-type-okp
+            (b* ((okp-lemma-name
+                  (pack gin.fn '-expr- gin.thm-index '-okp-lemma))
+                 ((mv okp-lemma-name gin.names-to-avoid)
+                  (fresh-logical-name-with-$s-suffix okp-lemma-name
+                                                     nil
+                                                     gin.names-to-avoid
+                                                     wrld))
+                 (okp-lemma-formula
+                  `(implies (,gin.fn-guard ,@fn-formals)
+                            (,op-arg1-type-arg2-type-okp ,arg1-term
+                                                         ,arg2-term)))
+                 (okp-lemma-hints
+                  `(("Goal"
+                     :in-theory '(,gin.fn-guard)
+                     :use (:guard-theorem ,gin.fn))))
+                 ((mv okp-lemma-event &)
+                  (evmac-generate-defthm okp-lemma-name
+                                         :formula okp-lemma-formula
+                                         :hints okp-lemma-hints
+                                         :enable nil)))
+              (mv (list okp-lemma-event)
+                  okp-lemma-name
+                  (1+ gin.thm-index)
+                  gin.names-to-avoid))
+          (mv nil nil gin.thm-index gin.names-to-avoid)))
        (thm-name (pack gin.fn '-expr- gin.thm-index '-correct))
-       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
-                                      thm-name nil gin.names-to-avoid wrld))
+       ((mv thm-name gin.names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                          thm-name nil gin.names-to-avoid wrld))
        (type-pred (type-to-recognizer out-type wrld))
        (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
                              ,term)
@@ -410,19 +515,11 @@
        (arg2-type-pred (type-to-recognizer arg2-type wrld))
        (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
        (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
-       (op-name (pack (binop-kind op)))
        (exec-binary-strict-pure-when-op
         (pack 'exec-binary-strict-pure-when- op-name))
-       ((unless (type-nonchar-integerp arg1-type))
-        (reterr (raise "Internal error: non-integer type ~x0." arg1-type)))
-       (arg1-fixtype (integer-type-to-fixtype arg1-type))
-       ((unless (type-nonchar-integerp arg2-type))
-        (reterr (raise "Internal error: non-integer type ~x0." arg2-type)))
-       (arg2-fixtype (integer-type-to-fixtype arg2-type))
        (op-values-when-arg2-type (pack op-name '-values-when- arg1-fixtype))
        (op-arg1-type-and-value-when-arg2-type
         (pack op-name '- arg1-fixtype '-and-value-when- arg2-fixtype))
-       (op-arg1-type-arg2-type (pack op-name '- arg1-fixtype '- arg2-fixtype))
        (type-pred-of-op-arg1-type-arg2-type
         (pack type-pred '-of- op-arg1-type-arg2-type))
        (hints `(("Goal" :in-theory '(exec-expr-pure-when-strict-pure-binary
@@ -440,7 +537,9 @@
                                      (:e ,(pack 'binop- op-name))
                                      ,op-values-when-arg2-type
                                      ,op-arg1-type-and-value-when-arg2-type
-                                     ,type-pred-of-op-arg1-type-arg2-type))))
+                                     ,type-pred-of-op-arg1-type-arg2-type
+                                     ,@(and op-arg1-type-arg2-type-okp
+                                            (list okp-lemma-name))))))
        ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints
@@ -450,10 +549,149 @@
                       :type out-type
                       :events (append arg1-events
                                       arg2-events
+                                      okp-lemma-event?
                                       (list event))
                       :thm-name thm-name
                       :thm-index (1+ gin.thm-index)
-                      :names-to-avoid names-to-avoid
+                      :names-to-avoid gin.names-to-avoid
+                      :proofs t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-conv ((term pseudo-termp)
+                           (tyname tynamep)
+                           (in-type typep)
+                           (out-type typep)
+                           (arg-term pseudo-termp)
+                           (arg-expr exprp)
+                           (arg-type typep)
+                           (arg-events pseudo-event-form-listp)
+                           (arg-thm symbolp)
+                           (gin pexpr-ginp)
+                           (wrld plist-worldp))
+  :returns (mv erp (gout pexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents a conversion."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expression and theorem for the argument
+     are generated in the caller, and passed here.")
+   (xdoc::p
+    "For now we do not generate the theorem;
+     we will add suppor for that later."))
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       ((unless (equal arg-type in-type))
+        (reterr
+         (msg "The conversion from ~x0 to ~x1 is applied ~
+               to an expression term ~x2 returning ~x3, ~
+               which is not the expected type ~x0. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              in-type out-type arg-term arg-type)))
+       (expr (make-expr-cast :type tyname :arg arg-expr))
+       ((when (not gin.proofs))
+        (retok (make-pexpr-gout
+                :expr expr
+                :type out-type
+                :events arg-events
+                :thm-name nil
+                :thm-index gin.thm-index
+                :names-to-avoid gin.names-to-avoid
+                :proofs nil)))
+       (fn-formals (formals+ gin.fn wrld))
+       ((unless (type-nonchar-integerp in-type))
+        (reterr (raise "Internal error: non-integer type ~x0." in-type)))
+       (in-fixtype (integer-type-to-fixtype in-type))
+       ((unless (type-nonchar-integerp out-type))
+        (reterr (raise "Internal error: non-integer type ~x0." out-type)))
+       (out-fixtype (integer-type-to-fixtype out-type))
+       (op-name (pack out-fixtype '-from- in-fixtype))
+       (op-name-okp
+        (and (or (type-case out-type :schar)
+                 (and (type-case out-type :sshort)
+                      (not (member-eq (type-kind in-type)
+                                      '(:schar))))
+                 (and (type-case out-type :sint)
+                      (not (member-eq (type-kind in-type)
+                                      '(:schar :sshort))))
+                 (and (type-case out-type :slong)
+                      (not (member-eq (type-kind in-type)
+                                      '(:schar :sshort :sint))))
+                 (and (type-case out-type :sllong)
+                      (not (member-eq (type-kind in-type)
+                                      '(:schar :sshort :sint :slong)))))
+             (pack op-name '-okp)))
+       ((mv okp-lemma-event?
+            okp-lemma-name
+            gin.thm-index
+            gin.names-to-avoid)
+        (if op-name-okp
+            (b* ((okp-lemma-name
+                  (pack gin.fn '-expr- gin.thm-index '-okp-lemma))
+                 ((mv okp-lemma-name gin.names-to-avoid)
+                  (fresh-logical-name-with-$s-suffix okp-lemma-name
+                                                     nil
+                                                     gin.names-to-avoid
+                                                     wrld))
+                 (okp-lemma-formula
+                  `(implies (,gin.fn-guard ,@fn-formals)
+                            (,op-name-okp ,arg-term)))
+                 (okp-lemma-hints
+                  `(("Goal"
+                     :in-theory '(,gin.fn-guard)
+                     :use (:guard-theorem ,gin.fn))))
+                 ((mv okp-lemma-event &)
+                  (evmac-generate-defthm okp-lemma-name
+                                         :formula okp-lemma-formula
+                                         :hints okp-lemma-hints
+                                         :enable nil)))
+              (mv (list okp-lemma-event)
+                  okp-lemma-name
+                  (1+ gin.thm-index)
+                  gin.names-to-avoid))
+          (mv nil nil gin.thm-index gin.names-to-avoid)))
+       (thm-name (pack gin.fn '-expr- gin.thm-index '-correct))
+       ((mv thm-name gin.names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                          thm-name nil gin.names-to-avoid wrld))
+       (type-pred (type-to-recognizer out-type wrld))
+       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
+                             ,term)
+                      (,type-pred ,term)))
+       (formula (atc-contextualize formula gin.context))
+       (formula `(implies (and (compustatep ,gin.compst-var)
+                               (,gin.fn-guard ,@fn-formals))
+                          ,formula))
+       (arg-type-pred (type-to-recognizer arg-type wrld))
+       (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
+       (exec-cast-of-out-fixtype-when-arg-type-pred
+        (pack 'exec-cast-of- out-fixtype '-when- arg-type-pred))
+       (type-pred-of-op-name (pack type-pred '-of- op-name))
+       (hints
+        `(("Goal" :in-theory '(exec-expr-pure-when-cast
+                               (:e expr-kind)
+                               (:e expr-cast->type)
+                               (:e expr-cast->arg)
+                               ,arg-thm
+                               ,valuep-when-arg-type-pred
+                               ,exec-cast-of-out-fixtype-when-arg-type-pred
+                               ,type-pred-of-op-name
+                               ,@(and op-name-okp
+                                      (list okp-lemma-name))))))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (retok
+     (make-pexpr-gout :expr expr
+                      :type out-type
+                      :events (append arg-events
+                                      okp-lemma-event?
+                                      (list event))
+                      :thm-name thm-name
+                      :thm-index (1+ gin.thm-index)
+                      :names-to-avoid gin.names-to-avoid
                       :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -471,13 +709,17 @@
      The theorems relate (the semantics of) the expressions
      to the ACL2 terms from which they are generated.
      Fow now we only generate theorems for some expressions,
-     but eventually we plan to extend this to all the expressions.
-     The theorem events are in the @('events') components
-     of @(tsee pexpr-gout) and @(tsee bexpr-gout).
-     In order to generate unique and relatively readable theorem names,
-     we thread through these code generation functions
-     an index that gets incremented for each theorem,
-     as well as an increasing list of names to avoid."))
+     but eventually we plan to extend this to all the expressions.")
+   (xdoc::p
+    "As we generate the code, we ensure that the ACL2 terms
+     are well-typed according to the C types.
+     This is subsumed by guard verification for all the code,
+     except for any code that is dead (i.e. unreachable) under the guard:
+     the dead code passes guard verification
+     (under a hypothesis of @('nil'), i.e. false),
+     but the resulting C code may not compile.
+     The additional type checking we do here should ensure that
+     all the code satisfies the C static semantics."))
 
   (define atc-gen-expr-pure ((term pseudo-termp)
                              (gin pexpr-ginp)
@@ -491,27 +733,9 @@
      (xdoc::p
       "At the same time,
        we check that the term is a pure expression term,
-       as described in the user documentation.")
-     (xdoc::p
-      "We also return the C type of the expression.")
-     (xdoc::p
-      "An ACL2 variable is translated to a C variable.
-       Its type is looked up in the symbol table passed as input.")
-     (xdoc::p
-      "If the term fits the pattern of an integer constant
-       we translate it to a C integer constant.")
-     (xdoc::p
-      "If the term fits the pattern of a unary or binary operation,
-       we translate it to the application of the operator
-       to the recursively generated expressions.
-       The type is the result type of the operator.")
-     (xdoc::p
-      "If the term fits the pattern of a conversion,
-       we translate it to a cast of
-       the recursively generated subexpression.
-       The type is the one of the cast.
-       (Future versions of ATC will avoid the cast
-       when the conversion happens automatically in C.)")
+       as described in the user documentation.
+       Based on its form, we dispatch to different code,
+       after recursively processing sub-expressions.")
      (xdoc::p
       "If the term fits the pattern of an array read,
        we translate it to an array subscripting expression
@@ -546,17 +770,7 @@
       "In all other cases, we fail with an error.
        The term is not a pure expression term.
        We could extend this code to provide
-       more information to the user at some point.")
-     (xdoc::p
-      "As we generate the code, we ensure that the ACL2 terms
-       are well-typed according to the C types.
-       This is subsumed by guard verification for all the code,
-       except for any code that is dead (i.e. unreachable) under the guard:
-       the dead code passes guard verification
-       (under a hypothesis of @('nil'), i.e. false),
-       but the resulting C code may not compile.
-       The additional type checking we do here should ensure that
-       all the code satisfies the C static semantics."))
+       more information to the user at some point."))
     (b* (((reterr) (irr-pexpr-gout))
          ((pexpr-gin gin) gin)
          (wrld (w state))
@@ -602,23 +816,14 @@
          ((when okp)
           (b* (((erp (pexpr-gout arg))
                 (atc-gen-expr-pure arg-term gin state))
-               ((unless (equal arg.type in-type))
-                (reterr
-                 (msg "The conversion from ~x0 to ~x1 is applied ~
-                       to an expression term ~x2 returning ~x3, ~
-                       but a ~x0 operand is expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      in-type out-type arg-term arg.type))))
-            (retok (make-pexpr-gout
-                    :expr (make-expr-cast :type tyname
-                                          :arg arg.expr)
-                    :type out-type
-                    :events arg.events
-                    :thm-name nil
-                    :thm-index arg.thm-index
-                    :names-to-avoid arg.names-to-avoid
-                    :proofs nil))))
+               (gin (change-pexpr-gin gin
+                                      :thm-index arg.thm-index
+                                      :names-to-avoid arg.names-to-avoid
+                                      :proofs arg.proofs)))
+            (atc-gen-expr-conv term tyname in-type out-type
+                               arg-term arg.expr arg.type
+                               arg.events arg.thm-name
+                               gin wrld)))
          ((mv okp arr-term sub-term in-type1 in-type2 out-type)
           (atc-check-array-read term))
          ((when okp)
@@ -850,7 +1055,9 @@
      (xdoc::p
       "At the same time, we check that the term is
        an expression term returning a boolean,
-       as described in the user documentation.")
+       as described in the user documentation.
+       Based on its form, we dispatch to different code,
+       after recursively processing sub-expressions.")
      (xdoc::p
       "If the term is a call of @(tsee not), @(tsee and), or @(tsee or),
        we recursively translate the arguments,
@@ -975,7 +1182,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pexprs-gin
-  :short "Inputs for @(tsee atc-gen-expr-pure-list)."
+  :short "Inputs for C pure expression list generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not include the terms, which are passed as a separate input."))
   ((context atc-contextp)
    (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
@@ -990,7 +1201,13 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pexprs-gout
-  :short "Outputs for @(tsee atc-gen-expr-pure-list)."
+  :short "Outputs for C pure expression list generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The generated expressions are @('exprs'),
+     and their types are @('types'),
+     in the same order."))
   ((exprs expr-list)
    (types type-list)
    (events pseudo-event-form-list)
@@ -1003,7 +1220,7 @@
 ;;;;;;;;;;
 
 (defirrelevant irr-pexprs-gout
-  :short "An irrelevant output for @(tsee atc-gen-expr-pure-list)."
+  :short "An irrelevant output for C pure expression list generation."
   :type pexprs-goutp
   :body (make-pexprs-gout :exprs nil
                           :types nil
@@ -1072,7 +1289,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod expr-gin
-  :short "Inputs for @(tsee atc-gen-expr)."
+  :short "Inputs for C expression generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not include the term, which is passed as a separate input."))
   ((context atc-contextp)
    (var-term-alist symbol-pseudoterm-alist)
    (inscope atc-symbol-varinfo-alist-list)
@@ -1091,7 +1312,16 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod expr-gout
-  :short "Outputs for @(tsee atc-gen-expr)."
+  :short "Outputs for C expression generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The generated expression is @('expr'),
+     and its type is @('type').")
+   (xdoc::p
+    "The @('limit') component is the lower bound of the limit,
+     i.e. the minimum limit for which
+     the execution of the expression terminates."))
   ((expr exprp)
    (type typep)
    (affect symbol-listp)
@@ -1106,7 +1336,7 @@
 ;;;;;;;;;;
 
 (defirrelevant irr-expr-gout
-  :short "An irrelevant output for @(tsee atc-gen-expr)."
+  :short "An irrelevant output for C expression generation."
   :type expr-goutp
   :body (make-expr-gout :expr (irr-expr)
                         :type (irr-type)
