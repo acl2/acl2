@@ -37,7 +37,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pexpr-gin
-  :short "Inputs for @(tsee atc-gen-expr-pure)."
+  :short "Inputs for C pure expression generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not include the term, which is passed as a separate input."))
   ((context atc-contextp)
    (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
@@ -52,7 +56,12 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pexpr-gout
-  :short "Outputs for @(tsee atc-gen-expr-pure)."
+  :short "Outputs for C pure expression generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The generated expression is @('expr'),
+     and its type is @('type')."))
   ((expr expr)
    (type type)
    (events pseudo-event-form-list)
@@ -65,7 +74,7 @@
 ;;;;;;;;;;
 
 (defirrelevant irr-pexpr-gout
-  :short "An irrelevant output for @(tsee atc-gen-expr-pure)."
+  :short "An irrelevant output for C pure expression generation."
   :type pexpr-goutp
   :body (make-pexpr-gout :expr (irr-expr)
                          :type (irr-type)
@@ -78,7 +87,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod bexpr-gin
-  :short "Inputs for @(tsee atc-gen-expr-bool)."
+  :short "Inputs for C boolean expression generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not include the term, which is passed as a separate input."))
   ((context atc-contextp)
    (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
@@ -93,7 +106,15 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod bexpr-gout
-  :short "Outputs for @(tsee atc-gen-expr-bool)."
+  :short "Outputs for C boolean expression generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The generated expression is @('expr').")
+   (xdoc::p
+    "Unlike @(tsee pexpr-gout), there is no type,
+     because these are boolean expressions,
+     so in a way the type is known."))
   ((expr expr)
    (events pseudo-event-form-list)
    (thm-name symbol)
@@ -105,7 +126,7 @@
 ;;;;;;;;;;
 
 (defirrelevant irr-bexpr-gout
-  :short "An irrelevant output for @(tsee atc-gen-expr-bool)."
+  :short "An irrelevant output for C boolean expression generation."
   :type bexpr-goutp
   :body (make-bexpr-gout :expr (irr-expr)
                          :events nil
@@ -120,7 +141,11 @@
                           (gin pexpr-ginp)
                           (wrld plist-worldp))
   :returns (gout pexpr-goutp)
-  :short "Generate a C expression from an ACL2 variable."
+  :short "Generate a C expression from an ACL2 variable.":long
+  (xdoc::topstring
+   (xdoc::p
+    "An ACL2 variable is translated to a C variable.
+     Its information is looked up in the symbol table."))
   (b* (((pexpr-gin gin) gin)
        (info (atc-get-var var gin.inscope))
        ((when (not info))
@@ -187,6 +212,9 @@
           that represents an integer constant expression."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The C integer constant is actually calculated by the caller,
+     and passed as input here.")
    (xdoc::p
     "The theorem says that the execution yields the term.
      It also says that the term satisfies
@@ -681,13 +709,17 @@
      The theorems relate (the semantics of) the expressions
      to the ACL2 terms from which they are generated.
      Fow now we only generate theorems for some expressions,
-     but eventually we plan to extend this to all the expressions.
-     The theorem events are in the @('events') components
-     of @(tsee pexpr-gout) and @(tsee bexpr-gout).
-     In order to generate unique and relatively readable theorem names,
-     we thread through these code generation functions
-     an index that gets incremented for each theorem,
-     as well as an increasing list of names to avoid."))
+     but eventually we plan to extend this to all the expressions.")
+   (xdoc::p
+    "As we generate the code, we ensure that the ACL2 terms
+     are well-typed according to the C types.
+     This is subsumed by guard verification for all the code,
+     except for any code that is dead (i.e. unreachable) under the guard:
+     the dead code passes guard verification
+     (under a hypothesis of @('nil'), i.e. false),
+     but the resulting C code may not compile.
+     The additional type checking we do here should ensure that
+     all the code satisfies the C static semantics."))
 
   (define atc-gen-expr-pure ((term pseudo-termp)
                              (gin pexpr-ginp)
@@ -701,27 +733,9 @@
      (xdoc::p
       "At the same time,
        we check that the term is a pure expression term,
-       as described in the user documentation.")
-     (xdoc::p
-      "We also return the C type of the expression.")
-     (xdoc::p
-      "An ACL2 variable is translated to a C variable.
-       Its type is looked up in the symbol table passed as input.")
-     (xdoc::p
-      "If the term fits the pattern of an integer constant
-       we translate it to a C integer constant.")
-     (xdoc::p
-      "If the term fits the pattern of a unary or binary operation,
-       we translate it to the application of the operator
-       to the recursively generated expressions.
-       The type is the result type of the operator.")
-     (xdoc::p
-      "If the term fits the pattern of a conversion,
-       we translate it to a cast of
-       the recursively generated subexpression.
-       The type is the one of the cast.
-       (Future versions of ATC will avoid the cast
-       when the conversion happens automatically in C.)")
+       as described in the user documentation.
+       Based on its form, we dispatch to different code,
+       after recursively processing sub-expressions.")
      (xdoc::p
       "If the term fits the pattern of an array read,
        we translate it to an array subscripting expression
@@ -756,17 +770,7 @@
       "In all other cases, we fail with an error.
        The term is not a pure expression term.
        We could extend this code to provide
-       more information to the user at some point.")
-     (xdoc::p
-      "As we generate the code, we ensure that the ACL2 terms
-       are well-typed according to the C types.
-       This is subsumed by guard verification for all the code,
-       except for any code that is dead (i.e. unreachable) under the guard:
-       the dead code passes guard verification
-       (under a hypothesis of @('nil'), i.e. false),
-       but the resulting C code may not compile.
-       The additional type checking we do here should ensure that
-       all the code satisfies the C static semantics."))
+       more information to the user at some point."))
     (b* (((reterr) (irr-pexpr-gout))
          ((pexpr-gin gin) gin)
          (wrld (w state))
@@ -1051,7 +1055,9 @@
      (xdoc::p
       "At the same time, we check that the term is
        an expression term returning a boolean,
-       as described in the user documentation.")
+       as described in the user documentation.
+       Based on its form, we dispatch to different code,
+       after recursively processing sub-expressions.")
      (xdoc::p
       "If the term is a call of @(tsee not), @(tsee and), or @(tsee or),
        we recursively translate the arguments,
@@ -1176,7 +1182,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pexprs-gin
-  :short "Inputs for @(tsee atc-gen-expr-pure-list)."
+  :short "Inputs for C pure expression list generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not include the terms, which are passed as a separate input."))
   ((context atc-contextp)
    (inscope atc-symbol-varinfo-alist-list)
    (prec-tags atc-string-taginfo-alist)
@@ -1191,7 +1201,13 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pexprs-gout
-  :short "Outputs for @(tsee atc-gen-expr-pure-list)."
+  :short "Outputs for C pure expression list generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The generated expressions are @('exprs'),
+     and their types are @('types'),
+     in the same order."))
   ((exprs expr-list)
    (types type-list)
    (events pseudo-event-form-list)
@@ -1204,7 +1220,7 @@
 ;;;;;;;;;;
 
 (defirrelevant irr-pexprs-gout
-  :short "An irrelevant output for @(tsee atc-gen-expr-pure-list)."
+  :short "An irrelevant output for C pure expression list generation."
   :type pexprs-goutp
   :body (make-pexprs-gout :exprs nil
                           :types nil
@@ -1273,7 +1289,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod expr-gin
-  :short "Inputs for @(tsee atc-gen-expr)."
+  :short "Inputs for C expression generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not include the term, which is passed as a separate input."))
   ((context atc-contextp)
    (var-term-alist symbol-pseudoterm-alist)
    (inscope atc-symbol-varinfo-alist-list)
@@ -1292,7 +1312,16 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod expr-gout
-  :short "Outputs for @(tsee atc-gen-expr)."
+  :short "Outputs for C expression generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The generated expression is @('expr'),
+     and its type is @('type').")
+   (xdoc::p
+    "The @('limit') component is the lower bound of the limit,
+     i.e. the minimum limit for which
+     the execution of the expression terminates."))
   ((expr exprp)
    (type typep)
    (affect symbol-listp)
@@ -1307,7 +1336,7 @@
 ;;;;;;;;;;
 
 (defirrelevant irr-expr-gout
-  :short "An irrelevant output for @(tsee atc-gen-expr)."
+  :short "An irrelevant output for C expression generation."
   :type expr-goutp
   :body (make-expr-gout :expr (irr-expr)
                         :type (irr-type)
