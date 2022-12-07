@@ -569,7 +569,7 @@
               (rec-typep type)
               ;; object
               (pre-commandsp pre-commands)
-              ;; theorem-body
+              ;; theorem-body is an untranslated term
               ;; theorem-hints
               (booleanp theorem-otf-flg)))))
 
@@ -599,13 +599,13 @@
                               (rec-typep type)
                               ;; object
                               (pre-commandsp pre-commands)
-                              ;; theorem-body
+                              ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg))))
   (list name type object pre-commands theorem-body theorem-hints theorem-otf-flg))
 
 (defthm successful-recommendationp-of-make-successful-rec
-  (equal (successful-recommendationp (make-successful-rec  name type object pre-commands theorem-body theorem-hints theorem-otf-flg))
+  (equal (successful-recommendationp (make-successful-rec name type object pre-commands theorem-body theorem-hints theorem-otf-flg))
          (and (stringp name)
               (rec-typep type)
               ;; object
@@ -781,10 +781,10 @@
           (cw "~s0, after doing ~x1" english-rec (first pre-commands)))
       (cw "~s0" english-rec))))
 
+;; Always returns nil.
 (defun show-successful-recommendations-aux (recs)
   (declare (xargs :guard (successful-recommendation-listp recs)
-                  :mode :program ; todo: why?
-                  ))
+                  :mode :program))
   (if (endp recs)
       nil
     (let* ((rec (first recs))
@@ -799,7 +799,8 @@
 
 ;; Returns state.
 (defun show-successful-recommendations (recs state)
-  (declare (xargs :mode :program ;todo
+  (declare (xargs :guard (successful-recommendation-listp recs)
+                  :mode :program
                   :stobjs state))
   (let ((state (acl2::widen-margins state)))
     (progn$ (show-successful-recommendations-aux recs)
@@ -1148,7 +1149,7 @@
 
 (defun cw-success-message (rec)
   (declare (xargs :guard (successful-recommendationp rec)
-                  :mode :program)) ; todo
+                  :mode :program))
   (progn$ (cw "SUCCESS: ")
           (show-successful-recommendation rec)
           (cw "~%")))
@@ -1158,7 +1159,21 @@
 ;; TODO: Skip later add-library recs if they are included by this one (though I suppose they might work only without the rest of what we get here).
 ;; TODO: Try any upcoming enable or use-lemma recs that (may) need this library:
 (defun try-add-library (include-book-form book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
-  (declare (xargs :stobjs state :mode :program)
+  (declare (xargs :stobjs state
+                  :guard (and (consp include-book-form)
+                              (eq 'include-book (car include-book-form))
+                              (or (null book-to-avoid-absolute-path)
+                                  (stringp book-to-avoid-absolute-path))
+                              (symbolp theorem-name)
+                              ;; theorem-body is an untranslated term
+                              ;; theorem-hints
+                              (booleanp theorem-otf-flg)
+                              (or (eq nil step-limit)
+                                  (natp step-limit))
+                              (recommendationp rec)
+                              ;; print
+                              )
+                  :mode :program)
            (ignore theorem-name) ; todo: use to make a suggestion
            )
   (b* (;; TODO: Give up here if the include-book-form corresponds to the book-to-avoid-absolute-path.
@@ -1180,6 +1195,7 @@
     (mv nil (if provedp rec nil) state)))
 
 ;; TODO: Handle LET and MV-LET and nested implies and ...
+;; TODO: Should we translate this first?
 (defun formula-hyp-simple (formula ;; untranslated
                            )
   (if (and (consp formula)
@@ -1212,7 +1228,18 @@
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Don't try a hyp that is already present, or contradicts ones already present
 (defun try-add-hyp (hyp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
-  (declare (xargs :stobjs state :mode :program)
+  (declare (xargs :guard (and (pseudo-termp hyp)
+                              (symbolp theorem-name)
+                              ;; theorem-body is an untranslated term
+                              ;; theorem-hint
+                              (booleanp theorem-otf-flg)
+                              (or (eq nil step-limit)
+                                  (natp step-limit))
+                              (recommendationp rec)
+                              ;; print
+                              )
+                  :stobjs state
+                  :mode :program)
            (ignore theorem-name))
   (b* ((translatablep (acl2::translatable-termp hyp (w state)))
        ((when (not translatablep))
@@ -1220,6 +1247,7 @@
         (mv nil nil state))
        (existing-hyp (formula-hyp-simple theorem-body))
        (existing-hyp-conjunts (acl2::conjuncts-of-uterm existing-hyp))
+       ;; TODO: Since hyp is translated, perhaps we should translate existing-hyp-conjunts:
        ((when (member-equal hyp existing-hyp-conjunts))
         (and (acl2::print-level-at-least-tp print) (cw "skip (hyp ~x0 is already present)~%" hyp))
         (mv nil nil state))
@@ -1272,7 +1300,19 @@
                             rec
                             print
                             state)
-  (declare (xargs :stobjs state :mode :program))
+  (declare (xargs :guard (and (symbolp rule)
+                              (book-mapp book-map)
+                              (or (null book-to-avoid-absolute-path)
+                                  (stringp book-to-avoid-absolute-path))
+                              ;; theorem-body is an untranslated term
+                              ;; theorem-hints
+                              (booleanp theorem-otf-flg)
+                              (or (eq nil step-limit)
+                                  (natp step-limit))
+                              (recommendationp rec)
+                              ;; print
+                              )
+                  :stobjs state :mode :program))
   (b* (((when (eq rule 'acl2::other)) ;; "Other" is a catch-all for low-frequency classes
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling catch-all: ~x0)~%" rule))
         (mv nil nil state))
@@ -1427,7 +1467,17 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
-  (declare (xargs :stobjs state :mode :program))
+  (declare (xargs :guard (and (symbolp rule)
+                              ;; theorem-body is an untranslated term
+                              ;; theorem-hints
+                              (booleanp theorem-otf-flg)
+                              (or (eq nil step-limit)
+                                  (natp step-limit))
+                              (recommendationp rec)
+                              ;; print
+                              )
+                  :stobjs state
+                  :mode :program))
   (b* (((when (eq rule 'acl2::other)) ;; "Other" is a catch-all for low-frequency classes
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling catch-all: ~x0)~%" rule))
         (mv nil nil state))
@@ -1461,7 +1511,21 @@
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Do we need to guess a substitution for the :use hint?  Then change the rec before returning...
 (defun try-add-use-hint (item book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
-  (declare (xargs :stobjs state :mode :program)
+  (declare (xargs :guard (and ;; (symbolp item)
+                          (book-mapp book-map)
+                          (or (null book-to-avoid-absolute-path)
+                              (stringp book-to-avoid-absolute-path))
+                          (symbolp theorem-name)
+                          ;; theorem-body is an untranslated term
+                          ;; theorem-hints
+                          (booleanp theorem-otf-flg)
+                          (or (eq nil step-limit)
+                              (natp step-limit))
+                          (recommendationp rec)
+                          ;; print
+                          )
+                  :stobjs state
+                  :mode :program)
            (ignore theorem-name))
   (b* (((when (eq item 'acl2::other))
         (and (acl2::print-level-at-least-tp print) (cw "skip (skipping catch-all: ~x0)~%" item))
@@ -1470,7 +1534,7 @@
         (and (acl2::print-level-at-least-tp print) (cw "skip (unexpected object for :add-use-hint: ~x0)~%" item)) ; todo: add support for other lemma-instances
         (mv nil nil state)))
     (if (symbol-that-can-be-usedp item (w state)) ; todo: what if it's defined but can't be :used?
-        (b* ( ;; todo: ensure this is nice:
+        (b* (                                     ;; todo: ensure this is nice:
              ;; todo: also disable the item, if appropriate
              (new-hints (cons `("Goal" :use ,item) theorem-hints))
              ((mv provedp state) (prove$-no-error 'try-add-use-hint
@@ -1562,7 +1626,18 @@
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-expand-hint (item ; the thing to expand
                             theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
-  (declare (xargs :stobjs state :mode :program)
+  (declare (xargs :guard (and ;; (symbolp item)
+                          (symbolp theorem-name)
+                          ;; theorem-body is an untranslated term
+                          ;; theorem-hints
+                          (booleanp theorem-otf-flg)
+                          (or (eq nil step-limit)
+                              (natp step-limit))
+                          (recommendationp rec)
+                          ;; print
+                          )
+                  :stobjs state
+                  :mode :program)
            (ignore theorem-name))
   (b* (((when (eq 'acl2::other item))
         (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring recommendation to expand \"Other\")~%"))
@@ -1601,7 +1676,18 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-by-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
-  (declare (xargs :stobjs state :mode :program)
+  (declare (xargs :guard (and ;; (symbolp item)
+                          (symbolp theorem-name)
+                          ;; theorem-body is an untranslated term
+                          ;; theorem-hints
+                          (booleanp theorem-otf-flg)
+                          (or (eq nil step-limit)
+                              (natp step-limit))
+                          (recommendationp rec)
+                          ;; print
+                          )
+                  :stobjs state
+                  :mode :program)
            (ignore theorem-name))
   (b* (((when (eq 'acl2::other item))
         (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :by hint with catch-all \"Other\")~%"))
@@ -1635,7 +1721,18 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-cases-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
-  (declare (xargs :stobjs state :mode :program)
+  (declare (xargs :guard (and ;; (symbolp item)
+                          (symbolp theorem-name)
+                          ;; theorem-body is an untranslated term
+                          ;; theorem-hints
+                          (booleanp theorem-otf-flg)
+                          (or (eq nil step-limit)
+                              (natp step-limit))
+                          (recommendationp rec)
+                          ;; print
+                          )
+                  :stobjs state
+                  :mode :program)
            (ignore theorem-name))
   (b* (((when (not (acl2::translatable-term-listp item (w state))))
         (and (acl2::print-level-at-least-tp print) (cw "fail (terms not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
@@ -1667,7 +1764,17 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-nonlinearp-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
-  (declare (xargs :stobjs state :mode :program)
+  (declare (xargs :guard (and ;; (symbolp item)
+                          (symbolp theorem-name)
+                          ;; theorem-body is an untranslated term
+                          ;; theorem-hints
+                          (booleanp theorem-otf-flg)
+                          (or (eq nil step-limit)
+                              (natp step-limit))
+                          (recommendationp rec)
+                          ;; print
+                          )
+                  :stobjs state :mode :program)
            (ignore theorem-name))
   (b* (((when (not (booleanp item)))
         (and print (cw "WARNING: Invalid value for :nonlinearp: ~x0.~%" item))
@@ -1692,9 +1799,19 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-do-not-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
-  (declare (xargs :stobjs state :mode :program)
+  (declare (xargs :guard (and ;; (symbolp item)
+                          (symbolp theorem-name)
+                          ;; theorem-body is an untranslated term
+                          ;; theorem-hints
+                          (booleanp theorem-otf-flg)
+                          (or (eq nil step-limit)
+                              (natp step-limit))
+                          (recommendationp rec)
+                          ;; print
+                          )
+                  :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (;; Can't easily check the :do-not hint syntactically...
+  (b* ( ;; Can't easily check the :do-not hint syntactically...
        ;; todo: ensure this is nice:
        (new-hints (cons `("Goal" :do-not ,item) theorem-hints))
        ((mv provedp state) (prove$-no-error 'try-add-do-not-hint
@@ -1715,9 +1832,20 @@
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: We need more than a symbol
 (defun try-add-induct-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
-  (declare (xargs :stobjs state :mode :program)
+  (declare (xargs :guard (and ;; (symbolp item)
+                          (symbolp theorem-name)
+                          ;; theorem-body is an untranslated term
+                          ;; theorem-hints
+                          (booleanp theorem-otf-flg)
+                          (or (eq nil step-limit)
+                              (natp step-limit))
+                          (recommendationp rec)
+                          ;; print
+                          )
+                  :stobjs state :mode :program)
            (ignore theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec))
   (if (symbolp item)
+      ;; TODO: Try looking for calls of the given symbol in the theorem (maybe just with arguments that are vars?):
       (prog2$ (and (acl2::print-level-at-least-tp print) (cw "skip (need arguments of ~x0 to create :induct hint)~%" item))
               (mv nil nil state))
     ;; TODO: Flesh this out when ready:
@@ -1725,7 +1853,15 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-exact-hints (hints theorem-body theorem-otf-flg step-limit rec print state)
-  (declare (xargs :stobjs state :mode :program))
+  (declare (xargs :guard (and (true-listp hints)
+                              ;; theorem-body is an untranslated term
+                              (booleanp theorem-otf-flg)
+                              (or (eq nil step-limit)
+                                  (natp step-limit))
+                              (recommendationp rec)
+                              ;; print
+                              )
+                  :stobjs state :mode :program))
   (b* (((mv provedp failure-info state)
         (prove$-no-error-with-failure-info 'try-exact-hints
                                            theorem-body
@@ -1759,7 +1895,7 @@
                               (or (null book-to-avoid-absolute-path)
                                   (stringp book-to-avoid-absolute-path))
                               (symbolp theorem-name)
-                              (pseudo-termp theorem-body)
+                              ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               (acl2::print-levelp print)
@@ -1830,13 +1966,14 @@
 ;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
 (defun make-enable-recs (formula wrld)
-  (declare (xargs :guard (and (pseudo-termp formula)
+  (declare (xargs :guard (and ;; formula is an untranslated term
                               (plist-worldp wrld))
-                  :mode :program))
+                  :mode :program ; because of acl2::translate-term
+                  ))
   (let* ((translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
          (fns-to-try-enabling (set-difference-eq (acl2::defined-fns-in-term translated-formula wrld)
                                                  ;; Don't bother wasting time with trying to enable implies
-                                                 ;; (I suppose we coud try it if implies is disabled):
+                                                 ;; (I suppose we could try it if implies is disabled):
                                                  '(implies))))
     (make-enable-recs-aux fns-to-try-enabling 1)))
 
@@ -2234,7 +2371,7 @@
                               (or (null book-to-avoid-absolute-path)
                                   (stringp book-to-avoid-absolute-path))
                               (symbolp theorem-name)
-                              (pseudo-termp theorem-body)
+                              ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               (natp n)
@@ -2273,6 +2410,7 @@
        ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
        (enable-recommendations (if (member-equal :enable disallowed-rec-sources)
                                    nil
+                                 ;; todo: translate outside make-enable-recs?:
                                  (make-enable-recs theorem-body wrld)))
        ;; Make recs try to hints given to recent theorems:
        ((mv erp recs-from-history state) (if (member-equal :history disallowed-rec-sources)
@@ -2338,9 +2476,10 @@
         (first sorted-successful-recs)
         state)))
 
-;; Returns (mv erp successp best-rec state)
+;; Returns (mv erp successp best-rec state).
 (defun get-and-try-advice-for-theorem (theorem-name
                                        theorem-body
+                                       translated-theorem-body
                                        theorem-hints
                                        theorem-otf-flg
                                        n ; number of recommendations from ML requested
@@ -2356,7 +2495,8 @@
                                        suppress-trivial-warningp
                                        state)
   (declare (xargs :guard (and (symbolp theorem-name)
-                              (pseudo-termp theorem-body)
+                              ;; theorem-body is an untranslated term
+                              (pseudo-termp translated-theorem-body)
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               (natp n)
@@ -2414,7 +2554,7 @@
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
        ;; TODO: Or use :otf-flg to get the real checkpoints?
        (checkpoint-clauses (if (equal raw-checkpoint-clauses '((acl2::<goal>)))
-                               (clausify-term theorem-body wrld) ; todo: why is wrld needed?
+                               (clausify-term translated-theorem-body wrld) ; todo: why is wrld needed?
                              raw-checkpoint-clauses))
        ((when (null checkpoint-clauses))
         ;; A step-limit may fire before checkpoints can be generated:
@@ -2488,6 +2628,7 @@
        (translated-theorem-body (acl2::translate-term theorem-body 'defthm-advice-fn wrld))
        ((mv erp successp best-rec state)
         (get-and-try-advice-for-theorem theorem-name
+                                        theorem-body
                                         translated-theorem-body
                                         theorem-hints
                                         theorem-otf-flg
@@ -2586,6 +2727,7 @@
        (translated-theorem-body (acl2::translate-term theorem-body 'defthm-advice-fn wrld))
        ((mv erp successp best-rec state)
         (get-and-try-advice-for-theorem 'the-thm
+                                        theorem-body
                                         translated-theorem-body
                                         theorem-hints
                                         theorem-otf-flg

@@ -47,6 +47,7 @@
        ((mv erp successp best-rec state)
         (help::get-and-try-advice-for-theorem theorem-name
                                               theorem-body
+                                              (acl2::translate-term theorem-body 'submit-defthm-event-with-advice (w state))
                                               nil ; don't use any hints
                                               nil ; theorem-otf-flg
                                               n ; number of recommendations from ML requested
