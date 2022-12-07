@@ -252,6 +252,19 @@ Added these rules as built-in clauses
   (<= (len x) (acl2s-size x))
   :rule-classes :linear)
 
+; This came up when I asked openai to write and verify a sorting
+; function in ACL2. It used remove and we don't have a theorem like
+; this, so here goes.
+
+(defthm acl2-count-remove
+  (<= (acl2-count (remove a x))
+      (acl2-count x))
+  :rule-classes :linear)
+
+(defthm acl2-count-remove2
+  (<= (acl2-count (remove-equal a x))
+      (acl2-count x))
+  :rule-classes :linear)
 
 #|
 
