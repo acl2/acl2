@@ -10323,9 +10323,10 @@
 ; familiar-name.
 
           (let* ((pair (assoc-familiar-name familiar-name actual-alist))
+                 (wrld (w state))
                  (full-book-string
                   (book-name-to-filename full-book-name
-                                         (w state)
+                                         wrld
                                          'tilde-*-book-hash-phrase1))
                  (msg
                   (cond (pair (msg "-- its certificate requires the book ~
@@ -10336,7 +10337,9 @@
                                     full-book-name; see :DOC full-book-name) ~
                                     -- has been included"
                                    full-book-string
-                                   (car pair)))
+                                   (book-name-to-filename (car pair)
+                                                          wrld
+                                                          'tilde-*-book-hash-phrase1)))
                         (t    (msg "-- its certificate requires the book ~
                                     \"~s0\", but that book has not been ~
                                     included, nor has any book with the same ~
