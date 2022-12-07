@@ -80,7 +80,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-contextualize (term (context atc-contextp))
+(define atc-contextualize (term (context atc-contextp) (skip-cs booleanp))
   :returns term1
   :short "Put a term into a context."
   :long
@@ -88,13 +88,22 @@
    (xdoc::p
     "We go through the context elements,
      generating code for them
-     and ending with the term given as input."))
+     and ending with the term given as input.")
+   (xdoc::p
+    "The @('skip-cs') flag controls whether
+     we skip over the computation state bindings or not.
+     For certain generated lemmas that apply just to ACL2 terms,
+     and not to relations between ACL2 terms and C constructs,
+     we skip over the bindings of computation states,
+     because there are no computation states mentioned in the lemmas."))
   (b* (((when (endp context)) term)
        (premise (car context)))
     (atc-premise-case
      premise
-     :compustate `(let ((,premise.var ,premise.term))
-                    ,(atc-contextualize term (cdr context)))
+     :compustate (if skip-cs
+                     (atc-contextualize term (cdr context) skip-cs)
+                   `(let ((,premise.var ,premise.term))
+                      ,(atc-contextualize term (cdr context) skip-cs)))
      :test `(and ,premise.get
-                 ,(atc-contextualize term (cdr context)))
+                 ,(atc-contextualize term (cdr context) skip-cs))
      :other (raise "Internal error: reached :OTHER case of ATC-PREMISE."))))
