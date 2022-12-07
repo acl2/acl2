@@ -2190,6 +2190,7 @@
                                  (compst-var symbolp)
                                  (fenv-var symbolp)
                                  (limit-var symbolp)
+                                 (fn-thms symbol-symbol-alistp)
                                  (fn-fun-env-thm symbolp)
                                  (init-scope-expand-thm symbolp)
                                  (init-scope-scopep-thm symbolp)
@@ -2200,8 +2201,9 @@
                                  (body-limit pseudo-termp)
                                  (names-to-avoid symbol-listp)
                                  state)
-  :returns (mv (thm-event pseudo-event-formp)
-               (thm-name symbolp)
+  :returns (mv (local-events pseudo-event-form-listp)
+               (exported-events pseudo-event-form-listp)
+               (name symbolp :hyp (symbol-symbol-alistp fn-thms))
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate the correctness theorem for a C function."
   :long
@@ -2217,14 +2219,14 @@
      to @(tsee exec-block-item-list),
      which is what the body's theorem refers to."))
   (b* ((wrld (w state))
-       (name (pack fn '-correct))
-       ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
-                                  name nil names-to-avoid wrld))
+       (lemma-name (pack fn '-correct))
+       ((mv lemma-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                        lemma-name nil names-to-avoid wrld))
        (formals (formals+ fn wrld))
        (result-var (genvar$ 'atc "RESULT" nil formals state))
        (limit `(binary-+ '1 ,body-limit))
        (type-pred (type-to-recognizer body-type wrld))
-       (formula
+       (lemma-formula
         `(implies (and (compustatep ,compst-var)
                        (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
                        (,fn-guard ,@formals)
@@ -2240,30 +2242,57 @@
                          (,type-pred ,result-var)))))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (type-of-value-when-type-pred (pack 'type-of-value-when- type-pred))
-       (hints `(("Goal" :in-theory '(exec-fun-open
-                                     not-zp-of-limit-variable
-                                     ,fn-fun-env-thm
-                                     ,init-scope-expand-thm
-                                     ,init-scope-scopep-thm
-                                     ,push-init-thm
-                                     ,body-thm
-                                     (:e fun-info->body)
-                                     mv-nth-of-cons
-                                     (:e zp)
-                                     value-optionp-when-valuep
-                                     ,valuep-when-type-pred
-                                     type-of-value-option-when-valuep
-                                     ,type-of-value-when-type-pred
-                                     (:e fun-info->result)
-                                     (:e tyname-to-type)
-                                     (:e ,(pack 'type- (type-kind body-type)))
-                                     ,pop-frame-thm
-                                     ,fn))))
-       ((mv event &) (evmac-generate-defthm name
-                                            :formula formula
-                                            :hints hints
-                                            :enable nil)))
-    (mv event name names-to-avoid)))
+       (lemma-hints
+        `(("Goal" :in-theory '(exec-fun-open
+                               not-zp-of-limit-variable
+                               ,fn-fun-env-thm
+                               ,init-scope-expand-thm
+                               ,init-scope-scopep-thm
+                               ,push-init-thm
+                               ,body-thm
+                               (:e fun-info->body)
+                               mv-nth-of-cons
+                               (:e zp)
+                               value-optionp-when-valuep
+                               ,valuep-when-type-pred
+                               type-of-value-option-when-valuep
+                               ,type-of-value-when-type-pred
+                               (:e fun-info->result)
+                               (:e tyname-to-type)
+                               (:e ,(pack 'type- (type-kind body-type)))
+                               ,pop-frame-thm
+                               ,fn))))
+       ((mv lemma-event &) (evmac-generate-defthm lemma-name
+                                                  :formula lemma-formula
+                                                  :hints lemma-hints
+                                                  :enable nil))
+       (name (cdr (assoc-eq fn fn-thms)))
+       (formula
+        `(implies (and (compustatep ,compst-var)
+                       (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
+                       ,(untranslate$ (uguard+ fn wrld) nil state)
+                       (integerp ,limit-var)
+                       (>= ,limit-var ,limit))
+                  (let ((,result-var (,fn ,@formals)))
+                    (and (equal (exec-fun (ident ,(symbol-name fn))
+                                          (list ,@formals)
+                                          ,compst-var
+                                          ,fenv-var
+                                          ,limit-var)
+                                (mv ,result-var ,compst-var))
+                         (,type-pred ,result-var)))))
+       (hints `(("Goal"
+                 :use ,lemma-name
+                 :in-theory '(,fn-guard))))
+       ((mv local-event exported-event)
+        (evmac-generate-defthm name
+                               :formula formula
+                               :hints hints
+                               :enable nil)))
+    (mv (list lemma-event local-event)
+        (list exported-event)
+        name
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2417,28 +2446,6 @@
             (atc-gen-pop-frame-thm
              fn fn-guard context compst-var names-to-avoid wrld)
           (mv '(_) nil names-to-avoid)))
-       ((mv correct-event
-            & ; correct-thm
-            names-to-avoid)
-        (if (and proofs
-                 modular-proofs)
-            (atc-gen-fun-correct-thm fn
-                                     fn-guard
-                                     prog-const
-                                     compst-var
-                                     fenv-var
-                                     limit-var
-                                     fn-fun-env-thm
-                                     init-scope-expand-thm
-                                     init-scope-scopep-thm
-                                     push-init-thm
-                                     pop-frame-thm
-                                     body.thm-name
-                                     body.type
-                                     body.limit
-                                     names-to-avoid
-                                     state)
-          (mv '(_) nil names-to-avoid)))
        (id (make-ident :name name))
        ((mv tyspec &) (ident+type-to-tyspec+declor id body.type))
        (fundef (make-fundef :tyspec tyspec
@@ -2473,22 +2480,43 @@
                                          state))
                  ((mv fn-correct-local-events
                       fn-correct-exported-events
-                      fn-correct-thm)
-                  (atc-gen-cfun-correct-thm fn
-                                            typed-formals
-                                            body.type
-                                            affect
-                                            prec-fns
-                                            prec-tags
-                                            prec-objs
-                                            prog-const
-                                            compst-var
-                                            fenv-var
-                                            limit-var
-                                            fn-thms
-                                            fn-fun-env-thm
-                                            limit
-                                            state))
+                      fn-correct-thm
+                      names-to-avoid)
+                  (if modular-proofs
+                      (atc-gen-fun-correct-thm fn
+                                               fn-guard
+                                               prog-const
+                                               compst-var
+                                               fenv-var
+                                               limit-var
+                                               fn-thms
+                                               fn-fun-env-thm
+                                               init-scope-expand-thm
+                                               init-scope-scopep-thm
+                                               push-init-thm
+                                               pop-frame-thm
+                                               body.thm-name
+                                               body.type
+                                               body.limit
+                                               names-to-avoid
+                                               state)
+                    (b* (((mv local-events exported-events name)
+                          (atc-gen-cfun-correct-thm fn
+                                                    typed-formals
+                                                    body.type
+                                                    affect
+                                                    prec-fns
+                                                    prec-tags
+                                                    prec-objs
+                                                    prog-const
+                                                    compst-var
+                                                    fenv-var
+                                                    limit-var
+                                                    fn-thms
+                                                    fn-fun-env-thm
+                                                    limit
+                                                    state)))
+                      (mv local-events exported-events name names-to-avoid))))
                  (progress-start?
                   (and (evmac-input-print->= print :info)
                        `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
@@ -2505,8 +2533,7 @@
                                        init-inscope-events
                                        body.events
                                        (and modular-proofs
-                                            (list pop-frame-event
-                                                  correct-event))
+                                            (list pop-frame-event))
                                        fn-result-events
                                        fn-correct-local-events
                                        progress-end?))
