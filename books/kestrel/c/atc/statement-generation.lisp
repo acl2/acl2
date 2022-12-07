@@ -174,7 +174,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod stmt-gin
-  :short "Inputs for @(tsee atc-gen-stmt)."
+  :short "Inputs for C statement generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not include the term, which is passed as a separate input.")
+   (xdoc::p
+    "The @('loop-flag') component is
+     the loop flag @('L') described in the user documentation."))
   ((context atc-contextp)
    (var-term-alist symbol-pseudoterm-alist)
    (typed-formals atc-symbol-varinfo-alist)
@@ -197,7 +204,20 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod stmt-gout
-  :short "Outputs for @(tsee atc-gen-stmt)."
+  :short "Outputs for C statement generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We actually generate a list of block items.
+     These can be regarded as forming a compound statement,
+     but lists of block items are compositional (via concatenation).")
+   (xdoc::p
+    "The type is the one returned by the block items.
+     It may be @('void').")
+   (xdoc::p
+    "The @('limit') component is a term that desscribes a value
+     that suffices for @(tsee exec-block-item-list)
+     to execute the block items completely."))
   ((items block-item-list)
    (type type)
    (limit pseudo-term)
@@ -211,7 +231,7 @@
 ;;;;;;;;;;
 
 (defirrelevant irr-stmt-gout
-  :short "An irrelevant output for @(tsee atc-gen-stmt)."
+  :short "An irrelevant output for C statement generation."
   :type stmt-goutp
   :body (make-stmt-gout :items nil
                         :type (irr-type)
@@ -449,39 +469,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "More precisely, we return a list of block items.
-     These can be regarded as forming a compound statement,
-     but lists of block items are compositional (via concatenation).")
-   (xdoc::p
     "At the same time, we check that the term is a statement term,
      as described in the user documentation.")
-   (xdoc::p
-    "Along with the term, we pass an alist from symbols to terms
-     that collects the @(tsee let) and @(tsee mv-let) bindings
-     encountered along the way.
-     These are eventually used to properly instantiate
-     limits associated to function calls,
-     because those limits apply to the functions' formals,
-     which must therefore be replaced not just with the actuals of the call,
-     but with those actuals with variables replaced with terms
-     according to the bindings that lead to the call.")
-   (xdoc::p
-    "The @('loop-flag') input of this ACL2 function (see @(tsee stmt-gin))
-     is the loop flag @('L') described in the user documentation.")
-   (xdoc::p
-    "The @('affect') input of this ACL2 function (see @(tsee stmt-gin))
-     is the list of variables being affected by this statement.
-     This is denoted @('vars') in the user documentation at @(tsee atc).")
-   (xdoc::p
-    "Besides the generated block items,
-     we also return a C type, which is the one returned by the statement.
-     This type may be @('void').")
-   (xdoc::p
-    "We also return a limit that suffices for @(tsee exec-block-item-list)
-     to execute the returned block items completely.")
-   (xdoc::p
-    "We also return the correctness theorems for expressions
-     generated for the expressions contained in the generated statement.")
    (xdoc::p
     "If the term is a conditional, there are two cases.
      If the test is @(tsee mbt) or @(tsee mbt$),
@@ -668,12 +657,12 @@
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test-term))
              ((when mbtp)
-              (b* (((erp out) (atc-gen-stmt then-term gin state)))
-                (retok (change-stmt-gout out :proofs nil))))
+              (b* ((gin (change-stmt-gin gin :proofs nil)))
+                (atc-gen-stmt then-term gin state)))
              ((mv mbt$p &) (check-mbt$-call test-term))
              ((when mbt$p)
-              (b* (((erp out) (atc-gen-stmt then-term gin state)))
-                (retok (change-stmt-gout out :proofs nil))))
+              (b* ((gin (change-stmt-gin gin :proofs nil)))
+                (atc-gen-stmt then-term gin state)))
              ((erp (bexpr-gout test))
               (atc-gen-expr-bool test-term
                                  (make-bexpr-gin
@@ -1789,7 +1778,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod lstmt-gin
-  :short "Inputs for @(tsee atc-gen-loop-stmt)."
+  :short "Inputs for C loop statement generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not include the term, which is passed as a separate input.")
+   (xdoc::p
+    "The @('measure-for-fn') component is the name of the
+     locally generated measure function for
+     the target function @('fn') that represents the loop."))
   ((context atc-contextp)
    (typed-formals atc-symbol-varinfo-alist)
    (inscope atc-symbol-varinfo-alist-list)
@@ -1811,7 +1808,18 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod lstmt-gout
-  :short "Outputs for @(tsee atc-gen-loop-stmt)."
+  :short "Outputs for C loop statement generation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The generated (loop) statement is @('stmt').
+     We may actually split it into a test and body at some point.")
+   (xdoc::p
+    "We also return the test and body ACL2 terms.")
+   (xdoc::p
+    "We return two limit terms:
+     one for just the body,
+     and one for the whole loop."))
   ((stmt stmtp)
    (test-term pseudo-term)
    (body-term pseudo-term)
@@ -1828,7 +1836,7 @@
 ;;;;;;;;;;
 
 (defirrelevant irr-lstmt-gout
-  :short "An irrelevant output for @(tsee atc-gen-loop-stmt)."
+  :short "An irrelevant output for C loop statement generation."
   :type lstmt-goutp
   :body (make-lstmt-gout :stmt (irr-stmt)
                          :test-term nil

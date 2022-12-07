@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "integers")
+(include-book "integer-conversions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
