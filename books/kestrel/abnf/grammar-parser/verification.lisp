@@ -6825,13 +6825,17 @@
 (defrule parse-exact-when-tree-match
   :parents (grammar-parser-completeness)
   :short "Completeness theorem for @(tsee parse-exact)."
-  (implies (tree-match-element-p tree (%. nat) *grammar*)
+  (implies (and (tree-match-element-p tree element *grammar*)
+                (element-case element :num-val)
+                (num-val-case (element-num-val->get element) :direct)
+                (equal (num-val-direct->get
+                        (element-num-val->get element))
+                       (list (nfix nat))))
            (equal (parse-exact nat (append (tree->string tree) rest-input))
                   (mv nil (tree-fix tree) (nat-list-fix rest-input))))
   :enable (parse-exact
            tree-match-element-p
            tree-match-num-val-p
-           %.-fn
            treep
            tree-fix
            tree-kind
