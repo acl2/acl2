@@ -524,6 +524,12 @@
            (recommendation-listp (remove-equal rec recs)))
   :hints (("Goal" :in-theory (enable recommendation-listp))))
 
+(defthm recommendation-listp-of-revappend
+  (implies (and (recommendation-listp recs1)
+                (recommendation-listp recs2))
+           (recommendation-listp (revappend recs1 recs2)))
+  :hints (("Goal" :in-theory (enable recommendation-listp revappend))))
+
 (defthm recommendation-listp-of-cdr
   (implies (recommendation-listp recs)
            (recommendation-listp (cdr recs)))
@@ -2271,6 +2277,12 @@
               (remove-equal match recs))
       (cons rec recs))))
 
+(defthm recommendation-listp-of-merge-rec-into-recs
+ (implies (and (recommendationp recs)
+               (recommendation-listp recs))
+          (recommendation-listp (merge-rec-into-recs recs recs)))
+ :hints (("Goal" :in-theory (enable merge-rec-into-recs recommendation-listp))))
+
 ;; This effectively reverses the first arg.
 (defun merge-recs-into-recs (recs1 recs2)
   (declare (xargs :guard (and (recommendation-listp recs1)
@@ -2279,6 +2291,37 @@
   (if (endp recs1)
       recs2
     (merge-recs-into-recs (rest recs1) (merge-rec-into-recs (first recs1) recs2))))
+
+(defthm recommendation-listp-of-merge-recs-into-recs
+ (implies (and (recommendation-listp recs1)
+               (recommendation-listp recs2))
+          (recommendation-listp (merge-recs-into-recs recs1 recs2)))
+ :hints (("Goal" :in-theory (enable merge-recs-into-recs recommendation-listp))))
+
+(defun recommendation-list-listp (rec-lists)
+  (declare (xargs :guard t))
+  (if (atom rec-lists)
+      (null rec-lists)
+    (and (recommendation-listp (first rec-lists))
+         (recommendation-list-listp (rest rec-lists)))))
+
+;; TODO: Think about the order here
+(defun merge-rec-lists-into-recs (rec-lists recs)
+  (declare (xargs :guard (and (recommendation-list-listp rec-lists)
+                              (recommendation-listp recs))
+                  :verify-guards nil ; done below
+                  :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
+  (if (endp rec-lists)
+      recs
+    (merge-rec-lists-into-recs (rest rec-lists)
+                               (merge-recs-into-recs (reverse (first rec-lists)) recs))))
+
+(defthm recommendation-listp-of-merge-recs-lists-into-recs
+  (implies (and (recommendation-list-listp rec-lists)
+                (recommendation-listp recs))
+           (recommendation-listp (merge-rec-lists-into-recs rec-lists recs))))
+
+(verify-guards merge-rec-lists-into-recs)
 
 ;; Returns (mv erp recs state).
 (defun get-recs-from-model (model num-recs checkpoint-clauses server-url debug print state)
@@ -2329,7 +2372,7 @@
         ml-recommendations
         state)))
 
-;; Returns (mv erp recs state).
+;; Returns (mv erp rec-lists state).
 (defun get-recs-from-models (models num-recs checkpoint-clauses server-url debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
                               (natp num-recs)
@@ -2345,8 +2388,7 @@
           (get-recs-from-model (first models) num-recs checkpoint-clauses server-url debug print state))
          ((when erp) (mv erp nil state)))
       (get-recs-from-models (rest models) num-recs checkpoint-clauses server-url debug print
-                            ;; TODO: Sort by priority once merged?:
-                            (merge-recs-into-recs (reverse recs) acc)
+                            (cons recs acc)
                             state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2443,8 +2485,10 @@
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
         (mv :no-server nil nil state))
        ;; Get the recommendations:
-       ((mv erp ml-recommendations state)
+       ((mv erp ml-recommendation-lists state)
         (get-recs-from-models models n checkpoint-clauses server-url debug print nil state))
+       ;; Removes duplicates:
+       (ml-recommendations (merge-rec-lists-into-recs ml-recommendation-lists nil))
        ((when erp) (mv erp nil nil state))
        ;; Sort the whole list by confidence (hope the numbers are comparable):
        (ml-recommendations (merge-sort-recs-by-confidence ml-recommendations))
