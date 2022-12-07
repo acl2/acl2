@@ -524,6 +524,11 @@
            (recommendation-listp (remove-equal rec recs)))
   :hints (("Goal" :in-theory (enable recommendation-listp))))
 
+(defthm recommendation-listp-of-cdr
+  (implies (recommendation-listp recs)
+           (recommendation-listp (cdr recs)))
+  :hints (("Goal" :in-theory (enable recommendation-listp))))
+
 (defun show-recommendations-aux (recs)
   (declare (xargs :guard (recommendation-listp recs)
                   :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
@@ -1879,6 +1884,7 @@
                (if provedp (cw-success-message rec) (cw-failure-message ":hints didn't help" failure-info)))))
     (mv nil (if provedp rec nil) state)))
 
+;; Tries each of the RECS in turn until MAX-WINS successful ones are found or there are none left.
 ;; Returns (mv erp successful-recs state)
 (defun try-recommendations (recs
                             book-to-avoid-absolute-path
@@ -1898,12 +1904,16 @@
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
+                              (or (null step-limit)
+                                  (natp step-limit))
+                              (or (null max-wins)
+                                  (natp max-wins))
                               (acl2::print-levelp print)
                               (true-listp successful-recs))
                   :mode :program
                   :stobjs state))
   (if (or (endp recs)
-          (and (natp max-wins)
+          (and max-wins
                (<= max-wins (len successful-recs))))
       (mv nil (reverse successful-recs) state)
     (b* ((rec (first recs))
@@ -1914,7 +1924,8 @@
          (book-map (nth 4 rec))
          (- (and (acl2::print-level-at-least-tp print) (cw "~s0: " name)))
          ((mv & ; erp ; for now, we ignore errors and just continue
-              maybe-successful-rec state)
+              maybe-successful-rec ; may be fleshed out (pre-commands, hints, etc.)
+              state)
           (case type
             ;; TODO: Pass the book-map and the book-to-avoid-absolute-path to all who can use it:
             (:add-by-hint (try-add-by-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
@@ -1965,6 +1976,7 @@
 
 ;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
+;; Returns a list of recs, which should contain no duplicates.
 (defun make-enable-recs (formula wrld)
   (declare (xargs :guard (and ;; formula is an untranslated term
                               (plist-worldp wrld))
@@ -1986,6 +1998,10 @@
 
 ;; not looking at anything but the type and object
 (defun rec-presentp (type object recs)
+  (declare (xargs :guard (and (rec-typep type)
+                              ;; object
+                              (recommendation-listp recs))
+                  :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
   (if (endp recs)
       nil
     (let ((rec (first recs)))
@@ -1996,8 +2012,13 @@
 
 (mutual-recursion
  ;; Look for hints in theorems in the history
- ;; Returns a list of recs.
+ ;; Returns a list of recs not already present in SEEN-RECS.
  (defun make-recs-from-history-event (event num seen-recs)
+   (declare (xargs :guard (and ;; event
+                               (posp num)
+                               (recommendation-listp seen-recs))
+                   :verify-guards nil ; todo
+                   ))
    (if (not (consp event))
        (er hard? 'make-recs-from-history-event "Unexpected command (not a cons!): ~x0." event)
      (if (eq 'local (acl2::ffn-symb event)) ; (local e1)
@@ -2021,6 +2042,9 @@
                                          nil))))))))))))
 
  (defun make-recs-from-history-events (events num acc)
+   (declare (xargs :guard (and (true-listp events)
+                               (posp num)
+                               (recommendation-listp acc))))
    (if (endp events)
        (reverse acc)
      (let* ((event (first events))
@@ -2426,14 +2450,14 @@
        (rec-count-before-removal (len recommendations))
        (recommendations (remove-disallowed-recs recommendations disallowed-rec-types nil))
        (rec-count-after-removal (len recommendations))
-       (- (and (< rec-count-after-removal rec-count-before-removal)
+       (- (and (< rec-count-after-removal rec-count-before-removal) ; todo: this doesn't catch disallowed enable or history recs suppresses above
                (acl2::print-level-at-least-tp print)
-               (cw "NOTE: Removed ~x0 recommendations of disallowed tyes." (- rec-count-before-removal rec-count-after-removal))))
-       ;; (num-recs (len recommendations))
+               (cw "NOTE: Removed ~x0 recommendations of disallowed types." (- rec-count-before-removal rec-count-after-removal))))
        ;; Print the recommendations (for now):
-       (- (and print (cw "~%RECOMMENDATIONS TO TRY:~%")))
        (state (if (acl2::print-level-at-least-tp print)
-                  (show-recommendations recommendations state) ; why does this return state?
+                  (prog2$ (cw "~%RECOMMENDATIONS TO TRY:~%")
+                          (show-recommendations recommendations state) ; why does this return state?
+                          )
                 state))
        ;; Try the recommendations:
        (- (and print (cw "~%TRYING RECOMMENDATIONS:~%")))
@@ -2452,7 +2476,6 @@
                (cw "~%NOTE: ~x0 duplicate ~s1 removed.~%" removed-count
                    (if (< 1 removed-count) "successful recommendations were" "successful recommendation was"))))
        (num-successful-recs (len successful-recs-no-dupes))
-
        (max-wins-reachedp (and (natp max-wins) (= max-wins num-successful-recs))) ; todo: what if the last win was the last rec (then we didn't stop early)?
        (- (and max-wins-reachedp
                (acl2::print-level-at-least-tp print)
@@ -2833,7 +2856,7 @@
               (cadr (assoc-keyword :hints (cdddr most-recent-failed-theorem)))
               (cadr (assoc-keyword :otf-flg (cdddr most-recent-failed-theorem))))))
        (- (and print (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil)))
-       (- (and (acl2::print-level-at-least-tp print) (cw "Original hints were:~%~X01:~%" theorem-hints nil)))
+       (- (and (acl2::print-level-at-least-tp print) (cw "Original hints were:~%~X01.~%" theorem-hints nil)))
        ;; Get the checkpoints from the failed attempt:
        ;; TODO: Consider trying again with no hints, in case the user gave were wrongheaded.
        (raw-checkpoint-clauses (acl2::checkpoint-list ;-pretty
