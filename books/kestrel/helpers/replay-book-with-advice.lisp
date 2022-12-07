@@ -22,17 +22,27 @@
 ;; Example:
 ;; (replay-book-with-advice "../lists-light/append")
 
-;; Determines whether the Proof Advice tool can find advice for DEFTHM.  Either way, this also submits the defthm.
-;; Returns (mv erp result state) where result is :yes, :no, :maybe, or :trivial.
+;; Determine whether EVENT is something for which we can try advice, given the list of THEOREMS-TO-TRY.
+(defun advice-eventp (event theorems-to-try)
+  (declare (xargs :guard (or (eq :all theorems-to-try)
+                             (symbol-listp theorems-to-try))))
+  (and (or (call-of 'defthm event) ; todo: maybe handle thm, defrule, rule, etc.  maybe handle defun and variants (termination and guard proof)
+           (call-of 'defthmd event))
+       (consp (cdr event))
+       (or (eq :all theorems-to-try)
+           (member-eq (cadr event) theorems-to-try))))
+
+;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
+;; Returns (mv erp result state) where result is :yes, :no, :maybe (not currently used?), or :trivial.
 (defun submit-defthm-event-with-advice (defthm n book-to-avoid-absolute-path print server-url models state)
-  (declare (xargs :mode :program
-                  :guard (and (natp n)
+  (declare (xargs :guard (and (natp n)
                               (or (null book-to-avoid-absolute-path)
                                   (stringp book-to-avoid-absolute-path))
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
                               (help::model-namesp models))
+                  :mode :program
                   :stobjs state))
   (b* ((defthm-variant (car defthm)) ; defthm or defthmd, etc.
        (theorem-name (cadr defthm))
@@ -44,18 +54,19 @@
                        '(:rewrite)))
        (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
        (- (cw "(ADVICE: ~x0: " theorem-name))
+       ;; Ignores any given hints (TODO: Try with fewer hints / hint pieces):
        ((mv erp successp best-rec state)
         (help::get-and-try-advice-for-theorem theorem-name
                                               theorem-body
                                               (acl2::translate-term theorem-body 'submit-defthm-event-with-advice (w state))
                                               nil ; don't use any hints
                                               nil ; theorem-otf-flg
-                                              n ; number of recommendations from ML requested
+                                              n ; number of recommendations from ML requested per model
                                               book-to-avoid-absolute-path
                                               print
                                               server-url
                                               nil ; debug
-                                              100000 ; step-limit
+                                              100000 ; step-limit (TODO: give time/steps proportional to what was needed for the original theorem?)
                                               '(:add-hyp) ; disallow :add-hyp, because no hyps are needed for these theorems
                                               nil ; disallowed-rec-sources, todo: allow passing these in
                                               1      ; max-wins
@@ -63,7 +74,6 @@
                                               t ; suppress warning about trivial rec, because below we ask if "original" is the best rec and handle trivial recs there
                                               state))
        ;; TODO: Maybe track errors separately?  Might be that a step limit was reached before checkpoints could even be generated, so perhaps that counts as a :no?
-       ;; Would like to give time/steps proportional to what was needed for the original theorem.
        ((when erp) (mv erp :no state)))
     (if (not successp)
         (prog2$ (cw "NO)~%") ; close paren matches (ADVICE
@@ -81,9 +91,9 @@
                        ((mv erp state) (submit-event-helper-core defthm nil state))
                        ((when erp) (mv erp :no state)))
                     (mv nil :maybe state)))
-        (b* (;; Since we passed nil for the hints, this means the theorem proved with no hints:
-             (proved-with-no-hintsp (equal "original" (help::successful-recommendationp-name best-rec)))
+        (b* ((proved-with-no-hintsp (equal "original" (help::successful-recommendationp-name best-rec)))
              (- (if proved-with-no-hintsp
+                    ;; Since we passed nil for the hints, this means the theorem proved with no hints:
                     (if hints-presentp
                         (cw "TRIVIAL (no hints needed, though some were given))~%") ; close paren matches (ADVICE
                       (cw "TRIVIAL (no hints needed or given))~%") ; close paren matches (ADVICE
@@ -100,17 +110,7 @@
               (mv :advice-didnt-work :no state)))
           (mv nil (if proved-with-no-hintsp :trivial :yes) state))))))
 
-;; Determine whether EVENT is something for which we can try advice, given the list of THEOREMS-TO-TRY.
-(defun advice-eventp (event theorems-to-try)
-  (declare (xargs :guard (or (eq :all theorems-to-try)
-                             (symbol-listp theorems-to-try))))
-  (and (or (call-of 'defthm event) ; todo: maybe handle thm, defrule, rule, etc.  maybe handle defun and variants (termination and guard proof)
-           (call-of 'defthmd event))
-       (consp (cdr event))
-       (or (eq :all theorems-to-try)
-           (member-eq (cadr event) theorems-to-try))))
-
-;Returns (mv erp yes-count no-count maybe-count trivial-count error-count state).
+;; Returns (mv erp yes-count no-count maybe-count trivial-count error-count state).
 ;throws an error if any event fails
 ; This uses :brief printing.
 (defun submit-events-with-advice (events theorems-to-try n book-to-avoid-absolute-path print server-url models yes-count no-count maybe-count trivial-count error-count state)
