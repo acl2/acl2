@@ -1087,11 +1087,14 @@
   :short "Tree matching theorem for @(tsee parse-exact)."
   (b* (((mv error? tree? &) (parse-exact nat input)))
     (implies (and (not error?)
-                  (equal element (%. nat)))
+                  (element-case element :num-val)
+                  (num-val-case (element-num-val->get element) :direct)
+                  (equal (num-val-direct->get
+                          (element-num-val->get element))
+                         (list (nfix nat))))
              (tree-match-element-p tree? element *grammar*)))
   :enable (parse-exact
-           tree-match-num-val-p
-           %.-fn))
+           tree-match-num-val-p))
 
 (defrule tree-match-of-parse-in-range
   :parents (grammar-parser-tree-matching)
