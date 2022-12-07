@@ -1101,11 +1101,17 @@
   :short "Tree matching theorem for @(tsee parse-in-range)."
   (b* (((mv error? tree? &) (parse-in-range min max input)))
     (implies (and (not error?)
-                  (equal element (%- min max)))
+                  (element-case element :num-val)
+                  (num-val-case (element-num-val->get element) :range)
+                  (equal (num-val-range->min
+                          (element-num-val->get element))
+                         (nfix min))
+                  (equal (num-val-range->max
+                          (element-num-val->get element))
+                         (nfix max)))
              (tree-match-element-p tree? element *grammar*)))
   :enable (parse-in-range
-           tree-match-num-val-p
-           %-))
+           tree-match-num-val-p))
 
 (defrule tree-match-of-parse-in-either-range
   :parents (grammar-parser-tree-matching)
@@ -1113,26 +1119,108 @@
   (b* (((mv error? tree? &) (parse-in-either-range min1 max1
                                                    min2 max2
                                                    input)))
-    (implies (and (not error?)
-                  (equal element (!_ (/_ (%- min1 max1))
-                                     (/_ (%- min2 max2)))))
-             (tree-match-element-p tree? element *grammar*)))
+    (implies
+     (and
+      (not error?)
+      (element-case element :group)
+      (b* ((alternation (element-group->get element)))
+        (and (consp alternation)
+             (consp (cdr alternation))
+             (atom (cddr alternation))
+             (b* ((concatenation1 (car alternation))
+                  (concatenation2 (cadr alternation)))
+               (and (consp concatenation1)
+                    (atom (cdr concatenation1))
+                    (consp concatenation2)
+                    (atom (cdr concatenation2))
+                    (b* ((repetition1 (car concatenation1))
+                         (repetition2 (car concatenation2)))
+                      (and (equal (repetition->range repetition1)
+                                  (make-repeat-range
+                                   :min 1
+                                   :max (nati-finite 1)))
+                           (equal (repetition->range repetition2)
+                                  (make-repeat-range
+                                   :min 1
+                                   :max (nati-finite 1)))
+                           (b* ((element1 (repetition->element repetition1))
+                                (element2 (repetition->element repetition2)))
+                             (and (element-case element1 :num-val)
+                                  (num-val-case (element-num-val->get element1)
+                                                :range)
+                                  (equal (num-val-range->min
+                                          (element-num-val->get element1))
+                                         (nfix min1))
+                                  (equal (num-val-range->max
+                                          (element-num-val->get element1))
+                                         (nfix max1))
+                                  (element-case element2 :num-val)
+                                  (num-val-case (element-num-val->get element2)
+                                                :range)
+                                  (equal (num-val-range->min
+                                          (element-num-val->get element2))
+                                         (nfix min2))
+                                  (equal (num-val-range->max
+                                          (element-num-val->get element2))
+                                         (nfix max2)))))))))))
+     (tree-match-element-p tree? element *grammar*)))
   :enable (parse-in-either-range
-           !_-fn
-           /_-fn))
+           tree-list-list-match-alternation-p
+           tree-list-list-match-concatenation-p))
 
 (defrule tree-list-match-of-parse-*-in-either-range
   :parents (grammar-parser-tree-matching)
   :short "Tree matching theorem for @(tsee parse-*-in-either-range)."
   (b* (((mv & trees &) (parse-*-in-either-range min1 max1 min2 max2 input)))
-    (implies (equal repetition (*_ (!_ (/_ (%- min1 max1))
-                                       (/_ (%- min2 max2)))))
-             (tree-list-match-repetition-p trees
-                                           repetition
-                                           *grammar*)))
-  :enable (parse-*-in-either-range
-           *_
-           !_-fn))
+    (implies
+     (and
+      (equal (repetition->range repetition)
+             (make-repeat-range :min 0 :max (nati-infinity)))
+      (b* ((element (repetition->element repetition)))
+        (and
+         (element-case element :group)
+         (b* ((alternation (element-group->get element)))
+           (and (consp alternation)
+                (consp (cdr alternation))
+                (atom (cddr alternation))
+                (b* ((concatenation1 (car alternation))
+                     (concatenation2 (cadr alternation)))
+                  (and (consp concatenation1)
+                       (atom (cdr concatenation1))
+                       (consp concatenation2)
+                       (atom (cdr concatenation2))
+                       (b* ((repetition1 (car concatenation1))
+                            (repetition2 (car concatenation2)))
+                         (and (equal (repetition->range repetition1)
+                                     (make-repeat-range
+                                      :min 1
+                                      :max (nati-finite 1)))
+                              (equal (repetition->range repetition2)
+                                     (make-repeat-range
+                                      :min 1
+                                      :max (nati-finite 1)))
+                              (b* ((element1 (repetition->element repetition1))
+                                   (element2 (repetition->element repetition2)))
+                                (and (element-case element1 :num-val)
+                                     (num-val-case (element-num-val->get element1)
+                                                   :range)
+                                     (equal (num-val-range->min
+                                             (element-num-val->get element1))
+                                            (nfix min1))
+                                     (equal (num-val-range->max
+                                             (element-num-val->get element1))
+                                            (nfix max1))
+                                     (element-case element2 :num-val)
+                                     (num-val-case (element-num-val->get element2)
+                                                   :range)
+                                     (equal (num-val-range->min
+                                             (element-num-val->get element2))
+                                            (nfix min2))
+                                     (equal (num-val-range->max
+                                             (element-num-val->get element2))
+                                            (nfix max2)))))))))))))
+     (tree-list-match-repetition-p trees repetition *grammar*)))
+  :enable (parse-*-in-either-range))
 
 (defrule tree-match-of-parse-ichar
   :parents (grammar-parser-tree-matching)
