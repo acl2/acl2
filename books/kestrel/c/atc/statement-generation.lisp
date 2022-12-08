@@ -19,6 +19,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrulel pseudo-termp-of-dumb-negate-lit
+  (implies (pseudo-termp term)
+           (pseudo-termp (acl2::dumb-negate-lit term))))
+
+(local (in-theory (disable acl2::dumb-negate-lit)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ atc-statement-generation
   :parents (atc-event-and-code-generation)
   :short "Generation of C statements."
@@ -677,23 +685,34 @@
                                   :proofs gin.proofs)
                                  state))
              ((erp (stmt-gout then))
-              (atc-gen-stmt then-term
-                            (change-stmt-gin
-                             gin
-                             :inscope (cons nil gin.inscope)
-                             :thm-index test.thm-index
-                             :names-to-avoid test.names-to-avoid
-                             :proofs nil)
-                            state))
+              (b* ((then-cond (untranslate$ test-term t state))
+                   (then-premise (atc-premise-test then-cond))
+                   (then-context (append gin.context
+                                         (list then-premise))))
+                (atc-gen-stmt then-term
+                              (change-stmt-gin
+                               gin
+                               :context then-context
+                               :inscope (cons nil gin.inscope)
+                               :thm-index test.thm-index
+                               :names-to-avoid test.names-to-avoid
+                               :proofs gin.proofs)
+                              state)))
              ((erp (stmt-gout else))
-              (atc-gen-stmt else-term
-                            (change-stmt-gin
-                             gin
-                             :inscope (cons nil gin.inscope)
-                             :thm-index then.thm-index
-                             :names-to-avoid then.names-to-avoid
-                             :proofs nil)
-                            state))
+              (b* ((not-test-term (acl2::dumb-negate-lit test-term))
+                   (else-cond (untranslate$ not-test-term t state))
+                   (else-premise (atc-premise-test else-cond))
+                   (else-context (append gin.context
+                                         (list else-premise))))
+                (atc-gen-stmt else-term
+                              (change-stmt-gin
+                               gin
+                               :context else-context
+                               :inscope (cons nil gin.inscope)
+                               :thm-index then.thm-index
+                               :names-to-avoid then.names-to-avoid
+                               :proofs gin.proofs)
+                              state)))
              ((unless (equal then.type else.type))
               (reterr
                (msg "When generating C code for the function ~x0, ~
