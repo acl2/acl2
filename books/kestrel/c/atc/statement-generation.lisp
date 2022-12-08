@@ -14,16 +14,9 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
+(local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel pseudo-termp-of-dumb-negate-lit
-  (implies (pseudo-termp term)
-           (pseudo-termp (acl2::dumb-negate-lit term))))
-
-(local (in-theory (disable acl2::dumb-negate-lit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -699,7 +692,7 @@
                                :proofs gin.proofs)
                               state)))
              ((erp (stmt-gout else))
-              (b* ((not-test-term (acl2::dumb-negate-lit test-term))
+              (b* ((not-test-term (dumb-negate-lit test-term))
                    (else-cond (untranslate$ not-test-term t state))
                    (else-premise (atc-premise-test else-cond))
                    (else-context (append gin.context
