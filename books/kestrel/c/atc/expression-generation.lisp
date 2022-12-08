@@ -345,9 +345,11 @@
                                                      nil
                                                      gin.names-to-avoid
                                                      wrld))
+                 (okp-lemma-formula `(,op-arg-type-okp ,arg-term))
                  (okp-lemma-formula
-                  `(implies (,gin.fn-guard ,@fn-formals)
-                            (,op-arg-type-okp ,arg-term)))
+                  (atc-contextualize okp-lemma-formula gin.context t))
+                 (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
+                                              ,okp-lemma-formula))
                  (okp-lemma-hints
                   `(("Goal"
                      :in-theory '(,gin.fn-guard)
@@ -482,10 +484,12 @@
                                                      nil
                                                      gin.names-to-avoid
                                                      wrld))
+                 (okp-lemma-formula `(,op-arg1-type-arg2-type-okp ,arg1-term
+                                                                  ,arg2-term))
                  (okp-lemma-formula
-                  `(implies (,gin.fn-guard ,@fn-formals)
-                            (,op-arg1-type-arg2-type-okp ,arg1-term
-                                                         ,arg2-term)))
+                  (atc-contextualize okp-lemma-formula gin.context t))
+                 (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
+                                              ,okp-lemma-formula))
                  (okp-lemma-hints
                   `(("Goal"
                      :in-theory '(,gin.fn-guard)
@@ -635,9 +639,11 @@
                                                      nil
                                                      gin.names-to-avoid
                                                      wrld))
+                 (okp-lemma-formula `(,op-name-okp ,arg-term))
                  (okp-lemma-formula
-                  `(implies (,gin.fn-guard ,@fn-formals)
-                            (,op-name-okp ,arg-term)))
+                  (atc-contextualize okp-lemma-formula gin.context t))
+                 (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
+                                              ,okp-lemma-formula))
                  (okp-lemma-hints
                   `(("Goal"
                      :in-theory '(,gin.fn-guard)
