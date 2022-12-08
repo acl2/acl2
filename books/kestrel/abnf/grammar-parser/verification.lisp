@@ -3210,12 +3210,12 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use ((:instance constraints-from-tree-match-in-range
                    (tree (car (car (tree-nonleaf->branches tree))))
-                   (element (%- #x41 #x5a))
+                   (element (%x- #x41 #x5a))
                    (min #x41)
                    (max #x5a))
         (:instance constraints-from-tree-match-in-range
                    (tree (car (car (tree-nonleaf->branches tree))))
-                   (element (%- #x61 #x7a))
+                   (element (%x- #x61 #x7a))
                    (min #x61)
                    (max #x7a))))
 
@@ -3232,7 +3232,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-exact
                   (tree (car (car (tree-nonleaf->branches tree))))
-                  (element (%. #x0d))
+                  (element (%x. #x0d))
                   (nats (list #x0d))))
 
 (defrule constraints-from-tree-match-digit
@@ -3250,7 +3250,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-in-range
                   (tree (car (car (tree-nonleaf->branches tree))))
-                  (element (%- #x30 #x39))
+                  (element (%x- #x30 #x39))
                   (min #x30)
                   (max #x39)))
 
@@ -3267,7 +3267,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-exact
                   (tree (car (car (tree-nonleaf->branches tree))))
-                  (element (%. #x22))
+                  (element (%x. #x22))
                   (nats (list #x22))))
 
 (defrule constraints-from-tree-match-htab
@@ -3283,7 +3283,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-exact
                   (tree (car (car (tree-nonleaf->branches tree))))
-                  (element (%. #x09))
+                  (element (%x. #x09))
                   (nats (list #x09))))
 
 (defrule constraints-from-tree-match-sp
@@ -3299,7 +3299,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-exact
                   (tree (car (car (tree-nonleaf->branches tree))))
-                  (element (%. #x20))
+                  (element (%x. #x20))
                   (nats (list #x20))))
 
 (defrule constraints-from-tree-match-vchar
@@ -3317,7 +3317,7 @@
   :expand (:free (element rules) (tree-match-element-p tree element rules))
   :use (:instance constraints-from-tree-match-in-range
                   (tree (car (car (tree-nonleaf->branches tree))))
-                  (element (%- #x21 #x7e))
+                  (element (%x- #x21 #x7e))
                   (min #x21)
                   (max #x7e)))
 
@@ -7093,7 +7093,7 @@
   :enable parse-alpha
   :use (:instance fail-1st-range-when-match-2nd-range
                   (tree (car (car (tree-nonleaf->branches tree))))
-                  (element (%- #x61 #x7a))
+                  (element (%x- #x61 #x7a))
                   (min1 #x41)
                   (max1 #x5a)
                   (min2 #x61)
