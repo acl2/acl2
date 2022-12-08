@@ -15,6 +15,8 @@
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "std/lists/top" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-generation-contexts
@@ -61,7 +63,7 @@
     "We may add more kinds later."))
   (:compustate ((var symbolp)
                 (term any)))
-  (:test ((get pseudo-term)))
+  (:test ((term any)))
   (:other ())
   :pred atc-premisep)
 
@@ -104,6 +106,6 @@
                      (atc-contextualize term (cdr context) skip-cs)
                    `(let ((,premise.var ,premise.term))
                       ,(atc-contextualize term (cdr context) skip-cs)))
-     :test `(and ,premise.get
-                 ,(atc-contextualize term (cdr context) skip-cs))
+     :test `(implies ,premise.term
+                     ,(atc-contextualize term (cdr context) skip-cs))
      :other (raise "Internal error: reached :OTHER case of ATC-PREMISE."))))
