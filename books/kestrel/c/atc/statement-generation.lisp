@@ -657,12 +657,12 @@
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test-term))
              ((when mbtp)
-              (b* ((gin (change-stmt-gin gin :proofs nil)))
-                (atc-gen-stmt then-term gin state)))
+              (b* (((erp gout) (atc-gen-stmt then-term gin state)))
+                (retok (change-stmt-gout gout :proofs nil))))
              ((mv mbt$p &) (check-mbt$-call test-term))
              ((when mbt$p)
-              (b* ((gin (change-stmt-gin gin :proofs nil)))
-                (atc-gen-stmt then-term gin state)))
+              (b* (((erp gout) (atc-gen-stmt then-term gin state)))
+                (retok (change-stmt-gout gout :proofs nil))))
              ((erp (bexpr-gout test))
               (atc-gen-expr-bool test-term
                                  (make-bexpr-gin
