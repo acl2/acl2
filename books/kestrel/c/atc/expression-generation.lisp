@@ -573,7 +573,7 @@
                            state)
   :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression from an ACL2 term
-          that represents a conversion."
+          that represents an integer conversion."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -696,6 +696,42 @@
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
                       :proofs t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-bool-from-type ((in-type typep)
+                                     (arg-term pseudo-termp)
+                                     (arg-expr exprp)
+                                     (arg-type typep)
+                                     (arg-events pseudo-event-form-listp)
+                                     (gin bexpr-ginp))
+  :returns (mv erp (gout bexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents a conversion to ACL2 boolean."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expression is the same as the one for the argument term:
+     the conversion to ACL2 boolean
+     only serves a purpose in the ACL2 representation
+     but it has no counterpart in the C code."))
+  (b* (((reterr) (irr-bexpr-gout))
+       ((bexpr-gin gin) gin)
+       ((unless (equal arg-type in-type))
+        (reterr
+         (msg "The conversion from ~x0 to boolean is applied to ~
+               an expression term ~x1 returning ~x2, ~
+               but a ~x0 operand is expected. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              in-type arg-term arg-type))))
+    (retok
+     (make-bexpr-gout :expr arg-expr
+                      :events arg-events
+                      :thm-name nil
+                      :thm-index gin.thm-index
+                      :names-to-avoid gin.names-to-avoid
+                      :proofs nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1152,21 +1188,13 @@
                                     :names-to-avoid gin.names-to-avoid
                                     :proofs gin.proofs)
                                    state))
-               ((unless (equal arg.type in-type))
-                (reterr
-                 (msg "The conversion from ~x0 to boolean is applied to ~
-                       an expression term ~x1 returning ~x2, ~
-                       but a ~x0 operand is expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      in-type arg-term arg.type))))
-            (retok
-             (make-bexpr-gout :expr arg.expr
-                              :events arg.events
-                              :thm-name nil
-                              :thm-index arg.thm-index
-                              :names-to-avoid arg.names-to-avoid
-                              :proofs nil)))))
+               (gin (change-bexpr-gin gin
+                                      :thm-index arg.thm-index
+                                      :names-to-avoid arg.names-to-avoid
+                                      :proofs arg.proofs)))
+            (atc-gen-expr-bool-from-type in-type arg-term
+                                         arg.expr arg.type
+                                         arg.events gin))))
       (reterr
        (msg "When generating C code for the function ~x0, ~
              at a point where ~
