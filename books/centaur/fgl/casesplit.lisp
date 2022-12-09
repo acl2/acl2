@@ -600,6 +600,7 @@ Usually this is evidence of a typo. If not, set keyword argument ~x1 to suppress
        
   
 (define fgl-casesplit-hint-fn (cases split-params solve-params split-concl repeat-concl
+                                allow-irrel-casesplit-vars
                                 (fgl-config fgl-config-p)
                                 state)
   :mode :program
@@ -610,12 +611,14 @@ Usually this is evidence of a typo. If not, set keyword argument ~x1 to suppress
                                                             (fgl-toplevel-sat-check-config))
                                           :split-concl split-concl
                                           :repeat-concl repeat-concl
+                                          :allow-irrel-casesplit-vars allow-irrel-casesplit-vars
                                           :cases cases-trans
                                           :fgl-config fgl-config)))
     (value `(:clause-processor (fgl-casesplit-clause-proc clause ',config)))))
 
-(defmacro fgl-casesplit (&key cases split-params solve-params split-concl repeat-concl fgl-config)
-  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl ,repeat-concl ,fgl-config state))
+(defmacro fgl-casesplit (&key cases split-params solve-params split-concl repeat-concl fgl-config allow-irrel-casesplit-vars)
+  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl ,repeat-concl ,fgl-config ,allow-irrel-casesplit-vars
+                          state))
 
 
 
