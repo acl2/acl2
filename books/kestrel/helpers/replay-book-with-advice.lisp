@@ -69,7 +69,6 @@
                                               nil ; debug
                                               100000 ; step-limit (TODO: give time/steps proportional to what was needed for the original theorem?)
                                               '(:add-hyp) ; disallow :add-hyp, because no hyps are needed for these theorems
-                                              nil ; disallowed-rec-sources, todo: allow passing these in
                                               1      ; max-wins
                                               models
                                               t ; suppress warning about trivial rec, because below we ask if "original" is the best rec and handle trivial recs there
