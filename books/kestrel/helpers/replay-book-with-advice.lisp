@@ -55,7 +55,7 @@
                        '(:rewrite)))
        (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
        (- (cw "(ADVICE: ~x0: " theorem-name))
-       ;; Ignores any given hints (TODO: Try with fewer hints / hint pieces):
+       ;; Ignores any given hints (for now):
        ((mv erp successp best-rec state)
         (help::get-and-try-advice-for-theorem theorem-name
                                               theorem-body
@@ -113,8 +113,9 @@
 
 ;; Returns (mv erp yes-count no-count maybe-count trivial-count error-count state).
 ;throws an error if any event fails
-; This uses :brief printing.
-(defun submit-events-with-advice (events theorems-to-try num-recs-per-model book-to-avoid-absolute-path print server-url models yes-count no-count maybe-count trivial-count error-count state)
+(defun submit-events-with-advice (events theorems-to-try num-recs-per-model book-to-avoid-absolute-path print server-url models
+                                         yes-count no-count maybe-count trivial-count error-count
+                                         state)
   (declare (xargs :guard (and (true-listp events)
                               (or (eq :all theorems-to-try)
                                   (symbol-listp theorems-to-try))
@@ -233,12 +234,10 @@
         (mv nil ; no error, but nothing to do for this book
             (list 0 0 0 0 0) state))
               ;; Ensures we are working in the same dir as the book:
-       ;; TODO: Ensure this gets rest upon failure, such as a package name clash.
+       ;; TODO: Ensure this gets reset upon failure, such as a package name clash.
        ((mv erp & state)
         (set-cbd-fn dir state))
        ((when erp) (mv erp (list 0 0 0 0 0) state))
-       ;; TODO: Also have to change the dir from which files are read.  How can we do that?
-       ;; This didn't work: (- (sys-call "cd" (list dir)))
        ;; Make margins wider for nicer printing:
        (state (widen-margins state))
        ;; Ensure proofs are done during make-event expansion, even if we use skip-proofs:
@@ -267,11 +266,11 @@
 ;; Reads and then submits all the events in FILENAME, trying advice for defthms that appear at the top level.
 ;; Returns (mv erp event state).
 (defun replay-book-with-advice-fn (filename ; the book, with .lisp extension
-                                   theorems-to-try
+                                   theorems-to-try ; can be :all
                                    num-recs-per-model
                                    print
                                    server-url
-                                   models
+                                   models ; can be :all
                                    state)
   (declare (xargs :guard (and (stringp filename)
                               (or (eq :all theorems-to-try)
