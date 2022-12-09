@@ -78,8 +78,8 @@
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/included-books-in-world" :dir :system)
-(include-book "kestrel/alists-light/lookup-equal" :dir :system)
-(include-book "kestrel/alists-light/lookup-eq" :dir :system)
+(include-book "kestrel/alists-light/lookup-equal" :dir :system) ; todo: include-less
+(include-book "kestrel/alists-light/lookup-eq" :dir :system) ; todo: include-less
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
@@ -93,13 +93,14 @@
 (include-book "tools/prove-dollar" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
-(local (include-book "kestrel/lists-light/revappend" :dir :system))
+;(local (include-book "kestrel/lists-light/revappend" :dir :system))
+(local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
 
-(local (in-theory (disable member-equal len true-listp nth)))
+(local (in-theory (disable member-equal len true-listp nth reverse)))
 
 ;; ;; Returns all disabled runes associate with NAME.
 ;; ;; Like disabledp but hygienic, also doesn't end in "p" since not a predicate.
@@ -108,6 +109,13 @@
 ;;   (disabledp-fn name ens wrld))
 
 (defconst *step-limit* 100000)
+
+;; See :doc lemma-instance
+(defund symbol-that-can-be-usedp (sym wrld)
+  (declare (xargs :guard (and (symbolp sym)
+                              (plist-worldp wrld))))
+  (or (acl2::defined-functionp sym wrld)
+      (acl2::defthm-or-defaxiom-symbolp sym wrld)))
 
 ;; If NAME is a macro-alias, return what it represents.  Otherwise, return NAME.
 ;; TODO: Compare to (deref-macro-name name (macro-aliases wrld)).
@@ -201,9 +209,33 @@
     ;; Confusingly named: Does not indicate a :use hint:
     ("use-lemma" . :use-lemma)))
 
+;; todo: rename (not necessarily about ml)
 (defconst *ml-rec-types* (strip-cdrs *rec-to-symbol-alist*))
 
 (defconst *all-rec-types* (cons :exact-hints *ml-rec-types*))
+
+(defund rec-typep (type)
+  (declare (xargs :guard t))
+  (member-eq type *all-rec-types*))
+
+(defthm rec-typep-forward-to-symbolp
+  (implies (rec-typep type)
+           (symbolp type))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable rec-typep member-equal))))
+
+(defund rec-type-listp (types)
+  (declare (xargs :guard t))
+  (if (not (consp types))
+      (null types)
+    (and (rec-typep (first types))
+         (rec-type-listp (rest types)))))
+
+(defthm rec-type-listp-forward-to-symbol-listp
+  (implies (rec-type-listp types)
+           (symbol-listp types))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable rec-type-listp))))
 
 (defund confidence-percentp (p)
   (declare (xargs :guard t))
@@ -211,12 +243,26 @@
        (<= 0 p)
        (<= p 100)))
 
-(defconst *known-models-and-strings*
+(defconst *non-ml-models-and-strings*
+  '((:enable . "enable")
+    (:history . "history")))
+
+(defconst *non-ml-models*
+  (strip-cars *non-ml-models-and-strings*))
+
+(defconst *ml-models-and-strings*
   '((:calpoly . "kestrel-calpoly")
     ;; note the capital L:
     (:leidos . "Leidos")
     ;; (:leidos-gpt . "leidos-gpt")
     ))
+
+(defconst *ml-models*
+  (strip-cars *ml-models-and-strings*))
+
+(defconst *known-models-and-strings*
+  (append *non-ml-models-and-strings*
+          *ml-models-and-strings*))
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
 
@@ -305,29 +351,6 @@
 (defund pre-commandsp (pre-commands)
   (declare (xargs :guard t))
   (true-listp pre-commands))
-
-(defund rec-typep (type)
-  (declare (xargs :guard t))
-  (member-eq type *all-rec-types*))
-
-(defthm rec-typep-forward-to-symbolp
-  (implies (rec-typep type)
-           (symbolp type))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable rec-typep member-equal))))
-
-(defund rec-type-listp (types)
-  (declare (xargs :guard t))
-  (if (not (consp types))
-      (null types)
-    (and (rec-typep (first types))
-         (rec-type-listp (rest types)))))
-
-(defthm rec-type-listp-forward-to-symbol-listp
-  (implies (rec-type-listp types)
-           (symbol-listp types))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable rec-type-listp))))
 
 (defund include-book-formp (form)
   (declare (xargs :guard t))
@@ -537,6 +560,11 @@
            (recommendation-listp (revappend recs1 recs2)))
   :hints (("Goal" :in-theory (enable recommendation-listp revappend))))
 
+(defthm recommendation-listp-of-reverse
+  (implies (recommendation-listp recs)
+           (recommendation-listp (reverse recs)))
+  :hints (("Goal" :in-theory (enable recommendation-listp reverse))))
+
 (defthm recommendation-listp-of-cdr
   (implies (recommendation-listp recs)
            (recommendation-listp (cdr recs)))
@@ -550,7 +578,7 @@
     (prog2$ (show-recommendation (first recs))
             (show-recommendations-aux (rest recs)))))
 
-;; Returns state.
+;; Returns state because of the margin widening.
 (defun show-recommendations (recs state)
   (declare (xargs :guard (recommendation-listp recs)
                   :stobjs state))
@@ -575,7 +603,7 @@
   (declare (xargs :guard t))
   (and (true-listp rec)
        (= 7 (len rec))
-       (let ((name (nth 0 rec))
+       (let ((name (nth 0 rec)) ; ex: "leidos1"
              (type (nth 1 rec))
              ;; (object (nth 2 rec))
              ;; this (possibly) gets populated when we try the rec:
@@ -815,7 +843,7 @@
               ;;(cw ": ")
               (show-successful-recommendations-aux (rest recs))))))
 
-;; Returns state.
+;; Returns state (because of the change to the margins).
 (defun show-successful-recommendations (recs state)
   (declare (xargs :guard (successful-recommendation-listp recs)
                   :mode :program
@@ -1038,12 +1066,137 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Think about THM vs DEFTHM
-;; (defun make-thm-to-attempt (body hints otf-flg)
-;;   `(thm ,body
-;;         ,@(and hints `(:hints ,hints))
-;;         ,@(and otf-flg `(:otf-flg .otf-flg))))
+(defun cw-failure-message (snippet failure-info)
+  (if (eq failure-info :step-limit-reached) ; update this is other kinds of failure-info become supported
+      (cw "fail (~s0: step limit reached)~%" snippet)
+    (cw "fail (~s0)~%" snippet)))
 
+(defun cw-success-message (rec)
+  (declare (xargs :guard (successful-recommendationp rec)
+                  :mode :program))
+  (progn$ (cw "SUCCESS: ")
+          (show-successful-recommendation rec)
+          (cw "~%")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun make-enable-recs-aux (names num)
+  (declare (xargs :guard (and (symbol-listp names)
+                              (posp num))))
+  (if (endp names)
+      nil
+    (cons (make-rec (concatenate 'string "enable" (acl2::nat-to-string num))
+                    :add-enable-hint
+                    (first names) ; the name to enable
+                    5             ; confidence percentage (quite high) TODO: allow unknown?)
+                    nil ; book map ; todo: indicate that the name must be present?
+                    )
+          (make-enable-recs-aux (rest names) (+ 1 num)))))
+
+(local
+ (defthm recommendation-listp-of-make-enable-recs-aux
+   (implies (symbol-listp names)
+            (recommendation-listp (make-enable-recs-aux names num)))
+   :hints (("Goal" :in-theory (enable recommendation-listp)))))
+
+;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
+;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
+;; Returns a list of recs, which should contain no duplicates.
+(defun make-enable-recs (formula wrld)
+  (declare (xargs :guard (and ;; formula is an untranslated term
+                              (plist-worldp wrld))
+                  :mode :program ; because of acl2::translate-term
+                  ))
+  (let* ((translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
+         (fns-to-try-enabling (set-difference-eq (acl2::defined-fns-in-term translated-formula wrld)
+                                                 ;; Don't bother wasting time with trying to enable implies
+                                                 ;; (I suppose we could try it if implies is disabled):
+                                                 '(implies))))
+    (make-enable-recs-aux fns-to-try-enabling 1)))
+
+;; (local
+;;  (defthm recommendation-listp-of-make-enable-recs
+;;    (implies (pseudo-termp formula)
+;;             (recommendation-listp (make-enable-recs formula wrld)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(mutual-recursion
+ ;; Extends ACC with hint-lists from the EVENT.
+ (defun hint-lists-from-history-event (event acc)
+   (declare (xargs :guard (and ;; event
+                           (true-listp acc)
+                           )
+                   :verify-guards nil ; todo
+                   ))
+   (if (not (consp event))
+       (er hard? 'hint-lists-from-history-event "Unexpected command (not a cons!): ~x0." event)
+     (if (eq 'local (acl2::ffn-symb event)) ; (local e1)
+         (hint-lists-from-history-event (acl2::farg1 event) acc)
+       (if (eq 'encapsulate (acl2::ffn-symb event)) ; (encapsulate <sigs> e1 e2 ...)
+           (hint-lists-from-history-events (rest (acl2::fargs event)) acc)
+         (if (eq 'progn (acl2::ffn-symb event)) ; (progn e1 e2 ...)
+             (hint-lists-from-history-events (acl2::fargs event) acc)
+           (if ;; todo: what else can we harvest hints from?
+               (not (member-eq (acl2::ffn-symb event) '(defthm defthmd)))
+               acc
+             (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
+               (if (not res)
+                   acc
+                 (let ((hints (cadr res)))
+                   (if (member-equal hints acc) ; todo: also look for equivalent hints?
+                       acc
+                     (cons hints acc)))))))))))
+
+ ;; Extends ACC with hint-lists from the EVENTS.  Hint lists from earlier EVENTS end up deeper in the result,
+ ;; which seems good because more recent events are likely to be more relevant (todo: but what about dups).
+ (defun hint-lists-from-history-events (events acc)
+   (declare (xargs :guard (and (true-listp events)
+                               (true-listp acc))))
+   (if (endp events)
+       acc
+     (hint-lists-from-history-events (rest events)
+                                     (hint-lists-from-history-event (first events) acc)))))
+
+(defun make-exact-hint-recs (hint-lists base-name num confidence-percent acc)
+  (declare (xargs :guard (and (true-listp hint-lists)
+                              (stringp base-name)
+                              (posp num)
+                              (confidence-percentp confidence-percent)
+                              (true-listp acc))))
+  (if (endp hint-lists)
+      (reverse acc)
+    (make-exact-hint-recs (rest hint-lists)
+                          base-name
+                          (+ 1 num)
+                          confidence-percent ; todo: allow this to decrease as we go
+                          (cons (make-rec (concatenate 'string base-name (acl2::nat-to-string num))
+                                          :exact-hints ; new kind of rec, to replace all hints (todo: if the rec is expressible as something simpler, use that)
+                                          (first hint-lists)
+                                          confidence-percent
+                                          nil ; no book-map (TODO: What about for things inside encapsulates?)
+                                          )
+                                acc))))
+
+;; Extracts hints from events in the command history.  In the result, hints for more recent events come first and have higher numbers.
+;; The result should contain no exact duplicates, but the recs (which are all of type :exact-hints) might effectively duplicate other recommendations.
+(defund make-recs-from-history-events (events)
+  (make-exact-hint-recs (hint-lists-from-history-events events nil) "history" 1
+                        3 ; confidence-percent (quite high)
+                        nil))
+
+;; Returns (mv erp val state).
+;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
+(defun make-recs-from-history (state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state)) ; todo: how to get events, not commands (e.g., get what make-events expanded to)?
+       ((when erp) (mv erp nil state)))
+    (mv nil (make-recs-from-history-events events) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; An interface to prove$ that doesn't pass back errors (instead printing a message).
 ;; Returns (mv provedp state).  Does not propagate any errors back.
 (defund prove$-no-error (ctx term hints otf-flg step-limit state)
   (declare (xargs :mode :program
@@ -1056,7 +1209,8 @@
                 (mv nil state))
       (mv provedp state))))
 
-;; Returns (mv provedp failure-info state).
+;; Returns (mv provedp failure-info state), where failure-info may be
+;; :step-limit-reached or :unknown.
 (defund prove$-no-error-with-failure-info (ctx term hints otf-flg step-limit state)
   (declare (xargs :mode :program
                   :stobjs state))
@@ -1067,13 +1221,6 @@
         (prog2$ (cw "Syntax error in prove$ call (made by ~x0).~%" ctx)
                 (mv nil nil state))
       (mv provedp failure-info state))))
-
-;; See :doc lemma-instance
-(defund symbol-that-can-be-usedp (sym wrld)
-  (declare (xargs :guard (and (symbolp sym)
-                              (plist-worldp wrld))))
-  (or (acl2::defined-functionp sym wrld)
-      (acl2::defthm-or-defaxiom-symbolp sym wrld)))
 
 ;; Calls prove$ on FORMULA after submitting INCLUDE-BOOK-FORM, which is undone after the prove$.
 ;; Returns (mv erp provedp state).  If NAME-TO-CHECK is non-nil, we require it to be something
@@ -1159,18 +1306,6 @@
                                      ;; args to prove$:
                                      hints otf-flg step-limit
                                      state))))
-
-(defun cw-failure-message (snippet failure-info)
-  (if (eq failure-info :step-limit-reached) ; update this is other kinds of failure-info become supported
-      (cw "fail (~s0: step limit reached)~%" snippet)
-    (cw "fail (~s0)~%" snippet)))
-
-(defun cw-success-message (rec)
-  (declare (xargs :guard (successful-recommendationp rec)
-                  :mode :program))
-  (progn$ (cw "SUCCESS: ")
-          (show-successful-recommendation rec)
-          (cw "~%")))
 
 ;; Returns (mv erp successp state).
 ;; TODO: Skip if library already included
@@ -1279,11 +1414,6 @@
        ((when contradictp)
         (and (acl2::print-level-at-least-tp print) (cw "skip (hyp ~x0 would contradict existing hyps)~%" hyp))
         (mv nil nil state))
-       ;; Now see whether we can prove the theorem using the new hyp:
-       ;; ((mv erp state) (acl2::submit-event-helper
-       ;;                  ;; TODO: Add the hyp more nicely:
-       ;;                  (make-thm-to-attempt `(implies ,hyp ,theorem-body) theorem-hints theorem-otf-flg)
-       ;;                  t nil state))
        (new-theorem-body `(implies ,hyp ,theorem-body)) ; todo: merge hyp in better
        ((mv provedp failure-info state) (prove$-no-error-with-failure-info
                                          'try-add-hyp
@@ -1318,7 +1448,7 @@
                             rec
                             print
                             state)
-  (declare (xargs :guard (and (symbolp rule)
+  (declare (xargs :guard (and ;; (symbolp rule) ; todo: can be a rune?
                               (book-mapp book-map)
                               (or (null book-to-avoid-absolute-path)
                                   (stringp book-to-avoid-absolute-path))
@@ -1897,9 +2027,65 @@
                (if provedp (cw-success-message rec) (cw-failure-message ":hints didn't help" failure-info)))))
     (mv nil (if provedp rec nil) state)))
 
+;; Returns (mv erp maybe-successful-rec state).
+;; TODO: Option to not improve successful recs?
+(defun try-recommendation (rec
+                           book-to-avoid-absolute-path
+                           theorem-name ; may be :thm
+                           theorem-body
+                           theorem-hints
+                           theorem-otf-flg
+                           step-limit
+                           print
+                           state)
+  (declare (xargs :guard (and (recommendationp rec)
+                              (or (null book-to-avoid-absolute-path)
+                                  (stringp book-to-avoid-absolute-path))
+                              (symbolp theorem-name)
+                              ;; theorem-body is an untranslated term
+                              ;; theorem-hints
+                              (booleanp theorem-otf-flg)
+                              (or (null step-limit)
+                                  (natp step-limit))
+                              (acl2::print-levelp print))
+                  :mode :program
+                  :stobjs state))
+  (b* ((name (nth 0 rec))
+       (type (nth 1 rec))
+       (object (nth 2 rec))
+       ;; (confidence-percent (nth 3 rec))
+       (book-map (nth 4 rec))
+       (- (and (acl2::print-level-at-least-tp print) (cw "~s0: " name)))
+       ((mv & ; erp ; for now, we ignore errors and just continue
+            maybe-successful-rec ; may be fleshed out (pre-commands, hints, etc.)
+            state)
+        (case type
+          ;; TODO: Pass the book-map and the book-to-avoid-absolute-path to all who can use it:
+          (:add-by-hint (try-add-by-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-do-not-hint (try-add-do-not-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-enable-hint (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-library (try-add-library object book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-nonlinearp-hint (try-add-nonlinearp-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-use-hint (try-add-use-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          ;; same as for try-add-enable-hint above:
+          (:use-lemma (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          ;; Hints not from ML:
+          (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg step-limit rec print state))
+          (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
+                     (mv t nil state))))))
+    (mv nil ; never an error (for now)
+        maybe-successful-rec
+        state)))
+
 ;; Tries to find rec(s) which, together with the supplied THEOREM-HINTS, suffices to prove the theorem.
 ;; Tries each of the RECS in turn until MAX-WINS successful ones are found or there are none left.
-;; Returns (mv erp successful-recs state)
+;; Returns (mv erp successful-recs extra-recs-ignoredp state)
+;; TODO: Move down.
 (defun try-recommendations (recs
                             book-to-avoid-absolute-path
                             theorem-name ; may be :thm
@@ -1909,7 +2095,7 @@
                             step-limit
                             max-wins
                             print
-                            successful-recs
+                            successful-recs ; an accumulator
                             state)
   (declare (xargs :guard (and (recommendation-listp recs)
                               (or (null book-to-avoid-absolute-path)
@@ -1926,172 +2112,23 @@
                               (true-listp successful-recs))
                   :mode :program
                   :stobjs state))
-  (if (or (endp recs)
-          (and max-wins
-               (<= max-wins (len successful-recs))))
-      (mv nil (reverse successful-recs) state)
-    (b* ((rec (first recs))
-         (name (nth 0 rec))
-         (type (nth 1 rec))
-         (object (nth 2 rec))
-         ;; (confidence-percent (nth 3 rec))
-         (book-map (nth 4 rec))
-         (- (and (acl2::print-level-at-least-tp print) (cw "~s0: " name)))
-         ((mv & ; erp ; for now, we ignore errors and just continue
-              maybe-successful-rec ; may be fleshed out (pre-commands, hints, etc.)
-              state)
-          (case type
-            ;; TODO: Pass the book-map and the book-to-avoid-absolute-path to all who can use it:
-            (:add-by-hint (try-add-by-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            (:add-do-not-hint (try-add-do-not-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            (:add-enable-hint (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            (:add-library (try-add-library object book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            (:add-nonlinearp-hint (try-add-nonlinearp-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            (:add-use-hint (try-add-use-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            ;; same as for try-add-enable-hint above:
-            (:use-lemma (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-            ;; Hints not from ML:
-            (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg step-limit rec print state))
-            (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
-                       (mv t nil state))))))
-      (try-recommendations (rest recs)
-                           book-to-avoid-absolute-path
-                           theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins print
-                           (if maybe-successful-rec
-                               (cons maybe-successful-rec successful-recs)
-                             successful-recs)
-                           state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun make-enable-recs-aux (names num)
-  (declare (xargs :guard (and (symbol-listp names)
-                              (posp num))))
-  (if (endp names)
-      nil
-    (cons (make-rec (concatenate 'string "enable" (acl2::nat-to-string num))
-                    :add-enable-hint
-                    (first names) ; the name to enable
-                    0             ; confidence percentage (TODO: allow unknown)
-                    nil ; book map ; todo: indicate that the name must be present?
-                    )
-          (make-enable-recs-aux (rest names) (+ 1 num)))))
-
-(local
- (defthm recommendation-listp-of-make-enable-recs-aux
-   (implies (symbol-listp names)
-            (recommendation-listp (make-enable-recs-aux names num)))
-   :hints (("Goal" :in-theory (enable recommendation-listp)))))
-
-;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
-;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
-;; Returns a list of recs, which should contain no duplicates.
-(defun make-enable-recs (formula wrld)
-  (declare (xargs :guard (and ;; formula is an untranslated term
-                              (plist-worldp wrld))
-                  :mode :program ; because of acl2::translate-term
-                  ))
-  (let* ((translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
-         (fns-to-try-enabling (set-difference-eq (acl2::defined-fns-in-term translated-formula wrld)
-                                                 ;; Don't bother wasting time with trying to enable implies
-                                                 ;; (I suppose we could try it if implies is disabled):
-                                                 '(implies))))
-    (make-enable-recs-aux fns-to-try-enabling 1)))
-
-;; (local
-;;  (defthm recommendation-listp-of-make-enable-recs
-;;    (implies (pseudo-termp formula)
-;;             (recommendation-listp (make-enable-recs formula wrld)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; ;; not looking at anything but the type and object
-;; (defun rec-presentp (type object recs)
-;;   (declare (xargs :guard (and (rec-typep type)
-;;                               ;; object
-;;                               (recommendation-listp recs))
-;;                   :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
-;;   (if (endp recs)
-;;       nil
-;;     (let ((rec (first recs)))
-;;       (if (and (eq type (nth 1 rec))
-;;                (equal object (nth 2 rec)))
-;;           t
-;;         (rec-presentp type object (rest recs))))))
-
-(mutual-recursion
- ;; Extends ACC with hint-lists from the EVENT.
- (defun hint-lists-from-history-event (event acc)
-   (declare (xargs :guard (and ;; event
-                           (true-listp acc)
-                           )
-                   :verify-guards nil ; todo
-                   ))
-   (if (not (consp event))
-       (er hard? 'hint-lists-from-history-event "Unexpected command (not a cons!): ~x0." event)
-     (if (eq 'local (acl2::ffn-symb event)) ; (local e1)
-         (hint-lists-from-history-event (acl2::farg1 event) acc)
-       (if (eq 'encapsulate (acl2::ffn-symb event)) ; (encapsulate <sigs> e1 e2 ...)
-           (hint-lists-from-history-events (rest (acl2::fargs event)) acc)
-         (if (eq 'progn (acl2::ffn-symb event)) ; (progn e1 e2 ...)
-             (hint-lists-from-history-events (acl2::fargs event) acc)
-           (if ;; todo: what else can we harvest hints from?
-               (not (member-eq (acl2::ffn-symb event) '(defthm defthmd)))
-               acc
-             (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
-               (if (not res)
-                   acc
-                 (let ((hints (cadr res)))
-                   (if (member-equal hints acc) ; todo: also look for equivalent recs?
-                       acc
-                     (cons hints acc)))))))))))
-
- ;; Extends ACC with hint-lists from the EVENTS.  Hint lists from earlier EVENTS end up deeper in the result,
- ;; which seems good because more recent events are likely to be more relevant (todo: but what about dups).
- (defun hint-lists-from-history-events (events acc)
-   (declare (xargs :guard (and (true-listp events)
-                               (true-listp acc))))
-   (if (endp events)
-       acc
-     (hint-lists-from-history-events (rest events)
-                                     (hint-lists-from-history-event (first events) acc)))))
-
-(defun make-exact-hint-recs (hint-lists base-name num acc)
-  (declare (xargs :guard (and (true-listp hint-lists)
-                              (stringp base-name)
-                              (posp num)
-                              (true-listp acc))))
-  (if (endp hint-lists)
-      (reverse acc)
-    (make-exact-hint-recs (rest hint-lists)
-                          base-name
-                          (+ 1 num)
-                          (cons (make-rec (concatenate 'string base-name (acl2::nat-to-string num))
-                                          :exact-hints ; new kind of rec, to replace all hints (todo: if the rec is expressible as something simpler, use that)
-                                          (first hint-lists)
-                                          0 ; confidence percent (TODO: What should we put in here?)
-                                          nil ; no book-map (TODO: What about for things inside encapsulates?)
-                                          )
-                                acc))))
-
-;; Extracts hints from events in the command history.  In the result, hints for more recent events come first and have higher numbers.
-;; The result should contain no exact duplicates, but the recs (which are all of type :exact-hints) might effectively duplicate other recommendations.
-(defund make-recs-from-history-events (events)
-  (make-exact-hint-recs (hint-lists-from-history-events events nil) "history" 1 nil))
-
-;; Returns (mv erp val state).
-;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
-(defun make-recs-from-history (state)
-  (declare (xargs :mode :program
-                  :stobjs state))
-  (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state)) ; todo: how to get events, not commands (e.g., get what make-events expanded to)?
-       ((when erp) (mv erp nil state)))
-    (mv nil (make-recs-from-history-events events) state)))
+  (if (endp recs)
+      (mv nil (reverse successful-recs) nil state)
+    (if (and max-wins
+             (<= max-wins (len successful-recs)))
+        (mv nil (reverse successful-recs) t state)
+      (b* ((rec (first recs))
+           ((mv & ; erp ; for now, we ignore errors and just continue
+                maybe-successful-rec ; may be fleshed out (pre-commands, hints, etc.)
+                state)
+            (try-recommendation rec book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit print state)))
+        (try-recommendations (rest recs)
+                             book-to-avoid-absolute-path
+                             theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins print
+                             (if maybe-successful-rec
+                                 (cons maybe-successful-rec successful-recs)
+                               successful-recs)
+                             state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2313,26 +2350,75 @@
     (and (recommendation-listp (first rec-lists))
          (recommendation-list-listp (rest rec-lists)))))
 
-;; TODO: Think about the order here
-(defun merge-rec-lists-into-recs (rec-lists recs)
+(defund merge-rec-lists-into-recs (rec-lists recs)
   (declare (xargs :guard (and (recommendation-list-listp rec-lists)
                               (recommendation-listp recs))
                   :verify-guards nil ; done below
                   :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
   (if (endp rec-lists)
       recs
-    (merge-rec-lists-into-recs (rest rec-lists)
+    (merge-rec-lists-into-recs (reverse (rest rec-lists)) ; preserve the order
                                (merge-recs-into-recs (reverse (first rec-lists)) recs))))
+
+(defthm recommendation-list-listp-of-revappend
+  (implies (and (recommendation-list-listp rec-lists1)
+                (recommendation-list-listp rec-lists2))
+           (recommendation-list-listp (revappend rec-lists1 rec-lists2)))
+  :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm recommendation-list-listp-of-reverse
+  (implies (recommendation-list-listp rec-lists)
+           (recommendation-list-listp (reverse rec-lists)))
+  :hints (("Goal" :in-theory (enable reverse))))
 
 (defthm recommendation-listp-of-merge-recs-lists-into-recs
   (implies (and (recommendation-list-listp rec-lists)
                 (recommendation-listp recs))
-           (recommendation-listp (merge-rec-lists-into-recs rec-lists recs))))
+           (recommendation-listp (merge-rec-lists-into-recs rec-lists recs)))
+  :hints (("Goal" :in-theory (enable merge-rec-lists-into-recs))))
 
 (verify-guards merge-rec-lists-into-recs)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund remove-disallowed-recs (recs disallowed-rec-types acc)
+  (declare (xargs :guard (and (recommendation-listp recs)
+                              (rec-type-listp disallowed-rec-types)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
+  (if (endp recs)
+      (reverse acc)
+    (let* ((rec (first recs))
+           (type (nth 1 rec)))
+      (if (member-eq type disallowed-rec-types)
+          ;; Drop the rec:
+          (remove-disallowed-recs (rest recs) disallowed-rec-types acc)
+        ;; Keep the rec:
+        (remove-disallowed-recs (rest recs) disallowed-rec-types (cons rec acc))))))
+
+;; (defund remove-disallowed-rec-types-from-alist (rec-alist disallowed-rec-types print)
+;;   (declare (xargs :guard (and (alistp rec-alist)
+;;                               (recommendation-list-listp rec-lists)
+;;                               (rec-type-listp disallowed-rec-types)
+;;                               (acl2::print-levelp print))
+;;                   :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
+;;   (if (endp rec-lists)
+;;       nil
+;;     (b* ((rec-list (first rec-lists))
+;;          (rec-count-before-removal (len rec-list))
+;;          (rec-list (remove-disallowed-recs rec-list disallowed-rec-types nil))
+;;          (rec-count-after-removal (len rec-list))
+;;          (- (and (< rec-count-after-removal rec-count-before-removal) ; todo: this doesn't catch disallowed enable or history recs suppressed elsewhere
+;;                  (acl2::print-level-at-least-tp print)
+;;                  ;; todo: pass in and print the source of the recs here:
+;;                  (cw "NOTE: Removed ~x0 recommendations of disallowed types.~%" (- rec-count-before-removal rec-count-after-removal)))))
+;;       (cons rec-list
+;;             (remove-disallowed-rec-types-from-alist (rest rec-alist) disallowed-rec-types print)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp recs state).
-(defun get-recs-from-model (model num-recs checkpoint-clauses server-url debug print state)
+(defun get-recs-from-ml-model (model num-recs checkpoint-clauses server-url debug print state)
   (declare (xargs :guard (and (model-namep model)
                               (natp num-recs)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
@@ -2380,10 +2466,12 @@
         ml-recommendations
         state)))
 
-;; Returns (mv erp rec-lists state).
-(defun get-recs-from-models-aux (models num-recs-per-model checkpoint-clauses server-url debug print acc state)
+;; Goes through the MODELS, getting recs from each.  Returns an alist from model names to rec-lists.
+;; Returns (mv erp rec-alist state).
+(defun get-recs-from-models-aux (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
                               (natp num-recs-per-model)
+                              (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (stringp server-url)
                               (booleanp debug)
@@ -2392,18 +2480,38 @@
                   :stobjs state))
   (if (endp models)
       (mv nil acc state) ; no error
-    (b* (((mv erp recs state)
-          (get-recs-from-model (first models) num-recs-per-model checkpoint-clauses server-url debug print state))
-         ((when erp) (mv erp nil state)))
-      (get-recs-from-models-aux (rest models) num-recs-per-model checkpoint-clauses server-url debug print
-                                (cons recs acc)
+    (b* ((model (first models))
+         ((mv erp recs state)
+          (if (eq :enable model)
+              ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
+              (if (member-eq :add-enable-hint disallowed-rec-types)
+                  (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+                (mv nil
+                    ;; todo: translate outside make-enable-recs?:
+                    (make-enable-recs theorem-body (w state))
+                    state))
+            (if (eq :history model)
+                ;; Make recs based on hints given to recent theorems:
+                (if (member-eq :exact-hints disallowed-rec-types)
+                    (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+                  (make-recs-from-history state))
+              ;; It's a normal ML model:
+              (get-recs-from-ml-model model num-recs-per-model checkpoint-clauses server-url debug print state))))
+         ((when erp) (mv erp nil state))
+         ;; Remove any recs that are disallowed:
+         (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
+      (get-recs-from-models-aux (rest models) num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print
+                                ;; Associate this model with its recs in the result:
+                                (acons model recs acc)
                                 state))))
 
-;; Returns (mv erp rec-lists state).
-(defun get-recs-from-models (models num-recs-per-model checkpoint-clauses server-url debug print acc state)
+;; Returns (mv erp rec-alist state).
+(defun get-recs-from-models (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
                               (natp num-recs-per-model)
+                              (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
+                              ;; theorem-body is an untranslated term (todo: translate outside this function?)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
                               (booleanp debug)
@@ -2412,7 +2520,7 @@
                   :stobjs state))
   (b* ( ;; Get server info:
        ((mv erp server-url state)
-        (if (null models)
+        (if (null (set-difference-eq models *non-ml-models*))
             (mv nil "NONE" state)
           (if server-url
               (mv nil server-url state)
@@ -2421,7 +2529,7 @@
        ((when (not (stringp server-url)))
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
         (mv :no-server nil state)))
-    (get-recs-from-models-aux models num-recs-per-model checkpoint-clauses server-url debug print acc state)))
+    (get-recs-from-models-aux models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print acc state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2448,24 +2556,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund remove-disallowed-recs (recs disallowed-rec-types acc)
-  (declare (xargs :guard (and (recommendation-listp recs)
-                              (rec-type-listp disallowed-rec-types)
-                              (true-listp acc))
-                  :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
-  (if (endp recs)
-      (reverse acc)
-    (let* ((rec (first recs))
-           (type (nth 1 rec)))
-      (if (member-eq type disallowed-rec-types)
-          ;; Drop the rec:
-          (remove-disallowed-recs (rest recs) disallowed-rec-types acc)
-        ;; Keep the rec:
-        (remove-disallowed-recs (rest recs) disallowed-rec-types (cons rec acc))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns (mv erp provedp rec checkpoint-clauses state) where if PROVEDP determines whether REC or CHECKPOINTS is meaningful.
+;; Attempts to prove the given theorem using the given hints.  If the proof
+;; worked, returns a recommendation that includes the hints that worked.
+;; Otherwise, unless there is an error, returns the checkpoints from the failed
+;; proof attempt.  Returns (mv erp provedp rec checkpoint-clauses state) where
+;; PROVEDP determines whether REC or CHECKPOINTS is meaningful.
 (defun try-proof-and-get-checkpoint-clauses (theorem-name
                                              theorem-body
                                              translated-theorem-body
@@ -2523,22 +2618,21 @@
         state)))
 
 ;; Returns (mv erp successp best-rec state).
-(defun get-and-try-advice-for-checkpoints (checkpoint-clauses
-                                           theorem-name
-                                           theorem-body
-                                           theorem-hints
-                                           theorem-otf-flg
-                                           num-recs-per-model
-                                           book-to-avoid-absolute-path
-                                           print
-                                           server-url
-                                           debug
-                                           step-limit
-                                           disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
-                                           disallowed-rec-sources
-                                           max-wins
-                                           models
-                                           state)
+(defun best-rec-for-checkpoints (checkpoint-clauses
+                                 theorem-name
+                                 theorem-body
+                                 theorem-hints
+                                 theorem-otf-flg
+                                 num-recs-per-model
+                                 book-to-avoid-absolute-path
+                                 print
+                                 server-url
+                                 debug
+                                 step-limit
+                                 disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
+                                 max-wins
+                                 models
+                                 state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (or (null book-to-avoid-absolute-path)
                                   (stringp book-to-avoid-absolute-path))
@@ -2554,53 +2648,29 @@
                               (or (null step-limit)
                                   (natp step-limit))
                               (or ;; (eq :auto max-wins)
-                                  (null max-wins)
-                                  (natp max-wins))
+                               (null max-wins)
+                               (natp max-wins))
                               (rec-type-listp disallowed-rec-types)
-                              (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
                               (model-namesp models))
                   :stobjs state
                   :mode :program))
-  (b* (;; Get the recommendations:
-       ((mv erp ml-recommendation-lists state)
-        (get-recs-from-models models num-recs-per-model checkpoint-clauses server-url debug print nil state))
-       ;; Removes duplicates:
-       (ml-recommendations (merge-rec-lists-into-recs ml-recommendation-lists nil))
+  (b* (((mv erp recommendation-alist state)
+        (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print nil state))
        ((when erp) (mv erp nil nil state))
+       ;; Combine all the lists:
+       (recommendation-lists (strip-cdrs recommendation-alist))
+       (recommendations (merge-rec-lists-into-recs recommendation-lists nil)) ; also removes duplicates
        ;; Sort the whole list by confidence (hope the numbers are comparable):
-       (ml-recommendations (merge-sort-recs-by-confidence ml-recommendations))
-       ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
-       (enable-recommendations (if (member-equal :enable disallowed-rec-sources)
-                                   nil
-                                 ;; todo: translate outside make-enable-recs?:
-                                 (make-enable-recs theorem-body (w state))))
-       ;; Make recs based on hints given to recent theorems:
-       ((mv erp recs-from-history state) (if (member-equal :history disallowed-rec-sources)
-                                             (mv nil nil state)
-                                           (make-recs-from-history state)))
-       ((when erp) (mv erp nil nil state))
-       ;; todo: remove duplicate recs from multiple sources:
-       ;; TODO: Can any of these 3 lists contain dups?
-       (recommendations (merge-recs-into-recs (reverse enable-recommendations)  ; reverse to preserve the order, though it's not very meaningful
-                                              (merge-recs-into-recs (reverse recs-from-history) ; reverse to preserve the order
-                                                                    ml-recommendations)))
-       ;; Remove any recs whose types have been disallowed:
-       (rec-count-before-removal (len recommendations))
-       (recommendations (remove-disallowed-recs recommendations disallowed-rec-types nil))
-       (rec-count-after-removal (len recommendations))
-       (- (and (< rec-count-after-removal rec-count-before-removal) ; todo: this doesn't catch disallowed enable or history recs suppresses above
-               (acl2::print-level-at-least-tp print)
-               (cw "NOTE: Removed ~x0 recommendations of disallowed types." (- rec-count-before-removal rec-count-after-removal))))
-       ;; Print the recommendations (for now):
+       (recommendations (merge-sort-recs-by-confidence recommendations)) ; todo: not a stable sort, messes up the order
+       ;; Maybe print the recommendations:
        (state (if (acl2::print-level-at-least-tp print)
                   (prog2$ (cw "~%RECOMMENDATIONS TO TRY:~%")
-                          (show-recommendations recommendations state) ; why does this return state?
-                          )
+                          (show-recommendations recommendations state))
                 state))
        ;; Try the recommendations:
        (- (and print (cw "~%TRYING RECOMMENDATIONS:~%")))
        (state (acl2::widen-margins state))
-       ((mv erp successful-recs state)
+       ((mv erp successful-recs extra-recs-ignoredp state)
         (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins print nil state))
        (state (acl2::unwiden-margins state))
        ((when erp)
@@ -2614,8 +2684,7 @@
                (cw "~%NOTE: ~x0 duplicate ~s1 removed.~%" removed-count
                    (if (< 1 removed-count) "successful recommendations were" "successful recommendation was"))))
        (num-successful-recs (len successful-recs-no-dupes))
-       (max-wins-reachedp (and (natp max-wins) (= max-wins num-successful-recs))) ; todo: what if the last win was the last rec (then we didn't stop early)?
-       (- (and max-wins-reachedp
+       (- (and extra-recs-ignoredp ;;max-wins-reachedp
                (acl2::print-level-at-least-tp print)
                (cw "~%NOTE: Search stopped after finding ~x0 successful ~s1.~%" max-wins (if (< 1 max-wins) "recommendations" "recommendation"))))
        ;; Sort the recs:
@@ -2632,30 +2701,29 @@
                     state)
                 (prog2$ (and print (cw "~%NO PROOF FOUND~%~%"))
                         state))))
-    (mv nil ; no error
+    (mv nil                        ; no error
         (posp num-successful-recs) ; whether we succeeded
         (first sorted-successful-recs)
         state)))
 
 ;; Tries the theorem with the supplied hints.  If that doesn't prove the theorem, this requests and tries advice.
 ;; Returns (mv erp successp best-rec state).
-(defun get-and-try-advice-for-theorem (theorem-name
-                                       theorem-body
-                                       translated-theorem-body
-                                       theorem-hints
-                                       theorem-otf-flg
-                                       num-recs-per-model
-                                       book-to-avoid-absolute-path
-                                       print
-                                       server-url
-                                       debug
-                                       step-limit
-                                       disallowed-rec-types
-                                       disallowed-rec-sources
-                                       max-wins
-                                       models
-                                       suppress-trivial-warningp
-                                       state)
+(defun best-rec-for-theorem (theorem-name
+                             theorem-body
+                             translated-theorem-body
+                             theorem-hints
+                             theorem-otf-flg
+                             num-recs-per-model
+                             book-to-avoid-absolute-path
+                             print
+                             server-url
+                             debug
+                             step-limit
+                             disallowed-rec-types
+                             max-wins
+                             models
+                             suppress-trivial-warningp
+                             state)
   (declare (xargs :guard (and (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               (pseudo-termp translated-theorem-body)
@@ -2671,7 +2739,6 @@
                               (or (null step-limit)
                                   (natp step-limit))
                               (rec-type-listp disallowed-rec-types)
-                              (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
                               (or ;; (eq :auto max-wins)
                                (null max-wins)
                                (natp max-wins))
@@ -2695,22 +2762,21 @@
             rec
             state)
       ;; Didn't prove using the supplied hints, so try advice:
-      (get-and-try-advice-for-checkpoints checkpoint-clauses
-                                          theorem-name
-                                          theorem-body
-                                          theorem-hints
-                                          theorem-otf-flg
-                                          num-recs-per-model
-                                          book-to-avoid-absolute-path
-                                          print
-                                          server-url
-                                          debug
-                                          step-limit
-                                          disallowed-rec-types
-                                          disallowed-rec-sources
-                                          max-wins
-                                          models
-                                          state))))
+      (best-rec-for-checkpoints checkpoint-clauses
+                                theorem-name
+                                theorem-body
+                                theorem-hints
+                                theorem-otf-flg
+                                num-recs-per-model
+                                book-to-avoid-absolute-path
+                                print
+                                server-url
+                                debug
+                                step-limit
+                                disallowed-rec-types
+                                max-wins
+                                models
+                                state))))
 
 ;; Returns (mv erp event state).
 (defun defthm-advice-fn (theorem-name
@@ -2724,7 +2790,6 @@
                          debug
                          step-limit
                          disallowed-rec-types
-                         disallowed-rec-sources
                          max-wins
                          models
                          state)
@@ -2742,7 +2807,6 @@
                                   (eq nil step-limit) ; means no limit
                                   (natp step-limit))
                               (rec-type-listp disallowed-rec-types)
-                              (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
                               (or (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
@@ -2762,23 +2826,22 @@
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
        (translated-theorem-body (acl2::translate-term theorem-body 'defthm-advice-fn wrld))
        ((mv erp successp best-rec state)
-        (get-and-try-advice-for-theorem theorem-name
-                                        theorem-body
-                                        translated-theorem-body
-                                        theorem-hints
-                                        theorem-otf-flg
-                                        num-recs-per-model
-                                        nil ; no book to avoid
-                                        print
-                                        server-url
-                                        debug
-                                        step-limit
-                                        disallowed-rec-types
-                                        disallowed-rec-sources
-                                        max-wins
-                                        models
-                                        nil
-                                        state))
+        (best-rec-for-theorem theorem-name
+                              theorem-body
+                              translated-theorem-body
+                              theorem-hints
+                              theorem-otf-flg
+                              num-recs-per-model
+                              nil ; no book to avoid
+                              print
+                              server-url
+                              debug
+                              step-limit
+                              disallowed-rec-types
+                              max-wins
+                              models
+                              nil
+                              state))
        ((when erp) (mv erp nil state)))
     (if successp
         (let ((event (successful-rec-to-defthm 'defthm theorem-name best-rec rule-classes)))
@@ -2802,13 +2865,12 @@
                          (debug 'nil)
                          (step-limit ':auto)
                          (disallowed-rec-types 'nil)
-                         (disallowed-rec-sources 'nil)
                          (max-wins ':auto)
                          (models ':all)
                          (rule-classes '(:rewrite))
                          )
   `(acl2::make-event-quiet
-    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,models state)))
+    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::defthm-advice (&rest rest) `(defthm-advice ,@rest))
@@ -2825,7 +2887,6 @@
                       debug
                       step-limit
                       disallowed-rec-types
-                      disallowed-rec-sources
                       max-wins
                       models
                       state)
@@ -2841,7 +2902,6 @@
                               (eq nil step-limit)     ; means no limit
                               (natp step-limit))
                           (rec-type-listp disallowed-rec-types)
-                          (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
                           (or (eq :auto max-wins)
                               (null max-wins)
                               (natp max-wins))
@@ -2859,25 +2919,24 @@
                    models)))
        (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
-       (translated-theorem-body (acl2::translate-term theorem-body 'defthm-advice-fn wrld))
+       (translated-theorem-body (acl2::translate-term theorem-body 'thm-advice-fn wrld))
        ((mv erp successp best-rec state)
-        (get-and-try-advice-for-theorem 'the-thm
-                                        theorem-body
-                                        translated-theorem-body
-                                        theorem-hints
-                                        theorem-otf-flg
-                                        num-recs-per-model
-                                        nil ; no book to avoid
-                                        print
-                                        server-url
-                                        debug
-                                        step-limit
-                                        disallowed-rec-types
-                                        disallowed-rec-sources
-                                        max-wins
-                                        models
-                                        nil
-                                        state))
+        (best-rec-for-theorem 'the-thm
+                              theorem-body
+                              translated-theorem-body
+                              theorem-hints
+                              theorem-otf-flg
+                              num-recs-per-model
+                              nil ; no book to avoid
+                              print
+                              server-url
+                              debug
+                              step-limit
+                              disallowed-rec-types
+                              max-wins
+                              models
+                              nil
+                              state))
        ((when erp) (mv erp nil state)))
     (if successp
         (let ((event (successful-rec-to-thm best-rec)))
@@ -2897,13 +2956,12 @@
                       (debug 'nil)
                       (step-limit ':auto)
                       (disallowed-rec-types 'nil)
-                      (disallowed-rec-sources 'nil)
                       (max-wins ':auto)
                       (models ':all)
                       ;; no rule-classes
                       )
   `(acl2::make-event-quiet
-    (thm-advice-fn ',body ',hints ,otf-flg ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,models state)))
+    (thm-advice-fn ',body ',hints ,otf-flg ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::thm-advice (&rest rest) `(thm-advice ,@rest))
@@ -2920,7 +2978,6 @@
                   debug
                   step-limit
                   disallowed-rec-types
-                  disallowed-rec-sources
                   max-wins
                   models
                   state)
@@ -2935,7 +2992,6 @@
                                   (eq nil step-limit)
                                   (natp step-limit))
                               (rec-type-listp disallowed-rec-types)
-                              (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
                               (or (eq :auto max-wins)
                                   (null max-wins)
                                   (natp max-wins))
@@ -2990,22 +3046,21 @@
             & ;; successp
             & ;; best-rec
             state)
-        (get-and-try-advice-for-checkpoints checkpoint-clauses
-                                            theorem-name
-                                            theorem-body
-                                            theorem-hints
-                                            theorem-otf-flg
-                                            n ; number of recommendations from ML requested
-                                            nil ; no book to avoid (TODO: Maybe avoid the last LDed book, in case they are working on it now)
-                                            print
-                                            server-url
-                                            debug
-                                            step-limit
-                                            disallowed-rec-types
-                                            disallowed-rec-sources
-                                            max-wins
-                                            models
-                                            state))
+        (best-rec-for-checkpoints checkpoint-clauses
+                                  theorem-name
+                                  theorem-body
+                                  theorem-hints
+                                  theorem-otf-flg
+                                  n ; number of recommendations from ML requested
+                                  nil ; no book to avoid (TODO: Maybe avoid the last LDed book, in case they are working on it now)
+                                  print
+                                  server-url
+                                  debug
+                                  step-limit
+                                  disallowed-rec-types
+                                  max-wins
+                                  models
+                                  state))
        ((when erp) (mv erp nil state))
        ;; Ensure there are no checkpoints left over from an attempt to use advice, in case the user calls the tool again.
        ;; TODO: Can we restore the old gag state saved?
@@ -3045,10 +3100,9 @@
                        (debug 'nil)
                        (step-limit ':auto)
                        (disallowed-rec-types 'nil)
-                       (disallowed-rec-sources 'nil)
                        (max-wins ':auto)
                        (models ':all))
-  `(acl2::make-event-quiet (advice-fn ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ',disallowed-rec-sources ,max-wins ,models state)))
+  `(acl2::make-event-quiet (advice-fn ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::advice (&rest rest) `(advice ,@rest))
@@ -3059,3 +3113,81 @@
 ;; (advice)
 ;; (thm (< (mod x 8) 256))
 ;; (advice)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp successful-recs state).
+;; TODO: Also return unsuccessful-recs?
+(defun all-successful-recs-for-checkpoints (checkpoint-clauses
+                                            theorem-name ; might not be needed
+                                            theorem-body
+                                            theorem-hints
+                                            theorem-otf-flg
+                                            num-recs-per-model
+                                            book-to-avoid-absolute-path ; drop?
+                                            print
+                                            server-url
+                                            debug
+                                            step-limit
+                                            disallowed-rec-types
+                                            models
+                                            state)
+  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
+                              (or (null book-to-avoid-absolute-path)
+                                  (stringp book-to-avoid-absolute-path))
+                              (symbolp theorem-name)
+                              ;; theorem-body is an untranslated term
+                              ;; theorem-hints
+                              (booleanp theorem-otf-flg)
+                              (natp num-recs-per-model)
+                              (acl2::print-levelp print)
+                              (or (null server-url) ; get url from environment variable
+                                  (stringp server-url))
+                              (booleanp debug)
+                              (or (null step-limit)
+                                  (natp step-limit))
+                              (rec-type-listp disallowed-rec-types)
+                              (model-namesp models))
+                  :stobjs state
+                  :mode :program))
+  (b* ( ;; Get all the recs to try:
+       ((mv erp recommendation-alist state)
+        (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print nil state))
+       ((when erp) (mv erp nil state))
+       ;; Combine all the lists:
+       (recommendation-lists (strip-cdrs recommendation-alist))
+       (recommendations (merge-rec-lists-into-recs recommendation-lists nil)) ; also removes duplicates
+       ;; Maybe print the recommendations:
+       (state (if (acl2::print-level-at-least-tp print)
+                  (prog2$ (cw "~%RECOMMENDATIONS TO TRY:~%")
+                          (show-recommendations recommendations state))
+                state))
+       ;; Try the recommendations:
+       (- (and print (cw "~%TRYING RECOMMENDATIONS:~%")))
+       (state (acl2::widen-margins state))
+       ((mv erp successful-recs
+            & ; extra-recs-ignoredp
+            state)
+        ;; TODO: Option to not improve the recs?
+        (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit
+                             nil ; max-wins
+                             print nil state))
+       (state (acl2::unwiden-margins state))
+       ((when erp)
+        (er hard? 'advice-fn "Error trying recommendations: ~x0" erp)
+        (mv erp nil state))
+       ;; Remove duplicates:
+       (successful-recs-no-dupes (merge-successful-recs-into-recs successful-recs nil))
+       ;; (removed-count (- (len successful-recs) (len successful-recs-no-dupes)))
+       ;; (- (and (posp removed-count)
+       ;;         (acl2::print-level-at-least-tp print)
+       ;;         (cw "~%NOTE: ~x0 duplicate ~s1 removed.~%" removed-count
+       ;;             (if (< 1 removed-count) "successful recommendations were" "successful recommendation was"))))
+       (num-successful-recs (len successful-recs-no-dupes))
+       (- (and print
+               (if (< 1 num-successful-recs)
+                   (cw "~%(~x0 successful recommendations):~%" num-successful-recs)
+                 (cw "~%(1 successful recommendation):~%")))))
+    (mv nil ; no error
+        successful-recs ; todo: what format should these be in?
+        state)))
