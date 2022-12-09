@@ -146,36 +146,28 @@ Added these rules as built-in clauses
   :hints (("Goal" :in-theory (enable str::split-list-1)))
   :rule-classes ((:rewrite :backchain-limit-lst 0) 
                  (:linear :backchain-limit-lst 0)))
-
-(defthm records-lemma-acl2s-size
-  (implies (and (acl2::ifrp v)
-                (acl2::rcdp v))
-           (< (acl2s-size (acl2::g-aux x v))
-              (acl2s-size v)))
-  :hints (("goal" :in-theory (enable g-aux ifrp)))
-  :rule-classes ((:linear :backchain-limit-lst 1)))
  
 (defthm records-acl2s-size-linear-arith-<=
-  (<= (acl2s-size (g k v))
-      (acl2s-size v))
-  :hints (("goal" :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
+  (<= (acl2s-size (mget k r))
+      (acl2s-size r))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes :linear)
 
 (defthm records-acl2s-size-linear-arith-<2
-  (implies (and k
-                (g k v))
-           (< (acl2s-size (g k v))
-              (acl2s-size v)))
-  :hints (("goal" :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
+  (implies (mget k r)
+           (< (acl2s-size (mget k r))
+              (acl2s-size r)))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes ((:linear :backchain-limit-lst 1)))
 
 (defthm records-acl2s-size
-  (implies (and x
-                (consp v))
-           (< (acl2s-size (g x v))
-              (acl2s-size v)))
-  :hints (("goal" :induct (g-aux x v)
-           :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
+  (implies (consp r)
+           (< (acl2s-size (mget k r))
+              (acl2s-size r)))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes ((:linear :backchain-limit-lst 1)))
 
 (defthm acl2s-size-evens-weak
@@ -252,6 +244,19 @@ Added these rules as built-in clauses
   (<= (len x) (acl2s-size x))
   :rule-classes :linear)
 
+; This came up when I asked openai to write and verify a sorting
+; function in ACL2. It used remove and we don't have a theorem like
+; this, so here goes.
+
+(defthm acl2-count-remove
+  (<= (acl2-count (remove a x))
+      (acl2-count x))
+  :rule-classes :linear)
+
+(defthm acl2-count-remove2
+  (<= (acl2-count (remove-equal a x))
+      (acl2-count x))
+  :rule-classes :linear)
 
 #|
 
