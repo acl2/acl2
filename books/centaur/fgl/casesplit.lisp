@@ -552,7 +552,7 @@
   :returns (res pseudo-term-list-listp)
   (b* ((clause (pseudo-term-list-fix clause))
        ((unless (fgl-casesplit-config-p config))
-        (cw "fgl-casesplit-clause-proc error: bad config~%")
+        (cw "fgl-casesplit-clause-proc error: bad config: ~x0~%" config)
         (list clause))
        ((fgl-casesplit-config config))
        (irrel-vars (and (not config.allow-irrel-casesplit-vars)
@@ -616,8 +616,8 @@ Usually this is evidence of a typo. If not, set keyword argument ~x1 to suppress
                                           :fgl-config fgl-config)))
     (value `(:clause-processor (fgl-casesplit-clause-proc clause ',config)))))
 
-(defmacro fgl-casesplit (&key cases split-params solve-params split-concl repeat-concl fgl-config allow-irrel-casesplit-vars)
-  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl ,repeat-concl ,fgl-config ,allow-irrel-casesplit-vars
+(defmacro fgl-casesplit (&key cases split-params solve-params split-concl repeat-concl allow-irrel-casesplit-vars fgl-config)
+  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl ,repeat-concl ,allow-irrel-casesplit-vars ,fgl-config
                           state))
 
 
