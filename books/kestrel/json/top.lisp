@@ -1,6 +1,6 @@
 ; JSON Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -30,8 +30,8 @@
     (xdoc::li
      "The "
      (xdoc::ahref
-      "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf"
-      "ECMA-404 Standard (2nd Edition)")
+      "https://www.ecma-international.org/publications-and-standards/standards/ecma-404"
+      "ECMA-404 Standard (2nd Edition, December 2017)")
      ".")
     (xdoc::li
      "The "
@@ -42,10 +42,14 @@
      "The "
      (xdoc::ahref "https://tools.ietf.org/html/rfc8259"
                   "RFC 8259")
+     ", including "
+     (xdoc::seetopic "https://www.rfc-editor.org/errata/rfc8259"
+                     "errata")
      "."))
    (xdoc::p
     "These are all meant to be consistent,
      at least in defining the JSON format,
-     although they may contain slightly different recommendations."))
+     although they may contain
+     slightly different notations and recommendations."))
   :order-subtopics t
   :default-parent t)
