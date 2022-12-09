@@ -135,7 +135,10 @@
   (local (defun generic-comparison (x y) (list x y))))
 
 ;; The function to merge 2 sorted lists
-(defun merge-generic (l1 l2 acc)
+(defun merge-generic (l1 ; sorted
+                      l2 ; sorted
+                      acc ; sorted in reverse order, contains elements <= to those in l1 and l2
+                      )
   (declare (xargs :measure (+ (len l1) (len l2))
                   :hints
                   (("Goal"
@@ -173,13 +176,11 @@
                   ))
   (if (atom (cdr l))
       l
-      (mv-let (first-half second-half)
-        (split-list-fast l)
-        (merge-generic (merge-sort-generic first-half)
-                                  (merge-sort-generic second-half)
-                                  nil))))
-
-
+    (mv-let (first-half second-half)
+      (split-list-fast l)
+      (merge-generic (merge-sort-generic first-half)
+                     (merge-sort-generic second-half)
+                     nil))))
 
 (defthm all-generic-predp-of-merge-generic
   (implies (and (all-generic-predp l1)
