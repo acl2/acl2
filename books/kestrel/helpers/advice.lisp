@@ -93,13 +93,14 @@
 (include-book "tools/prove-dollar" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
-(local (include-book "kestrel/lists-light/revappend" :dir :system))
+;(local (include-book "kestrel/lists-light/revappend" :dir :system))
+(local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
 
-(local (in-theory (disable member-equal len true-listp nth)))
+(local (in-theory (disable member-equal len true-listp nth reverse)))
 
 ;; ;; Returns all disabled runes associate with NAME.
 ;; ;; Like disabledp but hygienic, also doesn't end in "p" since not a predicate.
@@ -536,6 +537,11 @@
                 (recommendation-listp recs2))
            (recommendation-listp (revappend recs1 recs2)))
   :hints (("Goal" :in-theory (enable recommendation-listp revappend))))
+
+(defthm recommendation-listp-of-reverse
+  (implies (recommendation-listp recs)
+           (recommendation-listp (reverse recs)))
+  :hints (("Goal" :in-theory (enable recommendation-listp reverse))))
 
 (defthm recommendation-listp-of-cdr
   (implies (recommendation-listp recs)
@@ -1978,7 +1984,7 @@
     (cons (make-rec (concatenate 'string "enable" (acl2::nat-to-string num))
                     :add-enable-hint
                     (first names) ; the name to enable
-                    0             ; confidence percentage (TODO: allow unknown)
+                    5             ; confidence percentage (quite high) TODO: allow unknown?)
                     nil ; book map ; todo: indicate that the name must be present?
                     )
           (make-enable-recs-aux (rest names) (+ 1 num)))))
@@ -2048,7 +2054,7 @@
                (if (not res)
                    acc
                  (let ((hints (cadr res)))
-                   (if (member-equal hints acc) ; todo: also look for equivalent recs?
+                   (if (member-equal hints acc) ; todo: also look for equivalent hints?
                        acc
                      (cons hints acc)))))))))))
 
@@ -2062,20 +2068,22 @@
      (hint-lists-from-history-events (rest events)
                                      (hint-lists-from-history-event (first events) acc)))))
 
-(defun make-exact-hint-recs (hint-lists base-name num acc)
+(defun make-exact-hint-recs (hint-lists base-name num confidence-percent acc)
   (declare (xargs :guard (and (true-listp hint-lists)
                               (stringp base-name)
                               (posp num)
+                              (confidence-percentp confidence-percent)
                               (true-listp acc))))
   (if (endp hint-lists)
       (reverse acc)
     (make-exact-hint-recs (rest hint-lists)
                           base-name
                           (+ 1 num)
+                          confidence-percent ; todo: allow this to decrease as we go
                           (cons (make-rec (concatenate 'string base-name (acl2::nat-to-string num))
                                           :exact-hints ; new kind of rec, to replace all hints (todo: if the rec is expressible as something simpler, use that)
                                           (first hint-lists)
-                                          0 ; confidence percent (TODO: What should we put in here?)
+                                          confidence-percent
                                           nil ; no book-map (TODO: What about for things inside encapsulates?)
                                           )
                                 acc))))
@@ -2083,7 +2091,9 @@
 ;; Extracts hints from events in the command history.  In the result, hints for more recent events come first and have higher numbers.
 ;; The result should contain no exact duplicates, but the recs (which are all of type :exact-hints) might effectively duplicate other recommendations.
 (defund make-recs-from-history-events (events)
-  (make-exact-hint-recs (hint-lists-from-history-events events nil) "history" 1 nil))
+  (make-exact-hint-recs (hint-lists-from-history-events events nil) "history" 1
+                        3 ; confidence-percent (quite high)
+                        nil))
 
 ;; Returns (mv erp val state).
 ;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
@@ -2314,21 +2324,32 @@
     (and (recommendation-listp (first rec-lists))
          (recommendation-list-listp (rest rec-lists)))))
 
-;; TODO: Think about the order here
-(defun merge-rec-lists-into-recs (rec-lists recs)
+(defund merge-rec-lists-into-recs (rec-lists recs)
   (declare (xargs :guard (and (recommendation-list-listp rec-lists)
                               (recommendation-listp recs))
                   :verify-guards nil ; done below
                   :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
   (if (endp rec-lists)
       recs
-    (merge-rec-lists-into-recs (rest rec-lists)
+    (merge-rec-lists-into-recs (reverse (rest rec-lists)) ; preserve the order
                                (merge-recs-into-recs (reverse (first rec-lists)) recs))))
+
+(defthm recommendation-list-listp-of-revappend
+  (implies (and (recommendation-list-listp rec-lists1)
+                (recommendation-list-listp rec-lists2))
+           (recommendation-list-listp (revappend rec-lists1 rec-lists2)))
+  :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm recommendation-list-listp-of-reverse
+  (implies (recommendation-list-listp rec-lists)
+           (recommendation-list-listp (reverse rec-lists)))
+  :hints (("Goal" :in-theory (enable reverse))))
 
 (defthm recommendation-listp-of-merge-recs-lists-into-recs
   (implies (and (recommendation-list-listp rec-lists)
                 (recommendation-listp recs))
-           (recommendation-listp (merge-rec-lists-into-recs rec-lists recs))))
+           (recommendation-listp (merge-rec-lists-into-recs rec-lists recs)))
+  :hints (("Goal" :in-theory (enable merge-rec-lists-into-recs))))
 
 (verify-guards merge-rec-lists-into-recs)
 
@@ -2569,26 +2590,24 @@
   (b* (;; Get the recommendations:
        ((mv erp ml-recommendation-lists state)
         (get-recs-from-models models num-recs-per-model checkpoint-clauses server-url debug print nil state))
-       ;; Removes duplicates:
-       (ml-recommendations (merge-rec-lists-into-recs ml-recommendation-lists nil))
        ((when erp) (mv erp nil nil state))
-       ;; Sort the whole list by confidence (hope the numbers are comparable):
-       (ml-recommendations (merge-sort-recs-by-confidence ml-recommendations))
        ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
        (enable-recommendations (if (member-equal :enable disallowed-rec-sources)
                                    nil
                                  ;; todo: translate outside make-enable-recs?:
                                  (make-enable-recs theorem-body (w state))))
        ;; Make recs based on hints given to recent theorems:
-       ((mv erp recs-from-history state) (if (member-equal :history disallowed-rec-sources)
-                                             (mv nil nil state)
-                                           (make-recs-from-history state)))
+       ((mv erp history-based-recommendations state) (if (member-equal :history disallowed-rec-sources)
+                                                         (mv nil nil state)
+                                                       (make-recs-from-history state)))
        ((when erp) (mv erp nil nil state))
-       ;; todo: remove duplicate recs from multiple sources:
-       ;; TODO: Can any of these 3 lists contain dups?
-       (recommendations (merge-recs-into-recs (reverse enable-recommendations)  ; reverse to preserve the order, though it's not very meaningful
-                                              (merge-recs-into-recs (reverse recs-from-history) ; reverse to preserve the order
-                                                                    ml-recommendations)))
+       (recommendation-lists (cons enable-recommendations
+                                   (cons history-based-recommendations
+                                         ml-recommendation-lists)))
+       ;; Removes duplicates:
+       (recommendations (merge-rec-lists-into-recs recommendation-lists nil))
+       ;; Sort the whole list by confidence (hope the numbers are comparable):
+       (recommendations (merge-sort-recs-by-confidence recommendations)) ; todo: not a stable sort, messes up the order
        ;; Remove any recs whose types have been disallowed:
        (rec-count-before-removal (len recommendations))
        (recommendations (remove-disallowed-recs recommendations disallowed-rec-types nil))
