@@ -17,13 +17,13 @@
 
 #|
 
- s-diff-s1/2 are rules that replaces acl2::s-diff-s,
- acl2::s-diff-s is a rule that has a loop-stopper and the
+ mset-diff-mset1/2 are rules that replaces acl2::mset-diff-mset,
+ acl2::mset-diff-mset is a rule that has a loop-stopper and the
  behavior of loop-stoppers makes it hard to determine how ss are
- rewritten, so the only point of defdata-s-diff-s is to get rid
+ rewritten, so the only point of defdata-mset-diff-mset is to get rid
  of that loop stopper and add more predictable behavior.
 
- For example, with s-diff-s
+ For example, with mset-diff-mset
 
  (acl2s-defaults :set testing-enabled nil)
 
@@ -56,27 +56,29 @@
 ; If a and b are quoted objects, check the term-order by unquoting
 ; them. This is the only rule we should see in ACL2s/defdata since
 ; record fields are keywords.
-(defthm s-diff-s1
+(defthm mset-diff-mset1
   (implies (and
             (syntaxp (quotep a))
             (syntaxp (quotep b))
             (syntaxp (term-order (unquote a) (unquote b)))
+            (recordp r)
             (not (equal a b)))
-           (equal (s b y (s a x r))
-                  (s a x (s b y r))))
+           (equal (mset b y (mset a x r))
+                  (mset a x (mset b y r))))
   :rule-classes ((:rewrite :loop-stopper nil)))
 
-; This rule is here so that we get the s-diff-s behavior in all
+; This rule is here so that we get the mset-diff-mset behavior in all
 ; other cases.
-(defthm s-diff-s2
+(defthm mset-diff-mset2
   (implies (and
             (syntaxp (or (not (quotep a)) (not (quotep b))))
+            (recordp r)
             (not (equal a b)))
-           (equal (s b y (s a x r))
-                  (s a x (s b y r))))
-  :rule-classes ((:rewrite :loop-stopper ((a b s)))))
+           (equal (mset b y (mset a x r))
+                  (mset a x (mset b y r))))
+  :rule-classes ((:rewrite :loop-stopper ((a b mset)))))
 
-(in-theory (disable s-diff-s))
+(in-theory (disable mset-diff-mset))
 
 #|
 
@@ -97,42 +99,34 @@
 |#
 
 (defthm records-lemma-acl2-count
-  (implies (and (ifrp v)
-                (rcdp v))
-           (< (acl2-count (g-aux x v))
-              (acl2-count v)))
-  :hints (("goal" :in-theory (enable g-aux ifrp)))
+  (<= (acl2-count (mget k r))
+      (acl2-count r))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes :linear)
 
 (defun good-map (x)
-  (rcdp x))
+  (recordp x))
 
 (defun non-empty-good-map (x)
   (declare (xargs :guard t))
   (and (consp x)
-       (rcdp x)))
-
-(defthm records-acl2-count-linear-arith-<=
-  (<= (acl2-count (g k v))
-      (acl2-count v))
-  :hints (("goal" :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
-  :rule-classes :linear)
+       (recordp x)))
 
 (defthm records-acl2-count-linear-arith-<
-  (implies (and k
-                (g k v))
-           (< (acl2-count (g k v))
-              (acl2-count v)))
-  :hints (("goal" :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
+  (implies (mget k r)
+           (< (acl2-count (mget k r))
+              (acl2-count r)))
+  :hints (("goal" :in-theory 
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes :linear)
 
 (defthm records-acl2-count
-  (implies (and x
-                (consp v))
-           (< (acl2-count (g x v))
-              (acl2-count v)))
-  :hints (("goal" :induct (g-aux x v)
-           :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
+  (implies (consp r)
+           (< (acl2-count (mget k r))
+              (acl2-count r)))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes :linear)
 
 
@@ -148,9 +142,9 @@
   x)
 
 (defthmd map-elim-rule 
-;(implies (rcdp x)
-  (equal (s a (g a x) (map-identity2 a x))
-         x)
+  (implies (recordp r)
+           (equal (mset k (mget k r) (map-identity2 k r))
+                  r))
   :rule-classes :elim)
 
 (defun list-identity2 (a x) 
@@ -189,180 +183,80 @@
 
 ;Following lemmas are needed for record modifier theorems
 
-(defthm s-aux-consp
+(defthm mset-aux-consp
   (implies v
-           (consp (s-aux a v r)))
-  :hints (("goal" :in-theory (enable rcdp s-aux)))
-  :rule-classes ((:forward-chaining :trigger-terms ((s-aux a v r)))
+           (consp (mset a v r)))
+  :hints (("goal" :in-theory
+           (enable mset recordp no-nil-val-alistp ordered-unique-key-alistp)))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset a v r)))
                  (:rewrite :backchain-limit-lst 1)))
 
-(defthm s-preserves-rcdp-nil
-  (implies (and (syntaxp (quotep a))
-                a)
-           (rcdp (s a v nil)))
-  :hints (("goal" :in-theory (enable s ifrp rcdp s-aux acl2->rcd rcd->acl2)))
-  :rule-classes ((:forward-chaining :trigger-terms ((s a v nil)))
-                 (:rewrite)))
-
-(defthmd s-preserves-rcdp
-  (implies (and a v (rcdp r))
-           (rcdp (s a v r)))
-  :hints (("goal" :in-theory
-           (enable s ifrp rcdp s-aux acl2->rcd rcd->acl2)))
-  :rule-classes ((:forward-chaining :trigger-terms ((s a v r)))
+(defthm mset-preserves-record-nil
+  (recordp (mset a v nil))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset a v nil)))
                  (:rewrite)))
 
 (defthm s-nil-no-op
-  (implies (and (rcdp r) (not (g a r)))
-           (equal (s a nil r) r))
+  (implies (and (recordp r) (not (mget a r)))
+           (equal (mset a nil r) r))
   :hints (("goal" :in-theory
-           (enable s ifrp rcdp s-aux acl2->rcd rcd->acl2
-                   g g-aux)))
-  :rule-classes ((:forward-chaining :trigger-terms ((s a nil r)))
+           (enable mset mget recordp no-nil-val-alistp
+                   ordered-unique-key-alistp)))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset a nil r)))
                  (:rewrite)))
-
-(defthm s-preserves-rcdp2
-  (implies (and a (rcdp r) (not (g a r)))
-           (rcdp (s a v r)))
-  :hints (("goal" :in-theory
-           (enable s ifrp rcdp s-aux acl2->rcd rcd->acl2
-                   g g-aux)))
-  :rule-classes ((:forward-chaining :trigger-terms ((s a v r)))
-                 (:rewrite)))
-
-(defthm rcd->acl2-preserves-rcdp-tag
-  (implies (not (ifrp r))
-           (and (rcdp (rcd->acl2 r))
-                (not (ifrp (rcd->acl2 r)))))
-  :hints (("goal" :in-theory (enable ifrp rcdp acl2->rcd rcd->acl2)))
-  :rule-classes ((:forward-chaining :trigger-terms ((rcd->acl2 r)))
-                 (:rewrite :backchain-limit-lst 1)))
-
-(defthm s-aux-preserves-not-ifrp
-  (implies (and a
-                v
-                (not (ifrp r)))
-           (not (ifrp (s-aux a v r))))
-  :hints (("goal" :in-theory (enable s ifrp s-aux rcdp rcd->acl2 acl2->rcd))))
-
-
-(defthm g-aux-ifrp 
-  (implies (and (g-aux *tag* r) (rcdp r))
-           (not (ifrp r)))
-  :hints (("goal" :in-theory (enable g g-aux s ifrp s-aux rcdp rcd->acl2 acl2->rcd)))
-  :rule-classes ((:forward-chaining :trigger-terms ((g-aux *tag* r)))
-                 (:rewrite :backchain-limit-lst 1)))
-
-(defthm s-aux-preserves-not-ifrp-tag
-  (implies (and (not (equal a *tag*))
-                (rcdp r)
-                (or (g *tag* (s-aux a v r))
-                    (g *tag* r)))
-           (and (not (ifrp (s-aux a v r)))
-                (rcdp (s-aux a v r))))
-  :hints (("goal" :in-theory (enable g g-aux s ifrp s-aux rcdp rcd->acl2 acl2->rcd)))
-  :rule-classes ((:forward-chaining :trigger-terms ((s-aux a v r)))
-                 (:rewrite :backchain-limit-lst 1)))
-
-(defthm s-preserves-rcdp-tag
-  (implies (and (not (equal a *tag*))
-                (rcdp r)
-                (or (g *tag* (s a v r))
-                    (g *tag* r)))
-           (and (not (ifrp (s a v r)))
-                (rcdp (s a v r))))
-  :hints (("goal" :in-theory (enable g g-aux s ifrp rcdp s-aux acl2->rcd
-                                     rcd->acl2)))
-  :rule-classes ((:forward-chaining :trigger-terms ((rcdp (s a v r))))
-                 (:rewrite :backchain-limit-lst 2)))
-
-(defthm s-non-nil-val-is-consp
-  (implies (and a v (rcdp r))
-           (consp (s a v r)))
-  :rule-classes ((:forward-chaining :trigger-terms ((s a v r)))
-                 (:rewrite :backchain-limit-lst 1))
-  :hints (("goal" :in-theory (enable s ifrp s-aux rcdp rcd->acl2 acl2->rcd))))
 
 (defthm field-not-empty-implies-record-not-empty1
-  (implies (and (g a x) a)
-           (consp x))
-  :hints (("goal" :in-theory (enable s g g-aux s-aux acl2->rcd)))
+  (implies (mget a r)
+           (consp r))
+  :hints (("goal" :in-theory
+           (enable mset mget recordp no-nil-val-alistp
+                   ordered-unique-key-alistp)))
   :rule-classes (:forward-chaining))
 
-(defthm tag-not-empty-implies-record-not-empty1
-  (implies (g *tag* x)
-           (consp x))
-  :hints (("goal" :in-theory (enable s g g-aux s-aux acl2->rcd)))
-  :rule-classes ((:forward-chaining)))
-
-#|
-(defthm establish-g-s
-  (implies (and (syntaxp (quotep a))
-                a)
-           (g *tag* (s *tag* a r)))
-  :rule-classes ((:forward-chaining :trigger-terms ((s *tag* a r)))))
-|#
-
-(defthmd s-diff-entry-non-empty-good-map-is-consp1
-  (implies (and a
-                (g a (s b v r)))
-           (consp (s b v r)))
-  :hints (("goal" :use ((:instance field-not-empty-implies-record-not-empty1
-                                   (x (s b v r))))
-           :in-theory (enable s g g-aux s-aux rcd->acl2 acl2->rcd rcdp ifrp)))
-  :rule-classes ((:forward-chaining :trigger-terms ((s b v r)))
-                 (:rewrite :backchain-limit-lst 1)))
-
-(defthm s-diff-entry-non-empty-tag-is-consp1
-  (implies (g *tag* (s b v r))
-           (consp (s b v r)))
-  :rule-classes ((:forward-chaining)
-                 (:rewrite :backchain-limit-lst 1)))
 
 (defthmd s-diff-entry-non-empty-good-map-is-consp2
-  (implies (and a
-                (not (equal a b))
-                (g a r))
-           (consp (s b v r)))
-  :hints (("goal" :use ((:instance field-not-empty-implies-record-not-empty1
-                                   (x (s b v r))))))
-  :rule-classes ((:forward-chaining :trigger-terms ((s b v r)))
+  (implies (and (not (equal a b))
+                (mget a r))
+           (consp (mset b v r)))
+  :hints (("goal"
+           :in-theory
+           (enable mset mget recordp no-nil-val-alistp
+                   ordered-unique-key-alistp)))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset b v r)))
                  (:rewrite :backchain-limit-lst 1)))
 
-(defthmd s-diff-entry-tag-is-consp
-  (implies (and (g *tag* r)
-                (or (not (equal b *tag*))
-                    v))
-           (consp (s b v r)))
+(defthmd s-diff-entry-non-empty-good-map-is-consp-tag
+  (implies (and (not (equal *tag* b))
+                (mget *tag* r))
+           (consp (mset b v r)))
   :hints (("goal"
-           :use ((:instance s-diff-entry-non-empty-good-map-is-consp2
-                            (a *tag*)))
-           :in-theory (enable s g g-aux s-aux rcd->acl2 acl2->rcd)))
-  :rule-classes ((:forward-chaining :trigger-terms ((s b v r)))
+           :in-theory
+           (enable mset mget recordp no-nil-val-alistp
+                   ordered-unique-key-alistp)))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset b v r)))
                  (:rewrite :backchain-limit-lst 1)))
 
 (defthmd s-diff-entry-non-empty-good-map-is-non-nil
-  (implies (and (g a r)
-                a
+  (implies (and (mget a r)
                 (not (equal a b))) 
-           (s b v r))
-  :hints (("goal" :use ((:instance s-diff-entry-non-empty-good-map-is-consp2))))
-  :rule-classes ((:forward-chaining :trigger-terms ((s b v r)))
+           (mset b v r))
+  :hints (("goal" :use
+           ((:instance s-diff-entry-non-empty-good-map-is-consp2))))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset b v r)))
                  (:rewrite :backchain-limit-lst 1)))
 
 (defthmd s-diff-entry-tag-is-non-nil
-  (implies (and (g *tag* r)
+  (implies (and (mget *tag* r)
                 (not (equal b *tag*))) 
-           (s b v r))
-  :hints (("goal" :use ((:instance s-diff-entry-non-empty-good-map-is-consp2))))
-  :rule-classes ((:forward-chaining :trigger-terms ((s b v r)))
+           (mset b v r))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset b v r)))
                  (:rewrite :backchain-limit-lst 1)))
 
-(defthm non-empty-good-map-fc
-  (implies (rcdp v1)
-           (and (implies v1 (consp v1))
-                (implies (car v1) (consp (car v1)))))
-  :hints (("goal" :in-theory (enable rcdp)))
+(defthm non-empty-record-fc
+  (implies (recordp r)
+           (and (implies r (consp r))
+                (implies (car r) (consp (car r)))))
+  :hints (("goal" :in-theory (enable recordp)))
   :rule-classes :forward-chaining)
 
-(in-theory (disable rcdp))
+(in-theory (disable recordp))
