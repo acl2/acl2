@@ -110,6 +110,13 @@
 
 (defconst *step-limit* 100000)
 
+;; See :doc lemma-instance
+(defund symbol-that-can-be-usedp (sym wrld)
+  (declare (xargs :guard (and (symbolp sym)
+                              (plist-worldp wrld))))
+  (or (acl2::defined-functionp sym wrld)
+      (acl2::defthm-or-defaxiom-symbolp sym wrld)))
+
 ;; If NAME is a macro-alias, return what it represents.  Otherwise, return NAME.
 ;; TODO: Compare to (deref-macro-name name (macro-aliases wrld)).
 (defund handle-macro-alias (name wrld)
@@ -1058,12 +1065,137 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Think about THM vs DEFTHM
-;; (defun make-thm-to-attempt (body hints otf-flg)
-;;   `(thm ,body
-;;         ,@(and hints `(:hints ,hints))
-;;         ,@(and otf-flg `(:otf-flg .otf-flg))))
+(defun cw-failure-message (snippet failure-info)
+  (if (eq failure-info :step-limit-reached) ; update this is other kinds of failure-info become supported
+      (cw "fail (~s0: step limit reached)~%" snippet)
+    (cw "fail (~s0)~%" snippet)))
 
+(defun cw-success-message (rec)
+  (declare (xargs :guard (successful-recommendationp rec)
+                  :mode :program))
+  (progn$ (cw "SUCCESS: ")
+          (show-successful-recommendation rec)
+          (cw "~%")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun make-enable-recs-aux (names num)
+  (declare (xargs :guard (and (symbol-listp names)
+                              (posp num))))
+  (if (endp names)
+      nil
+    (cons (make-rec (concatenate 'string "enable" (acl2::nat-to-string num))
+                    :add-enable-hint
+                    (first names) ; the name to enable
+                    5             ; confidence percentage (quite high) TODO: allow unknown?)
+                    nil ; book map ; todo: indicate that the name must be present?
+                    )
+          (make-enable-recs-aux (rest names) (+ 1 num)))))
+
+(local
+ (defthm recommendation-listp-of-make-enable-recs-aux
+   (implies (symbol-listp names)
+            (recommendation-listp (make-enable-recs-aux names num)))
+   :hints (("Goal" :in-theory (enable recommendation-listp)))))
+
+;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
+;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
+;; Returns a list of recs, which should contain no duplicates.
+(defun make-enable-recs (formula wrld)
+  (declare (xargs :guard (and ;; formula is an untranslated term
+                              (plist-worldp wrld))
+                  :mode :program ; because of acl2::translate-term
+                  ))
+  (let* ((translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
+         (fns-to-try-enabling (set-difference-eq (acl2::defined-fns-in-term translated-formula wrld)
+                                                 ;; Don't bother wasting time with trying to enable implies
+                                                 ;; (I suppose we could try it if implies is disabled):
+                                                 '(implies))))
+    (make-enable-recs-aux fns-to-try-enabling 1)))
+
+;; (local
+;;  (defthm recommendation-listp-of-make-enable-recs
+;;    (implies (pseudo-termp formula)
+;;             (recommendation-listp (make-enable-recs formula wrld)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(mutual-recursion
+ ;; Extends ACC with hint-lists from the EVENT.
+ (defun hint-lists-from-history-event (event acc)
+   (declare (xargs :guard (and ;; event
+                           (true-listp acc)
+                           )
+                   :verify-guards nil ; todo
+                   ))
+   (if (not (consp event))
+       (er hard? 'hint-lists-from-history-event "Unexpected command (not a cons!): ~x0." event)
+     (if (eq 'local (acl2::ffn-symb event)) ; (local e1)
+         (hint-lists-from-history-event (acl2::farg1 event) acc)
+       (if (eq 'encapsulate (acl2::ffn-symb event)) ; (encapsulate <sigs> e1 e2 ...)
+           (hint-lists-from-history-events (rest (acl2::fargs event)) acc)
+         (if (eq 'progn (acl2::ffn-symb event)) ; (progn e1 e2 ...)
+             (hint-lists-from-history-events (acl2::fargs event) acc)
+           (if ;; todo: what else can we harvest hints from?
+               (not (member-eq (acl2::ffn-symb event) '(defthm defthmd)))
+               acc
+             (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
+               (if (not res)
+                   acc
+                 (let ((hints (cadr res)))
+                   (if (member-equal hints acc) ; todo: also look for equivalent hints?
+                       acc
+                     (cons hints acc)))))))))))
+
+ ;; Extends ACC with hint-lists from the EVENTS.  Hint lists from earlier EVENTS end up deeper in the result,
+ ;; which seems good because more recent events are likely to be more relevant (todo: but what about dups).
+ (defun hint-lists-from-history-events (events acc)
+   (declare (xargs :guard (and (true-listp events)
+                               (true-listp acc))))
+   (if (endp events)
+       acc
+     (hint-lists-from-history-events (rest events)
+                                     (hint-lists-from-history-event (first events) acc)))))
+
+(defun make-exact-hint-recs (hint-lists base-name num confidence-percent acc)
+  (declare (xargs :guard (and (true-listp hint-lists)
+                              (stringp base-name)
+                              (posp num)
+                              (confidence-percentp confidence-percent)
+                              (true-listp acc))))
+  (if (endp hint-lists)
+      (reverse acc)
+    (make-exact-hint-recs (rest hint-lists)
+                          base-name
+                          (+ 1 num)
+                          confidence-percent ; todo: allow this to decrease as we go
+                          (cons (make-rec (concatenate 'string base-name (acl2::nat-to-string num))
+                                          :exact-hints ; new kind of rec, to replace all hints (todo: if the rec is expressible as something simpler, use that)
+                                          (first hint-lists)
+                                          confidence-percent
+                                          nil ; no book-map (TODO: What about for things inside encapsulates?)
+                                          )
+                                acc))))
+
+;; Extracts hints from events in the command history.  In the result, hints for more recent events come first and have higher numbers.
+;; The result should contain no exact duplicates, but the recs (which are all of type :exact-hints) might effectively duplicate other recommendations.
+(defund make-recs-from-history-events (events)
+  (make-exact-hint-recs (hint-lists-from-history-events events nil) "history" 1
+                        3 ; confidence-percent (quite high)
+                        nil))
+
+;; Returns (mv erp val state).
+;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
+(defun make-recs-from-history (state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state)) ; todo: how to get events, not commands (e.g., get what make-events expanded to)?
+       ((when erp) (mv erp nil state)))
+    (mv nil (make-recs-from-history-events events) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; An interface to prove$ that doesn't pass back errors (instead printing a message).
 ;; Returns (mv provedp state).  Does not propagate any errors back.
 (defund prove$-no-error (ctx term hints otf-flg step-limit state)
   (declare (xargs :mode :program
@@ -1076,7 +1208,8 @@
                 (mv nil state))
       (mv provedp state))))
 
-;; Returns (mv provedp failure-info state).
+;; Returns (mv provedp failure-info state), where failure-info may be
+;; :step-limit-reached or :unknown.
 (defund prove$-no-error-with-failure-info (ctx term hints otf-flg step-limit state)
   (declare (xargs :mode :program
                   :stobjs state))
@@ -1087,13 +1220,6 @@
         (prog2$ (cw "Syntax error in prove$ call (made by ~x0).~%" ctx)
                 (mv nil nil state))
       (mv provedp failure-info state))))
-
-;; See :doc lemma-instance
-(defund symbol-that-can-be-usedp (sym wrld)
-  (declare (xargs :guard (and (symbolp sym)
-                              (plist-worldp wrld))))
-  (or (acl2::defined-functionp sym wrld)
-      (acl2::defthm-or-defaxiom-symbolp sym wrld)))
 
 ;; Calls prove$ on FORMULA after submitting INCLUDE-BOOK-FORM, which is undone after the prove$.
 ;; Returns (mv erp provedp state).  If NAME-TO-CHECK is non-nil, we require it to be something
@@ -1179,18 +1305,6 @@
                                      ;; args to prove$:
                                      hints otf-flg step-limit
                                      state))))
-
-(defun cw-failure-message (snippet failure-info)
-  (if (eq failure-info :step-limit-reached) ; update this is other kinds of failure-info become supported
-      (cw "fail (~s0: step limit reached)~%" snippet)
-    (cw "fail (~s0)~%" snippet)))
-
-(defun cw-success-message (rec)
-  (declare (xargs :guard (successful-recommendationp rec)
-                  :mode :program))
-  (progn$ (cw "SUCCESS: ")
-          (show-successful-recommendation rec)
-          (cw "~%")))
 
 ;; Returns (mv erp successp state).
 ;; TODO: Skip if library already included
@@ -1299,11 +1413,6 @@
        ((when contradictp)
         (and (acl2::print-level-at-least-tp print) (cw "skip (hyp ~x0 would contradict existing hyps)~%" hyp))
         (mv nil nil state))
-       ;; Now see whether we can prove the theorem using the new hyp:
-       ;; ((mv erp state) (acl2::submit-event-helper
-       ;;                  ;; TODO: Add the hyp more nicely:
-       ;;                  (make-thm-to-attempt `(implies ,hyp ,theorem-body) theorem-hints theorem-otf-flg)
-       ;;                  t nil state))
        (new-theorem-body `(implies ,hyp ,theorem-body)) ; todo: merge hyp in better
        ((mv provedp failure-info state) (prove$-no-error-with-failure-info
                                          'try-add-hyp
@@ -1989,136 +2098,6 @@
                                  (cons maybe-successful-rec successful-recs)
                                successful-recs)
                              state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun make-enable-recs-aux (names num)
-  (declare (xargs :guard (and (symbol-listp names)
-                              (posp num))))
-  (if (endp names)
-      nil
-    (cons (make-rec (concatenate 'string "enable" (acl2::nat-to-string num))
-                    :add-enable-hint
-                    (first names) ; the name to enable
-                    5             ; confidence percentage (quite high) TODO: allow unknown?)
-                    nil ; book map ; todo: indicate that the name must be present?
-                    )
-          (make-enable-recs-aux (rest names) (+ 1 num)))))
-
-(local
- (defthm recommendation-listp-of-make-enable-recs-aux
-   (implies (symbol-listp names)
-            (recommendation-listp (make-enable-recs-aux names num)))
-   :hints (("Goal" :in-theory (enable recommendation-listp)))))
-
-;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
-;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
-;; Returns a list of recs, which should contain no duplicates.
-(defun make-enable-recs (formula wrld)
-  (declare (xargs :guard (and ;; formula is an untranslated term
-                              (plist-worldp wrld))
-                  :mode :program ; because of acl2::translate-term
-                  ))
-  (let* ((translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
-         (fns-to-try-enabling (set-difference-eq (acl2::defined-fns-in-term translated-formula wrld)
-                                                 ;; Don't bother wasting time with trying to enable implies
-                                                 ;; (I suppose we could try it if implies is disabled):
-                                                 '(implies))))
-    (make-enable-recs-aux fns-to-try-enabling 1)))
-
-;; (local
-;;  (defthm recommendation-listp-of-make-enable-recs
-;;    (implies (pseudo-termp formula)
-;;             (recommendation-listp (make-enable-recs formula wrld)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; ;; not looking at anything but the type and object
-;; (defun rec-presentp (type object recs)
-;;   (declare (xargs :guard (and (rec-typep type)
-;;                               ;; object
-;;                               (recommendation-listp recs))
-;;                   :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
-;;   (if (endp recs)
-;;       nil
-;;     (let ((rec (first recs)))
-;;       (if (and (eq type (nth 1 rec))
-;;                (equal object (nth 2 rec)))
-;;           t
-;;         (rec-presentp type object (rest recs))))))
-
-(mutual-recursion
- ;; Extends ACC with hint-lists from the EVENT.
- (defun hint-lists-from-history-event (event acc)
-   (declare (xargs :guard (and ;; event
-                           (true-listp acc)
-                           )
-                   :verify-guards nil ; todo
-                   ))
-   (if (not (consp event))
-       (er hard? 'hint-lists-from-history-event "Unexpected command (not a cons!): ~x0." event)
-     (if (eq 'local (acl2::ffn-symb event)) ; (local e1)
-         (hint-lists-from-history-event (acl2::farg1 event) acc)
-       (if (eq 'encapsulate (acl2::ffn-symb event)) ; (encapsulate <sigs> e1 e2 ...)
-           (hint-lists-from-history-events (rest (acl2::fargs event)) acc)
-         (if (eq 'progn (acl2::ffn-symb event)) ; (progn e1 e2 ...)
-             (hint-lists-from-history-events (acl2::fargs event) acc)
-           (if ;; todo: what else can we harvest hints from?
-               (not (member-eq (acl2::ffn-symb event) '(defthm defthmd)))
-               acc
-             (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
-               (if (not res)
-                   acc
-                 (let ((hints (cadr res)))
-                   (if (member-equal hints acc) ; todo: also look for equivalent hints?
-                       acc
-                     (cons hints acc)))))))))))
-
- ;; Extends ACC with hint-lists from the EVENTS.  Hint lists from earlier EVENTS end up deeper in the result,
- ;; which seems good because more recent events are likely to be more relevant (todo: but what about dups).
- (defun hint-lists-from-history-events (events acc)
-   (declare (xargs :guard (and (true-listp events)
-                               (true-listp acc))))
-   (if (endp events)
-       acc
-     (hint-lists-from-history-events (rest events)
-                                     (hint-lists-from-history-event (first events) acc)))))
-
-(defun make-exact-hint-recs (hint-lists base-name num confidence-percent acc)
-  (declare (xargs :guard (and (true-listp hint-lists)
-                              (stringp base-name)
-                              (posp num)
-                              (confidence-percentp confidence-percent)
-                              (true-listp acc))))
-  (if (endp hint-lists)
-      (reverse acc)
-    (make-exact-hint-recs (rest hint-lists)
-                          base-name
-                          (+ 1 num)
-                          confidence-percent ; todo: allow this to decrease as we go
-                          (cons (make-rec (concatenate 'string base-name (acl2::nat-to-string num))
-                                          :exact-hints ; new kind of rec, to replace all hints (todo: if the rec is expressible as something simpler, use that)
-                                          (first hint-lists)
-                                          confidence-percent
-                                          nil ; no book-map (TODO: What about for things inside encapsulates?)
-                                          )
-                                acc))))
-
-;; Extracts hints from events in the command history.  In the result, hints for more recent events come first and have higher numbers.
-;; The result should contain no exact duplicates, but the recs (which are all of type :exact-hints) might effectively duplicate other recommendations.
-(defund make-recs-from-history-events (events)
-  (make-exact-hint-recs (hint-lists-from-history-events events nil) "history" 1
-                        3 ; confidence-percent (quite high)
-                        nil))
-
-;; Returns (mv erp val state).
-;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
-(defun make-recs-from-history (state)
-  (declare (xargs :mode :program
-                  :stobjs state))
-  (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state)) ; todo: how to get events, not commands (e.g., get what make-events expanded to)?
-       ((when erp) (mv erp nil state)))
-    (mv nil (make-recs-from-history-events events) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
