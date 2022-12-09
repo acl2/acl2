@@ -556,7 +556,7 @@
     (prog2$ (show-recommendation (first recs))
             (show-recommendations-aux (rest recs)))))
 
-;; Returns state.
+;; Returns state because of the margin widening.
 (defun show-recommendations (recs state)
   (declare (xargs :guard (recommendation-listp recs)
                   :stobjs state))
@@ -2548,6 +2548,68 @@
         checkpoint-clauses
         state)))
 
+(defund remove-disallowed-rec-types-from-lists (rec-lists disallowed-rec-types print)
+  (declare (xargs :guard (and (recommendation-list-listp rec-lists)
+                              (rec-type-listp disallowed-rec-types)
+                              (acl2::print-levelp print))
+                  :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
+  (if (endp rec-lists)
+      nil
+    (b* ((rec-list (first rec-lists))
+         (rec-count-before-removal (len rec-list))
+         (rec-list (remove-disallowed-recs rec-list disallowed-rec-types nil))
+         (rec-count-after-removal (len rec-list))
+         (- (and (< rec-count-after-removal rec-count-before-removal) ; todo: this doesn't catch disallowed enable or history recs suppressed elsewhere
+                 (acl2::print-level-at-least-tp print)
+                 ;; todo: pass in and print the source of the recs here:
+                 (cw "NOTE: Removed ~x0 recommendations of disallowed types.~%" (- rec-count-before-removal rec-count-after-removal)))))
+      (cons rec-list
+            (remove-disallowed-rec-types-from-lists (rest rec-lists) disallowed-rec-types print)))))
+
+;; Returns (mv erp recommendation-lists state).
+(defun get-all-recs (checkpoint-clauses
+                     theorem-body
+                     num-recs-per-model
+                     print
+                     server-url
+                     debug
+                     disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
+                     disallowed-rec-sources
+                     models
+                     state)
+  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
+                              ;; theorem-body is an untranslated term
+                              (natp num-recs-per-model)
+                              (acl2::print-levelp print)
+                              (or (null server-url) ; get url from environment variable
+                                  (stringp server-url))
+                              (booleanp debug)
+                              (rec-type-listp disallowed-rec-types)
+                              (subsetp-equal disallowed-rec-sources *extra-rec-sources*)
+                              (model-namesp models))
+                  :stobjs state
+                  :mode :program))
+  (b* ( ;; Get the ML recommendations:
+       ((mv erp ml-recommendation-lists state)
+        (get-recs-from-models models num-recs-per-model checkpoint-clauses server-url debug print nil state))
+       ((when erp) (mv erp nil state))
+       ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
+       (enable-recommendations (if (member-equal :enable disallowed-rec-sources)
+                                   nil
+                                 ;; todo: translate outside make-enable-recs?:
+                                 (make-enable-recs theorem-body (w state))))
+       ;; Make recs based on hints given to recent theorems:
+       ((mv erp history-based-recommendations state) (if (member-equal :history disallowed-rec-sources)
+                                                         (mv nil nil state)
+                                                       (make-recs-from-history state)))
+       ((when erp) (mv erp nil state))
+       (recommendation-lists (cons enable-recommendations
+                                   (cons history-based-recommendations
+                                         ml-recommendation-lists)))
+       ;; Remove any recs whose types have been disallowed:
+       (recommendation-lists (remove-disallowed-rec-types-from-lists recommendation-lists disallowed-rec-types print)))
+    (mv nil recommendation-lists state)))
+
 ;; Returns (mv erp successp best-rec state).
 (defun get-and-try-advice-for-checkpoints (checkpoint-clauses
                                            theorem-name
@@ -2587,39 +2649,17 @@
                               (model-namesp models))
                   :stobjs state
                   :mode :program))
-  (b* (;; Get the recommendations:
-       ((mv erp ml-recommendation-lists state)
-        (get-recs-from-models models num-recs-per-model checkpoint-clauses server-url debug print nil state))
+  (b* (((mv erp recommendation-lists state)
+        (get-all-recs checkpoint-clauses theorem-body num-recs-per-model print server-url debug disallowed-rec-types disallowed-rec-sources models state))
        ((when erp) (mv erp nil nil state))
-       ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
-       (enable-recommendations (if (member-equal :enable disallowed-rec-sources)
-                                   nil
-                                 ;; todo: translate outside make-enable-recs?:
-                                 (make-enable-recs theorem-body (w state))))
-       ;; Make recs based on hints given to recent theorems:
-       ((mv erp history-based-recommendations state) (if (member-equal :history disallowed-rec-sources)
-                                                         (mv nil nil state)
-                                                       (make-recs-from-history state)))
-       ((when erp) (mv erp nil nil state))
-       (recommendation-lists (cons enable-recommendations
-                                   (cons history-based-recommendations
-                                         ml-recommendation-lists)))
        ;; Removes duplicates:
        (recommendations (merge-rec-lists-into-recs recommendation-lists nil))
        ;; Sort the whole list by confidence (hope the numbers are comparable):
        (recommendations (merge-sort-recs-by-confidence recommendations)) ; todo: not a stable sort, messes up the order
-       ;; Remove any recs whose types have been disallowed:
-       (rec-count-before-removal (len recommendations))
-       (recommendations (remove-disallowed-recs recommendations disallowed-rec-types nil))
-       (rec-count-after-removal (len recommendations))
-       (- (and (< rec-count-after-removal rec-count-before-removal) ; todo: this doesn't catch disallowed enable or history recs suppresses above
-               (acl2::print-level-at-least-tp print)
-               (cw "NOTE: Removed ~x0 recommendations of disallowed types." (- rec-count-before-removal rec-count-after-removal))))
-       ;; Print the recommendations (for now):
+       ;; Maybe print the recommendations:
        (state (if (acl2::print-level-at-least-tp print)
                   (prog2$ (cw "~%RECOMMENDATIONS TO TRY:~%")
-                          (show-recommendations recommendations state) ; why does this return state?
-                          )
+                          (show-recommendations recommendations state))
                 state))
        ;; Try the recommendations:
        (- (and print (cw "~%TRYING RECOMMENDATIONS:~%")))
