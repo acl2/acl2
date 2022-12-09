@@ -57,22 +57,22 @@
        (- (cw "(ADVICE: ~x0: " theorem-name))
        ;; Ignores any given hints (for now):
        ((mv erp successp best-rec state)
-        (help::get-and-try-advice-for-theorem theorem-name
-                                              theorem-body
-                                              (acl2::translate-term theorem-body 'submit-defthm-event-with-advice (w state))
-                                              nil ; don't use any hints
-                                              nil ; theorem-otf-flg
-                                              num-recs-per-model
-                                              book-to-avoid-absolute-path
-                                              print
-                                              server-url
-                                              nil ; debug
-                                              100000 ; step-limit (TODO: give time/steps proportional to what was needed for the original theorem?)
-                                              '(:add-hyp) ; disallow :add-hyp, because no hyps are needed for these theorems
-                                              1      ; max-wins
-                                              models
-                                              t ; suppress warning about trivial rec, because below we ask if "original" is the best rec and handle trivial recs there
-                                              state))
+        (help::best-rec-for-theorem theorem-name
+                                    theorem-body
+                                    (acl2::translate-term theorem-body 'submit-defthm-event-with-advice (w state))
+                                    nil           ; don't use any hints
+                                    nil           ; theorem-otf-flg
+                                    num-recs-per-model
+                                    book-to-avoid-absolute-path
+                                    print
+                                    server-url
+                                    nil ; debug
+                                    100000 ; step-limit (TODO: give time/steps proportional to what was needed for the original theorem?)
+                                    '(:add-hyp) ; disallow :add-hyp, because no hyps are needed for these theorems
+                                    1           ; max-wins
+                                    models
+                                    t ; suppress warning about trivial rec, because below we ask if "original" is the best rec and handle trivial recs there
+                                    state))
        ;; TODO: Maybe track errors separately?  Might be that a step limit was reached before checkpoints could even be generated, so perhaps that counts as a :no?
        ((when erp) (mv erp :no state)))
     (if (not successp)

@@ -209,6 +209,7 @@
     ;; Confusingly named: Does not indicate a :use hint:
     ("use-lemma" . :use-lemma)))
 
+;; todo: rename (not necessarily about ml)
 (defconst *ml-rec-types* (strip-cdrs *rec-to-symbol-alist*))
 
 (defconst *all-rec-types* (cons :exact-hints *ml-rec-types*))
@@ -842,7 +843,7 @@
               ;;(cw ": ")
               (show-successful-recommendations-aux (rest recs))))))
 
-;; Returns state.
+;; Returns state (because of the change to the margins).
 (defun show-successful-recommendations (recs state)
   (declare (xargs :guard (successful-recommendation-listp recs)
                   :mode :program
@@ -2483,13 +2484,17 @@
          ((mv erp recs state)
           (if (eq :enable model)
               ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
-              (mv nil
-                  ;; todo: translate outside make-enable-recs?:
-                  (make-enable-recs theorem-body (w state))
-                  state)
-            ;; Make recs based on hints given to recent theorems:
+              (if (member-eq :add-enable-hint disallowed-rec-types)
+                  (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+                (mv nil
+                    ;; todo: translate outside make-enable-recs?:
+                    (make-enable-recs theorem-body (w state))
+                    state))
             (if (eq :history model)
-                (make-recs-from-history state)
+                ;; Make recs based on hints given to recent theorems:
+                (if (member-eq :exact-hints disallowed-rec-types)
+                    (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+                  (make-recs-from-history state))
               ;; It's a normal ML model:
               (get-recs-from-ml-model model num-recs-per-model checkpoint-clauses server-url debug print state))))
          ((when erp) (mv erp nil state))
@@ -2613,21 +2618,21 @@
         state)))
 
 ;; Returns (mv erp successp best-rec state).
-(defun get-and-try-advice-for-checkpoints (checkpoint-clauses
-                                           theorem-name
-                                           theorem-body
-                                           theorem-hints
-                                           theorem-otf-flg
-                                           num-recs-per-model
-                                           book-to-avoid-absolute-path
-                                           print
-                                           server-url
-                                           debug
-                                           step-limit
-                                           disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
-                                           max-wins
-                                           models
-                                           state)
+(defun best-rec-for-checkpoints (checkpoint-clauses
+                                 theorem-name
+                                 theorem-body
+                                 theorem-hints
+                                 theorem-otf-flg
+                                 num-recs-per-model
+                                 book-to-avoid-absolute-path
+                                 print
+                                 server-url
+                                 debug
+                                 step-limit
+                                 disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
+                                 max-wins
+                                 models
+                                 state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (or (null book-to-avoid-absolute-path)
                                   (stringp book-to-avoid-absolute-path))
@@ -2643,8 +2648,8 @@
                               (or (null step-limit)
                                   (natp step-limit))
                               (or ;; (eq :auto max-wins)
-                                  (null max-wins)
-                                  (natp max-wins))
+                               (null max-wins)
+                               (natp max-wins))
                               (rec-type-listp disallowed-rec-types)
                               (model-namesp models))
                   :stobjs state
@@ -2696,29 +2701,29 @@
                     state)
                 (prog2$ (and print (cw "~%NO PROOF FOUND~%~%"))
                         state))))
-    (mv nil ; no error
+    (mv nil                        ; no error
         (posp num-successful-recs) ; whether we succeeded
         (first sorted-successful-recs)
         state)))
 
 ;; Tries the theorem with the supplied hints.  If that doesn't prove the theorem, this requests and tries advice.
 ;; Returns (mv erp successp best-rec state).
-(defun get-and-try-advice-for-theorem (theorem-name
-                                       theorem-body
-                                       translated-theorem-body
-                                       theorem-hints
-                                       theorem-otf-flg
-                                       num-recs-per-model
-                                       book-to-avoid-absolute-path
-                                       print
-                                       server-url
-                                       debug
-                                       step-limit
-                                       disallowed-rec-types
-                                       max-wins
-                                       models
-                                       suppress-trivial-warningp
-                                       state)
+(defun best-rec-for-theorem (theorem-name
+                             theorem-body
+                             translated-theorem-body
+                             theorem-hints
+                             theorem-otf-flg
+                             num-recs-per-model
+                             book-to-avoid-absolute-path
+                             print
+                             server-url
+                             debug
+                             step-limit
+                             disallowed-rec-types
+                             max-wins
+                             models
+                             suppress-trivial-warningp
+                             state)
   (declare (xargs :guard (and (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               (pseudo-termp translated-theorem-body)
@@ -2757,21 +2762,21 @@
             rec
             state)
       ;; Didn't prove using the supplied hints, so try advice:
-      (get-and-try-advice-for-checkpoints checkpoint-clauses
-                                          theorem-name
-                                          theorem-body
-                                          theorem-hints
-                                          theorem-otf-flg
-                                          num-recs-per-model
-                                          book-to-avoid-absolute-path
-                                          print
-                                          server-url
-                                          debug
-                                          step-limit
-                                          disallowed-rec-types
-                                          max-wins
-                                          models
-                                          state))))
+      (best-rec-for-checkpoints checkpoint-clauses
+                                theorem-name
+                                theorem-body
+                                theorem-hints
+                                theorem-otf-flg
+                                num-recs-per-model
+                                book-to-avoid-absolute-path
+                                print
+                                server-url
+                                debug
+                                step-limit
+                                disallowed-rec-types
+                                max-wins
+                                models
+                                state))))
 
 ;; Returns (mv erp event state).
 (defun defthm-advice-fn (theorem-name
@@ -2821,22 +2826,22 @@
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
        (translated-theorem-body (acl2::translate-term theorem-body 'defthm-advice-fn wrld))
        ((mv erp successp best-rec state)
-        (get-and-try-advice-for-theorem theorem-name
-                                        theorem-body
-                                        translated-theorem-body
-                                        theorem-hints
-                                        theorem-otf-flg
-                                        num-recs-per-model
-                                        nil ; no book to avoid
-                                        print
-                                        server-url
-                                        debug
-                                        step-limit
-                                        disallowed-rec-types
-                                        max-wins
-                                        models
-                                        nil
-                                        state))
+        (best-rec-for-theorem theorem-name
+                              theorem-body
+                              translated-theorem-body
+                              theorem-hints
+                              theorem-otf-flg
+                              num-recs-per-model
+                              nil ; no book to avoid
+                              print
+                              server-url
+                              debug
+                              step-limit
+                              disallowed-rec-types
+                              max-wins
+                              models
+                              nil
+                              state))
        ((when erp) (mv erp nil state)))
     (if successp
         (let ((event (successful-rec-to-defthm 'defthm theorem-name best-rec rule-classes)))
@@ -2916,22 +2921,22 @@
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
        (translated-theorem-body (acl2::translate-term theorem-body 'thm-advice-fn wrld))
        ((mv erp successp best-rec state)
-        (get-and-try-advice-for-theorem 'the-thm
-                                        theorem-body
-                                        translated-theorem-body
-                                        theorem-hints
-                                        theorem-otf-flg
-                                        num-recs-per-model
-                                        nil ; no book to avoid
-                                        print
-                                        server-url
-                                        debug
-                                        step-limit
-                                        disallowed-rec-types
-                                        max-wins
-                                        models
-                                        nil
-                                        state))
+        (best-rec-for-theorem 'the-thm
+                              theorem-body
+                              translated-theorem-body
+                              theorem-hints
+                              theorem-otf-flg
+                              num-recs-per-model
+                              nil ; no book to avoid
+                              print
+                              server-url
+                              debug
+                              step-limit
+                              disallowed-rec-types
+                              max-wins
+                              models
+                              nil
+                              state))
        ((when erp) (mv erp nil state)))
     (if successp
         (let ((event (successful-rec-to-thm best-rec)))
@@ -3041,21 +3046,21 @@
             & ;; successp
             & ;; best-rec
             state)
-        (get-and-try-advice-for-checkpoints checkpoint-clauses
-                                            theorem-name
-                                            theorem-body
-                                            theorem-hints
-                                            theorem-otf-flg
-                                            n ; number of recommendations from ML requested
-                                            nil ; no book to avoid (TODO: Maybe avoid the last LDed book, in case they are working on it now)
-                                            print
-                                            server-url
-                                            debug
-                                            step-limit
-                                            disallowed-rec-types
-                                            max-wins
-                                            models
-                                            state))
+        (best-rec-for-checkpoints checkpoint-clauses
+                                  theorem-name
+                                  theorem-body
+                                  theorem-hints
+                                  theorem-otf-flg
+                                  n ; number of recommendations from ML requested
+                                  nil ; no book to avoid (TODO: Maybe avoid the last LDed book, in case they are working on it now)
+                                  print
+                                  server-url
+                                  debug
+                                  step-limit
+                                  disallowed-rec-types
+                                  max-wins
+                                  models
+                                  state))
        ((when erp) (mv erp nil state))
        ;; Ensure there are no checkpoints left over from an attempt to use advice, in case the user calls the tool again.
        ;; TODO: Can we restore the old gag state saved?
@@ -3108,3 +3113,81 @@
 ;; (advice)
 ;; (thm (< (mod x 8) 256))
 ;; (advice)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp successful-recs state).
+;; TODO: Also return unsuccessful-recs?
+(defun all-successful-recs-for-checkpoints (checkpoint-clauses
+                                            theorem-name ; might not be needed
+                                            theorem-body
+                                            theorem-hints
+                                            theorem-otf-flg
+                                            num-recs-per-model
+                                            book-to-avoid-absolute-path ; drop?
+                                            print
+                                            server-url
+                                            debug
+                                            step-limit
+                                            disallowed-rec-types
+                                            models
+                                            state)
+  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
+                              (or (null book-to-avoid-absolute-path)
+                                  (stringp book-to-avoid-absolute-path))
+                              (symbolp theorem-name)
+                              ;; theorem-body is an untranslated term
+                              ;; theorem-hints
+                              (booleanp theorem-otf-flg)
+                              (natp num-recs-per-model)
+                              (acl2::print-levelp print)
+                              (or (null server-url) ; get url from environment variable
+                                  (stringp server-url))
+                              (booleanp debug)
+                              (or (null step-limit)
+                                  (natp step-limit))
+                              (rec-type-listp disallowed-rec-types)
+                              (model-namesp models))
+                  :stobjs state
+                  :mode :program))
+  (b* ( ;; Get all the recs to try:
+       ((mv erp recommendation-alist state)
+        (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print nil state))
+       ((when erp) (mv erp nil state))
+       ;; Combine all the lists:
+       (recommendation-lists (strip-cdrs recommendation-alist))
+       (recommendations (merge-rec-lists-into-recs recommendation-lists nil)) ; also removes duplicates
+       ;; Maybe print the recommendations:
+       (state (if (acl2::print-level-at-least-tp print)
+                  (prog2$ (cw "~%RECOMMENDATIONS TO TRY:~%")
+                          (show-recommendations recommendations state))
+                state))
+       ;; Try the recommendations:
+       (- (and print (cw "~%TRYING RECOMMENDATIONS:~%")))
+       (state (acl2::widen-margins state))
+       ((mv erp successful-recs
+            & ; extra-recs-ignoredp
+            state)
+        ;; TODO: Option to not improve the recs?
+        (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit
+                             nil ; max-wins
+                             print nil state))
+       (state (acl2::unwiden-margins state))
+       ((when erp)
+        (er hard? 'advice-fn "Error trying recommendations: ~x0" erp)
+        (mv erp nil state))
+       ;; Remove duplicates:
+       (successful-recs-no-dupes (merge-successful-recs-into-recs successful-recs nil))
+       ;; (removed-count (- (len successful-recs) (len successful-recs-no-dupes)))
+       ;; (- (and (posp removed-count)
+       ;;         (acl2::print-level-at-least-tp print)
+       ;;         (cw "~%NOTE: ~x0 duplicate ~s1 removed.~%" removed-count
+       ;;             (if (< 1 removed-count) "successful recommendations were" "successful recommendation was"))))
+       (num-successful-recs (len successful-recs-no-dupes))
+       (- (and print
+               (if (< 1 num-successful-recs)
+                   (cw "~%(~x0 successful recommendations):~%" num-successful-recs)
+                 (cw "~%(1 successful recommendation):~%")))))
+    (mv nil ; no error
+        successful-recs ; todo: what format should these be in?
+        state)))
