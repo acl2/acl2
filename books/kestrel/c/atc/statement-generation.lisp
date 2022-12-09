@@ -14,6 +14,7 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
+(local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -372,7 +373,7 @@
                                              ,gin.limit-var)
                                   (mv ,term ,gin.compst-var))
                            (,type-pred ,term)))
-       (stmt-formula (atc-contextualize stmt-formula gin.context))
+       (stmt-formula (atc-contextualize stmt-formula gin.context nil))
        (stmt-formula `(implies (and (compustatep ,gin.compst-var)
                                     (,gin.fn-guard ,@(formals+ gin.fn wrld))
                                     (integerp ,gin.limit-var)
@@ -402,7 +403,7 @@
                                                    ,gin.limit-var)
                                   (mv ,term ,gin.compst-var))
                            (,type-pred ,term)))
-       (item-formula (atc-contextualize item-formula gin.context))
+       (item-formula (atc-contextualize item-formula gin.context nil))
        (item-formula `(implies (and (compustatep ,gin.compst-var)
                                     (,gin.fn-guard ,@(formals+ gin.fn wrld))
                                     (integerp ,gin.limit-var)
@@ -429,7 +430,7 @@
                                                          ,gin.limit-var)
                                    (mv ,term ,gin.compst-var))
                             (,type-pred ,term)))
-       (items-formula (atc-contextualize items-formula gin.context))
+       (items-formula (atc-contextualize items-formula gin.context nil))
        (items-formula `(implies (and (compustatep ,gin.compst-var)
                                      (,gin.fn-guard ,@(formals+ gin.fn wrld))
                                      (integerp ,gin.limit-var)
@@ -657,12 +658,12 @@
        ((when okp)
         (b* (((mv mbtp &) (check-mbt-call test-term))
              ((when mbtp)
-              (b* ((gin (change-stmt-gin gin :proofs nil)))
-                (atc-gen-stmt then-term gin state)))
+              (b* (((erp gout) (atc-gen-stmt then-term gin state)))
+                (retok (change-stmt-gout gout :proofs nil))))
              ((mv mbt$p &) (check-mbt$-call test-term))
              ((when mbt$p)
-              (b* ((gin (change-stmt-gin gin :proofs nil)))
-                (atc-gen-stmt then-term gin state)))
+              (b* (((erp gout) (atc-gen-stmt then-term gin state)))
+                (retok (change-stmt-gout gout :proofs nil))))
              ((erp (bexpr-gout test))
               (atc-gen-expr-bool test-term
                                  (make-bexpr-gin
@@ -677,23 +678,34 @@
                                   :proofs gin.proofs)
                                  state))
              ((erp (stmt-gout then))
-              (atc-gen-stmt then-term
-                            (change-stmt-gin
-                             gin
-                             :inscope (cons nil gin.inscope)
-                             :thm-index test.thm-index
-                             :names-to-avoid test.names-to-avoid
-                             :proofs nil)
-                            state))
+              (b* ((then-cond (untranslate$ test-term t state))
+                   (then-premise (atc-premise-test then-cond))
+                   (then-context (append gin.context
+                                         (list then-premise))))
+                (atc-gen-stmt then-term
+                              (change-stmt-gin
+                               gin
+                               :context then-context
+                               :inscope (cons nil gin.inscope)
+                               :thm-index test.thm-index
+                               :names-to-avoid test.names-to-avoid
+                               :proofs gin.proofs)
+                              state)))
              ((erp (stmt-gout else))
-              (atc-gen-stmt else-term
-                            (change-stmt-gin
-                             gin
-                             :inscope (cons nil gin.inscope)
-                             :thm-index then.thm-index
-                             :names-to-avoid then.names-to-avoid
-                             :proofs nil)
-                            state))
+              (b* ((not-test-term (dumb-negate-lit test-term))
+                   (else-cond (untranslate$ not-test-term t state))
+                   (else-premise (atc-premise-test else-cond))
+                   (else-context (append gin.context
+                                         (list else-premise))))
+                (atc-gen-stmt else-term
+                              (change-stmt-gin
+                               gin
+                               :context else-context
+                               :inscope (cons nil gin.inscope)
+                               :thm-index then.thm-index
+                               :names-to-avoid then.names-to-avoid
+                               :proofs gin.proofs)
+                              state)))
              ((unless (equal then.type else.type))
               (reterr
                (msg "When generating C code for the function ~x0, ~

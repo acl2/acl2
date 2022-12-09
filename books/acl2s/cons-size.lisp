@@ -129,35 +129,27 @@
       (cons-size (std::prod-cons std::x std::y)))
   :rule-classes :linear)
 
-(defthm records-lemma-cons-size
-  (implies (and (acl2::ifrp v)
-                (acl2::rcdp v))
-           (< (cons-size (acl2::g-aux x v))
-              (cons-size v)))
-  :hints (("goal" :in-theory (enable acl2::g-aux ifrp)))
-  :rule-classes :linear)
-
 (defthm records-cons-size-linear-arith-<=
-  (<= (cons-size (g k v))
-      (cons-size v))
-  :hints (("goal" :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
+  (<= (cons-size (mget k r))
+      (cons-size r))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes :linear)
 
 (defthm records-cons-size-linear-arith-<
-  (implies (and k
-                (g k v))
-           (< (cons-size (g k v))
-              (cons-size v)))
-  :hints (("goal" :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
+  (implies (mget k r)
+           (< (cons-size (mget k r))
+              (cons-size r)))
+  :hints (("goal" :in-theory 
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes :linear)
 
 (defthm records-cons-size
-  (implies (and x
-                (consp v))
-           (< (cons-size (g x v))
-              (cons-size v)))
-  :hints (("goal" :induct (g-aux x v)
-           :in-theory (enable rcdp g g-aux ifrp acl2->rcd)))
+  (implies (consp r)
+           (< (cons-size (mget k r))
+              (cons-size r)))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes :linear)
 
 (defthm len-<=-cons-size
