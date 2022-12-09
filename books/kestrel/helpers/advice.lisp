@@ -2026,11 +2026,65 @@
                (if provedp (cw-success-message rec) (cw-failure-message ":hints didn't help" failure-info)))))
     (mv nil (if provedp rec nil) state)))
 
+;; Returns (mv erp maybe-successful-rec state).
+;; TODO: Option to not improve successful recs?
+(defun try-recommendation (rec
+                           book-to-avoid-absolute-path
+                           theorem-name ; may be :thm
+                           theorem-body
+                           theorem-hints
+                           theorem-otf-flg
+                           step-limit
+                           print
+                           state)
+  (declare (xargs :guard (and (recommendationp rec)
+                              (or (null book-to-avoid-absolute-path)
+                                  (stringp book-to-avoid-absolute-path))
+                              (symbolp theorem-name)
+                              ;; theorem-body is an untranslated term
+                              ;; theorem-hints
+                              (booleanp theorem-otf-flg)
+                              (or (null step-limit)
+                                  (natp step-limit))
+                              (acl2::print-levelp print))
+                  :mode :program
+                  :stobjs state))
+  (b* ((name (nth 0 rec))
+       (type (nth 1 rec))
+       (object (nth 2 rec))
+       ;; (confidence-percent (nth 3 rec))
+       (book-map (nth 4 rec))
+       (- (and (acl2::print-level-at-least-tp print) (cw "~s0: " name)))
+       ((mv & ; erp ; for now, we ignore errors and just continue
+            maybe-successful-rec ; may be fleshed out (pre-commands, hints, etc.)
+            state)
+        (case type
+          ;; TODO: Pass the book-map and the book-to-avoid-absolute-path to all who can use it:
+          (:add-by-hint (try-add-by-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-do-not-hint (try-add-do-not-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-enable-hint (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-library (try-add-library object book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-nonlinearp-hint (try-add-nonlinearp-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-use-hint (try-add-use-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          ;; same as for try-add-enable-hint above:
+          (:use-lemma (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          ;; Hints not from ML:
+          (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg step-limit rec print state))
+          (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
+                     (mv t nil state))))))
+    (mv nil ; never an error (for now)
+        maybe-successful-rec
+        state)))
+
 ;; Tries to find rec(s) which, together with the supplied THEOREM-HINTS, suffices to prove the theorem.
 ;; Tries each of the RECS in turn until MAX-WINS successful ones are found or there are none left.
 ;; Returns (mv erp successful-recs extra-recs-ignoredp state)
 ;; TODO: Move down.
-;; TODO: Option to not improve successful recs?
 (defun try-recommendations (recs
                             book-to-avoid-absolute-path
                             theorem-name ; may be :thm
@@ -2063,34 +2117,10 @@
              (<= max-wins (len successful-recs)))
         (mv nil (reverse successful-recs) t state)
       (b* ((rec (first recs))
-           (name (nth 0 rec))
-           (type (nth 1 rec))
-           (object (nth 2 rec))
-           ;; (confidence-percent (nth 3 rec))
-           (book-map (nth 4 rec))
-           (- (and (acl2::print-level-at-least-tp print) (cw "~s0: " name)))
            ((mv & ; erp ; for now, we ignore errors and just continue
                 maybe-successful-rec ; may be fleshed out (pre-commands, hints, etc.)
                 state)
-            (case type
-              ;; TODO: Pass the book-map and the book-to-avoid-absolute-path to all who can use it:
-              (:add-by-hint (try-add-by-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-              (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-              (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-              (:add-do-not-hint (try-add-do-not-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-              (:add-enable-hint (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-              (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-              (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-              (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-              (:add-library (try-add-library object book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-              (:add-nonlinearp-hint (try-add-nonlinearp-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-              (:add-use-hint (try-add-use-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-              ;; same as for try-add-enable-hint above:
-              (:use-lemma (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-              ;; Hints not from ML:
-              (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg step-limit rec print state))
-              (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
-                         (mv t nil state))))))
+            (try-recommendation rec book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit print state)))
         (try-recommendations (rest recs)
                              book-to-avoid-absolute-path
                              theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins print
