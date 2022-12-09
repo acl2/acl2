@@ -1,4 +1,4 @@
-; A tool to try proof advice on each defthm in a book
+; A tool to try proof advice on some or all defthms in a book
 ;
 ; Copyright (C) 2022 Kestrel Institute
 ;
@@ -10,19 +10,20 @@
 
 (in-package "ACL2") ; todo: change to HELP package
 
-(include-book "replay-book")
+(include-book "replay-book-helpers")
 (include-book "advice")
 (include-book "kestrel/utilities/split-path" :dir :system)
 
-;; TODO: Exclude theorems not in the testing set!
 ;; TODO: Try advice on defthms inside encapsulates (and perhaps other forms).
-;; TODO: Consider excluding advice that uses different version of the same library (e.g., rtl/rel9).
-;; TODO: Should this revert the world?
+;; TODO: Consider excluding advice that uses a different version of the same library (e.g., rtl/rel9).
+;; TODO: Instead of removing all :hints, just remove one hint-setting or rune (in enable or disable or e/d).  Use the acl2data files since they include info on how to break theorems?
+;; TODO: Somehow remove libraries and see whether the advice can find something that works.
+;; TODO: Consider removing hyps, but how can we tell whether a suggested hyp is good?
 
 ;; Example:
-;; (replay-book-with-advice "../lists-light/append")
+;; (replay-book-with-advice "../lists-light/append.lisp")
 
-;; Determine whether EVENT is something for which we can try advice, given the list of THEOREMS-TO-TRY.
+;; Determine whether to try advice for EVENT, given the list of THEOREMS-TO-TRY.
 (defun advice-eventp (event theorems-to-try)
   (declare (xargs :guard (or (eq :all theorems-to-try)
                              (symbol-listp theorems-to-try))))
@@ -223,15 +224,15 @@
        ;; Read all the forms from the file:
        ((mv erp events state)
         (read-objects-from-book filename state))
-       (- (cw "(~x0 events.)~%" (len events)))
+       ((when erp) (cw "Error: ~x0.~%" erp) (mv erp (list 0 0 0 0 0) state))
+       (len-all-events (len events))
        (events (discard-events-after-last-advice-event events theorems-to-try))
-       (- (cw "(~x0 events after discarding final events.)~%~%" (len events)))
+       (- (cw "(~x0 total events, ~x1 after discarding final events.)~%~%" len-all-events (len events)))
        ((when (null events))
         (cw "~%SUMMARY for book ~s0: NO EVENTS TO TEST~%" filename)
         (mv nil ; no error, but nothing to do for this book
             (list 0 0 0 0 0) state))
-       ((when erp) (cw "Error: ~x0.~%" erp) (mv erp (list 0 0 0 0 0) state))
-       ;; Ensures we are working in the same dir as the book:
+              ;; Ensures we are working in the same dir as the book:
        ;; TODO: Ensure this gets rest upon failure, such as a package name clash.
        ((mv erp & state)
         (set-cbd-fn dir state))
@@ -263,7 +264,7 @@
         (list yes-count no-count maybe-count trivial-count error-count)
         state)))
 
-;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
+;; Reads and then submits all the events in FILENAME, trying advice for defthms that appear at the top level.
 ;; Returns (mv erp event state).
 (defun replay-book-with-advice-fn (filename ; the book, with .lisp extension
                                    theorems-to-try
@@ -278,7 +279,9 @@
                               (natp num-recs-per-model)
                               (acl2::print-levelp print)
                               (or (null server-url)
-                                  (stringp server-url)))
+                                  (stringp server-url))
+                              (or (eq :all models)
+                                  (help::model-namesp models)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (b* (((mv book-existsp state) (file-existsp filename state))
@@ -302,7 +305,6 @@
 ;; TODO: Add timing info.
 ;; This has no effect on the world, because all the work is done in make-event
 ;; expansion and such changes do not persist.
-;; Example: (replay-book-with-advice "../lists-light/append.lisp")
 (defmacro replay-book-with-advice (filename ; the book, with .lisp extension
                                    &key
                                    (theorems-to-try ':all) ; gets evaluated
