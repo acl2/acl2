@@ -5328,7 +5328,9 @@
 
 (defun select-do$-induction-q-seedp (lit xterms mvars)
   (and (subsetp-eq (all-vars lit) mvars)
-       (select-do$-induction-q-seedp1 lit xterms)))
+       (if (eq xterms :DO$)
+           (not (ffnnamep 'DO$ lit))
+           (select-do$-induction-q-seedp1 lit xterms))))
 
 (defun select-do$-induction-q-seed (cl xterms mvars)
   (cond
@@ -5357,9 +5359,9 @@
 
 ; Cl-set is a set of clauses we're proving by induction, a do$ induction has
 ; been chosen and it was suggested by the terms in xterms (unless xterms is
-; :all).  Mterm is the measure term.  We return a list of literals that should
-; be unioned into the measure conjecture to be generated.  :All is explained
-; below.
+; :DO$).  Mterm is the measure term.  We return a list of literals that should
+; be unioned into the measure conjecture to be generated.  The :DO$ case is
+; explained below.
 
 ; The conjunction of the negations of the literals returned is what we call Q
 ; in our do$ induction scheme.  We describe its use and the choice of Q below.
@@ -5385,18 +5387,17 @@
 
 ; Our algorithm is to collect from the first clause in cl-set all the literals
 ; that mention only variables in the measure but that do not contain any of the
-; xterms.  If xterms is :all we put in no literals.  Note that we'll collect
-; literals that mention NO variables, e.g., warrants.)  Call that set of
-; literals the ``seed.''  Then we'll throw out of the seed any literal that is
-; not mentioned in all the other clauses.  We call this ``filtering'' the seed.
+; xterms.  If xterms is :DO$ it is interpreted to mean the list of every DO$
+; term in the conjecture.  That is, if xterms is :DO$ we exclude from Q any
+; term containing any call of DO$.  Note that we'll collect literals that
+; mention NO variables, e.g., warrants.  Call the resulting set of literals the
+; ``seed.''  Then we'll throw out of the seed any literal that is not mentioned
+; in all the other clauses.  We call this ``filtering'' the seed and it
+; guarantees the ``inclusion rule.''
 
-  (if (eq xterms :all)
-      nil
-      (let* ((mvars (all-vars mterm))
-             (seed (select-do$-induction-q-seed (car cl-set)
-                                                xterms
-                                                mvars)))
-        (select-do$-induction-q-filter seed (cdr cl-set)))))
+  (let* ((mvars (all-vars mterm))
+         (seed (select-do$-induction-q-seed (car cl-set) xterms mvars)))
+    (select-do$-induction-q-filter seed (cdr cl-set))))
 
 (defun do$-induction-measure-clauses1 (negated-tests alist-lst mterm)
   (cond
@@ -6150,9 +6151,6 @@
                              (induction-formula
                               (list
                                (cond
-                                ((and induct-hint-val
-                                      (not (equal induct-hint-val *t*)))
-                                 (list p))
                                 ((eq (ffn-symb (access candidate winning-candidate
                                                        :induction-term))
                                      *do$-induction-fn*)
@@ -6738,7 +6736,7 @@
                          (access candidate winning-candidate :induction-term)
                          (if (and induct-hint-val
                                   (not (equal induct-hint-val *t*)))
-                             :all
+                             :DO$
                              (cons (access candidate winning-candidate
                                            :xinduction-term)
                                    (access candidate winning-candidate
