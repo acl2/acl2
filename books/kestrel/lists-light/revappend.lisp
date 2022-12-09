@@ -119,3 +119,10 @@
              (revappend (butlast x 1) y)
            (cdr y)))
   :hints (("Goal" :in-theory (enable revappend butlast))))
+
+(defthm <=-of-acl2-count-of-revappend-linear
+  (<= (acl2-count (revappend x y))
+      (+ (acl2-count x)
+         (acl2-count y)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable revappend))))

@@ -44,3 +44,9 @@
   (equal (car (reverse x))
          (car (last x)))
   :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm <=-of-acl2-count-of-reverse-linear
+  (<= (acl2-count (reverse x))
+      (acl2-count x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable reverse))))
