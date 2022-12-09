@@ -1478,7 +1478,8 @@ The corresponding rules do not seem to help, at all.
 (defun all-but-nilp (x)
   (declare (xargs :guard t))
   (not (equal x 'nil)))
-            
+
+#|
 (defun nth-wf-key-builtin (n) ;;since nth-all-but-zero-nil-t has strings of length less than 8, it cannot include the ill-formed-key
   (declare (xargs :guard (natp n)))
   (declare (xargs :mode :program))
@@ -1489,6 +1490,15 @@ The corresponding rules do not seem to help, at all.
   (all-but-nilp x))
 
 (register-custom-type wf-key t nth-wf-key-builtin wf-keyp)
+|#
+
+(register-data-constructor
+ (acl2::recordp mset)
+ ((allp caar) (allp cdar) (acl2::recordp cdr))
+ :hints (("Goal" :in-theory
+          (enable acl2::recordp acl2::no-nil-val-alistp
+                  acl2::ordered-unique-key-alistp)))
+ :proper nil)
 
 ;; Same problem as in sets. A nil is also a good-map!
 ;; 3 April 2014
@@ -1498,19 +1508,6 @@ The corresponding rules do not seem to help, at all.
 ;;        (good-map x)))
 
 
-; TODO: this is a major hiccup of our map and record implementation, disallowing nil explicitly!!
-;; (register-data-constructor (non-empty-good-map s)
-;;                            ((wf-keyp caar) (all-but-nilp cdar) (good-map cdr))
-;;                            :proper nil)
-
-
-#|
-; This isn't going to go through since I don't want to allow nil as key
-(register-data-constructor (rcdp s)
-                           ((wf-keyp caar) (wf-keyp cdar) (rcdp cdr))
-                           :hints (("Goal" :in-theory (enable rcdp)))
-                           :proper nil)
-|#
 
 (defun nth-all-but-nil-builtin (n)
   (declare (xargs :mode :program))

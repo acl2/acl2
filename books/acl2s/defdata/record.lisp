@@ -25,15 +25,15 @@ data last modified: [2014-08-06]
 (defun build-dex-mset-call (dex-names dex-var-names)
   (declare (xargs :guard (and (symbol-listp dex-names)
                               (symbol-listp dex-var-names)
-                                 )))
+                              )))
                   
   (if (endp dex-names)
-    nil
+      nil
     (let* ((dname (car dex-names))
            (dvar-name (car dex-var-names))
            (d-keyword-name (intern (symbol-name dname) "KEYWORD")))
-      `(s ,d-keyword-name ,dvar-name
-          ,(build-dex-mset-call (cdr dex-names) (cdr dex-var-names))))))
+      `(mset ,d-keyword-name ,dvar-name
+             ,(build-dex-mset-call (cdr dex-names) (cdr dex-var-names))))))
 
 
 (defun build-dex-recordImpl-bindings (dex-names dex-var-names rec-expr)
@@ -42,7 +42,7 @@ data last modified: [2014-08-06]
     (let* ((dname (car dex-names))
            (dname-var (car dex-var-names))
            (d-keyword-name (intern (symbol-name dname) "KEYWORD")))
-      (cons (list dname-var (list 'g d-keyword-name rec-expr))
+      (cons (list dname-var (list 'mget d-keyword-name rec-expr))
             (build-dex-recordImpl-bindings (cdr dex-names) (cdr dex-var-names) rec-expr)))))
 
 
@@ -64,7 +64,7 @@ data last modified: [2014-08-06]
         (if (not (acl2::non-empty-good-map v));for guards and termination (CCG)
             nil
           (let ,dex-bindings 
-            (and  (equal v (s ,*tag* ',conx-name ,dex-mset-call))
+            (and  (equal v (mset ,*tag* ',conx-name ,dex-mset-call))
                   ,@dex-prex-calls 
                   )))))))
 
@@ -116,7 +116,7 @@ data last modified: [2014-08-06]
        (dex-mset-call (build-dex-mset-call dex-orig-names dex-var-names)))
     `((defun ,conx-name ,dex-var-names
         (declare (xargs :guard (and . ,dex-prex-calls)))
-        (s ,*tag* ',conx-name ,dex-mset-call)))))
+        (mset ,*tag* ',conx-name ,dex-mset-call)))))
 
 ;cons up events that define destructor functions
 (defun cons-up-dex-defuns (conx-pred selector-fn-names dex-names)
@@ -132,7 +132,7 @@ data last modified: [2014-08-06]
     (cons `(defun ,sel-fn-name (v)
              (declare (xargs :guard (,conx-pred v))) ;not working with new record impl
                              ;:verify-guards nil))
-             (g ,d-keyword-name v))
+             (mget ,d-keyword-name v))
           (cons-up-dex-defuns conx-pred
                               (cdr selector-fn-names)
                               (cdr dex-names))))))
@@ -164,7 +164,7 @@ data last modified: [2014-08-06]
     (cons `(defun ,mod-fn-name (new v)
              (declare (xargs :guard (,conx-pred v))) ;not working with new record impl
                              ;:verify-guards nil))
-             (s ,d-keyword-name new v))
+             (mset ,d-keyword-name new v))
           (cons-up-mod-defuns conx-pred
                               (cdr modifier-fn-names)
                               (cdr dex-names))))))
@@ -255,7 +255,7 @@ data last modified: [2014-08-06]
        :verbose ,(get1 :verbose kwd-alist)
        :hints
        (("Goal" :in-theory (e/d (,conx-pred ,conx-name) 
-                                (acl2::s-diff-s2
+                                (acl2::mset-diff-mset2
                                  ,@(remove-duplicates dex-prex)))))))))
 
 (defloop reg-record-conx-events (new-constructors kwd-alist)
@@ -290,13 +290,13 @@ data last modified: [2014-08-06]
       
       (defthm ,(curr-pkg-s+ pred 'tag-bridge-lemma2)
         (implies (EQUAL x (,conx ,@fnames));AA-KEY  AA-LEVEL AA-LEFT AA-RIGHT))
-                 (g ,*tag* x))
+                 (mget ,*tag* x))
         :hints (("Goal" :in-theory (e/d (,pred) (,@disabled-runes))))
         :rule-classes nil)
       
       (defthm ,(curr-pkg-s+ pred 'tag-is-non-empty)
         (implies (,pred x)
-                 (g ,*tag* x))
+                 (mget ,*tag* x))
         :hints (("goal" :in-theory (e/d (,pred) (,@disabled-runes))
                  :use ((:instance ,(curr-pkg-s+ pred 'tag-bridge-lemma1))
                        (:instance ,(curr-pkg-s+ pred 'tag-bridge-lemma2)))))
@@ -313,7 +313,7 @@ data last modified: [2014-08-06]
 (defun record-predicate-theory-events (pred conx disabled-runes curr-pkg)
   `((defthm ,(curr-pkg-s+ pred 'unique-tag)
       (implies (,pred x)
-               (equal (g ,*tag* x) ',conx))
+               (equal (mget ,*tag* x) ',conx))
         :hints (("goal" :expand ((,pred x))
                         :in-theory (e/d () (,@disabled-runes))))
         :rule-classes (;(:rewrite :backchain-limit-lst 1)
@@ -327,7 +327,7 @@ data last modified: [2014-08-06]
 
       (defthm ,(curr-pkg-s+ pred 'implies-good-map)
         (implies (,pred x)
-                 (acl2::rcdp x))
+                 (acl2::recordp x))
         :hints (("goal" :in-theory (e/d (,pred))))
         :rule-classes (;(:rewrite :backchain-limit-lst 1) 
                        (:forward-chaining)))
@@ -335,7 +335,7 @@ data last modified: [2014-08-06]
       (defthm ,(curr-pkg-s+ pred 'excludes-atom-list)
         (implies (,pred x)
                  (not (atom-listp x)))
-        :hints (("goal" :in-theory (e/d (,pred acl2::rcdp) (,@disabled-runes))))
+        :hints (("goal" :in-theory (e/d (,pred acl2::recordp) (,@disabled-runes))))
         :rule-classes (:tau-system))
       ))
 
@@ -343,31 +343,31 @@ data last modified: [2014-08-06]
   (b* ((kname (keywordify fname)))
     `((defthm ,(curr-pkg-s+ pred  fname 'selector)
         (implies (,pred x)
-                 (,dpred (g ,kname x)))
+                 (,dpred (mget ,kname x)))
         :hints (("Goal" :in-theory (e/d (,pred) (,@disabled-runes))))
         :rule-classes (:rewrite 
                        (:forward-chaining
-                        :trigger-terms ((g ,kname x))))))))
+                        :trigger-terms ((mget ,kname x))))))))
    
 (defun record-per-field-modifier-theory-events (fname dpred pred disabled-runes curr-pkg) 
   (b* ((kname (keywordify fname)))
     `((defthm ,(curr-pkg-s+ pred fname 'modifier)
         (implies (and (,pred x)
                       (,dpred v))
-                 (,pred (s ,kname v x)))
+                 (,pred (mset ,kname v x)))
         :hints (("Goal" :use ((:instance ,(curr-pkg-s+ pred 'tag-is-non-empty)))
-                 :expand (,pred (s ,kname v x))
+                 :expand (,pred (mset ,kname v x))
                  :in-theory (e/d (acl2::s-diff-entry-tag-is-non-nil
-                                  acl2::s-diff-entry-tag-is-consp) 
+                                  acl2::s-diff-entry-non-empty-good-map-is-consp2) 
                                  (,pred 
                                   ,(curr-pkg-s+ pred 'unique-tag)
-                                  (:executable-counterpart acl2::s)
+                                  (:executable-counterpart mset)
                                   ,@disabled-runes)))
                 (and acl2::stable-under-simplificationp
                      '(:use ((:instance ,(curr-pkg-s+ pred 'def-crux))))))
         :rule-classes (:rewrite 
                        (:forward-chaining
-                        :trigger-terms ((s ,kname v x))))))))
+                        :trigger-terms ((mset ,kname v x))))))))
 
 
 (defun  record-per-field-inverse-def-theory-events (conx-name fname pred disabled-runes kwd-alist)
@@ -378,7 +378,7 @@ data last modified: [2014-08-06]
     `((defthm ,(curr-pkg-s+ pred  fname 'inverse-def)
         (implies (,pred x) ;earlier it was unconditional, but this leads to erroneous/unwanted dest-elim applications
 ;         (syntaxp (atom x))  ;this doesnt work for nested dest-elim in one elim process
-         (equal (g ,kname x) (,sel-name x)))
+         (equal (mget ,kname x) (,sel-name x)))
         :hints (("Goal" :in-theory (e/d () (,@disabled-runes) (,sel-name))))))))
 
 (defloop collect-inverse-def-theory-events (conx fnames pred disabled-runes kwd-alist)
@@ -402,7 +402,7 @@ data last modified: [2014-08-06]
 ;;   `((defthm ,nm ;TODO: of no use if cname is not disabled!
 ;;      (implies (and ,@(build-one-param-calls dprex fnames))
 ;;               (,tpred (,conx . ,fnames)))
-;;      :hints (("Goal" :in-theory (e/d (,tpred ,conx) (,@disabled acl2::s-diff-s1 acl2::s-diff-s2)))))))
+;;      :hints (("Goal" :in-theory (e/d (,tpred ,conx) (,@disabled acl2::mset-diff-mset1 acl2::mset-diff-mset2)))))))
 
 (defun term-order-insert (e l)
   (cond ((endp l) (list e))
@@ -422,8 +422,8 @@ data last modified: [2014-08-06]
 (defun gen-term-order-thm (type sfields)
   (cond ((endp sfields) nil)
         ((equal (car sfields) *tag*)
-         `(s ,*tag* ',type ,(gen-term-order-thm type (cdr sfields))))
-        (t `(s ,(car sfields)
+         `(mset ,*tag* ',type ,(gen-term-order-thm type (cdr sfields))))
+        (t `(mset ,(car sfields)
                    ,(intern-sym (car sfields) type)
             ,(gen-term-order-thm type (cdr sfields))))))
 
@@ -454,7 +454,9 @@ data last modified: [2014-08-06]
        (equal (,pred ,mset-form)
               ,rhs)
        :hints (("goal" :in-theory
-                (enable ,pred acl2::s-diff-entry-non-empty-tag-is-consp1)))))))
+                (enable ,pred
+                        ;acl2::field-not-empty-implies-record-not-empty1
+                        )))))))
 
 #|
  (gen-rule 'm-state 'm-statep '(pld-cache waitingfor recently-seen) 
@@ -581,7 +583,7 @@ data last modified: [2014-08-06]
 
 ; RECORD DEST-ELIM support (Ideas influenced by Pete and Sol)
 ; We will maintain a set of rules which do the foll inverse transformation:
-; (g :dex-name x) ==> (dex-name x)
+; (mget :dex-name x) ==> (dex-name x)
 
 ; For each record, we will add such rules to
 ; record-inverse-dest-def-rules ruleset which will be disabled by
@@ -605,7 +607,7 @@ data last modified: [2014-08-06]
 ;Note: Here clearly, accumulator-style definition is simpler and more intuitive to write.
 (mutual-recursion
 (defun collect-mget-var->field-names (e A.)
-  "collect (g :field1 x) terms in e into alist A. mapping x to (:field1 ...)"
+  "collect (mget :field1 x) terms in e into alist A. mapping x to (:field1 ...)"
   (declare (xargs :verify-guards nil
                   :guard (pseudo-termp e)))
   (cond ((acl2::variablep e) A.)
@@ -743,7 +745,7 @@ data last modified: [2014-08-06]
 ;; More detail.
 ;; The forementioned record dest-elim support is implemented as an override-hint.
 
-;; First we find (g :field x) like terms.
+;; First we find (mget :field x) like terms.
 ;; We then find all Predicate expressions on x.
 ;; We then find the corresponding (record) types and inverse-dest-def rulesets to enable.
 ;; ACHTUNG: What if multiple rulesets get enabled? And even worse, what if they overlap?
