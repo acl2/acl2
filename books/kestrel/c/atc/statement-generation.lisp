@@ -464,6 +464,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-ifelse-stmt ((term pseudo-termp)
+                             (test-expr exprp)
+                             (then-term pseudo-termp)
+                             (else-term pseudo-termp)
+                             (then-items block-item-listp)
+                             (else-items block-item-listp)
+                             (then-type typep)
+                             (else-type typep)
+                             (then-limit pseudo-termp)
+                             (else-limit pseudo-termp)
+                             (test-events pseudo-event-form-listp)
+                             (then-events pseudo-event-form-listp)
+                             (else-events pseudo-event-form-listp)
+                             (gin stmt-ginp)
+                             state)
+  (declare (ignore term state))
+  :returns (mv erp (gout stmt-goutp))
+  :short "Generate a C @('if')-@('else') statement from an ACL2 term."
+  (b* (((reterr) (irr-stmt-gout))
+       ((stmt-gin gin) gin)
+       ((unless (equal then-type else-type))
+        (reterr
+         (msg "When generating C code for the function ~x0, ~
+               two branches ~x1 and ~x2 of a conditional term ~
+               have different types ~x3 and ~x4; ~
+               use conversion operations, if needed, ~
+               to make the branches of the same type."
+              gin.fn then-term else-term then-type else-type)))
+       (type then-type)
+       (limit (pseudo-term-fncall
+               'binary-+
+               (list
+                (pseudo-term-quote 5)
+                (pseudo-term-fncall
+                 'binary-+
+                 (list then-limit else-limit))))))
+    (retok
+     (make-stmt-gout
+      :items (list
+              (block-item-stmt
+               (make-stmt-ifelse :test test-expr
+                                 :then (make-stmt-compound :items then-items)
+                                 :else (make-stmt-compound :items else-items))))
+      :type type
+      :limit limit
+      :events (append test-events then-events else-events)
+      :thm-name nil
+      :thm-index gin.thm-index
+      :names-to-avoid gin.names-to-avoid
+      :proofs nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-stmt ((term pseudo-termp) (gin stmt-ginp) state)
   :returns (mv erp (gout stmt-goutp))
   :short "Generate a C statement from an ACL2 term."
@@ -705,38 +758,19 @@
                                :thm-index then.thm-index
                                :names-to-avoid then.names-to-avoid
                                :proofs gin.proofs)
-                              state)))
-             ((unless (equal then.type else.type))
-              (reterr
-               (msg "When generating C code for the function ~x0, ~
-                     two branches ~x1 and ~x2 of a conditional term ~
-                     have different types ~x3 and ~x4; ~
-                     use conversion operations, if needed, ~
-                     to make the branches of the same type."
-                    gin.fn then-term else-term then.type else.type)))
-             (type then.type)
-             (limit (pseudo-term-fncall
-                     'binary-+
-                     (list
-                      (pseudo-term-quote 5)
-                      (pseudo-term-fncall
-                       'binary-+
-                       (list then.limit else.limit))))))
-          (retok
-           (make-stmt-gout
-            :items
-            (list
-             (block-item-stmt
-              (make-stmt-ifelse :test test.expr
-                                :then (make-stmt-compound :items then.items)
-                                :else (make-stmt-compound :items else.items))))
-            :type type
-            :limit limit
-            :events (append test.events then.events else.events)
-            :thm-name nil
-            :thm-index else.thm-index
-            :names-to-avoid else.names-to-avoid
-            :proofs nil))))
+                              state))))
+          (atc-gen-ifelse-stmt term test.expr then-term else-term
+                               then.items else.items then.type else.type
+                               then.limit else.limit
+                               test.events then.events else.events
+                               (change-stmt-gin
+                                gin
+                                :thm-index else.thm-index
+                                :names-to-avoid else.names-to-avoid
+                                :proofs (and test.proofs
+                                             then.proofs
+                                             else.proofs))
+                               state)))
        ((mv okp var? vars indices val-term body-term wrapper?)
         (atc-check-mv-let term))
        ((when okp)
