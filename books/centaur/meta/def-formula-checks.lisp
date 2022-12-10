@@ -283,7 +283,26 @@
   (declare (ignorable to-be-skipped))
   (b* (;;(recursivep (fgetprop name 'acl2::recursivep nil wrld))
        (formals (acl2::formals name wrld))
-       (body (getpropc name 'acl2::unnormalized-body nil wrld)))
+       (body (getpropc name 'acl2::unnormalized-body nil wrld))
+
+       (eval-rules
+        ;; ideally, everything evaluator symbol should have evaluator's package
+        ;; but not doing that  has been ok so far. The below  list of rules are
+        ;; added long after def-formula-checks has started  to be used. So I am
+        ;; making sure that they are in evaluator's package.
+        (acl2::template-subst
+         `(<evl>-of-equal-call
+           <evl>-of-variable
+           <evl>-of-fncall-args
+
+           ;; BOZO: the lst version of an evaluator should be
+           ;; taken from  the user or pulled  from ACL2 world
+           ;; if possible.  Here, I am assuming that  its name
+           ;; would be <evl>-lst
+           <evl>-LST-OF-ATOM
+           <evl>-LST-OF-CONS)
+         :str-alist `(("<EVL>" . ,(symbol-name evl)))
+         :pkg-sym evl)))
     (acl2::template-subst
      `(defthm <evl>-of-<name>-when-<formula-check>
         (implies (:@ :switch-hyps
@@ -297,10 +316,6 @@
                                                      (CONS '<formal> (<evl> <formal> env)))))))
         :hints(("Goal"
                 :in-theory '(meta-extract-formula-<name>-when-<formula-check>
-                             <evl>-of-equal-call
-                             (:rewrite <evl>-of-variable)
-                             <evl>-of-fncall-args
-                             ;;<name>
                              (:definition synp)
                              (:definition assoc-equal)
                              (:executable-counterpart car)
@@ -308,16 +323,7 @@
                              (:executable-counterpart equal)
                              (:rewrite car-cons)
                              (:rewrite cdr-cons)
-
-                             ;; BOZO: the lst version of an evaluator should be
-                             ;; taken from  the user or pulled  from ACL2 world
-                             ;; if possible.  Here, I am assuming that  its name
-                             ;; would be <evl>-lst
-                             (:REWRITE <evl>-LST-OF-ATOM)
-                             (:REWRITE <evl>-LST-OF-CONS)
-
-
-                             )
+                             ,@eval-rules)
                 :use ((:instance <evl>-meta-extract-formula
                                  (acl2::name '<name>)
                                  (acl2::a (list (:@proj <formals>
