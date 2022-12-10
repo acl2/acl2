@@ -399,6 +399,7 @@
    (solve-params)
    (split-concl)
    (repeat-concl)
+   (allow-irrel-casesplit-vars)
    (cases casesplit-alist-p)
    (fgl-config fgl-config-p)))
 
@@ -420,17 +421,17 @@
 ;;                            (term-vars (term-vars x))))
 ;;              :in-theory (disable eval-alists-agree-for-wrap-fgl-pathcond-fix-vars)))))
 
+(local (defthm pseudo-term-listp-alist-vals-of-casesplit-alist
+         (implies (casesplit-alist-p x)
+                  (pseudo-term-listp (alist-vals x)))
+         :hints(("Goal" :in-theory (enable alist-vals)))))
 
 (define fgl-casesplit-core ((hyp pseudo-termp)
                             (concl pseudo-termp)
                             (config fgl-casesplit-config-p))
   :prepwork ((local (defthm pseudo-term-listp-when-symbol-listp
                       (implies (symbol-listp x)
-                               (pseudo-term-listp x))))
-             (local (defthm pseudo-term-listp-alist-vals-of-casesplit-alist
-                      (implies (casesplit-alist-p x)
-                               (pseudo-term-listp (alist-vals x)))
-                      :hints(("Goal" :in-theory (enable alist-vals))))))
+                               (pseudo-term-listp x)))))
   :returns (thm pseudo-termp)
   (b* (((fgl-casesplit-config config))
        (cases config.cases)
@@ -458,11 +459,7 @@
                                    (config fgl-casesplit-config-p))
   :prepwork ((local (defthm pseudo-term-listp-when-symbol-listp
                       (implies (symbol-listp x)
-                               (pseudo-term-listp x))))
-             (local (defthm pseudo-term-listp-alist-vals-of-casesplit-alist
-                      (implies (casesplit-alist-p x)
-                               (pseudo-term-listp (alist-vals x)))
-                      :hints(("Goal" :in-theory (enable alist-vals))))))
+                               (pseudo-term-listp x)))))
   :returns (thm pseudo-termp)
   (b* (((fgl-casesplit-config config))
        (cases config.cases)
@@ -547,13 +544,29 @@
                               fcs-ev-of-pseudo-term-fix-x))))))
 
 
+(local (defthm union-x-nil
+         (equal (union-equal x nil)
+                (true-list-fix x))))
+
 (define fgl-casesplit-clause-proc ((clause pseudo-term-listp) config)
   :returns (res pseudo-term-list-listp)
   (b* ((clause (pseudo-term-list-fix clause))
        ((unless (fgl-casesplit-config-p config))
-        (cw "fgl-casesplit-clause-proc error: bad config~%")
+        (cw "fgl-casesplit-clause-proc error: bad config: ~x0~%" config)
         (list clause))
        ((fgl-casesplit-config config))
+       (irrel-vars (and (not config.allow-irrel-casesplit-vars)
+                        (b* ((config-vars (cmr::termlist-vars-acc (alist-vals config.cases) nil))
+                             (clause-vars (cmr::termlist-vars-acc clause nil))
+                             (irrel-vars (set-difference-eq config-vars clause-vars)))
+                          irrel-vars)))
+       (- (and irrel-vars
+               (raise "~%~%******* ERROR *******~%~%~
+The following variables were used in the case split but did not appear in the clause:
+~x0
+Usually this is evidence of a typo. If not, set keyword argument ~x1 to suppress this error.~%~%"
+                      irrel-vars
+                      ':allow-irrel-casesplit-vars)))
        ((mv hyp concl) (fgl-casesplit-hyp/concl config.split-concl clause)))
     (list (list (if config.repeat-concl
                     (fgl-casesplit-before-core hyp concl config)
@@ -587,6 +600,7 @@
        
   
 (define fgl-casesplit-hint-fn (cases split-params solve-params split-concl repeat-concl
+                                allow-irrel-casesplit-vars
                                 (fgl-config fgl-config-p)
                                 state)
   :mode :program
@@ -597,12 +611,14 @@
                                                             (fgl-toplevel-sat-check-config))
                                           :split-concl split-concl
                                           :repeat-concl repeat-concl
+                                          :allow-irrel-casesplit-vars allow-irrel-casesplit-vars
                                           :cases cases-trans
                                           :fgl-config fgl-config)))
     (value `(:clause-processor (fgl-casesplit-clause-proc clause ',config)))))
 
-(defmacro fgl-casesplit (&key cases split-params solve-params split-concl repeat-concl fgl-config)
-  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl ,repeat-concl ,fgl-config state))
+(defmacro fgl-casesplit (&key cases split-params solve-params split-concl repeat-concl allow-irrel-casesplit-vars fgl-config)
+  `(fgl-casesplit-hint-fn ,cases ,split-params ,solve-params ,split-concl ,repeat-concl ,allow-irrel-casesplit-vars ,fgl-config
+                          state))
 
 
 
