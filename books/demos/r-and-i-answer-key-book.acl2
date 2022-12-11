@@ -27,4 +27,5 @@
 #||
 (depends-on "r-and-i-answer-key-input.lsp")
 (depends-on "r-and-i-answer-key-log.txt")
+(include-book "ordinals/ordinals" :dir :system)
 ||#
