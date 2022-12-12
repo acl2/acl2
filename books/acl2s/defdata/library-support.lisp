@@ -53,33 +53,6 @@
 
 |#
 
-; If a and b are quoted objects, check the term-order by unquoting
-; them. This is the only rule we should see in ACL2s/defdata since
-; record fields are keywords.
-(defthm mset-diff-mset1
-  (implies (and
-            (syntaxp (quotep a))
-            (syntaxp (quotep b))
-            (syntaxp (term-order (unquote a) (unquote b)))
-            (recordp r)
-            (not (equal a b)))
-           (equal (mset b y (mset a x r))
-                  (mset a x (mset b y r))))
-  :rule-classes ((:rewrite :loop-stopper nil)))
-
-; This rule is here so that we get the mset-diff-mset behavior in all
-; other cases.
-(defthm mset-diff-mset2
-  (implies (and
-            (syntaxp (or (not (quotep a)) (not (quotep b))))
-            (recordp r)
-            (not (equal a b)))
-           (equal (mset b y (mset a x r))
-                  (mset a x (mset b y r))))
-  :rule-classes ((:rewrite :loop-stopper ((a b mset)))))
-
-(in-theory (disable mset-diff-mset))
-
 #|
 
 (defthm records-lemma-acl2-count
@@ -102,7 +75,7 @@
   (<= (acl2-count (mget k r))
       (acl2-count r))
   :hints (("goal" :in-theory
-           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
+           (enable minimal-records-theory)))
   :rule-classes :linear)
 
 (defun good-map (x)
@@ -118,7 +91,7 @@
            (< (acl2-count (mget k r))
               (acl2-count r)))
   :hints (("goal" :in-theory 
-           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
+           (enable minimal-records-theory)))
   :rule-classes :linear)
 
 (defthm records-acl2-count
@@ -126,7 +99,7 @@
            (< (acl2-count (mget k r))
               (acl2-count r)))
   :hints (("goal" :in-theory
-           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
+           (enable minimal-records-theory)))
   :rule-classes :linear)
 
 
@@ -187,32 +160,25 @@
   (implies v
            (consp (mset a v r)))
   :hints (("goal" :in-theory
-           (enable mset recordp no-nil-val-alistp ordered-unique-key-alistp)))
+           (enable minimal-records-theory)))
   :rule-classes ((:forward-chaining :trigger-terms ((mset a v r)))
                  (:rewrite :backchain-limit-lst 1)))
 
-(defthm mset-preserves-record-nil
-  (recordp (mset a v nil))
-  :rule-classes ((:forward-chaining :trigger-terms ((mset a v nil)))
-                 (:rewrite)))
-
 (defthm s-nil-no-op
-  (implies (and (recordp r) (not (mget a r)))
+  (implies (and (force (recordp r)) (not (mget a r)))
            (equal (mset a nil r) r))
   :hints (("goal" :in-theory
-           (enable mset mget recordp no-nil-val-alistp
-                   ordered-unique-key-alistp)))
+           (enable minimal-records-theory)))
   :rule-classes ((:forward-chaining :trigger-terms ((mset a nil r)))
-                 (:rewrite)))
+                 (:rewrite :backchain-limit-lst 1)))
 
 (defthm field-not-empty-implies-record-not-empty1
   (implies (mget a r)
            (consp r))
   :hints (("goal" :in-theory
-           (enable mset mget recordp no-nil-val-alistp
-                   ordered-unique-key-alistp)))
-  :rule-classes (:forward-chaining))
-
+           (enable minimal-records-theory)))
+  :rule-classes ((:forward-chaining)
+                 (:rewrite :backchain-limit-lst 0)))
 
 (defthmd s-diff-entry-non-empty-good-map-is-consp2
   (implies (and (not (equal a b))
@@ -252,11 +218,15 @@
   :rule-classes ((:forward-chaining :trigger-terms ((mset b v r)))
                  (:rewrite :backchain-limit-lst 1)))
 
-(defthm non-empty-record-fc
-  (implies (recordp r)
-           (and (implies r (consp r))
-                (implies (car r) (consp (car r)))))
+(defthm non-empty-record-consp
+  (implies (and (recordp r) r)
+           (consp r))
   :hints (("goal" :in-theory (enable recordp)))
-  :rule-classes :forward-chaining)
+  :rule-classes ((:forward-chaining)))
 
-(in-theory (disable recordp))
+(defthm non-empty-record-consp-car
+  (implies (and (recordp r) (car r))
+           (consp (car r)))
+  :hints (("goal" :in-theory (enable recordp)))
+  :rule-classes ((:forward-chaining)))
+

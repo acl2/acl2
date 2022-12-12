@@ -446,7 +446,13 @@ Same as neg-ratio
                       non-pos-ratiop)
 |#
 
-(defdata ratio (oneof pos-ratio neg-ratio)) 
+(defdata ratio (oneof pos-ratio neg-ratio))
+
+(defthm ratiop-compound-recognizer
+  (equal (ratiop x)
+         (and (rationalp x)
+              (not (integerp x))))
+  :rule-classes :compound-recognizer)
 
 (register-custom-type neg-rational
                       t
