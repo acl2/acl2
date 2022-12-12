@@ -47,31 +47,31 @@
       (function-deps-lst (cdr fns) wrld (acl2::all-fnnames1 nil body acc)))))
 
 (mutual-recursion
- ;; any function that has a dependency on a fn given in to-be-skipped list will
+ ;; any function that has a dependency on a fn given in skip list will
  ;; be returned in a separate list with the same name. Also, for anything given
- ;; in to-be-skipped, their  dependencies will not be  determined. For example,
- ;; if to-be-skipped='(apply$), then  we don't want to attempt to  find all the
+ ;; in skip, their  dependencies will not be  determined. For example,
+ ;; if skip='(apply$), then  we don't want to attempt to  find all the
  ;; children functions of apply$, and we want to know which functions depend on
  ;; apply$. Thos that depend on apply$ will be returned as the 3rd value.
- (defun collect-toposort-function-deps (fn wrld to-be-skipped seen toposort)
+ (defun collect-toposort-function-deps (fn wrld skip seen toposort)
    (declare (xargs :mode :program))
    (b* (((when (or (member-eq fn seen)
-                   (member-eq fn to-be-skipped)))
-         (mv seen toposort to-be-skipped))
+                   (member-eq fn skip)))
+         (mv seen toposort skip))
         (clique (or (getpropc fn 'acl2::recursivep nil wrld) (list fn)))
         (deps (function-deps-lst clique wrld nil))
         (seen (append clique seen))
-        ((mv seen toposort to-be-skipped)
-         (collect-toposort-function-deps-list deps wrld to-be-skipped seen toposort))
-        (to-be-skipped (if (intersection$ to-be-skipped deps)
-                           (append clique to-be-skipped)
-                         to-be-skipped)))
-     (mv seen (append clique toposort) to-be-skipped)))
- (defun collect-toposort-function-deps-list (fns wrld to-be-skipped seen toposort)
-   (b* (((when (atom fns)) (mv seen toposort to-be-skipped))
-        ((mv seen toposort to-be-skipped)
-         (collect-toposort-function-deps (car fns) wrld to-be-skipped seen toposort)))
-     (collect-toposort-function-deps-list (cdr fns) wrld to-be-skipped seen toposort))))
+        ((mv seen toposort skip)
+         (collect-toposort-function-deps-list deps wrld skip seen toposort))
+        (skip (if (intersection$ skip deps)
+                  (append clique skip)
+                skip)))
+     (mv seen (append clique toposort) skip)))
+ (defun collect-toposort-function-deps-list (fns wrld skip seen toposort)
+   (b* (((when (atom fns)) (mv seen toposort skip))
+        ((mv seen toposort skip)
+         (collect-toposort-function-deps (car fns) wrld skip seen toposort)))
+     (collect-toposort-function-deps-list (cdr fns) wrld skip seen toposort))))
 
 (defun formula-check-tests (formulas state)
   (declare (xargs :stobjs state :mode :program))
@@ -278,9 +278,9 @@
   `(make-event
     (def-formula-check-definition-thm-fn ',name ',evl ',formula-check ',switch-hyps (w state))))
 
-(defun def-formula-check-definition-only-body-thm-fn (name evl formula-check switch-hyps to-be-skipped wrld)
+(defun def-formula-check-definition-only-body-thm-fn (name evl formula-check switch-hyps skip wrld)
   (declare (xargs :mode :program))
-  (declare (ignorable to-be-skipped))
+  (declare (ignorable skip))
   (b* (;;(recursivep (fgetprop name 'acl2::recursivep nil wrld))
        (formals (acl2::formals name wrld))
        (body (getpropc name 'acl2::unnormalized-body nil wrld))
@@ -342,21 +342,21 @@
      :features (and switch-hyps '(:switch-hyps))
      :pkg-sym formula-check)))
 
-(defmacro def-formula-check-definition-only-body-thm (name evl formula-check &optional switch-hyps to-be-skipped)
+(defmacro def-formula-check-definition-only-body-thm (name evl formula-check &optional switch-hyps skip)
   `(make-event
-    (def-formula-check-definition-only-body-thm-fn ',name ',evl ',formula-check ',switch-hyps ',to-be-skipped  (w state))))
+    (def-formula-check-definition-only-body-thm-fn ',name ',evl ',formula-check ',switch-hyps ',skip  (w state))))
 
-(defun def-formula-checks-definition-thm-list-fn (x evl name switch-hyps to-be-skipped)
+(defun def-formula-checks-definition-thm-list-fn (x evl name switch-hyps skip)
   (if (atom x)
       nil
-    (cons (if (member-equal (car x) to-be-skipped)
-              `(def-formula-check-definition-only-body-thm ,(car x) ,evl ,name ,switch-hyps ,to-be-skipped)
+    (cons (if (member-equal (car x) skip)
+              `(def-formula-check-definition-only-body-thm ,(car x) ,evl ,name ,switch-hyps ,skip)
             `(def-formula-check-definition-thm ,(car x) ,evl ,name ,switch-hyps))
-          (def-formula-checks-definition-thm-list-fn (cdr x) evl name switch-hyps to-be-skipped))))
+          (def-formula-checks-definition-thm-list-fn (cdr x) evl name switch-hyps skip))))
 
-(defmacro def-formula-checks-definition-thm-list (x evl name &optional switch-hyps to-be-skipped)
+(defmacro def-formula-checks-definition-thm-list (x evl name &optional switch-hyps skip)
   `(make-event
-    (cons 'progn (def-formula-checks-definition-thm-list-fn ,x ',evl ',name ',switch-hyps ',to-be-skipped))))
+    (cons 'progn (def-formula-checks-definition-thm-list-fn ,x ',evl ',name ',switch-hyps ',skip))))
 
 (defun filter-defined-functions (fns wrld)
   (if (atom fns)
@@ -365,14 +365,17 @@
         (cons (car fns) (filter-defined-functions (cdr fns) wrld))
       (filter-defined-functions (cdr fns) wrld))))
 
-(defun def-formula-checks-fn (name fns evl evl-base-fns switch-hyps to-be-skipped wrld)
+(defun def-formula-checks-fn (name fns evl evl-base-fns switch-hyps skip wrld)
   (declare (xargs :mode :program))
   (b* ((evl-base-fns (if evl-base-fns evl-base-fns
                        (cdr (assoc-equal 'evl-base-fns
                                          (table-alist 'formula-checks-eval wrld)))))
        (evl (if evl evl (cdr (assoc-equal 'evl (table-alist 'formula-checks-eval wrld)))))
-       ((mv ?seen deps ?to-be-skipped)
-        (collect-toposort-function-deps-list fns wrld to-be-skipped evl-base-fns nil))
+       (skip (loop$ for s in skip ;; avoid skippping a fn if it is in evl-base-fns
+                    when (not (member-equal s evl-base-fns))
+                    collect s))
+       ((mv ?seen deps ?skip)
+        (collect-toposort-function-deps-list fns wrld skip evl-base-fns nil))
        (deps (acl2::rev deps))
        ;; BOZO. Someday we could deal with constrained functions more
        ;; generally.  For now, we hope that any constrained functions that fns
@@ -386,7 +389,7 @@
         (in-theory (enable assoc-equal)))
        (def-formula-checker ,name ,defined-deps)
        (local (def-formula-checker-lemmas ,name ,defined-deps))
-       (def-formula-checks-definition-thm-list ',defined-deps ,evl ,name ,switch-hyps ,to-be-skipped))))
+       (def-formula-checks-definition-thm-list ',defined-deps ,evl ,name ,switch-hyps ,skip))))
 
 (defmacro def-formula-checks (name fns &key
                                    (evl 'nil)
@@ -403,7 +406,6 @@
      (table formula-checks-eval
             'evl-base-fns ,evl-base-fns)))
 #|
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; EXAMPLE USE
