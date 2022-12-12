@@ -44,39 +44,95 @@
 (include-book "macros")
 
 ;;(fetch-new-theory
- (include-book "projects/apply/top" :dir :system)
- ;; use-apply-top-lemmas
- ;; :disabled t)
- 
+;; use-apply-top-lemmas
+;; :disabled t)
 
-(progn
+(encapsulate
+  nil
+  (local
+   (defthm lemma1
+     (implies (and (consp x)
+                   (consp (cdr x)))
+              (< (len (evens x))
+                 (len x)))))
+
+  (local
+   (defthm lemma2
+     (implies (and (consp x)
+                   )
+              (< (len (evens x))
+                 (1+ (len x))))))
+
+  (local
+   (defthm lemma3
+     (IMPLIES (AND (CONSP (CDR L)) (CONSP L))
+              (< (LEN (EVENS L)) (+ 1 (LEN (CDR L)))))))
   (defun rule-result-comperator (x y)
-    (declare (xargs :mode :logic))
-    (> (cdr x)
-       (cdr y)))
+    (declare (xargs :mode :logic
+                    :verify-guards t))
+    (> (ifix (and (consp x) (cdr x)))
+       (ifix (and (consp y) (cdr y)))))
 
-  (defwarrant rule-result-comperator))
+  (defun merge-rule-results (l1 l2 acc)
+    (declare (xargs :guard (and (true-listp l1)
+                                (true-listp l2)
+                                (true-listp acc))
+                    :measure (+ (len l1) (len l2))))
+    (cond
+     ((endp l1)
+      (revappend acc l2))
+     ((endp l2)
+      (revappend acc l1))
+     ((rule-result-comperator (car l1) (car l2))
+      (merge-rule-results (cdr l1)
+                          l2
+                          (cons (car l1) acc)))
+     (t (merge-rule-results  l1 (cdr l2)
+                             (cons (car l2) acc) ))))
+
+  (defun merge-sort-rule-results (l)
+    (declare (xargs :guard (and (true-listp l))
+                    :measure (len l)
+                    :verify-guards nil))
+    (cond ((endp (cdr l)) l)
+          (t (merge-rule-results
+              (merge-sort-rule-results (evens l))
+              (merge-sort-rule-results (odds l))
+              nil))))
+  (local
+   (defthm true-listp-of-merge-rule-results
+     (implies (and (true-listp l1)
+                   (true-listp l2)
+                   (true-listp acc))
+              (true-listp (merge-rule-results l1 l2 acc)))))
+
+  (local
+   (defthm true-listp-of-merge-sort-rule-results
+     (implies (true-listp l)
+              (true-listp (merge-sort-rule-results l)))))
+
+  (verify-guards merge-sort-rule-results)
+
+  #|(defwarrant rule-result-comperator)|#)
 
 (defmacro set-rw-step-limit (new-rw-limit)
-  
+
   `(make-event
     (b* ((rp-state (rp::update-rw-step-limit ,new-rw-limit rp-state)))
       (mv nil `(value-triple `(rw-step-limit ,',,new-rw-limit)) state rp-state))))
 
-
 (xdoc::defxdoc
- set-rw-step-limit
- :parents (rp-utilities)
- :short "Number of steps RP-Rewriter can take when rewriting a conjecture."
- :long "<p> Similar to the built-in rewriter (see @(see REWRITE-STACK-LIMIT)),
+  set-rw-step-limit
+  :parents (rp-utilities)
+  :short "Number of steps RP-Rewriter can take when rewriting a conjecture."
+  :long "<p> Similar to the built-in rewriter (see @(see REWRITE-STACK-LIMIT)),
  RP-Rewriter has a rewrite step limit. This can be changed with
  <code> @('(set-rw-step-limit <number>)') </code>
 which submits an event.
 </p>")
 
-
 (defmacro set-rp-backchain-limit (new-rw-limit)
-  
+
   `(make-event
     (b* ((rp-state (rp::update-rw-backchain-limit ,new-rw-limit rp-state)))
       (mv nil `(value-triple `(rw-backchain-limit ,',,new-rw-limit)) state
@@ -89,11 +145,11 @@ which submits an event.
       (mv nil `(value-triple `(rw-backchain-limit-throws-error ,',,t/nil)) state rp-state))))
 
 (xdoc::defxdoc
- set-rp-backchain-limit
- :parents (rp-utilities)
- :short "Number of steps RP-Rewriter can take when rewriting the hypothesis of
+  set-rp-backchain-limit
+  :parents (rp-utilities)
+  :short "Number of steps RP-Rewriter can take when rewriting the hypothesis of
  a lemma"
- :long "<p>  We have a different  step limit than (@see  set-rw-step-limit) when
+  :long "<p>  We have a different  step limit than (@see  set-rw-step-limit) when
  rewriting  hypotheses   of  lemmas  that   may  be  applied  to   the  current
  conjecture. This step limit can be changed with <code> @('(set-backchain-limit
  <number>)')</code>.  It is  recomendeded to  select a  value far  smaller than
@@ -102,19 +158,19 @@ which submits an event.
  </p>")
 
 (xdoc::defxdoc
- set-rp-backchain-limit-throws-error
- :parents (rp-utilities set-rp-backchain-limit)
- :short "Whether or not to throw an error when backchain-limit is reached"
- :long "<p> @(see set-rp-backchain-limit)
+  set-rp-backchain-limit-throws-error
+  :parents (rp-utilities set-rp-backchain-limit)
+  :short "Whether or not to throw an error when backchain-limit is reached"
+  :long "<p> @(see set-rp-backchain-limit)
  </p>")
 
 (xdoc::defxdoc
- show-rules
- :parents (rp-rewriter/debugging rp-utilities)
- :short "Sets whether or not RP-Rewriter should print used rules when rewriting
+  show-rules
+  :parents (rp-rewriter/debugging rp-utilities)
+  :short "Sets whether or not RP-Rewriter should print used rules when rewriting
  a conjecture."
- :long
- "<p>(show-rules  @('<nil-OR-t-OR-:cnt>'))   submits  an  event   that  changes
+  :long
+  "<p>(show-rules  @('<nil-OR-t-OR-:cnt>'))   submits  an  event   that  changes
  RP-Rewriter's behaviour on  saving and printing used rules. When  set to t, it
  prints rule in a fashion similar to the built-in rewriter but only differently
  for meta-rules.  When set  to :cnt,  it also  attaches a  number to  each rune
@@ -127,7 +183,6 @@ when rewriter finishes rewriting. There might be cases, however, that an error
 might not print rules used such as when a meta function throws an error. In
 such cases, or for some other reason, you may use: @('(rp-state-print-rules-used rp-state)') to manually print
 saved rules. </p>" )
-
 
 (encapsulate
   nil
@@ -180,7 +235,7 @@ saved rules. </p>" )
                                                                rp-state))
                                          rp-state)
                        rp-state))
-                         
+
                     (val (1+ (nfix (rules-used-get rune rp-state)))))
                  (rules-used-put rune val rp-state)))
               (t
@@ -204,7 +259,6 @@ saved rules. </p>" )
                  rp-state)))
       rp-state))
 
-
   (defund rp-state-print-rules-used-aux (all-rules rp-state)
     (declare (xargs :stobjs (rp-state)))
     (if (atom all-rules)
@@ -212,7 +266,7 @@ saved rules. </p>" )
       (acons (car all-rules)
              (rules-used-get (car all-rules) rp-state)
              (rp-state-print-rules-used-aux (cdr all-rules) rp-state))))
-  
+
   (defund rp-state-print-rules-used (rp-state)
     (declare (xargs :stobjs (rp-state)
                     :guard-hints (("Goal"
@@ -224,9 +278,9 @@ saved rules. </p>" )
         (cw "~%List of rules used: ~p0 ~%"
             (let* ((all-rules (true-list-fix (rules-used-get 'all-rules rp-state))))
               (if (count-used-rules-flg rp-state)
-                  (merge-comperator-sort
+                  (merge-sort-rule-results
                    (true-list-fix (rp-state-print-rules-used-aux all-rules rp-state))
-                   'rule-result-comperator)
+                   )
                 (acl2::merge-sort-lexorder
                  all-rules))))
       nil)))
@@ -529,8 +583,7 @@ untranslate). Default value = nil.
       (pp-rw-stack-aux rw-stack frames omit only evisc-tuple untranslate search-source state))))
 
 (defmacro show-rule-frames ()
-  `(merge-comperator-sort (fast-alist-clean (rule-frame-cnts rp-state))
-                          'rule-result-comperator))
+  `(merge-sort-rule-results (fast-alist-clean (rule-frame-cnts rp-state))))
 
 (define increment-rw-stack-size (rp-state)
   :stobjs (rp-state)
@@ -542,7 +595,6 @@ untranslate). Default value = nil.
 (in-theory (disable rp-statep))
 
 (xdoc::defxdoc
- rp-rewriter/debugging
- :parents (rp-rewriter)
- :short "Tools that may be used while debugging RP-Rewriter.")
-
+  rp-rewriter/debugging
+  :parents (rp-rewriter)
+  :short "Tools that may be used while debugging RP-Rewriter.")
