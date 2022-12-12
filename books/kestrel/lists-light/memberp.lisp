@@ -115,8 +115,7 @@
              t
            (memberp nil x))))
 
-;the -2 avoids a name clash
-(defthm memberp-of-update-nth-same-2
+(defthm memberp-of-update-nth-same
   (memberp val (update-nth n val lst))
   :hints (("Goal" :in-theory (enable update-nth))))
 
