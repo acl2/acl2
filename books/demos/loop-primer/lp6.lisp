@@ -154,17 +154,22 @@
 ; But here is the make-event version:
 
 (make-event
- `(defthm lp6-9
-    (implies (warrant thereis$)
-             (equal
-              (loop$ for triple in ',(w state)
+ (let ((names (loop$ for triple in (w state)
                      when (and (eq (cadr triple) 'theorem)
                                (loop$ for fn
                                       in (all-fnnames (cddr triple))
                                       thereis (eq fn 'expt)))
-                     collect (car triple))
-              '(APPLY$-PRIM-META-FN-EV-CONSTRAINT-464
-                RATIONALP-EXPT-TYPE-PRESCRIPTION
-                EXPT-TYPE-PRESCRIPTION-NON-ZERO-BASE)))))
-
-
+                     collect (car triple))))
+   `(defthm lp6-9
+      (implies (warrant thereis$)
+               (equal
+                ',names
+                '(#-:non-standard-analysis
+                  APPLY$-PRIM-META-FN-EV-CONSTRAINT-464
+                  #+:non-standard-analysis
+                  APPLY$-PRIM-META-FN-EV-CONSTRAINT-467
+                  RATIONALP-EXPT-TYPE-PRESCRIPTION
+                  #+:non-standard-analysis
+                  REALP-EXPT-TYPE-PRESCRIPTION
+                  EXPT-TYPE-PRESCRIPTION-NON-ZERO-BASE)))
+      :rule-classes nil)))
