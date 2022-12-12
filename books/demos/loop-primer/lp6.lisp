@@ -125,13 +125,19 @@
 ; However, make-event can be used to create a suitable defthm.
 
 (make-event
- `(defthm lp6-8
-    (equal
-     (loop$ for rune
-            in ',(let ((world (w state))) (function-theory :here))
-            when (let ((a (arity (cadr rune) ',(w state)))) (and a (> a 9)))
-            collect (cadr rune))
-     '(MEMOIZE-FORM SEARCH-FN SEARCH-FN-GUARD BUILD-STATE1))))
+ (let* ((world (w state))
+        (runes (function-theory :here))
+        (names
+         (loop$ for rune
+                in runes
+                when (let ((a (arity (cadr rune) world)))
+                       (and a (> a 9)))
+                collect (cadr rune))))
+   `(defthm lp6-8
+      (equal
+       ',names
+       '(MEMOIZE-FORM SEARCH-FN SEARCH-FN-GUARD BUILD-STATE1))
+      :rule-classes nil)))
 
 ; -----------------------------------------------------------------
 ; LP6-9 The same comment as above applies here, so we exhibit our solution
