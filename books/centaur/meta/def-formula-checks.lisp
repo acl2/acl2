@@ -30,6 +30,7 @@
 
 (in-package "CMR")
 
+(Include-book "misc/beta-reduce" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "tools/templates" :dir :system)
@@ -283,7 +284,9 @@
   (declare (ignorable skip))
   (b* (;;(recursivep (fgetprop name 'acl2::recursivep nil wrld))
        (formals (acl2::formals name wrld))
+
        (body (getpropc name 'acl2::unnormalized-body nil wrld))
+       ;;(body (acl2::beta-reduce-pseudo-termp body))
 
        (eval-rules
         ;; ideally, everything evaluator symbol should have evaluator's package
@@ -304,7 +307,7 @@
          :str-alist `(("<EVL>" . ,(symbol-name evl)))
          :pkg-sym evl)))
     (acl2::template-subst
-     `(defthm <evl>-of-<name>-when-<formula-check>
+     `(defthmd <evl>-of-<name>-when-<formula-check>
         (implies (:@ :switch-hyps
                      (and (<evl>-meta-extract-global-facts)
                           (<formula-check> state)))
