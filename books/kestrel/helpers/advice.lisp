@@ -348,6 +348,7 @@
 ;;    :rule-classes :forward-chaining
 ;;    :hints (("Goal" :in-theory (enable rec-sourcesp)))))
 
+;; todo: rename to pre-events?
 (defund pre-commandsp (pre-commands)
   (declare (xargs :guard t))
   (true-listp pre-commands))
@@ -1470,7 +1471,7 @@
                             theorem-hints
                             theorem-otf-flg
                             step-limit
-                            rec
+                            rec ; todo: just pass in the rec name (here and elsewhere)
                             print
                             state)
   (declare (xargs :guard (and ;; (symbolp rule) ; todo: can be a rune?
@@ -1490,12 +1491,13 @@
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling catch-all: ~x0)~%" rule))
         (mv nil nil state))
        ((when (keywordp rule))
-        (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling unsupported item: ~x0)~%" rule)) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not enabling unsupported item: ~x0)~%" rule)) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
         (mv nil nil state))
        ((when (not (symbolp rule)))
         (and (acl2::print-level-at-least-tp print) (cw "skip (Unsupported item: ~x0)~%" rule)) ; todo: handle runes like (:TYPE-PRESCRIPTION A14 . 1)
         (mv nil nil state))
        (wrld (w state))
+       (rec-name (nth 0 rec))
        (rule-or-macro-alias rule)
        (rule (handle-macro-alias rule wrld)) ; TODO: Handle the case of a macro-alias we don't know about
        )
@@ -1528,9 +1530,8 @@
              ((when (not provedp))
               (and (acl2::print-level-at-least-tp print) (cw "fail (enabling function ~x0 didn't help)~%" fn))
               (mv nil nil state))
-             ;; We change the rec type to ensure duplicates get removed:
-             (rec (make-successful-rec (nth 0 rec)
-                                       :add-enable-hint
+             (rec (make-successful-rec rec-name
+                                       :add-enable-hint ; in case it was a :use-lemma rec, we force the type to be :add-enable-hint here, to ensure duplicates get removed
                                        rule-or-macro-alias
                                        nil
                                        theorem-body new-hints theorem-otf-flg))
@@ -1539,7 +1540,7 @@
           (mv nil rec state))
       (if (not (eq :no-body (getpropc rule 'acl2::theorem :no-body wrld))) ;todo: how to just check if the property is set?
           ;; It's a theorem in the current world:
-          (b* ( ;; TODO: Consider whether to enable, say the :type-prescription rule
+          (b* ( ;; TODO: Consider whether to enable, say, the :type-prescription rule
                (rune `(:rewrite ,rule))
                ;; Rule already enabled, so don't bother (TODO: I suppose if the :hints disable it, we could reverse that):
                ((when (acl2::enabled-runep rune (acl2::ens-maybe-brr state) (w state)))
@@ -1558,7 +1559,7 @@
                 (and (acl2::print-level-at-least-tp print) (cw "fail (enabling rule ~x0 didn't help)~%" rule))
                 (mv nil nil state))
                ;; We change the rec type to ensure duplicates get removed:
-               (rec (make-successful-rec (nth 0 rec)
+               (rec (make-successful-rec rec-name
                                          :add-enable-hint
                                          rule-or-macro-alias
                                          nil
@@ -1576,7 +1577,7 @@
               (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" rule)
               (mv :bad-book-info nil state))
              ;; todo: check for empty books-to-try (here and elsewhere?)
-             (include-books-to-try include-book-info) ; rename for clarity
+             (include-books-to-try include-book-info) ; renames for clarity
              (num-include-books-to-try-orig (len include-books-to-try))
              ;; (- (and (< 1 num-include-books-to-try)
              ;;         (cw "NOTE: There are ~x0 books that might contain ~x1: ~X23~%" num-include-books-to-try rule include-books-to-try nil)))
@@ -1586,7 +1587,7 @@
              ;; todo: ensure this is nice:
              (new-hints (acl2::enable-runes-in-hints theorem-hints (list rule))))
           ;; Not built-in, so we'll have to try finding the rule in a book:
-          ;; TODO: Would be nice to not bother if it is a definition that we don't have.
+          ;; TODO: Would be nice to not bother if it is a definition that we don't have, but how to tell without including the book?
           (b* (;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
                ;; TODO: Try to get a good variety of books here, if there are too many to try them all:
                ((mv erp successful-include-book-form-or-nil state)
@@ -1600,11 +1601,11 @@
                          (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len include-books-to-try) num-include-books-to-try-orig rule)
                        (cw "fail (enabling ~x0 didn't help)~%" rule)))
                 (mv nil nil state))
-               (successful-include-book-form successful-include-book-form-or-nil) ; rename for clarity
+               (successful-include-book-form successful-include-book-form-or-nil) ; renames for clarity
                ;; We proved it with an include-book and an enable hint.  Now
                ;; try again but without the enable hint (maybe the include-book is enough):
                ((mv erp provedp-with-no-hint state)
-                (prove$-with-include-book 'try-add-enable-hint ; todo: the redoes the include-book
+                (prove$-with-include-book 'try-add-enable-hint ; todo: this redoes the include-book
                                           theorem-body
                                           successful-include-book-form
                                           nil ; name-to-check (no need to check this again)
@@ -1620,14 +1621,14 @@
                (rec (if provedp-with-no-hint
                         ;; Special case:
                         ;; Turn the rec into an :add-library, because the library is what mattered:
-                        (make-successful-rec (nth 0 rec) ;name (ok to keep the same name, i guess)
+                        (make-successful-rec rec-name ; ok to keep the same name, or should we change it?
                                              :add-library ;; Change the rec to :add-library since the hint didn't matter!
                                              successful-include-book-form ; action object for :add-library
                                              (list successful-include-book-form) ; pre-commands
                                              theorem-body
                                              theorem-hints ; original hints, no new enable
                                              theorem-otf-flg)
-                      (make-successful-rec (nth 0 rec) ; name
+                      (make-successful-rec rec-name
                                            :add-enable-hint
                                            rule-or-macro-alias
                                            (list successful-include-book-form) ; pre-commands
@@ -1707,7 +1708,8 @@
         (mv nil nil state))
        ((when (not (symbolp item))) ; for now
         (and (acl2::print-level-at-least-tp print) (cw "skip (unexpected object for :add-use-hint: ~x0)~%" item)) ; todo: add support for other lemma-instances
-        (mv nil nil state)))
+        (mv nil nil state))
+       (rec-name (nth 0 rec)))
     (if (symbol-that-can-be-usedp item (w state)) ; todo: what if it's defined but can't be :used?
         (b* (                                     ;; todo: ensure this is nice:
              ;; todo: also disable the item, if appropriate
@@ -1718,7 +1720,7 @@
                                                   theorem-otf-flg
                                                   step-limit
                                                   state))
-             (rec (make-successful-rec (nth 0 rec)
+             (rec (make-successful-rec rec-name
                                        :add-use-hint
                                        item
                                        nil
@@ -1735,7 +1737,7 @@
            ((when (eq :builtin include-book-info))
             (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" item)
             (mv :bad-book-info nil state))
-           (include-books-to-try include-book-info) ; rename for clarity
+           (include-books-to-try include-book-info) ; renames for clarity
            ;; TODO: Filter out include-books that are known to clash with this tool?
            (num-include-books-to-try-orig (len include-books-to-try))
            ;; (- (and (< 1 num-include-books-to-try)
@@ -1760,11 +1762,11 @@
                      (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len include-books-to-try) num-include-books-to-try-orig item)
                    (cw "fail (using ~x0 didn't help)~%" item)))
             (mv nil nil state))
-           (successful-include-book-form successful-include-book-form-or-nil) ; rename for clarity
+           (successful-include-book-form successful-include-book-form-or-nil) ; renames for clarity
            ;; We proved it with an include-book and a :use hint.  Now
            ;; try again but without the :use hint (maybe the include-book is enough):
            ((mv erp provedp-with-no-hint state)
-            (prove$-with-include-book 'try-add-use-hint ; todo: the redoes the include-book
+            (prove$-with-include-book 'try-add-use-hint ; todo: this redoes the include-book
                                       theorem-body
                                       successful-include-book-form
                                       nil ; name-to-check (no need to check this again)
@@ -1778,14 +1780,14 @@
            ((when erp) (mv erp nil state))
            ;; todo: we could even try to see if a smaller library would work
            (rec (if provedp-with-no-hint
-                    (make-successful-rec (nth 0 rec) ;name
+                    (make-successful-rec rec-name
                                          :add-library ;; Change the rec to :add-library since the hint didn't matter!
                                          successful-include-book-form
                                          (list successful-include-book-form) ; pre-commands
                                          theorem-body
                                          theorem-hints
                                          theorem-otf-flg)
-                  (make-successful-rec (nth 0 rec) ;name
+                  (make-successful-rec rec-name
                                        :add-use-hint
                                        item
                                        (list successful-include-book-form) ; pre-commands
