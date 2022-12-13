@@ -1227,7 +1227,7 @@
 ;; Returns (mv erp provedp state).  If NAME-TO-CHECK is non-nil, we require it to be defined
 ;; after including the book (and to be the name of something appropriate, according to CHECK-KIND)
 ;; or else we give up without calling prove$.
-;; TODO: Consider trying the proof anyway, even the include-book doesn't bring
+;; TODO: Consider trying the proof anyway, even if the include-book doesn't bring
 ;; in the name-to-check, since the proof attempt may be cheap compared to the include-book.
 ;; How often does this happen?
 ;; TODO: Drop the error return-value?
