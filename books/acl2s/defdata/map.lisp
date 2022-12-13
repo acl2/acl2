@@ -21,27 +21,49 @@ data last modified: [2014-08-06]
 (def-const *map-local-events* '())
 
 (def-const *map-export-defthms*
-  '((defthm _pred_-IMPLIES-RECORDP
+  '((defthm _pred_-IMPLIES-ALISTP
+      (implies (_pred_ x)
+               (acl2::alistp x))
+      :hints (("goal" :in-theory (e/d (_pred_))))
+      :rule-classes ((:rewrite :backchain-limit-lst 1) 
+                     (:forward-chaining)))
+
+    (defthm _pred_-IMPLIES-NO-NIL-VAL-ALISTP
+      (implies (_pred_ x)
+               (acl2::no-nil-val-alistp x))
+      :hints (("goal" :in-theory (e/d (_pred_))))
+      :rule-classes ((:rewrite :backchain-limit-lst 1) 
+                     (:forward-chaining)))
+
+    (defthm _pred_-IMPLIES-ORDERED-UNIQUE-KEY-ALISTP
+      (implies (_pred_ x)
+               (acl2::ordered-unique-key-alistp x))
+      :hints (("goal" :in-theory (e/d (_pred_))))
+      :rule-classes ((:rewrite :backchain-limit-lst 1) 
+                     (:forward-chaining)))
+    
+    (defthm _pred_-IMPLIES-RECORDP
       (implies (_pred_ x)
                (acl2::recordp x))
       :hints (("goal" :in-theory (e/d (_pred_))))
       :rule-classes ((:rewrite :backchain-limit-lst 1) 
                      (:forward-chaining)))
-    
+
     (defthm _pred_-EXCLUDES-ATOM-LIST
       (implies (and (_pred_ x)
                     (consp x))
                (not (atom-listp x)))
       :hints (("goal" :in-theory (e/d (_pred_) )))
       :rule-classes (:tau-system))
-    
+
+    ;; PETE: I'm not sure why Harsh put this here, but I should
+    ;; revisit it since I redid records and maps.
     (defthm _pred_-MAP-IDENTITY2-GENERALIZE
       (implies (_pred_ x)
                (_pred_ (acl2::map-identity2 a x)))
       :rule-classes (:generalize))
 
     (:@ :key-is-typename
-
 
         #|
         (defthm DISJOINT-_pred_-_keypred_
@@ -59,20 +81,24 @@ data last modified: [2014-08-06]
         
         (defthm _pred_-DOMAIN-LEMMA
           (implies (and (_pred_ x)
-                        (mget a x))
+                        (mget a x)
+                        )
                    (_keypred_ a))
           :hints (("Goal" :in-theory (e/d 
-                                      (_pred_ mget acl2::extensible-records)
+                                      (_pred_ mget
+                                              ;;acl2::minimal-records-theory
+                                              )
                                       (_keypred_))))
           :rule-classes (;(:rewrite :backchain-limit-lst 1)
-                         :forward-chaining :generalize))
+                         (:forward-chaining :trigger-terms ((mget a x)))
+                         :generalize))
 
         ;; added on jmitesh's request.
         (defthm DELETING-AN-ENTRY-IN-_pred_
           (implies (and (_pred_ x)
                         (_keypred_ a))
                    (_pred_ (mset a nil x)))
-          :hints (("Goal" :in-theory (e/d (acl2::extensible-records)))))
+          :hints (("Goal" :in-theory (e/d (acl2::minimal-records-theory)))))
 
 
         )
@@ -83,9 +109,9 @@ data last modified: [2014-08-06]
           (implies (and (_pred_ x)
                         (mget acl2::a x))
                    (_valpred_ (mget acl2::a x)))
-          :hints (("Goal" :in-theory (e/d 
-                                      (_pred_ mget acl2::extensible-records)
-                                      (_keypred_ _valpred_)))))
+          :hints (("Goal" :in-theory
+                   (e/d (_pred_ mget acl2::minimal-records-theory)
+                        (_keypred_ _valpred_)))))
 
 
         (defthm _pred_-SELECTOR-generalize
@@ -94,9 +120,9 @@ data last modified: [2014-08-06]
                         )
                    (or (_valpred_ (mget acl2::a x))
                        (equal (mget acl2::a x) nil)))
-          :hints (("Goal" :in-theory (e/d 
-                                      (_pred_ mget acl2::extensible-records)
-                                      (_keypred_ _valpred_))))
+          :hints (("Goal" :in-theory
+                   (e/d (_pred_ mget acl2::minimal-records-theory)
+                        (_keypred_ _valpred_))))
           :rule-classes :generalize)
 
         ;; (local
@@ -114,13 +140,9 @@ data last modified: [2014-08-06]
                         (_valpred_ v))
                    (_pred_ (mset acl2::a v x)))
           :hints (("Goal" :in-theory 
-                   (e/d (_pred_ mset acl2::extensible-records)
+                   (e/d (_pred_ mset acl2::minimal-records-theory)
                         (_keypred_ _valpred_))))
           :rule-classes (:rewrite :generalize)))
-    
-
-    
-    
     ))
 
 (defun map-attach-constraint-rules-ev (p wrld)
