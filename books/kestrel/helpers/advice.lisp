@@ -121,7 +121,7 @@
 ;; TODO: Compare to (deref-macro-name name (macro-aliases wrld)).
 (defund handle-macro-alias (name wrld)
   (declare (xargs :guard (plist-worldp wrld)))
-  (if (not (symbolp name)) ; possible?
+  (if (not (symbolp name)) ; possible? could be a rune?
       name
     (let* ((macro-aliases-table (table-alist 'acl2::macro-aliases-table wrld)))
       (if (not (alistp macro-aliases-table))
@@ -1223,29 +1223,44 @@
       (mv provedp failure-info state))))
 
 ;; Calls prove$ on FORMULA after submitting INCLUDE-BOOK-FORM, which is undone after the prove$.
-;; Returns (mv erp provedp state).  If NAME-TO-CHECK is non-nil, we require it to be something
-;; that can be enabled/disabled after including the book, or else we don't call prove$.
-(defun prove$-with-include-book (ctx
-                                 formula
+;; Returns (mv erp provedp state).  If NAME-TO-CHECK is non-nil, we require it to be defined
+;; after including the book (and to be the name of something appropriate, according to CHECK-KIND)
+;; or else we give up without calling prove$.
+;; TODO: Consider trying the proof anyway, even the include-book doesn't bring
+;; in the name-to-check, since the proof attempt may be cheap compared to the include-book.
+;; How often does this happen?
+;; TODO: Drop the error return-value?
+(defun prove$-with-include-book (ctx ; context (gets printed as-is, so not really a ctxp)
+                                 formula ; untranslated
                                  include-book-form
                                  name-to-check ; we ensure this exists after the include-book (nil means nothing to check)
-                                 check-kind ; :enable or :use
+                                 check-kind    ; :enable or :use
                                  book-to-avoid-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
                                  ;; args to prove$:
                                  hints otf-flg step-limit
                                  state)
-  (declare (xargs :stobjs state
-                  :guard (and (or (null book-to-avoid-absolute-path)
-                                  (stringp book-to-avoid-absolute-path))
-                              ;; todo: add to this
-                              )
+  (declare (xargs :guard (and ;; ctx
+                          ;; formula
+                          (consp include-book-form)
+                          (eq 'include-book (car include-book-form))
+                          (symbolp name-to-check)
+                          (or (null check-kind)
+                              (eq :enable check-kind)
+                              (eq :use check-kind))
+                          (or (null book-to-avoid-absolute-path)
+                              (stringp book-to-avoid-absolute-path))
+                          ;; hints
+                          (booleanp otf-flg)
+                          (or (eq nil step-limit)
+                              (natp step-limit)))
+                  :stobjs state
                   :mode :program))
   (revert-world ;; ensures the include-book gets undone
    (b* (        ;; Try to include the recommended book:
         ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
         ((when erp) ; can happen if there is a name clash
          (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
-         (mv nil ; not considering this an error, since if there is a name clash we want to try the other recommendations
+         (mv nil ; suppresses error (we want to continue trying other include-books / other advice)
              nil state))
         ((when (and name-to-check
                     (if (eq :enable check-kind)
@@ -1253,26 +1268,23 @@
                       (if (eq :use check-kind)
                           (not (symbol-that-can-be-usedp name-to-check (w state)))
                         (er hard? 'prove$-with-include-book "Bad check-kind: ~x0." check-kind)))))
-         ;; (cw "NOTE: After including ~x0, ~x1 is still not defined.~%" (cadr include-book-form) name-to-check) ;; todo: add debug arg
-         (mv nil ; suppress error
+         (cw "NOTE: After ~x0, ~x1 is not defined or is not suitable for.~%" include-book-form name-to-check) ;; todo: add debug arg
+         (mv nil ; suppresses error
              nil state))
         ;; Check that we didn't bring in the book-to-avoid:
         ((when (member-equal book-to-avoid-absolute-path (acl2::included-books-in-world (w state))))
          (cw "NOTE: Avoiding include-book, ~x0, that would bring in the book-to-avoid.~%" include-book-form)
          (mv nil nil state))
-        ((mv provedp state) (prove$-no-error ctx
-                                             formula
-                                             hints
-                                             otf-flg
-                                             step-limit
-                                             state)))
-     (mv nil provedp state))))
+        ;; The include-book brought in the desired name, so now try the proof:
+        ((mv provedp state) (prove$-no-error ctx formula hints otf-flg step-limit state)))
+     (mv nil ; suppresses any error from prove$
+         provedp state))))
 
 ;; Try to prove FORMULA after submitting each of the INCLUDE-BOOK-FORMS (separately).
 ;; Returns (mv erp successful-include-book-form-or-nil state).
 ;; TODO: Don't return erp if we will always suppress errors.
 (defun try-prove$-with-include-books (ctx
-                                      formula
+                                      formula ; untranslated
                                       include-book-forms
                                       name-to-check
                                       check-kind
@@ -1280,7 +1292,20 @@
                                       ;; args to prove$:
                                       hints otf-flg step-limit
                                       state)
-  (declare (xargs :stobjs state :mode :program))
+  (declare (xargs :guard (and ;; ctx
+                          ;; formula
+                          (true-listp include-book-forms) ; todo: strengthen
+                          (symbolp name-to-check)
+                          (or (null check-kind)
+                              (eq :enable check-kind)
+                              (eq :use check-kind))
+                          (or (null book-to-avoid-absolute-path)
+                              (stringp book-to-avoid-absolute-path))
+                          ;; hints
+                          (booleanp otf-flg)
+                          (or (eq nil step-limit)
+                              (natp step-limit)))
+                  :stobjs state :mode :program))
   (if (endp include-book-forms)
       (mv nil nil state)
     (b* ((form (first include-book-forms))
@@ -1471,6 +1496,7 @@
         (and (acl2::print-level-at-least-tp print) (cw "skip (Unsupported item: ~x0)~%" rule)) ; todo: handle runes like (:TYPE-PRESCRIPTION A14 . 1)
         (mv nil nil state))
        (wrld (w state))
+       (rule-or-macro-alias rule)
        (rule (handle-macro-alias rule wrld)) ; TODO: Handle the case of a macro-alias we don't know about
        )
     (if (function-symbolp rule wrld)
@@ -1505,7 +1531,7 @@
              ;; We change the rec type to ensure duplicates get removed:
              (rec (make-successful-rec (nth 0 rec)
                                        :add-enable-hint
-                                       (nth 2 rec)
+                                       rule-or-macro-alias
                                        nil
                                        theorem-body new-hints theorem-otf-flg))
              (- (and (acl2::print-level-at-least-tp print)
@@ -1534,7 +1560,7 @@
                ;; We change the rec type to ensure duplicates get removed:
                (rec (make-successful-rec (nth 0 rec)
                                          :add-enable-hint
-                                         (nth 2 rec)
+                                         rule-or-macro-alias
                                          nil
                                          theorem-body new-hints theorem-otf-flg))
                (- (and (acl2::print-level-at-least-tp print)
@@ -1592,17 +1618,18 @@
                ((when erp) (mv erp nil state))
                ;; todo: we could even try to see if a smaller library would work
                (rec (if provedp-with-no-hint
+                        ;; Special case:
                         ;; Turn the rec into an :add-library, because the library is what mattered:
                         (make-successful-rec (nth 0 rec) ;name (ok to keep the same name, i guess)
                                              :add-library ;; Change the rec to :add-library since the hint didn't matter!
-                                             successful-include-book-form
+                                             successful-include-book-form ; action object for :add-library
                                              (list successful-include-book-form) ; pre-commands
                                              theorem-body
                                              theorem-hints ; original hints, no new enable
                                              theorem-otf-flg)
-                      (make-successful-rec (nth 0 rec) ;name (ok to keep the same name, i guess)
+                      (make-successful-rec (nth 0 rec) ; name
                                            :add-enable-hint
-                                           (nth 2 rec)
+                                           rule-or-macro-alias
                                            (list successful-include-book-form) ; pre-commands
                                            theorem-body
                                            new-hints
