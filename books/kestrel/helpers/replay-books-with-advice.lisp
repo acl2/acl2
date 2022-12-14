@@ -74,6 +74,7 @@
           (revert-world (replay-book-with-advice-fn-aux (concatenate 'string base-dir "/" book)
                                                         theorems-to-try
                                                         num-recs-per-model
+                                                        nil ; don't spend time trying to improve recs
                                                         print
                                                         server-url
                                                         models

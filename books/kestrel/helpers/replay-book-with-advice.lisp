@@ -35,10 +35,11 @@
 
 ;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
 ;; Returns (mv erp result state) where result is :yes, :no, :maybe (not currently used?), or :trivial.
-(defun submit-defthm-event-with-advice (defthm num-recs-per-model book-to-avoid-absolute-path print server-url models state)
+(defun submit-defthm-event-with-advice (defthm num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models state)
   (declare (xargs :guard (and (natp num-recs-per-model)
                               (or (null book-to-avoid-absolute-path)
                                   (stringp book-to-avoid-absolute-path))
+                              (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
@@ -64,6 +65,7 @@
                                     nil           ; theorem-otf-flg
                                     num-recs-per-model
                                     book-to-avoid-absolute-path
+                                    improve-recsp
                                     print
                                     server-url
                                     nil ; debug
@@ -112,7 +114,7 @@
 
 ;; Returns (mv erp yes-count no-count maybe-count trivial-count error-count state).
 ;throws an error if any event fails
-(defun submit-events-with-advice (events theorems-to-try num-recs-per-model book-to-avoid-absolute-path print server-url models
+(defun submit-events-with-advice (events theorems-to-try num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models
                                          yes-count no-count maybe-count trivial-count error-count
                                          state)
   (declare (xargs :guard (and (true-listp events)
@@ -121,6 +123,7 @@
                               (natp num-recs-per-model)
                               (or (null book-to-avoid-absolute-path)
                                   (stringp book-to-avoid-absolute-path))
+                              (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
@@ -134,7 +137,7 @@
           ;; It's a theorem for which we are to try advice:
           (b* ( ;; Try to prove it using advice:
                ((mv erp result state)
-                (submit-defthm-event-with-advice event num-recs-per-model book-to-avoid-absolute-path print server-url models state))
+                (submit-defthm-event-with-advice event num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models state))
                (- (and erp
                        (cw "ERROR (~x0) with advice attempt for event ~X12 (continuing...).~%" erp event nil)
                        )))
@@ -148,9 +151,9 @@
                      ((when erp)
                       (er hard? 'submit-events-with-advice "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
                       (mv erp yes-count no-count maybe-count trivial-count error-count state)))
-                  (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model book-to-avoid-absolute-path print server-url models yes-count no-count maybe-count trivial-count error-count state))
+                  (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models yes-count no-count maybe-count trivial-count error-count state))
               ;; No error, so count the result:
-              (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model book-to-avoid-absolute-path print server-url models
+              (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models
                                          (if (eq :yes result) (+ 1 yes-count) yes-count)
                                          (if (eq :no result) (+ 1 no-count) no-count)
                                          (if (eq :maybe result) (+ 1 maybe-count) maybe-count)
@@ -166,7 +169,7 @@
               (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
               (mv erp yes-count no-count maybe-count trivial-count error-count state))
              (- (cw "~x0~%" (shorten-event event))))
-          (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model book-to-avoid-absolute-path print server-url models yes-count no-count maybe-count trivial-count error-count state))))))
+          (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models yes-count no-count maybe-count trivial-count error-count state))))))
 
 (defun discard-events-before-first-advice-event (events theorems-to-try)
   (declare (xargs :guard (and (true-listp events)
@@ -197,6 +200,7 @@
 (defun replay-book-with-advice-fn-aux (filename ; the book, with .lisp extension, we should have already checked that it exists
                                        theorems-to-try
                                        num-recs-per-model
+                                       improve-recsp
                                        print
                                        server-url
                                        models
@@ -205,6 +209,7 @@
                               (or (eq :all theorems-to-try)
                                   (symbol-listp theorems-to-try))
                               (natp num-recs-per-model)
+                              (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
@@ -244,7 +249,7 @@
        ((when erp) (mv erp (list 0 0 0 0 0) state))
        ;; Submit all the events, trying advice for each defthm in theorems-to-try:
        ((mv erp yes-count no-count maybe-count trivial-count error-count state)
-        (submit-events-with-advice events theorems-to-try num-recs-per-model book-to-avoid-absolute-path print server-url models 0 0 0 0 0 state))
+        (submit-events-with-advice events theorems-to-try num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models 0 0 0 0 0 state))
        ((when erp) ; I suppose we could return partial results from this book instead
         (cw "Error: ~x0.~%" erp)
         (mv erp (list 0 0 0 0 0) state))
@@ -267,6 +272,7 @@
 (defun replay-book-with-advice-fn (filename ; the book, with .lisp extension
                                    theorems-to-try ; can be :all
                                    num-recs-per-model
+                                   improve-recsp
                                    print
                                    server-url
                                    models ; can be :all
@@ -275,6 +281,7 @@
                               (or (eq :all theorems-to-try)
                                   (symbol-listp theorems-to-try))
                               (natp num-recs-per-model)
+                              (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
@@ -295,7 +302,7 @@
        ((mv erp
             & ; counts
             state)
-        (replay-book-with-advice-fn-aux filename theorems-to-try num-recs-per-model print server-url models state))
+        (replay-book-with-advice-fn-aux filename theorems-to-try num-recs-per-model improve-recsp print server-url models state))
        ((when erp) (mv erp nil state)))
     ;; No error:
     (mv nil '(value-triple :replay-succeeded) state)))
@@ -307,8 +314,9 @@
                                    &key
                                    (theorems-to-try ':all) ; gets evaluated
                                    (n '10) ; num-recs-per-model
+                                   (improve-recsp 't)
                                    (print 'nil)
                                    (server-url 'nil) ; nil means get from environment var
                                    (models ':all)
                                    )
-  `(make-event-quiet (replay-book-with-advice-fn ,filename ,theorems-to-try ,n ,print ,server-url ,models state)))
+  `(make-event-quiet (replay-book-with-advice-fn ,filename ,theorems-to-try ,n ,improve-recsp ,print ,server-url ,models state)))

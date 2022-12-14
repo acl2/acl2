@@ -1348,6 +1348,7 @@
                                      ;; args to prove$:
                                      hints otf-flg step-limit
                                      rec-name
+                                     improve-recsp
                                      state)
   (declare (xargs :guard (and (consp include-book-form)
                               (eq 'include-book (car include-book-form)) ; strengthen?
@@ -1358,7 +1359,9 @@
                               ;; hints are standard hints
                               (booleanp otf-flg)
                               (or (eq nil step-limit)
-                                  (natp step-limit)))
+                                  (natp step-limit))
+                              (stringp rec-name)
+                              (booleanp improve-recsp))
                   :stobjs state
                   :mode :program))
   (b* ((name-to-enable (if (symbolp item-to-enable)
@@ -1394,11 +1397,14 @@
                   ((mv provedp state) (prove$-no-error 'try-enable-with-include-book formula hints-with-enable otf-flg step-limit state)))
                (if provedp
                    ;; We proved it with the enable hint.  Now, try again without the enable (just the include-book):
-                   (b* (((mv provedp state) (prove$-no-error 'try-enable-with-include-book formula
-                                                             hints ; original hints
-                                                             otf-flg
-                                                             step-limit ; or base this on how many steps were taken when it succeeded
-                                                             state)))
+                   (b* (((mv provedp state)
+                         (if improve-recsp
+                             (prove$-no-error 'try-enable-with-include-book formula
+                                              hints ; original hints
+                                              otf-flg
+                                              step-limit ; or base this on how many steps were taken when it succeeded
+                                              state)
+                           (mv nil state))))
                      (if provedp
                          ;; Only the include-book was needed:
                          ;; Turn the rec into an :add-library, because the library is what mattered:
@@ -1484,6 +1490,7 @@
                                       otf-flg
                                       step-limit
                                       rec-name
+                                      improve-recsp
                                       state)
   (declare (xargs :guard (and (true-listp include-book-forms) ; todo: strengthen
                               ;; formula is untranslated
@@ -1496,7 +1503,8 @@
                               (booleanp otf-flg)
                               (or (eq nil step-limit)
                                   (natp step-limit))
-                              (stringp rec-name))
+                              (stringp rec-name)
+                              (booleanp improve-recsp))
                   :stobjs state :mode :program))
   (if (endp include-book-forms)
       (mv nil nil state)
@@ -1506,14 +1514,14 @@
       (b* ((include-book-form (first include-book-forms))
            ;; (- (cw "  Trying with ~x0.~%" form))
            ((mv maybe-successful-rec state)
-            (try-enable-with-include-book include-book-form formula item-to-enable maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name state)))
+            (try-enable-with-include-book include-book-form formula item-to-enable maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name improve-recsp state)))
         (if maybe-successful-rec
             (mv maybe-successful-rec nil state)
           (try-enable-with-include-books (rest include-book-forms)
                                          formula
                                          item-to-enable
                                          (+ 1 include-book-count)
-                                         maybe-max-include-book-count maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name state))))))
+                                         maybe-max-include-book-count maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name improve-recsp state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1530,6 +1538,7 @@
                                   ;; args to prove$:
                                   hints otf-flg step-limit
                                   rec-name
+                                  improve-recsp
                                   state)
   (declare (xargs :guard (and (consp include-book-form)
                               (eq 'include-book (car include-book-form)) ; strengthen?
@@ -1540,7 +1549,9 @@
                               ;; hints are standard hints
                               (booleanp otf-flg)
                               (or (eq nil step-limit)
-                                  (natp step-limit)))
+                                  (natp step-limit))
+                              (stringp rec-name)
+                              (booleanp improve-recsp))
                   :stobjs state
                   :mode :program))
   (b* ((name-to-use (if (symbolp item-to-use)
@@ -1576,11 +1587,14 @@
                   ((mv provedp state) (prove$-no-error 'try-use-with-include-book formula hints-with-use otf-flg step-limit state)))
                (if provedp
                    ;; We proved it with the :use hint.  Now, try again without the :use (just the include-book):
-                   (b* (((mv provedp state) (prove$-no-error 'try-use-with-include-book formula
-                                                             hints ; original hints
-                                                             otf-flg
-                                                             step-limit ; or base this on how many steps were taken when it succeeded
-                                                             state)))
+                   (b* (((mv provedp state)
+                         (if improve-recsp
+                             (prove$-no-error 'try-use-with-include-book formula
+                                              hints ; original hints
+                                              otf-flg
+                                              step-limit ; or base this on how many steps were taken when it succeeded
+                                              state)
+                           (mv nil state))))
                      (if provedp
                          ;; Only the include-book was needed:
                          ;; Turn the rec into an :add-library, because the library is what mattered:
@@ -1666,6 +1680,7 @@
                                    otf-flg
                                    step-limit
                                    rec-name
+                                   improve-recsp
                                    state)
   (declare (xargs :guard (and (true-listp include-book-forms) ; todo: strengthen
                               ;; formula is untranslated
@@ -1678,7 +1693,8 @@
                               (booleanp otf-flg)
                               (or (eq nil step-limit)
                                   (natp step-limit))
-                              (stringp rec-name))
+                              (stringp rec-name)
+                              (booleanp improve-recsp))
                   :stobjs state :mode :program))
   (if (endp include-book-forms)
       (mv nil nil state)
@@ -1688,14 +1704,14 @@
       (b* ((include-book-form (first include-book-forms))
            ;; (- (cw "  Trying with ~x0.~%" form))
            ((mv maybe-successful-rec state)
-            (try-use-with-include-book include-book-form formula item-to-use maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name state)))
+            (try-use-with-include-book include-book-form formula item-to-use maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name improve-recsp state)))
         (if maybe-successful-rec
             (mv maybe-successful-rec nil state)
           (try-use-with-include-books (rest include-book-forms)
                                       formula
                                       item-to-use
                                       (+ 1 include-book-count)
-                                      maybe-max-include-book-count maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name state))))))
+                                      maybe-max-include-book-count maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name improve-recsp state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1887,6 +1903,7 @@
                             theorem-otf-flg
                             step-limit
                             rec ; todo: just pass in the rec name (here and elsewhere)
+                            improve-recsp
                             print
                             state)
   (declare (xargs :guard (and ;; (symbolp rule) ; todo: can be a rune?
@@ -1900,6 +1917,7 @@
                               (or (eq nil step-limit)
                                   (natp step-limit))
                               (recommendationp rec)
+                              (booleanp improve-recsp)
                               ;; print
                               )
                   :stobjs state :mode :program))
@@ -2010,6 +2028,7 @@
                                              theorem-otf-flg
                                              step-limit
                                              rec-name
+                                             improve-recsp
                                              state)))
           (if maybe-successful-rec
               (prog2$ (and (acl2::print-level-at-least-tp print)
@@ -2070,7 +2089,7 @@
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Do we need to guess a substitution for the :use hint?  Then change the rec before returning...
 ;; TTODO: Handle the case where the included book has a name clash with the desired-name (see what we do for add-enable-hint)
-(defun try-add-use-hint (item book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+(defun try-add-use-hint (item book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec improve-recsp print state)
   (declare (xargs :guard (and ;; (symbolp item)
                           (book-mapp book-map)
                           (or (null book-to-avoid-absolute-path)
@@ -2082,6 +2101,7 @@
                           (or (eq nil step-limit)
                               (natp step-limit))
                           (recommendationp rec)
+                          (booleanp improve-recsp)
                           ;; print
                           )
                   :stobjs state
@@ -2138,6 +2158,7 @@
                                            theorem-otf-flg
                                            step-limit
                                            rec-name
+                                           improve-recsp
                                            state)))
         (if maybe-successful-rec
             (prog2$ (and (acl2::print-level-at-least-tp print)
@@ -2409,7 +2430,6 @@
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
-;; TODO: Option to not improve successful recs?
 ;; TODO: Pass in previous successful add-libraries and avoid anything else that brings in those libraries?
 (defun try-recommendation (rec
                            book-to-avoid-absolute-path
@@ -2418,6 +2438,7 @@
                            theorem-hints
                            theorem-otf-flg
                            step-limit
+                           improve-recsp
                            print
                            state)
   (declare (xargs :guard (and (recommendationp rec)
@@ -2429,6 +2450,7 @@
                               (booleanp theorem-otf-flg)
                               (or (null step-limit)
                                   (natp step-limit))
+                              (booleanp improve-recsp)
                               (acl2::print-levelp print))
                   :mode :program
                   :stobjs state))
@@ -2447,15 +2469,15 @@
           (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           (:add-do-not-hint (try-add-do-not-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-          (:add-enable-hint (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-enable-hint (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec improve-recsp print state))
           (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           (:add-library (try-add-library object book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           (:add-nonlinearp-hint (try-add-nonlinearp-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-          (:add-use-hint (try-add-use-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-use-hint (try-add-use-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec improve-recsp print state))
           ;; same as for try-add-enable-hint above:
-          (:use-lemma (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:use-lemma (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec improve-recsp print state))
           ;; Hints not from ML:
           (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg step-limit rec print state))
           (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
@@ -2476,6 +2498,7 @@
                             theorem-otf-flg
                             step-limit
                             max-wins
+                            improve-recsp
                             print
                             successful-recs ; an accumulator
                             state)
@@ -2490,6 +2513,7 @@
                                   (natp step-limit))
                               (or (null max-wins)
                                   (natp max-wins))
+                              (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (true-listp successful-recs))
                   :mode :program
@@ -2503,10 +2527,10 @@
            ((mv & ; erp ; for now, we ignore errors and just continue
                 maybe-successful-rec ; may be fleshed out (pre-commands, hints, etc.)
                 state)
-            (try-recommendation rec book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit print state)))
+            (try-recommendation rec book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit improve-recsp print state)))
         (try-recommendations (rest recs)
                              book-to-avoid-absolute-path
-                             theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins print
+                             theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins improve-recsp print
                              (if maybe-successful-rec
                                  (cons maybe-successful-rec successful-recs)
                                successful-recs)
@@ -3007,6 +3031,7 @@
                                  theorem-otf-flg
                                  num-recs-per-model
                                  book-to-avoid-absolute-path
+                                 improve-recsp
                                  print
                                  server-url
                                  debug
@@ -3023,6 +3048,7 @@
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               (natp num-recs-per-model)
+                              (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
@@ -3053,7 +3079,7 @@
        (- (and print (cw "~%TRYING RECOMMENDATIONS:~%")))
        (state (acl2::widen-margins state))
        ((mv erp successful-recs extra-recs-ignoredp state)
-        (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins print nil state))
+        (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins improve-recsp print nil state))
        (state (acl2::unwiden-margins state))
        ((when erp)
         (er hard? 'advice-fn "Error trying recommendations: ~x0" erp)
@@ -3097,6 +3123,7 @@
                              theorem-otf-flg
                              num-recs-per-model
                              book-to-avoid-absolute-path
+                             improve-recsp
                              print
                              server-url
                              debug
@@ -3114,6 +3141,7 @@
                               (natp num-recs-per-model)
                               (or (null book-to-avoid-absolute-path)
                                   (stringp book-to-avoid-absolute-path))
+                              (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
@@ -3151,6 +3179,7 @@
                                 theorem-otf-flg
                                 num-recs-per-model
                                 book-to-avoid-absolute-path
+                                improve-recsp
                                 print
                                 server-url
                                 debug
@@ -3167,6 +3196,7 @@
                          theorem-otf-flg
                          rule-classes
                          num-recs-per-model
+                         improve-recsp
                          print
                          server-url
                          debug
@@ -3181,6 +3211,7 @@
                               (booleanp theorem-otf-flg)
                               ;; rule-classes
                               (natp num-recs-per-model)
+                              (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
@@ -3215,6 +3246,7 @@
                               theorem-otf-flg
                               num-recs-per-model
                               nil ; no book to avoid
+                              improve-recsp
                               print
                               server-url
                               debug
@@ -3242,6 +3274,7 @@
                          (otf-flg 'nil)
                          ;; options for the advice:
                          (n '10) ; num-recs-per-model
+                         (improve-recsp 't)
                          (print 't)
                          (server-url 'nil)
                          (debug 'nil)
@@ -3252,7 +3285,7 @@
                          (rule-classes '(:rewrite))
                          )
   `(acl2::make-event-quiet
-    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,models state)))
+    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,improve-recsp ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::defthm-advice (&rest rest) `(defthm-advice ,@rest))
@@ -3264,6 +3297,7 @@
                       theorem-hints
                       theorem-otf-flg
                       num-recs-per-model
+                      improve-recsp
                       print
                       server-url
                       debug
@@ -3276,6 +3310,7 @@
                           ;; theorem-hints
                           (booleanp theorem-otf-flg)
                           (natp num-recs-per-model)
+                          (booleanp improve-recsp)
                           (acl2::print-levelp print)
                           (or (null server-url) ; get url from environment variable
                               (stringp server-url))
@@ -3310,6 +3345,7 @@
                               theorem-otf-flg
                               num-recs-per-model
                               nil ; no book to avoid
+                              improve-recsp
                               print
                               server-url
                               debug
@@ -3340,10 +3376,11 @@
                       (disallowed-rec-types 'nil)
                       (max-wins ':auto)
                       (models ':all)
+                      (improve-recsp 't)
                       ;; no rule-classes
                       )
   `(acl2::make-event-quiet
-    (thm-advice-fn ',body ',hints ,otf-flg ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,models state)))
+    (thm-advice-fn ',body ',hints ,otf-flg ,n ,improve-recsp ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::thm-advice (&rest rest) `(thm-advice ,@rest))
@@ -3355,6 +3392,7 @@
 ;; to fall back on when (equal untranslated-checkpoints '(<goal>)) (see
 ;; below).
 (defun advice-fn (n ; number of recommendations from ML requested
+                  improve-recsp
                   print
                   server-url
                   debug
@@ -3364,6 +3402,7 @@
                   models
                   state)
   (declare (xargs :guard (and (natp n)
+                              (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
@@ -3435,6 +3474,7 @@
                                   theorem-otf-flg
                                   n ; number of recommendations from ML requested
                                   nil ; no book to avoid (TODO: Maybe avoid the last LDed book, in case they are working on it now)
+                                  improve-recsp
                                   print
                                   server-url
                                   debug
@@ -3477,6 +3517,7 @@
 
 ;; Generate advice for the most recent failed theorem.
 (defmacro advice (&key (n '10) ; num-recs-per-model
+                       (improve-recsp 't)
                        (print 't)
                        (server-url 'nil)
                        (debug 'nil)
@@ -3484,7 +3525,7 @@
                        (disallowed-rec-types 'nil)
                        (max-wins ':auto)
                        (models ':all))
-  `(acl2::make-event-quiet (advice-fn ,n ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,models state)))
+  `(acl2::make-event-quiet (advice-fn ,n ,improve-recsp ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::advice (&rest rest) `(advice ,@rest))
@@ -3507,6 +3548,7 @@
                                             theorem-otf-flg
                                             num-recs-per-model
                                             book-to-avoid-absolute-path ; drop?
+                                            improve-recsp
                                             print
                                             server-url
                                             debug
@@ -3522,6 +3564,7 @@
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               (natp num-recs-per-model)
+                              (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
@@ -3550,10 +3593,9 @@
        ((mv erp successful-recs
             & ; extra-recs-ignoredp
             state)
-        ;; TODO: Option to not improve the recs?
         (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit
                              nil ; max-wins
-                             print nil state))
+                             improve-recsp print nil state))
        (state (acl2::unwiden-margins state))
        ((when erp)
         (er hard? 'advice-fn "Error trying recommendations: ~x0" erp)
