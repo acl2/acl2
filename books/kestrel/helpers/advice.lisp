@@ -1223,115 +1223,115 @@
                 (mv nil nil state))
       (mv provedp failure-info state))))
 
-;; Calls prove$ on FORMULA after submitting INCLUDE-BOOK-FORM, which is undone after the prove$.
-;; Returns (mv erp provedp state).  If NAME-TO-CHECK is non-nil, we require it to be defined
-;; after including the book (and to be the name of something appropriate, according to CHECK-KIND)
-;; or else we give up without calling prove$.
-;; TODO: Consider trying the proof anyway, even if the include-book doesn't bring
-;; in the name-to-check, since the proof attempt may be cheap compared to the include-book.
-;; How often does this happen?
-;; TODO: Drop the error return-value?
-(defun prove$-with-include-book (ctx ; context (gets printed as-is, so not really a ctxp)
-                                 formula ; untranslated
-                                 include-book-form
-                                 name-to-check ; we ensure this exists after the include-book (nil means nothing to check)
-                                 check-kind    ; :enable or :use
-                                 book-to-avoid-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
-                                 ;; args to prove$:
-                                 hints otf-flg step-limit
-                                 state)
-  (declare (xargs :guard (and ;; ctx
-                          ;; formula
-                          (consp include-book-form)
-                          (eq 'include-book (car include-book-form))
-                          (symbolp name-to-check)
-                          (or (null check-kind)
-                              (eq :enable check-kind)
-                              (eq :use check-kind))
-                          (or (null book-to-avoid-absolute-path)
-                              (stringp book-to-avoid-absolute-path))
-                          ;; hints
-                          (booleanp otf-flg)
-                          (or (eq nil step-limit)
-                              (natp step-limit)))
-                  :stobjs state
-                  :mode :program))
-  (revert-world ;; ensures the include-book gets undone
-   (b* (        ;; Try to include the recommended book:
-        ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
-        ((when erp) ; can happen if there is a name clash
-         (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
-         (mv nil ; suppresses error (we want to continue trying other include-books / other advice)
-             nil state))
-        ((when (and name-to-check
-                    (if (eq :enable check-kind)
-                        (not (item-that-can-be-enabled/disabledp name-to-check (w state)))
-                      (if (eq :use check-kind)
-                          (not (symbol-that-can-be-usedp name-to-check (w state)))
-                        (er hard? 'prove$-with-include-book "Bad check-kind: ~x0." check-kind)))))
-         (cw "NOTE: After ~x0, ~x1 is not defined or is not suitable for.~%" include-book-form name-to-check) ;; todo: add debug arg
-         (mv nil ; suppresses error
-             nil state))
-        ;; Check that we didn't bring in the book-to-avoid:
-        ((when (member-equal book-to-avoid-absolute-path (acl2::included-books-in-world (w state))))
-         (cw "NOTE: Avoiding include-book, ~x0, that would bring in the book-to-avoid.~%" include-book-form)
-         (mv nil nil state))
-        ;; The include-book brought in the desired name, so now try the proof:
-        ((mv provedp state) (prove$-no-error ctx formula hints otf-flg step-limit state)))
-     (mv nil ; suppresses any error from prove$
-         provedp state))))
+;; ;; Calls prove$ on FORMULA after submitting INCLUDE-BOOK-FORM, which is undone after the prove$.
+;; ;; Returns (mv erp provedp state).  If NAME-TO-CHECK is non-nil, we require it to be defined
+;; ;; after including the book (and to be the name of something appropriate, according to CHECK-KIND)
+;; ;; or else we give up without calling prove$.
+;; ;; TODO: Consider trying the proof anyway, even if the include-book doesn't bring
+;; ;; in the name-to-check, since the proof attempt may be cheap compared to the include-book.
+;; ;; How often does this happen?
+;; ;; TODO: Drop the error return-value?
+;; (defun prove$-with-include-book (ctx ; context (gets printed as-is, so not really a ctxp)
+;;                                  formula ; untranslated
+;;                                  include-book-form
+;;                                  name-to-check ; we ensure this exists after the include-book (nil means nothing to check)
+;;                                  check-kind    ; :enable or :use
+;;                                  book-to-avoid-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
+;;                                  ;; args to prove$:
+;;                                  hints otf-flg step-limit
+;;                                  state)
+;;   (declare (xargs :guard (and ;; ctx
+;;                           ;; formula
+;;                           (consp include-book-form)
+;;                           (eq 'include-book (car include-book-form))
+;;                           (symbolp name-to-check)
+;;                           (or (null check-kind)
+;;                               (eq :enable check-kind)
+;;                               (eq :use check-kind))
+;;                           (or (null book-to-avoid-absolute-path)
+;;                               (stringp book-to-avoid-absolute-path))
+;;                           ;; hints
+;;                           (booleanp otf-flg)
+;;                           (or (eq nil step-limit)
+;;                               (natp step-limit)))
+;;                   :stobjs state
+;;                   :mode :program))
+;;   (revert-world ;; ensures the include-book gets undone
+;;    (b* (        ;; Try to include the recommended book:
+;;         ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
+;;         ((when erp) ; can happen if there is a name clash
+;;          (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
+;;          (mv nil ; suppresses error (we want to continue trying other include-books / other advice)
+;;              nil state))
+;;         ((when (and name-to-check
+;;                     (if (eq :enable check-kind)
+;;                         (not (item-that-can-be-enabled/disabledp name-to-check (w state)))
+;;                       (if (eq :use check-kind)
+;;                           (not (symbol-that-can-be-usedp name-to-check (w state)))
+;;                         (er hard? 'prove$-with-include-book "Bad check-kind: ~x0." check-kind)))))
+;;          (cw "NOTE: After ~x0, ~x1 is not defined or is not suitable.~%" include-book-form name-to-check) ;; todo: add debug arg
+;;          (mv nil ; suppresses error
+;;              nil state))
+;;         ;; Check that we didn't bring in the book-to-avoid:
+;;         ((when (member-equal book-to-avoid-absolute-path (acl2::included-books-in-world (w state))))
+;;          (cw "NOTE: Avoiding include-book, ~x0, that would bring in the book-to-avoid.~%" include-book-form)
+;;          (mv nil nil state))
+;;         ;; The include-book brought in the desired name, so now try the proof:
+;;         ((mv provedp state) (prove$-no-error ctx formula hints otf-flg step-limit state)))
+;;      (mv nil ; suppresses any error from prove$
+;;          provedp state))))
 
-;; Try to prove FORMULA after submitting each of the INCLUDE-BOOK-FORMS (separately).
-;; Returns (mv erp successful-include-book-form-or-nil state).
-;; TODO: Don't return erp if we will always suppress errors.
-(defun try-prove$-with-include-books (ctx
-                                      formula ; untranslated
-                                      include-book-forms
-                                      name-to-check
-                                      check-kind
-                                      book-to-avoid-absolute-path
-                                      ;; args to prove$:
-                                      hints otf-flg step-limit
-                                      state)
-  (declare (xargs :guard (and ;; ctx
-                          ;; formula
-                          (true-listp include-book-forms) ; todo: strengthen
-                          (symbolp name-to-check)
-                          (or (null check-kind)
-                              (eq :enable check-kind)
-                              (eq :use check-kind))
-                          (or (null book-to-avoid-absolute-path)
-                              (stringp book-to-avoid-absolute-path))
-                          ;; hints
-                          (booleanp otf-flg)
-                          (or (eq nil step-limit)
-                              (natp step-limit)))
-                  :stobjs state :mode :program))
-  (if (endp include-book-forms)
-      (mv nil nil state)
-    (b* ((form (first include-book-forms))
-         ;; (- (cw "  Trying with ~x0.~%" form))
-         ((mv & ; erp ; suppress errors from prove$-with-include-book (TODO: Why?)
-              provedp state)
-          (prove$-with-include-book ctx formula
-                                    form
-                                    name-to-check
-                                    check-kind
-                                    book-to-avoid-absolute-path
-                                    ;; args to prove$:
-                                    hints otf-flg step-limit
-                                    state))
-         ;; ((when erp) (mv erp nil state))
-         ((when provedp) (mv nil form state)))
-      (try-prove$-with-include-books ctx
-                                     formula
-                                     (rest include-book-forms)
-                                     name-to-check
-                                     check-kind
-                                     book-to-avoid-absolute-path
-                                     ;; args to prove$:
-                                     hints otf-flg step-limit
-                                     state))))
+;; ;; Try to prove FORMULA after submitting each of the INCLUDE-BOOK-FORMS (separately).
+;; ;; Returns (mv erp successful-include-book-form-or-nil state).
+;; ;; TODO: Don't return erp if we will always suppress errors.
+;; (defun try-prove$-with-include-books (ctx
+;;                                       formula ; untranslated
+;;                                       include-book-forms
+;;                                       name-to-check
+;;                                       check-kind
+;;                                       book-to-avoid-absolute-path
+;;                                       ;; args to prove$:
+;;                                       hints otf-flg step-limit
+;;                                       state)
+;;   (declare (xargs :guard (and ;; ctx
+;;                           ;; formula
+;;                           (true-listp include-book-forms) ; todo: strengthen
+;;                           (symbolp name-to-check)
+;;                           (or (null check-kind)
+;;                               (eq :enable check-kind)
+;;                               (eq :use check-kind))
+;;                           (or (null book-to-avoid-absolute-path)
+;;                               (stringp book-to-avoid-absolute-path))
+;;                           ;; hints
+;;                           (booleanp otf-flg)
+;;                           (or (eq nil step-limit)
+;;                               (natp step-limit)))
+;;                   :stobjs state :mode :program))
+;;   (if (endp include-book-forms)
+;;       (mv nil nil state)
+;;     (b* ((form (first include-book-forms))
+;;          ;; (- (cw "  Trying with ~x0.~%" form))
+;;          ((mv & ; erp ; suppress errors from prove$-with-include-book (TODO: Why?)
+;;               provedp state)
+;;           (prove$-with-include-book ctx formula
+;;                                     form
+;;                                     name-to-check
+;;                                     check-kind
+;;                                     book-to-avoid-absolute-path
+;;                                     ;; args to prove$:
+;;                                     hints otf-flg step-limit
+;;                                     state))
+;;          ;; ((when erp) (mv erp nil state))
+;;          ((when provedp) (mv nil form state)))
+;;       (try-prove$-with-include-books ctx
+;;                                      formula
+;;                                      (rest include-book-forms)
+;;                                      name-to-check
+;;                                      check-kind
+;;                                      book-to-avoid-absolute-path
+;;                                      ;; args to prove$:
+;;                                      hints otf-flg step-limit
+;;                                      state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1344,6 +1344,7 @@
                                      formula        ; untranslated
                                      item-to-enable ; a symbol or rune
                                      maybe-book-to-avoid-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
+                                     theorem-name ; may be :thm
                                      ;; args to prove$:
                                      hints otf-flg step-limit
                                      rec-name
@@ -1353,6 +1354,7 @@
                               ;; formula is untranslated
                               (or (null maybe-book-to-avoid-absolute-path)
                                   (stringp maybe-book-to-avoid-absolute-path))
+                              (symbolp theorem-name)
                               ;; hints are standard hints
                               (booleanp otf-flg)
                               (or (eq nil step-limit)
@@ -1376,11 +1378,14 @@
                           (member-equal maybe-book-to-avoid-absolute-path (acl2::included-books-in-world (w state)))))
                (cw "NOTE: Avoiding include-book, ~x0, that would bring in the book-to-avoid.~%" include-book-form)
                (mv nil nil state))
-              ;; TODO: Check for name clash of new theorem with the current world (todo: maybe check also back in the original world)
-              )
+              ;; Check whether the include-book brought in the name being defined:
+              ;; todo: maybe check also back in the original world
+              ;; todo: do better if redundant!
+              (name-clashp (and (not (eq :thm theorem-name))
+                                (not (acl2::new-namep theorem-name (w state))))))
            (if (not (item-that-can-be-enabled/disabledp name-to-enable (w state)))
                ;; The item either didn't get brought in or is the wrong kind of thing, so fail:
-               (prog2$ (cw "NOTE: After ~x0, ~x1 is not defined or is not suitable for.~%" include-book-form name-to-enable) ;; todo: add debug arg and only print in that case
+               (prog2$ (cw "NOTE: After ~x0, ~x1 is not defined or is not suitable for enabling.~%" include-book-form name-to-enable) ;; todo: add debug arg and only print in that case
                        (mv nil nil state))
              ;; The include-book brought in the desired name (and that thing can be enabled), so now try the proof, enabling the item:
              ;; TTODO: Check if already enabled!
@@ -1398,25 +1403,68 @@
                          ;; Only the include-book was needed:
                          ;; Turn the rec into an :add-library, because the library is what mattered:
                          ;; todo: we could even try to see if a smaller library would work
-                         (mv nil
-                             (make-successful-rec (concatenate 'string rec-name ".improved") ; we modified the rec
-                                                  :add-library ;; Change the rec to :add-library since the hint didn't matter!
-                                                  include-book-form ; action object for :add-library
-                                                  (list include-book-form) ; pre-commands
-                                                  formula
-                                                  hints ; original hints, no new enable
-                                                  otf-flg)
-                             state)
+                         (let ((rec-name (concatenate 'string rec-name ".improved") ; we modified the rec
+                                         )
+                               (rec-type :add-library ;; Change the rec to :add-library since the hint didn't matter!
+                                         ))
+                           (mv nil
+                               (if name-clashp
+                                   (b* ((- (cw "NOTE: Working around name clash on ~x0.~%" theorem-name))
+                                        (defthm-copy-name (intern$ (concatenate 'string (symbol-name theorem-name) "-TEMP-FOR-PROOF-ADVICE") "HELP")))
+                                     (make-successful-rec rec-name
+                                                          rec-type
+                                                          include-book-form ; action object for :add-library
+                                                          ;; pre-commands:
+                                                          ;; since there is a name clash, we make a copy and prove the copy using the include-book
+                                                          ;; then we prove the desired theorem using the copy
+                                                          (list `(encapsulate ()
+                                                                   (local ,include-book-form)
+                                                                   (defthm ,defthm-copy-name
+                                                                     ,formula
+                                                                     :rule-classes nil ; in case it's not a legal rule
+                                                                     :hints ,hints ; we checked above that these hints work
+                                                                     :otf-flg ,otf-flg)))
+                                                          formula
+                                                          `(("Goal" :by ,defthm-copy-name))
+                                                          nil ; otf-flg
+                                                          ))
+                                 (make-successful-rec rec-name
+                                                      rec-type
+                                                      include-book-form ; action object for :add-library
+                                                      ;; pre-commands:
+                                                      (list include-book-form)
+                                                      formula
+                                                      hints ; original hints, no new enable
+                                                      otf-flg))
+                               state))
                        ;; Both the include-book and the enable were needed:
                        (mv nil
-                           (make-successful-rec rec-name
-                                                :add-enable-hint
-                                                item-to-enable
-                                                (list include-book-form) ; pre-commands
-                                                formula
-                                                hints-with-enable
-                                                otf-flg)
-                           state)))
+                           (if name-clashp
+                               (b* ((- (cw "NOTE: Working around name clash on ~x0.~%" theorem-name))
+                                    (defthm-copy-name (intern$ (concatenate 'string (symbol-name theorem-name) "-TEMP-FOR-PROOF-ADVICE") "HELP")))
+                                 (make-successful-rec rec-name
+                                                      :add-enable-hint
+                                                      item-to-enable
+                                                      ;; pre-commands:
+                                                      (list `(encapsulate ()
+                                                               (local ,include-book-form)
+                                                               (defthm ,defthm-copy-name
+                                                                 ,formula
+                                                                 :rule-classes nil ; in case it's not a legal rule
+                                                                 :hints ,hints-with-enable ; we checked above that these hints work
+                                                                 :otf-flg ,otf-flg)))
+                                                      formula
+                                                      `(("Goal" :by ,defthm-copy-name))
+                                                      nil ; otf-flg
+                                                      ))
+                             (make-successful-rec rec-name
+                                                  :add-enable-hint
+                                                  item-to-enable
+                                                  (list include-book-form) ; pre-commands
+                                                  formula
+                                                  hints-with-enable
+                                                  otf-flg))
+                             state)))
                  ;; Failed to prove, even with the enable (we could try without the enable, but it doesn't seem worth it):
                  (mv nil nil state))))))))
     (mv maybe-successful-rec state)))
@@ -1430,6 +1478,7 @@
                                       include-book-count ; number of include-books already tried
                                       maybe-max-include-book-count
                                       maybe-book-to-avoid-absolute-path
+                                      theorem-name ; may be :thm
                                       ;; args to prove$:
                                       hints ; will be augmented with an enable of the item-to-enable
                                       otf-flg
@@ -1457,28 +1506,211 @@
       (b* ((include-book-form (first include-book-forms))
            ;; (- (cw "  Trying with ~x0.~%" form))
            ((mv maybe-successful-rec state)
-            (try-enable-with-include-book include-book-form formula item-to-enable maybe-book-to-avoid-absolute-path hints otf-flg step-limit rec-name state)))
+            (try-enable-with-include-book include-book-form formula item-to-enable maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name state)))
         (if maybe-successful-rec
             (mv maybe-successful-rec nil state)
           (try-enable-with-include-books (rest include-book-forms)
                                          formula
                                          item-to-enable
                                          (+ 1 include-book-count)
-                                         maybe-max-include-book-count maybe-book-to-avoid-absolute-path hints otf-flg step-limit rec-name state))))))
+                                         maybe-max-include-book-count maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp successp state).
+;; Tries to prove FORMULA by :use-ing ITEM-TO-ENABLE after submitting INCLUDE-BOOK-FORM.
+;; The include-book is undone before this returns.
+;; Returns (mv maybe-successful-rec state).
+;; TODO: Consider trying the proof anyway, even if the include-book doesn't bring
+;; in the name-to-check, since the proof attempt may be cheap compared to the include-book.
+(defun try-use-with-include-book (include-book-form
+                                  formula     ; untranslated
+                                  item-to-use ; symbol? rune? instance?
+                                  maybe-book-to-avoid-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
+                                  theorem-name ; may be :thm
+                                  ;; args to prove$:
+                                  hints otf-flg step-limit
+                                  rec-name
+                                  state)
+  (declare (xargs :guard (and (consp include-book-form)
+                              (eq 'include-book (car include-book-form)) ; strengthen?
+                              ;; formula is untranslated
+                              (or (null maybe-book-to-avoid-absolute-path)
+                                  (stringp maybe-book-to-avoid-absolute-path))
+                              (symbolp theorem-name)
+                              ;; hints are standard hints
+                              (booleanp otf-flg)
+                              (or (eq nil step-limit)
+                                  (natp step-limit)))
+                  :stobjs state
+                  :mode :program))
+  (b* ((name-to-use (if (symbolp item-to-use)
+                        item-to-use
+                      (cadr item-to-use) ; must be a rune?
+                      ))
+       ((mv & ; ignore errors
+            maybe-successful-rec state)
+        (revert-world ;; ensures the include-book gets undone
+         (b* (        ; Try to include the recommended book:
+              ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
+              ((when erp) ; can happen if there is a name clash
+               (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
+               (mv nil nil state))
+              ;; Check that we didn't bring in the book-to-avoid:
+              ((when (and maybe-book-to-avoid-absolute-path
+                          (member-equal maybe-book-to-avoid-absolute-path (acl2::included-books-in-world (w state)))))
+               (cw "NOTE: Avoiding include-book, ~x0, that would bring in the book-to-avoid.~%" include-book-form)
+               (mv nil nil state))
+              ;; Check whether the include-book brought in the name being defined:
+              ;; todo: maybe check also back in the original world
+              ;; todo: do better if redundant!
+              (name-clashp (and (not (eq :thm theorem-name))
+                                (not (acl2::new-namep theorem-name (w state))))))
+           (if (not (symbol-that-can-be-usedp name-to-use (w state)))
+               ;; The item either didn't get brought in or is the wrong kind of thing, so fail:
+               (prog2$ (cw "NOTE: After ~x0, ~x1 is not defined or is not suitable for :use-ing.~%" include-book-form name-to-use) ;; todo: add debug arg and only print in that case
+                       (mv nil nil state))
+             ;; The include-book brought in the desired name (and that thing can be :used), so now try the proof, :use-ing the item:
+             (b* ( ; todo: ensure this is nice:
+                  ;; todo: also disable the item, if appropriate
+                  (hints-with-use (cons `("Goal" :use ,item-to-use) hints))
+                  ((mv provedp state) (prove$-no-error 'try-use-with-include-book formula hints-with-use otf-flg step-limit state)))
+               (if provedp
+                   ;; We proved it with the :use hint.  Now, try again without the :use (just the include-book):
+                   (b* (((mv provedp state) (prove$-no-error 'try-use-with-include-book formula
+                                                             hints ; original hints
+                                                             otf-flg
+                                                             step-limit ; or base this on how many steps were taken when it succeeded
+                                                             state)))
+                     (if provedp
+                         ;; Only the include-book was needed:
+                         ;; Turn the rec into an :add-library, because the library is what mattered:
+                         ;; todo: we could even try to see if a smaller library would work
+                         (let ((rec-name (concatenate 'string rec-name ".improved") ; we modified the rec
+                                         )
+                               (rec-type :add-library ;; Change the rec to :add-library since the hint didn't matter!
+                                         ))
+                           (mv nil
+                               (if name-clashp
+                                   (b* ((- (cw "NOTE: Working around name clash on ~x0.~%" theorem-name))
+                                        (defthm-copy-name (intern$ (concatenate 'string (symbol-name theorem-name) "-TEMP-FOR-PROOF-ADVICE") "HELP")))
+                                     (make-successful-rec rec-name
+                                                          rec-type
+                                                          include-book-form ; action object for :add-library
+                                                          ;; pre-commands:
+                                                          ;; since there is a name clash, we make a copy and prove the copy using the include-book
+                                                          ;; then we prove the desired theorem using the copy
+                                                          (list `(encapsulate ()
+                                                                   (local ,include-book-form)
+                                                                   (defthm ,defthm-copy-name
+                                                                     ,formula
+                                                                     :rule-classes nil ; in case it's not a legal rule
+                                                                     :hints ,hints ; we checked above that these hints work
+                                                                     :otf-flg ,otf-flg)))
+                                                          formula
+                                                          `(("Goal" :by ,defthm-copy-name))
+                                                          nil ; otf-flg
+                                                          ))
+                                 (make-successful-rec rec-name
+                                                      rec-type
+                                                      include-book-form ; action object for :add-library
+                                                      ;; pre-commands:
+                                                      (list include-book-form)
+                                                      formula
+                                                      hints ; original hints, no new use
+                                                      otf-flg))
+                               state))
+                       ;; Both the include-book and the :use were needed:
+                       (mv nil
+                           (if name-clashp
+                               (b* ((- (cw "NOTE: Working around name clash on ~x0.~%" theorem-name))
+                                    (defthm-copy-name (intern$ (concatenate 'string (symbol-name theorem-name) "-TEMP-FOR-PROOF-ADVICE") "HELP")))
+                                 (make-successful-rec rec-name
+                                                      :add-use-hint
+                                                      item-to-use
+                                                      ;; pre-commands:
+                                                      (list `(encapsulate ()
+                                                               (local ,include-book-form)
+                                                               (defthm ,defthm-copy-name
+                                                                 ,formula
+                                                                 :rule-classes nil ; in case it's not a legal rule
+                                                                 :hints ,hints-with-use ; we checked above that these hints work
+                                                                 :otf-flg ,otf-flg)))
+                                                      formula
+                                                      `(("Goal" :by ,defthm-copy-name))
+                                                      nil ; otf-flg
+                                                      ))
+                             (make-successful-rec rec-name
+                                                  :add-use-hint
+                                                  item-to-use
+                                                  (list include-book-form) ; pre-commands
+                                                  formula
+                                                  hints-with-use
+                                                  otf-flg))
+                           state)))
+                 ;; Failed to prove, even with the :use (we could try without the use, but it doesn't seem worth it):
+                 (mv nil nil state))))))))
+    (mv maybe-successful-rec state)))
+
+;; Tries to find one of the INCLUDE-BOOK-FORMS that brings in the ITEM-TO-USE and can prove FORMULA after :use-ing the ITEM-TO-USE.
+;; Returns (mv maybe-successful-rec limit-reachedp state).
+;; May improve the recommendation if the include-book alone suffices (without the :use).
+(defun try-use-with-include-books (include-book-forms
+                                   formula           ; untranslated
+                                   item-to-use    ; may be a rune?
+                                   include-book-count ; number of include-books already tried
+                                   maybe-max-include-book-count
+                                   maybe-book-to-avoid-absolute-path
+                                   theorem-name ; may be :thm
+                                   ;; args to prove$:
+                                   hints ; will be augmented with a :use of the item-to-use
+                                   otf-flg
+                                   step-limit
+                                   rec-name
+                                   state)
+  (declare (xargs :guard (and (true-listp include-book-forms) ; todo: strengthen
+                              ;; formula is untranslated
+                              (natp include-book-count)
+                              (or (null maybe-max-include-book-count)
+                                  (natp maybe-max-include-book-count))
+                              (or (null maybe-book-to-avoid-absolute-path)
+                                  (stringp maybe-book-to-avoid-absolute-path))
+                              ;; hints are just regular hints
+                              (booleanp otf-flg)
+                              (or (eq nil step-limit)
+                                  (natp step-limit))
+                              (stringp rec-name))
+                  :stobjs state :mode :program))
+  (if (endp include-book-forms)
+      (mv nil nil state)
+    (if (and maybe-max-include-book-count
+             (<= maybe-max-include-book-count include-book-count))
+        (mv nil t state)
+      (b* ((include-book-form (first include-book-forms))
+           ;; (- (cw "  Trying with ~x0.~%" form))
+           ((mv maybe-successful-rec state)
+            (try-use-with-include-book include-book-form formula item-to-use maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name state)))
+        (if maybe-successful-rec
+            (mv maybe-successful-rec nil state)
+          (try-use-with-include-books (rest include-book-forms)
+                                      formula
+                                      item-to-use
+                                      (+ 1 include-book-count)
+                                      maybe-max-include-book-count maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tries to prove the theorem after doing the given include-book.
+;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Skip if library already included
 ;; TODO: Skip later add-library recs if they are included by this one (though I suppose they might work only without the rest of what we get here).
 ;; TODO: Try any upcoming enable or use-lemma recs that (may) need this library:
-(defun try-add-library (include-book-form book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+(defun try-add-library (include-book-form maybe-book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
   (declare (xargs :stobjs state
                   :guard (and (consp include-book-form)
                               (eq 'include-book (car include-book-form))
-                              (or (null book-to-avoid-absolute-path)
-                                  (stringp book-to-avoid-absolute-path))
-                              (symbolp theorem-name)
+                              (or (null maybe-book-to-avoid-absolute-path)
+                                  (stringp maybe-book-to-avoid-absolute-path))
+                              (symbolp theorem-name) ; may be :thm
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
@@ -1487,26 +1719,73 @@
                               (recommendationp rec)
                               ;; print
                               )
-                  :mode :program)
-           (ignore theorem-name) ; todo: use to make a suggestion
-           )
-  (b* (;; TODO: Give up here if the include-book-form corresponds to the book-to-avoid-absolute-path.
+                  :mode :program))
+  (b* ( ;; TODO: Give up here if the include-book-form corresponds to the maybe-book-to-avoid-absolute-path.
        ((when (eq 'acl2::other include-book-form)) ; todo: can this happen, or could it be (include-book other)?
         (and (acl2::print-level-at-least-tp print) (cw "skip (can't include catch-all library ~x0)~%" include-book-form))
         (mv nil nil state))
        ((when (not (consp include-book-form)))
         (and (acl2::print-level-at-least-tp print) (cw "fail (ill-formed library recommendation: ~x0)~%" include-book-form))
         (mv nil nil state))
-       ((mv erp provedp state)
-        (prove$-with-include-book 'try-add-library theorem-body include-book-form nil nil book-to-avoid-absolute-path theorem-hints theorem-otf-flg step-limit state))
-       ((when erp) (mv erp nil state))
-       (rec (make-successful-rec (nth 0 rec)
-                                 :add-library
-                                 include-book-form
-                                 (list include-book-form)
-                                 theorem-body theorem-hints theorem-otf-flg))
-       (- (and (acl2::print-level-at-least-tp print) (if provedp (cw-success-message rec) (cw "fail (library didn't help)~%")))))
-    (mv nil (if provedp rec nil) state)))
+       ((mv & ; ignore errors
+            maybe-successful-rec state)
+        (revert-world ;; ensures the include-book gets undone
+         (b* (        ; Try to include the recommended book:
+              ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
+              ((when erp) ; can happen if there is a name clash
+               (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
+               (mv nil nil state))
+              ;; Check that we didn't bring in the book-to-avoid:
+              ((when (and maybe-book-to-avoid-absolute-path
+                          (member-equal maybe-book-to-avoid-absolute-path (acl2::included-books-in-world (w state)))))
+               (cw "NOTE: Avoiding include-book, ~x0, that would bring in the book-to-avoid.~%" include-book-form)
+               (mv nil nil state))
+              )
+           ;; The include-book is ok, so now try the proof:
+           (b* (((mv provedp state) (prove$-no-error 'try-add-library theorem-body theorem-hints theorem-otf-flg step-limit state)))
+             (if provedp
+                 ;; We proved it with this include-book:
+                 ;; todo: we could even try to see if a smaller library would work
+                 (mv nil
+                     (if ;; Check whether the include-book brought in the name being defined:
+                         ;; todo: do better if redundant!
+                         (and (not (eq :thm theorem-name))
+                              (not (acl2::new-namep theorem-name (w state))))
+                         (b* ((- (cw "NOTE: Working around name clash on ~x0.~%" theorem-name))
+                              (defthm-copy-name (intern$ (concatenate 'string (symbol-name theorem-name) "-TEMP-FOR-PROOF-ADVICE") "HELP")))
+                           (make-successful-rec (nth 0 rec)
+                                                :add-library
+                                                include-book-form ; action object for :add-library
+                                                ;; pre-commands:
+                                                ;; since there is a name clash, we make a copy and prove the copy using the include-book
+                                                ;; then we prove the desired theorem using the copy
+                                                (list `(encapsulate ()
+                                                         (local ,include-book-form)
+                                                         (defthm ,defthm-copy-name
+                                                           ,theorem-body
+                                                           :rule-classes nil ; in case it's not a legal rule
+                                                           :hints ,theorem-hints ; we checked above that these hints work
+                                                           :otf-flg ,theorem-otf-flg)))
+                                                theorem-body
+                                                `(("Goal" :by ,defthm-copy-name))
+                                                nil ; otf-flg
+                                                ))
+                       (make-successful-rec (nth 0 rec)
+                                            :add-library
+                                            include-book-form ; action object for :add-library
+                                            ;; pre-commands:
+                                            (list include-book-form)
+                                            theorem-body
+                                            theorem-hints ; we checked above that these hints work
+                                            theorem-otf-flg))
+                     state)
+               ;; Failed to prove:
+               (mv nil nil state)))))))
+    (if maybe-successful-rec
+        (prog2$ (and (acl2::print-level-at-least-tp print) (cw-success-message maybe-successful-rec))
+                (mv nil maybe-successful-rec state))
+      (prog2$ (and (acl2::print-level-at-least-tp print) (cw "fail (library didn't help)~%"))
+              (mv nil nil state)))))
 
 ;; TODO: Handle LET and MV-LET and nested implies and ...
 ;; TODO: Should we translate this first?
@@ -1602,6 +1881,7 @@
 (defun try-add-enable-hint (rule     ; the rule to try enabling
                             book-map ; info on where the rule may be found
                             book-to-avoid-absolute-path
+                            theorem-name ; may be :thm
                             theorem-body
                             theorem-hints
                             theorem-otf-flg
@@ -1613,6 +1893,7 @@
                               (book-mapp book-map)
                               (or (null book-to-avoid-absolute-path)
                                   (stringp book-to-avoid-absolute-path))
+                              (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
@@ -1724,6 +2005,7 @@
                                              0 ; include-book-count
                                              max-books-to-try
                                              book-to-avoid-absolute-path
+                                             theorem-name
                                              theorem-hints ; will be augmented with an enable of the item-to-enable
                                              theorem-otf-flg
                                              step-limit
@@ -1787,6 +2069,7 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Do we need to guess a substitution for the :use hint?  Then change the rec before returning...
+;; TTODO: Handle the case where the included book has a name clash with the desired-name (see what we do for add-enable-hint)
 (defun try-add-use-hint (item book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
   (declare (xargs :guard (and ;; (symbolp item)
                           (book-mapp book-map)
@@ -1802,8 +2085,7 @@
                           ;; print
                           )
                   :stobjs state
-                  :mode :program)
-           (ignore theorem-name))
+                  :mode :program))
   (b* (((when (eq item 'acl2::other))
         (and (acl2::print-level-at-least-tp print) (cw "skip (skipping catch-all: ~x0)~%" item))
         (mv nil nil state))
@@ -1838,68 +2120,37 @@
            ((when (eq :builtin include-book-info))
             (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" item)
             (mv :bad-book-info nil state))
-           (include-books-to-try include-book-info) ; renames for clarity
            ;; TODO: Filter out include-books that are known to clash with this tool?
-           (num-include-books-to-try-orig (len include-books-to-try))
-           ;; (- (and (< 1 num-include-books-to-try)
-           ;;         (cw "NOTE: There are ~x0 books that might contain ~x1: ~X23~%" num-include-books-to-try item include-books-to-try nil)))
-           (include-books-to-try (if (< 3 num-include-books-to-try-orig)
-                                     (take 3 include-books-to-try)
-                                   include-books-to-try))
-           ;; todo: ensure this is nice:
-           (new-hints ;; todo: ensure this is nice:
-            ;; todo: also disable the item, if appropriate
-            (cons `("Goal" :use ,item) theorem-hints))
-           ;; TODO: Would be nice to not bother if it is a definition that we don't have.
-           ;; TODO: For each of these, if it works, maybe just try the include-book without the enable:
-           ;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
-           ((mv erp successful-include-book-form-or-nil state)
-            (try-prove$-with-include-books 'try-add-use-hint theorem-body include-books-to-try item :use book-to-avoid-absolute-path new-hints theorem-otf-flg *step-limit* state))
-           ((when erp) (mv erp nil state))
-           ((when (not successful-include-book-form-or-nil))
-            (and (acl2::print-level-at-least-tp print)
-                 (if (< 3 num-include-books-to-try-orig)
-                     ;; todo: try more if we didn't find it?:
-                     (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len include-books-to-try) num-include-books-to-try-orig item)
-                   (cw "fail (using ~x0 didn't help)~%" item)))
-            (mv nil nil state))
-           (successful-include-book-form successful-include-book-form-or-nil) ; renames for clarity
-           ;; We proved it with an include-book and a :use hint.  Now
-           ;; try again but without the :use hint (maybe the include-book is enough):
-           ((mv erp provedp-with-no-hint state)
-            (prove$-with-include-book 'try-add-use-hint ; todo: this redoes the include-book
-                                      theorem-body
-                                      successful-include-book-form
-                                      nil ; name-to-check (no need to check this again)
-                                      :use
-                                      book-to-avoid-absolute-path
-                                      ;; args to prove$:
-                                      theorem-hints ; original hints, not new-hints
-                                      theorem-otf-flg
-                                      step-limit ; or base this on how many steps were taken when it succeeded
-                                      state))
-           ((when erp) (mv erp nil state))
-           ;; todo: we could even try to see if a smaller library would work
-           (rec (if provedp-with-no-hint
-                    (make-successful-rec rec-name
-                                         :add-library ;; Change the rec to :add-library since the hint didn't matter!
-                                         successful-include-book-form
-                                         (list successful-include-book-form) ; pre-commands
-                                         theorem-body
-                                         theorem-hints
-                                         theorem-otf-flg)
-                  (make-successful-rec rec-name
-                                       :add-use-hint
-                                       item
-                                       (list successful-include-book-form) ; pre-commands
-                                       theorem-body
-                                       new-hints
-                                       theorem-otf-flg)))
-           (- (and (acl2::print-level-at-least-tp print)
-                   (cw-success-message rec))))
-        (mv nil
-            rec
-            state)))))
+           (include-books-to-try include-book-info) ; renames for clarity
+           (max-books-to-try 3)
+             ;; TODO: Would be nice to not bother if it is a definition that we don't have, but how to tell without including the book?
+             ;; TODO: If, after including the book, the name to :use is a function, :use-ing it seems unlikely to help given that it didn't appear in the original proof.
+             ;; TODO: Try to get a good variety of books here, if there are too many to try them all:
+           ((mv maybe-successful-rec limit-reachedp state)
+            (try-use-with-include-books (if (< max-books-to-try (len include-books-to-try)) (take max-books-to-try include-books-to-try) include-books-to-try) ;; todo: try more if we didn't find it?
+                                           theorem-body
+                                           item
+                                           0 ; include-book-count
+                                           max-books-to-try
+                                           book-to-avoid-absolute-path
+                                           theorem-name
+                                           theorem-hints ; will be augmented with a :use of item
+                                           theorem-otf-flg
+                                           step-limit
+                                           rec-name
+                                           state)))
+        (if maybe-successful-rec
+            (prog2$ (and (acl2::print-level-at-least-tp print)
+                         (cw-success-message maybe-successful-rec))
+                    (mv nil maybe-successful-rec state))
+          ;; failed:
+          (if limit-reachedp
+              (prog2$ (and (acl2::print-level-at-least-tp print)
+                           ;; todo: clarify whether we even found an include-book that works:
+                           (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" max-books-to-try (len include-books-to-try) item))
+                      (mv nil nil state))
+            (prog2$ (cw "fail (:use ~x0 didn't help)~%" item)
+                    (mv nil nil state))))))))
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-expand-hint (item ; the thing to expand
@@ -2196,7 +2447,7 @@
           (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           (:add-do-not-hint (try-add-do-not-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-          (:add-enable-hint (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:add-enable-hint (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
@@ -2204,7 +2455,7 @@
           (:add-nonlinearp-hint (try-add-nonlinearp-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           (:add-use-hint (try-add-use-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           ;; same as for try-add-enable-hint above:
-          (:use-lemma (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
+          (:use-lemma (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
           ;; Hints not from ML:
           (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg step-limit rec print state))
           (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
