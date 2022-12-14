@@ -257,3 +257,9 @@ Skipping for now.
 (defdata d4 (map loi lloi))
 (defdata d5 (map lloi loi))
 
+(defdata d6
+  (record (a . loi)
+          (b . int)
+          (c . non-neg-rational)))
+
+(defdata d7 (map d6 d6))
