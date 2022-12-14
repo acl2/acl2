@@ -1333,6 +1333,141 @@
                                      hints otf-flg step-limit
                                      state))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tries to prove FORMULA by enabling ITEM-TO-ENABLE after submitting INCLUDE-BOOK-FORM.
+;; The include-book is undone before this returns.
+;; Returns (mv maybe-successful-rec state).
+;; TODO: Consider trying the proof anyway, even if the include-book doesn't bring
+;; in the name-to-check, since the proof attempt may be cheap compared to the include-book.
+(defun try-enable-with-include-book (include-book-form
+                                     formula        ; untranslated
+                                     item-to-enable ; a symbol or rune
+                                     maybe-book-to-avoid-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
+                                     ;; args to prove$:
+                                     hints otf-flg step-limit
+                                     rec-name
+                                     state)
+  (declare (xargs :guard (and (consp include-book-form)
+                              (eq 'include-book (car include-book-form)) ; strengthen?
+                              ;; formula is untranslated
+                              (or (null maybe-book-to-avoid-absolute-path)
+                                  (stringp maybe-book-to-avoid-absolute-path))
+                              ;; hints are standard hints
+                              (booleanp otf-flg)
+                              (or (eq nil step-limit)
+                                  (natp step-limit)))
+                  :stobjs state
+                  :mode :program))
+  (b* ((name-to-enable (if (symbolp item-to-enable)
+                           item-to-enable
+                         (cadr item-to-enable) ; must be a rune
+                         ))
+       ((mv & ; ignore errors
+            maybe-successful-rec state)
+        (revert-world ;; ensures the include-book gets undone
+         (b* (        ; Try to include the recommended book:
+              ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
+              ((when erp) ; can happen if there is a name clash
+               (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
+               (mv nil nil state))
+              ;; Check that we didn't bring in the book-to-avoid:
+              ((when (and maybe-book-to-avoid-absolute-path
+                          (member-equal maybe-book-to-avoid-absolute-path (acl2::included-books-in-world (w state)))))
+               (cw "NOTE: Avoiding include-book, ~x0, that would bring in the book-to-avoid.~%" include-book-form)
+               (mv nil nil state))
+              ;; TODO: Check for name clash of new theorem with the current world (todo: maybe check also back in the original world)
+              )
+           (if (not (item-that-can-be-enabled/disabledp name-to-enable (w state)))
+               ;; The item either didn't get brought in or is the wrong kind of thing, so fail:
+               (prog2$ (cw "NOTE: After ~x0, ~x1 is not defined or is not suitable for.~%" include-book-form name-to-enable) ;; todo: add debug arg and only print in that case
+                       (mv nil nil state))
+             ;; The include-book brought in the desired name (and that thing can be enabled), so now try the proof, enabling the item:
+             ;; TTODO: Check if already enabled!
+             (b* ( ; todo: ensure this is nice:
+                  (hints-with-enable (acl2::enable-runes-in-hints hints (list item-to-enable)))
+                  ((mv provedp state) (prove$-no-error 'try-enable-with-include-book formula hints-with-enable otf-flg step-limit state)))
+               (if provedp
+                   ;; We proved it with the enable hint.  Now, try again without the enable (just the include-book):
+                   (b* (((mv provedp state) (prove$-no-error 'try-enable-with-include-book formula
+                                                             hints ; original hints
+                                                             otf-flg
+                                                             step-limit ; or base this on how many steps were taken when it succeeded
+                                                             state)))
+                     (if provedp
+                         ;; Only the include-book was needed:
+                         ;; Turn the rec into an :add-library, because the library is what mattered:
+                         ;; todo: we could even try to see if a smaller library would work
+                         (mv nil
+                             (make-successful-rec (concatenate 'string rec-name ".improved") ; we modified the rec
+                                                  :add-library ;; Change the rec to :add-library since the hint didn't matter!
+                                                  include-book-form ; action object for :add-library
+                                                  (list include-book-form) ; pre-commands
+                                                  formula
+                                                  hints ; original hints, no new enable
+                                                  otf-flg)
+                             state)
+                       ;; Both the include-book and the enable were needed:
+                       (mv nil
+                           (make-successful-rec rec-name
+                                                :add-enable-hint
+                                                item-to-enable
+                                                (list include-book-form) ; pre-commands
+                                                formula
+                                                hints-with-enable
+                                                otf-flg)
+                           state)))
+                 ;; Failed to prove, even with the enable (we could try without the enable, but it doesn't seem worth it):
+                 (mv nil nil state))))))))
+    (mv maybe-successful-rec state)))
+
+;; Tries to find one of the INCLUDE-BOOK-FORMS that brings in the ITEM-TO-ENABLE and can prove FORMULA after enabling the ITEM-TO-ENABLE.
+;; Returns (mv maybe-successful-rec limit-reachedp state).
+;; May improve the recommendation if the include-book alone suffices (without the enable).
+(defun try-enable-with-include-books (include-book-forms
+                                      formula        ; untranslated
+                                      item-to-enable ; may be a rune
+                                      include-book-count ; number of include-books already tried
+                                      maybe-max-include-book-count
+                                      maybe-book-to-avoid-absolute-path
+                                      ;; args to prove$:
+                                      hints ; will be augmented with an enable of the item-to-enable
+                                      otf-flg
+                                      step-limit
+                                      rec-name
+                                      state)
+  (declare (xargs :guard (and (true-listp include-book-forms) ; todo: strengthen
+                              ;; formula is untranslated
+                              (natp include-book-count)
+                              (or (null maybe-max-include-book-count)
+                                  (natp maybe-max-include-book-count))
+                              (or (null maybe-book-to-avoid-absolute-path)
+                                  (stringp maybe-book-to-avoid-absolute-path))
+                              ;; hints are just regular hints
+                              (booleanp otf-flg)
+                              (or (eq nil step-limit)
+                                  (natp step-limit))
+                              (stringp rec-name))
+                  :stobjs state :mode :program))
+  (if (endp include-book-forms)
+      (mv nil nil state)
+    (if (and maybe-max-include-book-count
+             (<= maybe-max-include-book-count include-book-count))
+        (mv nil t state)
+      (b* ((include-book-form (first include-book-forms))
+           ;; (- (cw "  Trying with ~x0.~%" form))
+           ((mv maybe-successful-rec state)
+            (try-enable-with-include-book include-book-form formula item-to-enable maybe-book-to-avoid-absolute-path hints otf-flg step-limit rec-name state)))
+        (if maybe-successful-rec
+            (mv maybe-successful-rec nil state)
+          (try-enable-with-include-books (rest include-book-forms)
+                                         formula
+                                         item-to-enable
+                                         (+ 1 include-book-count)
+                                         maybe-max-include-book-count maybe-book-to-avoid-absolute-path hints otf-flg step-limit rec-name state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp successp state).
 ;; TODO: Skip if library already included
 ;; TODO: Skip later add-library recs if they are included by this one (though I suppose they might work only without the rest of what we get here).
@@ -1578,68 +1713,34 @@
               (mv :bad-book-info nil state))
              ;; todo: check for empty books-to-try (here and elsewhere?)
              (include-books-to-try include-book-info) ; renames for clarity
-             (num-include-books-to-try-orig (len include-books-to-try))
-             ;; (- (and (< 1 num-include-books-to-try)
-             ;;         (cw "NOTE: There are ~x0 books that might contain ~x1: ~X23~%" num-include-books-to-try rule include-books-to-try nil)))
-             (include-books-to-try (if (< 3 num-include-books-to-try-orig)
-                                       (take 3 include-books-to-try)
-                                     include-books-to-try))
-             ;; todo: ensure this is nice:
-             (new-hints (acl2::enable-runes-in-hints theorem-hints (list rule))))
-          ;; Not built-in, so we'll have to try finding the rule in a book:
-          ;; TODO: Would be nice to not bother if it is a definition that we don't have, but how to tell without including the book?
-          (b* (;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
-               ;; TODO: Try to get a good variety of books here, if there are too many to try them all:
-               ((mv erp successful-include-book-form-or-nil state)
-                (try-prove$-with-include-books 'try-add-enable-hint theorem-body include-books-to-try rule :enable book-to-avoid-absolute-path new-hints theorem-otf-flg *step-limit* state))
-               ((when erp) (mv erp nil state))
-               ;; todo: clarify whether we even found an include-book that works
-               ((when (not successful-include-book-form-or-nil))
-                (and (acl2::print-level-at-least-tp print)
-                     (if (< 3 num-include-books-to-try-orig)
-                         ;; todo: try more if we didn't find it?:
-                         (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" (len include-books-to-try) num-include-books-to-try-orig rule)
-                       (cw "fail (enabling ~x0 didn't help)~%" rule)))
-                (mv nil nil state))
-               (successful-include-book-form successful-include-book-form-or-nil) ; renames for clarity
-               ;; We proved it with an include-book and an enable hint.  Now
-               ;; try again but without the enable hint (maybe the include-book is enough):
-               ((mv erp provedp-with-no-hint state)
-                (prove$-with-include-book 'try-add-enable-hint ; todo: this redoes the include-book
-                                          theorem-body
-                                          successful-include-book-form
-                                          nil ; name-to-check (no need to check this again)
-                                          :enable
-                                          book-to-avoid-absolute-path
-                                          ;; args to prove$:
-                                          theorem-hints ; original hints, not new-hints
-                                          theorem-otf-flg
-                                          step-limit ; or base this on how many steps were taken when it succeeded
-                                          state))
-               ((when erp) (mv erp nil state))
-               ;; todo: we could even try to see if a smaller library would work
-               (rec (if provedp-with-no-hint
-                        ;; Special case:
-                        ;; Turn the rec into an :add-library, because the library is what mattered:
-                        (make-successful-rec rec-name ; ok to keep the same name, or should we change it?
-                                             :add-library ;; Change the rec to :add-library since the hint didn't matter!
-                                             successful-include-book-form ; action object for :add-library
-                                             (list successful-include-book-form) ; pre-commands
+             (max-books-to-try 3)
+             ;; TODO: Would be nice to not bother if it is a definition that we don't have, but how to tell without including the book?
+             ;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
+             ;; TODO: Try to get a good variety of books here, if there are too many to try them all:
+             ((mv maybe-successful-rec limit-reachedp state)
+              (try-enable-with-include-books (if (< max-books-to-try (len include-books-to-try)) (take max-books-to-try include-books-to-try) include-books-to-try) ;; todo: try more if we didn't find it?
                                              theorem-body
-                                             theorem-hints ; original hints, no new enable
-                                             theorem-otf-flg)
-                      (make-successful-rec rec-name
-                                           :add-enable-hint
-                                           rule-or-macro-alias
-                                           (list successful-include-book-form) ; pre-commands
-                                           theorem-body
-                                           new-hints
-                                           theorem-otf-flg)))
-               (- (and (acl2::print-level-at-least-tp print)
-                       (cw-success-message rec))))
-            (mv nil
-                rec
-                state)))))))
+                                             rule
+                                             0 ; include-book-count
+                                             max-books-to-try
+                                             book-to-avoid-absolute-path
+                                             theorem-hints ; will be augmented with an enable of the item-to-enable
+                                             theorem-otf-flg
+                                             step-limit
+                                             rec-name
+                                             state)))
+          (if maybe-successful-rec
+              (prog2$ (and (acl2::print-level-at-least-tp print)
+                           (cw-success-message maybe-successful-rec))
+                      (mv nil maybe-successful-rec state))
+            ;; failed:
+            (if limit-reachedp
+                (prog2$ (and (acl2::print-level-at-least-tp print)
+                             ;; todo: clarify whether we even found an include-book that works:
+                             (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" max-books-to-try (len include-books-to-try) rule))
+                        (mv nil nil state))
+              (prog2$ (cw "fail (enabling ~x0 didn't help)~%" rule)
+                      (mv nil nil state)))))))))
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
@@ -2058,6 +2159,7 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Option to not improve successful recs?
+;; TODO: Pass in previous successful add-libraries and avoid anything else that brings in those libraries?
 (defun try-recommendation (rec
                            book-to-avoid-absolute-path
                            theorem-name ; may be :thm
