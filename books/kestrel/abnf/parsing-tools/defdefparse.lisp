@@ -272,12 +272,10 @@
     "This is used to generate portions of documentation strings
      in the generated parsing functions.")
    (xdoc::p
-    "We print numeric notations in decimal base;
-     the abstract syntax has no information about the base.
-     We are considering extending our ABNF abstract syntax
-     to maintain more information from the concrete syntax,
-     including the numeric bases (decimal, hexadecimal, binary),
-     also to make this printing more faithful.")
+    "We print numeric notations without leading zeros,
+     except for a single zero if the number is 0.
+     We might extend the abstract syntax
+     to keep information about any leading zeros.")
    (xdoc::p
     "For the repetition prefix of a repetition,
      we print nothing for it if it is just one.
@@ -289,9 +287,9 @@
      except that we omit the maximum if it is infinity.
      This is a minimal printing strategy,
      in the sense that it prints the prefix in the shortest possible way;
-     noenetheless, if we extend the abstract syntax (as mentioned above)
+     noenetheless, we might extend the abstract syntax
      to preserve more information from the concrete syntax,
-     we might support different printed forms.")
+     and thus support different printed forms.")
    (xdoc::p
     "Prose elements are not supported,
      because currently we do not generate any paring functions for them.
@@ -320,11 +318,19 @@
      :num-val (num-val-case
                elem.get
                :direct (str::cat
-                        "%d"
+                        (b* ((base (num-val-direct->base elem.get)))
+                          (num-base-case base
+                                         :dec "%d"
+                                         :hex "%x"
+                                         :bin "%b"))
                         (defdefparse-print-num-val-direct-numbers
                           (num-val-direct->get elem.get)))
                :range (str::cat
-                       "%d"
+                       (b* ((base (num-val-range->base elem.get)))
+                         (num-base-case base
+                                        :dec "%d"
+                                        :hex "%x"
+                                        :bin "%b"))
                        (str::nat-to-dec-string (num-val-range->min elem.get))
                        "-"
                        (str::nat-to-dec-string (num-val-range->max elem.get))))
