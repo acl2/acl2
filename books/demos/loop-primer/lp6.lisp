@@ -6,6 +6,9 @@
 
 ; (certify-book "lp6")
 
+; See comment near the end of this file.
+; cert_param: (non-acl2r)
+
 (in-package "ACL2")
 
 (include-book "projects/apply/top" :dir :system)
@@ -151,7 +154,24 @@
 ; (APPLY$-PRIM-META-FN-EV-CONSTRAINT-462 RATIONALP-EXPT-TYPE-PRESCRIPTION
 ;                                        EXPT-TYPE-PRESCRIPTION-NON-ZERO-BASE)
 
-; But here is the make-event version:
+; Here is the make-event version.  We take the cdr, however, because there
+; the "parallel" version of ACL2, ACL2(p) (see :DOC parallelism) has a
+; different value for the car, as follows.
+
+; ACL2: normal version
+; car is APPLY$-PRIM-META-FN-EV-CONSTRAINT-464
+
+; ACL2(p): ACL2 with parallelism (see :DOC parallelism)
+; APPLY$-PRIM-META-FN-EV-CONSTRAINT-466
+
+; Note that yet another variant of ACL2, which supports the real numbers (see
+; :DOC real), has yet another value for the car.  It also has an additional
+; value, REALP-EXPT-TYPE-PRESCRIPTION.  We avoid dealing with the cert_param
+; comment near the top of this file, which excludes this book from ACL2(r)
+; regressions.
+
+; ACL2(r): ACL2 with the reals
+; APPLY$-PRIM-META-FN-EV-CONSTRAINT-467
 
 (make-event
  (let ((names (loop$ for triple in (w state)
@@ -163,13 +183,7 @@
    `(defthm lp6-9
       (implies (warrant thereis$)
                (equal
-                ',names
-                '(#-:non-standard-analysis
-                  APPLY$-PRIM-META-FN-EV-CONSTRAINT-464
-                  #+:non-standard-analysis
-                  APPLY$-PRIM-META-FN-EV-CONSTRAINT-467
-                  RATIONALP-EXPT-TYPE-PRESCRIPTION
-                  #+:non-standard-analysis
-                  REALP-EXPT-TYPE-PRESCRIPTION
+                (cdr ',names) ; see comment above
+                '(RATIONALP-EXPT-TYPE-PRESCRIPTION
                   EXPT-TYPE-PRESCRIPTION-NON-ZERO-BASE)))
       :rule-classes nil)))
