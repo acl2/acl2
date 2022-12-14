@@ -3539,6 +3539,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This could be useful when generating training data to improve an existing ML model.
 ;; Returns (mv erp successful-recs state).
 ;; TODO: Also return unsuccessful-recs?
 (defun all-successful-recs-for-checkpoints (checkpoint-clauses
