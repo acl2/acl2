@@ -76,6 +76,7 @@
 ;; Prints VAL, rounded to the hundredths place.
 ;; Returns nil
 (defund print-rounded-val (val)
+  (declare (xargs :guard (rationalp val)))
   (let* ((integer-part (floor val 1))
          (fraction-part (- val integer-part))
          (tenths (floor (* fraction-part 10) 1))
