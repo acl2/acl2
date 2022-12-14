@@ -165,7 +165,7 @@
              ((when erp)
               (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
               (mv erp yes-count no-count maybe-count trivial-count error-count state))
-             (- (cw "Skip: ~x0~%" (shorten-event event))))
+             (- (cw "~x0~%" (shorten-event event))))
           (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model book-to-avoid-absolute-path print server-url models yes-count no-count maybe-count trivial-count error-count state))))))
 
 (defun discard-events-before-first-advice-event (events theorems-to-try)
