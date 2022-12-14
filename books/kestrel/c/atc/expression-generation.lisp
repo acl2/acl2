@@ -1488,7 +1488,7 @@
                                :thm-index pure.thm-index
                                :names-to-avoid pure.names-to-avoid
                                :proofs nil)))
-       (thm-name (pack gin.fn '-expr- pure.thm-index '-correct))
+       (thm-name (pack gin.fn '-correct- pure.thm-index))
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil pure.names-to-avoid wrld))
        (type-pred (type-to-recognizer pure.type wrld))

@@ -362,7 +362,7 @@
        (names-to-avoid expr.names-to-avoid)
        (type-pred (type-to-recognizer expr.type wrld))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
-       (stmt-thm-name (pack gin.fn '-stmt- thm-index '-correct))
+       (stmt-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
@@ -392,7 +392,7 @@
                                                  :formula stmt-formula
                                                  :hints stmt-hints
                                                  :enable nil))
-       (item-thm-name (pack gin.fn '-blockitem- thm-index '-correct))
+       (item-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv item-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
@@ -419,7 +419,7 @@
                                                  :formula item-formula
                                                  :hints item-hints
                                                  :enable nil))
-       (items-thm-name (pack gin.fn '-blockitems- thm-index '-correct))
+       (items-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv items-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
