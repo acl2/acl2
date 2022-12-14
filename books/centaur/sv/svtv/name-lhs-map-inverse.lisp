@@ -25,6 +25,9 @@
 
 (in-package "SV")
 
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
+
 (include-book "fsm-obj")
 (include-book "../svex/env-ops")
 (include-book "centaur/bitops/part-install" :Dir :system)
@@ -77,14 +80,14 @@
                  (lhs-eval-x (cdr x) env)))
   ///
   (deffixequiv lhs-eval-x)
-  
+
   (local (defthm lhatom-eval-x-of-z
            (implies (lhatom-case x :z)
                     (Equal (lhatom-eval-x x env) (4vec-x)))
            :hints(("Goal" :in-theory (enable lhatom-eval-x)))))
 
-  
-  
+
+
   (local (defthm 4vec-concat-of-xes
            (implies (and (2vec-p w1)
                          (2vec-p w2)
@@ -110,7 +113,7 @@
                            (4vec-concat (2vec (+ w1 w2)) (4vec-rsh (2vec sh1) x) y)))
            :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core)))))
 
-  
+
   (defthm lhs-eval-x-of-lhs-cons
     (equal (lhs-eval-x (lhs-cons x y) env)
            (4vec-concat (2vec (lhrange->w x))
@@ -120,8 +123,8 @@
                                       lhatom-eval-x
                                       lhrange-nextbit))))
 
-  
-  
+
+
   (defthm lhs-eval-x-of-lhs-rsh
     (equal (lhs-eval-x (lhs-rsh sh x) env)
            (4vec-rsh (2vec (nfix sh)) (lhs-eval-x x env)))
@@ -258,7 +261,7 @@
                (lhs-range-no-zs (- (lposfix width) l1.w) (cdr lhs))))))
   ///
   (deffixequiv lhs-range-no-zs)
-  
+
   (defthm lhs-range-no-zs-of-lhs-cons
     (equal (lhs-range-no-zs width (lhs-cons x y))
            (and (lhatom-case (lhrange->atom x) :var)
@@ -271,7 +274,7 @@
            (and (lhatom-case (lhrange->atom x) :var)
                 (or (<= (pos-fix width) (lhrange->w x))
                     (lhs-range-no-zs (- (pos-fix width) (lhrange->w x)) y)))))
-  
+
   (defthm lhs-range-no-zs-of-lhs-concat
     (equal (lhs-range-no-zs width (lhs-concat w x y))
            (if (<= (pos-fix width) (nfix w))
@@ -290,7 +293,7 @@
                           (:instance lhs-range-no-zs-of-lhs-norm (lhs lhs-equiv)))
              :in-theory (disable lhs-range-no-zs-of-lhs-norm
                                  lhs-range-no-zs))))
-  
+
   (defthmd lhs-range-no-zs-decomp
     (implies (and (posp w1) (posp w2))
              (equal (lhs-range-no-zs (+ w1 w2) lhs)
@@ -319,7 +322,7 @@
                (lhs-range-all-zs (- (lposfix width) l1.w) (cdr lhs))))))
   ///
   (deffixequiv lhs-range-all-zs)
-  
+
   (defthm lhs-range-all-zs-of-lhs-cons
     (equal (lhs-range-all-zs width (lhs-cons x y))
            (and (lhatom-case (lhrange->atom x) :z)
@@ -332,7 +335,7 @@
            (and (lhatom-case (lhrange->atom x) :z)
                 (or (<= (pos-fix width) (lhrange->w x))
                     (lhs-range-all-zs (- (pos-fix width) (lhrange->w x)) y)))))
-  
+
   (defthm lhs-range-all-zs-of-lhs-concat
     (equal (lhs-range-all-zs width (lhs-concat w x y))
            (if (<= (pos-fix width) (nfix w))
@@ -351,7 +354,7 @@
                           (:instance lhs-range-all-zs-of-lhs-norm (lhs lhs-equiv)))
              :in-theory (disable lhs-range-all-zs-of-lhs-norm
                                  lhs-range-all-zs))))
-  
+
   (defthmd lhs-range-all-zs-decomp
     (implies (and (posp w1) (posp w2))
              (equal (lhs-range-all-zs (+ w1 w2) lhs)
@@ -416,7 +419,7 @@
             (implies (atom x)
                      (equal (lhs-rsh w x) nil))
             :hints(("Goal" :in-theory (enable lhs-rsh)))))
-   
+
    (defthmd lhs-rsh-of-lhs-concat-under-lhs-norm-equiv
      (lhs-norm-equiv (lhs-rsh sh (lhs-concat w x y))
                      (if (<= (nfix sh) (nfix w))
@@ -435,7 +438,7 @@
    ;;             (- (nfix sh1) (lhrange->w (car x)))
    ;;             (- (nfix sh2) (lhrange->w (car x)))
    ;;             (cdr x)))))
-   
+
    (defthm lhs-rsh-of-lhs-rsh-under-lhs-norm-equiv
      (lhs-norm-equiv (lhs-rsh sh1 (lhs-rsh sh2 x))
                      (lhs-rsh (+ (nfix sh1) (nfix sh2)) x))
@@ -468,14 +471,14 @@
     (equal (lhs-covers-range-p width offset (lhs-norm lhs))
            (lhs-covers-range-p width offset lhs)))
 
-  
+
 
   (defcong lhs-norm-equiv equal (lhs-covers-range-p width offset lhs) 3
     :hints (("goal" :use (lhs-covers-range-p-of-lhs-norm
                           (:instance lhs-covers-range-p-of-lhs-norm (lhs lhs-equiv)))
              :in-theory (disable lhs-covers-range-p-of-lhs-norm
                                  lhs-covers-range-p))))
-  
+
   (defthm lhs-covers-range-p-of-lhs-concat
     (equal (lhs-covers-range-p width offset (lhs-concat w x y))
            (cond ((<= (nfix w) (nfix offset))
@@ -499,7 +502,7 @@
                            (lhs (lhs-rsh offset lhs)))))))
 
   (deffixequiv lhs-covers-range-p)
-  
+
   (local (defthm pos-fix-equal-forward
            (implies (equal (pos-fix x) (pos-fix y))
                     (pos-equiv x y))
@@ -509,8 +512,8 @@
            (implies (equal (nfix x) (nfix y))
                     (nat-equiv x y))
            :rule-classes :forward-chaining))
-           
-  
+
+
   (defthm lhs-covers-range-p-of-subrange
     (implies (and (lhs-covers-range-p width offset lhs)
                   (<= (nfix offset) (nfix offset1))
@@ -529,7 +532,7 @@
   (defthm lhs-covers-range-p-nil
     (not (lhs-covers-range-p width offset nil))
     :hints(("Goal" :in-theory (enable lhs-rsh)))))
-             
+
 
 (define svtv-name-lhs-map-covers-lhs-p ((x lhs-p)
                                         (map svtv-name-lhs-map-p))
@@ -582,14 +585,14 @@
     (equal (lhs-empty-range-p width offset (lhs-norm lhs))
            (lhs-empty-range-p width offset lhs)))
 
-  
+
 
   (defcong lhs-norm-equiv equal (lhs-empty-range-p width offset lhs) 3
     :hints (("goal" :use (lhs-empty-range-p-of-lhs-norm
                           (:instance lhs-empty-range-p-of-lhs-norm (lhs lhs-equiv)))
              :in-theory (disable lhs-empty-range-p-of-lhs-norm
                                  lhs-empty-range-p))))
-  
+
   (defthm lhs-empty-range-p-of-lhs-concat
     (equal (lhs-empty-range-p width offset (lhs-concat w x y))
            (cond ((<= (nfix w) (nfix offset))
@@ -613,7 +616,7 @@
                            (lhs (lhs-rsh offset lhs)))))))
 
   (deffixequiv lhs-empty-range-p)
-  
+
   (local (defthm pos-fix-equal-forward
            (implies (equal (pos-fix x) (pos-fix y))
                     (pos-equiv x y))
@@ -623,8 +626,8 @@
            (implies (equal (nfix x) (nfix y))
                     (nat-equiv x y))
            :rule-classes :forward-chaining))
-           
-  
+
+
   (defthm lhs-empty-range-p-of-subrange
     (implies (and (lhs-empty-range-p width offset lhs)
                   (<= (nfix offset) (nfix offset1))
@@ -657,7 +660,7 @@
             :do-not-induct t))
     :otf-flg t)
 
-  
+
 
   (defthm lhs-covers-range-p-when-lhs-empty-range-p-non-disjoint
     (implies (and (lhs-empty-range-p width offset lhs)
@@ -679,7 +682,7 @@
             (lhs-varmask (cdr x))))
   ///
   (deffixequiv lhs-varmask)
-  
+
   (defthm lhs-varmask-of-lhs-cons
     (equal (lhs-varmask (lhs-cons x1 x))
            (lhs-varmask (cons x1 x)))
@@ -723,7 +726,7 @@
                           :low x1.atom.rsh))
   ///
   (deffixequiv var-lhs-mask)
-  
+
   (defthm var-lhs-mask-of-lhs-cons
     (equal (var-lhs-mask v (lhs-cons x1 x))
            (b* (((lhrange x1)))
@@ -851,7 +854,7 @@
 
 (define lhrange-collides-with-lhs-p ((x lhrange-p)
                                      (y lhs-p))
-  
+
   (if (atom y)
       nil
     (or (b* (((lhrange x))
@@ -866,13 +869,13 @@
         (lhrange-collides-with-lhs-p x (cdr y))))
   ///
   (deffixequiv lhrange-collides-with-lhs-p)
-  
+
   (defthm lhrange-collides-with-lhs-p-of-lhs-cons
     (equal (lhrange-collides-with-lhs-p x (lhs-cons y1 y))
            (lhrange-collides-with-lhs-p x (cons y1 y)))
     :hints(("Goal" :in-theory (enable lhs-cons lhrange-nextbit
                                       ranges-collide-p))))
-  
+
   (defthm lhrange-collides-with-lhs-p-of-lhs-norm
     (equal (lhrange-collides-with-lhs-p x (lhs-norm y))
            (lhrange-collides-with-lhs-p x y))
@@ -912,7 +915,7 @@
         (lhses-collide-p (cdr x) y)))
   ///
   (deffixequiv lhses-collide-p)
-  
+
   (defthm lhses-collide-p-of-lhs-norm-2
     (equal (lhses-collide-p x (lhs-norm y))
            (lhses-collide-p x y)))
@@ -966,11 +969,11 @@
                     :install-body nil
                     :controller-alist ((lhses-collide-p nil t)))))
 
-  
+
   (defthm lhses-collide-p-symm
     (implies (lhses-collide-p y x)
              (lhses-collide-p x y))
-    :hints (("goal" 
+    :hints (("goal"
              :expand ((:with lhses-collide-p-open-right (lhses-collide-p x y))
                       (:with lhses-collide-p (lhses-collide-p y x))))))
 
@@ -985,7 +988,7 @@
         (lhs-selfcollide-p (cdr x))))
   ///
   (deffixequiv lhs-selfcollide-p)
-  
+
   (defthm lhs-selfcollide-p-of-lhs-cons
     (equal (lhs-selfcollide-p (lhs-cons x1 x))
            (lhs-selfcollide-p (cons x1 x)))
@@ -1027,7 +1030,7 @@
                           (:instance lhs-collides-with-svtv-name-lhs-map-p-of-lhs-norm
                            (lhs lhs-equiv)))
              :in-theory (disable lhs-collides-with-svtv-name-lhs-map-p-of-lhs-norm))))
-  
+
   (local (in-theory (enable svtv-name-lhs-map-fix))))
 
 (define svtv-name-lhs-map-selfcollide-p ((x svtv-name-lhs-map-p))
@@ -1039,7 +1042,7 @@
         (svtv-name-lhs-map-selfcollide-p (cdr x))))
   ///
   (local (in-theory (enable svtv-name-lhs-map-fix))))
-                       
+
 
 
 
@@ -1071,13 +1074,13 @@
            (equal (logapp w1 x (logapp w2 (logtail w1 x) y))
                   (logapp (+ (nfix w1) (nfix w2)) x y))
            :hints((bitops::logbitp-reasoning))))
-  
+
   (local (defthm 4vec-concat-of-4vec-concat-rsh
            (implies (and (natp w1) (natp w2))
                     (equal (4vec-concat (2vec w1) x (4vec-concat (2vec w2) (4vec-rsh (2vec w1) x) y))
                            (4vec-concat (2vec (+ w1 w2)) x y)))
            :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core)))))
-  
+
   (defthm lhs-var-distribute-value-of-lhs-cons
     (equal (lhs-var-distribute-value val v (lhs-cons x1 x) prev)
            (b* (((lhrange x1))
@@ -1103,7 +1106,7 @@
                           (:instance lhs-var-distribute-value-of-lhs-norm (x x-equiv)))
              :in-theory (disable lhs-var-distribute-value-of-lhs-norm)))))
 
-       
+
 
 
 
@@ -1156,7 +1159,7 @@
 
 (local
  (defsection 4vec-lemmas
-   
+
    (defthm logand-of-logapp
      (equal (logand (logapp w x y) z)
             (logapp w (logand x z)
@@ -1188,13 +1191,13 @@
      (equal (4vec-bit?! 0 x y)
             (4vec-fix y))
      :hints(("Goal" :in-theory (enable 4vec-bit?!))))
-  
+
    (defthm 4vec-bit?!-neg1
      (equal (4vec-bit?! -1 x y)
             (4vec-fix x))
      :hints(("Goal" :in-theory (enable 4vec-bit?!))))
-  
-  
+
+
    ;;  (defthm 4vec-bitand-of-2vec-logapp
    ;;          (equal (4vec-bitand (2vec (logapp w x y)) z)
    ;;                 (4vec-concat (2vec (nfix w))
@@ -1287,7 +1290,7 @@
                                         (4vec-concat (2vec w2) (4vec-rsh (2vec (+ w1 sh)) x) y))
                            (4vec-concat (2vec (+ w1 w2)) (4vec-rsh (2vec sh) x) y)))
            :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core)))))
-  
+
   (defret eval-of-lhs-join
     (equal (lhs-eval-x join env)
            (4vec-bit?! (2vec (lhs-varmask x)) (lhs-eval-x x env) (lhs-eval-x y env)))
@@ -1296,7 +1299,7 @@
             :expand ((lhs-eval-x x env)
                      (lhs-eval-x y env)
                      (lhs-varmask x)))))
-  
+
   (verify-guards lhs-join))
 
 ;; (define lhs-invert-var ((v svar-p)
@@ -1320,14 +1323,14 @@
 ;;                                    (lhs-rsh (+ x1.w rsh) rest))))
 ;;   ///
 ;;   (verify-guards lhs-invert-var)
-  
+
 ;;   (defret lhs-varmask-of-<fn>
 ;;     (equal (lhs-varmask inv-lhs)
 ;;            (var-lhs-mask v x))
 ;;     :hints(("Goal" :in-theory (e/d (lhs-varmask var-lhs-mask
 ;;                                                 bitops::part-install-in-terms-of-logapp)
 ;;                                    (bitops::part-install)))))
-  
+
 ;;   (defret eval-of-<fn>
 ;;     (equal (lhs-eval-x inv-lhs env)
 ;;            (4vec-bit?! (2vec (var-lhs-mask v x))
@@ -1368,8 +1371,8 @@
     :hints(("Goal" :in-theory (enable lhatom-bitproj)
             :induct <call>
             :expand ((:free (idx) (lhs-bitproj idx x)))))))
-    
-    
+
+
 
 
 
@@ -1403,7 +1406,7 @@
                        (not (lhrange-collides-with-lhs-p
                              (lhrange w (lhatom-var name rsh)) lhs)))))
     :hints(("Goal" :in-theory (enable lhrange-collides-with-lhs-p))))
-  
+
   (defret collision-of-<fn>
     (iff collision
          (or (lhs-selfcollide-p lhs)
@@ -1453,13 +1456,13 @@
            (equal (4vec-bit?! 0 x y)
                   (4vec-fix y))
            :hints(("Goal" :in-theory (enable 4vec-bit?!)))))
-  
+
   (local (defthm 4vec-bit?!-neg1
            (equal (4vec-bit?! -1 x y)
                   (4vec-fix x))
            :hints(("Goal" :in-theory (enable 4vec-bit?!)))))
-  
-  
+
+
   ;; (local (defthm 4vec-bitand-of-2vec-logapp
   ;;          (equal (4vec-bitand (2vec (logapp w x y)) z)
   ;;                 (4vec-concat (2vec (nfix w))
@@ -1533,8 +1536,8 @@
            (equal (svex-env-lookup var (svtv-name-lhs-map-eval-x map env))
                   (lhs-eval-x (cdr (hons-assoc-equal (svar-fix var) map)) env))
            :hints(("Goal" :in-theory (enable svex-env-lookup
-                                             svtv-name-lhs-map-eval-x))))) 
-  
+                                             svtv-name-lhs-map-eval-x)))))
+
   (defret eval-lhs-of-lhs-accumulate-name-lhs-map-inverse
     (implies (and (not (lhs-selfcollide-p lhs))
                   (svtv-name-lhs-map-empty-lhs-p lhs inverse-acc))
@@ -1571,7 +1574,7 @@
                                                              (svtv-name-lhs-map-fix inverse-acc)))
                                                        env))
                                  rest)))
-    :hints(("Goal" 
+    :hints(("Goal"
             :induct <call>
             :expand ((lhrange-collides-with-lhs-p range lhs))
             :in-theory (enable ranges-collide-p
@@ -1616,7 +1619,7 @@
                                   (LOGAND b c d))
                           f))
            :hints ((bitops::logbitp-reasoning))))
-  
+
   (local (defthm 4vec-concat-of-4vec-bit?!-concat-same
            (implies (natp w)
                     (equal (4vec-concat (2vec w) (4vec-bit?! test (4vec-concat (2vec w) x y) z1) z2)
@@ -1632,7 +1635,7 @@
                      (4vec-bit?! (4vec-rsh sh test)
                                  (4vec-rsh sh x)
                                  (4vec-rsh sh y))))))
-  
+
   (defret lhs-eval-x-of-lookup-of-<fn>
     (implies (svar-p v)
              (equal (lhs-eval-x (cdr (hons-assoc-equal v new-inverse)) env)
@@ -1674,7 +1677,7 @@
                           (lhbit-var dom-var (+ (nfix offset) idx))
                         (lhs-bitproj n (cdr (hons-assoc-equal v inverse-acc)))))))
     :hints(("Goal" :in-theory (enable lhs-var/idx-find lhatom-bitproj)))))
-                                   
+
 
 
 (define svtv-name-lhs-map-var/idx-find ((var svar-p)
@@ -1696,7 +1699,7 @@
              (hons-assoc-equal (lhbit-var->name lhbit)
                                x))
     :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix))))
-  
+
   (defret <fn>-correct
     (implies (and (lhbit-case lhbit :var)
                   (no-duplicatesp-equal (alist-keys (svtv-name-lhs-map-fix x))))
@@ -1733,7 +1736,7 @@
                              (4vec-x))
                (4vec-x))))
     :hints(("Goal" :in-theory (enable svex-env-lookup))))
-  
+
   (local (in-theory (enable svtv-name-lhs-map-fix))))
 
 
@@ -1804,13 +1807,13 @@
   ///
   (deffixequiv svtv-name-lhs-map-inverse
     :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix))))
-  
+
   (defret svtv-name-lhs-map-empty-lhs-p-of-<fn>
     (iff (svtv-name-lhs-map-empty-lhs-p lhs inverse)
          (not (lhs-collides-with-svtv-name-lhs-map-p lhs x)))
     :hints(("Goal" :in-theory (enable svtv-name-lhs-map-empty-lhs-p
                                       lhs-collides-with-svtv-name-lhs-map-p))))
-  
+
   (defret collision-of-<fn>
     (iff collision
          (svtv-name-lhs-map-selfcollide-p x))
@@ -1846,7 +1849,7 @@
            (implies (and (not (svar-p v))
                          (svtv-name-lhs-map-p x))
                     (not (hons-assoc-equal v x)))))
-  
+
   (local (defret lhs-eval-x-lookup-of-cons-env
            (implies (not (hons-assoc-equal var (svtv-name-lhs-map-fix x)))
                     (equal (lhs-eval-x (cdr (hons-assoc-equal v inverse)) (cons (cons var val) env))
@@ -1894,7 +1897,7 @@
                   (4vec-bit?! (2vec (logior test1 test2)) then else))
            :hints(("Goal" :in-theory (enable 4vec-bit?!))
                   (bitops::logbitp-reasoning))))
-  
+
   (defret eval-<fn>-of-lookup
     (implies (and (not (svtv-name-lhs-map-selfcollide-p x))
                   (svar-p v)
@@ -1913,8 +1916,8 @@
            (and stable-under-simplificationp
                 (eq (caar (last clause)) 'svex-envs-similar)
                 `(:expand (,(car (last clause)))))))
-  
-  
+
+
   (defret eval-<fn>-of-eval
     (implies (and (not (svtv-name-lhs-map-selfcollide-p x))
                   (no-duplicatesp-equal (alist-keys (svtv-name-lhs-map-fix x))))
@@ -2182,7 +2185,7 @@
 ;;        (ain (lhs-eval-zero '((5 . "a")) (nth 0 inenvs))) ;; entry for "a" in the namemap
 ;;        (bin (lhs-eval-zero-signext '((3 "bpartouter" . 5) ;; entry for "b" in the namemap
 ;;                                        (3 . "bpartmid")
-;;                                        (4 . "bpartouter"))  
+;;                                        (4 . "bpartouter"))
 ;;                                      (nth 0 inenvs)))
 ;;        (qovr (lhs-eval-zero '((5 . "q")) (nth 1 outenvs)))
 ;;        (rovr (lhs-eval-with-weird-upper-bits '((3 "rl" . 3)
@@ -2312,7 +2315,7 @@
     (local (in-theory (disable iff)))
 
   (local (in-theory (enable equal-of-svar-change-override)))
-  
+
   (local (defret lookup-of-<fn>-when-overrides-uniform-lemma
            (implies (and (svarlist-override-p (alist-keys (svtv-name-lhs-map-fix map))
                                               prev-type)
@@ -2326,7 +2329,7 @@
                                              svarlist-override-p
                                              ;; svar-override-p
                                              )))))
-  
+
   (defret lookup-of-<fn>-when-overrides-uniform
     (implies (and (equal mapf (svtv-name-lhs-map-fix map))
                   (equal keys (alist-keys mapf))
@@ -2378,7 +2381,7 @@
                            (equal override-test v.override-test)
                            (equal override-val v.override-val))
                       (equal (svar v.name delay nonblocking override-test override-val) (svar-fix v))))))
-  
+
   (defthm svtv-name-lhs-map-keys-change-override-of-lhs-accumulate-name-lhs-map
     (b* (((mv ?collision inv) (lhs-accumulate-name-lhs-map-inverse dom-var offset lhs inverse-acc))
          ((mv ?collision2 renamed-inv)
