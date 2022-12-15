@@ -102,7 +102,9 @@
                                   node-env
                                   env))))
 
+
 (define svexl-eval$-aux ((x svexl-node-array-p)
+                        (node-env node-env-p)
                         (env sv::svex-env-p))
   :verify-guards nil
   :prepwork
@@ -111,14 +113,16 @@
                      node-env-p)
                     ()))))
   :returns (res-node-env node-env-p :hyp (and (svexl-node-array-p x)
+                                              (node-env-p node-env)
                                               (sv::svex-env-p env)))
   (if (atom x)
-      nil
-    (b* ((node-env (svexl-eval$-aux (cdr x) env))
-         (node-id (caar x))
-         (node (cdar x))
-         (eval$-res (svexl-node-eval$ node node-env env)))
-      (hons-acons node-id eval$-res node-env)))
+      node-env
+      (b* ((node-id (caar x))
+           (node (cdar x))
+           (eval-res (svexl-node-eval$ node node-env env)))
+        (svexl-eval$-aux (cdr x)
+                        (hons-acons node-id eval-res node-env)
+                        env)))
   ///
   (verify-guards svexl-eval$-aux))
 
@@ -128,7 +132,7 @@
                                      (sv::svex-env-p env)))
   (b* ((node (svexl->top-node x))
        (node-array (svexl->node-array x))
-       (node-env (svexl-eval$-aux node-array env))
+       (node-env (svexl-eval$-aux node-array nil env))
        (res (svexl-node-eval$ node node-env env))
        (- (fast-alist-free node-env)))
     res))
@@ -139,7 +143,7 @@
                                          (sv::svex-env-p env)))
   (b* ((node-lst (svexllist->top-nodelist x))
        (node-array (svexllist->node-array x))
-       (node-env (svexl-eval$-aux node-array env))
+       (node-env (svexl-eval$-aux node-array nil env))
        (res (svexl-nodelist-eval$ node-lst node-env env))
        (- (fast-alist-free node-env)))
     res))
@@ -150,7 +154,7 @@
                                          (sv::svex-env-p env)))
   (b* ((top-node-alist (svexl-alist->top-node-alist x))
        (node-array (svexl-alist->node-array x))
-       (node-env (svexl-eval$-aux node-array env))
+       (node-env (svexl-eval$-aux node-array nil env))
        (res (svexl-node-alist-eval$ top-node-alist node-env env))
        (- (fast-alist-free node-env)))
     res))
@@ -167,8 +171,8 @@
                               (binary-logior a b))))
      (env (make-fast-alist #!SV`((a . 12312321) (b . 331312312))))
      (svexl (svex-to-svexl svex)))
-  `((svex-eval$ ,(sv::svex-eval$ svex env))
-    (svexl-eval$ ,(svexl-eval$ svexl env))
+  `((svex-eval$$ ,(sv::svex-eval$$ svex env))
+    (svexl-eval$$ ,(svexl-eval$$ svexl env))
     (svexl ,svexl)))
 |#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -176,102 +180,102 @@
 
 
 (acl2::defines
-  svexl-node-eval$-wog
-  :flag-local nil
-  :flag-defthm-macro defthm-svexl-node-eval$-wog
-  :prepwork
-  ((local
-    (in-theory (e/d (svexl-node-kind
-                     sv::svexlist-p
-                     svexl-node-p
-                     svexl-node-array-p
-                     svexl-node-kind-wog-is-svexl-node-kind
-                     sv::svex-p)
-                    ()))))
-  (define svexl-node-eval$-wog ((x)
-                               (node-env)
-                               (env))
-    :measure (acl2-count x)
-    :verify-guards nil
-    (b* ((kind (svexl-node-kind-wog x)))
-      (cond ((eq kind :var)
-             (svex-env-fastlookup-wog x env))
-            ((eq kind :quote) x)
-            ((eq kind :node)
-             (svex-env-fastlookup-wog (cadr x) node-env))
-            (t
-             (b* ((x.fn (car x))
-                  (x.args (cdr x)))
-               (svex-apply$-wog
-                x.fn
-                (svexl-nodelist-eval$-wog x.args node-env env)))))))
+    svexl-node-eval$-wog
+    :flag-local nil
+    :flag-defthm-macro defthm-svexl-node-eval$-wog
+    :prepwork
+    ((local
+      (in-theory (e/d (svexl-node-kind
+                       sv::svexlist-p
+                       svexl-node-p
+                       svexl-node-array-p
+                       svexl-node-kind-wog-is-svexl-node-kind
+                       sv::svex-p)
+                      ()))))
+    (define svexl-node-eval$-wog ((x)
+                                 (node-env)
+                                 (env))
+      :measure (acl2-count x)
+      :verify-guards nil
+      (b* ((kind (svexl-node-kind-wog x)))
+        (cond ((eq kind :var)
+               (svex-env-fastlookup-wog x env))
+              ((eq kind :quote) x)
+              ((eq kind :node)
+               (svex-env-fastlookup-wog (cadr x) node-env))
+              (t
+               (b* ((x.fn (car x))
+                    (x.args (cdr x)))
+                 (svex-apply$-wog
+                  x.fn
+                  (svexl-nodelist-eval$-wog x.args node-env env)))))))
 
-  (define svexl-nodelist-eval$-wog ((lst)
-                                   (node-env)
-                                   (env))
-    :measure (acl2-count lst)
-    (if (atom lst)
-        nil
-      (cons (svexl-node-eval$-wog (car lst) node-env env)
-            (svexl-nodelist-eval$-wog (cdr lst) node-env env))))
+    (define svexl-nodelist-eval$-wog ((lst)
+                                     (node-env)
+                                     (env))
+      :measure (acl2-count lst)
+      (if (atom lst)
+          nil
+          (cons (svexl-node-eval$-wog (car lst) node-env env)
+                (svexl-nodelist-eval$-wog (cdr lst) node-env env))))
 
-  ///
+    ///
 
-  ;; openers:
-  (def-rp-rule svexl-eval$-node-of-var
-    (implies (eq (svexl-node-kind-wog x) ':var)
-             (equal (svexl-node-eval$-wog x node-env env-wires)
-                    (let ((entry (hons-get x env-wires)))
-                      (if entry (cdr entry)
-                        (sv::4vec-x)))))
-    :hints (("goal"
-             :expand (svexl-node-eval$-wog x node-env env-wires)
-             :in-theory (e/d (svex-env-fastlookup-wog) ()))))
+    ;; openers:
+    (def-rp-rule svexl-eval$-node-of-var
+        (implies (eq (svexl-node-kind-wog x) ':var)
+                 (equal (svexl-node-eval$-wog x node-env env-wires)
+                        (let ((entry (hons-get x env-wires)))
+                          (if entry (cdr entry)
+                              (sv::4vec-x)))))
+      :hints (("goal"
+               :expand (svexl-node-eval$-wog x node-env env-wires)
+               :in-theory (e/d (svex-env-fastlookup-wog) ()))))
 
-  (def-rp-rule svexl-eval$-node-of-node
-    (implies (eq (svexl-node-kind-wog x) ':node)
-             (equal (svexl-node-eval$-wog x node-env env-wires)
-                    (let ((entry (hons-get (cadr x) node-env)))
-                      (if entry (cdr entry)
-                        (sv::4vec-x)))))
-    :hints (("goal"
-             :expand (svexl-node-eval$-wog x node-env env-wires)
-             :in-theory (e/d (svex-env-fastlookup-wog) ()))))
+    (def-rp-rule svexl-eval$-node-of-node
+        (implies (eq (svexl-node-kind-wog x) ':node)
+                 (equal (svexl-node-eval$-wog x node-env env-wires)
+                        (let ((entry (hons-get (cadr x) node-env)))
+                          (if entry (cdr entry)
+                              (sv::4vec-x)))))
+      :hints (("goal"
+               :expand (svexl-node-eval$-wog x node-env env-wires)
+               :in-theory (e/d (svex-env-fastlookup-wog) ()))))
 
-  (def-rp-rule svexl-eval$-node-of-quoted
-    (implies (eq (svexl-node-kind-wog x) ':quote)
-             (equal (svexl-node-eval$-wog x node-env env-wires)
-                    x))
-    :hints (("goal"
-             :expand (svexl-node-eval$-wog x node-env env-wires)
-             :in-theory (e/d (svex-env-fastlookup-wog) ()))))
+    (def-rp-rule svexl-eval$-node-of-quoted
+        (implies (eq (svexl-node-kind-wog x) ':quote)
+                 (equal (svexl-node-eval$-wog x node-env env-wires)
+                        x))
+      :hints (("goal"
+               :expand (svexl-node-eval$-wog x node-env env-wires)
+               :in-theory (e/d (svex-env-fastlookup-wog) ()))))
 
-  (def-rp-rule svexl-eval$-node-of-call
-    (implies (eq (svexl-node-kind-wog x) ':call)
-             (equal (svexl-node-eval$-wog x node-env env)
-                    (svex-apply$-wog
-                     (car x)
-                     (svexl-nodelist-eval$-wog (cdr x) node-env env))))
-    :hints (("goal"
-             :expand (svexl-node-eval$-wog x node-env env)
-             :in-theory (e/d (svex-env-fastlookup-wog) ()))))
+    (def-rp-rule svexl-eval$-node-of-call
+        (implies (eq (svexl-node-kind-wog x) ':call)
+                 (equal (svexl-node-eval$-wog x node-env env)
+                        (svex-apply$-wog
+                         (car x)
+                         (svexl-nodelist-eval$-wog (cdr x) node-env env))))
+      :hints (("goal"
+               :expand (svexl-node-eval$-wog x node-env env)
+               :in-theory (e/d (svex-env-fastlookup-wog) ()))))
 
-  (def-rp-rule svexl-nodelist-eval$-wog-of-cons
-    (equal (svexl-nodelist-eval$-wog (cons x rest) node-env env)
-           (cons (svexl-node-eval$-wog x node-env env)
-                 (svexl-nodelist-eval$-wog rest node-env env)))
-    :hints (("Goal"
-             :expand (svexl-nodelist-eval$-wog (cons x rest) node-env env)
-             :in-theory (e/d () ()))))
+    (def-rp-rule svexl-nodelist-eval$-wog-of-cons
+        (equal (svexl-nodelist-eval$-wog (cons x rest) node-env env)
+               (cons (svexl-node-eval$-wog x node-env env)
+                     (svexl-nodelist-eval$-wog rest node-env env)))
+      :hints (("Goal"
+               :expand (svexl-nodelist-eval$-wog (cons x rest) node-env env)
+               :in-theory (e/d () ()))))
 
-  (def-rp-rule svexl-nodelist-eval$-wog-of-nil
-    (equal (svexl-nodelist-eval$-wog nil node-env env)
-           nil)
-    :hints (("Goal"
-             :expand (svexl-nodelist-eval$-wog nil node-env env)
-             :in-theory (e/d () ()))))
+    (def-rp-rule svexl-nodelist-eval$-wog-of-nil
+        (equal (svexl-nodelist-eval$-wog nil node-env env)
+               nil)
+      :hints (("Goal"
+               :expand (svexl-nodelist-eval$-wog nil node-env env)
+               :in-theory (e/d () ()))))
 
-  (verify-guards svexl-node-eval$-wog))
+    (verify-guards svexl-node-eval$-wog))
 
 (define svexl-node-alist-eval$-wog ((alist alistp)
                                    (node-env)
@@ -279,42 +283,42 @@
   :measure (acl2-count alist)
   (if (atom alist)
       nil
-    (acons
-     (caar alist)
-     (svexl-node-eval$-wog (cdar alist) node-env env)
-     (svexl-node-alist-eval$-wog (cdr alist) node-env env)))
+      (acons
+       (caar alist)
+       (svexl-node-eval$-wog (cdar alist) node-env env)
+       (svexl-node-alist-eval$-wog (cdr alist) node-env env)))
   ///
   (def-rp-rule svexl-node-alist-eval$-wog-of-cons
-    (equal (svexl-node-alist-eval$-wog (cons x rest) node-env env)
-           (acons
-            (car x)
-            (svexl-node-eval$-wog (cdr x) node-env env)
-            (svexl-node-alist-eval$-wog rest node-env env)))
+      (equal (svexl-node-alist-eval$-wog (cons x rest) node-env env)
+             (acons
+              (car x)
+              (svexl-node-eval$-wog (cdr x) node-env env)
+              (svexl-node-alist-eval$-wog rest node-env env)))
     :hints (("Goal"
              :expand (svexl-node-alist-eval$-wog (cons x rest) node-env env)
              :in-theory (e/d () ()))))
 
   (def-rp-rule svexl-node-alist-eval$-wog-of-nil
-    (equal (svexl-node-alist-eval$-wog nil node-env env)
-           nil)
+      (equal (svexl-node-alist-eval$-wog nil node-env env)
+             nil)
     :hints (("Goal"
              :expand (svexl-node-alist-eval$-wog nil node-env env)
              :in-theory (e/d () ()))))
   )
 
 (defthm-svexl-node-eval$-wog
-  (defthm svexl-node-eval$-is-svexl-node-eval$-wog
-    (implies (and (svexl-node-p x)
-                  (sv::svex-env-p env))
-             (equal (svexl-node-eval$ x node-env env)
-                    (svexl-node-eval$-wog x node-env env)))
-    :flag svexl-node-eval$-wog)
-  (defthm svexl-nodelist-eval$-is-svexl-nodelist-eval$-wog
-    (implies (and (svexl-nodelist-p lst)
-                  (sv::svex-env-p env))
-             (equal (svexl-nodelist-eval$ lst node-env env)
-                    (svexl-nodelist-eval$-wog lst node-env env)))
-    :flag svexl-nodelist-eval$-wog)
+    (defthm svexl-node-eval$-is-svexl-node-eval$-wog
+        (implies (and (svexl-node-p x)
+                      (sv::svex-env-p env))
+                 (equal (svexl-node-eval$ x node-env env)
+                        (svexl-node-eval$-wog x node-env env)))
+      :flag svexl-node-eval$-wog)
+    (defthm svexl-nodelist-eval$-is-svexl-nodelist-eval$-wog
+        (implies (and (svexl-nodelist-p lst)
+                      (sv::svex-env-p env))
+                 (equal (svexl-nodelist-eval$ lst node-env env)
+                        (svexl-nodelist-eval$-wog lst node-env env)))
+      :flag svexl-nodelist-eval$-wog)
   :hints (("goal"
            :expand ((svexl-node-eval$ x node-env env))
            :in-theory (e/d (svex-call->fn
@@ -350,10 +354,10 @@
 (rp::add-rp-rule svexl-nodelist-eval$-is-svexl-nodelist-eval$-wog)
 
 (def-rp-rule svexl-node-alist-eval$-is-svexl-node-alist-eval$-wog
-  (implies (and (svexl-node-alist-p alist)
-                (sv::svex-env-p env))
-           (equal (svexl-node-alist-eval$ alist node-env env)
-                  (svexl-node-alist-eval$-wog alist node-env env)))
+    (implies (and (svexl-node-alist-p alist)
+                  (sv::svex-env-p env))
+             (equal (svexl-node-alist-eval$ alist node-env env)
+                    (svexl-node-alist-eval$-wog alist node-env env)))
   :hints (("Goal"
            :in-theory (e/d (svexl-node-alist-eval$
                             svexl-node-alist-p
@@ -361,6 +365,7 @@
                            ()))))
 
 (define svexl-eval$-aux-wog ((x alistp)
+                            (node-env)
                             (env))
   :prepwork
   ((local
@@ -368,43 +373,44 @@
                      node-env-p)
                     ()))))
   (if (atom x)
-      nil
-    (b* ((node-env
-          (svexl-eval$-aux-wog (cdr x) env))
-         (node-id (caar x))
+      node-env
+    (b* ((node-id (caar x))
          (node (cdar x))
-         (eval$-res (svexl-node-eval$-wog node node-env env)))
-      (hons-acons node-id eval$-res node-env)))
+         (eval-res (svexl-node-eval$-wog node node-env env)))
+      (svexl-eval$-aux-wog (cdr x)
+                          (hons-acons node-id eval-res node-env)
+                          env)))
   ///
 
   (def-rp-rule :disabled-for-acl2 t
     svexl-eval$-aux-is-svexl-eval$-aux-wog
     (implies (and (svexl-node-array-p x)
                   (sv::svex-env-p env))
-             (equal (svexl-eval$-aux x env)
-                    (svexl-eval$-aux-wog x env)))
+             (equal (svexl-eval$-aux x node-env env)
+                    (svexl-eval$-aux-wog x node-env env)))
     :hints (("Goal"
              :in-theory (e/d (svexl-eval$-aux
                               svexl-eval$-aux-wog) ()))))
 
   (def-rp-rule
     svexl-eval$-aux-wog-cons
-    (equal (svexl-eval$-aux-wog (cons (cons node-id node) rest) env)
-           (b* ((node-env (svexl-eval$-aux-wog rest env))
-                (eval$-res (svexl-node-eval$-wog node node-env env)))
-             (hons-acons node-id eval$-res node-env))))
+    (equal (svexl-eval$-aux-wog (cons (cons node-id node) rest) node-env env)
+           (b* ((eval-res (svexl-node-eval$-wog node node-env env)))
+             (svexl-eval$-aux-wog rest
+                                 (hons-acons node-id eval-res node-env)
+                                 env))))
 
   (def-rp-rule
     svexl-eval$-aux-wog-nil
-    (equal (svexl-eval$-aux-wog nil env)
-           nil)))
+    (equal (svexl-eval$-aux-wog nil node-env env)
+           node-env)))
 
 (define svexl-eval$-wog ((x)
                         (env))
   :verify-guards nil
   (b* ((node (cdar x))
        (node-array (cdr (cadr x)))
-       (node-env (svexl-eval$-aux-wog node-array env))
+       (node-env (svexl-eval$-aux-wog node-array nil env))
        (res (svexl-node-eval$-wog node node-env env))
        (- (fast-alist-free node-env)))
     res)
@@ -426,23 +432,23 @@
                              ()))))
 
   (defthmd svexl-eval$-wog-is-svexl-eval$
-    (implies (and (svexl-p x)
-                  (sv::svex-env-p env))
-             (equal (svexl-eval$-wog x env)
-                    (svexl-eval$ x env)))
+      (implies (and (svexl-p x)
+                    (sv::svex-env-p env))
+               (equal (svexl-eval$-wog x env)
+                      (svexl-eval$ x env)))
     :hints (("Goal"
              :in-theory (e/d (svexl-eval$-is-svexl-eval$-wog)
                              ()))))
 
   (set-ignore-ok t)
-  (add-rp-rule svexl-eval$-wog :lambda-opt :max))
+  (add-rp-rule svexl-eval$-wog :lambda-opt t))
 
 (define svexllist-eval$-wog ((x)
                             (env))
   :verify-guards nil
   (b* ((node-lst (cdr (car x)))
        (node-array (cdr (cadr x)))
-       (node-env (svexl-eval$-aux-wog node-array env))
+       (node-env (svexl-eval$-aux-wog node-array nil env))
        (res (svexl-nodelist-eval$-wog node-lst node-env env))
        (- (fast-alist-free node-env)))
     res)
@@ -462,14 +468,15 @@
                               SVEXL-EVAL$-AUX-IS-SVEXL-EVAL$-AUX-WOG)
                              ()))))
   (set-ignore-ok t)
-  (add-rp-rule svexllist-eval$-wog :lambda-opt :max))
+  (add-rp-rule svexllist-eval$-wog :lambda-opt t))
 
 (define svexl-alist-eval$-wog ((x)
                               (env))
   :verify-guards nil
-  (b* ((top-node-alist (cdar x))
+  (b* ((- "Now rewriting svexl-alist for eval$... ~%")
+       (top-node-alist (cdar x))
        (node-array (cdr (cadr x)))
-       (node-env (svexl-eval$-aux-wog node-array env))
+       (node-env (svexl-eval$-aux-wog node-array nil env))
        (res (svexl-node-alist-eval$-wog top-node-alist node-env env))
        (- (fast-alist-free node-env)))
     res)
@@ -490,23 +497,5 @@
                               SVEXL-EVAL$-AUX-IS-SVEXL-EVAL$-AUX-WOG)
                              ()))))
   (set-ignore-ok t)
-  (add-rp-rule svexl-alist-eval$-wog :lambda-opt :max))
+  (add-rp-rule svexl-alist-eval$-wog :lambda-opt t))
 
-(defthm-svexl-node-eval$-wog
-  (defthm svex-p-implies-svexl-node-p
-    (implies (svex-p x)
-             (svexl-node-p x))
-    :flag svexl-node-eval$-wog)
-  (defthm svexlist-p-implies-svexl-nodelist-p
-    (implies (svexlist-p lst)
-             (svexl-nodelist-p lst))
-    :flag svexl-nodelist-eval$-wog)
-  :rule-classes :type-prescription
-  :hints (("Goal"
-           :in-theory (e/d (svex-p
-                            svexl-node-kind-wog-is-svexl-node-kind
-                            svexlist-p
-                            svexl-nodelist-p
-                            svexl-node-p
-                            svexl-node-kind
-                            svex-kind) ()))))
