@@ -2853,10 +2853,10 @@
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url post-data debug state))
                ((when erp)
-                (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
+                (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp)
                 (mv erp nil state))
                ((when (not (acl2::parsed-json-arrayp parsed-response)))
-                (er hard? 'advice-fn "Error: Response from server is not a JSON array: ~x0." parsed-response)
+                (er hard? 'get-recs-from-ml-model "Error: Response from server is not a JSON array: ~x0." parsed-response)
                 (mv :bad-server-response nil state)))
             (mv nil (acl2::parsed-json-array->values parsed-response) state))))
        ((when erp) (mv erp nil state))
@@ -2865,7 +2865,7 @@
        ;; Parse the individual strings in the recs:
        ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
        ((when erp)
-        (er hard? 'advice-fn "Error parsing recommendations.")
+        (er hard? 'get-recs-from-ml-model "Error parsing recommendations.")
         (mv erp nil state))
        (- (and debug (cw "Parsed ML recommendations: ~X01~%" ml-recommendations nil))))
     (mv nil ; no error
