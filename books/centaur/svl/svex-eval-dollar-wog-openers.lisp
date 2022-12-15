@@ -262,7 +262,7 @@
                  nil))
  :hints (("Goal"
           :Expand (sv::svex-alist-eval$ nil env)
-          :in-theory (e/d () ()))))
+          :in-theory (e/d (SVEX-ALIST-EVAL) ()))))
 
 (rp::def-rp-rule :disabled-for-acl2 t
  svex-alist-eval$-opener-cons

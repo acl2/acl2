@@ -1044,11 +1044,13 @@ but did not resolve the branch ~%" first))))
 
 (memoize 'svex-reduce-w/-env
          :condition '(equal (svex-kind svex) :call)
-         :aokp t)
+         ;;:aokp t
+         )
 
 (memoize 'svex-reduce-w/-env-masked
          :condition '(equal (svex-kind svex) :call)
-         :aokp t)
+         ;;:aokp t
+         )
 
 (define svex-alist-reduce-w/-env ((svex-alist sv::svex-alist-p)
                                   env)

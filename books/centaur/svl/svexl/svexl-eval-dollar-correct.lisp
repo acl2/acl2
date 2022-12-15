@@ -786,6 +786,7 @@
      :hints (("Goal"
               :in-theory (e/d (svexl-node-alist-eval$
                                SVEXLIST-EVAL$
+                               SVEX-ALIST-EVAL
                                sv::svex-alist-eval$)
                               ())))))
 

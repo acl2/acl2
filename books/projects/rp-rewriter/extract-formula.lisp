@@ -852,10 +852,18 @@ alist
 
            (rune (if given-type rule (get-rune-name name state)))
 
-           ((when (case-match rune ((':executable-counterpart &) t)))
+           ((when (case-match rune
+                    ((':executable-counterpart &) t)
+                    ((':e &) t)))
             (cons (if e/d
                       `(enable-exc-counterpart ,(second rune))
                     `(disable-exc-counterpart ,(second rune)))
+                  rest))
+           ((when (case-match rune
+                    ((&) t)))
+            (cons (if e/d
+                      `(enable-exc-counterpart ,(first rune))
+                    `(disable-exc-counterpart ,(first rune)))
                   rest))
 
            (rune-entry (hons-assoc-equal rune (table-alist ruleset (w state))))

@@ -4781,6 +4781,13 @@
            (('svl::bits & & ''1)
             t)))))
 
+(define memoized-cons (x y)
+  :enabled t
+  (cons x y)
+  
+  )
+  
+
 (define extract-new-sum-element ((term rp-termp) acc)
   :returns (acc-res rp-term-listp
                     :hyp (and (rp-termp term)
@@ -4794,15 +4801,15 @@
         (case-match term (('-- e) (mv (ex-from-rp$ e) t)) (& (mv term nil)))))
     (cond
      ((single-c-p abs-term)
-      (cons term-orig acc))
+      (memoized-cons term-orig acc))
      ((single-s-p abs-term)
-      (cons term-orig acc))
+      (memoized-cons term-orig acc))
      ((single-s-c-res-p abs-term)
-      (cons term-orig acc))
+      (memoized-cons term-orig acc))
      ((sum-list-p abs-term)
-      (cons term-orig acc))
+      (memoized-cons term-orig acc))
      ((and-list-p abs-term)
-      (cons term-orig acc))
+      (memoized-cons term-orig acc))
      ((binary-sum-p term)
       (b* ((acc (extract-new-sum-element (cadr term) acc))
            (acc (extract-new-sum-element (caddr term) acc)))
@@ -4815,7 +4822,7 @@
      ((or (pp-term-p abs-term)
           (binary-fnc-p abs-term)
           (has-bitp-rp term-orig))
-      (cons term-orig acc))
+      (memoized-cons term-orig acc))
      ((is-bitp-svl-bits term-orig)
       (cons `(rp 'bitp ,term-orig) acc))
      (t
@@ -4823,7 +4830,7 @@
        (hard-error 'extract-new-sum-element
                    "Unexpexted term: ~p0 ~%"
                    (list (cons #\0 term-orig)))
-       (cons term-orig acc))))))
+       (memoized-cons term-orig acc))))))
 
 (define extract-new-sum-consed ((term rp-termp))
   :measure (cons-count term)
@@ -5010,6 +5017,8 @@
                               (:REWRITE DEFAULT-CDR)
                               (:REWRITE RP-TERMP-IMPLIES-SUBTERMS))))))
   (verify-guards new-sum-merge-aux))
+
+
 
 (define new-sum-merge ((term rp-termp))
   :verify-guards t

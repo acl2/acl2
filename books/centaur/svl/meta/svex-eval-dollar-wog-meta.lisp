@@ -281,10 +281,12 @@ fast-alist. Consider making it one for a better performance.~%"))
   :verify-guards nil
   (svex-alist-eval$ x env)
   ///
-  (def-rp-rule svex-alist-eval$-to-svexl-alist
+  (def-rp-rule convert-svex-alist-to-svexl-for-eval$
     (implies (force (sv::svex-alist-p alist))
              (equal (svex-alist-eval$-to-svexl-alist-trig alist env)
-                    (svexl-alist-eval$ (svex-alist-to-svexl-alist alist) env)))
+                    (progn$ (cw "Converting svex-alist to svexl-alist ~
+ for svexl-alist-eval$ ...~%")
+                                (svexl-alist-eval$ (svex-alist-to-svexl-alist alist) env))))
     :hints (("Goal"
              :use ((:instance svexl-alist-eval$-correct))
              :in-theory (e/d () ())))))
@@ -292,7 +294,8 @@ fast-alist. Consider making it one for a better performance.~%"))
 (define svex-alist-eval$-meta (term)
   (case-match term
     (('svex-alist-eval$ ('quote alist) env)
-     (b* ((- (cw "Entering svex-eval$-alist-meta ~%"))
+     (b* ((- (cw "Entering svex-eval$-alist-meta to trigger ~
+svex-alist to svexl-alist conversion. ~%"))
           (env-orig env)
           (env (rp::ex-from-rp env)))
        (case-match env
@@ -300,14 +303,15 @@ fast-alist. Consider making it one for a better performance.~%"))
           (mv `(svex-alist-eval$-to-svexl-alist-trig ',alist ,env)
               `(nil t t)))
          (''nil
-          (mv term nil))
+          (mv `(svex-alist-eval$-to-svexl-alist-trig ',alist ,env-orig) '(nil t t)))
          (&
           (if (and (consp env) (equal (car env) 'cons))
               (progn$
                (cw "Note: the environment of svex-eval$-alist is not a fast-alist. Making it a fast alist now.~%")
-               (mv `(sv::svex-alist-eval$ ',alist (make-fast-alist ,env-orig))
+               (mv `(svex-alist-eval$-to-svexl-alist-trig ',alist (make-fast-alist ,env-orig))
                    `(nil t (nil t))))
-            (mv term nil))))))
+            (mv `(svex-alist-eval$-to-svexl-alist-trig ',alist ,env-orig)
+                '(nil t t)))))))
     (& (mv term nil))))
 
 

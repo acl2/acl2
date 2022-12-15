@@ -399,7 +399,7 @@
 
 ;;;;;; Now sanity checks ;;;;;;
 
-(defines svex-no-foreign-op-p-aux
+(defines svex-no-foreign-op-p
   :parents (evaluation)
   :short "Check if a given expression includes any operator that is included in *svex-op-table*"
   (define svex-no-foreign-op-p-aux ((x svex-p)
@@ -435,6 +435,9 @@
     (b* ((op-table *svex-op-table*))
       (with-fast-alist op-table
         (svexlist-no-foreign-op-p-aux x op-table))))
+  (define svex-alist-no-foreign-op-p ((x svex-alist-p))
+    (and (mbt (svex-alist-p x))
+         (svexlist-no-foreign-op-p (strip-cdrs x))))
   )
 
 (defthm svex-apply$-is-svex-apply
@@ -468,3 +471,23 @@
                             svexlist-eval$
                             svexlist-eval)
                            ()))))
+
+(defthm svex-alist-eval$-is-svex-alist-eval
+    (implies (svex-alist-no-foreign-op-p x)
+             (equal (svex-alist-eval$ x env)
+                    (svex-alist-eval x env)))
+    :hints (("Goal"
+             :expand ((:free (x y)
+                             (SVEXLIST-NO-FOREIGN-OP-P (CONS x y)))
+                      (:free (x y z)
+                             (SVEXLIST-NO-FOREIGN-OP-P-AUX (cons x y) z)))
+             :do-not-induct t
+             :induct (svex-alist-eval x env)
+             :in-theory (e/d (SVEX-ALIST-P
+                              SVEX-NO-FOREIGN-OP-P
+                              SVEXLIST-NO-FOREIGN-OP-P
+                              svex-alist-no-foreign-op-p
+                              svex-alist-eval
+                              SVEX-ALIST-EVAL$)
+                             ())))
+    )

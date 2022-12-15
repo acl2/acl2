@@ -383,10 +383,12 @@ fast-alist. Consider making it one for a better performance.~%"))
           (mv term nil)))))
     (& (mv term nil))))
 
-(define svex-alist-eval-meta (term)
+(define svex-alist-eval-meta-aux (term &key (convert-to-svexl 't))
   (case-match term
       (('sv::svex-alist-eval ('quote alist) env)
        (b* ((- (cw "Entering svex-eval-alist-meta ~%"))
+            (- (or convert-to-svexl
+                   (cw "convert-to-svexl is disabled~%")))
             (env-orig env)
             (env (rp::ex-from-rp env)))
          (case-match env
@@ -395,23 +397,27 @@ fast-alist. Consider making it one for a better performance.~%"))
                    ((Unless (sv::svex-alist-p alist)) ;; for guards
                     (mv term nil))
                    (- (cw "Starting: svl::svex-alist-reduce-w/-env ~%"))
-                   (- (time-tracker :svex-alist-eval-meta :end))
-                   (- (time-tracker :svex-alist-eval-meta :init
+                   (- (time-tracker :svex-alist-eval-meta-aux :end))
+                   (- (time-tracker :svex-alist-eval-meta-aux :init
                                     :times '(1 2 3 4 5)
                                     :interval 5
                                     ))
-                   (- (time-tracker :svex-alist-eval-meta :start!))
+                   (- (time-tracker :svex-alist-eval-meta-aux :start!))
                    (alist (svex-alist-reduce-w/-env alist env-falist))
                    
                    (- (cw "Finished: svl::svex-alist-reduce-w/-env. "))
-                   (- (time-tracker :svex-alist-eval-meta :stop))
-                   (- (time-tracker :svex-alist-eval-meta :print?
+                   (- (time-tracker :svex-alist-eval-meta-aux :stop))
+                   (- (time-tracker :svex-alist-eval-meta-aux :print?
                                     :min-time 0
                                     :msg "The total runtime of svl::svex-alist-reduce-w/-env ~
 was ~st seconds."))
                    ;;(- (cw "Starting: sv::svex-alist-rewrite-top ~%"))
                    ;;(alist (sv::svex-alist-rewrite-top alist))
                    ;;(alist (sv::svex-alist-rewrite-fixpoint alist))
+
+                   ((unless convert-to-svexl)
+                    (mv `(identity (sv::svex-alist-eval ',alist ,env-orig))
+                        `(nil t)))
                    
                    (- (cw "Starting: svl::svex-alist-to-svexl-alist ~%"))
                    (svexl-alist (svex-alist-to-svexl-alist alist))
@@ -430,7 +436,15 @@ was ~st seconds."))
                  (mv `(sv::svex-alist-eval ',alist (make-fast-alist ,env-orig))
                      `(nil t (nil t))))
                 (mv term nil))))))
-    (& (mv term nil))))
+      (& (mv term nil))))
+
+(define svex-alist-eval-meta (term)
+  :enabled t
+  (svex-alist-eval-meta-aux term :convert-to-svexl t))
+
+(define svex-alist-eval-meta-w/o-svexl (term)
+  :enabled t
+  (svex-alist-eval-meta-aux term :convert-to-svexl nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; svexl-eval-meta (svexl-eval-wog-meta)
@@ -649,6 +663,7 @@ was ~st seconds."))
         svex-eval-wog-formula-checks
         (;;svex-eval-wog-meta-main
          sv::4vec-fix$inline
+         identity
          svl::4vec-concat$
          make-fast-alist
          svex-env-fastlookup-wog
@@ -1793,6 +1808,24 @@ was ~st seconds."))
      :hints
      (("goal" :in-theory (e/d (rp::ex-from-rp rp::is-rp) nil))))))
 
+
+
+(rp::add-meta-rule
+ :meta-fnc svex-alist-eval-meta-w/o-svexl
+ :trig-fnc sv::svex-alist-eval
+ :formula-checks svex-eval-wog-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw)
+ :disabled t
+ :hints (("Goal"
+          :in-theory (e/d (svex-alist-eval-meta-aux
+                           svexl-alist-correct-reverse
+                           rp::is-rp
+                           
+                           RP::RP-EVLT-OF-EX-FROM-RP-reverse
+                           rp::is-if)
+                          (rp::rp-evlt-of-ex-from-rp)))))
+
 (rp::add-meta-rule
  :meta-fnc svex-alist-eval-meta
  :trig-fnc sv::svex-alist-eval
@@ -1801,10 +1834,12 @@ was ~st seconds."))
  :returns (mv term dont-rw)
 
  :hints (("Goal"
-          :in-theory (e/d (svex-alist-eval-meta
+          :in-theory (e/d (svex-alist-eval-meta-aux
                            svexl-alist-correct-reverse
                            rp::is-rp
                            
                            RP::RP-EVLT-OF-EX-FROM-RP-reverse
                            rp::is-if)
                           (rp::rp-evlt-of-ex-from-rp)))))
+
+
