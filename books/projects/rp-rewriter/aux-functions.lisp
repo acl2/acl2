@@ -1584,7 +1584,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
         (rp-beta-reduce (caddr (car term)) (cadar term) (cdr term))
       term)))
 
-(encapsulate
+#|(encapsulate
   nil
 
   (local
@@ -1649,7 +1649,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
      (implies (true-listp l)
               (true-listp (merge-comperator-sort l comperator)))))
 
-  (verify-guards merge-comperator-sort))
+  (verify-guards merge-comperator-sort))|#
 
 #|(define remove-disabled-meta-rules ((meta-rules weak-rp-meta-rule-recs-p)
                                     (disabled-meta-rules ))

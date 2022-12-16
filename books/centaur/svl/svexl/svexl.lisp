@@ -183,7 +183,9 @@
      svex
      :var acc
      :quote acc
-     :call (b* ((entry (hons-get svex acc)))
+     :call (b* (((unless (rp::cons-count-compare svex 15))
+                 acc)
+                (entry (hons-get svex acc)))
              (if entry
                  (hons-acons svex (1+ (cdr entry)) acc)
                  (svex-to-svexl-get-stats-lst (hons-acons svex 1 acc)

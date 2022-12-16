@@ -56,6 +56,9 @@
 	    sv::svex-fix
 	    sv::svexlist-p
 	    sv::svexlist-eval
+	    sv::svexlist-eval$
+	    sv::svex-alist-eval	
+	    sv::svex-alist-eval$
 	    sv::4VECLIST-NTH-SAFE
 	    sv::svex-call->fn
 	    sv::svex-kind
@@ -64,6 +67,9 @@
 	    sv::svex-call->args
 	    sv::svex-env-p
 	    sv::svex-eval
+	    sv::svex-apply
+	    sv::svex-eval$
+	    sv::svex-apply$
 	    sv::svex-var->name
 	    sv::svex-apply-cases
 	    std::defret

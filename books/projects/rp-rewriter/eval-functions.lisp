@@ -38,6 +38,7 @@
 ; Mertcan Temel         <mert@utexas.edu>
 
 (in-package "RP")
+(include-book "projects/apply/top" :dir :system)
 (include-book "macros" )
 ;(include-book "rp-rewriter")
 (include-book "aux-functions")
@@ -124,6 +125,7 @@
     (rp-equal-subterms . 2)
     (rp-equal-cnt . 3)
     (rp-equal-cnt-subterms . 3)
+    ;;(apply$ . 2)
     ))
 
 (with-output

@@ -315,8 +315,8 @@
 
 (def-rp-rule :disabled-for-acl2 t
   svex-eval-is-svex-eval-wog
-  (implies (and (svex-p x)
-                (svex-env-p env))
+  (implies (and (force (svex-p x))
+                (force (svex-env-p env)))
            (equal (svex-eval x env)
                   (svex-eval-wog x env)))
   :hints (("Goal"
@@ -324,8 +324,8 @@
 
 (def-rp-rule :disabled-for-acl2 t
   svexlist-eval-is-svexlist-eval-wog
-  (implies (and (svexlist-p x)
-                (svex-env-p env))
+  (implies (and (force (svexlist-p x))
+                (force (svex-env-p env)))
            (equal (svexlist-eval x env)
                   (svexlist-eval-wog x env)))
   :hints (("Goal"

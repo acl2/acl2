@@ -129,6 +129,8 @@
 (add-rp-rule cons-equal)
 (add-rp-rule acons)
 
+(add-rp-rule acl2::apply$-primitive)
+
 (def-rp-rule append-of-nil
   (equal (append nil x)
          x))
