@@ -2616,7 +2616,9 @@
   (b* ((- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
        ((mv erp post-response state)
         (htclient::post server-url post-data state))
-       ((when erp) (mv erp nil state))
+       ((when erp)
+        (cw "Error received from HTTP POST: ~x0.~%" erp)
+        (mv erp nil state))
        (- (and debug (cw "Raw POST response: ~X01~%" post-response nil)))
        ;; Parse the JSON:
        ((mv erp parsed-json-response) (acl2::parse-string-as-json post-response))
@@ -2853,7 +2855,7 @@
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url post-data debug state))
                ((when erp)
-                (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp)
+                ;; (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp) ; was catching rare "output operation on closed SSL stream" errors
                 (mv erp nil state))
                ((when (not (acl2::parsed-json-arrayp parsed-response)))
                 (er hard? 'get-recs-from-ml-model "Error: Response from server is not a JSON array: ~x0." parsed-response)
@@ -3544,12 +3546,12 @@
 ;; TODO: Also return unsuccessful-recs?
 (defun all-successful-recs-for-checkpoints (checkpoint-clauses
                                             theorem-name ; might not be needed
-                                            theorem-body
+                                            theorem-body ; untranslated
                                             theorem-hints
                                             theorem-otf-flg
                                             num-recs-per-model
                                             book-to-avoid-absolute-path ; drop?
-                                            improve-recsp
+                                            improve-recsp ; whether to try to improve successful recommendations
                                             print
                                             server-url
                                             debug
