@@ -824,3 +824,32 @@
           (equal x x))
  :skip-vacuity-check t)
 
+
+(include-book "centaur/bitops/int-sqrt" :dir :system)
+
+
+(encapsulate nil
+  (local (defun default-exhaustive-test-config ()
+           (declare (xargs :guard t))
+           (make-fgl-exhaustive-test-config)))
+  (local (defattach fgl-toplevel-sat-check-config default-exhaustive-test-config))
+  
+  (def-fgl-thm int-sqrt-correct
+    (implies (unsigned-byte-p 16 x)
+             (b* ((sqrt (bitops::int-sqrt x))
+                  (sqrt+1 (+ 1 sqrt))
+                  (lower-bound (* sqrt sqrt))
+                  (upper-bound (* sqrt+1 sqrt+1)))
+               (and (<= lower-bound x)
+                    (< x upper-bound)))))
+
+  (check-counterexample
+    (implies (and (unsigned-byte-p 16 x)
+                  (equal (integer-length x) 16))
+             (b* ((sqrt (bitops::int-sqrt x))
+                  (sqrt+1 (+ 1 sqrt))
+                  (lower-bound (* sqrt sqrt))
+                  (upper-bound (* sqrt+1 sqrt+1)))
+               (and (< lower-bound x)
+                    (< x upper-bound))))))
+                
