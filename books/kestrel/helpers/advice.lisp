@@ -1200,7 +1200,10 @@
 ;; An interface to prove$ that doesn't pass back errors (instead printing a message).
 ;; Returns (mv provedp state).  Does not propagate any errors back.
 (defund prove$-no-error (ctx term hints otf-flg step-limit state)
-  (declare (xargs :mode :program
+  (declare (xargs :guard (and (booleanp otf-flg)
+                              (or (null step-limit)
+                                  (natp step-limit)))
+                  :mode :program
                   :stobjs state))
   (mv-let (erp provedp state)
     ;; TODO: Drop the :time-limit once :step-limit can interrupt subsumption:
@@ -1213,7 +1216,10 @@
 ;; Returns (mv provedp failure-info state), where failure-info may be
 ;; :step-limit-reached or :unknown.
 (defund prove$-no-error-with-failure-info (ctx term hints otf-flg step-limit state)
-  (declare (xargs :mode :program
+  (declare (xargs :guard (and (booleanp otf-flg)
+                              (or (null step-limit)
+                                  (natp step-limit)))
+                  :mode :program
                   :stobjs state))
   (mv-let (erp provedp failure-info state)
     ;; TODO: Drop the :time-limit once :step-limit can interrupt subsumption:
