@@ -169,13 +169,14 @@
            :induct (double-cdr-induct lst1 lst2)
            :do-not '(generalize eliminate-destructors))))
 
-;rename!
-(defthm fw-1
-  (implies (perm bag1 (update-nth n val bag2))
-           (memberp val bag1))
+;move
+(defthm memberp-when-perm-of-update-nth
+  (implies (perm x (update-nth n a y))
+           (memberp a x))
   :hints (("Goal" :in-theory (enable UPDATE-NTH))))
 
 ;disabled Tue Apr 13 15:37:50 2010
+;todo: drop.  just use nth-of-0
 (defthmd nth-when-n-is-zp
   (implies (zp n)
            (equal (nth n lst)
@@ -188,11 +189,8 @@
                 (and (integerp n) (< 0 n)))
            (memberp (nth n lst) (cdr lst)))
   :hints (("Goal" :in-theory (e/d (nth
-;len
-                                   nth-when-n-is-zp
-                                   ) (CANCEL_PLUS-LESSP-CORRECT
-;LIST::LEN-EQUAL-1-REWRITE
-                                      ))
+                                   nth-when-n-is-zp)
+                                  (cancel_plus-lessp-correct))
            :do-not '(generalize eliminate-destructors))))
 
 ;this can loop if we are turning car into nth 0...
@@ -202,19 +200,11 @@
                   (or (and (integerp n) (< 0 n))
                       (memberp (car lst) (cdr lst)))))
   :hints (("Goal" :in-theory (e/d (nth
-                                   ;len
-                                   nth-when-n-is-zp
-                                     ) (CANCEL_PLUS-LESSP-CORRECT
-; LIST::LEN-EQUAL-1-REWRITE
-                                        ))
+                                   nth-when-n-is-zp)
+                                  (cancel_plus-lessp-correct))
            :do-not '(generalize eliminate-destructors))))
 
 (theory-invariant (incompatible (:rewrite memberp-nth-and-cdr) (:rewrite CAR-BECOMES-NTH-OF-0)))
-
-
-(defthm memberp-of-update-nth-same
-  (MEMBERP val (UPDATE-NTH n val lst))
-  :hints (("Goal" :in-theory (enable update-nth))))
 
 ;; (thm
 ;;  (equal (MEMBERP (CAR LST) (BAG::REMOVE-1 (NTH N LST) LST))
@@ -699,7 +689,6 @@
          (and (consp x)
               (equal y (cdr x)) ;bozo okay to introduce cdr?
               )))
-
 
 ;expensive
 (defthmd cons-car-self-equal-self

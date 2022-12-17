@@ -742,7 +742,7 @@
 ;;   (not (array-refp nil dims element-type heap))
 ;;   :hints (("Goal" :in-theory (enable array-refp))))
 
-(defthm nth-when-n-is-zp-2
+(defthmd nth-when-n-is-zp-2
   (implies (and (syntaxp (not (quotep n))) ;prevents loops
                 (zp n))
            (equal (nth n x)
@@ -760,9 +760,6 @@
                 (not (equal (get-array-dimensions-of-ref ad1 heap)
                             (get-array-dimensions-of-ref ad2 heap))))
            (not (equal ad1 ad2))))
-
-
-
 
 ;; (thm
 ;;  (implies (not (equal ad a2))

@@ -4239,7 +4239,7 @@
     (cond
      (erp ; from out-of-time or clause-processor failure; treat as 'error signal
       (mv-let@par (erp2 val state)
-                  (er@par soft ctx "~@0" erp)
+                  (er-soft@par ctx signal "~@0" erp)
                   (declare (ignore erp2 val))
                   (pprogn@par
                    (assert$
