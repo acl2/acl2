@@ -93,7 +93,8 @@
           (cond ((eq prover-error-output-off t)
 ; "Call depth" and  "Evaluation" are dealt with above the trans-eval call.
                  '(("Failure")
-                   ("Step-limit")))
+                   ("Step-limit")
+                   ("Time-limit")))
                 ((string-listp prover-error-output-off)
                  (pairlis$ prover-error-output-off nil))
                 (t (er hard ctx
