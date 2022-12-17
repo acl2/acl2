@@ -1,7 +1,7 @@
 ; Lookup a key in an alist using EQ
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,8 @@
 
 (include-book "lookup-equal") ;; included becase we rewrite lookup-eq to lookup-eqal
 
-;; Look up KEY in ALIST, using eq as the test.
+;; Look up KEY in ALIST, using EQ as the test, returning the value to which
+;; KEY is bound, or nil if KEY is not bound.
 (defund lookup-eq (key alist)
   (declare (xargs :guard (if (symbolp key)
                              (alistp alist)
