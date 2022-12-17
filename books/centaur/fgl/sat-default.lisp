@@ -32,6 +32,7 @@
 
 (include-book "ipasir-sat")
 (include-book "satlink-sat")
+(include-book "exhaustive-test")
 
 (local (in-theory (disable w)))
 
@@ -39,7 +40,8 @@
   :parents (fgl-sat-check)
   :short "Configuration object for either monolithic or incremental SAT in the default FGL configuration."
   (fgl-satlink-monolithic-sat-config
-   fgl-ipasir-config))
+   fgl-ipasir-config
+   fgl-exhaustive-test-config))
 
 (make-event
  `(define fgl-default-sat-check-impl (params
@@ -58,6 +60,8 @@
       (case (tag params)
         (:fgl-satlink-config
          (interp-st-satlink-sat-check-core params bfr interp-st state))
+        (:fgl-exhaustive-test-config
+         (interp-st-exhaustive-test-core params bfr interp-st state))
         (otherwise
          (interp-st-ipasir-sat-check-core params bfr interp-st state))))
     ///
@@ -69,6 +73,8 @@
   :returns (mv err new-interp-st)
   (case (tag params)
     (:fgl-satlink-config (interp-st-satlink-counterexample params interp-st state))
+    (:fgl-exhaustive-test-config
+     (interp-st-exhaustive-test-counterexample params interp-st state))
     (otherwise           (interp-st-ipasir-counterexample params interp-st state)))
   ///
   (defret interp-st-get-of-<fn>
