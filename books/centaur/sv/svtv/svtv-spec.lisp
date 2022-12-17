@@ -25,10 +25,13 @@
 
 (in-package "SV")
 
+; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
+(set-waterfall-parallelism nil)
+
 ;; (include-book "svtv-fsm-ideal")
 (include-book "cycle-probe")
 (include-book "assign")
-(local (include-book "../svex/svex-lattice"))  
+(local (include-book "../svex/svex-lattice"))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
@@ -103,7 +106,7 @@
                (svex-envlist-phase-outputs-extract-cycle-outputs phases rest))))
   ///
 
-  
+
 
   (local (defthm svtv-cycle-output-phase-<-len
            (implies (svtv-cyclephaselist-has-outputs-captured phases)
@@ -111,7 +114,7 @@
            :hints(("Goal" :in-theory (enable svtv-cycle-output-phase
                                              svtv-cyclephaselist-has-outputs-captured)))
            :rule-classes :linear))
-  
+
   (local (defun nth-of-extract-ind (n phases phase-outs)
            (if (zp n)
                (list phases phase-outs)
@@ -131,7 +134,7 @@
   (local (defthm plus-x-y-minus-x-z
            (equal (+ x y (* -1 x) z)
                   (+ y z))))
-  
+
   (defret nth-of-<fn>
     (implies (svtv-cyclephaselist-has-outputs-captured phases)
              (Equal (nth n cycle-outs)
@@ -166,7 +169,7 @@
                     (posp (len phases)))
            :hints(("Goal" :in-theory (enable svtv-cyclephaselist-has-outputs-captured)))
            :rule-classes :forward-chaining))
-  
+
   (defthm svtv-probealist-extract-of-probealist-cycle-adjust
     (implies (svtv-cyclephaselist-has-outputs-captured phases)
              (equal (svtv-probealist-extract (svtv-probealist-cycle-adjust probes phases) phase-outputs)
@@ -187,14 +190,14 @@
                   (< (svtv-cycle-output-phase phases) (len envs)))
            :hints(("Goal" :in-theory (enable svex-envlist-phase-outputs-extract-cycle-outputs)))))
 
-  
+
   (local (defthm mod-0-when-less
            (implies (and (natp x) (natp y)
                          (< x y))
                     (equal (equal 0 (mod x y))
                            (equal x 0)))
            :hints (("goal" :in-theory (e/d (acl2::mod-redef) (mod))))))
-          
+
 
   (local (defthm nthcdr-of-svtv-name-lhs-map-eval-list
            (equal (nthcdr n (svtv-name-lhs-map-eval-list namemap envs))
@@ -206,7 +209,7 @@
            (equal (consp (svtv-name-lhs-map-eval-list namemap envs))
                   (consp envs))
            :hints(("Goal" :in-theory (enable svtv-name-lhs-map-eval-list)))))
-  
+
   (defthm svex-envlist-phase-outputs-extract-cycle-outputs-of-svtv-name-lhs-map-eval-list
     (implies (and ; (equal 0 (mod (len envs) (len phases)))
                   (svtv-cyclephaselist-has-outputs-captured phases))
@@ -224,7 +227,7 @@
   (local (defthm nthcdr-when-gte-len
            (implies (<= (len x) (nfix n))
                     (not (consp (nthcdr n x) )))))
-  
+
   (verify-guards svex-envlist-phase-outputs-extract-cycle-outputs
     :hints ((and stable-under-simplificationp
                  '(:expand ((SVEX-ENVLIST-PHASE-OUTPUTS-EXTRACT-CYCLE-OUTPUTS
@@ -353,7 +356,7 @@
   (defthm svex-env-<<=-self
     (svex-env-<<= a a)
     :hints(("Goal" :in-theory (enable svex-env-<<=))))
-  
+
   (defthm svex-envlist-<<=-self
     (svex-envlist-<<= a a)
     :hints(("Goal" :in-theory (enable svex-envlist-<<=))))
@@ -394,7 +397,7 @@
 
   (local (defthm len-equal-0
            (Equal (equal (len x) 0) (atom x))))
-  
+
   (defret <fn>-when-b-empty
     (implies (and (subsetp-equal b '(nil))
                   (<= (len b) (len a)))
@@ -411,7 +414,7 @@
   (defret len-of-<fn>
     (equal (len res) (max (len a) (len b))))
 
-  
+
   (defthm svex-envlist-x-override-monotonic-on-b
     (implies (svex-envlist-<<= b1 b2)
              (svex-envlist-<<= (svex-envlist-x-override a b1)

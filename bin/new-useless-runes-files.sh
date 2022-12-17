@@ -1,4 +1,4 @@
-#!/bin/sh
+
 
 ##########
 
@@ -7,13 +7,23 @@
 
 # (1) Run fresh "everything" regression with ACL2_USELESS_RUNES=write
 #     to regenerate @useless-runes.lsp files.
+#  -- NOTE: to save time,
+#     consider temporarily creating file
+#     books/projects/filesystems/oracle.acl2
+#     with the following line
+#     ; cert-flags: ? t :useless-runes nil
+#     to avoid updating the useless-rules file,
+#     books/projects/filesystems/.sys/oracle@useless-runes.lsp
+#     -- otherwise you may be adding 4 hours or more to your
+#     regression time, even with many threads.  If you do this, be
+#     sure to remove oracle.acl2 file after completing this step.
 
-# (2) Run ordinary "everything" regression.  (This can be delayed till
-#     after (5) if you know what you are doing.)
+# (2) Run ordinary "everything" regression, perhaps updating with git
+#     first.
 
 # (3) Check for failures, avoiding bad @useless-runes.lsp files by
-#     editing .acl2 files and removing them (using git rm if already
-#     under git control).
+#     editing .acl2 files and removing them (using git rm, which
+#     of course assumes the directory is under git control).
 
 # (4) Run, in that same (top-level ACL2) directory (editing <your_acl2>):
 

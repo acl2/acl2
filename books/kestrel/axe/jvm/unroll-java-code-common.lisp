@@ -137,7 +137,8 @@
                               (pseudo-termp heap-term)
                               (member-eq vars-for-array-elements '(t nil :bits))
                               (method-designator-stringp method-designator-string))
-                  :guard-hints (("Goal" :in-theory (e/d (symbolp-of-lookup-equal-when-param-slot-to-name-alistp)
+                  :guard-hints (("Goal" :in-theory (e/d (symbolp-of-lookup-equal-when-param-slot-to-name-alistp
+                                                         param-slot-to-name-alistp)
                                                         (natp))))))
   (if (endp parameter-types)
       nil

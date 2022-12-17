@@ -297,9 +297,7 @@
 (SYNDEF::|add1_a-1$NOT-NORMALIZED|)
 (SYNDEF::|add1_a-1-TO-add1|)
 (SYNDEF::|add1-TO-add1_a-1|)
-(SYNDEF::|add1_a-1|
- (7 7 (:TYPE-PRESCRIPTION SYNDEF::|id|))
- )
+(SYNDEF::|add1_a-1|)
 (SYNDEF::|add1_a-1$NOT-NORMALIZED|)
 (SYNDEF::|add1_a-2|)
 (SYNDEF::|add1_a-1-BEFORE-VS-AFTER-0|)
@@ -401,9 +399,7 @@
 (SYNDEF::|add1_a-1$NOT-NORMALIZED|)
 (SYNDEF::|add1_a-1-TO-add1|)
 (SYNDEF::|add1-TO-add1_a-1|)
-(SYNDEF::|add1_a-1|
- (7 7 (:TYPE-PRESCRIPTION SYNDEF::|id|))
- )
+(SYNDEF::|add1_a-1|)
 (SYNDEF::|add1_a-1$NOT-NORMALIZED|)
 (SYNDEF::|add1_a-2|)
 (SYNDEF::|add1_a-1-BEFORE-VS-AFTER-0|)

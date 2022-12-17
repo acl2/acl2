@@ -3154,8 +3154,7 @@
 ;;            (not (equal x (nth n lst))))
 ;;   :hints (("Goal" :in-theory (enable bag::unique-of-cons))))
 
-
-(in-theory (disable ALISTP))
+;; (in-theory (disable alistp))
 
 ;; ;use a map (and don't use int-fix)
 ;; (defthm nth-of-int-fix-list
@@ -3462,16 +3461,11 @@
 ;gen  (LEN (TAKE N L))
 
 ;when i need this, lst is the call-stack
-(defthm len-pop-push-hack
-  (equal
-   (EQUAL (LEN lst)
-          (BINARY-+ '1
-                    (IF (CONSP lst)
-                        (BINARY-+ '-1
-                                  (LEN lst))
-                        '0)))
-   (consp lst)))
-
+;or just use + of if
+(defthmd len-pop-push-hack
+  (equal (equal (len lst)
+                (+ 1 (if (consp lst) (+ -1 (len lst)) 0)))
+         (consp lst)))
 
 ;; ;slow?
 ;; (defthm nthcdr-of-byte-fix-list

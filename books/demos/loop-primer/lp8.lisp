@@ -62,15 +62,48 @@
 
 ; -----------------------------------------------------------------
 ; LP8-2
-(defun arglistp1-loop$ (lst)
+; We offer two solutions, one using an ``IN'' loop$ with an extra true-listp
+; and one using an ``ON'' loop$ without the true-listp.
+
+(defun arglistp1-loop$-v1 (lst)
   (declare (xargs :guard t))
   (and (true-listp lst)
        (loop$ for e in lst always (legal-variablep e))))
 
-(defthm arglistp1-loop$-is-arglistp1
-  (equal (arglistp1-loop$ lst)
+(defthm arglistp1-loop$-v1-is-arglistp1
+  (equal (arglistp1-loop$-v1 lst)
          (arglistp1 lst))
   :rule-classes nil)
+
+; Our first solution, arglistp1-loop$-v1, is less efficient than arglistp1
+; because it makes two passes down lst, first to confirm that it is a
+; true-listp and then to check that every element is a legal-variablep.  Our
+; second solution checks the true-listp condition as it goes, but it still
+; probably not as efficient as arglistp1.  We say ``probably'' because it
+; depends on how well your Common Lisp implements recursion versus iteration
+; and type checks.
+
+(defun arglistp1-loop$-v2 (lst)
+  (declare (xargs :guard t))
+  (if (consp lst)
+      (loop$ for tail on lst
+             always
+             :guard (consp tail)
+             (and (legal-variablep (car tail))
+                  (or (consp (cdr tail))
+                      (eq (cdr tail) nil))))
+      (eq lst nil)))
+
+(defthm arglistp1-loop$-v2-is-arglistp1
+  (equal (arglistp1-loop$-v2 lst)
+         (arglistp1 lst))
+  :rule-classes nil)
+
+; You should study arglistp1-loop$-v2 to understand how it is checking the
+; true-listp condition as it goes.  Once you understand that, you'll understand
+; that you can always convert an IN loop$ with a true-listp check to an ON
+; loop$ without that check.  Because of that, we'll use the more elegant IN
+; solutions below and not further belabor this point.
 
 ; -----------------------------------------------------------------
 ; LP8-3
@@ -130,6 +163,19 @@
            (equal (select-corresponding-element-loop$ e lst1 lst2)
                   (select-corresponding-element e lst1 lst2)))
   :rule-classes nil)
+
+; Actually, the two true-listp hypotheses can be omitted and the two functions
+; are still provably equivalent.  But they are not equivalent if the third
+; hypothesis is dropped.
+
+(defthm counterexample-to-unconditional-equivalence
+  (let ((e 'a)
+        (lst1 '(a a))
+        (lst2 '(nil t)))
+    (not (equal (select-corresponding-element-loop$ e lst1 lst2)
+                (select-corresponding-element e lst1 lst2))))
+  :rule-classes nil)
+
 ; -----------------------------------------------------------------
 
 ; LP8-5
