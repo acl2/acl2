@@ -207,10 +207,10 @@
     ("add-library" . :add-library)
     ("add-nonlinearp-hint" . :add-nonlinearp-hint) ; very rare
     ("add-use-hint" . :add-use-hint)
-    ;; Confusingly named: Does not indicate a :use hint:
+    ;; Confusingly named: Does not indicate a :use hint and the "lemma" is often a defun (treated like add-enable-hint):
     ("use-lemma" . :use-lemma)))
 
-;; todo: rename (not necessarily about ml)
+;; todo: rename (not necessarily about ml)?
 (defconst *ml-rec-types* (strip-cdrs *rec-to-symbol-alist*))
 
 (defconst *all-rec-types* (cons :exact-hints *ml-rec-types*))
@@ -621,16 +621,19 @@
               ;; theorem-hints
               (booleanp theorem-otf-flg)))))
 
+;; Extract the name from a successful-recommendation.
 (defund successful-recommendationp-name (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 0 rec))
 
+;; Extract the action type from a successful-recommendation.
 (defund successful-recommendationp-type (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 1 rec))
 
+;; Extract the action object from a successful-recommendation.
 (defund successful-recommendationp-object (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
@@ -3619,7 +3622,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This could be useful when generating training data to improve an existing ML model.
-;; Returns (mv erp successful-recs state).
+;; Returns (mv erp successful-recs state) where successful-recs satisfies successful-recommendation-listp.
 ;; TODO: Also return unsuccessful-recs?
 (defun all-successful-recs-for-checkpoints (checkpoint-clauses
                                             theorem-name ; might not be needed
@@ -3638,13 +3641,13 @@
                                             models
                                             state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
-                              (or (null book-to-avoid-absolute-path)
-                                  (stringp book-to-avoid-absolute-path))
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               (natp num-recs-per-model)
+                              (or (null book-to-avoid-absolute-path)
+                                  (stringp book-to-avoid-absolute-path))
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
