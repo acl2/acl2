@@ -473,9 +473,11 @@
 (define svexl-alist-eval$-wog ((x)
                               (env))
   :verify-guards nil
-  (b* ((- "Now rewriting svexl-alist for eval$... ~%")
-       (top-node-alist (cdar x))
+  (b* ((top-node-alist (cdar x))
        (node-array (cdr (cadr x)))
+       (- (cw "Now rewriting svexl-alist (~p0 nodes) for eval$... ~%"
+              (len node-array)))
+       
        (node-env (svexl-eval$-aux-wog node-array nil env))
        (res (svexl-node-alist-eval$-wog top-node-alist node-env env))
        (- (fast-alist-free node-env)))

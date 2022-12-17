@@ -130,6 +130,7 @@
 (add-rp-rule acons)
 
 (add-rp-rule acl2::apply$-primitive)
+(rp::disable-rules '((:e APPLY$)))
 
 (def-rp-rule append-of-nil
   (equal (append nil x)

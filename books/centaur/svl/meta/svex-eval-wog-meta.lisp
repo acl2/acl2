@@ -422,9 +422,7 @@ was ~st seconds."))
                    (- (cw "Starting: svl::svex-alist-to-svexl-alist ~%"))
                    (svexl-alist (svex-alist-to-svexl-alist alist))
                    (- (let ((x (svexl-alist->node-array svexl-alist))) ;; for guards
-                        (and (consp x)
-                             (consp (car x))
-                             (cw "Finished: svl::svex-alist-to-svexl-alist. Resulting svexl-alist has ~p0 nodes.~%~%" (caar x))))))
+                        (cw "Finished: svl::svex-alist-to-svexl-alist. Resulting svexl-alist has ~p0 nodes.~%~%" (len x)))))
                 (mv `(svexl-alist-eval ',svexl-alist ,env-orig)
                     `(nil t t))))
            (''nil

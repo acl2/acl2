@@ -1071,7 +1071,7 @@
 (define svexl-alist-eval-wog ((x)
                               (env))
   :verify-guards nil
-  (b* ((- "Now rewriting svexl-alist... ~%")
+  (b* ((- (cw "Now rewriting svexl-alist... ~%"))
        (top-node-alist (cdar x))
        (node-array (cdr (cadr x)))
        (node-env (svexl-eval-aux-wog node-array nil env))

@@ -60,6 +60,12 @@
   use-qr-lemmas
   ))
 
+(local
+ (rp::fetch-new-events
+  (include-book "centaur/bitops/equal-by-logbitp" :dir :system)
+  use-equal-by-logbitp
+  :disabled t))
+
 (encapsulate
   nil
   (local
@@ -2210,7 +2216,7 @@
   (implies (and (natp amount)
                 (natp start)
                 (natp size)
-                (< amount size))
+                (<= amount size))
            (equal (sv::4vec-rsh amount (sv::4vec-part-select start size x))
                   (sv::4vec-part-select (+ start amount) (- size amount) x)))
   :hints (("Goal"
@@ -2226,7 +2232,7 @@
   (implies (and (natp amount)
                 (natp start)
                 (natp size)
-                (<= size amount))
+                (< size amount))
            (equal (sv::4vec-rsh amount (sv::4vec-part-select start size x))
                   0))
   :hints (("Goal"
@@ -2237,6 +2243,8 @@
                              4vec-shift-core
                              4vec-concat)
                             (4vec)))))
+
+
 
 (defthm 4vec-part-install-of-4vec-part-install-sizes=1
   (implies (and (natp start1)
@@ -4040,6 +4048,9 @@
                               loghead
                               ))))))
 
+
+
+
 (defthm 4vec-bitxor-with-zero
   (implies (integerp x)
            (and (equal (sv::4vec-bitxor 0 x)
@@ -4055,6 +4066,25 @@
                              SV::4VEC->UPPER
                              SV::4VEC->lower)
                             (4vec)))))
+
+(defthm 4vec-bitxor-of-0-better
+    (and (equal (sv::4vec-bitxor 0 x)
+                (sv::3vec-fix x))
+         (equal (sv::4vec-bitxor x 0)
+                (sv::3vec-fix x)))
+    :hints (("Goal"
+             :in-theory (e/d* (SV::3VEC-FIX
+                               sv::4vec-bitxor
+                               4VEC-FIX
+                               4VEC-P
+                               bitops::ihsext-recursive-redefs
+                               bitops::ihsext-inductions
+                               SV::4VEC->UPPER
+                               SV::4VEC->lower)
+                              ()))
+            (bitops::logbitp-reasoning)))
+
+
 
 (defthm 4vec-bitor-of-the-same
   (equal (sv::4vec-bitor x x)
