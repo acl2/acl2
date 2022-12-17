@@ -10,6 +10,22 @@
 (in-package "ACL2")
 (include-book "projects/apply/top" :dir :system)
 
+; In our solutions below we usually demonstrate both the Tedious Recipe and
+; then the more Direct Alternative that the experienced ACL2 user might use.
+; Recall that the Tedious Recipe calls for defining a function fn, proving
+; lemma 1, which says the generalized, normalize loop$ computes fn, proving
+; lemma 2, which says fn computes the desired answer, and then main, which says
+; the loop$ computes the desired answer.  In the more direct approach we don't
+; need fn and we combine lemmas 1 and 2.
+
+; In our demonstrations below, we follow the Tedious Recipe and prove main.
+; Then we disable the work just done and prove the combined lemmas 1 and 2
+; (into lemma-1&2) without mentioning fn.  The key is that generalized DO
+; loop$s suggest the inductions that unwind them.  In our demonstrations we
+; don't bother to prove main again using just lemma-1&2 since it is obvious the
+; proof would be the same as the previous proof that used lemma 1 and then
+; lemma 2.
+
 ; -----------------------------------------------------------------
 ; LP17-1
 
@@ -17,15 +33,22 @@
 ; the result should be (C B A).  Prove that your do loop$ is equal to (rev
 ; lst), where
 
+; Our first solution follows the Tedious Recipe closely.
+
 (defun rev (x)
   (if (endp x)
       nil
       (append (rev (cdr x)) (list (car x)))))
 
+; This function does what our loop$ does.
+
 (defun rev1 (x ac)
   (if (endp x)
       ac
       (rev1 (cdr x) (cons (car x) ac))))
+
+; Lemma 1 establishes that our generalized loop$ is equal to the function we
+; defined.
 
 (defthm lp17-1-lemma1
   (equal (loop$ with x = lst
@@ -36,6 +59,8 @@
                            (setq x (cdr x)))
                     (return ans)))
          (rev1 lst ans0)))
+
+; Lemma 2 establishes the function is appropriately related to rev.
 
 (defthm lp17-1-lemma2
   (equal (rev1 lst ans0)
@@ -53,6 +78,44 @@
                            (setq x (cdr x)))
                     (return ans)))
          (rev lst)))
+
+; Direct Alternative:
+
+; Now we demonstrate that we don't really need to introduce rev1.  A
+; generalized DO loop$ suggests the induction that unwinds it.  So we can just
+; combine lemmas 1 and 2.  But first we have to disable the lemmas above so we
+; construct the next proof from scratch.
+
+(in-theory (disable lp17-1-lemma1 lp17-1-lemma2 lp17-1-main))
+
+; Following The Method, we tried to prove the generalized normalized lemma,
+; lp17-1-lemma-1&2 below, first and it failed with a checkpoint suggesting the
+; associativity of append.  We actually used that fact in the proof of
+; lp17-lemma-1 above, but it was heuristically discovered and proved in the
+; course of that proof.  However, it was not recorded as a rule and it is not
+; discovered again in the attempt at lp17-1-lemma-1&2 because the do$ term
+; confuses the heuristics.  But the checkpoint suggests we prove this:
+
+(defthm assoc-of-append
+  (equal (append (append a b) c)
+         (append a (append b c))))
+
+; Then we prove the generalized, normalized, combined lemmas 1 and 2:
+
+(defthm lp17-1-lemma-1&2
+  (equal (loop$ with x = lst
+                with ans = ans0
+                do
+                (if (consp x)
+                    (progn (setq ans (cons (car x) ans))
+                           (setq x (cdr x)))
+                    (return ans)))
+         (append (rev lst) ans0)))
+
+; Clearly we could prove lp17-1-main using this, since it's just the
+; composition of the two lemmas actually used in the first proof.  So we'll
+; quit, having made the point: a generalized DO loop$ suggests the induction
+; that unwinds it.
 
 ; -----------------------------------------------------------------
 ; LP17-2
@@ -83,6 +146,8 @@
 ;                                 (setq x (cdr x))))))
 ;          (len lst)))
 
+; Tedious Recipe:
+
 (defun len-ac (x ans)
   (if (consp x)
       (len-ac (cdr x) (+ 1 ans))
@@ -103,7 +168,7 @@
            (equal (len-ac lst ans0)
                   (+ ans0 (len lst)))))
 
-(defthm lp17-3-main
+(defthm lp17-3-main-via-recipe
   (equal (loop$ with x = lst
                 with ans = 0
                 do
@@ -113,11 +178,29 @@
          (len lst)))
 
 
+; Direct Alternative:
+
+(in-theory (disable lp17-3-lemma1 lp17-3-lemma2 lp17-3-main-via-recipe))
+
+(defthm lp17-3-lemma-1&2
+  (implies (acl2-numberp ans0)
+           (equal (loop$ with x = lst
+                         with ans = ans0
+                         do
+                         (if (consp x)
+                             (progn (setq ans (+ 1 ans))
+                                    (setq x (cdr x)))
+                             (return ans)))
+                  (+ ans0 (len lst)))))
+
 ;-----------------------------------------------------------------
 ; lp17-4
 
 ; Write a do loop$ that computes (nth n lst), when n is a natural number.
 ; Prove it correct.
+
+; This is a fully generalized loop$ as written, so we can just prove the
+; theorem...
 
 (defthm lp17-4
   (implies (natp n)
@@ -145,6 +228,8 @@
 ;                                          (setq x (cdr x))))))
 ;                   lst)))
 
+; Tedious Recipe:
+
 (defun copy-ac (x ans)
   (if (consp x)
       (copy-ac (cdr x) (append ans (list (car x))))
@@ -160,9 +245,8 @@
                     (return ans)))
          (copy-ac lst ans0)))
 
-(defthm assoc-of-append
-  (equal (append (append a b) c)
-         (append a (append b c))))
+; We have to give the :induct hint below, because otherwise the prover does the
+; simpler induction suggested by (append ans0 lst).
 
 (defthm lp17-5-lemma2
   (implies (and (true-listp lst)
@@ -182,6 +266,34 @@
                                     (setq x (cdr x))))))
                   lst)))
 
+; Direct Alternative:
+
+(in-theory (disable lp17-5-lemma1 lp17-5-lemma2 lp17-5-main))
+
+; The system chooses the induction suggested by append, so we have to give an
+; induct hint, but we don't need copy-ac to express it: we can use the DO loop$
+; to give the hint.
+
+(defthm lp17-5-lemma-1&2
+  (implies (and (true-listp lst)
+                (true-listp ans0))
+           (equal (loop$ with x = lst
+                         with ans = ans0
+                         do
+                         (if (consp x)
+                             (progn (setq ans (append ans (list (car x))))
+                                    (setq x (cdr x)))
+                             (return ans)))
+                  (append ans0 lst)))
+  :hints (("Goal"
+           :induct 
+           (loop$ with x = lst
+                  with ans = ans0
+                  do
+                  (if (consp x)
+                      (progn (setq ans (append ans (list (car x))))
+                             (setq x (cdr x)))
+                      (return ans))))))
 ; -----------------------------------------------------------------
 ; lp17-6
 
@@ -198,6 +310,8 @@
 ;                              (progn (setq i (- i 1))
 ;                                     (setq j (+ j 1)))))
 ;                   (+ m n))))
+
+; Tedious Recipe:
 
 (defun plus-ac (i j)
   (if (zp i)
@@ -236,6 +350,24 @@
                                     (setq j (+ j 1)))))
                   (+ m n))))
 
+; Direct Alternative:
+
+(in-theory (disable lp17-6-lemma1 lp17-6-lemma2 lp17-6-main))
+
+(defthm lp17-6-lemma-1&2
+  (implies (and (natp m)
+                (natp n))
+           (equal (loop$ with i = m
+                         with j = n
+                         do
+                         (if (integerp i)
+                             (if (< 0 i)
+                                 (progn (setq i (- i 1))
+                                        (setq j (+ 1 j)))
+                                 (return j))
+                             (return j)))
+                  (+ m n))))
+
 ; -----------------------------------------------------------------
 ; lp17-7
 
@@ -247,6 +379,8 @@
       (* n (fact (- n 1)))))
 
 ; and prove it correct.
+
+; Tedious Recipe:
 
 (defun fact-ac (n ans)
   (if (zp n)
@@ -283,6 +417,53 @@
                                     (setq i (- i 1)))))
                   (fact n))))
 
+; Direct Alternative:
+
+(in-theory (disable lp17-7-lemma1 lp17-7-lemma2 lp17-7-main))
+
+; We need the so-called law of commutativity2 of multiplication to normalize
+; different nests of multiplications.  The normal user would just include one
+; of the standard arithmetic books.  But just to demonstrate that all we need
+; is that one rule, we prove it from first principles.  The proof is
+
+;    (* y (* x z))
+; =  (* (* y x) z) ; associativity (rewriting right-to-left)
+; =  (* (* x y) z) ; commutativity
+; =  (* x (* y z)) ; associativity (rewriting left-to-right)
+
+
+; Because associativity has to be used ``both ways'' we have to disable it and
+; give hints.  This is a standard proof while building up an effective set of
+; rewrite rules from the standard axioms of arithmetic.
+
+(defthm commutativity2-of-*
+  (equal (* y (* x z))
+         (* x (* y z)))
+  :hints (("Goal"
+           :in-theory (disable associativity-of-*)
+           :use ((:instance associativity-of-*
+                            (x y)
+                            (y x)
+                            (z z))
+                 (:instance associativity-of-*
+                            (x x)
+                            (y y)
+                            (z z))))))
+
+(defthm lp17-7-lemma-1&2
+  (implies (and (natp n)
+                (natp ans0))
+           (equal (loop$ with i = n
+                         with ans = ans0
+                         do
+                         (if (integerp i)
+                             (if (< 0 i)
+                                 (progn (setq ans (* i ans))
+                                        (setq i (- i 1)))
+                                 (return ans))
+                             (return ans)))
+                  (* (fact n) ans0))))
+
 ; -----------------------------------------------------------------
 ; LP17-8
 
@@ -295,6 +476,8 @@
 
 ; (cons (loop$ for e in lst sum e)
 ;       (loop$ for e in lst sum (sq e)))
+
+; Tedious Recipe:
 
 (defun sq (x) (* x x))
 (defwarrant sq)
@@ -340,6 +523,26 @@
                   (cons (loop$ for e in lst sum e)
                         (loop$ for e in lst sum (sq e))))))
 
+; Direct Alternative:
+
+(in-theory (disable lp17-8-lemma1 lp17-8-lemma2 lp17-8-main))
+
+(defthm lp17-8-lemma-1&2
+  (implies (and (warrant sq)
+                (acl2-numberp u0)
+                (acl2-numberp v0))
+           (equal (loop$ with lst = lst0
+                         with u = u0
+                         with v = v0
+                         do
+                         (cond ((consp lst)
+                                (progn (setq u (+ u (car lst)))
+                                       (setq v (+ v (* (car lst) (car lst))))
+                                       (setq lst (cdr lst))))
+                               (t (return (cons u v)))))
+                  (cons (+ u0 (loop$ for e in lst0 sum e))
+                        (+ v0 (loop$ for e in lst0 sum (sq e)))))))
+
 ; -----------------------------------------------------------------
 ; LP17-9
 
@@ -354,6 +557,8 @@
 ; (cons (rev (loop$ for e in lst when (symbolp e) collect e))
 ;       (rev (loop$ for e in lst when (not (symbolp e)) collect e)))
 
+; Tedious Recipe:
+
 (defun partition-symbols (lst)
   (loop$ with lst = lst
          with syms = nil
@@ -366,6 +571,8 @@
                (t
                 (progn (setq non-syms (cons (car lst) non-syms))
                        (setq lst (cdr lst)))))))
+
+; Tedious Recipe
 
 (defun recursive-partition-symbols (lst syms non-syms)
   (cond ((endp lst) (cons syms non-syms))
@@ -393,10 +600,6 @@
          (recursive-partition-symbols lst syms non-syms)))
 
 (defthm lp17-9-lemma2
-  (equal (partition-symbols lst)
-         (recursive-partition-symbols lst nil nil)))
-
-(defthm lp17-9-lemma3
   (equal (recursive-partition-symbols lst syms non-syms)
          (cons (append (rev (loop$ for e in lst when (symbolp e) collect e))
                        syms)
@@ -407,6 +610,29 @@
   (equal (partition-symbols lst)
          (cons (rev (loop$ for e in lst when (symbolp e) collect e))
                (rev (loop$ for e in lst when (not (symbolp e)) collect e)))))
+
+; Direct Alternative
+
+(in-theory (disable lp17-9-lemma1 lp17-9-lemma2 lp17-9-main))
+
+(defthm lp17-9-lemma-1&2
+  (equal (loop$ with lst = lst
+                with syms = syms
+                with non-syms = non-syms
+                do
+                (cond ((consp lst)
+                       (cond
+                        ((symbolp (car lst))
+                         (progn (setq syms (cons (car lst) syms))
+                                (setq lst (cdr lst))))
+                        (t
+                         (progn (setq non-syms (cons (car lst) non-syms))
+                                (setq lst (cdr lst))))))
+                      (t (return (cons syms non-syms)))))
+         (cons (append (rev (loop$ for e in lst when (symbolp e) collect e))
+                       syms)
+               (append (rev (loop$ for e in lst when (not (symbolp e)) collect e))
+                       non-syms))))
 
 ; -----------------------------------------------------------------
 ; LP17-10
@@ -423,6 +649,8 @@
 ; pay special attention to the normalized measure lambda object in your
 ; ``lemma1.''  And by the way, if you have non-recursive functions you don't
 ; want opened up when the lambda objects are rewritten, try disabling them.
+
+; Tedious Recipe:
 
 (defun nats-ac-up (i n ans)
   (declare (xargs :measure (nfix (- (+ 1 (nfix n)) (nfix i)))))
@@ -451,9 +679,7 @@
                               (setq i (+ 1 i)))))
             (nats-ac-up i0 n ans0))))
 
-(defthm assoc-of-append
-  (equal (append (append a b) c)
-         (append a (append b c))))
+; Another basic arithmetic lemma normally provided by a book.
 
 (defthm minus-minus-n
   (implies (acl2-numberp n)
@@ -482,6 +708,105 @@
                                     (setq i (+ 1 i)))))
                   (loop$ for i from 0 to n collect (- n i))))
   :hints (("Goal" :in-theory (disable nfix))))
+
+; Direct Alternative:
+
+(in-theory (disable lp17-10-lemma1 lp17-10-lemma2 lp17-10-main))
+
+; This example illustrates that sometimes it is advantageous to introduce the
+; auxiliary function to help guide the proof.  If you submit the lemma 1&2
+; below without the hint you'll see the proof fail with a checkpoint at Subgoal
+; *1/5'''.  That checkpoint contains the DO$ term below.  Inspection of second
+; argument of that DO$ term,
+
+; (LIST (CONS 'I I0)
+;       (CONS 'ANS ANS0)
+;       (CONS 'N I0))
+
+; shows that this is the case where I and N in the loop$ body are both equal to
+; I0.  But in that case, the loop$ takes just one step and terminates.  When
+; the loop$ is captured by the named function nats-ac-up the prover's
+; heuristics recognize this and expand the function out.  But when the loop$ is
+; written as a DO$ the heuristics tentatively expand the DO$ but decide the
+; result is too messy and reject the expansion.
+
+; The proof can be completed if the user says ``Go ahead and expand that
+; term!''  But perhaps rather than trying that you might just define nats-ac-up
+; and break the proof into smaller steps.
+
+(defthm lp17-10-lemma-1&2
+  (implies (and (natp n)
+                (natp i0))
+           (equal 
+            (loop$ with i = i0
+                   with ans = ans0
+                   do
+                   :measure (nfix (+ 1 (- (nfix i)) (nfix n)))
+		   (if (< n i)
+                       (return ans)
+                       (progn (setq ans (cons i ans))
+                              (setq i (+ 1 i)))))
+            (append (loop$ for i from 0 to (- n i0) collect (- n i))
+                    ans0)))
+  :hints
+  (("Subgoal *1/5'''"
+    :expand ((DO$
+              (LAMBDA$
+               (ALIST)
+               (COND ((INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                      (COND ((< (CDR (ASSOC-EQ-SAFE 'I ALIST)) 0)
+                             (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                                 (IF (< (CDR (ASSOC-EQ-SAFE 'N ALIST)) 0)
+                                     1 (+ 1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                 1))
+                            ((INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                             (COND ((< (CDR (ASSOC-EQ-SAFE 'N ALIST)) 0)
+                                    (IF (< (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                                           0)
+                                        0
+                                        (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
+                                   ((< (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                          (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                                       0)
+                                    0)
+                                   (T (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                         (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+                            ((< (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                                0)
+                             0)
+                            (T (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+                     ((INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                      (IF (< (CDR (ASSOC-EQ-SAFE 'N ALIST)) 0)
+                          1 (+ 1 (CDR (ASSOC-EQ-SAFE 'N ALIST)))))
+                     (T 1)))
+              (LIST (CONS 'I I0)
+                    (CONS 'ANS ANS0)
+                    (CONS 'N I0))
+              (LAMBDA$ (ALIST)
+                       (IF (< (CDR (ASSOC-EQ-SAFE 'N ALIST))
+                              (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                           (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                                 (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                       (CONS 'ANS
+                                             (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                       (CONS 'N
+                                             (CDR (ASSOC-EQ-SAFE 'N ALIST)))))
+                           (LIST NIL NIL
+                                 (LIST (CONS 'I
+                                             (+ 1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                                       (LIST* 'ANS
+                                              (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                              (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                       (CONS 'N
+                                             (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+              (LAMBDA$ (ALIST)
+                       (LIST NIL NIL
+                             (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                   (CONS 'ANS
+                                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                   (CONS 'N
+                                         (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+              NIL NIL NIL)))))
 
 ; -----------------------------------------------------------------
 ; LP17-11
@@ -521,14 +846,14 @@
   (declare (xargs :guard (and (natp imax) (natp jmax))))
   (all-pairs-helper1 1 imax jmax))
 
-; Hints: In following our advice on proving do loop$s you will define functions
-; that compute the same things as your do loop$s.  These functions will suggest
-; the appropriate inductions.  Your ``lemma1'' will prove your do loop$s
-; compute the pairs computed by those functions.  The next step in the recipe
-; is to prove that the functions compute the same thing that all-pairs does.
-; This will not involve loop$s of any sort.  It's just a normal proof about the
-; relation between some recursively defined functions.  But we found this step
-; surprisingly challenging!
+; Hints: In following our advice for proving do loop$s you will define
+; functions that compute the same things as your do loop$s.  These functions
+; will suggest the appropriate inductions.  Your ``lemma1'' will prove your do
+; loop$s compute the pairs computed by those functions.  The next step in the
+; recipe is to prove that the functions compute the same thing that all-pairs
+; does.  This will not involve loop$s of any sort.  It's just a normal proof
+; about the relation between some recursively defined functions.  But we found
+; this step surprisingly challenging!
 
 ; Since that second step does not involve loop$s, you may consider your answer
 ; correct if you just prove lemma1!
@@ -669,3 +994,7 @@
                 (natp jmax))
            (equal (all-pairs-do-loop$ imax jmax)
                   (all-pairs imax jmax))))
+
+; We won't bother with the Direct Alternative here.  This is another example of
+; a problem that might just be easier to think about if it is decomposed into
+; named functions.
