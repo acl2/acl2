@@ -15,12 +15,12 @@
 
 (include-book "kestrel/error-checking/ensure-value-is-constant-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
-(include-book "std/lists/len" :dir :system)
 (include-book "kestrel/std/system/constant-value" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-alists/symbol-alistp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
