@@ -43,8 +43,8 @@
      (xdoc::ahref "https://tools.ietf.org/html/rfc8259"
                   "RFC 8259")
      ", including "
-     (xdoc::seetopic "https://www.rfc-editor.org/errata/rfc8259"
-                     "errata")
+     (xdoc::ahref "https://www.rfc-editor.org/errata/rfc8259"
+                  "errata")
      "."))
    (xdoc::p
     "These are all meant to be consistent,
