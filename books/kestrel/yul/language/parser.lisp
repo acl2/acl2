@@ -18,6 +18,8 @@
 (include-book "tokenizer")
 (include-book "abstract-syntax")
 
+(local (include-book "std/lists/len" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parser
