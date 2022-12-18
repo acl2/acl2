@@ -126,7 +126,7 @@
 
   (define %d.-fn ((nats nat-listp))
     :returns (element elementp)
-    (element-num-val (num-val-direct nats))
+    (element-num-val (num-val-direct (num-base-dec) nats))
     :hooks (:fix)
     :no-function t))
 
@@ -149,7 +149,7 @@
 
   (define %x.-fn ((nats nat-listp))
     :returns (element elementp)
-    (element-num-val (num-val-direct nats))
+    (element-num-val (num-val-direct (num-base-hex) nats))
     :hooks (:fix)
     :no-function t))
 
@@ -172,7 +172,7 @@
 
   (define %b.-fn ((nats nat-listp))
     :returns (element elementp)
-    (element-num-val (num-val-direct nats))
+    (element-num-val (num-val-direct (num-base-bin) nats))
     :hooks (:fix)
     :no-function t))
 
@@ -188,7 +188,7 @@
     the ABNF notation @('%d<min>-<max>'),
     where @('<min>') and @('<max>') are numbers in base 10:
     the name of this function has the @('%d') and the @('-') of that notation.")
-  (element-num-val (num-val-range min max))
+  (element-num-val (num-val-range (num-base-dec) min max))
   :hooks (:fix)
   :no-function t)
 
@@ -204,7 +204,7 @@
     the ABNF notation @('%x<min>-<max>'),
     where @('<min>') and @('<max>') are numbers in base 16:
     the name of this function has the @('%x') and the @('-') of that notation.")
-  (element-num-val (num-val-range min max))
+  (element-num-val (num-val-range (num-base-hex) min max))
   :hooks (:fix)
   :no-function t)
 
@@ -220,7 +220,7 @@
     the ABNF notation @('%d<min>-<max>'),
     where @('<min>') and @('<max>') are numbers in base 2:
     the name of this function has the @('%b') and the @('-') of that notation.")
-  (element-num-val (num-val-range min max))
+  (element-num-val (num-val-range (num-base-bin) min max))
   :hooks (:fix)
   :no-function t)
 

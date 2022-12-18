@@ -80,26 +80,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum num-base
+  :short "Fixtype of numeric bases."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The numeric value notations can use
+     decimal, hexadecimal, or binary base."))
+  (:dec ())
+  (:hex ())
+  (:bin ()))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum num-val
   :short "Fixtype of numeric value notations."
   :long
-  (xdoc::topstring-p
-   "In the abstract syntax,
-    we use lists of natural numbers
-    for the numeric value notations described in [RFC:2.3],
-    and pairs of natural numbers
-    for the value range alternatives described in [RFC:3.4];
-    both notations are described by the rule @('num-val') (and sub-rules)
-    in [RFC:4].
-    We abstract away the radix notations @('%b'), @('%d'), and @('%x').
-    We also abstract away the restriction
-    that lists of natural numbers be non-empty.
-    This restriction is captured by the notion of "
-   (xdoc::seetopic "num-val-wfp" "well-formed numeric value notations")
-   ", which also requires that the minimum of a range
-    does not exceed the maximum.")
-  (:direct ((get nat-list)))
-  (:range ((min nat)
+  (xdoc::topstring
+   (xdoc::p
+    "In the abstract syntax,
+     we use lists of natural numbers
+     for the numeric value notations described in [RFC:2.3],
+     and pairs of natural numbers
+     for the value range alternatives described in [RFC:3.4];
+     both notations are described by the rule @('num-val') (and sub-rules)
+     in [RFC:4].")
+   (xdoc::p
+    "We keep information about the numeric base,
+     i.e. which of the @('%b'), @('%d'), and @('%x') notations is used.
+     Even though this is irrelevant semantically,
+     we prefer to retain that information from the concrete syntax
+     (e.g. for better pretty-printing),
+     instead of abstracting it away.")
+   (xdoc::p
+    "We abstract away the restriction
+     that lists of natural numbers be non-empty.
+     This restriction is captured by the notion of "
+    (xdoc::seetopic "num-val-wfp" "well-formed numeric value notations")
+    ", which also requires that the minimum of a range
+     does not exceed the maximum."))
+  (:direct ((base num-base)
+            (get nat-list)))
+  (:range ((base num-base)
+           (min nat)
            (max nat))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,25 +130,29 @@
 (fty::deftagsum char-val
   :short "Fixtype of character value notations."
   :long
-  (xdoc::topstring-p
-   "In the abstract syntax,
-    we use character strings
-    for the literal text strings described in [RFC:2.3]
-    and by the rule @('char-val') (and sub-rules) in [RFC:4].
-    We tag strings with an indication of their case sensitivity,
-    corresponding to the @('%s') and @('%i') notations.
-    We also keep information about whether case-insensitive strings
-    have an explicit @('%i') prefix or not;
-    even though this is irrelevant semantically,
-    we prefer to retain that information from the concrete syntax
-    (e.g. for better pretty-printing),
-    instead of abstracting it away.
-    We abstract away the restriction
-    that quoted strings include only certain characters
-    (which all are ACL2 characters).
-    This restriction is captured by the notion of "
-   (xdoc::seetopic "char-val-wfp" "well-formed character value notations")
-   ".")
+  (xdoc::topstring
+   (xdoc::p
+    "In the abstract syntax,
+     we use character strings
+     for the literal text strings described in [RFC:2.3]
+     and by the rule @('char-val') (and sub-rules) in [RFC:4].")
+   (xdoc::p
+    "We tag strings with an indication of their case sensitivity,
+     corresponding to the @('%s') and @('%i') notations.")
+   (xdoc::p
+    "We also keep information about whether case-insensitive strings
+     have an explicit @('%i') prefix or not.
+     Even though this is irrelevant semantically,
+     we prefer to retain that information from the concrete syntax
+     (e.g. for better pretty-printing),
+     instead of abstracting it away.")
+   (xdoc::p
+    "We abstract away the restriction
+     that quoted strings include only certain characters
+     (which all are ACL2 characters).
+     This restriction is captured by the notion of "
+    (xdoc::seetopic "char-val-wfp" "well-formed character value notations")
+    "."))
   (:sensitive ((get acl2::string)))
   (:insensitive ((iprefix bool)
                  (get acl2::string))))

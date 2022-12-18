@@ -573,7 +573,7 @@
                            state)
   :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression from an ACL2 term
-          that represents a conversion."
+          that represents an integer conversion."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -696,6 +696,96 @@
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
                       :proofs t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-bool-from-type ((term pseudo-termp)
+                                     (in-type typep)
+                                     (arg-term pseudo-termp)
+                                     (arg-expr exprp)
+                                     (arg-type typep)
+                                     (arg-events pseudo-event-form-listp)
+                                     (arg-thm symbolp)
+                                     (gin bexpr-ginp)
+                                     state)
+  :returns (mv erp (gout bexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents a conversion to ACL2 boolean."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expression is the same as the one for the argument term:
+     the conversion to ACL2 boolean
+     only serves a purpose in the ACL2 representation
+     but it has no counterpart in the C code.")
+   (xdoc::p
+    "The theorem's formula is the same as the one
+     that relates the expression to the argument term,
+     with the addition of two conjuncts:
+     one says that applying @(tsee test-value) to the argument term
+     yields the whole term (i.e. the one with @('boolean-from-<type>');
+     the other one says that the whole term satisfies @(tsee booleanp).
+     The reason for this form is that the symbolic execution rules
+     have separate binding hypotheses
+     for executing the expression and for applying @(tsee test-value):
+     for example, see the @('exec-expr-pure-when-cond') rule
+     in @(see atc-exec-expr-pure-rules)."))
+  (b* (((reterr) (irr-bexpr-gout))
+       (wrld (w state))
+       ((bexpr-gin gin) gin)
+       ((unless (equal arg-type in-type))
+        (reterr
+         (msg "The conversion from ~x0 to boolean is applied to ~
+               an expression term ~x1 returning ~x2, ~
+               but a ~x0 operand is expected. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              in-type arg-term arg-type)))
+       (expr arg-expr)
+       ((when (not gin.proofs))
+        (retok
+         (make-bexpr-gout :expr expr
+                          :events arg-events
+                          :thm-name nil
+                          :thm-index gin.thm-index
+                          :names-to-avoid gin.names-to-avoid
+                          :proofs nil)))
+       (thm-name (pack gin.fn '-correct- gin.thm-index))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil gin.names-to-avoid wrld))
+       (arg-type-pred (type-to-recognizer arg-type wrld))
+       (arg-uterm (untranslate$ arg-term nil state))
+       (uterm (untranslate$ term nil state))
+       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
+                             ,arg-uterm)
+                      (,arg-type-pred ,arg-uterm)
+                      (equal (test-value ,arg-uterm)
+                             ,uterm)
+                      (booleanp ,uterm)))
+       (formula (atc-contextualize formula gin.context nil))
+       (formula `(implies (and (compustatep ,gin.compst-var)
+                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
+                          ,formula))
+       (test-value-when-arg-type-pred (pack 'test-value-when- arg-type-pred))
+       ((unless (type-nonchar-integerp arg-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg-type)))
+       (arg-fixtype (integer-type-to-fixtype arg-type))
+       (booleanp-of-boolean-from-arg-fixtype
+        (pack 'booleanp-of-boolean-from- arg-fixtype))
+       (hints `(("Goal" :in-theory '(,arg-thm
+                                     ,test-value-when-arg-type-pred
+                                     ,booleanp-of-boolean-from-arg-fixtype))))
+       ((mv thm-event &) (evmac-generate-defthm thm-name
+                                                :formula formula
+                                                :hints hints
+                                                :enable nil)))
+    (retok (make-bexpr-gout :expr expr
+                            :events (append arg-events
+                                            (list thm-event))
+                            :thm-name thm-name
+                            :thm-index (1+ gin.thm-index)
+                            :names-to-avoid names-to-avoid
+                            :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1152,21 +1242,19 @@
                                     :names-to-avoid gin.names-to-avoid
                                     :proofs gin.proofs)
                                    state))
-               ((unless (equal arg.type in-type))
-                (reterr
-                 (msg "The conversion from ~x0 to boolean is applied to ~
-                       an expression term ~x1 returning ~x2, ~
-                       but a ~x0 operand is expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      in-type arg-term arg.type))))
-            (retok
-             (make-bexpr-gout :expr arg.expr
-                              :events arg.events
-                              :thm-name nil
-                              :thm-index arg.thm-index
-                              :names-to-avoid arg.names-to-avoid
-                              :proofs nil)))))
+               (gin (change-bexpr-gin gin
+                                      :thm-index arg.thm-index
+                                      :names-to-avoid arg.names-to-avoid
+                                      :proofs arg.proofs)))
+            (atc-gen-expr-bool-from-type term
+                                         in-type
+                                         arg-term
+                                         arg.expr
+                                         arg.type
+                                         arg.events
+                                         arg.thm-name
+                                         gin
+                                         state))))
       (reterr
        (msg "When generating C code for the function ~x0, ~
              at a point where ~
@@ -1400,7 +1488,7 @@
                                :thm-index pure.thm-index
                                :names-to-avoid pure.names-to-avoid
                                :proofs nil)))
-       (thm-name (pack gin.fn '-expr- pure.thm-index '-correct))
+       (thm-name (pack gin.fn '-correct- pure.thm-index))
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil pure.names-to-avoid wrld))
        (type-pred (type-to-recognizer pure.type wrld))
