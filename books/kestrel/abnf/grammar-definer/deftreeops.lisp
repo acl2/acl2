@@ -21,12 +21,7 @@
 (include-book "kestrel/std/util/tuple" :dir :system)
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel alistp-when-symbol-alistp
-  (implies (symbol-alistp x)
-           (alistp x)))
+(local (include-book "std/typed-alists/symbol-alistp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -163,6 +158,7 @@
        ((er prefix :iferr (irr))
         (deftreeops-process-prefix prefix ctx state)))
     (value (list grammar prefix)))
+  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
   ///
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
