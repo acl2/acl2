@@ -827,34 +827,14 @@
                   (putprop
                    name 'macro-body macro-body
                    (putprop
-                    name-fn 'symbol-class :common-lisp-compliant
+                    name-fn 'symbol-class :program
                     (putprop
                      name-fn 'formals formals
                      (putprop
                       name-fn 'stobjs-in stobjs-in
                       (putprop
                        name-fn 'stobjs-out *error-triple-sig*
-
-; The above may make sense, but the following act of fakery deserves
-; some comment.  In order to get, e.g. defconst-fn, to work before
-; it is defined in a boot-strap, we give it a body, which makes
-; ev-fncall think it is ok to take a short cut and use the Common Lisp
-; definition.  Of course, we are asking for trouble by laying down
-; this recursive call!  But it never happens.
-
-                       (putprop
-                        name-fn 'def-bodies
-                        (list (make def-body
-                                    :formals formals
-                                    :hyp nil
-                                    :concl (cons name-fn formals)
-                                    :equiv 'equal
-                                    :rune
-                                    *fake-rune-for-anonymous-enabled-rule*
-                                    :nume 0 ; fake
-                                    :recursivep nil
-                                    :controller-alist nil))
-                        wrld)))))))))
+                       wrld))))))))
               (& (er hard 'primordial-event-macro-and-fn
                      "The supplied form ~x0 was not of the required ~
                       shape.  Every element of ~
