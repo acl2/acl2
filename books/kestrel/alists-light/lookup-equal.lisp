@@ -15,11 +15,7 @@
 
 ;; TODO: Standardize variable names in theorems.
 
-;; Look up KEY in ALIST, using equal as the test, returning the value to which
-;; KEY is bound, or nil if KEY is not bound.
-(defund lookup-equal (key alist)
-  (declare (xargs :guard (alistp alist)))
-  (cdr (assoc-equal key alist)))
+(include-book "lookup-equal-def")
 
 (defthm lookup-equal-of-nil
   (equal (lookup-equal key nil)

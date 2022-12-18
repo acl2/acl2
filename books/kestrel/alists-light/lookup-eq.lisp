@@ -11,17 +11,11 @@
 
 (in-package "ACL2")
 
-;; STATUS: In-progress
+;; This book contains reasoning support for lookup-eq.  Note that we
+;; immediately rewrite it to lookup-equal and then reason about that instead.
 
-(include-book "lookup-equal") ;; included becase we rewrite lookup-eq to lookup-eqal
-
-;; Look up KEY in ALIST, using EQ as the test, returning the value to which
-;; KEY is bound, or nil if KEY is not bound.
-(defund lookup-eq (key alist)
-  (declare (xargs :guard (if (symbolp key)
-                             (alistp alist)
-                           (symbol-alistp alist))))
-  (cdr (assoc-eq key alist)))
+(include-book "lookup-eq-def")
+(include-book "lookup-equal") ;; included becase we rewrite lookup-eq to lookup-equal
 
 ;; Our strategy will be to rewrite lookup-eq to lookup-equal.
 (defthm lookup-eq-becomes-lookup-equal
