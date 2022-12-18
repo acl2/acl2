@@ -22,6 +22,7 @@
 (include-book "function-symbolsp")
 
 (include-book "all-functions-in-world")
+(include-book "world-triples-for")
 
 (include-book "filter-defined-fns")
 (include-book "defined-fns-in-term")
