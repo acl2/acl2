@@ -72,14 +72,14 @@
 (include-book "kestrel/utilities/theory-hints" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
-(include-book "kestrel/utilities/read-string" :dir :system) ; todo: slowish
+(include-book "kestrel/utilities/read-string" :dir :system)
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/included-books-in-world" :dir :system)
-(include-book "kestrel/alists-light/lookup-equal" :dir :system) ; todo: include-less
-(include-book "kestrel/alists-light/lookup-eq" :dir :system) ; todo: include-less
+(include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq-def" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
@@ -96,6 +96,7 @@
 ;(local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-eq" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
