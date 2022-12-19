@@ -110,7 +110,108 @@
                 (change-svtv-assigns-override-config-omit
                  config.override-config
                  :vars (acl2::hons-set-diff config.override-config.vars derived-clocks))))))
-      
+
+
+
+(define svtv-cyclephase-process-clock-name ((name svar-p)
+                                               (modidx natp)
+                                               (moddb moddb-ok)
+                                               (aliases))
+  :guard (svtv-mod-alias-guard modidx moddb aliases)
+  :returns (mv err
+               (new-name (implies (not err) (svar-p new-name))))
+  :guard-hints (("goal" :in-theory (enable svar-addr-p)))
+  (b* (((unless (stringp name))
+        (mv (msg "Expected cyclephase clock names to be strings, but found: ~x0~%" name) nil))
+       ((mv err path range-msb range-lsb) (svtv-parse-path/select name))
+       ((when err)
+        (mv (msg "Error parsing clock name ~s0: ~@1~%" name err) nil))
+       ((when (or range-msb range-lsb))
+        (mv (msg "Cyclephase clock names should not have range selects: ~x0~%" name) nil))
+       ((mv err ?wire wireidx bitsel) (moddb-path->wireidx/decl path modidx moddb))
+       ((when err)
+        (mv (msg "Clock wire not found: ~s0 -- ~@1" name err) nil))
+       ((when bitsel)
+        (mv (msg "Cyclephase clock names should not have bit selects: ~x0~%" name) nil))
+       (alias (get-alias wireidx aliases))
+       ((unless (and (consp alias) (not (cdr alias))))
+        ;; fix this error message
+        (mv (msg "Expected cyclephase clock names to refer to a single, whole signal but ~s0 canonicalizes to ~x1~%" name alias)
+            nil))
+       ((lhrange alias) (car alias))
+       ((unless (lhatom-case alias.atom :var))
+        (mv (msg "Unexpected: ~x0 canonicalized to an empty lhs~%" name) nil))
+       ((lhatom-var alias.atom))
+       ((unless (svar-addr-p alias.atom.name))
+        (mv (msg "Unexpected form of canonicalized version of clock (should be svar-addr-p) -- ~s0: ~x1~%" name alias.atom.name)
+            nil))
+       ((address alias.addr) (svar->name alias.atom.name))
+       ((unless (equal alias.addr.path path))
+        (mv (msg "Expected cyclephase clock names to be canonical, but ~s0 translated to ~x1 which canonicalized to ~x2.~%"
+                 name path alias.addr.path)
+            nil)))
+    (mv nil alias.atom.name)))
+  
+  
+(define svtv-cyclephase-process-constants-aux ((consts svex-env-p)
+                                               (modidx natp)
+                                               (moddb moddb-ok)
+                                               (aliases))
+  :guard (svtv-mod-alias-guard modidx moddb aliases)
+  :returns (mv err (new-consts svex-env-p))
+  (b* (((when (atom consts))
+        (mv nil nil))
+       ((unless (mbt (and (consp (car consts))
+                          (svar-p (caar consts)))))
+        (svtv-cyclephase-process-constants-aux (cdr consts) modidx moddb aliases))
+       ((mv err name) (svtv-cyclephase-process-clock-name (caar consts) modidx moddb aliases))
+       ((when err) (mv err nil))
+       ((mv err rest) (svtv-cyclephase-process-constants-aux (cdr consts) modidx moddb aliases))
+       ((when err) (mv err nil)))
+    (mv nil
+        (cons (cons name (4vec-fix (cdar consts))) rest))))
+  
+
+
+(define svtv-cyclephase-process-constants ((phase svtv-cyclephase-p)
+                                           (modidx natp)
+                                           (moddb moddb-ok)
+                                           (aliases))
+  :guard (svtv-mod-alias-guard modidx moddb aliases)
+  :returns (mv err (new-phase svtv-cyclephase-p))
+  (b* (((svtv-cyclephase phase))
+       ((mv err consts) (svtv-cyclephase-process-constants-aux phase.constants modidx moddb aliases)))
+    (mv err (change-svtv-cyclephase phase :constants consts))))
+
+
+(define svtv-cyclephaselist-process-constants-aux ((phases svtv-cyclephaselist-p)
+                                                   (modidx natp)
+                                                   (moddb moddb-ok)
+                                                   (aliases))
+  :guard (svtv-mod-alias-guard modidx moddb aliases)
+  :returns (mv err
+               (new-phases svtv-cyclephaselist-p))
+  (b* (((when (atom phases)) (mv nil nil))
+       ((mv err new-phase) (svtv-cyclephase-process-constants (car phases) modidx moddb aliases))
+       ((when err) (mv err nil))
+       ((mv err rest-phases)
+        (svtv-cyclephaselist-process-constants-aux (cdr phases) modidx moddb aliases)))
+    (mv err (and (not err) (cons new-phase rest-phases)))))
+
+(define svtv-cyclephaselist-process-constants ((phases svtv-cyclephaselist-p)
+                                               svtv-data)
+  :guard (svtv-data->flatten-validp svtv-data)
+  :returns (mv err
+               (new-phases svtv-cyclephaselist-p))
+  (b* ((topmod (design->top (svtv-data->design svtv-data))))
+    (stobj-let ((moddb (svtv-data->moddb svtv-data))
+                (aliases (svtv-data->aliases svtv-data)))
+               (err new-phases)
+               (svtv-cyclephaselist-process-constants-aux phases
+                                                          (moddb-modname-get-index topmod moddb)
+                                                          moddb aliases)
+               (mv err new-phases))))
+
 
 (define svtv-data-defcycle-core ((design design-p)
                                  (phases svtv-cyclephaselist-p)
@@ -145,6 +246,9 @@
                                   :rewrite t
                                   :scc-selfcompose-limit phase-scc-limit)))
        (svtv-data (svtv-data-maybe-rewrite-phase-fsm (and updatedp rewrite-phases) svtv-data :verbosep t))
+       ((mv err phases)
+        (svtv-cyclephaselist-process-constants phases svtv-data))
+       ((when err) (mv err svtv-data))
        ((mv updatedp svtv-data) (svtv-data-maybe-compute-cycle-fsm phases svtv-data cycle-simp :skip skip-cycle))
        ((when skip-cycle)
         (mv nil svtv-data))
@@ -157,7 +261,8 @@
                   (equal (svtv-data$c->flatten-validp new-svtv-data) t)
                   (equal (svtv-data$c->flatnorm-validp new-svtv-data) t)
                   (equal (svtv-data$c->phase-fsm-validp new-svtv-data) t)
-                  (equal (svtv-data$c->cycle-phases new-svtv-data) (svtv-cyclephaselist-fix phases))
+                  ;; (equal (svtv-data$c->cycle-phases new-svtv-data)
+                  ;;        (mv-nth (svtv-cyclephaselist-fix phases))
                   (implies (not skip-cycle)
                            (equal (svtv-data$c->cycle-fsm-validp new-svtv-data) t))))))
 

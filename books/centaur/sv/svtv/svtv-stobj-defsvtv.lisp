@@ -523,12 +523,13 @@
     (implies (not err)
              (and (b* (((defsvtv-args x)))
                     (and (equal (svtv-data$c->design new-svtv-data) x.design)
-                         (equal (svtv-data$c->cycle-phases new-svtv-data)
-                                (if x.cycle-phases-p
-                                    x.cycle-phases
-                                  (list (make-svtv-cyclephase :constants nil
-                                                              :inputs-free t
-                                                              :outputs-captured t))))))
+                         ;; (equal (svtv-data$c->cycle-phases new-svtv-data)
+                         ;;        (if x.cycle-phases-p
+                         ;;            x.cycle-phases
+                         ;;          (list (make-svtv-cyclephase :constants nil
+                         ;;                                      :inputs-free t
+                         ;;                                      :outputs-captured t))))
+                         ))
                   (equal (svtv-data$c->flatten-validp new-svtv-data) t)
                   (equal (svtv-data$c->flatnorm-validp new-svtv-data) t)
                   (equal (svtv-data$c->phase-fsm-validp new-svtv-data) t)
