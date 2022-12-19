@@ -504,7 +504,7 @@
               (and (equal (SV::4VEC->UPPER X) x)
                    (equal (SV::4VEC->lower X) x)))
      :hints (("Goal"
-              :in-theory (e/d (SV::4VEC->lower 
+              :in-theory (e/d (SV::4VEC->lower
                                SV::4VEC->UPPER)
                               ()))))
 
@@ -1757,7 +1757,7 @@
                    (rewrite-adders-in-svex-alist
                     alist)
                    env)))
-  :disabled t ;; should be enabled in the defthmrp-multiplier macro 
+  :disabled t ;; should be enabled in the defthmrp-multiplier macro
   :hints (("Goal"
            :use ((:instance svl::svex-alist-reduce-w/-env-correct
                             (svl::Svex-alist alist)
@@ -1765,22 +1765,17 @@
                             (svl::env-term ''nil)))
            :in-theory (e/d () ()))))
 
+
+
 (defmacro defthmrp-multiplier (&rest args)
   `(make-event
     (b* ((args ',args)
+         ;;(- (cw "args: ~p0 ~%" args))
          (then-fgl (cdr (extract-keyword-from-args :then-fgl args)))
-         (- (cw "args: ~p0~%" args))
-         (args (loop$ with x = args
-                      with y = nil
-                      do (cond ((and (consp x))
-                                (if (and (consp (cdr x))
-                                         (equal (car x) :then-fgl))
-                                    (setq x (cddr x))
-                                  (progn (setq y (cons (car x) y))
-                                         (setq x (cdr x)))))
-                               (t (return y)))))
-         (args (rev args))
-         (- (cw "args: ~p0~%" args)))
+         (args (remove-keywords-from-args '(:then-fgl) args))
+         ;;(args (rev args))
+         ;;(- (cw "args: ~p0 ~%" args))
+         )
       `(encapsulate
          nil
 
@@ -1794,8 +1789,178 @@
                           (:meta svl::svex-alist-eval-meta-w/o-svexl
                                  .
                                  sv::svex-alist-eval))))
-         (,(if then-fgl 'defthmrp-then-fgl 'defthmrp)
-          ,@args)))))
+         (defthm-with-temporary-warrants
+            ,@args
+            :fns (ha-c-chain
+                  fa-c-chain
+                  ha+1-c-chain
+                  ha+1-s-chain
+                  ha+1-s
+                  ha-s-chain
+                  fa-s-chain)
+            :defthm-macro ,(if then-fgl 'defthmrp-then-fgl 'defthmrp)
+            )))))
+
+;;;;;
+
+(defun remove-keywords-from-args (keywords args)
+  (if (or (atom args)
+          (atom (cdr args)))
+      args
+    (if (member-equal (car args) keywords)
+        (remove-keywords-from-args keywords (cddr args))
+      (cons (car args)
+            (remove-keywords-from-args keywords (cdr args))))))
+
+(defwarrant str::fast-string-append)
+
+(progn
+ (defun defthm-with-temporary-warrants-fn (thm-name thm-body args
+                                                    state)
+   (declare (xargs :stobjs state
+                   :mode :program))
+   (b* ((fns (cdr (extract-keyword-from-args :fns args)))
+        (defthm-macro (extract-keyword-from-args :defthm-macro args))
+        (defthm-macro (If defthm-macro (cdr defthm-macro) 'defthm))
+        (args (remove-keywords-from-args '(:defthm-macro :fns) args))
+        (local-thm-name
+         (intern-in-package-of-symbol (str::cat (symbol-name thm-name)
+                                                "-LOCAL-WITH-TEMP-WARRANTS")
+                                      thm-name))
+
+        (all-badges (cdr (assoc-equal :BADGE-USERFN-STRUCTURE
+                                      (table-alist 'acl2::badge-table (w state)))))
+
+        (- (loop$ for x in fns always
+                  (or (assoc-equal x all-badges)
+                      (hard-error 'warrant-check
+                                  "Warrant cannot be found for ~p0. Please call (defwarrant ~p0) (or pass its actual function name, not its macro alias).~%"
+                                  (list (cons #\0 x))))))
+
+        (- (loop$ for x in fns
+                  always
+                  (or (equal (third (caddr (assoc-equal x all-badges)))
+                             1)
+                      (hard-error 'return-count-check
+                                  "Right now, this program only supports functions that return only one value. However, ~p0 violates that.~%"
+                                  (list (cons #\0 x))))))
+
+        (my-badge-userfn-body
+         (loop$ for x in fns
+                collect
+                `((eq fn ',x)
+                  ',(caddr (assoc-equal x all-badges)))))
+
+        (- (cw "my-badge-userfn-body: ~p0~%" my-badge-userfn-body))
+
+        (warrant-hyps (loop$ for x in fns collect
+                             `(,(intern-in-package-of-symbol
+                                 (str::cat "APPLY$-WARRANT-"
+                                           (symbol-name x))
+                                 x))))
+        (my-apply$-userfn-body
+         (loop$ for x in fns
+                collect
+                `((eq fn ',x)
+                  (ec-call
+                   (,x
+                    ,@(loop$ for i
+                             from 0 to (1- (second (caddr (assoc-equal x all-badges))))
+                             collect
+                             `(nth ,i args)))))))
+
+        (warrant-bindings-for-hints
+         (loop$ for x in warrant-hyps collect
+                (append x '((lambda () t)))))
+
+        )
+     `(encapsulate
+        nil
+        (local
+         (,defthm-macro ,local-thm-name
+           (implies (and ,@warrant-hyps)
+                    ,thm-body)
+           ,@args))
+
+        (local
+         (defun my-badge-userfn (fn)
+           (declare (xargs :guard t))
+           (cond ,@my-badge-userfn-body)))
+
+        (local
+         (defun my-apply$-userfn (fn args)
+           (declare (xargs :guard (True-listp args)))
+           (cond ,@my-apply$-userfn-body)
+           #|(cond ((eq fn 'foo)
+           (ec-call (foo (car args)))) ; ; ;
+           ((eq fn 'foo2) ; ; ;
+           (ec-call (foo2 (car args)))) ; ; ;
+           (t  nil))|#))
+
+        (local
+         (defthm car-and-cdr-when-not-consp
+           (implies (not (consp x))
+                    (and (equal (car x) nil)
+                         (equal (cdr x) nil)))))
+        
+        (defthm ,thm-name
+          ,thm-body
+          :otf-flg t
+          :hints (("Goal"
+                   :use ((:functional-instance
+                          ,local-thm-name
+                          (apply$-userfn my-apply$-userfn)
+                          (badge-userfn my-badge-userfn)
+
+                          ,@warrant-bindings-for-hints
+
+                          ;; (apply$-warrant-foo
+                          ;;  (lambda ()
+                          ;;    t))
+                          ;; (apply$-warrant-foo2
+                          ;;  (lambda () t))
+                          ))
+
+                   :expand ((:free (x y)
+                                   (nth x y))
+                            (:free (x y)
+                                   (take x y)))
+                   :in-theory
+                   (union-theories
+                    (theory 'minimal-theory)
+                    '(car-and-cdr-when-not-consp
+                      my-apply$-userfn
+                      my-badge-userfn
+                      not
+                      zp
+                      (:definition nth)
+                      take
+                      car-cons
+                      cdr-cons
+                      (:executable-counterpart acl2::apply$-badgep)
+                      (:executable-counterpart car)
+                      (:executable-counterpart cdr)
+                      (:executable-counterpart equal)
+                      (:executable-counterpart my-badge-userfn))))
+                  #|(and stable-under-simplificationp
+                       '(:in-theory (e/d () ())))|#
+                  ))
+
+        )))
+
+ (defmacro defthm-with-temporary-warrants (thm-name thm-body
+                                                    &rest args)
+   `(make-event
+     (defthm-with-temporary-warrants-fn ',thm-name ',thm-body ',args state))
+   ))
+
+;; (defthm-with-temporary-warrants test
+;;   (and (equal (map-foo (append x y))
+;;               (append (map-foo x) (map-foo y)))
+;;        (equal (map-foo2 (append x y))
+;;               (append (map-foo2 x) (map-foo2 y))))
+;;   :fns (foo foo2)
+;;   :defthm-macro rp::defthmrp)
 
 ;; :i-am-here
 
