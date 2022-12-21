@@ -134,7 +134,8 @@
            (final-book-to-theorems-alist
             (if (eq :all num-books) ; todo: don't shuffle in this case?
                 shuffled-book-to-theorems-alist
-              (take num-books shuffled-book-to-theorems-alist))))
+              (take num-books shuffled-book-to-theorems-alist)))
+           (- (cw "(Processing ~x0 books.)~%" (len final-book-to-theorems-alist))))
         (replay-books-with-advice-fn-aux final-book-to-theorems-alist base-dir num-recs-per-model print server-url models 0 0 0 0 0 0 state)))))
 
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
