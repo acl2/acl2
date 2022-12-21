@@ -736,6 +736,18 @@
     (and (successful-recommendationp (first recs))
          (successful-recommendation-listp (rest recs)))))
 
+;; Returns a list of (<action-type> <action-object> <symbol-table>) pairs.
+(defund extract-actions-from-successful-recs (recs)
+  (declare (xargs :guard (successful-recommendation-listp recs)
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendation-listp)))))
+  (if (endp recs)
+      nil
+    (let ((rec (first recs)))
+      (cons (list (successful-recommendation-type rec)
+                  (successful-recommendation-object rec)
+                  :todo)
+            (extract-actions-from-successful-recs (rest recs))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *option-names* '(:max-wins))
@@ -2077,7 +2089,7 @@
                              ;; todo: clarify whether we even found an include-book that works:
                              (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" max-books-to-try (len include-books-to-try) rule))
                         (mv nil nil state))
-              (prog2$ (cw "fail (enabling ~x0 didn't help)~%" rule)
+              (prog2$ (and (acl2::print-level-at-least-tp print) (cw "fail (enabling ~x0 didn't help)~%" rule))
                       (mv nil nil state)))))))))
 
 ;; Returns (mv erp maybe-successful-rec state).
@@ -2211,7 +2223,8 @@
                            ;; todo: clarify whether we even found an include-book that works:
                            (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" max-books-to-try (len include-books-to-try) item))
                       (mv nil nil state))
-            (prog2$ (cw "fail (:use ~x0 didn't help)~%" item)
+            (prog2$ (and (acl2::print-level-at-least-tp print)
+                         (cw "fail (:use ~x0 didn't help)~%" item))
                     (mv nil nil state))))))))
 
 ;; Returns (mv erp maybe-successful-rec state).
@@ -3624,7 +3637,8 @@
 
 ;; This could be useful when generating training data to improve an existing ML model.
 ;; Returns (mv erp successful-recs state) where successful-recs satisfies successful-recommendation-listp.
-;; TODO: Also return unsuccessful-recs?
+;; TODO: Also return unsuccessful actions
+;; TODO: Rename to all-successful-actions-for-checkpoints?
 (defun all-successful-recs-for-checkpoints (checkpoint-clauses
                                             theorem-name ; might not be needed
                                             theorem-body ; untranslated
@@ -3700,5 +3714,25 @@
                    (cw "~%(~x0 successful recommendations):~%" num-successful-recs)
                  (cw "~%(1 successful recommendation):~%")))))
     (mv nil ; no error
-        successful-recs ; todo: what format should these be in?
+        ;; Note that this loses information about where recommended symbols are defined:
+        ;; (extract-actions-from-successful-recs successful-recs)
+        successful-recs
         state)))
+
+;; Example call:
+;; (all-successful-recs-for-checkpoints (list (list '(equal (len (append x y)) (binary-+ (len x) (len y)))))
+;;                                      'len-of-append
+;;                                      '(equal (len (append x y)) (+ (len x) (len y)))
+;;                                      nil ; theorem-hints
+;;                                      nil ; theorem-otf-flg
+;;                                      10  ; num-recs-per-model
+;;                                      nil ; book-to-avoid-absolute-path
+;;                                      t ; whether to try to improve successful recommendations
+;;                                      nil ; print
+;;                                      nil ; server-url (get from environment var)
+;;                                      nil ; debug
+;;                                      nil ; step-limit
+;;                                      nil ; time-limit
+;;                                      '(:add-hyp :exact-hints) ; disallowed-rec-types
+;;                                      help::*known-models*
+;;                                      state)
