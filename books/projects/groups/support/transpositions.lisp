@@ -258,8 +258,8 @@
 		        (:instance least-moved-least (n k))
 		        (:instance nth-perm-ninit (x p) (k (least-moved p)))
 		        (:instance least-moved-transpose (i (least-moved p)) (j (nth (least-moved p) p)))
-		        (::instance least-moved-least (p (transpose (least-moved p) (nth (least-moved p) p) n)))
-		        (::instance least-moved-bounds (p (comp-perm (transpose (least-moved p) (nth (least-moved p) p) n) p n)))))))
+		        (:instance least-moved-least (p (transpose (least-moved p) (nth (least-moved p) p) n)))
+		        (:instance least-moved-bounds (p (comp-perm (transpose (least-moved p) (nth (least-moved p) p) n) p n)))))))
 
 (defthm perm-meas-dec
   (let ((m (least-moved p)))
