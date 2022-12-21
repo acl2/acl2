@@ -3653,7 +3653,6 @@
 ;; TODO: Also return unsuccessful actions
 ;; TODO: Rename to all-successful-actions-for-checkpoints?
 (defun all-successful-recs-for-checkpoints (checkpoint-clauses
-                                            theorem-name ; might not be needed
                                             theorem-body ; untranslated
                                             theorem-hints
                                             theorem-otf-flg
@@ -3669,7 +3668,6 @@
                                             models
                                             state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
-                              (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
@@ -3707,7 +3705,9 @@
        ((mv erp successful-recs
             & ; extra-recs-ignoredp
             state)
-        (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit
+        (try-recommendations recommendations book-to-avoid-absolute-path
+                             :thm
+                             theorem-body theorem-hints theorem-otf-flg step-limit time-limit
                              nil ; max-wins
                              improve-recsp print nil state))
        (state (acl2::unwiden-margins state))
@@ -3734,7 +3734,6 @@
 
 ;; Example call:
 ;; (all-successful-recs-for-checkpoints (list (list '(equal (len (append x y)) (binary-+ (len x) (len y)))))
-;;                                      'len-of-append
 ;;                                      '(equal (len (append x y)) (+ (len x) (len y)))
 ;;                                      nil ; theorem-hints
 ;;                                      nil ; theorem-otf-flg
