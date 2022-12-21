@@ -17855,15 +17855,10 @@
       (remove-do-loop$-guards args))))
 
 #-acl2-loop-only
-(defvar *hcomp-loop$-alist* nil)
-
-#-acl2-loop-only
 (defmacro loop$ (&whole loop$-form &rest args)
-  (let ((term (or (loop$-alist-term loop$-form
-                                    *hcomp-loop$-alist*)
-                  (loop$-alist-term loop$-form
-                                    (global-val 'loop$-alist
-                                                (w *the-live-state*))))))
+  (let ((term (loop$-alist-term loop$-form
+                                (global-val 'loop$-alist
+                                            (w *the-live-state*)))))
     `(cond (*aokp* (loop ,@(remove-loop$-guards args)))
            (t ,(or term
                    '(error "Unable to translate loop$ (defun given directly ~

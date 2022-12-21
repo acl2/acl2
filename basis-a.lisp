@@ -6332,6 +6332,7 @@
   (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
     (list 'error1 context summary str alist 'state)))
 
+#+acl2-par
 (defmacro er-soft@par (context summary str &rest str-args)
   (let ((alist (make-fmt-bindings *base-10-chars* str-args)))
     (list 'error1@par context summary str alist 'state)))
