@@ -640,11 +640,25 @@
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 2 rec))
 
+;; Extract the action object from a successful-recommendation.
+(defund successful-recommendation-pre-commands (rec)
+  (declare (xargs :guard (successful-recommendationp rec)
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
+  (nth 3 rec))
+
 (local
- (defthm pre-commandsp-of-nth-3-when-successful-recommendationp
+ (defthm pre-commandsp-of-successful-recommendation-pre-commands
    (implies (successful-recommendationp rec)
-            (pre-commandsp (nth 3 rec)))
-   :hints (("Goal" :in-theory (enable successful-recommendationp)))))
+            (pre-commandsp (successful-recommendation-pre-commands rec)))
+   :hints (("Goal" :in-theory (enable successful-recommendationp
+                                      successful-recommendation-pre-commands)))))
+
+(local
+ (defthm true-listp-of-successful-recommendation-pre-commands
+   (implies (successful-recommendationp rec)
+            (true-listp (successful-recommendation-pre-commands rec)))
+   :hints (("Goal" :in-theory (enable successful-recommendationp
+                                      successful-recommendation-pre-commands)))))
 
 (defund make-successful-rec (name type object pre-commands theorem-body theorem-hints theorem-otf-flg)
   (declare (xargs :guard (and (stringp name)
@@ -693,9 +707,7 @@
                               (symbolp defthm-name)
                               (successful-recommendationp rec))
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
-  (let* (;; (type (nth 1 rec))
-         ;; (object (nth 2 rec))
-         (pre-commands (nth 3 rec)))
+  (let* ((pre-commands (successful-recommendation-pre-commands rec)))
     (if pre-commands
         `(encapsulate ()
            ,@(acl2::wrap-all 'local pre-commands)
@@ -718,9 +730,7 @@
 (defund successful-rec-to-thm (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
-  (let* ( ;;(type (nth 1 rec))
-         ;; (object (nth 2 rec))
-         (pre-commands (nth 3 rec)))
+  (let* ((pre-commands (successful-recommendation-pre-commands rec)))
     (if pre-commands
         `(encapsulate ()
            ,@(acl2::wrap-all 'local pre-commands)
@@ -818,10 +828,9 @@
   (declare (xargs :guard (successful-recommendationp rec)
                   :mode :program ; because of fms-to-string
                   ))
-  (let* (;; (name (nth 0 rec))
-         (type (nth 1 rec))
-         (object (nth 2 rec))
-         (pre-commands (nth 3 rec))
+  (let* ((type (successful-recommendation-type rec))
+         (object (successful-recommendation-object rec))
+         (pre-commands (successful-recommendation-pre-commands rec))
          (english-rec (case type
                         (:add-by-hint (fms-to-string-one-line ":by ~x0" (acons #\0 object nil)))
                         (:add-cases-hint (fms-to-string-one-line ":cases ~x0" (acons #\0 object nil)))
@@ -852,7 +861,7 @@
   (if (endp recs)
       nil
     (let* ((rec (first recs))
-           (name (nth 0 rec)))
+           (name (successful-recommendation-name rec)))
       (progn$ (show-successful-recommendation rec)
               (cw " (~S0)~%" name)
               ;; todo: drop the sources:
@@ -2617,7 +2626,7 @@
          (term (remove-guard-holders term wrld)))
     (acl2::clausify term nil t (acl2::sr-limit wrld))))
 
-;; compares the type and object fields
+;; compares most of the fields
 (defund equivalent-successful-recommendationsp (rec1 rec2)
   (declare (xargs :guard (and (successful-recommendationp rec1)
                               (successful-recommendationp rec2))
@@ -2677,6 +2686,8 @@
       recs2
     (merge-successful-recs-into-recs (rest recs1) (merge-successful-rec-into-recs (first recs1) recs2))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Sends an HTTP POST request containing the POST-DATA to the server at
 ;; SERVER-URL.  Parses the response as JSON.  Returns (mv erp
 ;; parsed-json-response state).
@@ -2699,6 +2710,8 @@
         (mv erp nil state))
        (- (and debug (cw "Parsed POST response: ~X01~%" parsed-json-response nil))))
     (mv nil parsed-json-response state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund same-recp (rec1 rec2)
   (declare (xargs :guard (and (recommendationp rec1)
