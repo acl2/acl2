@@ -85,23 +85,23 @@
                      ((when erp) (mv erp :no state)))
                   (mv nil :no state)))
       ;; We found advice that worked:
-      (if (eq :add-hyp (help::successful-recommendationp-type best-rec))
+      (if (eq :add-hyp (help::successful-recommendation-type best-rec))
           ;; Note that :add-hyp is now disallowed above!
           ;; TODO: Consider marking add-hyp as a failure, since we know the theorem is true without a hyp, but then
           ;; we should allow the tool to keep looking for more recs
-          (prog2$ (cw "Maybe: hyp added: ~x0)~%" (help::successful-recommendationp-object best-rec)) ; close paren matches (ADVICE
+          (prog2$ (cw "Maybe: hyp added: ~x0)~%" (help::successful-recommendation-object best-rec)) ; close paren matches (ADVICE
                   (b* ( ;; Submit the original defthm (no extra hyp), so we can keep going:
                        ((mv erp state) (submit-event-helper-core defthm nil state))
                        ((when erp) (mv erp :no state)))
                     (mv nil :maybe state)))
-        (b* ((proved-with-no-hintsp (equal "original" (help::successful-recommendationp-name best-rec)))
+        (b* ((proved-with-no-hintsp (equal "original" (help::successful-recommendation-name best-rec)))
              (- (if proved-with-no-hintsp
                     ;; Since we passed nil for the hints, this means the theorem proved with no hints:
                     (if hints-presentp
                         (cw "TRIVIAL (no hints needed, though some were given))~%") ; close paren matches (ADVICE
                       (cw "TRIVIAL (no hints needed or given))~%") ; close paren matches (ADVICE
                       )
-                  (progn$ (cw "YES: ~s0: " (help::successful-recommendationp-name best-rec))
+                  (progn$ (cw "YES: ~s0: " (help::successful-recommendation-name best-rec))
                           (help::show-successful-recommendation best-rec)
                           (cw ")~%")))) ; close paren matches (ADVICE
              ((mv erp state)

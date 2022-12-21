@@ -623,19 +623,19 @@
               (booleanp theorem-otf-flg)))))
 
 ;; Extract the name from a successful-recommendation.
-(defund successful-recommendationp-name (rec)
+(defund successful-recommendation-name (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 0 rec))
 
 ;; Extract the action type from a successful-recommendation.
-(defund successful-recommendationp-type (rec)
+(defund successful-recommendation-type (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 1 rec))
 
 ;; Extract the action object from a successful-recommendation.
-(defund successful-recommendationp-object (rec)
+(defund successful-recommendation-object (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 2 rec))
