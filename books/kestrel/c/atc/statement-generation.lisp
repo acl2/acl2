@@ -464,24 +464,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-ifelse-stmt ((term pseudo-termp)
-                             (test-expr exprp)
-                             (then-term pseudo-termp)
-                             (else-term pseudo-termp)
-                             (then-items block-item-listp)
-                             (else-items block-item-listp)
-                             (then-type typep)
-                             (else-type typep)
-                             (then-limit pseudo-termp)
-                             (else-limit pseudo-termp)
-                             (test-events pseudo-event-form-listp)
-                             (then-events pseudo-event-form-listp)
-                             (else-events pseudo-event-form-listp)
-                             (gin stmt-ginp)
-                             state)
+(define atc-gen-if/ifelse-stmt ((term pseudo-termp)
+                                (test-expr exprp)
+                                (then-term pseudo-termp)
+                                (else-term pseudo-termp)
+                                (then-items block-item-listp)
+                                (else-items block-item-listp)
+                                (then-type typep)
+                                (else-type typep)
+                                (then-limit pseudo-termp)
+                                (else-limit pseudo-termp)
+                                (test-events pseudo-event-form-listp)
+                                (then-events pseudo-event-form-listp)
+                                (else-events pseudo-event-form-listp)
+                                (gin stmt-ginp)
+                                state)
   (declare (ignore term state))
   :returns (mv erp (gout stmt-goutp))
-  :short "Generate a C @('if')-@('else') statement from an ACL2 term."
+  :short "Generate a C @('if') or @('if')-@('else') statement
+          from an ACL2 term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate an @('if') if the `else' branch is empty.
+     Otherwise we generate an @('if')-@('else')."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        ((unless (equal then-type else-type))
@@ -499,14 +505,16 @@
                 (pseudo-term-quote 5)
                 (pseudo-term-fncall
                  'binary-+
-                 (list then-limit else-limit))))))
+                 (list then-limit else-limit)))))
+       (stmt (if (consp else-items)
+                 (make-stmt-ifelse :test test-expr
+                                   :then (make-stmt-compound :items then-items)
+                                   :else (make-stmt-compound :items else-items))
+               (make-stmt-if :test test-expr
+                             :then (make-stmt-compound :items then-items)))))
     (retok
      (make-stmt-gout
-      :items (list
-              (block-item-stmt
-               (make-stmt-ifelse :test test-expr
-                                 :then (make-stmt-compound :items then-items)
-                                 :else (make-stmt-compound :items else-items))))
+      :items (list (block-item-stmt stmt))
       :type type
       :limit limit
       :events (append test-events then-events else-events)
@@ -542,7 +550,7 @@
      we need 1 to go from @(tsee exec-block-item-list)
      to @(tsee exec-block-item),
      another 1 to go from that to @(tsee exec-stmt),
-     and another 1 to go to the @(':ifelse') case there;
+     and another 1 to go to the @(':if') or @(':ifelse') case there;
      the test is pure and so it needs no addition to the limit;
      since either branch may be taken,
      we return the sum of the limits for the two branches.
@@ -759,18 +767,18 @@
                                :names-to-avoid then.names-to-avoid
                                :proofs gin.proofs)
                               state))))
-          (atc-gen-ifelse-stmt term test.expr then-term else-term
-                               then.items else.items then.type else.type
-                               then.limit else.limit
-                               test.events then.events else.events
-                               (change-stmt-gin
-                                gin
-                                :thm-index else.thm-index
-                                :names-to-avoid else.names-to-avoid
-                                :proofs (and test.proofs
-                                             then.proofs
-                                             else.proofs))
-                               state)))
+          (atc-gen-if/ifelse-stmt term test.expr then-term else-term
+                                  then.items else.items then.type else.type
+                                  then.limit else.limit
+                                  test.events then.events else.events
+                                  (change-stmt-gin
+                                   gin
+                                   :thm-index else.thm-index
+                                   :names-to-avoid else.names-to-avoid
+                                   :proofs (and test.proofs
+                                                then.proofs
+                                                else.proofs))
+                                  state)))
        ((mv okp var? vars indices val-term body-term wrapper?)
         (atc-check-mv-let term))
        ((when okp)
