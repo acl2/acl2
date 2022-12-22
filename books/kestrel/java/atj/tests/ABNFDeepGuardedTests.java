@@ -143,6 +143,15 @@ public class ABNFDeepGuardedTests {
         test_Parse(testName, input, n, m);
     }
 
+    private static void test_ParseC(int n, int m)
+        throws Acl2UndefinedPackageException,
+               java.io.FileNotFoundException, java.io.IOException {
+        String testName = "ParseC";
+        Acl2Value input =
+            getInputFromFile("../../../c/language/grammar.abnf");
+        test_Parse(testName, input, n, m);
+    }
+
     private static void test_ParseJavaLexical(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
@@ -166,15 +175,6 @@ public class ABNFDeepGuardedTests {
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseJSON";
         Acl2Value input = getInputFromFile("../../../json/grammar.abnf");
-        test_Parse(testName, input, n, m);
-    }
-
-    private static void test_ParseC(int n, int m)
-        throws Acl2UndefinedPackageException,
-               java.io.FileNotFoundException, java.io.IOException {
-        String testName = "ParseC";
-        Acl2Value input =
-            getInputFromFile("../../../c/language/grammar.abnf");
         test_Parse(testName, input, n, m);
     }
 
@@ -210,6 +210,7 @@ public class ABNFDeepGuardedTests {
         test_ParseIMF(n, m);
         test_ParseSMTP(n, m);
         test_ParseIMAP(n, m);
+        test_ParseC(n, m);
         test_ParseJavaLexical(n, m);
         test_ParseJavaSyntactic(n, m);
         test_ParseJSON(n, m);

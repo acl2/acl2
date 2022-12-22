@@ -24,6 +24,7 @@
 ; (depends-on "../../../abnf/examples/imf.abnf")
 ; (depends-on "../../../abnf/examples/smtp.abnf")
 ; (depends-on "../../../abnf/examples/imap.abnf")
+; (depends-on "../../../c/language/grammar.abnf")
 ; (depends-on "../../../java/language/lexical-grammar.abnf")
 ; (depends-on "../../../java/language/syntactic-grammar.abnf")
 ; (depends-on "../../../json/grammar.abnf")
@@ -314,6 +315,10 @@
      (value `(defconst *imap* ',nats))))
   (make-event
    (mv-let (nats state)
+     (get-input-from-file "../../../c/language/grammar.abnf" state)
+     (value `(defconst *c* ',nats))))
+  (make-event
+   (mv-let (nats state)
      (get-input-from-file "../../../java/language/lexical-grammar.abnf" state)
      (value `(defconst *java-lexical* ',nats))))
   (make-event
@@ -342,6 +347,7 @@
                       *imf*
                       *smtp*
                       *imap*
+                      *c*
                       *java-lexical*
                       *java-syntactic*
                       *json*
@@ -353,6 +359,7 @@
                   imf
                   smtp
                   imap
+                  c
                   java-lexical
                   java-syntactic
                   json
