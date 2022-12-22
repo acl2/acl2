@@ -100,14 +100,6 @@ public class ABNFShallowGuardedTests {
         test_Parse(testName, input, n, m);
     }
 
-    private static void test_ParseJSON(int n, int m)
-        throws Acl2UndefinedPackageException,
-               java.io.FileNotFoundException, java.io.IOException {
-        String testName = "ParseJSON";
-        Acl2Value input = getInputFromFile("../../../abnf/examples/json.abnf");
-        test_Parse(testName, input, n, m);
-    }
-
     private static void test_ParseURI(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
@@ -166,6 +158,14 @@ public class ABNFShallowGuardedTests {
         test_Parse(testName, input, n, m);
     }
 
+    private static void test_ParseJSON(int n, int m)
+        throws Acl2UndefinedPackageException,
+               java.io.FileNotFoundException, java.io.IOException {
+        String testName = "ParseJSON";
+        Acl2Value input = getInputFromFile("../../../json/grammar.abnf");
+        test_Parse(testName, input, n, m);
+    }
+
     private static void test_ParseC(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
@@ -202,7 +202,6 @@ public class ABNFShallowGuardedTests {
         ABNFShallowGuarded.initialize();
         test_ParseABNFCore(n, m);
         test_ParseABNFSyntax(n, m);
-        test_ParseJSON(n, m);
         test_ParseURI(n, m);
         test_ParseHTTP(n, m);
         test_ParseIMF(n, m);
@@ -210,6 +209,7 @@ public class ABNFShallowGuardedTests {
         test_ParseIMAP(n, m);
         test_ParseJavaLexical(n, m);
         test_ParseJavaSyntactic(n, m);
+        test_ParseJSON(n, m);
         test_ParseYul(n, m);
         if (failures) {
             System.out.println("Some tests failed.");

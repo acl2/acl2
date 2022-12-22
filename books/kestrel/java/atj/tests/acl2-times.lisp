@@ -24,9 +24,9 @@
 ; (depends-on "../../../abnf/examples/imf.abnf")
 ; (depends-on "../../../abnf/examples/smtp.abnf")
 ; (depends-on "../../../abnf/examples/imap.abnf")
-; (depends-on "../../../abnf/examples/json.abnf")
 ; (depends-on "../../../java/language/lexical-grammar.abnf")
 ; (depends-on "../../../java/language/syntactic-grammar.abnf")
+; (depends-on "../../../json/grammar.abnf")
 ; (depends-on "../../../yul/language/grammar-new.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -294,10 +294,6 @@
      (value `(defconst *abnf-syntax* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/examples/json.abnf" state)
-     (value `(defconst *json* ',nats))))
-  (make-event
-   (mv-let (nats state)
      (get-input-from-file "../../../abnf/examples/uri.abnf" state)
      (value `(defconst *uri* ',nats))))
   (make-event
@@ -326,6 +322,10 @@
      (value `(defconst *java-syntactic* ',nats))))
   (make-event
    (mv-let (nats state)
+     (get-input-from-file "../../../json/grammar.abnf" state)
+     (value `(defconst *json* ',nats))))
+  (make-event
+   (mv-let (nats state)
      (get-input-from-file "../../../yul/language/grammar-new.abnf" state)
      (value `(defconst *yul* ',nats)))))
 
@@ -337,7 +337,6 @@
 #|
 (run-abnf-tests (list *abnf-core*
                       *abnf-syntax*
-                      *json*
                       *uri*
                       *http*
                       *imf*
@@ -345,10 +344,10 @@
                       *imap*
                       *java-lexical*
                       *java-syntactic*
+                      *json*
                       *yul*)
                 '(abnf-core
                   abnf-syntax
-                  json
                   uri
                   http
                   imf
@@ -356,6 +355,7 @@
                   imap
                   java-lexical
                   java-syntactic
+                  json
                   yul)
                 10
                 1
