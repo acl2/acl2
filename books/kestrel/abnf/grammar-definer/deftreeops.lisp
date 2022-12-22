@@ -316,18 +316,76 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define deftreeops-gen-rulename-thms ((rules rulelistp)
+                                      (prefix acl2::symbolp))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the theorems about
+          the rule names defined by the rules of the grammar."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate theorems for each rule name, not for each rule.
+     Since in general a grammar may have more than one rule
+     with the same rule name on the left
+     (even in a "
+    (xdoc::seetopic "well-formedness" "well-formed")
+    " grammar, there may be incremental rules),
+     we keep track of the rule names encountered so far,
+     to avoid duplicates.
+     We generate the theorems in the order in which
+     the rule names first appear on the left of rules.")
+   (xdoc::p
+    "We start by generating theorems saying that
+     if a tree matches a rule name then it is a non-leaf tree.
+     More theorems will be generated soon."))
+  (deftreeops-gen-rulename-thms-aux rules nil prefix)
+
+  :prepwork
+  ((define deftreeops-gen-rulename-thms-aux ((rules rulelistp)
+                                             (done rulename-listp)
+                                             (prefix acl2::symbolp))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp rules)) nil)
+          (rule (car rules))
+          (name (rule->name rule))
+          ((when (member-equal name done))
+           (deftreeops-gen-rulename-thms-aux (cdr rules) done prefix))
+          (cst-rulename-nonleaf
+           (packn-pos (list prefix
+                            '-nonleaf-when-
+                            (str::upcase-string (rulename->get name)))
+                      prefix))
+          (cst-matchp (add-suffix-to-fn prefix "-MATCHP"))
+          (events
+           `((defruled ,cst-rulename-nonleaf
+               (implies (,cst-matchp cst ,(rulename->get name))
+                        (equal (abnf::tree-kind cst) :nonleaf))
+               :in-theory '(,cst-matchp
+                            tree-nonleaf-when-match-rulename/group/option
+                            (:e abnf::element-kind)
+                            (:e member-equal)))))
+          (more-events (deftreeops-gen-rulename-thms-aux
+                         (cdr rules) (cons name done) prefix)))
+       (append events more-events)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define deftreeops-gen-everything ((grammar acl2::symbolp)
+                                   (rules rulelistp)
                                    (prefix acl2::symbolp))
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
   (b* ((matchers (deftreeops-gen-matchers grammar prefix))
+       (rulename-thms (deftreeops-gen-rulename-thms rules prefix))
        (event `(defsection ,(add-suffix grammar "-TREE-OPERATIONS")
                  :parents (,grammar)
                  :short ,(str::cat
                           "Tree operations specialized to @(tsee "
                           (str::downcase-string (symbol-name grammar))
                           ").")
-                 ,@matchers)))
+                 ,@matchers
+                 ,@rulename-thms)))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -341,8 +399,8 @@
   (b* (((reterr) '(_))
        ((when (deftreeops-table-lookup call wrld))
         (retok '(value-triple :redundant)))
-       ((erp grammar & prefix) (deftreeops-process-inputs args wrld)))
-    (retok (deftreeops-gen-everything grammar prefix))))
+       ((erp grammar rules prefix) (deftreeops-process-inputs args wrld)))
+    (retok (deftreeops-gen-everything grammar rules prefix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
