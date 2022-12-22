@@ -95,9 +95,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define deftreeops-process-grammar (grammar (wrld plist-worldp))
-  :returns (mv erp (grammar acl2::symbolp))
+  :returns (mv erp
+               (grammar acl2::symbolp)
+               (rules rulelistp))
   :short "Process the @('*grammar*') input."
-  (b* (((reterr) nil)
+  (b* (((reterr) nil nil)
        ((unless (constant-namep grammar wrld))
         (reterr (msg "The *GRAMMAR* input ~x0 must be the name of a constant."
                      grammar)))
@@ -107,7 +109,7 @@
         (reterr (msg "The *GRAMMAR* input is the name of a constant, ~
                       but its value ~x0 is not a non-empty ABNF grammar."
                      rules))))
-    (retok grammar)))
+    (retok grammar rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -133,9 +135,10 @@
 (define deftreeops-process-inputs ((args true-listp) (wrld plist-worldp))
   :returns (mv erp
                (grammar acl2::symbolp)
+               (rules rulelistp)
                (prefix acl2::symbolp))
   :short "Process all the inputs."
-  (b* (((reterr) nil nil)
+  (b* (((reterr) nil nil nil)
        ((mv erp grammar options)
         (partition-rest-and-keyword-args args *deftreeops-allowed-options*))
        ((when (or erp
@@ -145,13 +148,13 @@
                       followed by the options ~&0."
                      *deftreeops-allowed-options*)))
        (grammar (car grammar))
-       ((erp grammar) (deftreeops-process-grammar grammar wrld))
+       ((erp grammar rules) (deftreeops-process-grammar grammar wrld))
        (prefix-option (assoc-eq :prefix options))
        ((unless (consp prefix-option))
         (reterr (msg "The :PREFIX input must be supplied.")))
        (prefix (cdr prefix-option))
        ((erp prefix) (deftreeops-process-prefix prefix)))
-    (retok grammar prefix))
+    (retok grammar rules prefix))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -338,7 +341,7 @@
   (b* (((reterr) '(_))
        ((when (deftreeops-table-lookup call wrld))
         (retok '(value-triple :redundant)))
-       ((erp grammar prefix) (deftreeops-process-inputs args wrld)))
+       ((erp grammar & prefix) (deftreeops-process-inputs args wrld)))
     (retok (deftreeops-gen-everything grammar prefix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
