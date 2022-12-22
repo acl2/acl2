@@ -27574,6 +27574,7 @@ Lisp definition."
      er
      er-let*
      er-progn
+     er-soft
      error-fms
      error-in-parallelism-mode
      error1

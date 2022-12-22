@@ -14030,19 +14030,6 @@
                                       ch state)
                        (print-object$ `(setq *hcomp-macro-alist*
                                          ',macro-alist)
-                                      ch state)
-                       (print-object$ '(when (eq *readtable*
-                                                 *reckless-acl2-readtable*)
-                                         (setq *set-hcomp-loop$-alist* t))
-                                      ch state)
-                       (print-object$ `(when *set-hcomp-loop$-alist*
-; Debug:
-;                                        (cw "@@ Setting ~
-;                                             *hcomp-loop$-alist*:~%~x0~%"
-;                                            ',expansion-filename)
-                                         (setq *hcomp-loop$-alist*
-                                               ',(top-level-loop$-alist
-                                                  (w *the-live-state*))))
                                       ch state)))
        (print-object$ '(hcomp-init) ch state)
        (newline ch state)
