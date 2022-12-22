@@ -48,7 +48,7 @@
 
 ;; Returns an error triple.
 (defun add-inhibit-er-programmatic (str state)
-  (declare (xargs :mode :program :stobjs state))
+  (declare (xargs :guard (stringp str) :mode :program :stobjs state))
   ;; For some reason, keys are set to nil in this table:
   (set-table-entry-programmatic 'inhibit-er-table str nil state))
 
@@ -71,7 +71,7 @@
    (er-progn
     ;; Step-limit reached is not an error, so this makes it not print an error
     ;; message:
-    (add-inhibit-er-programmatic "step-limit" state)
+    (add-inhibit-er-programmatic "step-limit" state) ; todo: this may no longer be needed?
     ;; Don't print an error if the rewrite stack depth is exceeded:
     (add-inhibit-er-programmatic "Call depth" state)
     (if time-limit ;awkward, due to how prove$ handles time-limit

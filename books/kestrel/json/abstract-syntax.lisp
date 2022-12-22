@@ -1,6 +1,6 @@
 ; JSON Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -60,8 +60,8 @@
    (xdoc::p
     "We model numbers as rationals,
      which suffices to represent the value of all JSON numbers,
-     but it abstracts away a bit of information from the JSON text.
-     Thus, we may change our model of numbers
+     but it abstracts away some information from the JSON text.
+     Thus, in the future we may change our model of numbers
      to preserve more information from the JSON text.")
    (xdoc::p
     "We model strings as ACL2 strings, similarly to object member names.
@@ -117,14 +117,13 @@
   (xdoc::topstring
    (xdoc::p
     "As mentioned in @(tsee values),
-     our abstract syntax does not assume that JSON objects
+     our abstract syntax does not assume or enforce that JSON objects
      have members with unique names.
      Accordingly, given a member name,
      there may be 0, 1, or more values associated with that name.
      This function returns the list of such values,
      in the order in which they occur in the object;
-     member order is captured and significant in our JSON abstract syntax,
-     as also described in @(tsee values).")
+     member order is captured and significant in our JSON abstract syntax.")
    (xdoc::p
     "Note that if the JSON object has two duplicate members
      (meaning not just the same name, but also the same value),

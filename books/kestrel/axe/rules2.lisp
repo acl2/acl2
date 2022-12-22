@@ -138,16 +138,16 @@
 ;;       (list n l)
 ;;     (induct-sub1-cdr (+ -1 n) (cdr l))))
 
-(defthm integerp-of-nth-free-len
-  (implies (and (equal (len l) k) ;k is a free variable
-                (< n k)
-                (integerp n)
-                (<= 0 n)
-                (integer-listp l))
-           (INTEGERP (NTH n l)))
-  :hints (("Goal" ; :induct (induct-sub1-cdr n l)
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (integer-listp nth) (nth-of-cdr)))))
+;; (defthm integerp-of-nth-free-len
+;;   (implies (and (equal (len l) k) ;k is a free variable
+;;                 (< n k)
+;;                 (integerp n)
+;;                 (<= 0 n)
+;;                 (integer-listp l))
+;;            (INTEGERP (NTH n l)))
+;;   :hints (("Goal" ; :induct (induct-sub1-cdr n l)
+;;            :do-not '(generalize eliminate-destructors)
+;;            :in-theory (e/d (integer-listp nth) (nth-of-cdr)))))
 
 ;; (defun ind-hint (m n dom)
 ;;   (if (zp m)
@@ -259,7 +259,6 @@
 ;(in-theory (disable LIST::UPDATE-NTH-EQUAL-UPDATE-NTH-REWRITE))
 
 ;(in-theory (disable LIST::LEN-UPDATE-NTH-BETTER))
-(in-theory (disable TRUE-LISTP-UPDATE-NTH)) ;TRUE-LISTP-OF-UPDATE-NTH-2 is stronger
 
 ;loade
 ;(in-theory (disable UPDATE-NTH-OF-CONS)) ;why necessary?
@@ -705,6 +704,7 @@
 
 ;(in-theory (disable STORE-2D-ARRAY-ROW-RECOLLAPSE))
 
+;move
 ;bozo think about whther i need both
 (defthm not-equal-nth-when-not-memberp-cheap
   (implies (and (not (memberp a x))
@@ -715,6 +715,7 @@
   :hints (("Goal" :in-theory (e/d (memberp nth) (nth-of-cdr))))
   :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil))))
 
+;move
 (defthmd not-equal-nth-when-not-memberp-no-limit
   (implies (and (not (memberp a x))
                 (natp n)
@@ -1924,11 +1925,10 @@
 
 ;(in-theory (disable list::nth-of-cons))
 
-;rename
-(defthm nth-of-plus-constant
+;move
+(defthm nth-of-plus-of-cons-when-constant
   (implies (and (syntaxp (quotep k))
-                (< 0 k)
-                (integerp k)
+                (posp k)
                 (natp n))
            (equal (nth (+ k n) (cons a rst))
                   (nth (+ (+ -1 k) n) rst)))
@@ -1999,24 +1999,6 @@
 ;(in-theory (disable BAG::MEMBERP-SUBBAGP)) ;introduces bag reasoning!
 
 ;(in-theory (disable LIST::FIX-OF-NTHCDR))
-
-;; (defthm not-memberp-of-take
-;;   (IMPLIES (and (NOT (MEMBERP X LST))
-;;                 (<= n (len lst)))
-;;            (NOT (MEMBERP X (TAKE n lst))))
-;;   :hints (("Goal" :in-theory (enable take MEMBERP))))
-
-;yuck, for this we need more hyps for the new firstn...
-(defthm not-memberp-of-subrange
-  (implies (and (not (memberp x lst))
-                (natp end) ;new
-                (< end (len lst)) ;new
-;                (natp start)
-                )
-           (not (memberp x (subrange start end lst))))
-  :hints (("Goal" :in-theory (e/d (subrange take)
-                                  (;anti-subrange
-                                   )))))
 
 ;todo: move
 ;; (defthm insert-nth-2set-subrange-adjacent
@@ -3172,8 +3154,7 @@
 ;;            (not (equal x (nth n lst))))
 ;;   :hints (("Goal" :in-theory (enable bag::unique-of-cons))))
 
-
-(in-theory (disable ALISTP))
+;; (in-theory (disable alistp))
 
 ;; ;use a map (and don't use int-fix)
 ;; (defthm nth-of-int-fix-list
@@ -3480,16 +3461,11 @@
 ;gen  (LEN (TAKE N L))
 
 ;when i need this, lst is the call-stack
-(defthm len-pop-push-hack
-  (equal
-   (EQUAL (LEN lst)
-          (BINARY-+ '1
-                    (IF (CONSP lst)
-                        (BINARY-+ '-1
-                                  (LEN lst))
-                        '0)))
-   (consp lst)))
-
+;or just use + of if
+(defthmd len-pop-push-hack
+  (equal (equal (len lst)
+                (+ 1 (if (consp lst) (+ -1 (len lst)) 0)))
+         (consp lst)))
 
 ;; ;slow?
 ;; (defthm nthcdr-of-byte-fix-list

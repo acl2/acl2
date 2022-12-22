@@ -1,7 +1,7 @@
 ; Lookup a key in an alist using EQUAL
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,10 +15,7 @@
 
 ;; TODO: Standardize variable names in theorems.
 
-;; Look up KEY in ALIST, using equal as the test.
-(defund lookup-equal (key alist)
-  (declare (xargs :guard (alistp alist)))
-  (cdr (assoc-equal key alist)))
+(include-book "lookup-equal-def")
 
 (defthm lookup-equal-of-nil
   (equal (lookup-equal key nil)

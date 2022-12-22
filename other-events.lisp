@@ -827,34 +827,14 @@
                   (putprop
                    name 'macro-body macro-body
                    (putprop
-                    name-fn 'symbol-class :common-lisp-compliant
+                    name-fn 'symbol-class :program
                     (putprop
                      name-fn 'formals formals
                      (putprop
                       name-fn 'stobjs-in stobjs-in
                       (putprop
                        name-fn 'stobjs-out *error-triple-sig*
-
-; The above may make sense, but the following act of fakery deserves
-; some comment.  In order to get, e.g. defconst-fn, to work before
-; it is defined in a boot-strap, we give it a body, which makes
-; ev-fncall think it is ok to take a short cut and use the Common Lisp
-; definition.  Of course, we are asking for trouble by laying down
-; this recursive call!  But it never happens.
-
-                       (putprop
-                        name-fn 'def-bodies
-                        (list (make def-body
-                                    :formals formals
-                                    :hyp nil
-                                    :concl (cons name-fn formals)
-                                    :equiv 'equal
-                                    :rune
-                                    *fake-rune-for-anonymous-enabled-rule*
-                                    :nume 0 ; fake
-                                    :recursivep nil
-                                    :controller-alist nil))
-                        wrld)))))))))
+                       wrld))))))))
               (& (er hard 'primordial-event-macro-and-fn
                      "The supplied form ~x0 was not of the required ~
                       shape.  Every element of ~
@@ -10323,9 +10303,10 @@
 ; familiar-name.
 
           (let* ((pair (assoc-familiar-name familiar-name actual-alist))
+                 (wrld (w state))
                  (full-book-string
                   (book-name-to-filename full-book-name
-                                         (w state)
+                                         wrld
                                          'tilde-*-book-hash-phrase1))
                  (msg
                   (cond (pair (msg "-- its certificate requires the book ~
@@ -10336,7 +10317,9 @@
                                     full-book-name; see :DOC full-book-name) ~
                                     -- has been included"
                                    full-book-string
-                                   (car pair)))
+                                   (book-name-to-filename (car pair)
+                                                          wrld
+                                                          'tilde-*-book-hash-phrase1)))
                         (t    (msg "-- its certificate requires the book ~
                                     \"~s0\", but that book has not been ~
                                     included, nor has any book with the same ~
@@ -14047,19 +14030,6 @@
                                       ch state)
                        (print-object$ `(setq *hcomp-macro-alist*
                                          ',macro-alist)
-                                      ch state)
-                       (print-object$ '(when (eq *readtable*
-                                                 *reckless-acl2-readtable*)
-                                         (setq *set-hcomp-loop$-alist* t))
-                                      ch state)
-                       (print-object$ `(when *set-hcomp-loop$-alist*
-; Debug:
-;                                        (cw "@@ Setting ~
-;                                             *hcomp-loop$-alist*:~%~x0~%"
-;                                            ',expansion-filename)
-                                         (setq *hcomp-loop$-alist*
-                                               ',(top-level-loop$-alist
-                                                  (w *the-live-state*))))
                                       ch state)))
        (print-object$ '(hcomp-init) ch state)
        (newline ch state)

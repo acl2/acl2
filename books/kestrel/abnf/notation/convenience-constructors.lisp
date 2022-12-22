@@ -109,42 +109,118 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection %.
-  :short "Construct a direct numeric value notation element
+(defsection %d.
+  :short "Construct a decimal-base direct numeric value notation element
           from a variable number of numbers."
   :long
   (xdoc::topstring
    (xdoc::p
     "The name of this macro is inspired by
-     the ABNF notation @('%Rn1.n2. ...'),
-     where @('R') is the letter for the radix
-     and @('n1'), @('n2'), ... are numbers in base @('R'):
-     the name of this macro has the @('%') and the @('.') of that notation.")
-   (xdoc::@def "%."))
+     the ABNF notation @('%d<n1>.<n2>. ...'),
+     where @('<n1>'), @('<n2>'), ... are numbers in base 10:
+     the name of this macro has the @('%d') and the @('.') of that notation.")
+   (xdoc::@def "%d."))
 
-  (defmacro %. (&rest numbers)
-    `(%.-fn (list ,@numbers)))
+  (defmacro %d. (&rest numbers)
+    `(%d.-fn (list ,@numbers)))
 
-  (define %.-fn ((nats nat-listp))
+  (define %d.-fn ((nats nat-listp))
     :returns (element elementp)
-    (element-num-val (num-val-direct nats))
+    (element-num-val (num-val-direct (num-base-dec) nats))
+    :hooks (:fix)
+    :no-function t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection %x.
+  :short "Construct a hexadecimal-base direct numeric value notation element
+          from a variable number of numbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The name of this macro is inspired by
+     the ABNF notation @('%d<n1>.<n2>. ...'),
+     where @('<n1>'), @('<n2>'), ... are numbers in base 16:
+     the name of this macro has the @('%x') and the @('.') of that notation.")
+   (xdoc::@def "%x."))
+
+  (defmacro %x. (&rest numbers)
+    `(%x.-fn (list ,@numbers)))
+
+  (define %x.-fn ((nats nat-listp))
+    :returns (element elementp)
+    (element-num-val (num-val-direct (num-base-hex) nats))
+    :hooks (:fix)
+    :no-function t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection %b.
+  :short "Construct a binary-base direct numeric value notation element
+          from a variable number of numbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The name of this macro is inspired by
+     the ABNF notation @('%d<n1>.<n2>. ...'),
+     where @('<n1>'), @('<n2>'), ... are numbers in base 2:
+     the name of this macro has the @('%b') and the @('.') of that notation.")
+   (xdoc::@def "%b."))
+
+  (defmacro %b. (&rest numbers)
+    `(%b.-fn (list ,@numbers)))
+
+  (define %b.-fn ((nats nat-listp))
+    :returns (element elementp)
+    (element-num-val (num-val-direct (num-base-bin) nats))
     :hooks (:fix)
     :no-function t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define %- ((min natp) (max natp))
+(define %d- ((min natp) (max natp))
   :returns (element elementp)
-  :short "Construct a range numeric value notation element
+  :short "Construct a decimal-base range numeric value notation element
           from a minimum and a maximum."
   :long
   (xdoc::topstring-p
    "The name of this function is inspired by
-    the ABNF notation @('%Rmin-max'),
-    where @('R') is the letter for the radix
-    and @('min') and @('max') are numbers in base @('R'):
-    the name of this function has the @('%') and the @('-') of that notation.")
-  (element-num-val (num-val-range min max))
+    the ABNF notation @('%d<min>-<max>'),
+    where @('<min>') and @('<max>') are numbers in base 10:
+    the name of this function has the @('%d') and the @('-') of that notation.")
+  (element-num-val (num-val-range (num-base-dec) min max))
+  :hooks (:fix)
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define %x- ((min natp) (max natp))
+  :returns (element elementp)
+  :short "Construct a hexadecimal-base range numeric value notation element
+          from a minimum and a maximum."
+  :long
+  (xdoc::topstring-p
+   "The name of this function is inspired by
+    the ABNF notation @('%x<min>-<max>'),
+    where @('<min>') and @('<max>') are numbers in base 16:
+    the name of this function has the @('%x') and the @('-') of that notation.")
+  (element-num-val (num-val-range (num-base-hex) min max))
+  :hooks (:fix)
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define %b- ((min natp) (max natp))
+  :returns (element elementp)
+  :short "Construct a binary-base range numeric value notation element
+          from a minimum and a maximum."
+  :long
+  (xdoc::topstring-p
+   "The name of this function is inspired by
+    the ABNF notation @('%d<min>-<max>'),
+    where @('<min>') and @('<max>') are numbers in base 2:
+    the name of this function has the @('%b') and the @('-') of that notation.")
+  (element-num-val (num-val-range (num-base-bin) min max))
   :hooks (:fix)
   :no-function t)
 

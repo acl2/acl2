@@ -39,14 +39,14 @@
 
 (defthm-flag-free-vars-in-term
   (defthm not-member-equal-of-nil-and-free-vars-in-term
-    (implies (and (pseudo-termp term)
+    (implies (and ;(pseudo-termp term)
                   (no-nils-in-termp term))
              ;; This is weaker than (no-nils-in-termp term) because it doesn't
              ;; check lambda bodies:
              (not (member-equal nil (free-vars-in-term term))))
     :flag free-vars-in-term)
   (defthm not-member-equal-of-nil-and-free-vars-in-terms
-    (implies (and (pseudo-term-listp terms)
+    (implies (and ;(pseudo-term-listp terms)
                   (no-nils-in-termsp terms))
              (not (member-equal nil (free-vars-in-terms terms))))
     :flag free-vars-in-terms)
@@ -59,6 +59,12 @@
            (equal (no-nils-in-termp term)
                   (not (equal term nil))))
   :hints (("Goal" :in-theory (enable no-nils-in-termp))))
+
+(defthm no-nils-in-termsp-when-symbol-listp
+  (implies (symbol-listp terms)
+           (equal (no-nils-in-termsp terms)
+                  (not (member-equal nil terms))))
+  :hints (("Goal" :in-theory (enable no-nils-in-termsp))))
 
 (defthm no-nils-in-termsp-of-remove-equal
   (implies (no-nils-in-termsp terms)
@@ -93,14 +99,15 @@
 
 (make-flag no-nils-in-termp)
 
-(defthm-flag-no-nils-in-termp
-  (defthm no-nils-in-termp-of-free-vars-in-term
-    (implies (no-nils-in-termp term)
-             (no-nils-in-termsp (free-vars-in-term term)))
-    :flag no-nils-in-termp)
-  (defthm no-nils-in-termsp-of-free-vars-in-terms
-    (implies (no-nils-in-termsp terms)
-             (no-nils-in-termsp (free-vars-in-terms terms)))
-    :flag no-nils-in-termsp)
-  :hints (("Goal" :expand (free-vars-in-terms terms)
-           :in-theory (enable free-vars-in-term no-nils-in-termsp))))
+;; Just use no-nils-in-termsp-when-symbol-listp
+;; (defthm-flag-no-nils-in-termp
+;;   (defthm no-nils-in-termsp-of-free-vars-in-term
+;;     (implies (no-nils-in-termp term)
+;;              (no-nils-in-termsp (free-vars-in-term term)))
+;;     :flag no-nils-in-termp)
+;;   (defthm no-nils-in-termsp-of-free-vars-in-terms
+;;     (implies (no-nils-in-termsp terms)
+;;              (no-nils-in-termsp (free-vars-in-terms terms)))
+;;     :flag no-nils-in-termsp)
+;;   :hints (("Goal" :expand (free-vars-in-terms terms)
+;;            :in-theory (enable free-vars-in-term no-nils-in-termsp))))

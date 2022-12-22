@@ -13,7 +13,7 @@
 
 ;; STATUS: In-progress
 
-(include-book "lookup-equal") ;; included becase we rewrite lookup to lookup-eqal
+(include-book "lookup-equal") ;; included becase we rewrite lookup to lookup-equal
 
 ;; Look up KEY in ALIST, using eql as the test (like assoc).
 (defund lookup (key alist)

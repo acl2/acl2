@@ -115,8 +115,7 @@
              t
            (memberp nil x))))
 
-;the -2 avoids a name clash
-(defthm memberp-of-update-nth-same-2
+(defthm memberp-of-update-nth-same
   (memberp val (update-nth n val lst))
   :hints (("Goal" :in-theory (enable update-nth))))
 
@@ -310,7 +309,8 @@
 
 (defthm not-memberp-of-take
   (implies (and (not (memberp a l))
-                (<= n (len l)))
+                (or a
+                    (<= n (len l))))
            (not (memberp a (take n l))))
   :hints (("Goal" :in-theory (enable take))))
 

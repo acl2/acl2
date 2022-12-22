@@ -38,16 +38,31 @@
         (clear-keys-with-matching-prefixes (rest alist) prefixes (cons pair acc))))))
 
 ;; Returns (mv erp event state).
-(defun replay-books-with-advice-fn-aux (book-to-theorems-alist base-dir n server-url models yes-count no-count maybe-count trivial-count error-count done-book-count state)
-  (declare (xargs :mode :program
-                  :guard (and (alistp book-to-theorems-alist)
+(defun replay-books-with-advice-fn-aux (book-to-theorems-alist
+                                        base-dir
+                                        num-recs-per-model
+                                        print
+                                        server-url
+                                        models
+                                        yes-count no-count maybe-count trivial-count error-count
+                                        done-book-count
+                                        state)
+  (declare (xargs :guard (and (alistp book-to-theorems-alist)
                               (stringp base-dir)
-                              (natp n)
+                              (natp num-recs-per-model)
+                              (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
+                              (help::model-namesp models)
+                              (natp yes-count)
+                              (natp no-count)
+                              (natp maybe-count)
+                              (natp trivial-count)
+                              (natp error-count)
                               (natp done-book-count))
+                  :mode :program
                   :stobjs state)
-           (irrelevant maybe-count) ; since we don't allow :add-hyp
+           ;; (irrelevant maybe-count) ; since we don't allow :add-hyp
            )
   (if (endp book-to-theorems-alist)
       (mv nil '(value-triple :invisible) state)
@@ -58,13 +73,15 @@
          ((mv erp counts state)
           (revert-world (replay-book-with-advice-fn-aux (concatenate 'string base-dir "/" book)
                                                         theorems-to-try
-                                                        n
-                                                        nil ; print
+                                                        num-recs-per-model
+                                                        nil ; don't spend time trying to improve recs
+                                                        print
                                                         server-url
                                                         models
                                                         state)))
-         ((list book-yes-count book-no-count book-maybe-count book-trivial-count book-error-count) counts)
          (- (and erp (cw "WARNING: Error replaying ~x0.~%" book)))
+         ;; Extract the individual counts:
+         ((list book-yes-count book-no-count book-maybe-count book-trivial-count book-error-count) counts)
          (yes-count (+ yes-count book-yes-count))
          (no-count (+ no-count book-no-count))
          (maybe-count (+ maybe-count book-maybe-count))
@@ -77,18 +94,17 @@
                     ;; (cw "ADD HYP ADVICE FOUND : ~x0~%" maybe-count)
                     (cw "NO HINTS NEEDED : ~x0~%" trivial-count)
                     (cw "ERROR           : ~x0~%~%" error-count))))
-      (replay-books-with-advice-fn-aux (rest book-to-theorems-alist) base-dir n server-url models yes-count no-count maybe-count trivial-count error-count done-book-count state))))
+      (replay-books-with-advice-fn-aux (rest book-to-theorems-alist) base-dir num-recs-per-model print server-url models yes-count no-count maybe-count trivial-count error-count done-book-count state))))
 
 ;; Returns (mv erp event state).
-;; TODO: Need a way to set and use a random seed?
-(defun replay-books-with-advice-fn (book-to-theorems-alist base-dir excluded-prefixes seed n server-url models num-books state)
-  (declare (xargs :mode :program
-                  :guard (and (alistp book-to-theorems-alist)
+(defun replay-books-with-advice-fn (book-to-theorems-alist base-dir excluded-prefixes seed num-recs-per-model print server-url models num-books state)
+  (declare (xargs :guard (and (alistp book-to-theorems-alist)
                               (stringp base-dir)
                               (string-listp excluded-prefixes)
                               (or (eq :random seed)
                                   (minstd-rand0p seed))
-                              (natp n)
+                              (natp num-recs-per-model)
+                              (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
                               (or (eq :all models)
@@ -96,6 +112,7 @@
                                   (help::model-namesp models))
                               (or (eq :all num-books)
                                   (natp num-books)))
+                  :mode :program
                   :stobjs state))
   (b* ( ;; Elaborate options:
        (models (if (eq models :all)
@@ -108,29 +125,30 @@
         (if (eq :random seed)
             (random$ *m31* state)
           (mv seed state)))
-       (- (cw "Using random seed of ~x0.~%" seed))
-       (- (cw "Trying ~x0 recommendations per model set.~%" n)))
+       (- (cw "(Using random seed of ~x0.)~%" seed))
+       (- (cw "(Trying ~x0 recommendations per model.)~%" num-recs-per-model)))
     (if (and (not (eq :all num-books))
              (> num-books (len book-to-theorems-alist)))
         (mv :not-enough-books nil state)
       (b* ((shuffled-book-to-theorems-alist (shuffle-list2 book-to-theorems-alist seed))
            (final-book-to-theorems-alist
-            (if (eq :all num-books)
+            (if (eq :all num-books) ; todo: don't shuffle in this case?
                 shuffled-book-to-theorems-alist
-              (take num-books shuffled-book-to-theorems-alist))))
-        (replay-books-with-advice-fn-aux final-book-to-theorems-alist base-dir n server-url models 0 0 0 0 0 0 state)))))
+              (take num-books shuffled-book-to-theorems-alist)))
+           (- (cw "(Processing ~x0 books.)~%" (len final-book-to-theorems-alist))))
+        (replay-books-with-advice-fn-aux final-book-to-theorems-alist base-dir num-recs-per-model print server-url models 0 0 0 0 0 0 state)))))
 
-;; TODO: Skip ACL2s stuff (don't even train on it!) since it can't be replayed in regular acl2?
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
 ;; Rec names should not include slash or digits?
 (defmacro replay-books-with-advice (book-to-theorems-alist ; maps book names (relative to BASE-DIR, with .lisp extension) to lists of defthm names.
                                     base-dir ; no trailing slash
                                     &key
-                                    (seed ':random)
                                     (excluded-prefixes 'nil) ; relative to BASE-DIR
-                                    (n '10) ; number of recs from each model
-                                    (num-books ':all) ; how many books to evaluate (TODO: Better to chose a random subset of theorems, rather than books?)
+                                    (seed ':random)
+                                    (n '10) ; num-recs-per-model
                                     (server-url 'nil) ; nil means get from environment var
                                     (models ':all) ; which ML models to use
+                                    (num-books ':all) ; how many books to evaluate (TODO: Better to chose a random subset of theorems, rather than books?)
+                                    (print 'nil)
                                     )
-  `(make-event (replay-books-with-advice-fn ,book-to-theorems-alist ,base-dir ,excluded-prefixes ,seed ,n ,server-url ,models ,num-books state)))
+  `(make-event (replay-books-with-advice-fn ,book-to-theorems-alist ,base-dir ,excluded-prefixes ,seed ,n ,print ,server-url ,models ,num-books state)))

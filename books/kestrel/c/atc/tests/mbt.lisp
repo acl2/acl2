@@ -20,10 +20,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |mbt| (|x|)
+(defun |mbt1| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
   (if (mbt (c::sintp |x|))
       (c::lt-sint-sint |x| (c::sint-dec-const 100))
+    (list :this-is-not-translated-to-c)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defun |mbt2| (|x|)
+  (declare (xargs :guard (and (c::sintp |x|)
+                              (<= 0 (c::sint->get |x|))
+                              (<= (c::sint->get |x|) 10))
+                  :guard-hints (("Goal"
+                                 :in-theory
+                                 (enable c::minus-sint-okp
+                                         c::sint-integerp-alt-def)))))
+  (if (mbt (c::sintp |x|))
+      (c::minus-sint |x|)
     (list :this-is-not-translated-to-c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -36,7 +50,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |mbt|
+(c::atc |mbt1|
+        |mbt2|
         |mbt_dollar|
         :file-name "mbt"
         :header t)

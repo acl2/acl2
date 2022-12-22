@@ -88,6 +88,12 @@
   (and (integerp x)
        (< x 0)))
 
+(defthm negp-compound-recognizer
+  (equal (negp x)
+         (and (integerp x)
+              (< x 0)))
+  :rule-classes :compound-recognizer)
+
 (defun nth-neg-builtin (n)
   (declare (xargs :guard (natp n)))
   (- -1 n))
@@ -96,6 +102,12 @@
   (declare (xargs :guard t))
   (and (integerp x)
        (<= x 0)))
+
+(defthm non-pos-integerp-compound-recognizer
+  (equal (non-pos-integerp x)
+         (and (integerp x)
+              (<= x 0)))
+  :rule-classes :compound-recognizer)
 
 (defun nth-non-pos-integer-builtin (n)
   (declare (xargs :guard (natp n)))
@@ -247,6 +259,13 @@
   (and (rationalp x)
        (not (integerp x))
        (< x 0)))
+
+(defthm neg-ratiop-compound-recognizer 
+  (equal (neg-ratiop x)
+         (and (rationalp x)
+              (not (integerp x))
+              (< x 0)))
+  :rule-classes :compound-recognizer)
 
 (defun base-defdata-insert (e l)
   (declare (xargs :guard (and (natp e) (nat-listp l))))
@@ -433,6 +452,13 @@
        (not (integerp x))
        (> x 0)))
 
+(defthm pos-ratiop-compound-recognizer
+  (equal (pos-ratiop x)
+         (and (rationalp x)
+              (not (integerp x))
+              (> x 0)))
+  :rule-classes :compound-recognizer)
+
 (defun nth-pos-ratio-builtin (n)
   (declare (xargs :guard (natp n) :verify-guards nil))
   (let* ((two-n-list (base-defdata-isort (defdata::split-nat 3 n)))
@@ -496,6 +522,12 @@ as a type.
   (and (rationalp x)
        (< x 0)))
 
+(defthm neg-rationalp-compound-recognizer
+  (equal (neg-rationalp x)
+         (and (rationalp x)
+              (< x 0)))
+  :rule-classes :compound-recognizer)
+
 (defun nth-neg-rational-builtin (n)
   (declare (xargs :guard (natp n)))
   (let* ((two-n-list (defdata::split-nat 2 n))
@@ -507,6 +539,12 @@ as a type.
   (declare (xargs :guard t))
   (and (rationalp x)
        (> x 0)))
+
+(defthm pos-rationalp-compound-recognizer
+  (equal (pos-rationalp x)
+         (and (rationalp x)
+              (> x 0)))
+  :rule-classes :compound-recognizer)
 
 (defun nth-pos-rational-builtin (n)
   (declare (xargs :guard (natp n)))
@@ -520,6 +558,12 @@ as a type.
   (and (rationalp x)
        (>= x 0)))
 
+(defthm non-neg-rationalp-compound-recognizer
+  (equal (non-neg-rationalp x)
+         (and (rationalp x)
+              (>= x 0)))
+  :rule-classes :compound-recognizer)
+
 (defun nth-non-neg-rational-builtin (n)
   (declare (xargs :guard (natp n)))
   (let* ((two-n-list (defdata::split-nat 2 n))
@@ -531,6 +575,12 @@ as a type.
   (declare (xargs :guard t))
   (and (rationalp x)
        (<= x 0)))
+
+(defthm non-pos-rationalp-compound-recognizer
+  (equal (non-pos-rationalp x)
+         (and (rationalp x)
+              (<= x 0)))
+  :rule-classes :compound-recognizer)
 
 (defun nth-non-pos-rational-builtin (n)
   (declare (xargs :guard (natp n)))
