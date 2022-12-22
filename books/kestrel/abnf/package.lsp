@@ -22,6 +22,7 @@
                           bool
                           char-fix
                           chars=>nats
+                          constant-namep
                           constant-value
                           defmacro+
                           defxdoc+
