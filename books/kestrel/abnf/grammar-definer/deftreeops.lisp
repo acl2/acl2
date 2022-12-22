@@ -13,11 +13,11 @@
 (include-book "../grammar-parser/executable")
 (include-book "../notation/syntax-abstraction")
 
-(include-book "kestrel/error-checking/ensure-value-is-constant-name" :dir :system)
-(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "kestrel/std/system/constant-namep" :dir :system)
 (include-book "kestrel/std/system/constant-value" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
-(include-book "kestrel/std/util/tuple" :dir :system)
+(include-book "kestrel/std/util/error-value-tuples" :dir :system)
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -94,31 +94,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-process-grammar (grammar (ctx ctxp) state)
-  :returns (mv erp (grammar acl2::symbolp) state)
+(define deftreeops-process-grammar (grammar (wrld plist-worldp))
+  :returns (mv erp (grammar acl2::symbolp))
   :short "Process the @('*grammar*') input."
-  (b* (((er &) (ensure-value-is-constant-name$ grammar
-                                               "The *GRAMMAR* input"
-                                               t
-                                               nil))
-       (rules (constant-value grammar (w state)))
+  (b* (((reterr) nil)
+       ((unless (constant-namep grammar wrld))
+        (reterr (msg "The *GRAMMAR* input ~x0 must be the name of a constant."
+                     grammar)))
+       (rules (constant-value grammar wrld))
        ((unless (and (rulelistp rules)
                      (consp rules)))
-        (er-soft+ ctx t nil
-                  "The *GRAMMAR* input is the name of a constant, ~
-                   but its value ~x0 is not a non-empty ABNF grammar."
-                  rules)))
-    (value grammar))
-  :prepwork ((local (in-theory (enable acl2::ensure-value-is-constant-name)))))
+        (reterr (msg "The *GRAMMAR* input is the name of a constant, ~
+                      but its value ~x0 is not a non-empty ABNF grammar."
+                     rules))))
+    (retok grammar)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-process-prefix (prefix (ctx ctxp) state)
-  :returns (mv erp (prefix acl2::symbolp) state)
+(define deftreeops-process-prefix (prefix)
+  :returns (mv erp (prefix acl2::symbolp))
   :short "Process the @(':prefix') input."
-  (b* (((er &) (ensure-value-is-symbol$ prefix "The :PREFIX input" t nil)))
-    (value prefix))
-  :prepwork ((local (in-theory (enable acl2::ensure-value-is-symbol)))))
+  (b* (((reterr) nil)
+       ((unless (acl2::symbolp prefix))
+        (reterr (msg "The :PREFIX input ~x0 must be a symbol." prefix))))
+    (retok prefix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,37 +130,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-process-inputs ((args true-listp) (ctx ctxp) state)
+(define deftreeops-process-inputs ((args true-listp) (wrld plist-worldp))
   :returns (mv erp
-               (val (std::tuple (grammar acl2::symbolp)
-                                (prefix acl2::symbolp)
-                                val))
-               state)
+               (grammar acl2::symbolp)
+               (prefix acl2::symbolp))
   :short "Process all the inputs."
-  (b* (((fun (irr)) (list nil nil))
+  (b* (((reterr) nil nil)
        ((mv erp grammar options)
         (partition-rest-and-keyword-args args *deftreeops-allowed-options*))
        ((when (or erp
                   (not (consp grammar))
                   (not (endp (cdr grammar)))))
-        (er-soft+ ctx t (irr)
-                  "The inputs must be the constant name for the grammar ~
-                   followed by the options ~&0."
-                  *deftreeops-allowed-options*))
+        (reterr (msg "The inputs must be the constant name for the grammar ~
+                      followed by the options ~&0."
+                     *deftreeops-allowed-options*)))
        (grammar (car grammar))
-       ((er grammar :iferr (irr))
-        (deftreeops-process-grammar grammar ctx state))
+       ((erp grammar) (deftreeops-process-grammar grammar wrld))
        (prefix-option (assoc-eq :prefix options))
        ((unless (consp prefix-option))
-        (er-soft+ ctx t (irr) "The :PREFIX input must be supplied."))
+        (reterr (msg "The :PREFIX input must be supplied.")))
        (prefix (cdr prefix-option))
-       ((er prefix :iferr (irr))
-        (deftreeops-process-prefix prefix ctx state)))
-    (value (list grammar prefix)))
-  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
-  ///
-  (more-returns
-   (val true-listp :rule-classes :type-prescription)))
+       ((erp prefix) (deftreeops-process-prefix prefix)))
+    (retok grammar prefix))
+  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -338,23 +329,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define deftreeops-process-inputs-and-gen-everything ((args true-listp)
+                                                      (call pseudo-event-formp)
+                                                      (wrld plist-worldp))
+  :returns (mv erp (event pseudo-event-formp))
+  :parents (deftreeops-implementation)
+  :short "Process the inputs and generate the events."
+  (b* (((reterr) '(_))
+       ((when (deftreeops-table-lookup call wrld))
+        (retok '(value-triple :redundant)))
+       ((erp grammar prefix) (deftreeops-process-inputs args wrld)))
+    (retok (deftreeops-gen-everything grammar prefix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define deftreeops-fn ((args true-listp)
                        (call pseudo-event-formp)
                        (ctx ctxp)
                        state)
   :returns (mv erp (event pseudo-event-formp) state)
   :parents (deftreeops-implementation)
-  :short "Process the inputs and generate the events."
-  (b* (((when (deftreeops-table-lookup call (w state)))
-        (value '(value-triple :redundant)))
-       ((er (list grammar prefix) :iferr '(_))
-        (deftreeops-process-inputs args ctx state)))
-    (value (deftreeops-gen-everything grammar prefix))))
+  :short "Event expansion of @(tsee deftreeops)."
+  (b* (((mv erp event)
+        (deftreeops-process-inputs-and-gen-everything args call (w state)))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
+    (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection deftreeops-macro-definition
   :parents (deftreeops-implementation)
-  :short "Definition of the @(tsee deftreeops) macro."
+  :short "Definition of @(tsee deftreeops)."
   (defmacro deftreeops (&whole call &rest args)
     `(make-event (deftreeops-fn ',args ',call 'deftreeops state))))
