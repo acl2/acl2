@@ -64,6 +64,7 @@
 
 ;; TODO: Untranslate before printing (e.g., hyps)?
 
+(include-book "kestrel/utilities/book-of-event" :dir :system)
 (include-book "kestrel/utilities/checkpoints" :dir :system)
 (include-book "kestrel/utilities/nat-to-string" :dir :system)
 (include-book "kestrel/utilities/ld-history" :dir :system)
@@ -601,11 +602,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Maps symbols (e.g., ones occuring in action objects of recommendations) to the books that define them.
+(defund symbol-tablep (tab)
+  (declare (xargs :guard t))
+  (or (eq :unavailable tab) ; todo: eventually remove this case?
+      (and (symbol-alistp tab)
+           ;; Note that a book name can be a sysfile:
+           (acl2::book-name-listp (strip-cdrs tab)))))
+
 ;; todo: strengthen?
 (defund successful-recommendationp (rec)
   (declare (xargs :guard t))
   (and (true-listp rec)
-       (= 7 (len rec))
+       (= 8 (len rec))
        (let ((name (nth 0 rec)) ; ex: "leidos1"
              (type (nth 1 rec))
              ;; (object (nth 2 rec))
@@ -613,14 +622,17 @@
              (pre-commands (nth 3 rec))
              ;; (theorem-body (nth 4 rec))
              ;; (theorem-hints (nth 5 rec))
-             (theorem-otf-flg (nth 6 rec)))
+             (theorem-otf-flg (nth 6 rec))
+             (symbol-table (nth 7 rec)) ; maps each symbol in the action object to its defining book
+             )
          (and (stringp name)
               (rec-typep type)
               ;; object
               (pre-commandsp pre-commands)
               ;; theorem-body is an untranslated term
               ;; theorem-hints
-              (booleanp theorem-otf-flg)))))
+              (booleanp theorem-otf-flg)
+              (symbol-tablep symbol-table)))))
 
 ;; Extract the name from a successful-recommendation.
 (defund successful-recommendation-name (rec)
@@ -646,6 +658,12 @@
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 3 rec))
 
+;; Extract the symbol-table from a successful-recommendation.
+(defund successful-recommendation-symbol-table (rec)
+  (declare (xargs :guard (successful-recommendationp rec)
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
+  (nth 7 rec))
+
 (local
  (defthm pre-commandsp-of-successful-recommendation-pre-commands
    (implies (successful-recommendationp rec)
@@ -660,25 +678,27 @@
    :hints (("Goal" :in-theory (enable successful-recommendationp
                                       successful-recommendation-pre-commands)))))
 
-(defund make-successful-rec (name type object pre-commands theorem-body theorem-hints theorem-otf-flg)
+(defund make-successful-rec (name type object pre-commands theorem-body theorem-hints theorem-otf-flg symbol-table)
   (declare (xargs :guard (and (stringp name)
                               (rec-typep type)
                               ;; object
                               (pre-commandsp pre-commands)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
-                              (booleanp theorem-otf-flg))))
-  (list name type object pre-commands theorem-body theorem-hints theorem-otf-flg))
+                              (booleanp theorem-otf-flg)
+                              (symbol-tablep symbol-table))))
+  (list name type object pre-commands theorem-body theorem-hints theorem-otf-flg symbol-table))
 
 (defthm successful-recommendationp-of-make-successful-rec
-  (equal (successful-recommendationp (make-successful-rec name type object pre-commands theorem-body theorem-hints theorem-otf-flg))
+  (equal (successful-recommendationp (make-successful-rec name type object pre-commands theorem-body theorem-hints theorem-otf-flg symbol-table))
          (and (stringp name)
               (rec-typep type)
               ;; object
               (pre-commandsp pre-commands)
               ;; theorem-body
               ;; theorem-hints
-              (booleanp theorem-otf-flg)))
+              (booleanp theorem-otf-flg)
+              (symbol-tablep symbol-table)))
   :hints (("Goal" :in-theory (enable make-successful-rec successful-recommendationp))))
 
 ;; Returns a defthm (or similar) event.
@@ -755,7 +775,7 @@
     (let ((rec (first recs)))
       (cons (list (successful-recommendation-type rec)
                   (successful-recommendation-object rec)
-                  :todo)
+                  (successful-recommendation-symbol-table rec))
             (extract-actions-from-successful-recs (rest recs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1265,6 +1285,39 @@
                 (mv nil nil state))
       (mv provedp failure-info state))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Do this better?  Ask Matt.
+(defund sysfile-from-include-book-form (form)
+  (declare (xargs :guard (and (true-listp form)
+                              (consp (cdr form))
+                              (eq 'include-book (car form))
+                              (stringp (cadr form)))))
+  (if (not (equal (cddr form) '(:dir :system)))
+      (er hard? 'sysfile-from-include-book-form "Unexpected include-book form: ~x0." form)
+    (cons :system (concatenate 'string (cadr form) ".lisp"))))
+
+;; The result maps each of the FNS to a sysfile, or a string, or :built-in, or
+;; :top-level, or nil.
+(defun symbol-table-for-fns (fns wrld)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (plist-worldp wrld))
+                  :mode :program))
+  (if (endp fns)
+      nil
+    (acons (first fns)
+           (acl2::book-of-event (first fns) wrld)
+           (symbol-table-for-fns (rest fns) wrld))))
+
+(defund symbol-table-for-term (term wrld)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (plist-worldp wrld))
+                  :mode :program))
+  (let ((fns (acl2::all-fnnames term)))
+    (symbol-table-for-fns fns wrld)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; ;; Calls prove$ on FORMULA after submitting INCLUDE-BOOK-FORM, which is undone after the prove$.
 ;; ;; Returns (mv erp provedp state).  If NAME-TO-CHECK is non-nil, we require it to be defined
 ;; ;; after including the book (and to be the name of something appropriate, according to CHECK-KIND)
@@ -1477,6 +1530,7 @@
                                                           formula
                                                           `(("Goal" :by ,defthm-copy-name))
                                                           nil ; otf-flg
+                                                          nil ; symbol-table
                                                           ))
                                  (make-successful-rec rec-name
                                                       rec-type
@@ -1485,7 +1539,9 @@
                                                       (list include-book-form)
                                                       formula
                                                       hints ; original hints, no new enable
-                                                      otf-flg))
+                                                      otf-flg
+                                                      nil ; symbol-table
+                                                      ))
                                state))
                        ;; Both the include-book and the enable were needed:
                        (mv nil
@@ -1506,14 +1562,17 @@
                                                       formula
                                                       `(("Goal" :by ,defthm-copy-name))
                                                       nil ; otf-flg
-                                                      ))
+                                                      ;; The book here may not be where the name-to-enable is actually defined:
+                                                      (acons name-to-enable (sysfile-from-include-book-form include-book-form) nil)))
                              (make-successful-rec rec-name
                                                   :add-enable-hint
                                                   item-to-enable
                                                   (list include-book-form) ; pre-commands
                                                   formula
                                                   hints-with-enable
-                                                  otf-flg))
+                                                  otf-flg
+                                                  ;; The book here may not be where the name-to-enable is actually defined:
+                                                  (acons name-to-enable (sysfile-from-include-book-form include-book-form) nil)))
                              state)))
                  ;; Failed to prove, even with the enable (we could try without the enable, but it doesn't seem worth it):
                  (mv nil nil state))))))))
@@ -1671,6 +1730,7 @@
                                                           formula
                                                           `(("Goal" :by ,defthm-copy-name))
                                                           nil ; otf-flg
+                                                          nil ; symbol-table
                                                           ))
                                  (make-successful-rec rec-name
                                                       rec-type
@@ -1678,8 +1738,10 @@
                                                       ;; pre-commands:
                                                       (list include-book-form)
                                                       formula
-                                                      hints ; original hints, no new use
-                                                      otf-flg))
+                                                      hints ; original hints, no new :use
+                                                      otf-flg
+                                                      nil ; symbol-table
+                                                      ))
                                state))
                        ;; Both the include-book and the :use were needed:
                        (mv nil
@@ -1700,6 +1762,8 @@
                                                       formula
                                                       `(("Goal" :by ,defthm-copy-name))
                                                       nil ; otf-flg
+                                                      ;; The book here may not be where the name-to-use is actually defined:
+                                                      (acons name-to-use (sysfile-from-include-book-form include-book-form) nil)
                                                       ))
                              (make-successful-rec rec-name
                                                   :add-use-hint
@@ -1707,7 +1771,9 @@
                                                   (list include-book-form) ; pre-commands
                                                   formula
                                                   hints-with-use
-                                                  otf-flg))
+                                                  otf-flg
+                                                  ;; The book here may not be where the name-to-use is actually defined:
+                                                  (acons name-to-use (sysfile-from-include-book-form include-book-form) nil)))
                            state)))
                  ;; Failed to prove, even with the :use (we could try without the use, but it doesn't seem worth it):
                  (mv nil nil state))))))))
@@ -1837,6 +1903,7 @@
                                                 theorem-body
                                                 `(("Goal" :by ,defthm-copy-name))
                                                 nil ; otf-flg
+                                                nil ; symbol-table
                                                 ))
                        (make-successful-rec (nth 0 rec)
                                             :add-library
@@ -1845,7 +1912,9 @@
                                             (list include-book-form)
                                             theorem-body
                                             theorem-hints ; we checked above that these hints work
-                                            theorem-otf-flg))
+                                            theorem-otf-flg
+                                            nil ; symbol-table
+                                            ))
                      state)
                ;; Failed to prove:
                (mv nil nil state)))))))
@@ -1887,6 +1956,8 @@
                    *step-limit*
                    *time-limit* ; todo: reduce?
                    state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Don't try a hyp that is already present, or contradicts ones already present
@@ -1940,7 +2011,8 @@
                                  nil ; no pre-commands ; todo update this once we use the book map
                                  new-theorem-body
                                  theorem-hints
-                                 theorem-otf-flg))
+                                 theorem-otf-flg
+                                 (symbol-table-for-term hyp (w state))))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp
                    (cw-success-message rec)
@@ -2026,7 +2098,10 @@
                                        :add-enable-hint ; in case it was a :use-lemma rec, we force the type to be :add-enable-hint here, to ensure duplicates get removed
                                        rule-or-macro-alias
                                        nil
-                                       theorem-body new-hints theorem-otf-flg))
+                                       theorem-body new-hints theorem-otf-flg
+                                       ;;todo: what about :top-level?
+                                       ;;(acons rule (book-of-event rule  ..  nil))
+                                       :unavailable))
              (- (and (acl2::print-level-at-least-tp print)
                      (cw-success-message rec))))
           (mv nil rec state))
@@ -2055,7 +2130,7 @@
                                          :add-enable-hint
                                          rule-or-macro-alias
                                          nil
-                                         theorem-body new-hints theorem-otf-flg))
+                                         theorem-body new-hints theorem-otf-flg :unavailable))
                (- (and (acl2::print-level-at-least-tp print)
                        (cw-success-message rec))))
             (mv nil rec state))
@@ -2141,7 +2216,7 @@
                                  :add-disable-hint
                                  rule
                                  nil
-                                 theorem-body new-hints theorem-otf-flg))
+                                 theorem-body new-hints theorem-otf-flg :unavailable))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw "fail (disable didn't help)~%")))))
     (mv nil (if provedp rec nil) state)))
@@ -2189,7 +2264,7 @@
                                        :add-use-hint
                                        item
                                        nil
-                                       theorem-body new-hints theorem-otf-flg))
+                                       theorem-body new-hints theorem-otf-flg :unavailable))
              (- (and (acl2::print-level-at-least-tp print)
                      (if provedp (cw-success-message rec) (cw "fail (:use ~x0 didn't help)~%" item)))))
           (mv nil (if provedp rec nil) state))
@@ -2284,7 +2359,7 @@
                                  :add-expand-hint
                                  item
                                  nil
-                                 theorem-body new-hints theorem-otf-flg))
+                                 theorem-body new-hints theorem-otf-flg :unavailable))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw "fail (:expand hint didn't help)~%")))))
     (mv nil (if provedp rec nil) state)))
@@ -2331,7 +2406,7 @@
                                  :add-by-hint
                                  item
                                  nil
-                                 theorem-body new-hints theorem-otf-flg))
+                                 theorem-body new-hints theorem-otf-flg :unavailable))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw-failure-message ":by hint didn't help" failure-info)))))
     (mv nil (if provedp rec nil) state)))
@@ -2376,7 +2451,7 @@
                                  :add-cases-hint
                                  item
                                  nil
-                                 theorem-body new-hints theorem-otf-flg))
+                                 theorem-body new-hints theorem-otf-flg :unavailable))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw "fail (:cases hint didn't help)~%")))))
     (mv nil (if provedp rec nil) state)))
@@ -2413,7 +2488,7 @@
                                  :add-nonlinearp-hint
                                  item
                                  nil
-                                 theorem-body new-hints theorem-otf-flg))
+                                 theorem-body new-hints theorem-otf-flg nil))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw "fail (:nonlinearp hint didn't help)~%")))))
     (mv nil (if provedp rec nil) state)))
@@ -2447,7 +2522,7 @@
                                  :add-do-not-hint
                                  item
                                  nil
-                                 theorem-body new-hints theorem-otf-flg))
+                                 theorem-body new-hints theorem-otf-flg nil))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw "fail (:do-not hint didn't help)~%")))))
     (mv nil (if provedp rec nil) state)))
@@ -2501,7 +2576,7 @@
                                  :exact-hints
                                  hints
                                  nil
-                                 theorem-body hints theorem-otf-flg))
+                                 theorem-body hints theorem-otf-flg :unavailable))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw-failure-message ":hints didn't help" failure-info)))))
     (mv nil (if provedp rec nil) state)))
@@ -2637,6 +2712,7 @@
        (equal (nth 4 rec1) (nth 4 rec2)) ; same theorem-body
        (equal (nth 5 rec1) (nth 5 rec2)) ; same theorem-hints
        (equal (nth 6 rec1) (nth 6 rec2)) ; same theorem-otf-flg
+       (equal (nth 7 rec1) (nth 7 rec2)) ; same symbol-table
        ))
 
 ;; Returns a member of RECS that is equivalent to REC, or nil.
@@ -2672,6 +2748,7 @@
                                    (nth 4 rec) ; theorem-body is same in both
                                    (nth 5 rec) ; theorem-hints are same in both
                                    (nth 6 rec) ; theorem-otf-flg is same in both
+                                   (nth 7 rec) ; symbol-table is same in both
                                    )
               (remove-equal match recs))
       (cons rec recs))))
@@ -3086,7 +3163,7 @@
                (cw "WARNING: Proved ~x0 with original hints.~%" theorem-name)))
         (mv nil ; no error
             t   ; proved (with the original hints)
-            (make-successful-rec "original" :exact-hints theorem-hints nil theorem-body theorem-hints theorem-otf-flg)
+            (make-successful-rec "original" :exact-hints theorem-hints nil theorem-body theorem-hints theorem-otf-flg :unavailable)
             nil ; checkpoints, meaningless
             state))
        ;; The proof failed, so get the checkpoints:
