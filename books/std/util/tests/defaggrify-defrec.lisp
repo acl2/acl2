@@ -30,18 +30,18 @@
 
 ; Tests for defaggrify-defrec utility.
 
-; (depends-on "build/rewrite-constant.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
 
-; (depends-on "build/rewrite-rule.certdep" :dir :system)
-; (depends-on "build/def-body.certdep" :dir :system)
-; (depends-on "build/io-record.certdep" :dir :system)
-; (depends-on "build/state-vars.certdep" :dir :system)
-; (depends-on "build/gag-info.certdep" :dir :system)
-; (depends-on "build/rewrite-constant.certdep" :dir :system)
-; (depends-on "build/attachment.certdep" :dir :system)
-; (depends-on "build/clause-id.certdep" :dir :system)
-; (depends-on "build/assumption.certdep" :dir :system)
-; (depends-on "build/justification.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/REWRITE-RULE.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/DEF-BODY.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/IO-RECORD.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/STATE-VARS.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/GAG-INFO.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/ATTACHMENT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/CLAUSE-ID.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/ASSUMPTION.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/JUSTIFICATION.certdep" :dir :system)
 
 (in-package "ACL2")
 (include-book "../defaggrify-defrec")
