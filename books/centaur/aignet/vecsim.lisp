@@ -48,6 +48,14 @@
                 (remove-equal (assoc 'aignet fixtype-alist)
                               fixtype-alist))))
 
+(defxdoc vector-simulation
+  :parents (aignet-eval)
+  :short "Simulating the network by running many tests in parallel using vector logic operations"
+  :long " <p>32-bit bitwise logic operations can be used to effectively run 32
+ANDs, XORs, or NOTs with one operation, so we can use this to run many
+evaluations of an AIG very quickly. See subtopics for various utilities.</p>")
+
+
 (define s32-fix ((x :type (signed-byte 32)))
   :inline t
   :returns (new-x (signed-byte-p 32 new-x))
@@ -61,7 +69,9 @@
   :pred (lambda (x) (signed-byte-p 32 x))
   :type-decl (signed-byte 32)
   :default-val 0
-  :fix s32-fix)
+  :fix s32-fix
+  :parents (vector-simulation)
+  :short "Stobj containing a 2-dimensional array of 32-bit signed integers.  Used to store the data for @(see vector-simulation).")
 
 (defthm signed-byte-p-of-s32v-get2
   (signed-byte-p 32 (s32v-get2 row col s32v)))
@@ -536,7 +546,30 @@
 
 
 (defsection aignet-vecsim
+  :parents (vector-simulation)
+  :short "Simulate an AIG on N*32 parallel input vectors."
+  :long "<p>This takes an @(see s32v) that has at least one row (see @(see
+s32v-nrows)) for each fanin node of the AIG and is seeded with combinational
+input values.  This function sweeps over the AIG to compute all other fanin
+values given those inputs.  After this, the Kth bit of the Nth row of the s32v
+will equal the @('id-eval') of the AIG under the inputs/registers computed by
+collecting the Kth bit of the rows corresponding to input and register
+nodes.</p>
+
+<p>If you want to simulate only one 32-bit set of values at a time, it is
+faster and logically equivalent to use @(see aignet-vecsim1) or @(see
+aignet-vecsim-top) (which logically equals @('aignet-vecsim') but uses
+@('aignet-vecsim1') when the input @('s32v') is one column wide).</p>
+
+<p>The combinational inputs of the AIG must have values already set in the
+@('s32v') before starting.  You may initialize them to random values using
+@(see s32v-randomize-inputs) and @(see s32v-randomize-regs).</p>
+
+<p>@(csee exhaustive-sim) wraps @('aignet-vecsim') and performs an exhaustive
+simulation to find whether there is any input setting that results in the 0th
+output producing 1; i.e. whether the 0th output is satisfiable.</p>"
   (defiteration aignet-vecsim (s32v aignet)
+
     (declare (xargs :stobjs (s32v aignet)
                     :guard (<= (num-fanins aignet) (s32v-nrows s32v))
                     :guard-hints (("goal" :in-theory (enable aignet-idp)))))
@@ -747,6 +780,8 @@
 
 
 (defsection aignet-vecsim1
+  :parents (vector-simulation)
+  :short "Simulate an AIG on 32 parallel input vectors."
   (defiteration aignet-vecsim1 (s32v aignet)
     (declare (xargs :stobjs (s32v aignet)
                     :guard (and (<= (num-fanins aignet) (s32v-nrows s32v))
@@ -821,6 +856,9 @@
 (define aignet-vecsim-top (s32v aignet)
   :enabled t
   :guard (<= (num-fanins aignet) (s32v-nrows s32v))
+  :parents (vector-simulation)
+  :short "Logically same as @(see aignet-vecsim), but optimizes by calling
+@(see aignet-vecsim1) when s32v has only 1 column"
   (mbe :logic (aignet-vecsim s32v aignet)
        :exec (if (eql (s32v-ncols s32v) 1)
                  (aignet-vecsim1 s32v aignet)
@@ -920,6 +958,8 @@
                                (s32v)
                                (aignet)
                                (state))
+  :parents (vector-simulation)
+  :short "Assign random values to the PI nodes of an AIG in an @(see s32v)"
   :guard (and (<= n (num-ins aignet))
               (<= (num-fanins aignet) (s32v-nrows s32v)))
   :measure (nfix (- (num-ins aignet) (nfix n)))
@@ -943,6 +983,8 @@
                              (s32v)
                              (aignet)
                              (state))
+  :parents (vector-simulation)
+  :short "Assign random values to the register nodes of an AIG in an @(see s32v)"
   :guard (and (<= n (num-regs aignet))
               (<= (num-fanins aignet) (s32v-nrows s32v)))
   :measure (nfix (- (num-regs aignet) (nfix n)))
@@ -1465,6 +1507,14 @@
   :returns (ctrex acl2::maybe-natp :rule-classes :type-prescription)
   :guard (and (<= (num-ins aignet) 37)
               (<= 1 (num-outs aignet)))
+  :parents (vector-simulation)
+  :short "Exhaustively simulate an AIG with one output node to determine if it is satisfiable"
+  :long "<p>Given a combinational AIG with 37 or fewer inputs and no registers,
+this uses @(see aignet-vecsim) to run through all combinations of inputs to
+check the satisfiability of the 0th output of the AIG.  This function returns
+NIL if that output is unsatisfiable (always 0), and otherwise returns a natural
+number giving the satisfying assignment for the PIs; i.e. @('(logbitp n
+result)') gives the assignment for input n.</p>"
   (b* (((acl2::local-stobjs s32v)
         (mv ctrex s32v))
        (s32v (s32v-resize-cols 1 s32v))
