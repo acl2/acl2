@@ -1871,6 +1871,11 @@
 
 (bump-rule 4vec-plus-to-HA-FA-helper-1)
 
+;; where there is a mismatch at the end of a 4vec-concat$ term, the meta
+;; checking equiv keeps getting called to keep failing over and over again. But
+;; this should separate the problem and take care of it nicely.
+(bump-rule svl::equal-of-4vec-concat$-with-posp-size)
+
 ;;(bump-down-rp-rule (:META medw-compress-meta . equal))
 ;;(bump-down-rp-rule (:META make-sc-fgl-ready-meta-main . equal))
 

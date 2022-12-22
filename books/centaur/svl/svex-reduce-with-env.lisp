@@ -62,6 +62,12 @@
   use-qr-lemmas
   :disabled t))
 
+(local
+ (rp::fetch-new-events
+  (include-book "centaur/bitops/equal-by-logbitp" :dir :system)
+  use-equal-by-logbitp
+  :disabled t))
+
 (define nth-4vec (n argsvar)
   :guard (natp n)
   (if (atom argsvar)
@@ -316,37 +322,37 @@
             :in-theory (e/d (SVEX-P) ())))))
 
 #|(define svex-rw-bitand (arg1 arg2)
-  :measure (+ (acl2-count arg1)
-              (acl2-count arg2))
-  (cond ((case-match arg1 (('sv::unfloat &) t))
-         (svex-rw-bitand (cadr arg1) arg2))
-        ((case-match arg2 (('sv::unfloat &) t))
-         (svex-rw-bitand arg1 (cadr arg2)))
-        ((case-match arg1 (('sv::partsel start size
-                                         ('sv::bitnot x))
-                           (case-match arg2
-                             (('sv::partsel start2 size2 x2)
-                              (and (equal start start2)
-                                   (equal size size2)
-                                   (equal x x2))))))
-         0)
-        ((case-match arg2 (('sv::partsel start size
-                                         ('sv::bitnot x))
-                           (case-match arg1
-                             (('sv::partsel start2 size2 x2)
-                              (and (equal start start2)
-                                   (equal size size2)
-                                   (equal x x2))))))
-         0)
-        ((case-match arg1 (('sv::partsel 0 &
-                                         ('sv::bitnot x))
-                           (equal x arg2)))
-         0)
-        ((case-match arg2 (('sv::partsel 0 &
-                                         ('sv::bitnot x))
-                           (equal x arg1)))
-         0)
-        (t (hons-list 'sv::bitand arg1 arg2))))|#
+:measure (+ (acl2-count arg1)
+(acl2-count arg2))
+(cond ((case-match arg1 (('sv::unfloat &) t))
+(svex-rw-bitand (cadr arg1) arg2))
+((case-match arg2 (('sv::unfloat &) t))
+(svex-rw-bitand arg1 (cadr arg2)))
+((case-match arg1 (('sv::partsel start size
+('sv::bitnot x))
+(case-match arg2
+(('sv::partsel start2 size2 x2)
+(and (equal start start2)
+(equal size size2)
+(equal x x2))))))
+0)
+((case-match arg2 (('sv::partsel start size
+('sv::bitnot x))
+(case-match arg1
+(('sv::partsel start2 size2 x2)
+(and (equal start start2)
+(equal size size2)
+(equal x x2))))))
+0)
+((case-match arg1 (('sv::partsel 0 &
+('sv::bitnot x))
+(equal x arg2)))
+0)
+((case-match arg2 (('sv::partsel 0 &
+('sv::bitnot x))
+(equal x arg1)))
+0)
+(t (hons-list 'sv::bitand arg1 arg2))))|#
 
 (define svex-reduce-w/-env-apply-specials (fn args)
   :returns (res svex-p :hyp (and (FNSYM-P fn)
@@ -455,19 +461,19 @@
 ;; saw one that went (4vec-? (1 . 0) x y)
 ;; saw one sv::4vec-parity
 ;; (SVL::4VEC-BITNOT$
-      ;; '1
-      ;; (SVL::4VEC-BITNOT$
-      ;;  '1
-      ;;  (SVL::BITS
-      ;;    (SV::4VEC-REDUCTION-OR
-      ;;         (SV::4VEC-? '(1 . 0)
-      ;;                     (SV::4VEC-BIT?! '255
-      ;;                                     (SVL::BITS (ACL2::RP 'INTEGERP OP1)
-      ;;                                                '23
-      ;;                                                '8)
-      ;;                                     '(255 . 0))
-      ;;                     '(255 . 0)))
-      ;;    '0
+;; '1
+;; (SVL::4VEC-BITNOT$
+;;  '1
+;;  (SVL::BITS
+;;    (SV::4VEC-REDUCTION-OR
+;;         (SV::4VEC-? '(1 . 0)
+;;                     (SV::4VEC-BIT?! '255
+;;                                     (SVL::BITS (ACL2::RP 'INTEGERP OP1)
+;;                                                '23
+;;                                                '8)
+;;                                     '(255 . 0))
+;;                     '(255 . 0)))
+;;    '0
 ;;    '1)))
 
 ;; (SV::4VEC-? '(1 . 0)
@@ -490,9 +496,9 @@
        (hons-list 'sv::partsel start size return-term))))
 
 #|(encapsulate
-    (((example-env) => *))
-    (local
-     (defun example-env () nil)))|#
+(((example-env) => *))
+(local
+(defun example-env () nil)))|#
 
 (local
  (defthm dummy-svex-p-of-call-lemma
@@ -539,15 +545,70 @@
     :flag-local nil
     :hints (("Goal"
              :in-theory (e/d (svex-kind
+                              sv::svex-call->fn
+                              sv::svex-call->args
                               measure-lemmas) ())))
     :prepwork ((local
                 (in-theory (enable svex-kind-wog))))
+
+    (define svex-and/or/xor-reduce-w/-env-masked ((svex svex-p)
+                                                  (start natp)
+                                                  (size natp)
+                                                  env)
+      :measure (acl2::nat-list-measure (list (cons-count svex)
+                                             (nfix size)))
+      :returns (res svex-p :hyp (and (natp start)
+                                     (natp size)
+                                     (svex-p svex)))
+      (b* (((unless (equal (sv::svex-kind svex) :call))
+            `(sv::partsel ,start ,size ,svex))
+           ((mv fn args) (mv (car svex)
+                             (cdr svex))))
+        (cond
+         ((zp size)
+          0)
+         ((not (and (or (equal fn 'sv::bitor)
+                        (equal fn 'sv::bitand)
+                        (equal fn 'sv::bitxor))
+                    (equal-len args 2)))
+          (svex-reduce-w/-env-apply 'sv::partsel (hons-list start size svex)))
+         (t
+          (b* ((term1 (svex-reduce-w/-env-masked (first args) start 1 env))
+               (term2 (svex-reduce-w/-env-masked (second args) start 1 env))
+               (cur-term
+                (b* (((when (and (equal fn 'sv::bitand)
+                                 (or (equal term1 1)
+                                     (equal term2 1))))
+                      (if (equal term1 1)
+                          (svex-reduce-w/-env-apply 'sv::unfloat (hons-list term2))
+                        (svex-reduce-w/-env-apply 'sv::unfloat (hons-list
+                                                                term1))))
+                     ((when (and (or (equal fn 'sv::bitor)
+                                     (equal fn 'sv::bitxor))
+                                 (or (equal term1 0)
+                                     (equal term2 0))))
+                      (if (equal term1 0)
+                          (svex-reduce-w/-env-apply 'sv::unfloat (hons-list term2))
+                        (svex-reduce-w/-env-apply 'sv::unfloat (hons-list term1)))))
+                  (svex-reduce-w/-env-apply fn (hons-list term1 term2))))
+               
+               ((when (equal size 1))
+                cur-term))
+            (svex-reduce-w/-env-apply
+             'sv::concat
+             (hons-list 1
+                        cur-term
+                        (svex-and/or/xor-reduce-w/-env-masked svex
+                                                              (1+ start)
+                                                              (1- size)
+                                                              env))))))))
 
     (define svex-reduce-w/-env-masked ((svex svex-p)
                                        (start natp)
                                        (size natp)
                                        env)
-      :measure (cons-count svex)
+      :measure (acl2::nat-list-measure (list (cons-count svex)
+                                             (1+ (nfix size))))
       :returns (res svex-p :hyp (and (natp start)
                                      (natp size)
                                      (svex-p svex)))
@@ -725,21 +786,22 @@
                         (equal fn 'sv::bitand)
                         (equal fn 'sv::bitxor))
                     (equal-len args 2))
-               (b* ((term1 (svex-reduce-w/-env-masked (first args) start size env))
-                    (term2 (svex-reduce-w/-env-masked (second args) start size env))
-                    ((when (and (equal fn 'sv::bitand)
-                                (or (equal term1 (4vec-part-select 0 size -1))
-                                    (equal term2 (4vec-part-select 0 size -1)))))
-                     (if (equal term1 (4vec-part-select 0 size -1))
-                         (svex-reduce-w/-env-apply 'sv::unfloat (hons-list term2))
-                       (svex-reduce-w/-env-apply 'sv::unfloat (hons-list term1))))
-                    ((when (and (equal fn 'sv::bitor)
-                                (or (equal term1 0)
-                                    (equal term2 0))))
-                     (if (equal term1 0)
-                         (svex-reduce-w/-env-apply 'sv::unfloat (hons-list term2))
-                       (svex-reduce-w/-env-apply 'sv::unfloat (hons-list term1)))))
-                 (svex-reduce-w/-env-apply fn (hons-list term1 term2))))
+               (svex-and/or/xor-reduce-w/-env-masked svex start size env)
+               #|(b* ((term1 (svex-reduce-w/-env-masked (first args) start size env))
+               (term2 (svex-reduce-w/-env-masked (second args) start size env))
+               ((when (and (equal fn 'sv::bitand)
+               (or (equal term1 (4vec-part-select 0 size -1))
+               (equal term2 (4vec-part-select 0 size -1)))))
+               (if (equal term1 (4vec-part-select 0 size -1))
+               (svex-reduce-w/-env-apply 'sv::unfloat (hons-list term2))
+               (svex-reduce-w/-env-apply 'sv::unfloat (hons-list term1))))
+               ((when (and (equal fn 'sv::bitor)
+               (or (equal term1 0)
+               (equal term2 0))))
+               (if (equal term1 0)
+               (svex-reduce-w/-env-apply 'sv::unfloat (hons-list term2))
+               (svex-reduce-w/-env-apply 'sv::unfloat (hons-list term1)))))
+               (svex-reduce-w/-env-apply fn (hons-list term1 term2)))|#)
 
               ((and (equal fn 'sv::bitnot)
                     (equal-len args 1))
@@ -947,7 +1009,8 @@ but did not resolve the branch ~%" first))))
 
     (define svex-reduce-w/-env ((svex svex-p)
                                 env)
-      :measure (cons-count svex)
+      :measure (acl2::nat-list-measure (list (cons-count svex)
+                                             0))
       :returns (res svex-p :hyp (svex-p svex))
       (let* ((svex.kind (svex-kind svex)))
         (case  svex.kind
@@ -998,7 +1061,8 @@ but did not resolve the branch ~%" first))))
 
     (define svex-reduce-w/-env-lst ((svex-list svexlist-p)
                                     env)
-      :measure (cons-count svex-list)
+      :measure (acl2::nat-list-measure (list (cons-count svex-list)
+                                             0))
       :returns (res-lst sv::svexlist-p :hyp (sv::svexlist-p svex-list))
       (if (atom svex-list)
           nil
@@ -1363,76 +1427,76 @@ but did not resolve the branch ~%" first))))
             :in-theory (e/d (4vec-p) ())))))
 
 #|(local
- (defthm svex-reduce-w/-env-apply-specials-is-svex-apply-when-4vec-p
-     (implies (and (fnsym-p fn)
-                   (4VEC-P (SVEX-REDUCE-W/-ENV-APPLY-SPECIALS fn args)))
-              (equal (SVEX-REDUCE-W/-ENV-APPLY-SPECIALS fn args)
-                     (SV::SVEX-APPLY fn args)))
-   :hints (("goal"
-            :do-not-induct t
-            :use ((:instance bit?!-resolve-is-svex-apply-when-4vec-p
-                             (test (car args))
-                             (then (cadr args))
-                             (else (caddr args))
-                             (limit 1073741824))
-                  (:instance svex-reduce-w/-env-apply-correct)
-                  (:instance svex-reduce-w/-env-apply-specials-correct))
-            :expand ((SV::4VEC->LOWER (CAR ARGS))
-                     (:free (x y) (4VEC-P (CONS x y)))
+(defthm svex-reduce-w/-env-apply-specials-is-svex-apply-when-4vec-p
+(implies (and (fnsym-p fn)
+(4VEC-P (SVEX-REDUCE-W/-ENV-APPLY-SPECIALS fn args)))
+(equal (SVEX-REDUCE-W/-ENV-APPLY-SPECIALS fn args)
+(SV::SVEX-APPLY fn args)))
+:hints (("goal"
+:do-not-induct t
+:use ((:instance bit?!-resolve-is-svex-apply-when-4vec-p
+(test (car args))
+(then (cadr args))
+(else (caddr args))
+(limit 1073741824))
+(:instance svex-reduce-w/-env-apply-correct)
+(:instance svex-reduce-w/-env-apply-specials-correct))
+:expand ((SV::4VEC->LOWER (CAR ARGS))
+(:free (x y) (4VEC-P (CONS x y)))
 
-                     (:free (x y) (4VECLIST-NTH-SAFE x y))
-                     (:free (x y) (nth x y))
-                     ;; (:free (x) (SV::SVEX-APPLY 'BITAND x))
-                     ;; (:free (x) (SV::SVEX-APPLY 'SV::BITOR x))
-                     ;; (:free (x) (SV::SVEX-APPLY 'sv::? x))
-                     ;; (:free (x) (SV::SVEX-APPLY 'sv::?* x))
-                     ;; (:free (x) (SV::SVEX-APPLY 'sv::?! x))
-                     ;; (:free (x) (SV::SVEX-APPLY 'sv::bit?! x))
-                     ;; (:free (x) (SV::SVEX-APPLY 'sv::bit? x))
-                     )
-            :in-theory (e/d (;;svex-reduce-w/-env-apply-specials
-                             ;;4VEC-?
-                             ;;SV::4VEC-BIT?!
-                             ;;4VEC-P
-                             ;;4VEC-?*
-                             ;;SV::3VEC-BIT?
-                             ;;SV::3VEC-?*
-                             ;;SV::4VEC-BIT?!
-                             ;;SV::4VEC-?!
-                             ;;SV::4VEC->UPPER
-                             ;;SV::3VEC-?
-                             )
-                            (bit?!-resolve-is-svex-apply-when-4vec-p
-                             svex-reduce-w/-env-apply-correct
-                             svex-reduce-w/-env-apply-specials-correct
-                             ))))))|#
+(:free (x y) (4VECLIST-NTH-SAFE x y))
+(:free (x y) (nth x y))
+;; (:free (x) (SV::SVEX-APPLY 'BITAND x))
+;; (:free (x) (SV::SVEX-APPLY 'SV::BITOR x))
+;; (:free (x) (SV::SVEX-APPLY 'sv::? x))
+;; (:free (x) (SV::SVEX-APPLY 'sv::?* x))
+;; (:free (x) (SV::SVEX-APPLY 'sv::?! x))
+;; (:free (x) (SV::SVEX-APPLY 'sv::bit?! x))
+;; (:free (x) (SV::SVEX-APPLY 'sv::bit? x))
+)
+:in-theory (e/d (;;svex-reduce-w/-env-apply-specials
+;;4VEC-?
+;;SV::4VEC-BIT?!
+;;4VEC-P
+;;4VEC-?*
+;;SV::3VEC-BIT?
+;;SV::3VEC-?*
+;;SV::4VEC-BIT?!
+;;SV::4VEC-?!
+;;SV::4VEC->UPPER
+;;SV::3VEC-?
+)
+(bit?!-resolve-is-svex-apply-when-4vec-p
+svex-reduce-w/-env-apply-correct
+svex-reduce-w/-env-apply-specials-correct
+))))))|#
 
 #|(local
- (defthm svex-reduce-w/-env-apply-is-SVEX-APPLY-when-4vec-p
-    (implies (and (fnsym-p fn)
-                  (4VEC-P (SVEX-REDUCE-W/-ENV-APPLY fn args)))
-             (equal (SVEX-REDUCE-W/-ENV-APPLY fn args)
-                    (SV::SVEX-APPLY fn args)))
-  :hints (("goal"
-           :do-not-induct t
-           :expand ((SVEXLIST-EVAL ARGS ENV)
-                    (:free (x y)
-                           (SVEX-REDUCE-W/-ENV-APPLY x y))
-                    (:free (x y)
-                           (SV::SVEX-APPLY x y))
-                    ;;(SV::SVEX-APPLY FN ARGS)
-                    (:free (fn args)
-                           (4VEC-P (CONS FN ARGS)))
-                    (SVEX-EVAL (CONS FN ARGS) ENV)
-                    (SVEX-REDUCE-W/-ENV-APPLY FN ARGS))
-           :use ((:instance svex-reduce-w/-env-apply-correct))
-           :in-theory (e/d (SVEX-KIND
-                            4VEC-?
-                            SV::3VEC-?
-                            SV::4VEC-BIT?
-                            SVEX-CALL->ARGS
-                            SVEX-CALL->FN)
-                           (svex-reduce-w/-env-apply-correct))))))|#
+(defthm svex-reduce-w/-env-apply-is-SVEX-APPLY-when-4vec-p
+(implies (and (fnsym-p fn)
+(4VEC-P (SVEX-REDUCE-W/-ENV-APPLY fn args)))
+(equal (SVEX-REDUCE-W/-ENV-APPLY fn args)
+(SV::SVEX-APPLY fn args)))
+:hints (("goal"
+:do-not-induct t
+:expand ((SVEXLIST-EVAL ARGS ENV)
+(:free (x y)
+(SVEX-REDUCE-W/-ENV-APPLY x y))
+(:free (x y)
+(SV::SVEX-APPLY x y))
+;;(SV::SVEX-APPLY FN ARGS)
+(:free (fn args)
+(4VEC-P (CONS FN ARGS)))
+(SVEX-EVAL (CONS FN ARGS) ENV)
+(SVEX-REDUCE-W/-ENV-APPLY FN ARGS))
+:use ((:instance svex-reduce-w/-env-apply-correct))
+:in-theory (e/d (SVEX-KIND
+4VEC-?
+SV::3VEC-?
+SV::4VEC-BIT?
+SVEX-CALL->ARGS
+SVEX-CALL->FN)
+(svex-reduce-w/-env-apply-correct))))))|#
 
 (local
  (defthm SVEX-VAR->NAME-when-svexp
@@ -1562,14 +1626,14 @@ but did not resolve the branch ~%" first))))
                              ) ())))))
 
 #|(skip-proofs
- (defthm 4vec-part-select-of-4vec-bit?
-    (implies (and (natp start)
-                  (natp size))
-             (equal (4vec-part-select start size
-                                      (sv::4vec-bit? test then else))
-                    (sv::4vec-bit? (4vec-part-select start size test)
-                                    (4vec-part-select start size then)
-                                    (4vec-part-select start size else))))))|#
+(defthm 4vec-part-select-of-4vec-bit?
+(implies (and (natp start)
+(natp size))
+(equal (4vec-part-select start size
+(sv::4vec-bit? test then else))
+(sv::4vec-bit? (4vec-part-select start size test)
+(4vec-part-select start size then)
+(4vec-part-select start size else))))))|#
 
 (local
  (defthm 4vec-bit?-of-masked-dont-care
@@ -1766,7 +1830,7 @@ but did not resolve the branch ~%" first))))
                              (test 0)))
             :in-theory (e/d () (SV::4VEC-BIT?!-of-constants
                                 4vec-part-select-of-4vec-bit?!
-                                
+
                                 (:REWRITE 4VEC-BIT?!-WHEN-TEST=-1-MASKED)
                                 (:REWRITE 4VEC-BIT?!-WHEN-TEST=-DONT-CARE-OR-Z-MASKED)
                                 (:REWRITE 4VEC-BIT?!-WHEN-TEST=DONT-CARE)
@@ -2068,6 +2132,86 @@ but did not resolve the branch ~%" first))))
         (implies (acl2-numberp other)
                  (equal (+ x (- x) other) other)))))
 
+;; (local
+;;  (defthm 4VEC-CONCAT-INSERT-4VEC-PART-SELECT-to-concat$
+;;    (equal (4vec-concat size val1 val2)
+;;           (4vec-concat$ size (4vec-part-select 0 size val1)
+;;                         val2))
+;;    :hints (("Goal"
+;;             :in-theory (e/d (4vec-concat$
+;;                              4VEC-CONCAT-INSERT-4VEC-PART-SELECT)
+;;                             ())))))
+
+;; (local
+;;  (defthm min-of-the-same
+;;    (equal (min x x)
+;;           x)))
+
+;; (local
+;;  (defthm 4vec-part-select-of-4vec-concat$
+;;    (implies (and (natp start)
+;;                  (natp size)
+;;                  (natp c-size))
+;;             (and (implies (<= (+ start size) c-size)
+;;                           (equal (4vec-part-select start size (4vec-concat$ c-size term1 term2))
+;;                                  (4vec-part-select start size term1)))
+;;                  (implies (and (< start c-size)
+;;                                (< c-size (+ start size)))
+;;                           (equal (4vec-part-select start size (4vec-concat$ c-size term1 term2))
+;;                                  (4vec-concat$ (- c-size start)
+;;                                                (bits term1 start (- c-size start) )
+;;                                                (bits term2 0 (- size (- c-size start)) ))))
+;;                  (implies (and (<= c-size start))
+;;                           (equal (4vec-part-select start size (4vec-concat$ c-size term1 term2))
+;;                                  (bits term2 (- start c-size) size )))))
+;;    :hints (("Goal"
+;;             :use ((:instance bits-of-concat-1)
+;;                   (:instance bits-of-concat-2)
+;;                   (:instance bits-of-concat-3))
+;;             :in-theory (e/d (
+;;                              bits)
+;;                             (4VEC-CONCAT-INSERT-4VEC-PART-SELECT-TO-CONCAT$))))))
+
+;; (local
+;;  (defthm 4vec-rsh-of-4vec-concat$
+;;    (implies (and (natp s1)
+;;                  (natp s2))
+;;             (equal (4vec-rsh s1 (4vec-concat$ s2 x y))
+;;                    (if (<= s2 s1)
+;;                        (4vec-rsh (- s1 s2) y)
+;;                      (4vec-concat$ (- s2 s1)
+;;                                    (4vec-rsh s1 x)
+;;                                    y))))
+;;    :hints (("Goal"
+;;             :use ((:instance 4vec-rsh-of-4vec-concat$-1)
+;;                   (:instance 4vec-rsh-of-4vec-concat$-2))
+;;             :in-theory (e/d (bits)
+;;                             ())))))
+
+(local
+ (defthmd 4vec-concat-insert-4vec-part-select-local
+   (implies
+    (syntaxp
+     (and (not (equal val1 '0))
+          (not (equal val1 ''0))
+          (or (and (consp val1)
+                   (not (equal (car val1) 'sv::4vec-part-select))
+                   (not (equal (car val1) 'sv::4vec-bitxor))
+                   (not (equal (car val1) 'sv::4vec-bitand))
+                   (not (equal (car val1) 'sv::4vec-bitor))
+                   (not (equal (car val1) 'sv::3vec-fix)))
+              (atom val1))))
+    (equal (4vec-concat size val1 val2)
+           (4vec-concat size (4vec-part-select 0 size val1)
+                        val2)))
+   :hints (("goal"
+            :use ((:instance 4vec-concat-insert-4vec-part-select))
+            :in-theory (e/d () ())))))
+
+
+
+
+
 (progn
   (local
    (in-theory (disable (:DEFINITION ACL2::APPLY$-BADGEP)
@@ -2106,7 +2250,7 @@ but did not resolve the branch ~%" first))))
                        (:REWRITE ACL2::|(equal (/ x) (/ y))|)
                        (:REWRITE ACL2::|(equal (- x) c)|)
                        (:REWRITE ACL2::|(equal (- x) (- y))|)
-;;                       (:REWRITE ACL2::O-P-O-INFP-CAR)
+                       ;;                       (:REWRITE ACL2::O-P-O-INFP-CAR)
                        (:REWRITE ACL2::REDUCE-INTEGERP-+)
                        (:REWRITE ACL2::INTEGERP-MINUS-X)
                        (:REWRITE
@@ -2147,10 +2291,10 @@ but did not resolve the branch ~%" first))))
                        (:REWRITE DEFAULT-<-1)
                        (:REWRITE ACL2::FOLD-CONSTS-IN-+)
                        (:REWRITE SV::SVEX-P-WHEN-MAYBE-SVEX-P)
-;;                       (:REWRITE ACL2::O-INFP->NEQ-0)
+                       ;;                       (:REWRITE ACL2::O-INFP->NEQ-0)
                        (:REWRITE SV::MAYBE-SVEX-P-WHEN-SVEX-P)
                        (:TYPE-PRESCRIPTION O-FINP)
-;;                       (:REWRITE ACL2::O-FIRST-EXPT-O-INFP)
+                       ;;                       (:REWRITE ACL2::O-FIRST-EXPT-O-INFP)
                        (:REWRITE
                         ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-3)
                        (:REWRITE ACL2::DEFAULT-LESS-THAN-2)
@@ -2167,12 +2311,22 @@ but did not resolve the branch ~%" first))))
                        (:TYPE-PRESCRIPTION 4VEC-BITOR)
                        (:TYPE-PRESCRIPTION 4VEC-BITAND)
                        )))
-  
+
   (with-output
     :off :All
     :on (error summary)
 
     (defret-mutual svex-reduce-w/-env-correct
+
+      (defret svex-and/or/xor-reduce-w/-env-masked-correct
+        (implies (and (svex-p svex)
+                      (natp start)
+                      (natp size)
+                      (rp::falist-consistent-aux env env-term))
+                 (equal (svex-eval (svex-and/or/xor-reduce-w/-env-masked svex start size env) (rp-evlt env-term a))
+                        (svex-eval `(sv::partsel ,start ,size ,svex) (rp-evlt env-term a))))
+        :fn svex-and/or/xor-reduce-w/-env-masked)
+
       (defret svex-reduce-w/-env-masked-correct
         (implies (and (svex-p svex)
                       (natp start)
@@ -2224,6 +2378,7 @@ but did not resolve the branch ~%" first))))
                         (:free (args) (SV::SVEX-APPLY 'SV::BIT?! args))
                         (:free (args) (SV::SVEX-APPLY 'SV::PARTINST args)))
                :in-theory (e/d (svex-reduce-w/-env-masked
+                                SVEX-AND/OR/XOR-REDUCE-W/-ENV-MASKED
                                 SV::SVEX-QUOTE->VAL
                                 SVEX-ENV-LOOKUP-when-svex-p
                                 4vec-part-select-of-4vec-bitnot-reverse
@@ -2234,7 +2389,9 @@ but did not resolve the branch ~%" first))))
                                 svex-eval-when-entry-is-absent
                                 svex-eval-when-entry-is-present-but-not-4vec-p
                                 ;;convert-4vec-concat-to-4vec-concat$
-                                4vec-concat-insert-4vec-part-select
+                                ;;4vec-concat-insert-4vec-part-select
+                                4vec-concat-insert-4vec-part-select-local
+                                ;;4VEC-CONCAT-INSERT-4VEC-PART-SELECT-to-concat$
                                 ;; 4vec-concat-of-4vec-part-select-same-size
                                 svex-reduce-w/-env
                                 SVEX-CALL->FN
@@ -2243,6 +2400,8 @@ but did not resolve the branch ~%" first))))
                                 bits
                                 ;;SVEX-ENV-LOOKUP-when-svex-p
                                 svex-reduce-w/-env-lst
+
+                                4VEC-CONCAT$-OF-TERM2=0
 
                                 4vec-sign-ext-to-4vec-concat)
                                ()))))))
