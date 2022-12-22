@@ -450,7 +450,7 @@
       (if (eq :step-limit-reached failure-info)
           ;; Step limit reached, so record the fact that we worked harder on it:
           (mv nil :updated nil (change-open-problem prob :last-step-limit step-limit) nil nil name-map state)
-        ;; Didn't prove it but no limit reached, so we should have subgoals:
+        ;; Didn't prove it but no step-limit reached, so we should have subgoals:
         (b* ((non-top-checkpoints (checkpoint-list nil state)) ; these are clauses
              (non-top-checkpoints (clauses-to-implications non-top-checkpoints))
              ((when (not non-top-checkpoints))

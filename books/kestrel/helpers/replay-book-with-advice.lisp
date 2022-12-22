@@ -70,6 +70,7 @@
                                     server-url
                                     nil ; debug
                                     100000 ; step-limit (TODO: give time/steps proportional to what was needed for the original theorem?)
+                                    5 ; time-limit
                                     '(:add-hyp) ; disallow :add-hyp, because no hyps are needed for these theorems
                                     1           ; max-wins
                                     models

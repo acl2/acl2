@@ -66,7 +66,8 @@
                   state)
         (mv-let (erp val state)
           ;; TODO: Make this less noisy:
-          (eval-port-file (concatenate 'string book-path ".lisp") 'load-port-file-if-exists state)
+          (with-output! :off (acl2::event acl2::observation)
+            (eval-port-file (concatenate 'string book-path ".lisp") 'load-port-file-if-exists state))
           (declare (ignore val))
           (if erp
               (prog2$ (er hard? 'load-port-file-if-exists "Error loading .port file for ~x0." book-path)

@@ -72,14 +72,14 @@
 (include-book "kestrel/utilities/theory-hints" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
-(include-book "kestrel/utilities/read-string" :dir :system) ; todo: slowish
+(include-book "kestrel/utilities/read-string" :dir :system)
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/included-books-in-world" :dir :system)
-(include-book "kestrel/alists-light/lookup-equal" :dir :system) ; todo: include-less
-(include-book "kestrel/alists-light/lookup-eq" :dir :system) ; todo: include-less
+(include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq-def" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
@@ -96,6 +96,7 @@
 ;(local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-eq" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
@@ -109,6 +110,7 @@
 ;;   (disabledp-fn name ens wrld))
 
 (defconst *step-limit* 100000)
+(defconst *time-limit* 5)
 
 ;; See :doc lemma-instance
 (defund symbol-that-can-be-usedp (sym wrld)
@@ -206,10 +208,10 @@
     ("add-library" . :add-library)
     ("add-nonlinearp-hint" . :add-nonlinearp-hint) ; very rare
     ("add-use-hint" . :add-use-hint)
-    ;; Confusingly named: Does not indicate a :use hint:
+    ;; Confusingly named: Does not indicate a :use hint and the "lemma" is often a defun (treated like add-enable-hint):
     ("use-lemma" . :use-lemma)))
 
-;; todo: rename (not necessarily about ml)
+;; todo: rename (not necessarily about ml)?
 (defconst *ml-rec-types* (strip-cdrs *rec-to-symbol-alist*))
 
 (defconst *all-rec-types* (cons :exact-hints *ml-rec-types*))
@@ -620,16 +622,19 @@
               ;; theorem-hints
               (booleanp theorem-otf-flg)))))
 
+;; Extract the name from a successful-recommendation.
 (defund successful-recommendationp-name (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 0 rec))
 
+;; Extract the action type from a successful-recommendation.
 (defund successful-recommendationp-type (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 1 rec))
 
+;; Extract the action object from a successful-recommendation.
 (defund successful-recommendationp-object (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
@@ -1067,10 +1072,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: update this if other kinds of failure-info become supported.
 (defun cw-failure-message (snippet failure-info)
-  (if (eq failure-info :step-limit-reached) ; update this is other kinds of failure-info become supported
+  (if (eq failure-info :step-limit-reached)
       (cw "fail (~s0: step limit reached)~%" snippet)
-    (cw "fail (~s0)~%" snippet)))
+    (if (eq failure-info :time-limit-reached)
+        (cw "fail (~s0: time limit reached)~%" snippet)
+      (cw "fail (~s0)~%" snippet))))
 
 (defun cw-success-message (rec)
   (declare (xargs :guard (successful-recommendationp rec)
@@ -1199,25 +1207,38 @@
 
 ;; An interface to prove$ that doesn't pass back errors (instead printing a message).
 ;; Returns (mv provedp state).  Does not propagate any errors back.
-(defund prove$-no-error (ctx term hints otf-flg step-limit state)
-  (declare (xargs :mode :program
+(defund prove$-no-error (ctx term hints otf-flg step-limit
+                             time-limit ; warning: not portable!
+                             state)
+  (declare (xargs :guard (and (booleanp otf-flg)
+                              (or (null step-limit)
+                                  (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit)))
+                  :mode :program
                   :stobjs state))
   (mv-let (erp provedp state)
-    ;; TODO: Drop the :time-limit once :step-limit can interrupt subsumption:
-    (acl2::prove$ term :hints hints :otf-flg otf-flg :step-limit step-limit :time-limit 5)
+    (acl2::prove$ term :hints hints :otf-flg otf-flg :step-limit step-limit :time-limit time-limit)
     (if erp
         (prog2$ (cw "Syntax error in prove$ call (made by ~x0).~%" ctx)
                 (mv nil state))
       (mv provedp state))))
 
 ;; Returns (mv provedp failure-info state), where failure-info may be
-;; :step-limit-reached or :unknown.
-(defund prove$-no-error-with-failure-info (ctx term hints otf-flg step-limit state)
-  (declare (xargs :mode :program
+;; :step-limit-reached, :time-limit-reached, or :unknown.
+(defund prove$-no-error-with-failure-info (ctx term hints otf-flg step-limit
+                                               time-limit ; warning: not portable!
+                                               state)
+  (declare (xargs :guard (and (booleanp otf-flg)
+                              (or (null step-limit)
+                                  (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit)))
+                  :mode :program
                   :stobjs state))
   (mv-let (erp provedp failure-info state)
     ;; TODO: Drop the :time-limit once :step-limit can interrupt subsumption:
-    (acl2::prove$+ term :hints hints :otf-flg otf-flg :step-limit step-limit :time-limit 5 :print nil)
+    (acl2::prove$+ term :hints hints :otf-flg otf-flg :step-limit step-limit :time-limit time-limit :print nil)
     (if erp
         (prog2$ (cw "Syntax error in prove$ call (made by ~x0).~%" ctx)
                 (mv nil nil state))
@@ -1346,7 +1367,7 @@
                                      maybe-book-to-avoid-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
                                      theorem-name ; may be :thm
                                      ;; args to prove$:
-                                     hints otf-flg step-limit
+                                     hints otf-flg step-limit time-limit
                                      rec-name
                                      improve-recsp
                                      state)
@@ -1360,6 +1381,8 @@
                               (booleanp otf-flg)
                               (or (eq nil step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (stringp rec-name)
                               (booleanp improve-recsp))
                   :stobjs state
@@ -1394,7 +1417,7 @@
              ;; TTODO: Check if already enabled!
              (b* ( ; todo: ensure this is nice:
                   (hints-with-enable (acl2::enable-runes-in-hints hints (list item-to-enable)))
-                  ((mv provedp state) (prove$-no-error 'try-enable-with-include-book formula hints-with-enable otf-flg step-limit state)))
+                  ((mv provedp state) (prove$-no-error 'try-enable-with-include-book formula hints-with-enable otf-flg step-limit time-limit state)))
                (if provedp
                    ;; We proved it with the enable hint.  Now, try again without the enable (just the include-book):
                    (b* (((mv provedp state)
@@ -1402,7 +1425,7 @@
                              (prove$-no-error 'try-enable-with-include-book formula
                                               hints ; original hints
                                               otf-flg
-                                              step-limit ; or base this on how many steps were taken when it succeeded
+                                              step-limit time-limit ; or base this on how many steps were taken when it succeeded
                                               state)
                            (mv nil state))))
                      (if provedp
@@ -1488,7 +1511,7 @@
                                       ;; args to prove$:
                                       hints ; will be augmented with an enable of the item-to-enable
                                       otf-flg
-                                      step-limit
+                                      step-limit time-limit
                                       rec-name
                                       improve-recsp
                                       state)
@@ -1503,6 +1526,8 @@
                               (booleanp otf-flg)
                               (or (eq nil step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (stringp rec-name)
                               (booleanp improve-recsp))
                   :stobjs state :mode :program))
@@ -1514,14 +1539,14 @@
       (b* ((include-book-form (first include-book-forms))
            ;; (- (cw "  Trying with ~x0.~%" form))
            ((mv maybe-successful-rec state)
-            (try-enable-with-include-book include-book-form formula item-to-enable maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name improve-recsp state)))
+            (try-enable-with-include-book include-book-form formula item-to-enable maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
         (if maybe-successful-rec
             (mv maybe-successful-rec nil state)
           (try-enable-with-include-books (rest include-book-forms)
                                          formula
                                          item-to-enable
                                          (+ 1 include-book-count)
-                                         maybe-max-include-book-count maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name improve-recsp state))))))
+                                         maybe-max-include-book-count maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1536,7 +1561,7 @@
                                   maybe-book-to-avoid-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
                                   theorem-name ; may be :thm
                                   ;; args to prove$:
-                                  hints otf-flg step-limit
+                                  hints otf-flg step-limit time-limit
                                   rec-name
                                   improve-recsp
                                   state)
@@ -1550,6 +1575,8 @@
                               (booleanp otf-flg)
                               (or (eq nil step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (stringp rec-name)
                               (booleanp improve-recsp))
                   :stobjs state
@@ -1584,7 +1611,7 @@
              (b* ( ; todo: ensure this is nice:
                   ;; todo: also disable the item, if appropriate
                   (hints-with-use (cons `("Goal" :use ,item-to-use) hints))
-                  ((mv provedp state) (prove$-no-error 'try-use-with-include-book formula hints-with-use otf-flg step-limit state)))
+                  ((mv provedp state) (prove$-no-error 'try-use-with-include-book formula hints-with-use otf-flg step-limit time-limit state)))
                (if provedp
                    ;; We proved it with the :use hint.  Now, try again without the :use (just the include-book):
                    (b* (((mv provedp state)
@@ -1592,7 +1619,7 @@
                              (prove$-no-error 'try-use-with-include-book formula
                                               hints ; original hints
                                               otf-flg
-                                              step-limit ; or base this on how many steps were taken when it succeeded
+                                              step-limit time-limit ; or base this on how many steps were taken when it succeeded
                                               state)
                            (mv nil state))))
                      (if provedp
@@ -1678,7 +1705,7 @@
                                    ;; args to prove$:
                                    hints ; will be augmented with a :use of the item-to-use
                                    otf-flg
-                                   step-limit
+                                   step-limit time-limit
                                    rec-name
                                    improve-recsp
                                    state)
@@ -1693,6 +1720,8 @@
                               (booleanp otf-flg)
                               (or (eq nil step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (stringp rec-name)
                               (booleanp improve-recsp))
                   :stobjs state :mode :program))
@@ -1704,14 +1733,14 @@
       (b* ((include-book-form (first include-book-forms))
            ;; (- (cw "  Trying with ~x0.~%" form))
            ((mv maybe-successful-rec state)
-            (try-use-with-include-book include-book-form formula item-to-use maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name improve-recsp state)))
+            (try-use-with-include-book include-book-form formula item-to-use maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
         (if maybe-successful-rec
             (mv maybe-successful-rec nil state)
           (try-use-with-include-books (rest include-book-forms)
                                       formula
                                       item-to-use
                                       (+ 1 include-book-count)
-                                      maybe-max-include-book-count maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit rec-name improve-recsp state))))))
+                                      maybe-max-include-book-count maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1720,7 +1749,7 @@
 ;; TODO: Skip if library already included
 ;; TODO: Skip later add-library recs if they are included by this one (though I suppose they might work only without the rest of what we get here).
 ;; TODO: Try any upcoming enable or use-lemma recs that (may) need this library:
-(defun try-add-library (include-book-form maybe-book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+(defun try-add-library (include-book-form maybe-book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
   (declare (xargs :stobjs state
                   :guard (and (consp include-book-form)
                               (eq 'include-book (car include-book-form))
@@ -1732,6 +1761,8 @@
                               (booleanp theorem-otf-flg)
                               (or (eq nil step-limit)
                                   (natp step-limit))
+                              (or (null time-limit) ; todo: should this also apply to the time to include the library?
+                                  (rationalp time-limit))
                               (recommendationp rec)
                               ;; print
                               )
@@ -1758,7 +1789,7 @@
                (mv nil nil state))
               )
            ;; The include-book is ok, so now try the proof:
-           (b* (((mv provedp state) (prove$-no-error 'try-add-library theorem-body theorem-hints theorem-otf-flg step-limit state)))
+           (b* (((mv provedp state) (prove$-no-error 'try-add-library theorem-body theorem-hints theorem-otf-flg step-limit time-limit state)))
              (if provedp
                  ;; We proved it with this include-book:
                  ;; todo: we could even try to see if a smaller library would work
@@ -1821,6 +1852,7 @@
                    nil ; todo: use the theorem-hints? ;todo: don't induct?
                    nil
                    *step-limit*
+                   *time-limit* ; todo: reduce?
                    state))
 
 ;; Returns (mv impliedp state).
@@ -1832,11 +1864,12 @@
                    nil ; todo: use the theorem-hints? ;todo: don't induct?
                    nil
                    *step-limit*
+                   *time-limit* ; todo: reduce?
                    state))
 
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Don't try a hyp that is already present, or contradicts ones already present
-(defun try-add-hyp (hyp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+(defun try-add-hyp (hyp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
   (declare (xargs :guard (and (pseudo-termp hyp)
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
@@ -1844,6 +1877,8 @@
                               (booleanp theorem-otf-flg)
                               (or (eq nil step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (recommendationp rec)
                               ;; print
                               )
@@ -1876,7 +1911,7 @@
                                          new-theorem-body
                                          theorem-hints
                                          theorem-otf-flg
-                                         step-limit
+                                         step-limit time-limit
                                          state))
        (rec (make-successful-rec (nth 0 rec)
                                  :add-hyp
@@ -1901,7 +1936,7 @@
                             theorem-body
                             theorem-hints
                             theorem-otf-flg
-                            step-limit
+                            step-limit time-limit
                             rec ; todo: just pass in the rec name (here and elsewhere)
                             improve-recsp
                             print
@@ -1916,6 +1951,8 @@
                               (booleanp theorem-otf-flg)
                               (or (eq nil step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (recommendationp rec)
                               (booleanp improve-recsp)
                               ;; print
@@ -1959,7 +1996,7 @@
                                theorem-body
                                new-hints
                                theorem-otf-flg
-                               step-limit
+                               step-limit time-limit
                                state))
              ((when (not provedp))
               (and (acl2::print-level-at-least-tp print) (cw "fail (enabling function ~x0 didn't help)~%" fn))
@@ -1987,7 +2024,7 @@
                                  theorem-body
                                  new-hints
                                  theorem-otf-flg
-                                 step-limit
+                                 step-limit time-limit
                                  state))
                ((when (not provedp))
                 (and (acl2::print-level-at-least-tp print) (cw "fail (enabling rule ~x0 didn't help)~%" rule))
@@ -2026,7 +2063,7 @@
                                              theorem-name
                                              theorem-hints ; will be augmented with an enable of the item-to-enable
                                              theorem-otf-flg
-                                             step-limit
+                                             step-limit time-limit
                                              rec-name
                                              improve-recsp
                                              state)))
@@ -2044,13 +2081,15 @@
                       (mv nil nil state)))))))))
 
 ;; Returns (mv erp maybe-successful-rec state).
-(defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+(defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
   (declare (xargs :guard (and (symbolp rule)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               (or (eq nil step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (recommendationp rec)
                               ;; print
                               )
@@ -2075,7 +2114,7 @@
                                             theorem-body
                                             new-hints
                                             theorem-otf-flg
-                                            step-limit
+                                            step-limit time-limit
                                             state))
        (rec (make-successful-rec (nth 0 rec)
                                  :add-disable-hint
@@ -2089,7 +2128,7 @@
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Do we need to guess a substitution for the :use hint?  Then change the rec before returning...
 ;; TTODO: Handle the case where the included book has a name clash with the desired-name (see what we do for add-enable-hint)
-(defun try-add-use-hint (item book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec improve-recsp print state)
+(defun try-add-use-hint (item book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state)
   (declare (xargs :guard (and ;; (symbolp item)
                           (book-mapp book-map)
                           (or (null book-to-avoid-absolute-path)
@@ -2100,6 +2139,8 @@
                           (booleanp theorem-otf-flg)
                           (or (eq nil step-limit)
                               (natp step-limit))
+                          (or (null time-limit)
+                              (rationalp time-limit))
                           (recommendationp rec)
                           (booleanp improve-recsp)
                           ;; print
@@ -2121,7 +2162,7 @@
                                                   theorem-body
                                                   new-hints
                                                   theorem-otf-flg
-                                                  step-limit
+                                                  step-limit time-limit
                                                   state))
              (rec (make-successful-rec rec-name
                                        :add-use-hint
@@ -2156,7 +2197,7 @@
                                            theorem-name
                                            theorem-hints ; will be augmented with a :use of item
                                            theorem-otf-flg
-                                           step-limit
+                                           step-limit time-limit
                                            rec-name
                                            improve-recsp
                                            state)))
@@ -2175,7 +2216,7 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-add-expand-hint (item ; the thing to expand
-                            theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+                            theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
   (declare (xargs :guard (and ;; (symbolp item)
                           (symbolp theorem-name)
                           ;; theorem-body is an untranslated term
@@ -2183,6 +2224,8 @@
                           (booleanp theorem-otf-flg)
                           (or (eq nil step-limit)
                               (natp step-limit))
+                          (or (null time-limit)
+                              (rationalp time-limit))
                           (recommendationp rec)
                           ;; print
                           )
@@ -2213,7 +2256,7 @@
                                             theorem-body
                                             new-hints
                                             theorem-otf-flg
-                                            step-limit
+                                            step-limit time-limit
                                             state))
        (rec (make-successful-rec (nth 0 rec)
                                  :add-expand-hint
@@ -2225,7 +2268,7 @@
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
-(defun try-add-by-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+(defun try-add-by-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
   (declare (xargs :guard (and ;; (symbolp item)
                           (symbolp theorem-name)
                           ;; theorem-body is an untranslated term
@@ -2233,6 +2276,8 @@
                           (booleanp theorem-otf-flg)
                           (or (eq nil step-limit)
                               (natp step-limit))
+                          (or (null time-limit)
+                              (rationalp time-limit))
                           (recommendationp rec)
                           ;; print
                           )
@@ -2258,7 +2303,7 @@
                                            theorem-body
                                            new-hints
                                            theorem-otf-flg
-                                           step-limit
+                                           step-limit time-limit
                                            state))
        (rec (make-successful-rec (nth 0 rec)
                                  :add-by-hint
@@ -2270,7 +2315,7 @@
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
-(defun try-add-cases-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+(defun try-add-cases-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
   (declare (xargs :guard (and ;; (symbolp item)
                           (symbolp theorem-name)
                           ;; theorem-body is an untranslated term
@@ -2278,6 +2323,8 @@
                           (booleanp theorem-otf-flg)
                           (or (eq nil step-limit)
                               (natp step-limit))
+                          (or (null time-limit)
+                              (rationalp time-limit))
                           (recommendationp rec)
                           ;; print
                           )
@@ -2301,7 +2348,7 @@
                                             theorem-body
                                             new-hints
                                             theorem-otf-flg
-                                            step-limit
+                                            step-limit time-limit
                                             state))
        (rec (make-successful-rec (nth 0 rec)
                                  :add-cases-hint
@@ -2313,7 +2360,7 @@
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
-(defun try-add-nonlinearp-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+(defun try-add-nonlinearp-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
   (declare (xargs :guard (and ;; (symbolp item)
                           (symbolp theorem-name)
                           ;; theorem-body is an untranslated term
@@ -2321,6 +2368,8 @@
                           (booleanp theorem-otf-flg)
                           (or (eq nil step-limit)
                               (natp step-limit))
+                          (or (null time-limit)
+                              (rationalp time-limit))
                           (recommendationp rec)
                           ;; print
                           )
@@ -2336,7 +2385,7 @@
                                             theorem-body
                                             new-hints
                                             theorem-otf-flg
-                                            step-limit
+                                            step-limit time-limit
                                             state))
        (rec (make-successful-rec (nth 0 rec)
                                  :add-nonlinearp-hint
@@ -2348,7 +2397,7 @@
     (mv nil (if provedp rec nil) state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
-(defun try-add-do-not-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+(defun try-add-do-not-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
   (declare (xargs :guard (and ;; (symbolp item)
                           (symbolp theorem-name)
                           ;; theorem-body is an untranslated term
@@ -2356,6 +2405,8 @@
                           (booleanp theorem-otf-flg)
                           (or (eq nil step-limit)
                               (natp step-limit))
+                          (or (null time-limit)
+                              (rationalp time-limit))
                           (recommendationp rec)
                           ;; print
                           )
@@ -2368,7 +2419,7 @@
                                             theorem-body
                                             new-hints
                                             theorem-otf-flg
-                                            step-limit
+                                            step-limit time-limit
                                             state))
        (rec (make-successful-rec (nth 0 rec)
                                  :add-do-not-hint
@@ -2381,7 +2432,7 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: We need more than a symbol
-(defun try-add-induct-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state)
+(defun try-add-induct-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
   (declare (xargs :guard (and ;; (symbolp item)
                           (symbolp theorem-name)
                           ;; theorem-body is an untranslated term
@@ -2389,11 +2440,13 @@
                           (booleanp theorem-otf-flg)
                           (or (eq nil step-limit)
                               (natp step-limit))
+                          (or (null time-limit)
+                              (rationalp time-limit))
                           (recommendationp rec)
                           ;; print
                           )
                   :stobjs state :mode :program)
-           (ignore theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec))
+           (ignore theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec))
   (if (symbolp item)
       ;; TODO: Try looking for calls of the given symbol in the theorem (maybe just with arguments that are vars?):
       (prog2$ (and (acl2::print-level-at-least-tp print) (cw "skip (need arguments of ~x0 to create :induct hint)~%" item))
@@ -2402,12 +2455,14 @@
     (mv :unsupported-induct-hint nil state)))
 
 ;; Returns (mv erp maybe-successful-rec state).
-(defun try-exact-hints (hints theorem-body theorem-otf-flg step-limit rec print state)
+(defun try-exact-hints (hints theorem-body theorem-otf-flg step-limit time-limit rec print state)
   (declare (xargs :guard (and (true-listp hints)
                               ;; theorem-body is an untranslated term
                               (booleanp theorem-otf-flg)
                               (or (eq nil step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (recommendationp rec)
                               ;; print
                               )
@@ -2418,7 +2473,7 @@
                                            ;; todo: ensure this is nice:
                                            hints
                                            theorem-otf-flg
-                                           step-limit
+                                           step-limit time-limit
                                            state))
        (rec (make-successful-rec (nth 0 rec)
                                  :exact-hints
@@ -2437,7 +2492,7 @@
                            theorem-body
                            theorem-hints
                            theorem-otf-flg
-                           step-limit
+                           step-limit time-limit
                            improve-recsp
                            print
                            state)
@@ -2450,6 +2505,8 @@
                               (booleanp theorem-otf-flg)
                               (or (null step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (booleanp improve-recsp)
                               (acl2::print-levelp print))
                   :mode :program
@@ -2465,21 +2522,21 @@
             state)
         (case type
           ;; TODO: Pass the book-map and the book-to-avoid-absolute-path to all who can use it:
-          (:add-by-hint (try-add-by-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-          (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-          (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-          (:add-do-not-hint (try-add-do-not-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-          (:add-enable-hint (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec improve-recsp print state))
-          (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-          (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-          (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-          (:add-library (try-add-library object book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-          (:add-nonlinearp-hint (try-add-nonlinearp-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec print state))
-          (:add-use-hint (try-add-use-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec improve-recsp print state))
+          (:add-by-hint (try-add-by-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-do-not-hint (try-add-do-not-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-enable-hint (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
+          (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-library (try-add-library object book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-nonlinearp-hint (try-add-nonlinearp-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-use-hint (try-add-use-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
           ;; same as for try-add-enable-hint above:
-          (:use-lemma (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit rec improve-recsp print state))
+          (:use-lemma (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
           ;; Hints not from ML:
-          (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg step-limit rec print state))
+          (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg step-limit time-limit rec print state))
           (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
                      (mv t nil state))))))
     (mv nil ; never an error (for now)
@@ -2496,7 +2553,7 @@
                             theorem-body
                             theorem-hints
                             theorem-otf-flg
-                            step-limit
+                            step-limit time-limit
                             max-wins
                             improve-recsp
                             print
@@ -2511,6 +2568,8 @@
                               (booleanp theorem-otf-flg)
                               (or (null step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (or (null max-wins)
                                   (natp max-wins))
                               (booleanp improve-recsp)
@@ -2527,10 +2586,10 @@
            ((mv & ; erp ; for now, we ignore errors and just continue
                 maybe-successful-rec ; may be fleshed out (pre-commands, hints, etc.)
                 state)
-            (try-recommendation rec book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit improve-recsp print state)))
+            (try-recommendation rec book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit improve-recsp print state)))
         (try-recommendations (rest recs)
                              book-to-avoid-absolute-path
-                             theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins improve-recsp print
+                             theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit max-wins improve-recsp print
                              (if maybe-successful-rec
                                  (cons maybe-successful-rec successful-recs)
                                successful-recs)
@@ -2616,7 +2675,9 @@
   (b* ((- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
        ((mv erp post-response state)
         (htclient::post server-url post-data state))
-       ((when erp) (mv erp nil state))
+       ((when erp)
+        (cw "Error received from HTTP POST: ~x0.~%" erp)
+        (mv erp nil state))
        (- (and debug (cw "Raw POST response: ~X01~%" post-response nil)))
        ;; Parse the JSON:
        ((mv erp parsed-json-response) (acl2::parse-string-as-json post-response))
@@ -2853,10 +2914,10 @@
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url post-data debug state))
                ((when erp)
-                (er hard? 'advice-fn "Error in HTTP POST: ~@0" erp)
+                ;; (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp) ; was catching rare "output operation on closed SSL stream" errors
                 (mv erp nil state))
                ((when (not (acl2::parsed-json-arrayp parsed-response)))
-                (er hard? 'advice-fn "Error: Response from server is not a JSON array: ~x0." parsed-response)
+                (er hard? 'get-recs-from-ml-model "Error: Response from server is not a JSON array: ~x0." parsed-response)
                 (mv :bad-server-response nil state)))
             (mv nil (acl2::parsed-json-array->values parsed-response) state))))
        ((when erp) (mv erp nil state))
@@ -2865,7 +2926,7 @@
        ;; Parse the individual strings in the recs:
        ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
        ((when erp)
-        (er hard? 'advice-fn "Error parsing recommendations.")
+        (er hard? 'get-recs-from-ml-model "Error parsing recommendations.")
         (mv erp nil state))
        (- (and debug (cw "Parsed ML recommendations: ~X01~%" ml-recommendations nil))))
     (mv nil ; no error
@@ -2972,7 +3033,7 @@
                                              translated-theorem-body
                                              theorem-hints
                                              theorem-otf-flg
-                                             step-limit
+                                             step-limit time-limit
                                              suppress-trivial-warningp
                                              state)
   (declare (xargs :guard (and (symbolp theorem-name)
@@ -2982,12 +3043,14 @@
                               (booleanp theorem-otf-flg)
                               (or (null step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (booleanp suppress-trivial-warningp))
                   :stobjs state
                   :mode :program))
   (b* ( ;; Try the theorem with the given hints (todo: consider also getting rid of any existng hints):
        ((mv provedp state)
-        (prove$-no-error 'try-proof-and-get-checkpoints theorem-body theorem-hints theorem-otf-flg step-limit state))
+        (prove$-no-error 'try-proof-and-get-checkpoints theorem-body theorem-hints theorem-otf-flg step-limit time-limit state))
        ;; TODO: What if the step-limit applied?  We may want to see how many steps this attempt uses, to decide how many steps to allow in future attempts.
        ((when provedp)
         ;; The original hints worked!
@@ -3035,7 +3098,7 @@
                                  print
                                  server-url
                                  debug
-                                 step-limit
+                                 step-limit time-limit
                                  disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
                                  max-wins
                                  models
@@ -3055,6 +3118,8 @@
                               (booleanp debug)
                               (or (null step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (or ;; (eq :auto max-wins)
                                (null max-wins)
                                (natp max-wins))
@@ -3079,7 +3144,7 @@
        (- (and print (cw "~%TRYING RECOMMENDATIONS:~%")))
        (state (acl2::widen-margins state))
        ((mv erp successful-recs extra-recs-ignoredp state)
-        (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit max-wins improve-recsp print nil state))
+        (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit max-wins improve-recsp print nil state))
        (state (acl2::unwiden-margins state))
        ((when erp)
         (er hard? 'advice-fn "Error trying recommendations: ~x0" erp)
@@ -3127,7 +3192,7 @@
                              print
                              server-url
                              debug
-                             step-limit
+                             step-limit time-limit
                              disallowed-rec-types
                              max-wins
                              models
@@ -3148,6 +3213,8 @@
                               (booleanp debug)
                               (or (null step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (rec-type-listp disallowed-rec-types)
                               (or ;; (eq :auto max-wins)
                                (null max-wins)
@@ -3162,7 +3229,7 @@
                                               translated-theorem-body
                                               theorem-hints
                                               theorem-otf-flg
-                                              step-limit
+                                              step-limit time-limit
                                               suppress-trivial-warningp
                                               state))
        ((when erp) (mv erp nil nil state)))
@@ -3183,7 +3250,7 @@
                                 print
                                 server-url
                                 debug
-                                step-limit
+                                step-limit time-limit
                                 disallowed-rec-types
                                 max-wins
                                 models
@@ -3200,7 +3267,7 @@
                          print
                          server-url
                          debug
-                         step-limit
+                         step-limit time-limit
                          disallowed-rec-types
                          max-wins
                          models
@@ -3219,6 +3286,9 @@
                               (or (eq :auto step-limit) ; means use *step-limit*
                                   (eq nil step-limit) ; means no limit
                                   (natp step-limit))
+                              (or (eq :auto time-limit) ; means use *time-limit*
+                                  (eq nil time-limit) ; means no limit
+                                  (rationalp time-limit))
                               (rec-type-listp disallowed-rec-types)
                               (or (eq :auto max-wins)
                                   (null max-wins)
@@ -3236,6 +3306,7 @@
                      (list models) ; single model stands for singleton list of that model
                    models)))
        (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
+       (time-limit (if (eq :auto time-limit) *time-limit* time-limit))
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
        (translated-theorem-body (acl2::translate-term theorem-body 'defthm-advice-fn wrld))
        ((mv erp successp best-rec state)
@@ -3250,7 +3321,7 @@
                               print
                               server-url
                               debug
-                              step-limit
+                              step-limit time-limit
                               disallowed-rec-types
                               max-wins
                               models
@@ -3279,13 +3350,14 @@
                          (server-url 'nil)
                          (debug 'nil)
                          (step-limit ':auto)
+                         (time-limit ':auto)
                          (disallowed-rec-types 'nil)
                          (max-wins ':auto)
                          (models ':all)
                          (rule-classes '(:rewrite))
                          )
   `(acl2::make-event-quiet
-    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,improve-recsp ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,models state)))
+    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,improve-recsp ,print ,server-url ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::defthm-advice (&rest rest) `(defthm-advice ,@rest))
@@ -3301,7 +3373,7 @@
                       print
                       server-url
                       debug
-                      step-limit
+                      step-limit time-limit
                       disallowed-rec-types
                       max-wins
                       models
@@ -3318,6 +3390,9 @@
                           (or (eq :auto step-limit)   ; means use *step-limit*
                               (eq nil step-limit)     ; means no limit
                               (natp step-limit))
+                          (or (eq :auto time-limit)   ; means use *time-limit*
+                              (eq nil time-limit)     ; means no limit
+                              (rationalp time-limit))
                           (rec-type-listp disallowed-rec-types)
                           (or (eq :auto max-wins)
                               (null max-wins)
@@ -3335,6 +3410,7 @@
                      (list models) ; single model stands for singleton list of that model
                    models)))
        (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
+       (time-limit (if (eq :auto time-limit) *time-limit* time-limit))
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
        (translated-theorem-body (acl2::translate-term theorem-body 'thm-advice-fn wrld))
        ((mv erp successp best-rec state)
@@ -3349,7 +3425,7 @@
                               print
                               server-url
                               debug
-                              step-limit
+                              step-limit time-limit
                               disallowed-rec-types
                               max-wins
                               models
@@ -3373,6 +3449,7 @@
                       (server-url 'nil)
                       (debug 'nil)
                       (step-limit ':auto)
+                      (time-limit ':auto)
                       (disallowed-rec-types 'nil)
                       (max-wins ':auto)
                       (models ':all)
@@ -3380,7 +3457,7 @@
                       ;; no rule-classes
                       )
   `(acl2::make-event-quiet
-    (thm-advice-fn ',body ',hints ,otf-flg ,n ,improve-recsp ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,models state)))
+    (thm-advice-fn ',body ',hints ,otf-flg ,n ,improve-recsp ,print ,server-url ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::thm-advice (&rest rest) `(thm-advice ,@rest))
@@ -3396,7 +3473,7 @@
                   print
                   server-url
                   debug
-                  step-limit
+                  step-limit time-limit
                   disallowed-rec-types
                   max-wins
                   models
@@ -3412,6 +3489,9 @@
                               (or (eq :auto step-limit)
                                   (eq nil step-limit)
                                   (natp step-limit))
+                              (or (eq :auto time-limit)
+                                  (eq nil time-limit)
+                                  (rationalp time-limit))
                               (rec-type-listp disallowed-rec-types)
                               (or (eq :auto max-wins)
                                   (null max-wins)
@@ -3430,6 +3510,7 @@
                      (list models) ; single model stands for singleton list of that model
                    models)))
        (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
+       (time-limit (if (eq :auto time-limit) *time-limit* time-limit))
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
        ;; Get most recent failed theorem:
        (most-recent-failed-theorem (acl2::most-recent-failed-command acl2::*theorem-event-types* state))
@@ -3478,7 +3559,7 @@
                                   print
                                   server-url
                                   debug
-                                  step-limit
+                                  step-limit time-limit
                                   disallowed-rec-types
                                   max-wins
                                   models
@@ -3499,6 +3580,7 @@
              ((mv provedp state)
               (prove$-no-error 'advice-fn theorem-body theorem-hints theorem-otf-flg
                                nil ; step-limit
+                               nil ; time-limit
                                state))
              ((when provedp) ; surprising!
               (cw "WARNING: Tried the theorem again and it worked!")
@@ -3522,10 +3604,11 @@
                        (server-url 'nil)
                        (debug 'nil)
                        (step-limit ':auto)
+                       (time-limit ':auto)
                        (disallowed-rec-types 'nil)
                        (max-wins ':auto)
                        (models ':all))
-  `(acl2::make-event-quiet (advice-fn ,n ,improve-recsp ,print ,server-url ,debug ,step-limit ',disallowed-rec-types ,max-wins ,models state)))
+  `(acl2::make-event-quiet (advice-fn ,n ,improve-recsp ,print ,server-url ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::advice (&rest rest) `(advice ,@rest))
@@ -3540,31 +3623,32 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This could be useful when generating training data to improve an existing ML model.
-;; Returns (mv erp successful-recs state).
+;; Returns (mv erp successful-recs state) where successful-recs satisfies successful-recommendation-listp.
 ;; TODO: Also return unsuccessful-recs?
 (defun all-successful-recs-for-checkpoints (checkpoint-clauses
                                             theorem-name ; might not be needed
-                                            theorem-body
+                                            theorem-body ; untranslated
                                             theorem-hints
                                             theorem-otf-flg
                                             num-recs-per-model
                                             book-to-avoid-absolute-path ; drop?
-                                            improve-recsp
+                                            improve-recsp ; whether to try to improve successful recommendations
                                             print
                                             server-url
                                             debug
                                             step-limit
+                                            time-limit
                                             disallowed-rec-types
                                             models
                                             state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
-                              (or (null book-to-avoid-absolute-path)
-                                  (stringp book-to-avoid-absolute-path))
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               (natp num-recs-per-model)
+                              (or (null book-to-avoid-absolute-path)
+                                  (stringp book-to-avoid-absolute-path))
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
@@ -3572,6 +3656,8 @@
                               (booleanp debug)
                               (or (null step-limit)
                                   (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
                               (rec-type-listp disallowed-rec-types)
                               (model-namesp models))
                   :stobjs state
@@ -3594,7 +3680,7 @@
        ((mv erp successful-recs
             & ; extra-recs-ignoredp
             state)
-        (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit
+        (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit
                              nil ; max-wins
                              improve-recsp print nil state))
        (state (acl2::unwiden-margins state))
