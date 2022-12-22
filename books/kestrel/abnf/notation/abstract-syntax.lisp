@@ -63,6 +63,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist rulename-list
+  :short "Fixtype of lists of rule names."
+  :elt-type rulename
+  :true-listp t
+  :elementp-of-nil nil
+  :pred rulename-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption rulename-option
   rulename
   :short "Fixtype of rule names and @('nil')."
