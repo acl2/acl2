@@ -1,4 +1,4 @@
-; ABNF (Augmented Backus-Naur Form) Library
+; JSON Library
 ;
 ; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,38 +8,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ABNF")
+(in-package "JSON")
 
-(include-book "../grammar-definer/defgrammar")
-(include-book "../grammar-definer/deftreeops")
-(include-book "../operations/in-terminal-set")
-(include-book "../operations/plugging")
+(include-book "kestrel/abnf/grammar-definer/defgrammar" :dir :system)
+(include-book "kestrel/abnf/grammar-definer/deftreeops" :dir :system)
+(include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)
+(include-book "kestrel/abnf/operations/plugging" :dir :system)
 
 (local (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))
 
-; (depends-on "json.abnf")
+; (depends-on "grammar.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ json-example
-  :parents (examples)
-  :short "The ABNF grammar of the JSON (JavaScript Object Notation) syntax."
-  :long
-  (xdoc::topstring-p
-   "The JSON syntax is specified by "
-   (xdoc::ahref "https://www.rfc-editor.org/info/rfc7159" "RFC 7159")
-   ".")
+(defxdoc+ grammar
+  :parents (concrete-syntax)
+  :short "The ABNF grammar of JSON."
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar *json-grammar-rules*
+(abnf::defgrammar *grammar-rules*
   :short "The JSON grammar rules from RFC 7159."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file @('json.abnf') contains the grammar rules,
+    "The file @('grammar.abnf') contains the grammar rules,
      copied and pasted from RFC 7159.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the JSON grammar rules,
@@ -49,13 +44,13 @@
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
-  :file "json.abnf"
+  :file "grammar.abnf"
   :untranslate t
   :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *all-json-grammar-rules*
+(defval *all-grammar-rules*
   :short "All the JSON grammar rules, including the referenced ABNF core rules."
   :long
   (xdoc::topstring
@@ -77,29 +72,29 @@
    (xdoc::p
     "We use @(tsee add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
-  (plug-rules *json-grammar-rules*
-              *core-rules*)
+  (abnf::plug-rules *grammar-rules*
+                    abnf::*core-rules*)
   ///
 
-  (add-const-to-untranslate-preprocess *all-json-grammar-rules*)
+  (acl2::add-const-to-untranslate-preprocess *all-grammar-rules*)
 
-  (defrule rulelist-wfp-of-*all-json-grammar-rules*
-    (rulelist-wfp *all-json-grammar-rules*))
+  (defrule rulelist-wfp-of-*all-grammar-rules*
+    (abnf::rulelist-wfp *all-grammar-rules*))
 
-  (defrule rulelist-closedp-of-*all-json-grammar-rules*
-    (rulelist-closedp *all-json-grammar-rules*))
+  (defrule rulelist-closedp-of-*all-grammar-rules*
+    (abnf::rulelist-closedp *all-grammar-rules*))
 
-  (defrule unicode-only-*all-json-grammar-rules*
-    (rulelist-in-termset-p *all-json-grammar-rules*
-                           (integers-from-to 0 #x10ffff))
-    :enable (rule-in-termset-p
-             repetition-in-termset-p
-             element-in-termset-p
-             num-val-in-termset-p
-             char-val-in-termset-p
-             char-insensitive-in-termset-p)
-    :disable ((:e integers-from-to))))
+  (defrule unicode-only-*all-grammar-rules*
+    (abnf::rulelist-in-termset-p *all-grammar-rules*
+                                 (acl2::integers-from-to 0 #x10ffff))
+    :enable (abnf::rule-in-termset-p
+             abnf::repetition-in-termset-p
+             abnf::element-in-termset-p
+             abnf::num-val-in-termset-p
+             abnf::char-val-in-termset-p
+             abnf::char-insensitive-in-termset-p)
+    :disable ((:e acl2::integers-from-to))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::deftreeops *all-json-grammar-rules* :prefix json-cst)
+(abnf::deftreeops *all-grammar-rules* :prefix cst)
