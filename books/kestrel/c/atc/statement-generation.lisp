@@ -1877,7 +1877,13 @@
              (pseudo-termp x))
     :enable pseudo-termp)
 
-  (verify-guards atc-gen-stmt))
+  (verify-guards atc-gen-stmt
+    :hints (("Goal"
+             :in-theory (disable atc-gen-stmt
+                                 append
+                                 member-equal
+                                 equal-of-type-pointer
+                                 equal-of-type-struct)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
