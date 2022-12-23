@@ -335,6 +335,18 @@
                has pointer type ~x2, which is disallowed."
               gin.fn term expr.type)))
        (stmt (make-stmt-return :value expr.expr))
+       ((when (not expr.proofs))
+        (retok (make-stmt-gout
+                :items (list (block-item-stmt stmt))
+                :type expr.type
+                :limit (pseudo-term-fncall
+                        'binary-+
+                        (list (pseudo-term-quote 3)
+                              expr.limit))
+                :events expr.events
+                :thm-index expr.thm-index
+                :names-to-avoid expr.names-to-avoid
+                :proofs nil)))
        (item (block-item-stmt stmt))
        (items (list item))
        (stmt-limit (pseudo-term-fncall
@@ -349,15 +361,6 @@
                      'binary-+
                      (list (pseudo-term-quote 1)
                            item-limit)))
-       ((when (not expr.proofs))
-        (retok (make-stmt-gout
-                :items items
-                :type expr.type
-                :limit items-limit
-                :events expr.events
-                :thm-index expr.thm-index
-                :names-to-avoid expr.names-to-avoid
-                :proofs nil)))
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
        (type-pred (type-to-recognizer expr.type wrld))

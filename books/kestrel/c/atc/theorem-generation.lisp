@@ -70,7 +70,10 @@
      in particular to eliminate quotes before numbers.
      Term, expression, and type are passed as inputs.
      The theorem is contextualized,
-     and further conditioned by the satisfaction of the guard of @('fn')."))
+     and further conditioned by the satisfaction of the guard of @('fn').")
+   (xdoc::p
+    "The hints to prove the theorem are passed as input,
+     because they depend on the specifics of the expression."))
   (b* ((wrld (w state))
        (name (pack fn '-correct- thm-index))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
