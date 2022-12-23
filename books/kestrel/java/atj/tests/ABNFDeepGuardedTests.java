@@ -103,14 +103,6 @@ public class ABNFDeepGuardedTests {
         test_Parse(testName, input, n, m);
     }
 
-    private static void test_ParseJSON(int n, int m)
-        throws Acl2UndefinedPackageException,
-               java.io.FileNotFoundException, java.io.IOException {
-        String testName = "ParseJSON";
-        Acl2Value input = getInputFromFile("../../../abnf/examples/json.abnf");
-        test_Parse(testName, input, n, m);
-    }
-
     private static void test_ParseURI(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
@@ -151,6 +143,15 @@ public class ABNFDeepGuardedTests {
         test_Parse(testName, input, n, m);
     }
 
+    private static void test_ParseC(int n, int m)
+        throws Acl2UndefinedPackageException,
+               java.io.FileNotFoundException, java.io.IOException {
+        String testName = "ParseC";
+        Acl2Value input =
+            getInputFromFile("../../../c/language/grammar.abnf");
+        test_Parse(testName, input, n, m);
+    }
+
     private static void test_ParseJavaLexical(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
@@ -169,12 +170,11 @@ public class ABNFDeepGuardedTests {
         test_Parse(testName, input, n, m);
     }
 
-    private static void test_ParseC(int n, int m)
+    private static void test_ParseJSON(int n, int m)
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
-        String testName = "ParseC";
-        Acl2Value input =
-            getInputFromFile("../../../c/language/grammar.abnf");
+        String testName = "ParseJSON";
+        Acl2Value input = getInputFromFile("../../../json/grammar.abnf");
         test_Parse(testName, input, n, m);
     }
 
@@ -205,14 +205,15 @@ public class ABNFDeepGuardedTests {
         ABNFDeepGuarded.initialize();
         test_ParseABNFCore(n, m);
         test_ParseABNFSyntax(n, m);
-        test_ParseJSON(n, m);
         test_ParseURI(n, m);
         test_ParseHTTP(n, m);
         test_ParseIMF(n, m);
         test_ParseSMTP(n, m);
         test_ParseIMAP(n, m);
+        test_ParseC(n, m);
         test_ParseJavaLexical(n, m);
         test_ParseJavaSyntactic(n, m);
+        test_ParseJSON(n, m);
         test_ParseYul(n, m);
         if (failures) {
             System.out.println("Some tests failed.");

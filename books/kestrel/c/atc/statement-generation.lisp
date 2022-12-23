@@ -335,6 +335,18 @@
                has pointer type ~x2, which is disallowed."
               gin.fn term expr.type)))
        (stmt (make-stmt-return :value expr.expr))
+       ((when (not expr.proofs))
+        (retok (make-stmt-gout
+                :items (list (block-item-stmt stmt))
+                :type expr.type
+                :limit (pseudo-term-fncall
+                        'binary-+
+                        (list (pseudo-term-quote 3)
+                              expr.limit))
+                :events expr.events
+                :thm-index expr.thm-index
+                :names-to-avoid expr.names-to-avoid
+                :proofs nil)))
        (item (block-item-stmt stmt))
        (items (list item))
        (stmt-limit (pseudo-term-fncall
@@ -349,15 +361,6 @@
                      'binary-+
                      (list (pseudo-term-quote 1)
                            item-limit)))
-       ((when (not expr.proofs))
-        (retok (make-stmt-gout
-                :items items
-                :type expr.type
-                :limit items-limit
-                :events expr.events
-                :thm-index expr.thm-index
-                :names-to-avoid expr.names-to-avoid
-                :proofs nil)))
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
        (type-pred (type-to-recognizer expr.type wrld))
@@ -742,31 +745,81 @@
               (b* ((then-cond (untranslate$ test-term t state))
                    (then-premise (atc-premise-test then-cond))
                    (then-context (append gin.context
-                                         (list then-premise))))
-                (atc-gen-stmt then-term
-                              (change-stmt-gin
-                               gin
-                               :context then-context
-                               :inscope (cons nil gin.inscope)
-                               :thm-index test.thm-index
-                               :names-to-avoid test.names-to-avoid
-                               :proofs gin.proofs)
-                              state)))
+                                         (list then-premise)))
+                   ((mv then-inscope
+                        then-context
+                        then-enter-scope-events
+                        thm-index
+                        names-to-avoid)
+                    (if test.proofs
+                        (atc-gen-enter-inscope gin.fn
+                                               gin.fn-guard
+                                               gin.inscope
+                                               then-context
+                                               gin.compst-var
+                                               test.thm-index
+                                               test.names-to-avoid
+                                               wrld)
+                      (mv (cons nil gin.inscope)
+                          then-context
+                          nil
+                          test.thm-index
+                          test.names-to-avoid)))
+                   ((erp gout)
+                    (atc-gen-stmt then-term
+                                  (change-stmt-gin
+                                   gin
+                                   :context then-context
+                                   :inscope then-inscope
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
+                                   :proofs gin.proofs)
+                                  state)))
+                (retok
+                 (change-stmt-gout gout
+                                   :events (append
+                                            then-enter-scope-events
+                                            (stmt-gout->events gout))))))
              ((erp (stmt-gout else))
               (b* ((not-test-term (dumb-negate-lit test-term))
                    (else-cond (untranslate$ not-test-term t state))
                    (else-premise (atc-premise-test else-cond))
                    (else-context (append gin.context
-                                         (list else-premise))))
-                (atc-gen-stmt else-term
-                              (change-stmt-gin
-                               gin
-                               :context else-context
-                               :inscope (cons nil gin.inscope)
-                               :thm-index then.thm-index
-                               :names-to-avoid then.names-to-avoid
-                               :proofs gin.proofs)
-                              state))))
+                                         (list else-premise)))
+                   ((mv else-inscope
+                        else-context
+                        else-enter-scope-events
+                        thm-index
+                        names-to-avoid)
+                    (if then.proofs
+                        (atc-gen-enter-inscope gin.fn
+                                               gin.fn-guard
+                                               gin.inscope
+                                               else-context
+                                               gin.compst-var
+                                               then.thm-index
+                                               then.names-to-avoid
+                                               wrld)
+                      (mv (cons nil gin.inscope)
+                          else-context
+                          nil
+                          then.thm-index
+                          then.names-to-avoid)))
+                   ((erp gout)
+                    (atc-gen-stmt else-term
+                                  (change-stmt-gin
+                                   gin
+                                   :context else-context
+                                   :inscope else-inscope
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
+                                   :proofs gin.proofs)
+                                  state)))
+                (retok
+                 (change-stmt-gout gout
+                                   :events (append
+                                            else-enter-scope-events
+                                            (stmt-gout->events gout)))))))
           (atc-gen-if/ifelse-stmt term test.expr then-term else-term
                                   then.items else.items then.type else.type
                                   then.limit else.limit
@@ -1827,7 +1880,13 @@
              (pseudo-termp x))
     :enable pseudo-termp)
 
-  (verify-guards atc-gen-stmt))
+  (verify-guards atc-gen-stmt
+    :hints (("Goal"
+             :in-theory (disable atc-gen-stmt
+                                 append
+                                 member-equal
+                                 equal-of-type-pointer
+                                 equal-of-type-struct)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

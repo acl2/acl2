@@ -1504,8 +1504,9 @@
                                (integerp ,gin.limit-var)
                                (>= ,gin.limit-var 1))
                           ,formula))
-       (hints `(("Goal" :in-theory '(compustatep-of-add-var
-                                     compustatep-of-add-frame
+       (hints `(("Goal" :in-theory '(compustatep-of-add-frame
+                                     compustatep-of-add-var
+                                     compustatep-of-enter-scope
                                      exec-expr-call-or-pure-when-pure
                                      (:e expr-kind)
                                      not-zp-of-limit-variable
