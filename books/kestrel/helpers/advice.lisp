@@ -780,7 +780,7 @@
     (and (successful-recommendationp (first recs))
          (successful-recommendation-listp (rest recs)))))
 
-;; Returns a list of (<action-type> <action-object> <symbol-table>) pairs.
+;; Returns a list of (<action-type> <action-object> <symbol-table>) tuples.
 (defund extract-actions-from-successful-recs (recs)
   (declare (xargs :guard (successful-recommendation-listp recs)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendation-listp)))))
@@ -3797,26 +3797,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This could be useful when generating training data to improve an existing ML model.
-;; Returns (mv erp successful-recs state) where successful-recs satisfies successful-recommendation-listp.
+;; This supports the generation of training data to improve an existing ML model.
+;; Returns (mv erp successful-actions state) where each successful-action is of the form (<action-type> <action-object> <symbol-table>).
 ;; TODO: Also return unsuccessful actions
-;; TODO: Rename to all-successful-actions-for-checkpoints?
-;; This should not be used for evaluation, as it allows the current-book to be used to prove checkpoints from its own theorems.
-(defun all-successful-recs-for-checkpoints (checkpoint-clauses
-                                            theorem-body ; untranslated
-                                            theorem-hints
-                                            theorem-otf-flg
-                                            num-recs-per-model
-                                            current-book-absolute-path
-                                            improve-recsp ; whether to try to improve successful recommendations
-                                            print
-                                            server-url
-                                            debug
-                                            step-limit
-                                            time-limit
-                                            disallowed-rec-types
-                                            models
-                                            state)
+;; WARNING: This should not be used for evaluation of models/recommendations, as it allows the current-book to be used to prove checkpoints from its own theorems!
+(defun all-successful-actions-for-checkpoints (checkpoint-clauses
+                                               theorem-body ; untranslated
+                                               theorem-hints
+                                               theorem-otf-flg
+                                               num-recs-per-model
+                                               current-book-absolute-path
+                                               improve-recsp ; whether to try to improve successful recommendations
+                                               print
+                                               server-url
+                                               debug
+                                               step-limit
+                                               time-limit
+                                               disallowed-rec-types
+                                               models
+                                               state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
@@ -3878,13 +3877,11 @@
                    (cw "~%(~x0 successful recommendations):~%" num-successful-recs)
                  (cw "~%(1 successful recommendation):~%")))))
     (mv nil ; no error
-        ;; Note that this loses information about where recommended symbols are defined:
-        ;; (extract-actions-from-successful-recs successful-recs)
-        successful-recs
+        (extract-actions-from-successful-recs successful-recs)
         state)))
 
 ;; Example call:
-;; (all-successful-recs-for-checkpoints (list (list '(equal (len (append x y)) (binary-+ (len x) (len y)))))
+;; (help::all-successful-actions-for-checkpoints (list (list '(equal (len (append x y)) (binary-+ (len x) (len y)))))
 ;;                                      '(equal (len (append x y)) (+ (len x) (len y)))
 ;;                                      nil ; theorem-hints
 ;;                                      nil ; theorem-otf-flg
