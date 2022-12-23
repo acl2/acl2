@@ -17,7 +17,7 @@
 ;;  This file was called axerulescore.lisp.
 
 ;;(include-book "list-rules")
-(include-book "kestrel/bv-lists/list-patterns" :dir :system) ;for negated-elems-listp
+(include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system)

@@ -18,7 +18,6 @@
 ;;  This file was called hacks6.lisp.
 
 (include-book "list-rules")
-;(include-book "kestrel/bv-lists/bvnth" :dir :system)
 ;(include-book "kestrel/arrays-2d/bv-arrays-2d" :dir :system)
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-true-listp" :dir :system)
