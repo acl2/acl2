@@ -3059,11 +3059,11 @@
                (declare (ignore val))
                (cond
                 (erp
-                 (er soft 'theory-invariant
-                     "The specified theory invariant fails for the current ~
-                      ACL2 world, and hence is rejected.  This failure can ~
-                      probably be overcome by supplying an appropriate ~
-                      in-theory event first."))
+                 (er-soft 'theory-invariant "Theory"
+                          "The specified theory invariant fails for the ~
+                           current ACL2 world, and hence is rejected.  This ~
+                           failure can probably be overcome by supplying an ~
+                           appropriate in-theory event first."))
                 (t (value key)))))))))))))
 
 #+acl2-loop-only

@@ -313,8 +313,8 @@
    (xdoc::p
     "The tool, @(see prove$), now treats hard errors as ordinary failures by
      default, just as for soft errors.  It also now suppresses @(see
-     time-limit) error printing as it does for @(see step-limit) error
-     printing.")
+     time-limit) and @(see theory-invariant) error printing as it does for
+     @(see step-limit) error printing.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
