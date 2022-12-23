@@ -602,13 +602,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Records where a symbol "comes from".
+(defun symbol-sourcep (source)
+  (declare (xargs :guard t))
+  (or (eq :built-in source)
+      (acl2::book-name-p source) ; string or sysfile
+      ))
+
+;; Note that a book name can be a sysfile:
+(defund symbol-source-listp (sources)
+  (declare (xargs :guard t))
+  (if (not (consp sources))
+      (null sources)
+    (and (symbol-sourcep (first sources))
+         (symbol-source-listp (rest sources)))))
+
 ;; Maps symbols (e.g., ones occuring in action objects of recommendations) to the books that define them.
 (defund symbol-tablep (tab)
   (declare (xargs :guard t))
-  (or (eq :unavailable tab) ; todo: eventually remove this case?
+  (or (eq :unavailable tab) ; todo: eventually remove this case?  Or allow individual symbols to be mapped to :unknown or :top-level?
       (and (symbol-alistp tab)
-           ;; Note that a book name can be a sysfile:
-           (acl2::book-name-listp (strip-cdrs tab)))))
+           (symbol-source-listp (strip-cdrs tab)))))
 
 ;; todo: strengthen?
 (defund successful-recommendationp (rec)
@@ -1315,6 +1329,33 @@
                   :mode :program))
   (let ((fns (acl2::all-fnnames term)))
     (symbol-table-for-fns fns wrld)))
+
+;; Returns a book-name (sysfile or string) or :built-in or :top-level or nil.
+;; Converts :top-level to the current-book when current-book-absolute-path is non-nil.
+(defun event-source (name current-book-absolute-path wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (plist-worldp wrld))
+                  :mode :program))
+  (let ((res (acl2::book-of-event name wrld)))
+    (if (and (eq :top-level res)
+             current-book-absolute-path)
+        (acl2::filename-to-book-name current-book-absolute-path wrld)
+      res)))
+
+;; Builds a symbol-table with a single entry.
+;; Converts :top-level to the current-book when current-book-absolute-path is non-nil.
+(defun symbol-table-for-event (name current-book-absolute-path wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (plist-worldp wrld))
+                  :mode :program))
+  (let ((event-source (event-source name current-book-absolute-path wrld)))
+    (if (eq :top-level event-source)
+        :unavailable
+      (acons name event-source nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2113,9 +2154,7 @@
                                        rule-or-macro-alias
                                        nil
                                        theorem-body new-hints theorem-otf-flg
-                                       ;;todo: what about :top-level?
-                                       ;;(acons rule (book-of-event rule  ..  nil))
-                                       :unavailable))
+                                       (symbol-table-for-event rule current-book-absolute-path wrld)))
              (- (and (acl2::print-level-at-least-tp print)
                      (cw-success-message rec))))
           (mv nil rec state))
@@ -2144,7 +2183,7 @@
                                          :add-enable-hint
                                          rule-or-macro-alias
                                          nil
-                                         theorem-body new-hints theorem-otf-flg :unavailable))
+                                         theorem-body new-hints theorem-otf-flg (symbol-table-for-event rule current-book-absolute-path wrld)))
                (- (and (acl2::print-level-at-least-tp print)
                        (cw-success-message rec))))
             (mv nil rec state))
@@ -2192,8 +2231,10 @@
                       (mv nil nil state)))))))))
 
 ;; Returns (mv erp maybe-successful-rec state).
-(defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
-  (declare (xargs :guard (and (symbolp rule)
+(defun try-add-disable-hint (rule current-book-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
+  (declare (xargs :guard (and (symbolp rule) ; todo: never a rune?
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
@@ -2231,7 +2272,8 @@
                                  :add-disable-hint
                                  rule
                                  nil
-                                 theorem-body new-hints theorem-otf-flg :unavailable))
+                                 theorem-body new-hints theorem-otf-flg
+                                 (symbol-table-for-event rule current-book-absolute-path (w state))))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw "fail (disable didn't help)~%")))))
     (mv nil (if provedp rec nil) state)))
@@ -2280,7 +2322,8 @@
                                        :add-use-hint
                                        item
                                        nil
-                                       theorem-body new-hints theorem-otf-flg :unavailable))
+                                       theorem-body new-hints theorem-otf-flg
+                                       (symbol-table-for-event item current-book-absolute-path (w state))))
              (- (and (acl2::print-level-at-least-tp print)
                      (if provedp (cw-success-message rec) (cw "fail (:use ~x0 didn't help)~%" item)))))
           (mv nil (if provedp rec nil) state))
@@ -2640,7 +2683,7 @@
           ;; TODO: Pass the book-map and the current-book-absolute-path to all who can use it:
           (:add-by-hint (try-add-by-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
           (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
-          (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-disable-hint (try-add-disable-hint object current-book-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
           (:add-do-not-hint (try-add-do-not-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
           (:add-enable-hint (try-add-enable-hint object book-map current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
           (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
