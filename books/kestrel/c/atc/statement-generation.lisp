@@ -347,20 +347,10 @@
                 :thm-index expr.thm-index
                 :names-to-avoid expr.names-to-avoid
                 :proofs nil)))
-       (item (block-item-stmt stmt))
-       (items (list item))
        (stmt-limit (pseudo-term-fncall
                     'binary-+
                     (list (pseudo-term-quote 1)
                           expr.limit)))
-       (item-limit (pseudo-term-fncall
-                    'binary-+
-                    (list (pseudo-term-quote 1)
-                          stmt-limit)))
-       (items-limit (pseudo-term-fncall
-                     'binary-+
-                     (list (pseudo-term-quote 1)
-                           item-limit)))
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
        (type-pred (type-to-recognizer expr.type wrld))
@@ -395,6 +385,11 @@
                                                  :formula stmt-formula
                                                  :hints stmt-hints
                                                  :enable nil))
+       (item (block-item-stmt stmt))
+       (item-limit (pseudo-term-fncall
+                    'binary-+
+                    (list (pseudo-term-quote 1)
+                          stmt-limit)))
        (item-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv item-thm-name names-to-avoid)
@@ -422,6 +417,11 @@
                                                  :formula item-formula
                                                  :hints item-hints
                                                  :enable nil))
+       (items (list item))
+       (items-limit (pseudo-term-fncall
+                     'binary-+
+                     (list (pseudo-term-quote 1)
+                           item-limit)))
        (items-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv items-thm-name names-to-avoid)
