@@ -42,7 +42,7 @@
    (xdoc::p
     "The JSON grammar rules are well-formed.")
    (xdoc::p
-    "We use @(tsee add-const-to-untranslate-preprocess)
+    "We use @(tsee acl2::add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
   :file "grammar.abnf"
   :untranslate t
@@ -63,14 +63,14 @@
      i.e. natural numbers between 0 and @('x10FFFF').
      Proving this by execution would take a long time
      due to the specification-appropriate but execution-inefficient
-     definition of @(tsee rulelist-in-termset-p)
+     definition of @(tsee abnf::rulelist-in-termset-p)
      and to the relatively large size of the range of natural numbers.
      Thus, we prove the theorems (quickly)
-     by disabling the executable counterpart of @(tsee integers-from-to)
-     and by using library theorems that relate @(tsee integers-from-to)
-     to @(tsee in) and @(tsee list-in).")
+     by disabling the executable counterpart of @(tsee acl2::integers-from-to)
+     and by using library theorems that relate @(tsee acl2::integers-from-to)
+     to @(tsee in) and @(tsee set::list-in).")
    (xdoc::p
-    "We use @(tsee add-const-to-untranslate-preprocess)
+    "We use @(tsee acl2::add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output."))
   (abnf::plug-rules *grammar-rules*
                     abnf::*core-rules*)
