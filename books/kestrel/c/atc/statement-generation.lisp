@@ -245,6 +245,87 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-block-item-stmt ((fn symbolp)
+                                 (fn-guard symbolp)
+                                 (context atc-contextp)
+                                 (stmt stmtp)
+                                 (stmt-limit pseudo-termp)
+                                 (stmt-thm symbolp)
+                                 (result-type typep)
+                                 (result-term pseudo-termp)
+                                 (compst-var symbolp)
+                                 (fenv-var symbolp)
+                                 (limit-var symbolp)
+                                 (compst-term pseudo-termp)
+                                 (thm-index posp)
+                                 (names-to-avoid symbol-listp)
+                                 state)
+  :returns (mv (item block-itemp)
+               (item-limit pseudo-termp)
+               (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (thm-index posp
+                          :hyp (posp thm-index)
+                          :rule-classes (:rewrite :type-prescription))
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate a C block item that consists of a given statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to lift generated statements
+     to generated block items.
+     Besdies the block item,
+     we also generate a theorem saying that
+     @(tsee exec-block-item) applied to the quoted block item
+     yields an @(tsee mv) pair consisting of
+     a result term (or @('nil'))
+     and a possibly updated computation state;
+     these are the same as the ones for the statement theorem.")
+   (xdoc::p
+    "The limit for the block item is
+     1 more than the limit for the statement,
+     because we need 1 to go from @(tsee exec-block-item)
+     to the @(':stmt') case and @(tsee exec-stmt)."))
+  (b* ((wrld (w state))
+       (item (block-item-stmt stmt))
+       (item-limit (pseudo-term-fncall
+                    'binary-+
+                    (list (pseudo-term-quote 1)
+                          stmt-limit)))
+       (name (pack fn '-correct- thm-index))
+       (thm-index (1+ thm-index))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       (result-uterm (untranslate$ result-term nil state))
+       (formula `(equal (exec-block-item ',item
+                                         ,compst-var
+                                         ,fenv-var
+                                         ,limit-var)
+                        (mv ,result-uterm ,compst-term)))
+       (formula (if result-term
+                    (b* ((type-pred (type-to-recognizer result-type wrld)))
+                      `(and ,formula
+                            (,type-pred ,result-uterm)))
+                  formula))
+       (formula (atc-contextualize formula context nil))
+       (formula `(implies (and (compustatep ,compst-var)
+                               (,fn-guard ,@(formals+ fn wrld))
+                               (integerp ,limit-var)
+                               (>= ,limit-var ,item-limit))
+                          ,formula))
+       (hints `(("Goal" :in-theory '(exec-block-item-when-stmt
+                                     (:e block-item-kind)
+                                     not-zp-of-limit-variable
+                                     (:e block-item-stmt->get)
+                                     ,stmt-thm))))
+       ((mv event &) (evmac-generate-defthm name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (mv item item-limit event name thm-index names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-return-stmt ((term pseudo-termp)
                              (gin stmt-ginp)
                              (must-affect symbol-listp)
@@ -385,38 +466,17 @@
                                                  :formula stmt-formula
                                                  :hints stmt-hints
                                                  :enable nil))
-       (item (block-item-stmt stmt))
-       (item-limit (pseudo-term-fncall
-                    'binary-+
-                    (list (pseudo-term-quote 1)
-                          stmt-limit)))
-       (item-thm-name (pack gin.fn '-correct- thm-index))
-       (thm-index (1+ thm-index))
-       ((mv item-thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix
-         item-thm-name nil names-to-avoid wrld))
-       (item-formula `(and (equal (exec-block-item ',item
-                                                   ,gin.compst-var
-                                                   ,gin.fenv-var
-                                                   ,gin.limit-var)
-                                  (mv ,term ,gin.compst-var))
-                           (,type-pred ,term)))
-       (item-formula (atc-contextualize item-formula gin.context nil))
-       (item-formula `(implies (and (compustatep ,gin.compst-var)
-                                    (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                                    (integerp ,gin.limit-var)
-                                    (>= ,gin.limit-var ,item-limit))
-                               ,item-formula))
-       (item-hints
-        `(("Goal" :in-theory '(exec-block-item-when-stmt
-                               (:e block-item-kind)
-                               not-zp-of-limit-variable
-                               (:e block-item-stmt->get)
-                               ,stmt-thm-name))))
-       ((mv item-event &) (evmac-generate-defthm item-thm-name
-                                                 :formula item-formula
-                                                 :hints item-hints
-                                                 :enable nil))
+       ((mv item
+            item-limit
+            item-thm-event
+            item-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-stmt gin.fn gin.fn-guard gin.context
+                                 stmt stmt-limit stmt-thm-name
+                                 expr.type term
+                                 gin.compst-var gin.fenv-var gin.limit-var
+                                 gin.compst-var thm-index names-to-avoid state))
        (items (list item))
        (items-limit (pseudo-term-fncall
                      'binary-+
@@ -458,7 +518,8 @@
                            :limit items-limit
                            :events (append expr.events
                                            (list stmt-event)
-                                           (list item-event)
+                                           (and item-thm-name
+                                                (list item-thm-event))
                                            (list items-event))
                            :thm-name items-thm-name
                            :thm-index thm-index
