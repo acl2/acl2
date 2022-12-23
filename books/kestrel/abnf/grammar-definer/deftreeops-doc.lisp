@@ -40,6 +40,11 @@
       of these specialized tree matching predicates.")
 
     (xdoc::p
+     "In addition, this @('deftreeops') macro also generates
+      theorems about trees that satisfy
+      the generated grammar-specific matching predicates.")
+
+    (xdoc::p
      "We plan to extend this @('deftreeops') macro
       to generate additional grammar-specific operations on trees."))
 
@@ -152,4 +157,15 @@
       (xdoc::seetopic "acl2::macro-aliases-table" "Macro aliases")
       " are also generated that link the macro names to the function names:
        this way, the predicates can be opened (in proofs)
-       via their macro names.")))))
+       via their macro names."))
+
+    (xdoc::desc
+     "@('prefix-nonleaf-when-rulename')"
+     (xdoc::p
+      "Theorems saying that trees that match the rulenames
+       are tree of the @(':nonleaf') kind.")
+     (xdoc::p
+      "One theorem is generated for each rule name
+       defined by a grammar rule.
+       The name of the theorem is obtained by concatenating
+       @('prefix') with @('-nonleaf-when-') with the rule name.")))))

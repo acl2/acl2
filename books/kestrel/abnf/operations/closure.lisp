@@ -206,3 +206,21 @@
           that transitively define the names in a list of rule names."
   (calc-trans-rules-of-names rulenames nil rules)
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define rulelist-unused-rules ((rules rulelistp))
+  :returns (rulenames rulename-setp)
+  :short "Rule names that are defined in a list of rules
+          but not used anywhere in those rules."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "It is not uncommon for this set to be non-empty.
+     First, top-level rule names are often not used in other rules.
+     Second, sometimes grammars define certain rules
+     to establish nomenclatures,
+     even if those rules may not be used explicitly in other rules."))
+  (difference (rulelist-defined-rules rules)
+              (rulelist-called-rules rules))
+  :no-function t)
