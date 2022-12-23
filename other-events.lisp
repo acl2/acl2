@@ -8731,25 +8731,88 @@
    ((null wrld) (mv nil cmds cbds state))
    ((and (eq (caar wrld) 'command-landmark)
          (eq (cadar wrld) 'global-value))
-    (let ((form
-           (or (access-command-tuple-last-make-event-expansion (cddar wrld))
-               (access-command-tuple-form (cddar wrld))))
+    (let ((form0 (access-command-tuple-form (cddar wrld)))
           (cbd (access-command-tuple-cbd (cddar wrld))))
-      (cond ((equal form '(exit-boot-strap-mode))
+      (cond ((equal form0 '(exit-boot-strap-mode))
              (mv nil cmds cbds state))
             (t (mv-let
-                (erp val state)
-                (chk-embedded-event-form form nil
-                                         wrld ctx state names nil nil t)
-                (declare (ignore val))
-                (cond
-                 (erp (mv erp nil nil state))
-                 (t
-                  (get-portcullis-cmds
-                   (cdr wrld)
-                   (cons form cmds)
-                   (cons cbd cbds)
-                   names ctx state))))))))
+                 (erp val state)
+                 (chk-embedded-event-form form0 nil wrld ctx state names nil
+                                          nil nil)
+                 (cond
+                  (erp (mv erp nil nil state))
+                  (t
+                   (let* ((exp (access-command-tuple-last-make-event-expansion
+                                (cddar wrld)))
+                          (form
+                           (if exp
+
+; We restore LOCAL and other wrappers.  Before we did this we had problems as
+; indicated by the tests below.
+
+;;; Test 1
+; acl2
+; (local (make-event (prog2$ (cw "@@@ Stuff @@@~%")
+;                            '(local (defun f2 (x) x)))
+;                    :check-expansion t))
+; (certify-book "foo" ?)
+; (quit)
+; acl2
+; ; Should not print "Stuff", but formerly did so.
+; (include-book "foo")
+
+;;; Test 2
+; acl2
+; (local (make-event '(defun f2 (x) x)))
+; (certify-book "foo" ?)
+; (quit)
+; acl2
+; (include-book "foo")
+; ; Should fail, but formerly did not.
+; (pe 'f2)
+; ; Formerly, this presented a name conflict that shouldn't exist.
+; (defun f2 (x y) (cons x y))
+
+;;; Test 3:  A local event that's not from make-event was also in the world
+;;; after include-book, when it didn't belong.
+; acl2
+; (local (progn (defun f1 (x) x) (make-event '(defun f2 (x) x))))
+; (certify-book "foo" ?)
+; (quit)
+; acl2
+; (include-book "foo")
+; ; Should fail, but formerly did not.
+; (pe 'f1)
+; ; Formerly, this presented a name conflict that shouldn't exist.
+; (defun f1 (x y) (cons x y))
+; ; Should fail, but doesn't.
+; (pe 'f2)
+; ; Formerly, this presented a name conflict that shouldn't exist.
+; (defun f2 (x y) (cons x y))
+
+;;; Test 4: It's actually not just about local; it's about other wrappers too.
+;;; Formerly the setting of guard-checking to nil was being ignored.
+; acl2
+; (defun bad (x) (declare (xargs :mode :program)) (car x))
+; (with-guard-checking-event
+;   nil
+;   (make-event (prog2$ (car 3) '(local (defun f2 (x) x)))
+;               :check-expansion t))
+; (certify-book "foo" ?)
+; (quit)
+; acl2
+; (include-book "foo")
+
+                               (mv-let (wrappers base-form)
+                                 (destructure-expansion val)
+                                 (declare (ignore base-form))
+                                 (rebuild-expansion wrappers exp))
+                             form0)))
+                     (get-portcullis-cmds
+                      (cdr wrld)
+                      (cons form cmds)
+                      (cons cbd cbds)
+                      names ctx state)))))))))
    (t (get-portcullis-cmds (cdr wrld) cmds cbds names ctx state))))
 
 #-acl2-loop-only
