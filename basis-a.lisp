@@ -8799,20 +8799,27 @@
 ; Essay on Book-names
 
 ; In October 2022 we completed changes to support relocation of book
-; directories.  A key change was to use sysfiles as full-book-names when
-; possible, not only in book certificates but also in structures in the ACL2
-; world.  More specifically, full-book-names can now be either sysfiles or
-; canonical absolute pathname strings.  We consistently use "full-book-name" in
-; variable and record field names that represent arbitrary full-book-names for
-; which a sysfile will be used whenever it can be.  By contrast, a
-; "full-book-string" is a (generally canonical) absolute pathname string for a
-; book.
+; directories.  A key change was to use sysfiles, which are data structures of
+; the form (:kwd . relative-pathname-string) as full-book-names when possible
+; -- not only in book certificates but also in structures in the ACL2 world
+; that contain full-book-names.  More specifically, full-book-names can now be
+; either sysfiles or canonical absolute pathname strings.  We consistently use
+; "full-book-name" in variable and record field names that represent arbitrary
+; full-book-names for which a sysfile will be used whenever it can be.  By
+; contrast, a "full-book-string" is a (generally canonical) absolute pathname
+; string for a book.
 
-; The sysfile-filename of a sysfile may be an absolute or relative pathname,
-; depending on context.  In (project-dir-alist (w state)), a sysfile (:kwd
-; . "dir/") maps :kwd to a canonical absolute directory pathname, "dir/".  Then
-; in a book's certificate, the full-book-name for a book residing in "dir/path"
-; (where "path" is thus a relative pathname) would be (:kwd . "path").
+; Note that entries (:kwd . string) in (project-dir-alist (w state)) resemble
+; sysfiles, but their string component is an absolute pathname.  We do not
+; consider these to be sysfiles, though the recognizer sysfile-p is too weak to
+; make this distinction.
+
+; As suggested above, the sysfile-filename of a sysfile is a relative pathname.
+; In (project-dir-alist (w state)), a pair (:kwd . "dir/") -- not considered a
+; sysfile, as noted above, as "dir/" is an absolute pathname -- maps :kwd to a
+; canonical absolute directory pathname, "dir/".  Then in a book's certificate,
+; the full-book-name for a book residing in "dir/path" (where "path" is thus a
+; relative pathname) would be (:kwd . "path").
 
 ; When ACL2 uses a full-book-name, the sysfile form is preferred (when
 ; applicable; of course some pathnames don't lie under any directory in the
@@ -8861,7 +8868,7 @@
 (defun sysfile-p (x)
 
 ; This predicate is a weak recognizer for a sysfile, which is a pair (:kwd
-; . "relative-pathname/"), which represents the interpretation of the given
+; . "relative-pathname"), which represents the interpretation of the given
 ; relative pathname with respect to the absolute pathname associated with the
 ; given keyword in the project-dir-alist of the logical world.  A
 ; full-book-name is always either an absolute pathname or a sysfile.  See
