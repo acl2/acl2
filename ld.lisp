@@ -1480,7 +1480,6 @@
 ; or any other wormhole; hence the condition above.
 
             (setq *trace-level* 0))
-          (setq *hcomp-loop$-alist* nil) ; could be modified in raw-mode
           (ld-read-eval-print state))
    (cond ((eq signal :continue)
           (ld-loop state))

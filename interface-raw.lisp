@@ -4014,11 +4014,6 @@
 ; (setq *hcomp-fn-alist* '((fn1 ..) (fn2 ..) ..))
 ; (setq *hcomp-const-alist* '((c1 ..) (c2 ..) ..))
 ; (setq *hcomp-macro-alist* '((mac1 ..) (mac2 ..) ..))
-;;; Support compilation of loop$ forms (see Part 3 below):
-; (when (eq *readtable* *reckless-acl2-readtable*)
-;   (setq *set-hcomp-loop$-alist* t))
-; (when *set-hcomp-loop$-alist*
-;   (setq *hcomp-loop$-alist* '..))
 ;;; Build a hash table associating fni, ci, and maci with pre-existing
 ;;; compiled definitions or special *unbound* mark:
 ; (hcomp-init)
@@ -4728,33 +4723,6 @@
 ; Note that some of these are wrapped together in a progn to maximize sharing
 ; using #n# syntax.
 
-; Note added February, 2019: We have extended the expansion file to support the
-; macroexpansion of loop$ in raw Lisp.  The main idea is to mirror the world
-; global, 'loop$-alist, in a Lisp special variable to be consulted during the
-; early load of compiled files: *hcomp-loop$-alist*.  See loop$.  The
-; discussion below outlines how the expansion file supports the macroexpansion
-; of loop$ in raw Lisp.
-
-; The loop$-alist -- whether the value of world global 'loop$-alist or the
-; value of special variable *hcomp-loop$-alist* -- needs to distinguish entries
-; added for the current book during its certification, because these are the
-; only ones that are placed directly in that book's expansion file.  Thus the
-; loop$-alist-entry record has a field, :flg, that is usually nil but is t when
-; adding an entry during certification and not under include-book (i.e., under
-; a sub-book).  The variable *hcomp-loop$-alist* is set to nil in
-; include-book-raw-top and then populated in expansion files.  Then each
-; expansion file overwrites that variable to the list of loop$-alist-entry
-; records appropriate for loop$ forms introduced in that book, not in
-; sub-books.  But upon exit from the expansion file, the value of that variable
-; from before that overwrite is extended by the final value from the expansion
-; file, using the macro wrapper, handle-hcomp-loop$-alist.
-
-; An optimizbation is that *set-hcomp-loop$-alist* is only true when under some
-; load of an expansion file (where (eq *readtable* *reckless-acl2-readtable*)).
-; In particular, in the normal case that compiled files are loaded,
-; *hcomp-loop$-alist* will remain nil, which is fine since the loop$ macros
-; will have already been expanded.
-
 ; End of Essay on Hash Table Support for Compilation
 
 (defun hcomp-init ()
@@ -5179,40 +5147,9 @@
              (assert$ (member-eq status '(to-be-compiled complete incomplete))
                       status)))))))))
 
-(defvar *set-hcomp-loop$-alist* nil)
-
-(defun extend-hcomp-loop$-alist (new old full-book-string)
-
-; Extend old by new, checking that we never change an existing value.
-
-  (let ((result old))
-    (loop for pair in new
-          when (let ((old-pair (assoc-equal (car pair) old)))
-                 (cond ((null old-pair) t)
-                       ((equal (cdr pair) (cdr old-pair)) nil)
-                       (t (er hard 'extend-hcomp-loop$-alist
-                              "Implementation error: unexpected ~
-                               incompatibility in loop$-alists when ~
-                               processing the book ~x0.~%new:~%~x1~%old~%~x2"
-                              full-book-string new old))))
-          do (push pair result)
-          finally (return result))))
-
-(defmacro handle-hcomp-loop$-alist (form full-book-string)
-  (let ((saved-hcomp-loop$-alist (gensym)))
-    `(let ((,saved-hcomp-loop$-alist *hcomp-loop$-alist*))
-       (prog1 ,form
-         (setq *hcomp-loop$-alist*
-               (extend-hcomp-loop$-alist *hcomp-loop$-alist*
-                                         ,saved-hcomp-loop$-alist
-                                         ,full-book-string))))))
-
 (defun include-book-raw (book-string book-name
                                      directory-name load-compiled-file dir ctx
-                                     state
-                                     &aux ; protect global value
-                                     (*set-hcomp-loop$-alist*
-                                      *set-hcomp-loop$-alist*))
+                                     state)
 
 ; Book-string and book-name are an ACL2 pathname and a corresponding book-name
 ; or nil.  These are discussed further below.
@@ -5340,9 +5277,7 @@
                 ((and book-date
                       ofile-date
                       (<= book-date ofile-date))
-                 (handle-hcomp-loop$-alist
-                  (load-compiled ofile t)
-                  full-book-string))
+                 (load-compiled ofile t))
                 (t (let ((reason (cond (ofile-exists
                                         "the compiled file is not at least as ~
                                          recent as the book")
@@ -5383,9 +5318,7 @@
                                           reason)
                                 (cond (efile-p
                                        (with-reckless-readtable
-                                        (handle-hcomp-loop$-alist
-                                         (load efile)
-                                         full-book-string)))
+                                        (load efile)))
                                       (raw-mode-p (load os-file))))))))))
         :binder state-free-global-let*-safe))
       ((let* ((entry (assert$ *hcomp-book-ht* ; not raw mode, e.g.
@@ -5446,11 +5379,9 @@
 ; managed by those hash tables: *user-stobj-alist*.
 
                       *user-stobj-alist*))
-                 (handle-hcomp-loop$-alist
-                  (load-compiled-book full-book-string full-book-name
-                                      directory-name load-compiled-file
-                                      ctx state)
-                  full-book-string))))
+                 (load-compiled-book full-book-string full-book-name
+                                     directory-name load-compiled-file
+                                     ctx state))))
           (setf (gethash full-book-name *hcomp-book-ht*)
                 (make hcomp-book-ht-entry
                       :status   status
@@ -5494,8 +5425,7 @@
 ; then for acl2-unwind-protect to do the actual cleanup using those saved
 ; values.
 
-     (setq *saved-hcomp-restore-hts* nil
-           *hcomp-loop$-alist* nil)
+     (setq *saved-hcomp-restore-hts* nil)
      (acl2-unwind-protect
       "include-book-raw"
       (unwind-protect
@@ -5527,16 +5457,12 @@
                   (value nil)))
         (setq *saved-hcomp-restore-hts*
               (list* *hcomp-fn-macro-restore-ht*
-                     *hcomp-const-restore-ht*)
-              *hcomp-loop$-alist*
-              nil))
+                     *hcomp-const-restore-ht*)))
       (progn (hcomp-restore-defs)
              (setq *saved-hcomp-restore-hts* nil)
-             (setq *hcomp-loop$-alist* nil)
              state)
       (progn (hcomp-restore-defs)
              (setq *saved-hcomp-restore-hts* nil)
-             (setq *hcomp-loop$-alist* nil)
              state)))))
 
 (defmacro hcomp-ht-from-type (type ctx)
