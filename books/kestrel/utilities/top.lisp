@@ -83,10 +83,3 @@
   :parents (kestrel-books)
   :short "Utilities that are part of the
           <see topic='@(url kestrel-books)'>Kestrel Books</see>.")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc theorems-about-non-kestrel-books
-  :parents (kestrel-utilities)
-  :short "Theorems about functions defined outside the
-          <see topic='@(url kestrel-books)'>Kestrel Books</see>.")

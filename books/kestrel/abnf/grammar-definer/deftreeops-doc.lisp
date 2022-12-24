@@ -87,7 +87,7 @@
        where @('lang') indicates the language that the grammar refers to.")
      (xdoc::p
       "In the rest of this documentation page,
-       let @('prefix') be this symbol.")))
+       let @('<prefix>') be this symbol.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -104,14 +104,14 @@
 
     (xdoc::desc
      (list
-      "@('prefix-matchp')"
-      "@('prefix-list-elem-matchp')"
-      "@('prefix-list-rep-matchp')"
-      "@('prefix-list-list-conc-matchp')"
-      "@('prefix-list-list-alt-matchp')")
+      "@('<prefix>-matchp')"
+      "@('<prefix>-list-elem-matchp')"
+      "@('<prefix>-list-rep-matchp')"
+      "@('<prefix>-list-list-conc-matchp')"
+      "@('<prefix>-list-list-alt-matchp')")
      (xdoc::p
       "Tree matching predicates, specialized to @('*grammar*').
-       The predicates are put in the same package as @('prefix').")
+       The predicates are put in the same package as @('<prefix>').")
      (xdoc::p
       "Each predicate takes two arguments:")
      (xdoc::ol
@@ -160,12 +160,25 @@
        via their macro names."))
 
     (xdoc::desc
-     "@('prefix-nonleaf-when-rulename')"
+     "@('<prefix>-nonleaf-when-<rulename>')"
      (xdoc::p
-      "Theorems saying that trees that match the rulenames
+      "Theorems saying that trees that match the rule names
        are tree of the @(':nonleaf') kind.")
      (xdoc::p
       "One theorem is generated for each rule name
        defined by a grammar rule.
        The name of the theorem is obtained by concatenating
-       @('prefix') with @('-nonleaf-when-') with the rule name.")))))
+       @('<prefix>') with @('-nonleaf-when-')
+       with the rule name @('<rulename>')."))
+
+    (xdoc::desc
+     "@('<prefix>-rulename-when-<rulename>')"
+     (xdoc::p
+      "Theorems saying that the rule names of tree that matches the rule names
+       are exactly those rule names.")
+     (xdoc::p
+      "One theorem is generated for each rule name
+       defined by a grammar rule.
+       The name of the theorem is obtained by concatenating
+       @('<prefix>') with @('-rulename-when-')
+       with the rule name @('<rulename>').")))))

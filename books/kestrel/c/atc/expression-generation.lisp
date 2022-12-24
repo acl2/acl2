@@ -343,7 +343,8 @@
                                                      nil
                                                      gin.names-to-avoid
                                                      wrld))
-                 (okp-lemma-formula `(,op-arg-type-okp ,arg-term))
+                 (arg-uterm (untranslate$ arg-term nil state))
+                 (okp-lemma-formula `(,op-arg-type-okp ,arg-uterm))
                  (okp-lemma-formula
                   (atc-contextualize okp-lemma-formula gin.context t))
                  (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
@@ -482,8 +483,10 @@
                                                      nil
                                                      gin.names-to-avoid
                                                      wrld))
-                 (okp-lemma-formula `(,op-arg1-type-arg2-type-okp ,arg1-term
-                                                                  ,arg2-term))
+                 (arg1-uterm (untranslate$ arg1-term nil state))
+                 (arg2-uterm (untranslate$ arg2-term nil state))
+                 (okp-lemma-formula `(,op-arg1-type-arg2-type-okp ,arg1-uterm
+                                                                  ,arg2-uterm))
                  (okp-lemma-formula
                   (atc-contextualize okp-lemma-formula gin.context t))
                  (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
@@ -638,7 +641,8 @@
                                                      nil
                                                      gin.names-to-avoid
                                                      wrld))
-                 (okp-lemma-formula `(,op-name-okp ,arg-term))
+                 (arg-uterm (untranslate$ arg-term nil state))
+                 (okp-lemma-formula `(,op-name-okp ,arg-uterm))
                  (okp-lemma-formula
                   (atc-contextualize okp-lemma-formula gin.context t))
                  (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
@@ -1492,12 +1496,13 @@
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil pure.names-to-avoid wrld))
        (type-pred (type-to-recognizer pure.type wrld))
+       (uterm (untranslate$ term nil state))
        (formula `(and (equal (exec-expr-call-or-pure ',pure.expr
                                                      ,gin.compst-var
                                                      ,gin.fenv-var
                                                      ,gin.limit-var)
-                             (mv ,term ,gin.compst-var))
-                      (,type-pred ,term)))
+                             (mv ,uterm ,gin.compst-var))
+                      (,type-pred ,uterm)))
        (formula (atc-contextualize formula gin.context nil))
        (formula `(implies (and (compustatep ,gin.compst-var)
                                (,gin.fn-guard ,@(formals+ gin.fn wrld))
