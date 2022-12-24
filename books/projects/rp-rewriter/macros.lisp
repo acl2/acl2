@@ -42,6 +42,7 @@
 ;(include-book "aux-functions")
 ;(local (include-book "proofs/useful-lemmas"))
 (include-book "tools/flag" :dir :system)
+(include-book "tools/templates" :dir :system)
 
 (encapsulate
   nil
@@ -482,3 +483,36 @@ preserve-current-theory) </p>
                                 (cons (cons 'list args) 'nil)))
                     (cons '0
                           (cons ''(nil 6 7 nil) (cons 'nil 'nil)))))))
+
+
+
+(defsection create-case-match-macro
+  :autodoc nil
+  :short "Creates a function and a macro to replace case-match, and prevent
+  excessive casesplitting when proving lemmas."
+  
+  (define create-case-match-macro-fn (name pattern extra-cond)
+    :mode :program
+    (acl2::template-subst
+     `(progn
+        (define <name>-p (x)
+          :ignore-ok t
+          :inline t
+          (case-match x
+            (<pattern> ,extra-cond))
+          ///
+          (set-ignore-ok t)
+          (defthm <name>-p-implies
+            (implies (<name>-p x)
+                     (case-match x
+                       (,pattern ,extra-cond)))
+            :rule-classes :forward-chaining))
+        (defmacro <name>-body (var &rest body)
+          (second (acl2::match-clause var '<pattern> body))))
+     :atom-alist `((<pattern> . ,pattern)
+                   (<name> . ,name))
+     :str-alist `(("<NAME>" . ,(symbol-name name)))
+     :pkg-sym name))
+
+  (defmacro create-case-match-macro (name pattern &optional (extra-cond ''t))
+    (create-case-match-macro-fn name pattern extra-cond)))

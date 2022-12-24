@@ -245,7 +245,8 @@
                              bits-is-bit-of-reverse
                              SVL::BITS-OF-RSH-NO-SYNTAXP
                              svl-sum-col-bybit)
-                            (bits-is-bit-of))))))
+                            (bits-is-bit-of
+                             SVL::4VEC->UPPER-AND-LOWER-WHEN-INTEGERP))))))
 
 (local
  (encapsulate
