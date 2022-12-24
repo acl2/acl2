@@ -30,8 +30,8 @@
 (include-book "lenconsmeta") ;BOZO did this speed things up?  try with and without...
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
-(include-book "kestrel/bv/logext" :dir :system)
-(include-book "kestrel/bv/bvor" :dir :system)
+;(include-book "kestrel/bv/logext" :dir :system)
+;(include-book "kestrel/bv/bvor" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system)
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -2458,12 +2458,12 @@
                   (cons a (myif test b c))))
   :hints (("Goal" :in-theory (enable myif))))
 
-;gen? -alt?
-(defthmd myif-of-logext-logior-32-hack
-  (implies (signed-byte-p 32 x)
-           (equal (myif test x (logext 32 (bvor 32 y x)))
-                  (logext 32 (bvor 32 (myif test 0 y) x))))
-  :hints (("Goal" :in-theory (enable myif))))
+;; ;gen? -alt?
+;; (defthmd myif-of-logext-logior-32-hack
+;;   (implies (signed-byte-p 32 x)
+;;            (equal (myif test x (logext 32 (bvor 32 y x)))
+;;                   (logext 32 (bvor 32 (myif test 0 y) x))))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
 ;; ;BOZO think about the extra logext here
 ;; (defthmd myif-of-logext-logior-32-hack-2
@@ -3102,12 +3102,12 @@
 ;BOZO try
 ;(in-theory (disable logext-of-myif))
 
-(defthmd logext-of-myif-back
-  (equal (myif test (logext n a) (logext n b))
-         (logext n (myif test a b)))
-  :hints (("Goal" :in-theory (enable myif))))
+;; (defthmd logext-of-myif-back
+;;   (equal (myif test (logext n a) (logext n b))
+;;          (logext n (myif test a b)))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
-(theory-invariant (incompatible (:rewrite LOGEXT-OF-MYIF) (:rewrite LOGEXT-OF-MYIF-back)))
+;; (theory-invariant (incompatible (:rewrite LOGEXT-OF-MYIF) (:rewrite LOGEXT-OF-MYIF-back)))
 
 ;trying for efficiency...
 ;(in-theory (disable LIST::NTH-WITH-LARGE-INDEX))

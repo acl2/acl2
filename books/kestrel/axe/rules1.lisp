@@ -21,7 +21,7 @@
 (include-book "kestrel/bv/unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system)
-(include-book "kestrel/bv-lists/bvnth" :dir :system)
+(include-book "kestrel/bv-lists/bvnth" :dir :system) ; todo: split out
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
