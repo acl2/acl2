@@ -3290,8 +3290,6 @@
                                    bvcat-equal-rewrite-alt bvcat-equal-rewrite
                                    )))))
 
-(in-theory (disable BV-ARRAY-WRITE-OF-BV-ARRAY-WRITE-DIFF-CONSTANT-INDICES)) ;move up -will this break anything?
-
 (defthm bvlt-of-max-arg2
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))

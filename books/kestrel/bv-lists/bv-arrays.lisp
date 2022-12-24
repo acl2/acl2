@@ -513,15 +513,16 @@
                               bv-array-write))))
 
 ;would like this not to mention len, but we have to know that the indices (after trimming down to the number of bits indicated by len) are in fact different.
-(defthm bv-array-write-of-bv-array-write-diff-constant-indices
-  (implies (and (syntaxp (quotep index1))
-                (syntaxp (quotep index2))
+;; TODO: Maybe we prefer the other order since lower indices are usually done first.
+(defthmd bv-array-write-of-bv-array-write-diff-constant-indices
+  (implies (and (syntaxp (and (quotep index1)
+                              (quotep index2)))
                 (< index2 index1)
                 (< index1 len)
                 ;; (< index2 len)
                 (natp index1)
                 (natp index2)
-;                (natp len) ;drop?
+                ;; (natp len) ;drop?
                 )
            (equal (bv-array-write element-size len index1 val1 (bv-array-write element-size len index2 val2 lst))
                   (bv-array-write element-size len index2 val2 (bv-array-write element-size len index1 val1 lst))
