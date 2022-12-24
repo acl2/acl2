@@ -603,12 +603,16 @@
                                 (else-type typep)
                                 (then-limit pseudo-termp)
                                 (else-limit pseudo-termp)
+                                (then-thm symbolp)
+                                (else-thm symbolp)
+                                (then-context atc-contextp)
+                                (else-context atc-contextp)
                                 (test-events pseudo-event-form-listp)
                                 (then-events pseudo-event-form-listp)
                                 (else-events pseudo-event-form-listp)
                                 (gin stmt-ginp)
                                 state)
-  (declare (ignore term state))
+  (declare (ignore term))
   :returns (mv erp (gout stmt-goutp))
   :short "Generate a C @('if') or @('if')-@('else') statement
           from an ACL2 term."
@@ -616,9 +620,29 @@
   (xdoc::topstring
    (xdoc::p
     "We generate an @('if') if the `else' branch is empty.
-     Otherwise we generate an @('if')-@('else')."))
+     Otherwise we generate an @('if')-@('else').")
+   (xdoc::p
+    "We generate a theorem for each branch:
+     each theorem is about the compound statement
+     that consists of the block items of the branch.
+     Recall that @(atc-gen-stmt) recursively generates
+     theorems for those lists of block items;
+     these are put into compound statements
+     that become the actual branches of the conditional,
+     so we need to lift the theorems to those compound statements.
+     We generate the theorem for the `else' compound statement
+     regardless of whether it is empty or not, for uniformity.
+     The limit for each compound statement is
+     1 plus the one for the block item list,
+     because we need 1 to go from @(tsee exec-stmt)
+     to the @(':compound') case and @(tsee exec-block-item-list).")
+   (xdoc::p
+    "We will soon extend this to also generate a theorem
+     for the conditional statement.
+     For now we just stop the modular proofs at this point."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
+       (wrld (w state))
        ((unless (equal then-type else-type))
         (reterr
          (msg "When generating C code for the function ~x0, ~
@@ -628,28 +652,140 @@
                to make the branches of the same type."
               gin.fn then-term else-term then-type else-type)))
        (type then-type)
-       (limit (pseudo-term-fncall
-               'binary-+
-               (list
-                (pseudo-term-quote 5)
-                (pseudo-term-fncall
-                 'binary-+
-                 (list then-limit else-limit)))))
+       (then-stmt (make-stmt-compound :items then-items))
+       (else-stmt (make-stmt-compound :items else-items))
        (stmt (if (consp else-items)
                  (make-stmt-ifelse :test test-expr
-                                   :then (make-stmt-compound :items then-items)
-                                   :else (make-stmt-compound :items else-items))
+                                   :then then-stmt
+                                   :else else-stmt)
                (make-stmt-if :test test-expr
-                             :then (make-stmt-compound :items then-items)))))
+                             :then then-stmt)))
+       ((when (not gin.proofs))
+        (retok
+         (make-stmt-gout
+          :items (list (block-item-stmt stmt))
+          :type type
+          :limit (pseudo-term-fncall
+                  'binary-+
+                  (list
+                   (pseudo-term-quote 5)
+                   (pseudo-term-fncall
+                    'binary-+
+                    (list then-limit else-limit))))
+          :events (append test-events then-events else-events)
+          :thm-name nil
+          :thm-index gin.thm-index
+          :names-to-avoid gin.names-to-avoid
+          :proofs nil)))
+       (thm-index gin.thm-index)
+       (names-to-avoid gin.names-to-avoid)
+       (then-stmt-thm (pack gin.fn '-correct- thm-index))
+       (thm-index (1+ thm-index))
+       ((mv then-stmt-thm names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         then-stmt-thm nil names-to-avoid wrld))
+       (else-stmt-thm (pack gin.fn '-correct- thm-index))
+       (thm-index (1+ thm-index))
+       ((mv else-stmt-thm names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         else-stmt-thm nil names-to-avoid wrld))
+       (type-pred (type-to-recognizer type wrld))
+       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (then-stmt-limit `(binary-+ '1 ,then-limit))
+       (else-stmt-limit `(binary-+ '1 ,else-limit))
+       (then-uterm (untranslate$ then-term nil state))
+       (else-uterm (untranslate$ else-term nil state))
+       (then-stmt-formula `(and (equal (exec-stmt ',then-stmt
+                                                  ,gin.compst-var
+                                                  ,gin.fenv-var
+                                                  ,gin.limit-var)
+                                       (mv ,then-uterm ,gin.compst-var))
+                                (,type-pred ,then-uterm)))
+       (then-stmt-formula
+        (atc-contextualize then-stmt-formula then-context nil))
+       (then-stmt-formula
+        `(implies (and (compustatep ,gin.compst-var)
+                       (,gin.fn-guard ,@(formals+ gin.fn wrld))
+                       (integerp ,gin.limit-var)
+                       (>= ,gin.limit-var ,then-stmt-limit))
+                  ,then-stmt-formula))
+       (else-stmt-formula `(and (equal (exec-stmt ',else-stmt
+                                                  ,gin.compst-var
+                                                  ,gin.fenv-var
+                                                  ,gin.limit-var)
+                                       (mv ,else-uterm ,gin.compst-var))
+                                (,type-pred ,else-uterm)))
+       (else-stmt-formula
+        (atc-contextualize else-stmt-formula else-context nil))
+       (else-stmt-formula
+        `(implies (and (compustatep ,gin.compst-var)
+                       (,gin.fn-guard ,@(formals+ gin.fn wrld))
+                       (integerp ,gin.limit-var)
+                       (>= ,gin.limit-var ,else-stmt-limit))
+                  ,else-stmt-formula))
+       (then-stmt-hints
+        `(("Goal" :in-theory '(exec-stmt-when-compound
+                               (:e stmt-kind)
+                               not-zp-of-limit-variable
+                               (:e stmt-compound->items)
+                               ,then-thm
+                               mv-nth-of-cons
+                               (:e zp)
+                               value-optionp-when-valuep
+                               ,valuep-when-type-pred
+                               exit-scope-of-enter-scope
+                               compustate-frames-number-of-add-frame-not-zero
+                               compustate-frames-number-of-enter-scope-not-zero
+                               compustate-frames-number-of-add-var-not-zero
+                               compustatep-of-add-frame
+                               compustatep-of-add-var
+                               compustatep-of-enter-scope))))
+       (else-stmt-hints
+        `(("Goal" :in-theory '(exec-stmt-when-compound
+                               (:e stmt-kind)
+                               not-zp-of-limit-variable
+                               (:e stmt-compound->items)
+                               ,else-thm
+                               mv-nth-of-cons
+                               (:e zp)
+                               value-optionp-when-valuep
+                               ,valuep-when-type-pred
+                               exit-scope-of-enter-scope
+                               compustate-frames-number-of-add-frame-not-zero
+                               compustate-frames-number-of-enter-scope-not-zero
+                               compustate-frames-number-of-add-var-not-zero
+                               compustatep-of-add-frame
+                               compustatep-of-add-var
+                               compustatep-of-enter-scope))))
+       ((mv then-stmt-event &)
+        (evmac-generate-defthm then-stmt-thm
+                               :formula then-stmt-formula
+                               :hints then-stmt-hints
+                               :enable nil))
+       ((mv else-stmt-event &)
+        (evmac-generate-defthm else-stmt-thm
+                               :formula else-stmt-formula
+                               :hints else-stmt-hints
+                               :enable nil)))
     (retok
      (make-stmt-gout
       :items (list (block-item-stmt stmt))
       :type type
-      :limit limit
-      :events (append test-events then-events else-events)
+      :limit (pseudo-term-fncall
+              'binary-+
+              (list
+               (pseudo-term-quote 5)
+               (pseudo-term-fncall
+                'binary-+
+                (list then-limit else-limit))))
+      :events (append test-events
+                      then-events
+                      else-events
+                      (list then-stmt-event)
+                      (list else-stmt-event))
       :thm-name nil
-      :thm-index gin.thm-index
-      :names-to-avoid gin.names-to-avoid
+      :thm-index thm-index
+      :names-to-avoid names-to-avoid
       :proofs nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -867,8 +1003,9 @@
                                   :names-to-avoid gin.names-to-avoid
                                   :proofs gin.proofs)
                                  state))
-             ((erp (stmt-gout then))
-              (b* ((then-cond (untranslate$ test-term t state))
+             ((erp (stmt-gout then) then-context)
+              (b* (((reterr) (irr-stmt-gout) nil)
+                   (then-cond (untranslate$ test-term t state))
                    (then-premise (atc-premise-test then-cond))
                    (then-context (append gin.context
                                          (list then-premise)))
@@ -905,9 +1042,11 @@
                  (change-stmt-gout gout
                                    :events (append
                                             then-enter-scope-events
-                                            (stmt-gout->events gout))))))
-             ((erp (stmt-gout else))
-              (b* ((not-test-term (dumb-negate-lit test-term))
+                                            (stmt-gout->events gout)))
+                 then-context)))
+             ((erp (stmt-gout else) else-context)
+              (b* (((reterr) (irr-stmt-gout) nil)
+                   (not-test-term (dumb-negate-lit test-term))
                    (else-cond (untranslate$ not-test-term t state))
                    (else-premise (atc-premise-test else-cond))
                    (else-context (append gin.context
@@ -945,10 +1084,13 @@
                  (change-stmt-gout gout
                                    :events (append
                                             else-enter-scope-events
-                                            (stmt-gout->events gout)))))))
+                                            (stmt-gout->events gout)))
+                 else-context))))
           (atc-gen-if/ifelse-stmt term test.expr then-term else-term
                                   then.items else.items then.type else.type
                                   then.limit else.limit
+                                  then.thm-name else.thm-name
+                                  then-context else-context
                                   test.events then.events else.events
                                   (change-stmt-gin
                                    gin
