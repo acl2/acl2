@@ -873,7 +873,7 @@
                    (then-context (append gin.context
                                          (list then-premise)))
                    ((mv then-inscope
-                        then-context
+                        then-enter-scope-context
                         then-enter-scope-events
                         thm-index
                         names-to-avoid)
@@ -895,7 +895,7 @@
                     (atc-gen-stmt then-term
                                   (change-stmt-gin
                                    gin
-                                   :context then-context
+                                   :context then-enter-scope-context
                                    :inscope then-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
@@ -913,7 +913,7 @@
                    (else-context (append gin.context
                                          (list else-premise)))
                    ((mv else-inscope
-                        else-context
+                        else-enter-scope-context
                         else-enter-scope-events
                         thm-index
                         names-to-avoid)
@@ -935,7 +935,7 @@
                     (atc-gen-stmt else-term
                                   (change-stmt-gin
                                    gin
-                                   :context else-context
+                                   :context else-enter-scope-context
                                    :inscope else-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
