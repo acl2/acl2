@@ -297,11 +297,12 @@
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (result-uterm (untranslate$ result-term nil state))
+       (compst-uterm (untranslate$ compst-term nil state))
        (formula `(equal (exec-block-item ',item
                                          ,compst-var
                                          ,fenv-var
                                          ,limit-var)
-                        (mv ,result-uterm ,compst-term)))
+                        (mv ,result-uterm ,compst-uterm)))
        (formula (if result-term
                     (b* ((type-pred (type-to-recognizer result-type wrld)))
                       `(and ,formula
@@ -377,11 +378,12 @@
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (result-uterm (untranslate$ result-term nil state))
+       (compst-uterm (untranslate$ compst-term nil state))
        (formula `(equal (exec-block-item-list ',items
                                               ,compst-var
                                               ,fenv-var
                                               ,limit-var)
-                        (mv ,result-uterm ,compst-term)))
+                        (mv ,result-uterm ,compst-uterm)))
        (type-pred (and result-term
                        (type-to-recognizer result-type wrld)))
        (formula (if result-term
@@ -530,12 +532,13 @@
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
          stmt-thm-name nil names-to-avoid wrld))
+       (uterm (untranslate$ term nil state))
        (stmt-formula `(and (equal (exec-stmt ',stmt
                                              ,gin.compst-var
                                              ,gin.fenv-var
                                              ,gin.limit-var)
-                                  (mv ,term ,gin.compst-var))
-                           (,type-pred ,term)))
+                                  (mv ,uterm ,gin.compst-var))
+                           (,type-pred ,uterm)))
        (stmt-formula (atc-contextualize stmt-formula gin.context nil))
        (stmt-formula `(implies (and (compustatep ,gin.compst-var)
                                     (,gin.fn-guard ,@(formals+ gin.fn wrld))
