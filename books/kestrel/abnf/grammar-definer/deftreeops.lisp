@@ -333,11 +333,7 @@
      we keep track of the rule names encountered so far,
      to avoid duplicates.
      We generate the theorems in the order in which
-     the rule names first appear on the left of rules.")
-   (xdoc::p
-    "We start by generating theorems saying that
-     if a tree matches a rule name then it is a non-leaf tree.
-     More theorems will be generated soon."))
+     the rule names first appear on the left of rules."))
   (deftreeops-gen-rulename-thms-aux rules nil prefix)
 
   :prepwork
@@ -351,20 +347,34 @@
           (name (rule->name rule))
           ((when (member-equal name done))
            (deftreeops-gen-rulename-thms-aux (cdr rules) done prefix))
-          (cst-rulename-nonleaf
+          (cst-matchp (add-suffix-to-fn prefix "-MATCHP"))
+          (cst-nonleaf-when-rulename
            (packn-pos (list prefix
                             '-nonleaf-when-
                             (str::upcase-string (rulename->get name)))
                       prefix))
-          (cst-matchp (add-suffix-to-fn prefix "-MATCHP"))
+          (cst-rulename-when-rulename
+           (packn-pos (list prefix
+                            '-rulename-when-
+                            (str::upcase-string (rulename->get name)))
+                      prefix))
           (events
-           `((defruled ,cst-rulename-nonleaf
+           `((defruled ,cst-nonleaf-when-rulename
                (implies (,cst-matchp cst ,(rulename->get name))
-                        (equal (abnf::tree-kind cst) :nonleaf))
+                        (equal (tree-kind cst) :nonleaf))
                :in-theory '(,cst-matchp
                             tree-nonleaf-when-match-rulename/group/option
-                            (:e abnf::element-kind)
-                            (:e member-equal)))))
+                            (:e element-kind)
+                            (:e member-equal)))
+             (defruled ,cst-rulename-when-rulename
+               (implies (,cst-matchp cst ,(rulename->get name))
+                        (equal (tree-nonleaf->rulename? cst)
+                               (rulename ,(rulename->get name))))
+               :in-theory '(,cst-matchp
+                            tree-rulename-when-match-rulename
+                            (:e element-kind)
+                            (:e element-rulename->get)
+                            (:e rulename)))))
           (more-events (deftreeops-gen-rulename-thms-aux
                          (cdr rules) (cons name done) prefix)))
        (append events more-events)))))
