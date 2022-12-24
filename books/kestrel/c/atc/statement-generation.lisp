@@ -628,7 +628,7 @@
     "We generate a theorem for each branch:
      each theorem is about the compound statement
      that consists of the block items of the branch.
-     Recall that @(atc-gen-stmt) recursively generates
+     Recall that @(tsee atc-gen-stmt) recursively generates
      theorems for those lists of block items;
      these are put into compound statements
      that become the actual branches of the conditional,
