@@ -326,6 +326,95 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-block-item-list-one ((fn symbolp)
+                                     (fn-guard symbolp)
+                                     (context atc-contextp)
+                                     (item block-itemp)
+                                     (item-limit pseudo-termp)
+                                     (item-thm symbolp)
+                                     (result-type typep)
+                                     (result-term pseudo-termp)
+                                     (compst-var symbolp)
+                                     (fenv-var symbolp)
+                                     (limit-var symbolp)
+                                     (compst-term pseudo-termp)
+                                     (thm-index posp)
+                                     (names-to-avoid symbol-listp)
+                                     state)
+  :returns (mv (items block-item-listp :hyp (block-itemp item))
+               (items-limit pseudo-termp)
+               (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (thm-index posp
+                          :hyp (posp thm-index)
+                          :rule-classes (:rewrite :type-prescription))
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate a list of C block items that consists of a given item."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to lift generated block items to generated block item lists.
+     Besides the (singleton) block item list,
+     we also generate a theorem saying that
+     @(tsee exec-block-item-list) applied to the quoted block item list
+     yields an @(tsee mv) pair consisting of
+     a result term (or @('nil'))
+     and a possibly updated computation state;
+     these are the same as the ones for the single item theorem.")
+   (xdoc::p
+    "The limit for the block item list is
+     1 more than the limit for the block item,
+     because we need 1 to go from @(tsee exec-block-item-list)
+     to @(tsee exec-block-item)."))
+  (b* ((wrld (w state))
+       (items (list item))
+       (items-limit (pseudo-term-fncall
+                     'binary-+
+                     (list (pseudo-term-quote 1)
+                           item-limit)))
+       (name (pack fn '-correct- thm-index))
+       (thm-index (1+ thm-index))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       (result-uterm (untranslate$ result-term nil state))
+       (formula `(equal (exec-block-item-list ',items
+                                              ,compst-var
+                                              ,fenv-var
+                                              ,limit-var)
+                        (mv ,result-uterm ,compst-term)))
+       (type-pred (and result-term
+                       (type-to-recognizer result-type wrld)))
+       (formula (if result-term
+                    `(and ,formula
+                          (,type-pred ,result-uterm))
+                  formula))
+       (formula (atc-contextualize formula context nil))
+       (formula `(implies (and (compustatep ,compst-var)
+                               (,fn-guard ,@(formals+ fn wrld))
+                               (integerp ,limit-var)
+                               (>= ,limit-var ,items-limit))
+                          ,formula))
+       (valuep-when-type-pred (and result-term
+                                   (pack 'valuep-when- type-pred)))
+       (hints
+        `(("Goal" :in-theory '(exec-block-item-list-when-consp
+                               not-zp-of-limit-variable
+                               mv-nth-of-cons
+                               (:e zp)
+                               value-optionp-when-valuep
+                               ,@(and result-term
+                                      (list valuep-when-type-pred))
+                               ,item-thm
+                               exec-block-item-list-of-nil
+                               not-zp-of-limit-minus-const))))
+       ((mv event &) (evmac-generate-defthm name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (mv items items-limit event name thm-index names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-return-stmt ((term pseudo-termp)
                              (gin stmt-ginp)
                              (must-affect symbol-listp)
@@ -476,51 +565,27 @@
                                  stmt stmt-limit stmt-thm-name
                                  expr.type term
                                  gin.compst-var gin.fenv-var gin.limit-var
-                                 gin.compst-var thm-index names-to-avoid state))
-       (items (list item))
-       (items-limit (pseudo-term-fncall
-                     'binary-+
-                     (list (pseudo-term-quote 1)
-                           item-limit)))
-       (items-thm-name (pack gin.fn '-correct- thm-index))
-       (thm-index (1+ thm-index))
-       ((mv items-thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix
-         items-thm-name nil names-to-avoid wrld))
-       (items-formula `(and (equal (exec-block-item-list ',items
-                                                         ,gin.compst-var
-                                                         ,gin.fenv-var
-                                                         ,gin.limit-var)
-                                   (mv ,term ,gin.compst-var))
-                            (,type-pred ,term)))
-       (items-formula (atc-contextualize items-formula gin.context nil))
-       (items-formula `(implies (and (compustatep ,gin.compst-var)
-                                     (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                                     (integerp ,gin.limit-var)
-                                     (>= ,gin.limit-var ,items-limit))
-                                ,items-formula))
-       (items-hints
-        `(("Goal" :in-theory '(exec-block-item-list-when-consp
-                               not-zp-of-limit-variable
-                               mv-nth-of-cons
-                               (:e zp)
-                               value-optionp-when-valuep
-                               ,valuep-when-type-pred
-                               ,item-thm-name
-                               exec-block-item-list-of-nil
-                               not-zp-of-limit-minus-const))))
-       ((mv items-event &) (evmac-generate-defthm items-thm-name
-                                                  :formula items-formula
-                                                  :hints items-hints
-                                                  :enable nil)))
+                                 gin.compst-var
+                                 thm-index names-to-avoid state))
+       ((mv items
+            items-limit
+            items-thm-event
+            items-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-list-one gin.fn gin.fn-guard gin.context
+                                     item item-limit item-thm-name
+                                     expr.type term
+                                     gin.compst-var gin.fenv-var gin.limit-var
+                                     gin.compst-var
+                                     thm-index names-to-avoid state)))
     (retok (make-stmt-gout :items items
                            :type expr.type
                            :limit items-limit
                            :events (append expr.events
                                            (list stmt-event)
-                                           (and item-thm-name
-                                                (list item-thm-event))
-                                           (list items-event))
+                                           (list item-thm-event)
+                                           (list items-thm-event))
                            :thm-name items-thm-name
                            :thm-index thm-index
                            :names-to-avoid names-to-avoid
