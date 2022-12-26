@@ -35,10 +35,10 @@
 
 ;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
 ;; Returns (mv erp result state) where result is :yes, :no, :maybe (not currently used?), or :trivial.
-(defun submit-defthm-event-with-advice (defthm num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models state)
+(defun submit-defthm-event-with-advice (defthm num-recs-per-model current-book-absolute-path improve-recsp print server-url models state)
   (declare (xargs :guard (and (natp num-recs-per-model)
-                              (or (null book-to-avoid-absolute-path)
-                                  (stringp book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url)
@@ -64,7 +64,8 @@
                                     nil           ; don't use any hints
                                     nil           ; theorem-otf-flg
                                     num-recs-per-model
-                                    book-to-avoid-absolute-path
+                                    current-book-absolute-path
+                                    t ; avoid using a book to prove its own checkpoints
                                     improve-recsp
                                     print
                                     server-url
@@ -85,23 +86,23 @@
                      ((when erp) (mv erp :no state)))
                   (mv nil :no state)))
       ;; We found advice that worked:
-      (if (eq :add-hyp (help::successful-recommendationp-type best-rec))
+      (if (eq :add-hyp (help::successful-recommendation-type best-rec))
           ;; Note that :add-hyp is now disallowed above!
           ;; TODO: Consider marking add-hyp as a failure, since we know the theorem is true without a hyp, but then
           ;; we should allow the tool to keep looking for more recs
-          (prog2$ (cw "Maybe: hyp added: ~x0)~%" (help::successful-recommendationp-object best-rec)) ; close paren matches (ADVICE
+          (prog2$ (cw "Maybe: hyp added: ~x0)~%" (help::successful-recommendation-object best-rec)) ; close paren matches (ADVICE
                   (b* ( ;; Submit the original defthm (no extra hyp), so we can keep going:
                        ((mv erp state) (submit-event-helper-core defthm nil state))
                        ((when erp) (mv erp :no state)))
                     (mv nil :maybe state)))
-        (b* ((proved-with-no-hintsp (equal "original" (help::successful-recommendationp-name best-rec)))
+        (b* ((proved-with-no-hintsp (equal "original" (help::successful-recommendation-name best-rec)))
              (- (if proved-with-no-hintsp
                     ;; Since we passed nil for the hints, this means the theorem proved with no hints:
                     (if hints-presentp
                         (cw "TRIVIAL (no hints needed, though some were given))~%") ; close paren matches (ADVICE
                       (cw "TRIVIAL (no hints needed or given))~%") ; close paren matches (ADVICE
                       )
-                  (progn$ (cw "YES: ~s0: " (help::successful-recommendationp-name best-rec))
+                  (progn$ (cw "YES: ~s0: " (help::successful-recommendation-name best-rec))
                           (help::show-successful-recommendation best-rec)
                           (cw ")~%")))) ; close paren matches (ADVICE
              ((mv erp state)
@@ -115,15 +116,15 @@
 
 ;; Returns (mv erp yes-count no-count maybe-count trivial-count error-count state).
 ;throws an error if any event fails
-(defun submit-events-with-advice (events theorems-to-try num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models
+(defun submit-events-with-advice (events theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url models
                                          yes-count no-count maybe-count trivial-count error-count
                                          state)
   (declare (xargs :guard (and (true-listp events)
                               (or (eq :all theorems-to-try)
                                   (symbol-listp theorems-to-try))
                               (natp num-recs-per-model)
-                              (or (null book-to-avoid-absolute-path)
-                                  (stringp book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url)
@@ -138,7 +139,7 @@
           ;; It's a theorem for which we are to try advice:
           (b* ( ;; Try to prove it using advice:
                ((mv erp result state)
-                (submit-defthm-event-with-advice event num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models state))
+                (submit-defthm-event-with-advice event num-recs-per-model current-book-absolute-path improve-recsp print server-url models state))
                (- (and erp
                        (cw "ERROR (~x0) with advice attempt for event ~X12 (continuing...).~%" erp event nil)
                        )))
@@ -152,9 +153,9 @@
                      ((when erp)
                       (er hard? 'submit-events-with-advice "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
                       (mv erp yes-count no-count maybe-count trivial-count error-count state)))
-                  (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models yes-count no-count maybe-count trivial-count error-count state))
+                  (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url models yes-count no-count maybe-count trivial-count error-count state))
               ;; No error, so count the result:
-              (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models
+              (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url models
                                          (if (eq :yes result) (+ 1 yes-count) yes-count)
                                          (if (eq :no result) (+ 1 no-count) no-count)
                                          (if (eq :maybe result) (+ 1 maybe-count) maybe-count)
@@ -170,7 +171,7 @@
               (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
               (mv erp yes-count no-count maybe-count trivial-count error-count state))
              (- (cw "~x0~%" (shorten-event event))))
-          (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models yes-count no-count maybe-count trivial-count error-count state))))))
+          (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url models yes-count no-count maybe-count trivial-count error-count state))))))
 
 (defun discard-events-before-first-advice-event (events theorems-to-try)
   (declare (xargs :guard (and (true-listp events)
@@ -218,8 +219,8 @@
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (b* ( ;; We must avoid including the current book (or an other book that includes it) when trying to find advice:
-       (book-to-avoid-absolute-path (canonical-pathname filename nil state))
-       ((when (member-equal book-to-avoid-absolute-path
+       (current-book-absolute-path (canonical-pathname filename nil state))
+       ((when (member-equal current-book-absolute-path
                             (included-books-in-world (w state))))
         (cw "WARNING: Can't replay ~s0 because it is already included in the world.~%" filename)
         (mv :book-already-included (list 0 0 0 0 0) state))
@@ -250,7 +251,7 @@
        ((when erp) (mv erp (list 0 0 0 0 0) state))
        ;; Submit all the events, trying advice for each defthm in theorems-to-try:
        ((mv erp yes-count no-count maybe-count trivial-count error-count state)
-        (submit-events-with-advice events theorems-to-try num-recs-per-model book-to-avoid-absolute-path improve-recsp print server-url models 0 0 0 0 0 state))
+        (submit-events-with-advice events theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url models 0 0 0 0 0 state))
        ((when erp) ; I suppose we could return partial results from this book instead
         (cw "Error: ~x0.~%" erp)
         (mv erp (list 0 0 0 0 0) state))
