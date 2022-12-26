@@ -1,6 +1,6 @@
 ; ACL2 Programming Language Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -114,7 +114,7 @@
      whose @(tsee symbol-package-name) is @('\"COMMON-LISP\"').")
    (xdoc::p
     "This function looks up a symbol, by name,
-     in a list of symbol that is meant to be a package import list.
+     in a list of symbols that is meant to be a package import list.
      We return the first symbol found, if any.
      If none is found, we return @('nil').")
    (xdoc::p
