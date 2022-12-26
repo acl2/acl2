@@ -181,4 +181,16 @@
        defined by a grammar rule.
        The name of the theorem is obtained by concatenating
        @('<prefix>') with @('-rulename-when-')
+       with the rule name @('<rulename>')."))
+
+    (xdoc::desc
+     "@('<prefix>-branches-match-alt-when-<rulename>')"
+     (xdoc::p
+      "Theorems saying that if the trees match the rule names
+       then the branches match the alternations that define the rule names.")
+     (xdoc::p
+      "One theorem is generated for each rule name
+       defined by a grammar rule.
+       The name of the theorem is obtained by concatenating
+       @('<prefix>') with @('-branches-match-alt-when-')
        with the rule name @('<rulename>').")))))
