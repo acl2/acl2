@@ -8542,6 +8542,8 @@ lognot)
                  bitops::logbitp-of-lognot
 
                  (:e INTEGER-LENGTH)
+                 
+                 
 
                  (:type-prescription acl2::binary-logior)
                  (:type-prescription acl2::binary-logxor)
@@ -8596,13 +8598,6 @@ lognot)
                                  (sv::4vec-bitand x z))))
      :hints ((bitops::logbitp-reasoning)))
 
-   (defthmd 4vec-bitxor-to-ors-and-ands
-     (equal (sv::4vec-bitxor x y)
-            (sv::4vec-bitor (sv::4vec-bitand x
-                                             (sv::4vec-bitnot y))
-                            (sv::4vec-bitand y
-                                             (sv::4vec-bitnot x))))
-     :hints ((bitops::logbitp-reasoning)))
 
    (defthm 4vec->upper-and-lower-when-integerp
      (implies (integerp x)
@@ -8612,6 +8607,36 @@ lognot)
               :in-theory (e/d (sv::4vec->lower
                                sv::4vec->upper)
                               ()))))
+
+   (defthmd insert-4vec-bitand-into-4vec-bitxor
+     (implies (and (integerp x))
+              (and (equal (sv::4vec-bitand x (sv::4vec-bitxor y z))
+                          (sv::4vec-bitxor (sv::4vec-bitand x y)
+                                           (sv::4vec-bitand x z)))
+                   (equal (sv::4vec-bitand (sv::4vec-bitxor y z) x)
+                          (sv::4vec-bitxor (sv::4vec-bitand x y)
+                                           (sv::4vec-bitand x z)))))
+     :hints ((bitops::logbitp-reasoning)))
+
+   #|(defthmd 4vec-bitand-of-4vec-bitxor-with-same-var
+     (implies (and (sv::3vec-p x)
+                   (sv::3vec-p z))
+              (and (equal (sv::4vec-bitand x (sv::4vec-bitxor x z))
+                          (sv::4vec-bitand x (sv::4vec-bitxor -1 z)))
+                   (equal (sv::4vec-bitand x (sv::4vec-bitxor x z))
+                          (sv::4vec-bitand (sv::4vec-bitxor -1 z) x))
+                   ))
+     :hints ((bitops::logbitp-reasoning)))|#
+
+   (defthmd 4vec-bitxor-to-ors-and-ands
+     (equal (sv::4vec-bitxor x y)
+            (sv::4vec-bitor (sv::4vec-bitand x
+                                             (sv::4vec-bitnot y))
+                            (sv::4vec-bitand y
+                                             (sv::4vec-bitnot x))))
+     :hints ((bitops::logbitp-reasoning)))
+
+   
 
    (defthmd 4vec-bitnot-to-4vec-bitxor
      (implies t

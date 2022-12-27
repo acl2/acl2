@@ -30,7 +30,7 @@
 (include-book "../svexl/svexl")
 (include-book "../svexl/svexl-correct")
 (include-book "../svexl/svexl-eval-dollar-correct")
-(include-book "../svex-reduce-with-env")
+(include-book "../svex-reduce/top")
 ;;(include-book "centaur/sv/svex/rewrite" :dir :system)
 
 (include-book "std/alists/remove-assocs" :dir :system)

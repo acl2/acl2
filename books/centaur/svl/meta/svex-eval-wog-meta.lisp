@@ -28,7 +28,7 @@
 (include-book "../svex-eval-wog-openers")
 (include-book "../svexl/svexl")
 (include-book "../svexl/svexl-correct")
-(include-book "../svex-reduce-with-env")
+(include-book "../svex-reduce/top")
 ;;(include-book "centaur/sv/svex/rewrite" :dir :system)
 
 (include-book "std/alists/remove-assocs" :dir :system)
@@ -397,7 +397,7 @@ fast-alist. Consider making it one for a better performance.~%"))
                    ((Unless (sv::svex-alist-p alist)) ;; for guards
                     (mv term nil))
                    
-                   (- (cw "Starting: svl::svex-alist-reduce-w/-env ~%"))
+                   (- (cw "Starting: svl::svex-alist-reduce-w/-env. ~%"))
                    (- (time-tracker :svex-alist-eval-meta-aux :end))
                    (- (time-tracker :svex-alist-eval-meta-aux :init
                                     :times '(1 2 3 4 5)
@@ -411,7 +411,7 @@ fast-alist. Consider making it one for a better performance.~%"))
                                     :min-time 0
                                     :msg "The total runtime of svl::svex-alist-reduce-w/-env ~
 was ~st seconds."))
-                   (- (cw "Finished: svl::svex-alist-reduce-w/-env. "))
+                   
                    ;;(- (cw "Starting: sv::svex-alist-rewrite-top ~%"))
                    ;;(alist (sv::svex-alist-rewrite-top alist))
                    ;;(alist (sv::svex-alist-rewrite-fixpoint alist))
