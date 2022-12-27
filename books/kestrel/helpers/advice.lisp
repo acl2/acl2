@@ -64,6 +64,7 @@
 
 ;; TODO: Untranslate before printing (e.g., hyps)?
 
+(include-book "kestrel/utilities/book-of-event" :dir :system)
 (include-book "kestrel/utilities/checkpoints" :dir :system)
 (include-book "kestrel/utilities/nat-to-string" :dir :system)
 (include-book "kestrel/utilities/ld-history" :dir :system)
@@ -601,11 +602,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Records where a symbol "comes from".
+(defun symbol-sourcep (source)
+  (declare (xargs :guard t))
+  (or (eq :built-in source)
+      (acl2::book-name-p source) ; string or sysfile
+      ))
+
+;; Note that a book name can be a sysfile:
+(defund symbol-source-listp (sources)
+  (declare (xargs :guard t))
+  (if (not (consp sources))
+      (null sources)
+    (and (symbol-sourcep (first sources))
+         (symbol-source-listp (rest sources)))))
+
+;; Maps symbols (e.g., ones occuring in action objects of recommendations) to the books that define them.
+(defund symbol-tablep (tab)
+  (declare (xargs :guard t))
+  (or (eq :unavailable tab) ; todo: eventually remove this case?  Or allow individual symbols to be mapped to :unknown or :top-level?
+      (and (symbol-alistp tab)
+           (symbol-source-listp (strip-cdrs tab)))))
+
 ;; todo: strengthen?
 (defund successful-recommendationp (rec)
   (declare (xargs :guard t))
   (and (true-listp rec)
-       (= 7 (len rec))
+       (= 8 (len rec))
        (let ((name (nth 0 rec)) ; ex: "leidos1"
              (type (nth 1 rec))
              ;; (object (nth 2 rec))
@@ -613,58 +636,83 @@
              (pre-commands (nth 3 rec))
              ;; (theorem-body (nth 4 rec))
              ;; (theorem-hints (nth 5 rec))
-             (theorem-otf-flg (nth 6 rec)))
+             (theorem-otf-flg (nth 6 rec))
+             (symbol-table (nth 7 rec)) ; maps each symbol in the action object to its defining book
+             )
          (and (stringp name)
               (rec-typep type)
               ;; object
               (pre-commandsp pre-commands)
               ;; theorem-body is an untranslated term
               ;; theorem-hints
-              (booleanp theorem-otf-flg)))))
+              (booleanp theorem-otf-flg)
+              (symbol-tablep symbol-table)))))
 
 ;; Extract the name from a successful-recommendation.
-(defund successful-recommendationp-name (rec)
+(defund successful-recommendation-name (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 0 rec))
 
 ;; Extract the action type from a successful-recommendation.
-(defund successful-recommendationp-type (rec)
+(defund successful-recommendation-type (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 1 rec))
 
 ;; Extract the action object from a successful-recommendation.
-(defund successful-recommendationp-object (rec)
+(defund successful-recommendation-object (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
   (nth 2 rec))
 
-(local
- (defthm pre-commandsp-of-nth-3-when-successful-recommendationp
-   (implies (successful-recommendationp rec)
-            (pre-commandsp (nth 3 rec)))
-   :hints (("Goal" :in-theory (enable successful-recommendationp)))))
+;; Extract the action object from a successful-recommendation.
+(defund successful-recommendation-pre-commands (rec)
+  (declare (xargs :guard (successful-recommendationp rec)
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
+  (nth 3 rec))
 
-(defund make-successful-rec (name type object pre-commands theorem-body theorem-hints theorem-otf-flg)
+;; Extract the symbol-table from a successful-recommendation.
+(defund successful-recommendation-symbol-table (rec)
+  (declare (xargs :guard (successful-recommendationp rec)
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
+  (nth 7 rec))
+
+(local
+ (defthm pre-commandsp-of-successful-recommendation-pre-commands
+   (implies (successful-recommendationp rec)
+            (pre-commandsp (successful-recommendation-pre-commands rec)))
+   :hints (("Goal" :in-theory (enable successful-recommendationp
+                                      successful-recommendation-pre-commands)))))
+
+(local
+ (defthm true-listp-of-successful-recommendation-pre-commands
+   (implies (successful-recommendationp rec)
+            (true-listp (successful-recommendation-pre-commands rec)))
+   :hints (("Goal" :in-theory (enable successful-recommendationp
+                                      successful-recommendation-pre-commands)))))
+
+(defund make-successful-rec (name type object pre-commands theorem-body theorem-hints theorem-otf-flg symbol-table)
   (declare (xargs :guard (and (stringp name)
                               (rec-typep type)
                               ;; object
                               (pre-commandsp pre-commands)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
-                              (booleanp theorem-otf-flg))))
-  (list name type object pre-commands theorem-body theorem-hints theorem-otf-flg))
+                              (booleanp theorem-otf-flg)
+                              (symbol-tablep symbol-table))))
+  (list name type object pre-commands theorem-body theorem-hints theorem-otf-flg symbol-table))
 
 (defthm successful-recommendationp-of-make-successful-rec
-  (equal (successful-recommendationp (make-successful-rec name type object pre-commands theorem-body theorem-hints theorem-otf-flg))
+  (equal (successful-recommendationp (make-successful-rec name type object pre-commands theorem-body theorem-hints theorem-otf-flg symbol-table))
          (and (stringp name)
               (rec-typep type)
               ;; object
               (pre-commandsp pre-commands)
               ;; theorem-body
               ;; theorem-hints
-              (booleanp theorem-otf-flg)))
+              (booleanp theorem-otf-flg)
+              (symbol-tablep symbol-table)))
   :hints (("Goal" :in-theory (enable make-successful-rec successful-recommendationp))))
 
 ;; Returns a defthm (or similar) event.
@@ -693,9 +741,7 @@
                               (symbolp defthm-name)
                               (successful-recommendationp rec))
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
-  (let* (;; (type (nth 1 rec))
-         ;; (object (nth 2 rec))
-         (pre-commands (nth 3 rec)))
+  (let* ((pre-commands (successful-recommendation-pre-commands rec)))
     (if pre-commands
         `(encapsulate ()
            ,@(acl2::wrap-all 'local pre-commands)
@@ -718,9 +764,7 @@
 (defund successful-rec-to-thm (rec)
   (declare (xargs :guard (successful-recommendationp rec)
                   :guard-hints (("Goal" :in-theory (enable successful-recommendationp)))))
-  (let* ( ;;(type (nth 1 rec))
-         ;; (object (nth 2 rec))
-         (pre-commands (nth 3 rec)))
+  (let* ((pre-commands (successful-recommendation-pre-commands rec)))
     (if pre-commands
         `(encapsulate ()
            ,@(acl2::wrap-all 'local pre-commands)
@@ -735,6 +779,18 @@
       (null recs)
     (and (successful-recommendationp (first recs))
          (successful-recommendation-listp (rest recs)))))
+
+;; Returns a list of (<action-type> <action-object> <symbol-table>) tuples.
+(defund extract-actions-from-successful-recs (recs)
+  (declare (xargs :guard (successful-recommendation-listp recs)
+                  :guard-hints (("Goal" :in-theory (enable successful-recommendation-listp)))))
+  (if (endp recs)
+      nil
+    (let ((rec (first recs)))
+      (cons (list (successful-recommendation-type rec)
+                  (successful-recommendation-object rec)
+                  (successful-recommendation-symbol-table rec))
+            (extract-actions-from-successful-recs (rest recs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -806,10 +862,9 @@
   (declare (xargs :guard (successful-recommendationp rec)
                   :mode :program ; because of fms-to-string
                   ))
-  (let* (;; (name (nth 0 rec))
-         (type (nth 1 rec))
-         (object (nth 2 rec))
-         (pre-commands (nth 3 rec))
+  (let* ((type (successful-recommendation-type rec))
+         (object (successful-recommendation-object rec))
+         (pre-commands (successful-recommendation-pre-commands rec))
          (english-rec (case type
                         (:add-by-hint (fms-to-string-one-line ":by ~x0" (acons #\0 object nil)))
                         (:add-cases-hint (fms-to-string-one-line ":cases ~x0" (acons #\0 object nil)))
@@ -840,7 +895,7 @@
   (if (endp recs)
       nil
     (let* ((rec (first recs))
-           (name (nth 0 rec)))
+           (name (successful-recommendation-name rec)))
       (progn$ (show-successful-recommendation rec)
               (cw " (~S0)~%" name)
               ;; todo: drop the sources:
@@ -1244,6 +1299,66 @@
                 (mv nil nil state))
       (mv provedp failure-info state))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Do this better?  Ask Matt.
+(defund sysfile-from-include-book-form (form)
+  (declare (xargs :guard (and (true-listp form)
+                              (consp (cdr form))
+                              (eq 'include-book (car form))
+                              (stringp (cadr form)))))
+  (if (not (equal (cddr form) '(:dir :system)))
+      (er hard? 'sysfile-from-include-book-form "Unexpected include-book form: ~x0." form)
+    (cons :system (concatenate 'string (cadr form) ".lisp"))))
+
+;; The result maps each of the FNS to a sysfile, or a string, or :built-in, or
+;; :top-level, or nil.
+(defun symbol-table-for-fns (fns wrld)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (plist-worldp wrld))
+                  :mode :program))
+  (if (endp fns)
+      nil
+    (acons (first fns)
+           (acl2::book-of-event (first fns) wrld)
+           (symbol-table-for-fns (rest fns) wrld))))
+
+(defund symbol-table-for-term (term wrld)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (plist-worldp wrld))
+                  :mode :program))
+  (let ((fns (acl2::all-fnnames term)))
+    (symbol-table-for-fns fns wrld)))
+
+;; Returns a book-name (sysfile or string) or :built-in or :top-level or nil.
+;; Converts :top-level to the current-book when current-book-absolute-path is non-nil.
+(defun event-source (name current-book-absolute-path wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (plist-worldp wrld))
+                  :mode :program))
+  (let ((res (acl2::book-of-event name wrld)))
+    (if (and (eq :top-level res)
+             current-book-absolute-path)
+        (acl2::filename-to-book-name current-book-absolute-path wrld)
+      res)))
+
+;; Builds a symbol-table with a single entry.
+;; Converts :top-level to the current-book when current-book-absolute-path is non-nil.
+(defun symbol-table-for-event (name current-book-absolute-path wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (plist-worldp wrld))
+                  :mode :program))
+  (let ((event-source (event-source name current-book-absolute-path wrld)))
+    (if (eq :top-level event-source)
+        :unavailable
+      (acons name event-source nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; ;; Calls prove$ on FORMULA after submitting INCLUDE-BOOK-FORM, which is undone after the prove$.
 ;; ;; Returns (mv erp provedp state).  If NAME-TO-CHECK is non-nil, we require it to be defined
 ;; ;; after including the book (and to be the name of something appropriate, according to CHECK-KIND)
@@ -1364,7 +1479,8 @@
 (defun try-enable-with-include-book (include-book-form
                                      formula        ; untranslated
                                      item-to-enable ; a symbol or rune
-                                     maybe-book-to-avoid-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
+                                     current-book-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
+                                     avoid-current-bookp
                                      theorem-name ; may be :thm
                                      ;; args to prove$:
                                      hints otf-flg step-limit time-limit
@@ -1374,8 +1490,9 @@
   (declare (xargs :guard (and (consp include-book-form)
                               (eq 'include-book (car include-book-form)) ; strengthen?
                               ;; formula is untranslated
-                              (or (null maybe-book-to-avoid-absolute-path)
-                                  (stringp maybe-book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
                               (symbolp theorem-name)
                               ;; hints are standard hints
                               (booleanp otf-flg)
@@ -1399,10 +1516,11 @@
               ((when erp) ; can happen if there is a name clash
                (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
                (mv nil nil state))
-              ;; Check that we didn't bring in the book-to-avoid:
-              ((when (and maybe-book-to-avoid-absolute-path
-                          (member-equal maybe-book-to-avoid-absolute-path (acl2::included-books-in-world (w state)))))
-               (cw "NOTE: Avoiding include-book, ~x0, that would bring in the book-to-avoid.~%" include-book-form)
+              ;; Check that we didn't bring in the current-book:
+              ((when (and avoid-current-bookp
+                          current-book-absolute-path
+                          (member-equal current-book-absolute-path (acl2::included-books-in-world (w state)))))
+               (cw "NOTE: Avoiding include-book, ~x0, that would bring in the current-book.~%" include-book-form)
                (mv nil nil state))
               ;; Check whether the include-book brought in the name being defined:
               ;; todo: maybe check also back in the original world
@@ -1456,6 +1574,7 @@
                                                           formula
                                                           `(("Goal" :by ,defthm-copy-name))
                                                           nil ; otf-flg
+                                                          nil ; symbol-table
                                                           ))
                                  (make-successful-rec rec-name
                                                       rec-type
@@ -1464,7 +1583,9 @@
                                                       (list include-book-form)
                                                       formula
                                                       hints ; original hints, no new enable
-                                                      otf-flg))
+                                                      otf-flg
+                                                      nil ; symbol-table
+                                                      ))
                                state))
                        ;; Both the include-book and the enable were needed:
                        (mv nil
@@ -1485,14 +1606,17 @@
                                                       formula
                                                       `(("Goal" :by ,defthm-copy-name))
                                                       nil ; otf-flg
-                                                      ))
+                                                      ;; The book here may not be where the name-to-enable is actually defined:
+                                                      (acons name-to-enable (sysfile-from-include-book-form include-book-form) nil)))
                              (make-successful-rec rec-name
                                                   :add-enable-hint
                                                   item-to-enable
                                                   (list include-book-form) ; pre-commands
                                                   formula
                                                   hints-with-enable
-                                                  otf-flg))
+                                                  otf-flg
+                                                  ;; The book here may not be where the name-to-enable is actually defined:
+                                                  (acons name-to-enable (sysfile-from-include-book-form include-book-form) nil)))
                              state)))
                  ;; Failed to prove, even with the enable (we could try without the enable, but it doesn't seem worth it):
                  (mv nil nil state))))))))
@@ -1506,7 +1630,8 @@
                                       item-to-enable ; may be a rune
                                       include-book-count ; number of include-books already tried
                                       maybe-max-include-book-count
-                                      maybe-book-to-avoid-absolute-path
+                                      current-book-absolute-path
+                                      avoid-current-bookp
                                       theorem-name ; may be :thm
                                       ;; args to prove$:
                                       hints ; will be augmented with an enable of the item-to-enable
@@ -1520,8 +1645,9 @@
                               (natp include-book-count)
                               (or (null maybe-max-include-book-count)
                                   (natp maybe-max-include-book-count))
-                              (or (null maybe-book-to-avoid-absolute-path)
-                                  (stringp maybe-book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
                               ;; hints are just regular hints
                               (booleanp otf-flg)
                               (or (eq nil step-limit)
@@ -1539,14 +1665,14 @@
       (b* ((include-book-form (first include-book-forms))
            ;; (- (cw "  Trying with ~x0.~%" form))
            ((mv maybe-successful-rec state)
-            (try-enable-with-include-book include-book-form formula item-to-enable maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
+            (try-enable-with-include-book include-book-form formula item-to-enable current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
         (if maybe-successful-rec
             (mv maybe-successful-rec nil state)
           (try-enable-with-include-books (rest include-book-forms)
                                          formula
                                          item-to-enable
                                          (+ 1 include-book-count)
-                                         maybe-max-include-book-count maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state))))))
+                                         maybe-max-include-book-count current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1558,7 +1684,8 @@
 (defun try-use-with-include-book (include-book-form
                                   formula     ; untranslated
                                   item-to-use ; symbol? rune? instance?
-                                  maybe-book-to-avoid-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
+                                  current-book-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
+                                  avoid-current-bookp
                                   theorem-name ; may be :thm
                                   ;; args to prove$:
                                   hints otf-flg step-limit time-limit
@@ -1568,8 +1695,9 @@
   (declare (xargs :guard (and (consp include-book-form)
                               (eq 'include-book (car include-book-form)) ; strengthen?
                               ;; formula is untranslated
-                              (or (null maybe-book-to-avoid-absolute-path)
-                                  (stringp maybe-book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
                               (symbolp theorem-name)
                               ;; hints are standard hints
                               (booleanp otf-flg)
@@ -1593,10 +1721,11 @@
               ((when erp) ; can happen if there is a name clash
                (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
                (mv nil nil state))
-              ;; Check that we didn't bring in the book-to-avoid:
-              ((when (and maybe-book-to-avoid-absolute-path
-                          (member-equal maybe-book-to-avoid-absolute-path (acl2::included-books-in-world (w state)))))
-               (cw "NOTE: Avoiding include-book, ~x0, that would bring in the book-to-avoid.~%" include-book-form)
+              ;; Check that we didn't bring in the current-book:
+              ((when (and avoid-current-bookp
+                          current-book-absolute-path
+                          (member-equal current-book-absolute-path (acl2::included-books-in-world (w state)))))
+               (cw "NOTE: Avoiding include-book, ~x0, that would bring in the current-book.~%" include-book-form)
                (mv nil nil state))
               ;; Check whether the include-book brought in the name being defined:
               ;; todo: maybe check also back in the original world
@@ -1650,6 +1779,7 @@
                                                           formula
                                                           `(("Goal" :by ,defthm-copy-name))
                                                           nil ; otf-flg
+                                                          nil ; symbol-table
                                                           ))
                                  (make-successful-rec rec-name
                                                       rec-type
@@ -1657,8 +1787,10 @@
                                                       ;; pre-commands:
                                                       (list include-book-form)
                                                       formula
-                                                      hints ; original hints, no new use
-                                                      otf-flg))
+                                                      hints ; original hints, no new :use
+                                                      otf-flg
+                                                      nil ; symbol-table
+                                                      ))
                                state))
                        ;; Both the include-book and the :use were needed:
                        (mv nil
@@ -1679,6 +1811,8 @@
                                                       formula
                                                       `(("Goal" :by ,defthm-copy-name))
                                                       nil ; otf-flg
+                                                      ;; The book here may not be where the name-to-use is actually defined:
+                                                      (acons name-to-use (sysfile-from-include-book-form include-book-form) nil)
                                                       ))
                              (make-successful-rec rec-name
                                                   :add-use-hint
@@ -1686,7 +1820,9 @@
                                                   (list include-book-form) ; pre-commands
                                                   formula
                                                   hints-with-use
-                                                  otf-flg))
+                                                  otf-flg
+                                                  ;; The book here may not be where the name-to-use is actually defined:
+                                                  (acons name-to-use (sysfile-from-include-book-form include-book-form) nil)))
                            state)))
                  ;; Failed to prove, even with the :use (we could try without the use, but it doesn't seem worth it):
                  (mv nil nil state))))))))
@@ -1700,7 +1836,8 @@
                                    item-to-use    ; may be a rune?
                                    include-book-count ; number of include-books already tried
                                    maybe-max-include-book-count
-                                   maybe-book-to-avoid-absolute-path
+                                   current-book-absolute-path
+                                   avoid-current-bookp
                                    theorem-name ; may be :thm
                                    ;; args to prove$:
                                    hints ; will be augmented with a :use of the item-to-use
@@ -1714,8 +1851,9 @@
                               (natp include-book-count)
                               (or (null maybe-max-include-book-count)
                                   (natp maybe-max-include-book-count))
-                              (or (null maybe-book-to-avoid-absolute-path)
-                                  (stringp maybe-book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
                               ;; hints are just regular hints
                               (booleanp otf-flg)
                               (or (eq nil step-limit)
@@ -1733,14 +1871,14 @@
       (b* ((include-book-form (first include-book-forms))
            ;; (- (cw "  Trying with ~x0.~%" form))
            ((mv maybe-successful-rec state)
-            (try-use-with-include-book include-book-form formula item-to-use maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
+            (try-use-with-include-book include-book-form formula item-to-use current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
         (if maybe-successful-rec
             (mv maybe-successful-rec nil state)
           (try-use-with-include-books (rest include-book-forms)
                                       formula
                                       item-to-use
                                       (+ 1 include-book-count)
-                                      maybe-max-include-book-count maybe-book-to-avoid-absolute-path theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state))))))
+                                      maybe-max-include-book-count current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1749,12 +1887,13 @@
 ;; TODO: Skip if library already included
 ;; TODO: Skip later add-library recs if they are included by this one (though I suppose they might work only without the rest of what we get here).
 ;; TODO: Try any upcoming enable or use-lemma recs that (may) need this library:
-(defun try-add-library (include-book-form maybe-book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
+(defun try-add-library (include-book-form current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
   (declare (xargs :stobjs state
                   :guard (and (consp include-book-form)
                               (eq 'include-book (car include-book-form))
-                              (or (null maybe-book-to-avoid-absolute-path)
-                                  (stringp maybe-book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
                               (symbolp theorem-name) ; may be :thm
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
@@ -1767,7 +1906,7 @@
                               ;; print
                               )
                   :mode :program))
-  (b* ( ;; TODO: Give up here if the include-book-form corresponds to the maybe-book-to-avoid-absolute-path.
+  (b* ( ;; TODO: Give up here if the include-book-form corresponds to the current-book-absolute-path.
        ((when (eq 'acl2::other include-book-form)) ; todo: can this happen, or could it be (include-book other)?
         (and (acl2::print-level-at-least-tp print) (cw "skip (can't include catch-all library ~x0)~%" include-book-form))
         (mv nil nil state))
@@ -1782,10 +1921,11 @@
               ((when erp) ; can happen if there is a name clash
                (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
                (mv nil nil state))
-              ;; Check that we didn't bring in the book-to-avoid:
-              ((when (and maybe-book-to-avoid-absolute-path
-                          (member-equal maybe-book-to-avoid-absolute-path (acl2::included-books-in-world (w state)))))
-               (cw "NOTE: Avoiding include-book, ~x0, that would bring in the book-to-avoid.~%" include-book-form)
+              ;; Check that we didn't bring in the current-book:
+              ((when (and avoid-current-bookp
+                          current-book-absolute-path
+                          (member-equal current-book-absolute-path (acl2::included-books-in-world (w state)))))
+               (cw "NOTE: Avoiding include-book, ~x0, that would bring in the current-book.~%" include-book-form)
                (mv nil nil state))
               )
            ;; The include-book is ok, so now try the proof:
@@ -1816,6 +1956,7 @@
                                                 theorem-body
                                                 `(("Goal" :by ,defthm-copy-name))
                                                 nil ; otf-flg
+                                                nil ; symbol-table
                                                 ))
                        (make-successful-rec (nth 0 rec)
                                             :add-library
@@ -1824,7 +1965,9 @@
                                             (list include-book-form)
                                             theorem-body
                                             theorem-hints ; we checked above that these hints work
-                                            theorem-otf-flg))
+                                            theorem-otf-flg
+                                            nil ; symbol-table
+                                            ))
                      state)
                ;; Failed to prove:
                (mv nil nil state)))))))
@@ -1866,6 +2009,8 @@
                    *step-limit*
                    *time-limit* ; todo: reduce?
                    state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Don't try a hyp that is already present, or contradicts ones already present
@@ -1919,7 +2064,8 @@
                                  nil ; no pre-commands ; todo update this once we use the book map
                                  new-theorem-body
                                  theorem-hints
-                                 theorem-otf-flg))
+                                 theorem-otf-flg
+                                 (symbol-table-for-term hyp (w state))))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp
                    (cw-success-message rec)
@@ -1931,7 +2077,8 @@
 ;; TODO: Avoid theory-invariant violations from enabling.
 (defun try-add-enable-hint (rule     ; the rule to try enabling
                             book-map ; info on where the rule may be found
-                            book-to-avoid-absolute-path
+                            current-book-absolute-path
+                            avoid-current-bookp
                             theorem-name ; may be :thm
                             theorem-body
                             theorem-hints
@@ -1943,8 +2090,9 @@
                             state)
   (declare (xargs :guard (and ;; (symbolp rule) ; todo: can be a rune?
                               (book-mapp book-map)
-                              (or (null book-to-avoid-absolute-path)
-                                  (stringp book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
@@ -2005,7 +2153,8 @@
                                        :add-enable-hint ; in case it was a :use-lemma rec, we force the type to be :add-enable-hint here, to ensure duplicates get removed
                                        rule-or-macro-alias
                                        nil
-                                       theorem-body new-hints theorem-otf-flg))
+                                       theorem-body new-hints theorem-otf-flg
+                                       (symbol-table-for-event rule current-book-absolute-path wrld)))
              (- (and (acl2::print-level-at-least-tp print)
                      (cw-success-message rec))))
           (mv nil rec state))
@@ -2034,7 +2183,7 @@
                                          :add-enable-hint
                                          rule-or-macro-alias
                                          nil
-                                         theorem-body new-hints theorem-otf-flg))
+                                         theorem-body new-hints theorem-otf-flg (symbol-table-for-event rule current-book-absolute-path wrld)))
                (- (and (acl2::print-level-at-least-tp print)
                        (cw-success-message rec))))
             (mv nil rec state))
@@ -2059,7 +2208,8 @@
                                              rule
                                              0 ; include-book-count
                                              max-books-to-try
-                                             book-to-avoid-absolute-path
+                                             current-book-absolute-path
+                                             avoid-current-bookp
                                              theorem-name
                                              theorem-hints ; will be augmented with an enable of the item-to-enable
                                              theorem-otf-flg
@@ -2077,12 +2227,14 @@
                              ;; todo: clarify whether we even found an include-book that works:
                              (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" max-books-to-try (len include-books-to-try) rule))
                         (mv nil nil state))
-              (prog2$ (cw "fail (enabling ~x0 didn't help)~%" rule)
+              (prog2$ (and (acl2::print-level-at-least-tp print) (cw "fail (enabling ~x0 didn't help)~%" rule))
                       (mv nil nil state)))))))))
 
 ;; Returns (mv erp maybe-successful-rec state).
-(defun try-add-disable-hint (rule theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
-  (declare (xargs :guard (and (symbolp rule)
+(defun try-add-disable-hint (rule current-book-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
+  (declare (xargs :guard (and (symbolp rule) ; todo: never a rune?
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
@@ -2120,7 +2272,8 @@
                                  :add-disable-hint
                                  rule
                                  nil
-                                 theorem-body new-hints theorem-otf-flg))
+                                 theorem-body new-hints theorem-otf-flg
+                                 (symbol-table-for-event rule current-book-absolute-path (w state))))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw "fail (disable didn't help)~%")))))
     (mv nil (if provedp rec nil) state)))
@@ -2128,11 +2281,12 @@
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Do we need to guess a substitution for the :use hint?  Then change the rec before returning...
 ;; TTODO: Handle the case where the included book has a name clash with the desired-name (see what we do for add-enable-hint)
-(defun try-add-use-hint (item book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state)
+(defun try-add-use-hint (item book-map current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state)
   (declare (xargs :guard (and ;; (symbolp item)
                           (book-mapp book-map)
-                          (or (null book-to-avoid-absolute-path)
-                              (stringp book-to-avoid-absolute-path))
+                          (or (null current-book-absolute-path)
+                              (stringp current-book-absolute-path))
+                          (booleanp avoid-current-bookp)
                           (symbolp theorem-name)
                           ;; theorem-body is an untranslated term
                           ;; theorem-hints
@@ -2168,7 +2322,8 @@
                                        :add-use-hint
                                        item
                                        nil
-                                       theorem-body new-hints theorem-otf-flg))
+                                       theorem-body new-hints theorem-otf-flg
+                                       (symbol-table-for-event item current-book-absolute-path (w state))))
              (- (and (acl2::print-level-at-least-tp print)
                      (if provedp (cw-success-message rec) (cw "fail (:use ~x0 didn't help)~%" item)))))
           (mv nil (if provedp rec nil) state))
@@ -2193,7 +2348,8 @@
                                            item
                                            0 ; include-book-count
                                            max-books-to-try
-                                           book-to-avoid-absolute-path
+                                           current-book-absolute-path
+                                           avoid-current-bookp
                                            theorem-name
                                            theorem-hints ; will be augmented with a :use of item
                                            theorem-otf-flg
@@ -2211,7 +2367,8 @@
                            ;; todo: clarify whether we even found an include-book that works:
                            (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" max-books-to-try (len include-books-to-try) item))
                       (mv nil nil state))
-            (prog2$ (cw "fail (:use ~x0 didn't help)~%" item)
+            (prog2$ (and (acl2::print-level-at-least-tp print)
+                         (cw "fail (:use ~x0 didn't help)~%" item))
                     (mv nil nil state))))))))
 
 ;; Returns (mv erp maybe-successful-rec state).
@@ -2262,7 +2419,7 @@
                                  :add-expand-hint
                                  item
                                  nil
-                                 theorem-body new-hints theorem-otf-flg))
+                                 theorem-body new-hints theorem-otf-flg :unavailable))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw "fail (:expand hint didn't help)~%")))))
     (mv nil (if provedp rec nil) state)))
@@ -2309,7 +2466,7 @@
                                  :add-by-hint
                                  item
                                  nil
-                                 theorem-body new-hints theorem-otf-flg))
+                                 theorem-body new-hints theorem-otf-flg :unavailable))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw-failure-message ":by hint didn't help" failure-info)))))
     (mv nil (if provedp rec nil) state)))
@@ -2354,7 +2511,7 @@
                                  :add-cases-hint
                                  item
                                  nil
-                                 theorem-body new-hints theorem-otf-flg))
+                                 theorem-body new-hints theorem-otf-flg :unavailable))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw "fail (:cases hint didn't help)~%")))))
     (mv nil (if provedp rec nil) state)))
@@ -2391,7 +2548,7 @@
                                  :add-nonlinearp-hint
                                  item
                                  nil
-                                 theorem-body new-hints theorem-otf-flg))
+                                 theorem-body new-hints theorem-otf-flg nil))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw "fail (:nonlinearp hint didn't help)~%")))))
     (mv nil (if provedp rec nil) state)))
@@ -2425,7 +2582,7 @@
                                  :add-do-not-hint
                                  item
                                  nil
-                                 theorem-body new-hints theorem-otf-flg))
+                                 theorem-body new-hints theorem-otf-flg nil))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw "fail (:do-not hint didn't help)~%")))))
     (mv nil (if provedp rec nil) state)))
@@ -2479,7 +2636,7 @@
                                  :exact-hints
                                  hints
                                  nil
-                                 theorem-body hints theorem-otf-flg))
+                                 theorem-body hints theorem-otf-flg :unavailable))
        (- (and (acl2::print-level-at-least-tp print)
                (if provedp (cw-success-message rec) (cw-failure-message ":hints didn't help" failure-info)))))
     (mv nil (if provedp rec nil) state)))
@@ -2487,7 +2644,8 @@
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Pass in previous successful add-libraries and avoid anything else that brings in those libraries?
 (defun try-recommendation (rec
-                           book-to-avoid-absolute-path
+                           current-book-absolute-path
+                           avoid-current-bookp
                            theorem-name ; may be :thm
                            theorem-body
                            theorem-hints
@@ -2497,8 +2655,9 @@
                            print
                            state)
   (declare (xargs :guard (and (recommendationp rec)
-                              (or (null book-to-avoid-absolute-path)
-                                  (stringp book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
@@ -2521,20 +2680,20 @@
             maybe-successful-rec ; may be fleshed out (pre-commands, hints, etc.)
             state)
         (case type
-          ;; TODO: Pass the book-map and the book-to-avoid-absolute-path to all who can use it:
+          ;; TODO: Pass the book-map and the current-book-absolute-path to all who can use it:
           (:add-by-hint (try-add-by-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
           (:add-cases-hint (try-add-cases-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
-          (:add-disable-hint (try-add-disable-hint object theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-disable-hint (try-add-disable-hint object current-book-absolute-path theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
           (:add-do-not-hint (try-add-do-not-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
-          (:add-enable-hint (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
+          (:add-enable-hint (try-add-enable-hint object book-map current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
           (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
           (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
           (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
-          (:add-library (try-add-library object book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-library (try-add-library object current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
           (:add-nonlinearp-hint (try-add-nonlinearp-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
-          (:add-use-hint (try-add-use-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
+          (:add-use-hint (try-add-use-hint object book-map current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
           ;; same as for try-add-enable-hint above:
-          (:use-lemma (try-add-enable-hint object book-map book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
+          (:use-lemma (try-add-enable-hint object book-map current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
           ;; Hints not from ML:
           (:exact-hints (try-exact-hints object theorem-body theorem-otf-flg step-limit time-limit rec print state))
           (t (prog2$ (cw "WARNING: UNHANDLED rec type ~x0.~%" type)
@@ -2548,7 +2707,8 @@
 ;; Returns (mv erp successful-recs extra-recs-ignoredp state)
 ;; TODO: Move down.
 (defun try-recommendations (recs
-                            book-to-avoid-absolute-path
+                            current-book-absolute-path
+                            avoid-current-bookp
                             theorem-name ; may be :thm
                             theorem-body
                             theorem-hints
@@ -2560,8 +2720,9 @@
                             successful-recs ; an accumulator
                             state)
   (declare (xargs :guard (and (recommendation-listp recs)
-                              (or (null book-to-avoid-absolute-path)
-                                  (stringp book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
@@ -2586,9 +2747,9 @@
            ((mv & ; erp ; for now, we ignore errors and just continue
                 maybe-successful-rec ; may be fleshed out (pre-commands, hints, etc.)
                 state)
-            (try-recommendation rec book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit improve-recsp print state)))
+            (try-recommendation rec current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit improve-recsp print state)))
         (try-recommendations (rest recs)
-                             book-to-avoid-absolute-path
+                             current-book-absolute-path avoid-current-bookp
                              theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit max-wins improve-recsp print
                              (if maybe-successful-rec
                                  (cons maybe-successful-rec successful-recs)
@@ -2604,7 +2765,7 @@
          (term (remove-guard-holders term wrld)))
     (acl2::clausify term nil t (acl2::sr-limit wrld))))
 
-;; compares the type and object fields
+;; compares most of the fields
 (defund equivalent-successful-recommendationsp (rec1 rec2)
   (declare (xargs :guard (and (successful-recommendationp rec1)
                               (successful-recommendationp rec2))
@@ -2615,6 +2776,7 @@
        (equal (nth 4 rec1) (nth 4 rec2)) ; same theorem-body
        (equal (nth 5 rec1) (nth 5 rec2)) ; same theorem-hints
        (equal (nth 6 rec1) (nth 6 rec2)) ; same theorem-otf-flg
+       (equal (nth 7 rec1) (nth 7 rec2)) ; same symbol-table
        ))
 
 ;; Returns a member of RECS that is equivalent to REC, or nil.
@@ -2650,6 +2812,7 @@
                                    (nth 4 rec) ; theorem-body is same in both
                                    (nth 5 rec) ; theorem-hints are same in both
                                    (nth 6 rec) ; theorem-otf-flg is same in both
+                                   (nth 7 rec) ; symbol-table is same in both
                                    )
               (remove-equal match recs))
       (cons rec recs))))
@@ -2663,6 +2826,8 @@
   (if (endp recs1)
       recs2
     (merge-successful-recs-into-recs (rest recs1) (merge-successful-rec-into-recs (first recs1) recs2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Sends an HTTP POST request containing the POST-DATA to the server at
 ;; SERVER-URL.  Parses the response as JSON.  Returns (mv erp
@@ -2686,6 +2851,8 @@
         (mv erp nil state))
        (- (and debug (cw "Parsed POST response: ~X01~%" parsed-json-response nil))))
     (mv nil parsed-json-response state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund same-recp (rec1 rec2)
   (declare (xargs :guard (and (recommendationp rec1)
@@ -3060,7 +3227,7 @@
                (cw "WARNING: Proved ~x0 with original hints.~%" theorem-name)))
         (mv nil ; no error
             t   ; proved (with the original hints)
-            (make-successful-rec "original" :exact-hints theorem-hints nil theorem-body theorem-hints theorem-otf-flg)
+            (make-successful-rec "original" :exact-hints theorem-hints nil theorem-body theorem-hints theorem-otf-flg :unavailable)
             nil ; checkpoints, meaningless
             state))
        ;; The proof failed, so get the checkpoints:
@@ -3093,7 +3260,8 @@
                                  theorem-hints
                                  theorem-otf-flg
                                  num-recs-per-model
-                                 book-to-avoid-absolute-path
+                                 current-book-absolute-path
+                                 avoid-current-bookp
                                  improve-recsp
                                  print
                                  server-url
@@ -3104,8 +3272,9 @@
                                  models
                                  state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
-                              (or (null book-to-avoid-absolute-path)
-                                  (stringp book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
@@ -3144,7 +3313,7 @@
        (- (and print (cw "~%TRYING RECOMMENDATIONS:~%")))
        (state (acl2::widen-margins state))
        ((mv erp successful-recs extra-recs-ignoredp state)
-        (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit max-wins improve-recsp print nil state))
+        (try-recommendations recommendations current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit max-wins improve-recsp print nil state))
        (state (acl2::unwiden-margins state))
        ((when erp)
         (er hard? 'advice-fn "Error trying recommendations: ~x0" erp)
@@ -3187,7 +3356,8 @@
                              theorem-hints
                              theorem-otf-flg
                              num-recs-per-model
-                             book-to-avoid-absolute-path
+                             current-book-absolute-path
+                             avoid-current-bookp
                              improve-recsp
                              print
                              server-url
@@ -3204,8 +3374,9 @@
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               (natp num-recs-per-model)
-                              (or (null book-to-avoid-absolute-path)
-                                  (stringp book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
@@ -3245,7 +3416,8 @@
                                 theorem-hints
                                 theorem-otf-flg
                                 num-recs-per-model
-                                book-to-avoid-absolute-path
+                                current-book-absolute-path
+                                avoid-current-bookp
                                 improve-recsp
                                 print
                                 server-url
@@ -3316,7 +3488,8 @@
                               theorem-hints
                               theorem-otf-flg
                               num-recs-per-model
-                              nil ; no book to avoid
+                              nil ; no book to avoid (for now)
+                              t
                               improve-recsp
                               print
                               server-url
@@ -3420,7 +3593,8 @@
                               theorem-hints
                               theorem-otf-flg
                               num-recs-per-model
-                              nil ; no book to avoid
+                              nil ; no book to avoid (for now)
+                              t
                               improve-recsp
                               print
                               server-url
@@ -3554,7 +3728,8 @@
                                   theorem-hints
                                   theorem-otf-flg
                                   n ; number of recommendations from ML requested
-                                  nil ; no book to avoid (TODO: Maybe avoid the last LDed book, in case they are working on it now)
+                                  nil ; no current-book (TODO: Maybe avoid the last LDed book, in case they are working on it now)
+                                  t ; avoid the current-book (but there isn't one, currently)
                                   improve-recsp
                                   print
                                   server-url
@@ -3622,33 +3797,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This could be useful when generating training data to improve an existing ML model.
-;; Returns (mv erp successful-recs state) where successful-recs satisfies successful-recommendation-listp.
-;; TODO: Also return unsuccessful-recs?
-(defun all-successful-recs-for-checkpoints (checkpoint-clauses
-                                            theorem-name ; might not be needed
-                                            theorem-body ; untranslated
-                                            theorem-hints
-                                            theorem-otf-flg
-                                            num-recs-per-model
-                                            book-to-avoid-absolute-path ; drop?
-                                            improve-recsp ; whether to try to improve successful recommendations
-                                            print
-                                            server-url
-                                            debug
-                                            step-limit
-                                            time-limit
-                                            disallowed-rec-types
-                                            models
-                                            state)
+;; This supports the generation of training data to improve an existing ML model.
+;; Returns (mv erp successful-actions state) where each successful-action is of the form (<action-type> <action-object> <symbol-table>).
+;; TODO: Also return unsuccessful actions
+;; WARNING: This should not be used for evaluation of models/recommendations, as it allows the current-book to be used to prove checkpoints from its own theorems!
+(defun all-successful-actions-for-checkpoints (checkpoint-clauses
+                                               theorem-body ; untranslated
+                                               theorem-hints
+                                               theorem-otf-flg
+                                               num-recs-per-model
+                                               current-book-absolute-path
+                                               improve-recsp ; whether to try to improve successful recommendations
+                                               print
+                                               server-url
+                                               debug
+                                               step-limit
+                                               time-limit
+                                               disallowed-rec-types
+                                               models
+                                               state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
-                              (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
                               (natp num-recs-per-model)
-                              (or (null book-to-avoid-absolute-path)
-                                  (stringp book-to-avoid-absolute-path))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
@@ -3680,7 +3854,10 @@
        ((mv erp successful-recs
             & ; extra-recs-ignoredp
             state)
-        (try-recommendations recommendations book-to-avoid-absolute-path theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit
+        (try-recommendations recommendations current-book-absolute-path
+                             nil ; avoid-current-bookp ; allow recs from the current book, since we are just generating training data
+                             :thm
+                             theorem-body theorem-hints theorem-otf-flg step-limit time-limit
                              nil ; max-wins
                              improve-recsp print nil state))
        (state (acl2::unwiden-margins state))
@@ -3700,5 +3877,22 @@
                    (cw "~%(~x0 successful recommendations):~%" num-successful-recs)
                  (cw "~%(1 successful recommendation):~%")))))
     (mv nil ; no error
-        successful-recs ; todo: what format should these be in?
+        (extract-actions-from-successful-recs successful-recs)
         state)))
+
+;; Example call:
+;; (help::all-successful-actions-for-checkpoints (list (list '(equal (len (append x y)) (binary-+ (len x) (len y)))))
+;;                                      '(equal (len (append x y)) (+ (len x) (len y)))
+;;                                      nil ; theorem-hints
+;;                                      nil ; theorem-otf-flg
+;;                                      10  ; num-recs-per-model
+;;                                      "/home/ewsmith/acl2/books/kestrel/arithmetic-light/mod.lisp" ; current-book-absolute-path
+;;                                      t ; whether to try to improve successful recommendations
+;;                                      nil ; print
+;;                                      nil ; server-url (get from environment var)
+;;                                      nil ; debug
+;;                                      nil ; step-limit
+;;                                      nil ; time-limit
+;;                                      '(:add-hyp :exact-hints) ; disallowed-rec-types
+;;                                      help::*known-models*
+;;                                      state)
