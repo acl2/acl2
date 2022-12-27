@@ -1073,9 +1073,7 @@
          (book-map (acl2::lookup-equal "book_map" dict))
          ((mv erp book-map state) (parse-book-map book-map state))
          ((when erp)
-          (if (stringp erp)
-              (cw "WARNING: When parsing book map: ~s0.~%" erp)
-            (cw "WARNING: When parsing book map: ~x0.~%" erp))
+          (cw "WARNING: When parsing book map: ~@0.~%" erp)
           (mv nil ; supressing this error for now
               :none state))
          ((when (or (not (rationalp confidence))
