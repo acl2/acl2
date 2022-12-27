@@ -609,7 +609,6 @@
                                 (test-thm symbolp)
                                 (then-thm symbolp)
                                 (else-thm symbolp)
-                                (context atc-contextp)
                                 (then-context atc-contextp)
                                 (else-context atc-contextp)
                                 (test-events pseudo-event-form-listp)
@@ -792,7 +791,7 @@
                                                 ,gin.limit-var)
                                      (mv ,uterm ,gin.compst-var))
                               (,type-pred ,uterm)))
-       (if-stmt-formula (atc-contextualize if-stmt-formula context nil))
+       (if-stmt-formula (atc-contextualize if-stmt-formula gin.context nil))
        (if-stmt-formula
         `(implies (and (compustatep ,gin.compst-var)
                        (,gin.fn-guard ,@(formals+ gin.fn wrld))
@@ -825,25 +824,53 @@
         (evmac-generate-defthm if-stmt-thm
                                :formula if-stmt-formula
                                :hints if-stmt-hints
-                               :enable nil)))
+                               :enable nil))
+       ;; We temporarily do not submit the following two events,
+       ;; because they fail in some examples,
+       ;; due to ACL2's splitting over IFs
+       ;; and thus preventing the use of previously proved theorems
+       ;; about IF terms.
+       ;; We plan to refine our proof generation approach
+       ;; to overcome this issue.
+       ((mv item
+            item-limit
+            & ; item-thm-event
+            item-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-stmt gin.fn gin.fn-guard gin.context
+                                 stmt if-stmt-limit if-stmt-thm
+                                 type term
+                                 gin.compst-var gin.fenv-var gin.limit-var
+                                 gin.compst-var
+                                 thm-index names-to-avoid state))
+       ((mv items
+            items-limit
+            & ; items-thm-event
+            items-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-list-one gin.fn gin.fn-guard gin.context
+                                     item item-limit item-thm-name
+                                     type term
+                                     gin.compst-var gin.fenv-var gin.limit-var
+                                     gin.compst-var
+                                     thm-index names-to-avoid state)))
     (retok
      (make-stmt-gout
-      :items (list (block-item-stmt stmt))
+      :items items
       :type type
-      :limit (pseudo-term-fncall
-              'binary-+
-              (list
-               (pseudo-term-quote 5)
-               (pseudo-term-fncall
-                'binary-+
-                (list then-limit else-limit))))
+      :limit items-limit
       :events (append test-events
                       then-events
                       else-events
                       (list then-stmt-event)
                       (list else-stmt-event)
-                      (list if-stmt-event))
-      :thm-name nil
+                      (list if-stmt-event)
+                      ;; (list item-thm-event)
+                      ;; (list items-thm-event)
+                      )
+      :thm-name items-thm-name
       :thm-index thm-index
       :names-to-avoid names-to-avoid
       :proofs nil))))
@@ -1151,7 +1178,7 @@
                                   then.type else.type
                                   then.limit else.limit
                                   test.thm-name then.thm-name else.thm-name
-                                  gin.context then-context else-context
+                                  then-context else-context
                                   test.events then.events else.events
                                   (change-stmt-gin
                                    gin
