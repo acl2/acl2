@@ -399,24 +399,16 @@
                             (:e element-rulename->get)
                             (:e lookup-rulename))
                :use ,cst-nonleaf-when-rulename)
-             ,@(and
-                ;; We temporarily avoid generating this theorem
-                ;; if there are more than 10 alternatives,
-                ;; because it may be slow to prove.
-                ;; We plan to find more scalable hints for this theorem,
-                ;; so we can remove this limitation.
-                (<= (len alt) 10)
-                `((defruled ,cst-alternatives-when-rulename
-                    (implies (,cst-list-list-alt-matchp cstss ,alt-string)
-                             (or ,@(deftreeops-gen-rulename-thms-aux-aux
-                                     alt cst-list-list-conc-matchp)))
-                    :do-not '(preprocess)
-                    :in-theory
-                    '(,cst-list-list-alt-matchp
-                      ,cst-list-list-conc-matchp
-                      tree-list-list-match-alternation-p-when-atom-alternation
-                      tree-list-list-match-alternation-p-of-cons-alternation
-                      tree-list-list-match-concatenation-p-of-cons-concatenation))))))
+             (defruled ,cst-alternatives-when-rulename
+               (implies (,cst-list-list-alt-matchp cstss ,alt-string)
+                        (or ,@(deftreeops-gen-rulename-thms-aux-aux
+                                alt cst-list-list-conc-matchp)))
+               :do-not '(preprocess)
+               :in-theory
+               '(,cst-list-list-alt-matchp
+                 ,cst-list-list-conc-matchp
+                 tree-list-list-match-alternation-p-when-atom-alternation
+                 tree-list-list-match-alternation-p-of-cons-alternation))))
           (more-events (deftreeops-gen-rulename-thms-aux
                          (cdr rules) (cons rulename done) prefix)))
        (append events more-events))
