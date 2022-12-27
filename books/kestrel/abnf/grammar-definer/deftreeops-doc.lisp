@@ -178,4 +178,14 @@
      (xdoc::p
       "For each rule name defined in the grammar,
        a theorem saying that if a tree matches the rule name
-       then its branches match the alternation that defines the rule name.")))))
+       then its branches match the alternation that defines the rule name."))
+
+    (xdoc::desc
+     "@('<prefix>-alternatives-when-<rulename>')"
+     (xdoc::p
+      "For each rule name defined in the grammar,
+       a theorem saying that
+       if a list of list of trees matches
+       the alternation that defines the rule name
+       then the list of list of trees matches
+       one of the alternatives (each of which is a concatenation.")))))

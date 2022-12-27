@@ -352,6 +352,8 @@
            (add-suffix-to-fn prefix "-MATCHP"))
           (cst-list-list-alt-matchp
            (add-suffix-to-fn prefix "-LIST-LIST-ALT-MATCHP"))
+          (cst-list-list-conc-matchp
+           (add-suffix-to-fn prefix "-LIST-LIST-CONC-MATCHP"))
           (rulename-string (rulename->get rulename))
           (rulename-upstring (str::upcase-string rulename-string))
           (cst-nonleaf-when-rulename
@@ -363,7 +365,11 @@
           (cst-branches-match-alt-when-rulename
            (packn-pos (list prefix '-branches-match-alt-when- rulename-upstring)
                       prefix))
+          (cst-alternatives-when-rulename
+           (packn-pos (list prefix '-alternatives-when- rulename-upstring)
+                      prefix))
           (alt (lookup-rulename rulename rules))
+          (alt-string (pretty-print-alternation alt))
           (events
            `((defruled ,cst-nonleaf-when-rulename
                (implies (,cst-matchp cst ,rulename-string)
@@ -384,8 +390,7 @@
              (defruled ,cst-branches-match-alt-when-rulename
                (implies (,cst-matchp cst ,rulename-string)
                         (,cst-list-list-alt-matchp
-                         (tree-nonleaf->branches cst)
-                         ,(pretty-print-alternation alt)))
+                         (tree-nonleaf->branches cst) ,alt-string))
                :in-theory '(,cst-matchp
                             ,cst-list-list-alt-matchp
                             tree-branches-match-alt-when-match-rulename
@@ -393,10 +398,41 @@
                             (:e element-kind)
                             (:e element-rulename->get)
                             (:e lookup-rulename))
-               :use ,cst-nonleaf-when-rulename)))
+               :use ,cst-nonleaf-when-rulename)
+             ,@(and
+                ;; We temporarily avoid generating this theorem
+                ;; if there are more than 10 alternatives,
+                ;; because it may be slow to prove.
+                ;; We plan to find more scalable hints for this theorem,
+                ;; so we can remove this limitation.
+                (<= (len alt) 10)
+                `((defruled ,cst-alternatives-when-rulename
+                    (implies (,cst-list-list-alt-matchp cstss ,alt-string)
+                             (or ,@(deftreeops-gen-rulename-thms-aux-aux
+                                     alt cst-list-list-conc-matchp)))
+                    :do-not '(preprocess)
+                    :in-theory
+                    '(,cst-list-list-alt-matchp
+                      ,cst-list-list-conc-matchp
+                      tree-list-list-match-alternation-p-when-atom-alternation
+                      tree-list-list-match-alternation-p-of-cons-alternation
+                      tree-list-list-match-concatenation-p-of-cons-concatenation))))))
           (more-events (deftreeops-gen-rulename-thms-aux
                          (cdr rules) (cons rulename done) prefix)))
-       (append events more-events)))))
+       (append events more-events))
+     :guard-hints (("Goal" :in-theory (disable add-suffix-to-fn)))
+
+     :prepwork
+     ((define deftreeops-gen-rulename-thms-aux-aux
+        ((alt alternationp) (cst-list-list-conc-matchp acl2::symbolp))
+        :returns (disjuncts true-listp)
+        :parents nil
+        (cond ((endp alt) nil)
+              (t (cons `(,cst-list-list-conc-matchp
+                         cstss
+                         ,(pretty-print-concatenation (car alt)))
+                       (deftreeops-gen-rulename-thms-aux-aux
+                         (cdr alt) cst-list-list-conc-matchp)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
