@@ -597,15 +597,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-if/ifelse-stmt ((term pseudo-termp)
-                                (test-expr exprp)
                                 (then-term pseudo-termp)
                                 (else-term pseudo-termp)
+                                (test-expr exprp)
                                 (then-items block-item-listp)
                                 (else-items block-item-listp)
                                 (then-type typep)
                                 (else-type typep)
                                 (then-limit pseudo-termp)
                                 (else-limit pseudo-termp)
+                                (test-thm symbolp)
                                 (then-thm symbolp)
                                 (else-thm symbolp)
                                 (then-context atc-contextp)
@@ -615,7 +616,6 @@
                                 (else-events pseudo-event-form-listp)
                                 (gin stmt-ginp)
                                 state)
-  (declare (ignore term))
   :returns (mv erp (gout stmt-goutp))
   :short "Generate a C @('if') or @('if')-@('else') statement
           from an ACL2 term."
@@ -640,9 +640,17 @@
      because we need 1 to go from @(tsee exec-stmt)
      to the @(':compound') case and @(tsee exec-block-item-list).")
    (xdoc::p
-    "We will soon extend this to also generate a theorem
-     for the conditional statement.
-     For now we just stop the modular proofs at this point."))
+    "We then generate a theorem for the conditional statement,
+     based on the theorems for the test and branches.
+     The limit for the conditional statement is
+     one more than the sum of the ones for the branches;
+     we could take one plus the maximum,
+     but the sum avoids case splits.
+     We include the compound recognizer @('booleanp-compound-recognizer')
+     for the same reason explained in @(tsee atc-gen-expr-bool-from-type).")
+   (xdoc::p
+    "We lift the theorem for the conditional statement
+     to a block item and to a singleton list of block items."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -769,24 +777,100 @@
         (evmac-generate-defthm else-stmt-thm
                                :formula else-stmt-formula
                                :hints else-stmt-hints
-                               :enable nil)))
+                               :enable nil))
+       (if-stmt-thm (pack gin.fn '-correct- thm-index))
+       (thm-index (1+ thm-index))
+       ((mv if-stmt-thm names-to-avoid)
+        (fresh-logical-name-with-$s-suffix if-stmt-thm nil names-to-avoid wrld))
+       (if-stmt-limit
+        `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
+       (uterm (untranslate$ term nil state))
+       (if-stmt-formula `(and (equal (exec-stmt ',stmt
+                                                ,gin.compst-var
+                                                ,gin.fenv-var
+                                                ,gin.limit-var)
+                                     (mv ,uterm ,gin.compst-var))
+                              (,type-pred ,uterm)))
+       (if-stmt-formula (atc-contextualize if-stmt-formula gin.context nil))
+       (if-stmt-formula
+        `(implies (and (compustatep ,gin.compst-var)
+                       (,gin.fn-guard ,@(formals+ gin.fn wrld))
+                       (integerp ,gin.limit-var)
+                       (>= ,gin.limit-var ,if-stmt-limit))
+                  ,if-stmt-formula))
+       (if-stmt-hints
+        (if (consp else-items)
+            `(("Goal" :in-theory '(exec-stmt-when-ifelse
+                                   (:e stmt-kind)
+                                   not-zp-of-limit-variable
+                                   (:e stmt-ifelse->test)
+                                   ,test-thm
+                                   ,valuep-when-type-pred
+                                   (:e stmt-ifelse->then)
+                                   ,then-stmt-thm
+                                   (:e stmt-ifelse->else)
+                                   ,else-stmt-thm
+                                   booleanp-compound-recognizer)))
+          `(("Goal" :in-theory '(exec-stmt-when-if
+                                 (:e stmt-kind)
+                                 not-zp-of-limit-variable
+                                 (:e stmt-if->test)
+                                 ,test-thm
+                                 ,valuep-when-type-pred
+                                 (:e stmt-if->then)
+                                 ,then-stmt-thm
+                                 booleanp-compound-recognizer)))))
+       ((mv if-stmt-event &)
+        (evmac-generate-defthm if-stmt-thm
+                               :formula if-stmt-formula
+                               :hints if-stmt-hints
+                               :enable nil))
+       ;; We temporarily do not submit the following two events,
+       ;; because they fail in some examples,
+       ;; due to ACL2's splitting over IFs
+       ;; and thus preventing the use of previously proved theorems
+       ;; about IF terms.
+       ;; We plan to refine our proof generation approach
+       ;; to overcome this issue.
+       ((mv item
+            item-limit
+            & ; item-thm-event
+            item-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-stmt gin.fn gin.fn-guard gin.context
+                                 stmt if-stmt-limit if-stmt-thm
+                                 type term
+                                 gin.compst-var gin.fenv-var gin.limit-var
+                                 gin.compst-var
+                                 thm-index names-to-avoid state))
+       ((mv items
+            items-limit
+            & ; items-thm-event
+            items-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-list-one gin.fn gin.fn-guard gin.context
+                                     item item-limit item-thm-name
+                                     type term
+                                     gin.compst-var gin.fenv-var gin.limit-var
+                                     gin.compst-var
+                                     thm-index names-to-avoid state)))
     (retok
      (make-stmt-gout
-      :items (list (block-item-stmt stmt))
+      :items items
       :type type
-      :limit (pseudo-term-fncall
-              'binary-+
-              (list
-               (pseudo-term-quote 5)
-               (pseudo-term-fncall
-                'binary-+
-                (list then-limit else-limit))))
+      :limit items-limit
       :events (append test-events
                       then-events
                       else-events
                       (list then-stmt-event)
-                      (list else-stmt-event))
-      :thm-name nil
+                      (list else-stmt-event)
+                      (list if-stmt-event)
+                      ;; (list item-thm-event)
+                      ;; (list items-thm-event)
+                      )
+      :thm-name items-thm-name
       :thm-index thm-index
       :names-to-avoid names-to-avoid
       :proofs nil))))
@@ -1089,10 +1173,11 @@
                                             else-enter-scope-events
                                             (stmt-gout->events gout)))
                  else-context))))
-          (atc-gen-if/ifelse-stmt term test.expr then-term else-term
-                                  then.items else.items then.type else.type
+          (atc-gen-if/ifelse-stmt term then-term else-term
+                                  test.expr then.items else.items
+                                  then.type else.type
                                   then.limit else.limit
-                                  then.thm-name else.thm-name
+                                  test.thm-name then.thm-name else.thm-name
                                   then-context else-context
                                   test.events then.events else.events
                                   (change-stmt-gin

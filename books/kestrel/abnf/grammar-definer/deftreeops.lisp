@@ -11,6 +11,7 @@
 (in-package "ABNF")
 
 (include-book "../grammar-parser/executable")
+(include-book "../grammar-printer/executable")
 (include-book "../notation/syntax-abstraction")
 
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
@@ -344,40 +345,94 @@
      :parents nil
      (b* (((when (endp rules)) nil)
           (rule (car rules))
-          (name (rule->name rule))
-          ((when (member-equal name done))
+          (rulename (rule->name rule))
+          ((when (member-equal rulename done))
            (deftreeops-gen-rulename-thms-aux (cdr rules) done prefix))
-          (cst-matchp (add-suffix-to-fn prefix "-MATCHP"))
+          (cst-matchp
+           (add-suffix-to-fn prefix "-MATCHP"))
+          (cst-list-list-alt-matchp
+           (add-suffix-to-fn prefix "-LIST-LIST-ALT-MATCHP"))
+          (cst-list-list-conc-matchp
+           (add-suffix-to-fn prefix "-LIST-LIST-CONC-MATCHP"))
+          (rulename-string (rulename->get rulename))
+          (rulename-upstring (str::upcase-string rulename-string))
           (cst-nonleaf-when-rulename
-           (packn-pos (list prefix
-                            '-nonleaf-when-
-                            (str::upcase-string (rulename->get name)))
+           (packn-pos (list prefix '-nonleaf-when- rulename-upstring)
                       prefix))
           (cst-rulename-when-rulename
-           (packn-pos (list prefix
-                            '-rulename-when-
-                            (str::upcase-string (rulename->get name)))
+           (packn-pos (list prefix '-rulename-when- rulename-upstring)
                       prefix))
+          (cst-branches-match-alt-when-rulename
+           (packn-pos (list prefix '-branches-match-alt-when- rulename-upstring)
+                      prefix))
+          (cst-alternatives-when-rulename
+           (packn-pos (list prefix '-alternatives-when- rulename-upstring)
+                      prefix))
+          (alt (lookup-rulename rulename rules))
+          (alt-string (pretty-print-alternation alt))
           (events
            `((defruled ,cst-nonleaf-when-rulename
-               (implies (,cst-matchp cst ,(rulename->get name))
+               (implies (,cst-matchp cst ,rulename-string)
                         (equal (tree-kind cst) :nonleaf))
                :in-theory '(,cst-matchp
                             tree-nonleaf-when-match-rulename/group/option
                             (:e element-kind)
                             (:e member-equal)))
              (defruled ,cst-rulename-when-rulename
-               (implies (,cst-matchp cst ,(rulename->get name))
+               (implies (,cst-matchp cst ,rulename-string)
                         (equal (tree-nonleaf->rulename? cst)
-                               (rulename ,(rulename->get name))))
+                               (rulename ,rulename-string)))
                :in-theory '(,cst-matchp
                             tree-rulename-when-match-rulename
                             (:e element-kind)
                             (:e element-rulename->get)
-                            (:e rulename)))))
+                            (:e rulename)))
+             (defruled ,cst-branches-match-alt-when-rulename
+               (implies (,cst-matchp cst ,rulename-string)
+                        (,cst-list-list-alt-matchp
+                         (tree-nonleaf->branches cst) ,alt-string))
+               :in-theory '(,cst-matchp
+                            ,cst-list-list-alt-matchp
+                            tree-branches-match-alt-when-match-rulename
+                            tree-terminatedp
+                            (:e element-kind)
+                            (:e element-rulename->get)
+                            (:e lookup-rulename))
+               :use ,cst-nonleaf-when-rulename)
+             ,@(and
+                ;; We temporarily avoid generating this theorem
+                ;; if there are more than 10 alternatives,
+                ;; because it may be slow to prove.
+                ;; We plan to find more scalable hints for this theorem,
+                ;; so we can remove this limitation.
+                (<= (len alt) 10)
+                `((defruled ,cst-alternatives-when-rulename
+                    (implies (,cst-list-list-alt-matchp cstss ,alt-string)
+                             (or ,@(deftreeops-gen-rulename-thms-aux-aux
+                                     alt cst-list-list-conc-matchp)))
+                    :do-not '(preprocess)
+                    :in-theory
+                    '(,cst-list-list-alt-matchp
+                      ,cst-list-list-conc-matchp
+                      tree-list-list-match-alternation-p-when-atom-alternation
+                      tree-list-list-match-alternation-p-of-cons-alternation
+                      tree-list-list-match-concatenation-p-of-cons-concatenation))))))
           (more-events (deftreeops-gen-rulename-thms-aux
-                         (cdr rules) (cons name done) prefix)))
-       (append events more-events)))))
+                         (cdr rules) (cons rulename done) prefix)))
+       (append events more-events))
+     :guard-hints (("Goal" :in-theory (disable add-suffix-to-fn)))
+
+     :prepwork
+     ((define deftreeops-gen-rulename-thms-aux-aux
+        ((alt alternationp) (cst-list-list-conc-matchp acl2::symbolp))
+        :returns (disjuncts true-listp)
+        :parents nil
+        (cond ((endp alt) nil)
+              (t (cons `(,cst-list-list-conc-matchp
+                         cstss
+                         ,(pretty-print-concatenation (car alt)))
+                       (deftreeops-gen-rulename-thms-aux-aux
+                         (cdr alt) cst-list-list-conc-matchp)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
