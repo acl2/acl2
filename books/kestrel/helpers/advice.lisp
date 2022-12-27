@@ -97,6 +97,7 @@
 ;(local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
 (local (include-book "kestrel/alists-light/lookup-eq" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -783,14 +784,18 @@
 ;; Returns a list of (<action-type> <action-object> <symbol-table>) tuples.
 (defund extract-actions-from-successful-recs (recs)
   (declare (xargs :guard (successful-recommendation-listp recs)
-                  :guard-hints (("Goal" :in-theory (enable successful-recommendation-listp)))))
+                  :verify-guards nil ; done below
+                  ))
   (if (endp recs)
       nil
     (let ((rec (first recs)))
-      (cons (list (successful-recommendation-type rec)
-                  (successful-recommendation-object rec)
-                  (successful-recommendation-symbol-table rec))
-            (extract-actions-from-successful-recs (rest recs))))))
+      (add-to-set-equal ; ensures no dups (can arise if recs are improved)
+       (list (successful-recommendation-type rec)
+             (successful-recommendation-object rec)
+             (successful-recommendation-symbol-table rec))
+       (extract-actions-from-successful-recs (rest recs))))))
+
+(verify-guards extract-actions-from-successful-recs :hints (("Goal" :in-theory (enable successful-recommendation-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
