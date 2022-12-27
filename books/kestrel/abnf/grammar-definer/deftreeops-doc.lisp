@@ -162,23 +162,30 @@
     (xdoc::desc
      "@('<prefix>-nonleaf-when-<rulename>')"
      (xdoc::p
-      "Theorems saying that trees that match the rule names
-       are tree of the @(':nonleaf') kind.")
-     (xdoc::p
-      "One theorem is generated for each rule name
-       defined by a grammar rule.
-       The name of the theorem is obtained by concatenating
-       @('<prefix>') with @('-nonleaf-when-')
-       with the rule name @('<rulename>')."))
+      "For each rule name defined in the grammar,
+       a theorem saying that a tree that matches the rule name
+       is a non-leaf tree."))
 
     (xdoc::desc
      "@('<prefix>-rulename-when-<rulename>')"
      (xdoc::p
-      "Theorems saying that the rule names of tree that matches the rule names
-       are exactly those rule names.")
+      "For each rule name defined in the grammar,
+       a theorem saying that a tree that matches the rule name
+       has exactly that rule name."))
+
+    (xdoc::desc
+     "@('<prefix>-branches-match-alt-when-<rulename>')"
      (xdoc::p
-      "One theorem is generated for each rule name
-       defined by a grammar rule.
-       The name of the theorem is obtained by concatenating
-       @('<prefix>') with @('-rulename-when-')
-       with the rule name @('<rulename>').")))))
+      "For each rule name defined in the grammar,
+       a theorem saying that if a tree matches the rule name
+       then its branches match the alternation that defines the rule name."))
+
+    (xdoc::desc
+     "@('<prefix>-alternatives-when-<rulename>')"
+     (xdoc::p
+      "For each rule name defined in the grammar,
+       a theorem saying that
+       if a list of list of trees matches
+       the alternation that defines the rule name
+       then the list of list of trees matches
+       one of the alternatives (each of which is a concatenation.")))))
