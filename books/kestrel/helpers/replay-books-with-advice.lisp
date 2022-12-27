@@ -37,6 +37,7 @@
           (clear-keys-with-matching-prefixes (rest alist) prefixes acc)
         (clear-keys-with-matching-prefixes (rest alist) prefixes (cons pair acc))))))
 
+;; Walks through the BOOK-TO-THEOREMS-ALIST, replaying each book with advice.
 ;; Returns (mv erp event state).
 (defun replay-books-with-advice-fn-aux (book-to-theorems-alist
                                         base-dir
