@@ -407,7 +407,7 @@
              ((when erp)
               (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
               (mv erp nil state))
-             (- (cw "~x0~%" (shorten-event event))))
+             (- (and (acl2::print-level-at-least-tp print) (cw "~x0~%" (shorten-event event)))))
           (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -456,7 +456,7 @@
        (events (discard-events-after-last-advice-event events theorems-to-try))
        (- (cw "(~x0 total events, ~x1 after discarding final events.)~%~%" len-all-events (len events)))
        ((when (null events))
-        (cw "~%SUMMARY for book ~s0: NO EVENTS TO EVALUATE~%" filename)
+        (cw "~%SUMMARY for book ~s0: NO EVENTS TO EVALUATE.  Theorems to try were ~X12.~%" filename theorems-to-try nil)
         (mv nil ; no error, but nothing to do for this book
             nil state))
        ;; Ensures we are working in the same dir as the book:
@@ -528,6 +528,7 @@
               (show-model-evaluations models result-alist-acc)
               (mv nil '(value-triple :invisible) state))
     (b* ((- (cw "~%======================================================================~%"))
+         (- (cw "Processing book #~x0.~%" (+ 1 done-book-count)))
          (entry (first book-to-theorems-alist))
          (book (car entry))
          (theorems-to-try (cdr entry))
@@ -558,8 +559,10 @@
                                    state))))
 
 ;; Returns (mv erp event state).
-(defun eval-models-on-books-fn (book-to-theorems-alist base-dir num-recs-per-model excluded-prefixes seed print debug step-limit time-limit server-url models num-books state)
-  (declare (xargs :guard (and (alistp book-to-theorems-alist)
+(defun eval-models-on-books-fn (tests base-dir num-recs-per-model excluded-prefixes seed print debug step-limit time-limit server-url models num-tests state)
+  (declare (xargs :guard (and (alistp tests)
+                              (string-listp (strip-cars tests))
+                              (symbol-listp (strip-cdrs tests))
                               (stringp base-dir)
                               (natp num-recs-per-model)
                               (string-listp excluded-prefixes)
@@ -576,8 +579,8 @@
                               (or (eq :all models)
                                   (help::model-namep models) ; special case for a single model
                                   (help::model-namesp models))
-                              (or (eq :all num-books)
-                                  (natp num-books)))
+                              (or (eq :all num-tests)
+                                  (natp num-tests)))
                   :mode :program
                   :stobjs state))
   (b* ( ;; Elaborate options:
@@ -586,36 +589,41 @@
                  (if (help::model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
-       (book-to-theorems-alist (clear-keys-with-matching-prefixes book-to-theorems-alist excluded-prefixes nil))
        ((mv seed state)
         (if (eq :random seed)
             (random$ *m31* state)
           (mv seed state)))
-       (- (cw "(Using random seed of ~x0.)~%" seed)))
-    (if (and (not (eq :all num-books))
-             (> num-books (len book-to-theorems-alist)))
-        (mv :not-enough-books nil state)
-      (b* ((shuffled-book-to-theorems-alist (shuffle-list2 book-to-theorems-alist seed))
-           (final-book-to-theorems-alist
-            (if (eq :all num-books) ; todo: don't shuffle in this case?
-                shuffled-book-to-theorems-alist
-              (take num-books shuffled-book-to-theorems-alist)))
-           (- (cw "(Processing ~x0 books.)~%" (len final-book-to-theorems-alist))))
-        (eval-models-on-books-fn-aux final-book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit server-url models 0 nil state)))))
+       (- (cw "(Using random seed of ~x0.)~%" seed))
+       (- (cw "(Trying ~x0 recommendations per model.)~%" num-recs-per-model))
+       (tests (clear-keys-with-matching-prefixes tests excluded-prefixes nil))
+       (len-tests (len tests))
+       ((when (and (not (eq :all num-tests))
+                   (> num-tests len-tests)))
+        (mv :not-enough-tests nil state))
+       (tests (if (eq :all num-tests)
+                  (prog2$ (cw "Using all ~x0 tests.~%" len-tests)
+                          tests)
+                (prog2$ (cw "Randomly choosing ~x0 from among the ~x1 tests.~%" num-tests len-tests)
+                        (take num-tests (shuffle-list2 tests seed)))))
+       (tests-sorted (merge-sort-string<-of-cadr tests))
+       (book-to-theorems-alist (group-pairs tests-sorted nil))
+       (book-to-theorems-alist (shuffle-list2 book-to-theorems-alist (minstd-rand0-next seed)))
+       (- (cw "(Processing ~x0 tests in ~x1 books.)~%" num-tests (len book-to-theorems-alist))))
+    (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit server-url models 0 nil state)))
 
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
 ;; Rec names should not include slash or digits?
-(defmacro eval-models-on-books (book-to-theorems-alist ; maps book names (relative to BASE-DIR, with .lisp extension) to lists of defthm names.
+(defmacro eval-models-on-books (tests ; pairs of the form (book-name . theorem-name) where book-names are relative to BASE-DIR and have the .lisp extension
                                 base-dir               ; no trailing slash
                                 &key
                                 (excluded-prefixes 'nil) ; relative to BASE-DIR
                                 (seed ':random)
                                 (server-url 'nil) ; nil means get from environment var
                                 (models ':all)    ; which ML models to use
-                                (num-books ':all) ; how many books to evaluate (TODO: Better to chose a random subset of theorems, rather than books?)
+                                (num-tests ':all) ; how many books to evaluate (TODO: Better to chose a random subset of theorems, rather than books?)
                                 (print 'nil)
                                 (debug 'nil)
                                 (step-limit '10000)
                                 (time-limit '5)
                                 (num-recs-per-model '20))
-  `(make-event (eval-models-on-books-fn ,book-to-theorems-alist ,base-dir ,num-recs-per-model ,excluded-prefixes ,seed ,print ,debug ,step-limit ,time-limit ,server-url ,models ,num-books state)))
+  `(make-event (eval-models-on-books-fn ,tests ,base-dir ,num-recs-per-model ,excluded-prefixes ,seed ,print ,debug ,step-limit ,time-limit ,server-url ,models ,num-tests state)))
