@@ -3183,6 +3183,8 @@
        ((when erp) (mv erp nil state))
        (- (and (not (consp semi-parsed-recommendations))
                (cw "~% WARNING: No recommendations returned from server.~%")))
+       (- (and (not (equal num-recs (len semi-parsed-recommendations)))
+               (cw "~% WARNING: Number of recs returned from server is ~x0 but we requested ~x1.~%" (len semi-parsed-recommendations) num-recs)))
        ;; Parse the individual strings in the recs:
        ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
        ((when erp)
