@@ -79,6 +79,7 @@
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/included-books-in-world" :dir :system)
+(include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-def" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
@@ -1169,9 +1170,10 @@
 ;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
 ;; Returns a list of recs, which should contain no duplicates.
-(defun make-enable-recs (formula wrld)
+(defun make-enable-recs (formula num-recs wrld)
   (declare (xargs :guard (and ;; formula is an untranslated term
-                              (plist-worldp wrld))
+                          (natp num-recs)
+                          (plist-worldp wrld))
                   :mode :program ; because of acl2::translate-term
                   ))
   (let* ((translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
@@ -1179,7 +1181,8 @@
                                                  ;; Don't bother wasting time with trying to enable implies
                                                  ;; (I suppose we could try it if implies is disabled):
                                                  '(implies))))
-    (make-enable-recs-aux fns-to-try-enabling 1)))
+    ;; todo: how to choose when we can't return them all?:
+    (acl2::firstn num-recs (make-enable-recs-aux fns-to-try-enabling 1))))
 
 ;; (local
 ;;  (defthm recommendation-listp-of-make-enable-recs
@@ -1219,7 +1222,8 @@
 
  ;; Extends ACC with hint-lists from the EVENTS.  Hint lists from earlier EVENTS end up deeper in the result,
  ;; which seems good because more recent events are likely to be more relevant (todo: but what about dups).
- (defun hint-lists-from-history-events (events acc)
+ (defun hint-lists-from-history-events (events ; oldest first
+                                        acc)
    (declare (xargs :guard (and (true-listp events)
                                (true-listp acc))))
    (if (endp events)
@@ -1227,7 +1231,8 @@
      (hint-lists-from-history-events (rest events)
                                      (hint-lists-from-history-event (first events) acc)))))
 
-(defun make-exact-hint-recs (hint-lists base-name num confidence-percent acc)
+(defun make-exact-hint-recs (hint-lists ; newest first
+                             base-name num confidence-percent acc)
   (declare (xargs :guard (and (true-listp hint-lists)
                               (stringp base-name)
                               (posp num)
@@ -1247,21 +1252,29 @@
                                           )
                                 acc))))
 
-;; Extracts hints from events in the command history.  In the result, hints for more recent events come first and have higher numbers.
+;; Extracts hints from events in the command history.  In the result, hints for more recent events come first and have lower numbers.
 ;; The result should contain no exact duplicates, but the recs (which are all of type :exact-hints) might effectively duplicate other recommendations.
-(defund make-recs-from-history-events (events)
-  (make-exact-hint-recs (hint-lists-from-history-events events nil) "history" 1
+(defund make-recs-from-history-events (num-recs
+                                       events ; oldest first
+                                       )
+  (declare (xargs :guard (natp num-recs)
+                  :verify-guards nil ;todo
+                  ))
+  (make-exact-hint-recs (acl2::firstn num-recs (hint-lists-from-history-events events nil)) ; newest first
+                        "history"
+                        1 ; start numbering at 1
                         3 ; confidence-percent (quite high)
                         nil))
 
 ;; Returns (mv erp val state).
 ;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
-(defun make-recs-from-history (state)
-  (declare (xargs :mode :program
+(defun make-recs-from-history (num-recs state)
+  (declare (xargs :guard (natp num-recs)
+                  :mode :program
                   :stobjs state))
   (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state)) ; todo: how to get events, not commands (e.g., get what make-events expanded to)?
        ((when erp) (mv erp nil state)))
-    (mv nil (make-recs-from-history-events events) state)))
+    (mv nil (make-recs-from-history-events num-recs events) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3127,13 +3140,13 @@
                   (mv nil nil state) ; don't bother creating recs as they will be disallowed below
                 (mv nil
                     ;; todo: translate outside make-enable-recs?:
-                    (make-enable-recs theorem-body (w state))
+                    (make-enable-recs theorem-body num-recs-per-model (w state))
                     state))
             (if (eq :history model)
                 ;; Make recs based on hints given to recent theorems:
                 (if (member-eq :exact-hints disallowed-rec-types)
                     (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-                  (make-recs-from-history state))
+                  (make-recs-from-history num-recs-per-model state))
               ;; It's a normal ML model:
               (get-recs-from-ml-model model num-recs-per-model checkpoint-clauses server-url debug print state))))
          ((when erp) (mv erp nil state))
