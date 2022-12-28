@@ -187,6 +187,8 @@
             prog-const
             wf-thm
             fn-thms
+            & ; fn-limits
+            & ; fn-body-limits
             print
             state)
         (atc-process-inputs args state))
