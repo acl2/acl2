@@ -164,11 +164,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define deftreeops-match-pred ((prefix acl2::symbolp))
+  :returns (pred acl2::symbolp)
+  :short "Name of the @('<prefix>-matchp') predicate."
+  (add-suffix-to-fn prefix "-MATCHP"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-elem-match-pred ((prefix acl2::symbolp))
+  :returns (pred acl2::symbolp)
+  :short "Name of the @('<prefix>-list-elem-matchp') predicate."
+  (add-suffix-to-fn prefix "-LIST-ELEM-MATCHP"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-rep-match-pred ((prefix acl2::symbolp))
+  :returns (pred acl2::symbolp)
+  :short "Name of the @('<prefix>-list-rep-matchp') predicate."
+  (add-suffix-to-fn prefix "-LIST-REP-MATCHP"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-conc-match-pred ((prefix acl2::symbolp))
+  :returns (pred acl2::symbolp)
+  :short "Name of the @('<prefix>-list-list-conc-matchp') predicate."
+  (add-suffix-to-fn prefix "-LIST-LIST-CONC-MATCHP"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-alt-match-pred ((prefix acl2::symbolp))
+  :returns (pred acl2::symbolp)
+  :short "Name of the @('<prefix>-list-list-alt-matchp') predicate."
+  (add-suffix-to-fn prefix "-LIST-LIST-ALT-MATCHP"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define deftreeops-gen-cst-match ((grammar acl2::symbolp)
                                   (prefix acl2::symbolp))
   :returns (events pseudo-event-form-listp)
   :short "Generate the first of the specialized matching predicates."
-  (b* ((cst-matchp (add-suffix-to-fn prefix "-MATCHP"))
+  (b* ((cst-matchp (deftreeops-match-pred prefix))
        (cst-matchp$ (add-suffix-to-fn cst-matchp "$")))
     `((define ,cst-matchp$ ((tree treep) (elem elementp))
         :returns (yes/no booleanp)
@@ -195,7 +230,7 @@
                                             (prefix acl2::symbolp))
   :returns (events pseudo-event-form-listp)
   :short "Generate the second of the specialized matching predicates."
-  (b* ((cst-list-elem-matchp (add-suffix-to-fn prefix "-LIST-ELEM-MATCHP"))
+  (b* ((cst-list-elem-matchp (deftreeops-elem-match-pred prefix))
        (cst-list-elem-matchp$ (add-suffix-to-fn cst-list-elem-matchp "$")))
     `((define ,cst-list-elem-matchp$ ((trees tree-listp) (elem elementp))
         :returns (yes/no booleanp)
@@ -222,7 +257,7 @@
                                            (prefix acl2::symbolp))
   :returns (events pseudo-event-form-listp)
   :short "Generate the third of the specialized matching predicates."
-  (b* ((cst-list-rep-matchp (add-suffix-to-fn prefix "-LIST-REP-MATCHP"))
+  (b* ((cst-list-rep-matchp (deftreeops-rep-match-pred prefix))
        (cst-list-rep-matchp$ (add-suffix-to-fn cst-list-rep-matchp "$")))
     `((define ,cst-list-rep-matchp$ ((trees tree-listp) (rep repetitionp))
         :returns (yes/no booleanp)
@@ -249,8 +284,7 @@
                                                  (prefix acl2::symbolp))
   :returns (events pseudo-event-form-listp)
   :short "Generate the fourth of the specialized matching predicates."
-  (b* ((cst-list-list-conc-matchp
-        (add-suffix-to-fn prefix "-LIST-LIST-CONC-MATCHP"))
+  (b* ((cst-list-list-conc-matchp (deftreeops-conc-match-pred prefix))
        (cst-list-list-conc-matchp$
         (add-suffix-to-fn cst-list-list-conc-matchp "$")))
     `((define ,cst-list-list-conc-matchp$ ((treess tree-list-listp)
@@ -279,8 +313,7 @@
                                                 (prefix acl2::symbolp))
   :returns (events pseudo-event-form-listp)
   :short "Generate the fifth of the specialized matching predicates."
-  (b* ((cst-list-list-alt-matchp
-        (add-suffix-to-fn prefix "-LIST-LIST-ALT-MATCHP"))
+  (b* ((cst-list-list-alt-matchp (deftreeops-alt-match-pred prefix))
        (cst-list-list-alt-matchp$
         (add-suffix-to-fn cst-list-list-alt-matchp "$")))
     `((define ,cst-list-list-alt-matchp$ ((treess tree-list-listp)
@@ -348,12 +381,9 @@
           (rulename (rule->name rule))
           ((when (member-equal rulename done))
            (deftreeops-gen-rulename-thms-aux (cdr rules) done prefix))
-          (cst-matchp
-           (add-suffix-to-fn prefix "-MATCHP"))
-          (cst-list-list-alt-matchp
-           (add-suffix-to-fn prefix "-LIST-LIST-ALT-MATCHP"))
-          (cst-list-list-conc-matchp
-           (add-suffix-to-fn prefix "-LIST-LIST-CONC-MATCHP"))
+          (cst-matchp (deftreeops-match-pred prefix))
+          (cst-list-list-alt-matchp (deftreeops-alt-match-pred prefix))
+          (cst-list-list-conc-matchp (deftreeops-conc-match-pred prefix))
           (rulename-string (rulename->get rulename))
           (rulename-upstring (str::upcase-string rulename-string))
           (cst-nonleaf-when-rulename
