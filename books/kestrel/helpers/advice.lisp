@@ -1204,16 +1204,18 @@
            (hint-lists-from-history-events (rest (acl2::fargs event)) acc)
          (if (eq 'progn (acl2::ffn-symb event)) ; (progn e1 e2 ...)
              (hint-lists-from-history-events (acl2::fargs event) acc)
-           (if ;; todo: what else can we harvest hints from?
-               (not (member-eq (acl2::ffn-symb event) '(defthm defthmd)))
-               acc
-             (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
-               (if (not res)
-                   acc
-                 (let ((hints (cadr res)))
-                   (if (member-equal hints acc) ; todo: also look for equivalent hints?
-                       acc
-                     (cons hints acc)))))))))))
+           (if (eq 'skip-proofs (acl2::ffn-symb event)) ; (skip-proofs e1), needed because we skip-proofs when evaluating models on a book
+               (hint-lists-from-history-event (acl2::farg1 event) acc)
+             (if ;; todo: what else can we harvest hints from?
+                 (not (member-eq (acl2::ffn-symb event) '(defthm defthmd)))
+                 acc
+               (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
+                 (if (not res)
+                     acc
+                   (let ((hints (cadr res)))
+                     (if (member-equal hints acc) ; todo: also look for equivalent hints?
+                         acc
+                       (cons hints acc))))))))))))
 
  ;; Extends ACC with hint-lists from the EVENTS.  Hint lists from earlier EVENTS end up deeper in the result,
  ;; which seems good because more recent events are likely to be more relevant (todo: but what about dups).
@@ -3142,6 +3144,7 @@
                                 (acons model recs acc)
                                 state))))
 
+;; Returns an alist from model names to rec-lists.
 ;; Returns (mv erp rec-alist state).
 (defun get-recs-from-models (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
