@@ -217,6 +217,40 @@
 ;; todo: rename (not necessarily about ml)?
 (defconst *ml-rec-types* (strip-cdrs *rec-to-symbol-alist*))
 
+(defund ml-rec-typep (type)
+  (declare (xargs :guard t))
+  (member-eq type *ml-rec-types*))
+
+(defthm ml-rec-typep-forward-to-symbolp
+  (implies (ml-rec-typep type)
+           (symbolp type))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable ml-rec-typep member-equal))))
+
+(defund ml-rec-type-listp (types)
+  (declare (xargs :guard t))
+  (if (not (consp types))
+      (null types)
+    (and (ml-rec-typep (first types))
+         (ml-rec-type-listp (rest types)))))
+
+(defthm ml-rec-type-listp-of-cdr
+  (implies (ml-rec-type-listp types)
+           (ml-rec-type-listp (cdr types)))
+  :hints (("Goal" :in-theory (enable ml-rec-type-listp))))
+
+(defthm ml-rec-typep-of-car
+  (implies (and (ml-rec-type-listp types)
+                (consp types))
+           (ml-rec-typep (car types)))
+  :hints (("Goal" :in-theory (enable ml-rec-type-listp))))
+
+(defthm ml-rec-type-listp-forward-to-symbol-listp
+  (implies (ml-rec-type-listp types)
+           (symbol-listp types))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable ml-rec-type-listp))))
+
 (defconst *all-rec-types* (cons :exact-hints *ml-rec-types*))
 
 (defund rec-typep (type)
@@ -236,11 +270,40 @@
     (and (rec-typep (first types))
          (rec-type-listp (rest types)))))
 
+(defthm rec-type-listp-of-cdr
+  (implies (rec-type-listp types)
+           (rec-type-listp (cdr types)))
+  :hints (("Goal" :in-theory (enable rec-type-listp))))
+
 (defthm rec-type-listp-forward-to-symbol-listp
   (implies (rec-type-listp types)
            (symbol-listp types))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable rec-type-listp))))
+
+(defund ml-rec-type-to-string (type)
+  (declare (xargs :guard (ml-rec-typep type)))
+  (car (rassoc type *rec-to-symbol-alist*)))
+
+(defthm stringp-of-ml-rec-type-to-string
+  (implies (ml-rec-typep type)
+           (stringp (ml-rec-type-to-string type)))
+  :hints (("Goal" :in-theory (enable ml-rec-type-to-string
+                                     ml-rec-typep
+                                     member-equal))))
+
+(defund ml-rec-types-to-strings (types)
+  (declare (xargs :guard (ml-rec-type-listp types)
+                  :guard-hints (("Goal" :in-theory (enable ml-rec-type-listp)))))
+  (if (endp types)
+      nil
+    (cons (ml-rec-type-to-string (first types))
+          (ml-rec-types-to-strings (rest types)))))
+
+(defthm string-listp-of-ml-rec-types-to-strings
+  (implies (ml-rec-type-listp types)
+           (string-listp (ml-rec-types-to-strings types)))
+  :hints (("Goal" :in-theory (enable ml-rec-types-to-strings))))
 
 (defund confidence-percentp (p)
   (declare (xargs :guard t))
@@ -3069,10 +3132,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;move
+(defun acons-all-to-val (keys val alist)
+  (declare (xargs :guard (and (true-listp keys)
+                              (alistp alist))))
+  (if (endp keys)
+      alist
+    (acons (first keys) val (acons-all-to-val (rest keys) val alist))))
+
 ;; Returns (mv erp recs state).
-(defun get-recs-from-ml-model (model num-recs checkpoint-clauses server-url debug print state)
+(defun get-recs-from-ml-model (model num-recs disallowed-rec-types checkpoint-clauses server-url debug print state)
   (declare (xargs :guard (and (model-namep model)
                               (natp num-recs)
+                              (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (stringp server-url)
                               (booleanp debug)
@@ -3096,6 +3168,9 @@
                (post-data (acons "use-group" model-string
                                  (acons "n" (acl2::nat-to-string num-recs)
                                         (make-numbered-checkpoint-entries 0 checkpoint-clauses))))
+               (post-data (acons-all-to-val (ml-rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types))
+                                            "off"
+                                            post-data))
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url post-data debug state))
                ((when erp)
@@ -3148,9 +3223,9 @@
                     (mv nil nil state) ; don't bother creating recs as they will be disallowed below
                   (make-recs-from-history num-recs-per-model state))
               ;; It's a normal ML model:
-              (get-recs-from-ml-model model num-recs-per-model checkpoint-clauses server-url debug print state))))
+              (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses server-url debug print state))))
          ((when erp) (mv erp nil state))
-         ;; Remove any recs that are disallowed:
+         ;; Remove any recs that are disallowed (todo: drop this now?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
       (get-recs-from-models-aux (rest models) num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print
                                 ;; Associate this model with its recs in the result:
