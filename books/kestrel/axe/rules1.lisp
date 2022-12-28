@@ -296,21 +296,21 @@
 ;;                   (nth2 (+ highsize lowsize) (bvcat highsize highval lowsize lowval) lst)))
 ;;   :hints (("Goal" :in-theory (enable nth2))))
 
-(defthm nth2-becomes-bvnth-for-natps
-  (implies (and (all-natp vals)
-                (natp indexsize)
-                (natp index)
-                (< index (len vals))
-                )
-           (equal (nth2 indexsize index vals)
-                  (bvnth (width-of-widest-int vals)
-                         indexsize
-                         index
-                         vals)))
-  :hints (("Goal"
-           :cases ((<= (bvchop indexsize index) index))
-           :in-theory (enable nth2 bvnth ;all-integerp-when-all-natp
-                              ))))
+;; (defthmd nth2-becomes-bvnth-for-natps
+;;   (implies (and (all-natp vals)
+;;                 (natp indexsize)
+;;                 (natp index)
+;;                 (< index (len vals))
+;;                 )
+;;            (equal (nth2 indexsize index vals)
+;;                   (bvnth (width-of-widest-int vals)
+;;                          indexsize
+;;                          index
+;;                          vals)))
+;;   :hints (("Goal"
+;;            :cases ((<= (bvchop indexsize index) index))
+;;            :in-theory (enable nth2 bvnth ;all-integerp-when-all-natp
+;;                               ))))
 
 ;; (defthm nth2-becomes-bvnth-for-signed-byte-data
 ;;   (implies (and (all-signed-byte-p (+ 1 (width-of-widest-int vals)) vals)
@@ -338,19 +338,19 @@
                   0))
   :hints (("Goal" :in-theory (enable getbit-too-high))))
 
-(DEFTHMd NTH2-BECOMES-BVNTH-8
-  (IMPLIES (AND (all-unsigned-byte-p 8 vals)
-                ;;(ALL-NATP VALS)
-                (NATP INDEXSIZE)
-                (NATP INDEX)
-                (< INDEX (LEN VALS)))
-           (EQUAL (NTH2 INDEXSIZE INDEX VALS)
-                  (BVNTH 8 INDEXSIZE INDEX VALS)))
-  :HINTS
-  (("Goal"
-    :CASES ((<= (BVCHOP INDEXSIZE INDEX) INDEX))
-    :IN-THEORY (E/d (NTH2 BVNTH
-                          ALL-INTEGERP-WHEN-ALL-NATP) ()))))
+;; (DEFTHMd NTH2-BECOMES-BVNTH-8
+;;   (IMPLIES (AND (all-unsigned-byte-p 8 vals)
+;;                 ;;(ALL-NATP VALS)
+;;                 (NATP INDEXSIZE)
+;;                 (NATP INDEX)
+;;                 (< INDEX (LEN VALS)))
+;;            (EQUAL (NTH2 INDEXSIZE INDEX VALS)
+;;                   (BVNTH 8 INDEXSIZE INDEX VALS)))
+;;   :HINTS
+;;   (("Goal"
+;;     :CASES ((<= (BVCHOP INDEXSIZE INDEX) INDEX))
+;;     :IN-THEORY (E/d (NTH2 BVNTH
+;;                           ALL-INTEGERP-WHEN-ALL-NATP) ()))))
 
 ;Thu Mar  4 15:56:21 2010
 ;; (skip -proofs
@@ -383,22 +383,22 @@
 
 ;;(ALL-UNSIGNED-BYTE-P M (REPEAT N NIL))
 
-(DEFTHMd NTH2-BECOMES-BVNTH-32
-  (IMPLIES (AND (all-unsigned-byte-p 32 vals)
-                ;(ALL-NATP VALS)
-                (NATP INDEXSIZE)
-                (NATP INDEX)
-                (< INDEX (LEN VALS)))
-           (EQUAL (NTH2 INDEXSIZE INDEX VALS)
-                  (BVNTH 32 INDEXSIZE INDEX VALS)))
-  :HINTS
-  (("Goal"
-    :CASES ((<= (BVCHOP INDEXSIZE INDEX) INDEX))
-    :IN-THEORY (E/d (NTH2 BVNTH
-                       ALL-INTEGERP-WHEN-ALL-NATP) ()))))
+;; (DEFTHMd NTH2-BECOMES-BVNTH-32
+;;   (IMPLIES (AND (all-unsigned-byte-p 32 vals)
+;;                 ;(ALL-NATP VALS)
+;;                 (NATP INDEXSIZE)
+;;                 (NATP INDEX)
+;;                 (< INDEX (LEN VALS)))
+;;            (EQUAL (NTH2 INDEXSIZE INDEX VALS)
+;;                   (BVNTH 32 INDEXSIZE INDEX VALS)))
+;;   :HINTS
+;;   (("Goal"
+;;     :CASES ((<= (BVCHOP INDEXSIZE INDEX) INDEX))
+;;     :IN-THEORY (E/d (NTH2 BVNTH
+;;                        ALL-INTEGERP-WHEN-ALL-NATP) ()))))
 
 ;bbozo gross
-(defthm bvnth-tighten-32-8
+(defthmd bvnth-tighten-32-8
   (implies (all-unsigned-byte-p 8 data)
            (equal (bvnth 32 index-size index data)
                   (bvnth 8 index-size index data)))
@@ -1591,21 +1591,21 @@
                                   (;JVM::INT-LEMMA0
                                    )))))
 
-(defthmd nth2-becomes-bvnth-for-natps-dag
-  (implies (and (syntaxp (quotep vals))
-                (all-natp vals)
-                (natp indexsize)
-                (natp index)
-                (< index (len vals))
-                )
-           (equal (nth2 indexsize index vals)
-                  (bvnth (width-of-widest-int vals)
-                         indexsize
-                         index
-                         vals)))
-  :hints (("Goal"
-           :cases ((<= (bvchop indexsize index) index))
-           :in-theory (enable nth2 bvnth all-integerp-when-all-natp))))
+;; (defthmd nth2-becomes-bvnth-for-natps-dag
+;;   (implies (and (syntaxp (quotep vals))
+;;                 (all-natp vals)
+;;                 (natp indexsize)
+;;                 (natp index)
+;;                 (< index (len vals))
+;;                 )
+;;            (equal (nth2 indexsize index vals)
+;;                   (bvnth (width-of-widest-int vals)
+;;                          indexsize
+;;                          index
+;;                          vals)))
+;;   :hints (("Goal"
+;;            :cases ((<= (bvchop indexsize index) index))
+;;            :in-theory (enable nth2 bvnth all-integerp-when-all-natp))))
 
 ;bvchop analogue?
 (defthm bv-array-read-of-getbit-when-len-is-2
@@ -2234,14 +2234,14 @@
 ;(local (in-theory (disable +-becomes-bvplus-hack))) ;drop?
 
 ;gen!
-(defthm nth2-of-bv-array-write
-  (implies (and (natp index)
-                (< index 64)
-                )
-           (equal (nth2 '6 index (bv-array-write '16 '64 index2 val array))
-                  (bv-array-read '16 '64 index (bv-array-write '16 '64 index2 val array))))
-  :hints (("Goal" :in-theory (enable ;BV-ARRAY-READ
-                              nth2))))
+;; (defthm nth2-of-bv-array-write
+;;   (implies (and (natp index)
+;;                 (< index 64)
+;;                 )
+;;            (equal (nth2 '6 index (bv-array-write '16 '64 index2 val array))
+;;                   (bv-array-read '16 '64 index (bv-array-write '16 '64 index2 val array))))
+;;   :hints (("Goal" :in-theory (enable ;BV-ARRAY-READ
+;;                               nth2))))
 
 (DEFTHM BV-ARRAY-READ-OF-BV-ARRAY-WRITE-TIGHTEN-better
   (IMPLIES (AND (< ESIZE1 ESIZE2)
