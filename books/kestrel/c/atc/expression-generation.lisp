@@ -733,7 +733,13 @@
      have separate binding hypotheses
      for executing the expression and for applying @(tsee test-value):
      for example, see the @('exec-expr-pure-when-cond') rule
-     in @(see atc-exec-expr-pure-rules)."))
+     in @(see atc-exec-expr-pure-rules).")
+   (xdoc::p
+    "The hints include
+     the compound recognizer @('booleanp-compound-recognizer')
+     in order to prove that @('t') or @('nil') satisfies @(tsee booleanp),
+     in case the term or its negation happens to be in context
+     and thus gets rewritten to @('t') or @('nil')."))
   (b* (((reterr) (irr-bexpr-gout))
        (wrld (w state))
        ((bexpr-gin gin) gin)
@@ -763,6 +769,7 @@
        (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
                              ,arg-uterm)
                       (,arg-type-pred ,arg-uterm)
+                      (valuep ,arg-uterm)
                       (equal (test-value ,arg-uterm)
                              ,uterm)
                       (booleanp ,uterm)))
@@ -776,9 +783,12 @@
        (arg-fixtype (integer-type-to-fixtype arg-type))
        (booleanp-of-boolean-from-arg-fixtype
         (pack 'booleanp-of-boolean-from- arg-fixtype))
+       (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
        (hints `(("Goal" :in-theory '(,arg-thm
                                      ,test-value-when-arg-type-pred
-                                     ,booleanp-of-boolean-from-arg-fixtype))))
+                                     ,valuep-when-arg-type-pred
+                                     ,booleanp-of-boolean-from-arg-fixtype
+                                     booleanp-compound-recognizer))))
        ((mv thm-event &) (evmac-generate-defthm thm-name
                                                 :formula formula
                                                 :hints hints
