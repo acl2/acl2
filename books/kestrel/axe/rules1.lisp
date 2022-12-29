@@ -21,7 +21,7 @@
 (include-book "kestrel/bv/unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system)
-(include-book "kestrel/bv-lists/bvnth" :dir :system) ; todo: split out
+;(include-book "kestrel/bv-lists/bvnth" :dir :system) ; todo: split out
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
@@ -112,20 +112,20 @@
 ;;          x)
 ;;   :rule-classes nil)
 
-;gets rid of extra bits in the bvcat indices - without this, we may have had big problems...
-;bozo gen?
-(defthm bvnth-of-bvcat-8-case
-  (implies (and (< 8 (+ n lowsize))
-                (natp lowsize)
-                (natp n)
-;                (natp esize)
-;                (equal 8 esize) ;bozo
-                )
-           (equal (bvnth esize 8 (bvcat n highval lowsize lowval) data)
-                  (if (<= 8 lowsize)
-                      (bvnth esize 8 lowval data)
-                    (bvnth esize 8 (bvcat (- 8 lowsize) highval lowsize lowval) data))))
-  :hints (("Goal" :in-theory (enable bvnth))))
+;; ;gets rid of extra bits in the bvcat indices - without this, we may have had big problems...
+;; ;bozo gen?
+;; (defthm bvnth-of-bvcat-8-case
+;;   (implies (and (< 8 (+ n lowsize))
+;;                 (natp lowsize)
+;;                 (natp n)
+;; ;                (natp esize)
+;; ;                (equal 8 esize) ;bozo
+;;                 )
+;;            (equal (bvnth esize 8 (bvcat n highval lowsize lowval) data)
+;;                   (if (<= 8 lowsize)
+;;                       (bvnth esize 8 lowval data)
+;;                     (bvnth esize 8 (bvcat (- 8 lowsize) highval lowsize lowval) data))))
+;;   :hints (("Goal" :in-theory (enable bvnth))))
 
 ;; ;bozo gen this series
 ;; (defthm slice-7-0-bvnth
@@ -330,13 +330,13 @@
 ;;                               BVCHOP-WHEN-I-IS-NOT-AN-INTEGER
 ;;                                      ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4-ALT))))
 
-(defthm getbit-of-bvnth-too-high
-  (implies (and (<= size n)
-                (natp n)
-                (natp size))
-           (equal (getbit n (bvnth size isize index vals))
-                  0))
-  :hints (("Goal" :in-theory (enable getbit-too-high))))
+;; (defthm getbit-of-bvnth-too-high
+;;   (implies (and (<= size n)
+;;                 (natp n)
+;;                 (natp size))
+;;            (equal (getbit n (bvnth size isize index vals))
+;;                   0))
+;;   :hints (("Goal" :in-theory (enable getbit-too-high))))
 
 ;; (DEFTHMd NTH2-BECOMES-BVNTH-8
 ;;   (IMPLIES (AND (all-unsigned-byte-p 8 vals)
@@ -397,15 +397,15 @@
 ;;     :IN-THEORY (E/d (NTH2 BVNTH
 ;;                        ALL-INTEGERP-WHEN-ALL-NATP) ()))))
 
-;bbozo gross
-(defthmd bvnth-tighten-32-8
-  (implies (all-unsigned-byte-p 8 data)
-           (equal (bvnth 32 index-size index data)
-                  (bvnth 8 index-size index data)))
-  :hints (("Goal" :cases ((< (BVCHOP INDEX-SIZE INDEX) (LEN DATA)))
-           :in-theory (enable bvnth slice-too-high-is-0
-                              ;;LIST::NTH-WITH-LARGE-INDEX
-                              ))))
+;; ;bbozo gross
+;; (defthmd bvnth-tighten-32-8
+;;   (implies (all-unsigned-byte-p 8 data)
+;;            (equal (bvnth 32 index-size index data)
+;;                   (bvnth 8 index-size index data)))
+;;   :hints (("Goal" :cases ((< (BVCHOP INDEX-SIZE INDEX) (LEN DATA)))
+;;            :in-theory (enable bvnth slice-too-high-is-0
+;;                               ;;LIST::NTH-WITH-LARGE-INDEX
+;;                               ))))
 
 ;BOZO classify these rules somehow (separate the ones for the symbolic simulation?)
 
@@ -488,16 +488,16 @@
 
 ;bozo some dups above this?
 
-;TODO: do we still use bvnth?
-;move?
-(defthm bvnth-becomes-bv-array-read
-  (implies (and (natp index-size)
-                ;; (< index (expt 2 index-size))
-                ;; (natp index)
-                )
-           (equal (bvnth element-size index-size index data)
-                  (bv-array-read element-size (expt 2 index-size) (bvchop index-size index) data)))
-  :hints (("Goal" :in-theory (enable bv-array-read bvnth ceiling-of-lg))))
+;; ;TODO: do we still use bvnth?
+;; ;move?
+;; (defthm bvnth-becomes-bv-array-read
+;;   (implies (and (natp index-size)
+;;                 ;; (< index (expt 2 index-size))
+;;                 ;; (natp index)
+;;                 )
+;;            (equal (bvnth element-size index-size index data)
+;;                   (bv-array-read element-size (expt 2 index-size) (bvchop index-size index) data)))
+;;   :hints (("Goal" :in-theory (enable bv-array-read bvnth ceiling-of-lg))))
 
 ;=== stuff to support array-reduction-when-top-bit-is-xored-in
 
@@ -917,7 +917,8 @@
   :hints
   (("Goal" :do-not '(generalize eliminate-destructors)
     :cases ((<= ESIZE N))
-    :in-theory (e/d (bv-array-read bvnth GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER ;NTH-WHEN-N-IS-ZP
+    :in-theory (e/d (bv-array-read ;bvnth
+                     GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER ;NTH-WHEN-N-IS-ZP
                                    )
                     (nth-of-cdr CAR-BECOMES-NTH-OF-0)))))
 
@@ -995,19 +996,19 @@
   :hints (("Goal" :in-theory (enable UPDATE-NTH2 bv-array-write))))
 
 
-;not true for negative vals!
-(defthm nth-of-bvcat-becomes-bvnth-for-natps
-  (implies (and (all-natp vals)
-                (natp HIGHSIZE)
-                (natp lowsize)
-                (< (bvcat highsize highval lowsize lowval) (len vals))
-                )
-           (equal (nth (bvcat highsize highval lowsize lowval) vals)
-                  (bvnth (width-of-widest-int vals)
-                         (+ highsize lowsize)
-                         (bvcat highsize highval lowsize lowval)
-                         vals)))
-  :hints (("Goal" :in-theory (enable bvnth all-integerp-when-all-natp))))
+;; ;not true for negative vals!
+;; (defthm nth-of-bvcat-becomes-bvnth-for-natps
+;;   (implies (and (all-natp vals)
+;;                 (natp HIGHSIZE)
+;;                 (natp lowsize)
+;;                 (< (bvcat highsize highval lowsize lowval) (len vals))
+;;                 )
+;;            (equal (nth (bvcat highsize highval lowsize lowval) vals)
+;;                   (bvnth (width-of-widest-int vals)
+;;                          (+ highsize lowsize)
+;;                          (bvcat highsize highval lowsize lowval)
+;;                          vals)))
+;;   :hints (("Goal" :in-theory (enable bvnth all-integerp-when-all-natp))))
 
 ;; (defthm nth-of-bvcat-becomes-bvnth-for-signed-byte-data
 ;;   (implies (and (all-signed-byte-p (+ 1 (width-of-widest-int vals)) vals)
@@ -1144,22 +1145,22 @@
 ;;   :HINTS (("Goal" :IN-THEORY (ENABLE MYIF))))
 
 
-(DEFTHMd NTH-OF-BVCAT-BECOMES-BVNTH-FOR-NATPS-hack
-  (IMPLIES (AND (all-unsigned-byte-p 4 vals)
-                ;(ALL-NATP VALS)
-                (NATP HIGHSIZE)
-                (NATP LOWSIZE)
-                (< (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL) (LEN VALS))
-                )
-           (EQUAL (NTH (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL) VALS)
-                  (BVNTH 4
-                         (+ HIGHSIZE LOWSIZE)
-                         (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL)
-                         VALS)))
-  :HINTS
-  (("Goal"
-    :IN-THEORY (E/d (BVNTH BV-ARRAY-READ
-                       ALL-INTEGERP-WHEN-ALL-NATP) (NTH-OF-BVCAT-BECOMES-BVNTH-FOR-NATPS)))))
+;; (DEFTHMd NTH-OF-BVCAT-BECOMES-BVNTH-FOR-NATPS-hack
+;;   (IMPLIES (AND (all-unsigned-byte-p 4 vals)
+;;                 ;(ALL-NATP VALS)
+;;                 (NATP HIGHSIZE)
+;;                 (NATP LOWSIZE)
+;;                 (< (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL) (LEN VALS))
+;;                 )
+;;            (EQUAL (NTH (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL) VALS)
+;;                   (BVNTH 4
+;;                          (+ HIGHSIZE LOWSIZE)
+;;                          (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL)
+;;                          VALS)))
+;;   :HINTS
+;;   (("Goal"
+;;     :IN-THEORY (E/d (BVNTH BV-ARRAY-READ
+;;                        ALL-INTEGERP-WHEN-ALL-NATP) (NTH-OF-BVCAT-BECOMES-BVNTH-FOR-NATPS)))))
 
 
 ;how can we easily turn a nest of conses into a nest of bv-array-write calls?
@@ -1288,16 +1289,16 @@
                   (BV-ARRAY-WRITE ELEMENT-SIZE1 LEN INDEX1 VAL1 (BV-ARRAY-WRITE ELEMENT-SIZE1 LEN INDEX2 VAL2 LST))))
   :hints (("Goal" :in-theory (enable update-nth2 LEN-UPDATE-NTH bv-array-write))))
 
-(defthm nth-becomes-bvnth-when-unsigned-byte-p
-  (implies (and (unsigned-byte-p size index) ;size is a free variable
-                (all-natp vals)
-                (<= (expt 2 size) (len vals)))
-           (equal (nth index vals)
-                  (bvnth (width-of-widest-int vals)
-                         size
-                         index
-                         vals)))
-  :hints (("Goal" :in-theory (enable bvnth all-integerp-when-all-natp))))
+;; (defthm nth-becomes-bvnth-when-unsigned-byte-p
+;;   (implies (and (unsigned-byte-p size index) ;size is a free variable
+;;                 (all-natp vals)
+;;                 (<= (expt 2 size) (len vals)))
+;;            (equal (nth index vals)
+;;                   (bvnth (width-of-widest-int vals)
+;;                          size
+;;                          index
+;;                          vals)))
+;;   :hints (("Goal" :in-theory (enable bvnth all-integerp-when-all-natp))))
 
 ;drop?
 (defthm UNSIGNED-BYTE-P-of-WIDTH-OF-WIDEST-INT-nth
@@ -1316,7 +1317,8 @@
                 (natp index))
            (equal (nth index vals)
                   (bv-array-read (width-of-widest-int vals) (len vals) index vals)))
-  :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ bvnth all-integerp-when-all-natp ceiling-of-lg)
+  :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ ;bvnth
+                                   all-integerp-when-all-natp ceiling-of-lg)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
 
 ;compare to nth-becomes-bv-array-read-strong
@@ -1420,13 +1422,13 @@
 
 ;(local (in-theory (disable jvm::int-lemma0))) ;could make a cheap version with a free var
 
-(defthm bvchop-of-bvnth
-  (implies (and (<= n element-size)
-                (natp n)
-                (natp element-size))
-           (equal (bvchop n (bvnth element-size index-size index data))
-                  (bvnth n index-size index data)))
-  :hints (("Goal" :in-theory (enable bvnth))))
+;; (defthm bvchop-of-bvnth
+;;   (implies (and (<= n element-size)
+;;                 (natp n)
+;;                 (natp element-size))
+;;            (equal (bvchop n (bvnth element-size index-size index data))
+;;                   (bvnth n index-size index data)))
+;;   :hints (("Goal" :in-theory (enable bvnth))))
 
 (defthm bv-array-read-of-subrange
   (implies (and (natp index)
@@ -2216,18 +2218,13 @@
                       t
                     (equal 0 (bv-array-read size len n x))))))
 
-(defstub error-state-no-params () t)
+;; (defstub error-state-no-params () t)
 
 ;; ;fixme - handle this stuff better?
 ;; (skip -proofs
 ;;  (defthm error-state-drop-params
 ;;    (equal (jvm::error-state msg state)
 ;;           (error-state-no-params))))
-
-(defthm force-of-non-nil
-  (implies x
-           (equal (force x)
-                  x)))
 
 ;(in-theory (disable CDR-OF-TAKE-BECOMES-SUBRANGE)) ;drop?
 

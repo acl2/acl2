@@ -837,7 +837,10 @@
             jvm::no-explicit-invokep
             jvm::len-of-invoke-instruction-constant-opener ;jvm::len-of-invoke-instruction ;could build in to the evaluator
             jvm::move-past-invoke-instruction
-            eql-becomes-equal
+
+            eql ; replaces eql with equal
+            eq ; replaces eq with equal
+
             not-addressp-of-null-ref
             ;; address-or-nullp ;;trying...
 
@@ -912,7 +915,6 @@
             equal-of-nil-and-null-ref
             equal-of-null-ref-and-nil
 
-            eq
 ;    atom ;fri dec 24 16:38:27 2010
             jvm::initialize-static-fields-unroll ;todo: what if we don't do this?  can we handle this with rules?
             jvm::initialize-static-fields-base
