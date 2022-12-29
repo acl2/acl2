@@ -1,7 +1,7 @@
 ; Axe rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,7 @@
 
 (include-book "kestrel/typed-lists-light/all-true-listp" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
+(include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "kestrel/lists-light/memberp-def" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
@@ -29,22 +30,31 @@
                        (equal x (car z))
                        (equal y (cdr z))))))
 
+;; Only needeed for Axe, since ACL2 knows this by type-prescription.
 (defthmd true-listp-of-repeat
   (true-listp (repeat n x)))
 
-;only useful for Axe since ACL2 knows this by types
+;; Only needeed for Axe, since ACL2 knows this by type-prescription.
+(defthmd true-listp-of-firstn
+  (true-listp (firstn n x)))
+
+;; Only needeed for Axe, since ACL2 knows this by type-prescription.
+(defthmd true-listp-of-true-list-fix2
+  (true-listp (true-list-fix x)))
+
+;; Only needeed for Axe, since ACL2 knows this by type-prescription.
 (defthmd equal-of-nil-and-len
   (not (equal nil (len x))))
+
+;; Only needeed for Axe, since ACL2 knows this by type-prescription.
+(defthmd consp-of-update-nth
+  (consp (update-nth key val l)))
 
 ;We also have equal-of-car-and-nth-of-0, so this variant is just for Axe.
 ;This helps when we don't want to commit to either form.
 (defthmd equal-of-nth-of-0-and-car
   (equal (equal (nth 0 x) (car x))
          t))
-
-;only needed by axe since ACL2 knows this by type reasoning
-(defthmd consp-of-update-nth
-  (consp (update-nth key val l)))
 
 (defthmd integerp-of-len
   (integerp (len x)))

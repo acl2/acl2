@@ -1620,7 +1620,7 @@
                    (cond
                     ((access theory-invariant-record inv-rec :error)
                      (mv-let@par (erp val state)
-                                 (er@par soft ctx "~@0" msg)
+                                 (er-soft@par ctx "Theory" "~@0" msg)
                                  (declare (ignore erp val))
                                  (mv@par t state)))
                     (t (pprogn@par (warning$@par ctx "Theory"
@@ -1674,14 +1674,14 @@
                                     theory-invariant-term))
                            (if (access theory-invariant-record inv-rec :error)
                                "~|This theory invariant violation causes an ~
-                               error."
+                                error."
                              ""))))
                 (mv-let@par
                  (errp-acc state)
                  (cond
                   ((access theory-invariant-record inv-rec :error)
                    (mv-let@par (erp val state)
-                               (er@par soft ctx "~@0" msg)
+                               (er-soft@par ctx "Theory" "~@0" msg)
                                (declare (ignore erp val))
                                (mv@par t state)))
                   (t (pprogn@par (warning$@par ctx "Theory"

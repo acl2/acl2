@@ -94,7 +94,8 @@
 ; "Call depth" and  "Evaluation" are dealt with above the trans-eval call.
                  '(("Failure")
                    ("Step-limit")
-                   ("Time-limit")))
+                   ("Time-limit")
+                   ("Theory")))
                 ((string-listp prover-error-output-off)
                  (pairlis$ prover-error-output-off nil))
                 (t (er hard ctx

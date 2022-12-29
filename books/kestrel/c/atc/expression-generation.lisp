@@ -343,7 +343,8 @@
                                                      nil
                                                      gin.names-to-avoid
                                                      wrld))
-                 (okp-lemma-formula `(,op-arg-type-okp ,arg-term))
+                 (arg-uterm (untranslate$ arg-term nil state))
+                 (okp-lemma-formula `(,op-arg-type-okp ,arg-uterm))
                  (okp-lemma-formula
                   (atc-contextualize okp-lemma-formula gin.context t))
                  (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
@@ -482,8 +483,10 @@
                                                      nil
                                                      gin.names-to-avoid
                                                      wrld))
-                 (okp-lemma-formula `(,op-arg1-type-arg2-type-okp ,arg1-term
-                                                                  ,arg2-term))
+                 (arg1-uterm (untranslate$ arg1-term nil state))
+                 (arg2-uterm (untranslate$ arg2-term nil state))
+                 (okp-lemma-formula `(,op-arg1-type-arg2-type-okp ,arg1-uterm
+                                                                  ,arg2-uterm))
                  (okp-lemma-formula
                   (atc-contextualize okp-lemma-formula gin.context t))
                  (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
@@ -638,7 +641,8 @@
                                                      nil
                                                      gin.names-to-avoid
                                                      wrld))
-                 (okp-lemma-formula `(,op-name-okp ,arg-term))
+                 (arg-uterm (untranslate$ arg-term nil state))
+                 (okp-lemma-formula `(,op-name-okp ,arg-uterm))
                  (okp-lemma-formula
                   (atc-contextualize okp-lemma-formula gin.context t))
                  (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
@@ -729,7 +733,13 @@
      have separate binding hypotheses
      for executing the expression and for applying @(tsee test-value):
      for example, see the @('exec-expr-pure-when-cond') rule
-     in @(see atc-exec-expr-pure-rules)."))
+     in @(see atc-exec-expr-pure-rules).")
+   (xdoc::p
+    "The hints include
+     the compound recognizer @('booleanp-compound-recognizer')
+     in order to prove that @('t') or @('nil') satisfies @(tsee booleanp),
+     in case the term or its negation happens to be in context
+     and thus gets rewritten to @('t') or @('nil')."))
   (b* (((reterr) (irr-bexpr-gout))
        (wrld (w state))
        ((bexpr-gin gin) gin)
@@ -759,6 +769,7 @@
        (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
                              ,arg-uterm)
                       (,arg-type-pred ,arg-uterm)
+                      (valuep ,arg-uterm)
                       (equal (test-value ,arg-uterm)
                              ,uterm)
                       (booleanp ,uterm)))
@@ -772,9 +783,12 @@
        (arg-fixtype (integer-type-to-fixtype arg-type))
        (booleanp-of-boolean-from-arg-fixtype
         (pack 'booleanp-of-boolean-from- arg-fixtype))
+       (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
        (hints `(("Goal" :in-theory '(,arg-thm
                                      ,test-value-when-arg-type-pred
-                                     ,booleanp-of-boolean-from-arg-fixtype))))
+                                     ,valuep-when-arg-type-pred
+                                     ,booleanp-of-boolean-from-arg-fixtype
+                                     booleanp-compound-recognizer))))
        ((mv thm-event &) (evmac-generate-defthm thm-name
                                                 :formula formula
                                                 :hints hints
@@ -1492,20 +1506,22 @@
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil pure.names-to-avoid wrld))
        (type-pred (type-to-recognizer pure.type wrld))
+       (uterm (untranslate$ term nil state))
        (formula `(and (equal (exec-expr-call-or-pure ',pure.expr
                                                      ,gin.compst-var
                                                      ,gin.fenv-var
                                                      ,gin.limit-var)
-                             (mv ,term ,gin.compst-var))
-                      (,type-pred ,term)))
+                             (mv ,uterm ,gin.compst-var))
+                      (,type-pred ,uterm)))
        (formula (atc-contextualize formula gin.context nil))
        (formula `(implies (and (compustatep ,gin.compst-var)
                                (,gin.fn-guard ,@(formals+ gin.fn wrld))
                                (integerp ,gin.limit-var)
                                (>= ,gin.limit-var 1))
                           ,formula))
-       (hints `(("Goal" :in-theory '(compustatep-of-add-var
-                                     compustatep-of-add-frame
+       (hints `(("Goal" :in-theory '(compustatep-of-add-frame
+                                     compustatep-of-add-var
+                                     compustatep-of-enter-scope
                                      exec-expr-call-or-pure-when-pure
                                      (:e expr-kind)
                                      not-zp-of-limit-variable

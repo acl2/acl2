@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function take.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -253,3 +253,12 @@
   :hints (("Goal" :in-theory (enable take append))))
 
 ;; Would like to include take of nil, but that requires repeat to state.
+
+;rename
+(defthm update-nth-take-last-element
+  (implies (and (< n (len lst))
+                (integerp n) ;drop?
+                )
+           (equal (UPDATE-NTH n val (TAKE (+ 1 n) lst))
+                  (append (TAKE n lst) (list val))))
+  :hints (("Goal" :in-theory (enable take))))

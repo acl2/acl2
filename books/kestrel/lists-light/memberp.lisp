@@ -355,3 +355,20 @@
 (defthm memberp-nth-1-cdr
   (equal (memberp (nth 1 x) (cdr x))
          (< 1 (len x))))
+
+;todo: think about whther i need both
+(defthm not-equal-nth-when-not-memberp-cheap
+  (implies (and (not (memberp a x))
+                (natp n)
+                (consp x))
+           (equal (equal (nth n x) a)
+                  (if (< n (len x)) nil (equal a nil))))
+  :hints (("Goal" :in-theory (e/d (memberp nth) (nth-of-cdr))))
+  :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil))))
+
+(defthmd not-equal-nth-when-not-memberp-no-limit
+  (implies (and (not (memberp a x))
+                (natp n)
+                (consp x))
+           (equal (equal a (nth n x))
+                  (if (< n (len x)) nil (equal a nil)))))

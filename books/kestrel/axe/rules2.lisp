@@ -18,7 +18,6 @@
 ;;  This file was called hacks6.lisp.
 
 (include-book "list-rules")
-;(include-book "kestrel/bv-lists/bvnth" :dir :system)
 ;(include-book "kestrel/arrays-2d/bv-arrays-2d" :dir :system)
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-true-listp" :dir :system)
@@ -31,8 +30,8 @@
 (include-book "lenconsmeta") ;BOZO did this speed things up?  try with and without...
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
-(include-book "kestrel/bv/logext" :dir :system)
-(include-book "kestrel/bv/bvor" :dir :system)
+;(include-book "kestrel/bv/logext" :dir :system)
+;(include-book "kestrel/bv/bvor" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system)
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -703,25 +702,6 @@
 ;;   :hints (("Goal" :in-theory (enable store-array-list))))
 
 ;(in-theory (disable STORE-2D-ARRAY-ROW-RECOLLAPSE))
-
-;move
-;bozo think about whther i need both
-(defthm not-equal-nth-when-not-memberp-cheap
-  (implies (and (not (memberp a x))
-                (natp n)
-                (consp x))
-           (equal (equal (nth n x) a)
-                  (if (< n (len x)) nil (equal a nil))))
-  :hints (("Goal" :in-theory (e/d (memberp nth) (nth-of-cdr))))
-  :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil))))
-
-;move
-(defthmd not-equal-nth-when-not-memberp-no-limit
-  (implies (and (not (memberp a x))
-                (natp n)
-                (consp x))
-           (equal (equal a (nth n x))
-                  (if (< n (len x)) nil (equal a nil)))))
 
 ;; (defthm store-array-list-open-on-consp
 ;;   (implies (consp ref-list)
@@ -1923,17 +1903,6 @@
 ;;         (BVNOT 1 (getbit n x)))
 ;; :hints (("Goal" :in-theory (enable bvnot))))
 
-;(in-theory (disable list::nth-of-cons))
-
-;move
-(defthm nth-of-plus-of-cons-when-constant
-  (implies (and (syntaxp (quotep k))
-                (posp k)
-                (natp n))
-           (equal (nth (+ k n) (cons a rst))
-                  (nth (+ (+ -1 k) n) rst)))
-  :hints (("Goal" :in-theory (e/d (nth) (nth-of-cdr)))))
-
 ;; (defund keep-every-nth (n lst)
 ;;   (if (or (endp lst)
 ;;           (zp n))
@@ -2055,39 +2024,39 @@
 ;;            :in-theory (enable store-array-2d CONS-OF-NTH-AND-NTH-PLUS-1))))
 
 
-;bozo gen
-(defthmd oddp-9-tighten
-  (implies (and (oddp x)
-                (integerp x))
-           (equal (< x 9)
-                  (<= x 7))))
+;; ;bozo gen
+;; (defthmd oddp-9-tighten
+;;   (implies (and (oddp x)
+;;                 (integerp x))
+;;            (equal (< x 9)
+;;                   (<= x 7))))
 
-;bozo hope this doesn't loop
-(defthmd oddp-9-tighten2
-  (implies (and (not (equal x 9))
-                (oddp x)
-                (integerp x))
-           (equal (< 9 x)
-                  (< 7 x))))
+;; ;bozo hope this doesn't loop
+;; (defthmd oddp-9-tighten2
+;;   (implies (and (not (equal x 9))
+;;                 (oddp x)
+;;                 (integerp x))
+;;            (equal (< 9 x)
+;;                   (< 7 x))))
 
-(defthmd oddp-9-7-rule
-  (implies (and (oddp x)
-                (integerp x)
-                (<= x 9)
-                )
-           (equal (< 7 x)
-                  (equal x 9))))
+;; (defthmd oddp-9-7-rule
+;;   (implies (and (oddp x)
+;;                 (integerp x)
+;;                 (<= x 9)
+;;                 )
+;;            (equal (< 7 x)
+;;                   (equal x 9))))
 
 ;bozo hacky? expensive?
-(defthm not-greater-than-255-when-usb8
-  (implies (unsigned-byte-p 8 x)
-           (not (< 255 x))))
+;; (defthm not-greater-than-255-when-usb8
+;;   (implies (unsigned-byte-p 8 x)
+;;            (not (< 255 x))))
 
 ;gen?
 ;expensive?
-(defthm x-less-than-32-when-usb5
-  (implies (unsigned-byte-p 5 x)
-           (< x 32)))
+;; (defthm x-less-than-32-when-usb5
+;;   (implies (unsigned-byte-p 5 x)
+;;            (< x 32)))
 
 ;; (thm
 ;;  (implies (not (integerp x))
@@ -2459,12 +2428,12 @@
                   (cons a (myif test b c))))
   :hints (("Goal" :in-theory (enable myif))))
 
-;gen? -alt?
-(defthmd myif-of-logext-logior-32-hack
-  (implies (signed-byte-p 32 x)
-           (equal (myif test x (logext 32 (bvor 32 y x)))
-                  (logext 32 (bvor 32 (myif test 0 y) x))))
-  :hints (("Goal" :in-theory (enable myif))))
+;; ;gen? -alt?
+;; (defthmd myif-of-logext-logior-32-hack
+;;   (implies (signed-byte-p 32 x)
+;;            (equal (myif test x (logext 32 (bvor 32 y x)))
+;;                   (logext 32 (bvor 32 (myif test 0 y) x))))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
 ;; ;BOZO think about the extra logext here
 ;; (defthmd myif-of-logext-logior-32-hack-2
@@ -3103,12 +3072,12 @@
 ;BOZO try
 ;(in-theory (disable logext-of-myif))
 
-(defthmd logext-of-myif-back
-  (equal (myif test (logext n a) (logext n b))
-         (logext n (myif test a b)))
-  :hints (("Goal" :in-theory (enable myif))))
+;; (defthmd logext-of-myif-back
+;;   (equal (myif test (logext n a) (logext n b))
+;;          (logext n (myif test a b)))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
-(theory-invariant (incompatible (:rewrite LOGEXT-OF-MYIF) (:rewrite LOGEXT-OF-MYIF-back)))
+;; (theory-invariant (incompatible (:rewrite LOGEXT-OF-MYIF) (:rewrite LOGEXT-OF-MYIF-back)))
 
 ;trying for efficiency...
 ;(in-theory (disable LIST::NTH-WITH-LARGE-INDEX))

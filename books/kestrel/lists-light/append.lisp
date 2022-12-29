@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function binary-append.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 (local (include-book "cons"))
 (local (include-book "take"))
 (local (include-book "nthcdr"))
+(local (include-book "true-list-fix"))
 
 (in-theory (disable append))
 
@@ -130,7 +131,8 @@
 
 (defthm append-of-true-list-fix-arg1
   (equal (append (true-list-fix x) y)
-         (append x y)))
+         (append x y))
+  :hints (("Goal" :in-theory (enable true-list-fix))))
 
 ; a fairly aggressive rule.  when enabling this, consider also including the
 ; books about take and nthcdr.
@@ -161,3 +163,10 @@
              (last y)
            (append (last x) y)))
   :hints (("Goal" :in-theory (enable last append))))
+
+;now in std
+(defthm equal-of-append-and-append-same-arg2
+  (equal (equal (append x1 y) (append x2 y))
+         (equal (true-list-fix x1)
+                (true-list-fix x2)))
+  :hints (("Goal" :in-theory (enable equal-of-append equal-of-true-list-fix-and-true-list-fix-forward))))

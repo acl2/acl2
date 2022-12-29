@@ -24,9 +24,10 @@
 ; (depends-on "../../../abnf/examples/imf.abnf")
 ; (depends-on "../../../abnf/examples/smtp.abnf")
 ; (depends-on "../../../abnf/examples/imap.abnf")
-; (depends-on "../../../abnf/examples/json.abnf")
+; (depends-on "../../../c/language/grammar.abnf")
 ; (depends-on "../../../java/language/lexical-grammar.abnf")
 ; (depends-on "../../../java/language/syntactic-grammar.abnf")
+; (depends-on "../../../json/grammar.abnf")
 ; (depends-on "../../../yul/language/grammar-new.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -294,10 +295,6 @@
      (value `(defconst *abnf-syntax* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/examples/json.abnf" state)
-     (value `(defconst *json* ',nats))))
-  (make-event
-   (mv-let (nats state)
      (get-input-from-file "../../../abnf/examples/uri.abnf" state)
      (value `(defconst *uri* ',nats))))
   (make-event
@@ -318,12 +315,20 @@
      (value `(defconst *imap* ',nats))))
   (make-event
    (mv-let (nats state)
+     (get-input-from-file "../../../c/language/grammar.abnf" state)
+     (value `(defconst *c* ',nats))))
+  (make-event
+   (mv-let (nats state)
      (get-input-from-file "../../../java/language/lexical-grammar.abnf" state)
      (value `(defconst *java-lexical* ',nats))))
   (make-event
    (mv-let (nats state)
      (get-input-from-file "../../../java/language/syntactic-grammar.abnf" state)
      (value `(defconst *java-syntactic* ',nats))))
+  (make-event
+   (mv-let (nats state)
+     (get-input-from-file "../../../json/grammar.abnf" state)
+     (value `(defconst *json* ',nats))))
   (make-event
    (mv-let (nats state)
      (get-input-from-file "../../../yul/language/grammar-new.abnf" state)
@@ -337,25 +342,27 @@
 #|
 (run-abnf-tests (list *abnf-core*
                       *abnf-syntax*
-                      *json*
                       *uri*
                       *http*
                       *imf*
                       *smtp*
                       *imap*
+                      *c*
                       *java-lexical*
                       *java-syntactic*
+                      *json*
                       *yul*)
                 '(abnf-core
                   abnf-syntax
-                  json
                   uri
                   http
                   imf
                   smtp
                   imap
+                  c
                   java-lexical
                   java-syntactic
+                  json
                   yul)
                 10
                 1
