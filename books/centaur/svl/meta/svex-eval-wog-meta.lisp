@@ -388,14 +388,15 @@ fast-alist. Consider making it one for a better performance.~%"))
       (('sv::svex-alist-eval ('quote alist) env)
        (b* ((- (cw "Entering svex-eval-alist-meta ~%"))
             (- (or convert-to-svexl
-                   (cw "convert-to-svexl is disabled~%")))
+                   (cw " (convert-to-svexl is disabled)~%")))
             (env-orig env)
             (env (rp::ex-from-rp env)))
          (case-match env
              (('falist ('quote env-falist) &)
-              (b* ((- (cw "Calling sv::svex-alist-p ~%"))
+              (b* (
                    ((Unless (sv::svex-alist-p alist)) ;; for guards
                     (mv term nil))
+                   
                    (- (cw "Starting: svl::svex-alist-reduce-w/-env ~%"))
                    (- (time-tracker :svex-alist-eval-meta-aux :end))
                    (- (time-tracker :svex-alist-eval-meta-aux :init
@@ -403,19 +404,21 @@ fast-alist. Consider making it one for a better performance.~%"))
                                     :interval 5
                                     ))
                    (- (time-tracker :svex-alist-eval-meta-aux :start!))
+                   (alist (svexalist-convert-bitnot-to-bitxor alist))
                    (alist (svex-alist-reduce-w/-env alist env-falist))
-                   
-                   (- (cw "Finished: svl::svex-alist-reduce-w/-env. "))
                    (- (time-tracker :svex-alist-eval-meta-aux :stop))
                    (- (time-tracker :svex-alist-eval-meta-aux :print?
                                     :min-time 0
                                     :msg "The total runtime of svl::svex-alist-reduce-w/-env ~
 was ~st seconds."))
+                   (- (cw "Finished: svl::svex-alist-reduce-w/-env. "))
                    ;;(- (cw "Starting: sv::svex-alist-rewrite-top ~%"))
                    ;;(alist (sv::svex-alist-rewrite-top alist))
                    ;;(alist (sv::svex-alist-rewrite-fixpoint alist))
 
                    ((unless convert-to-svexl)
+                    ;; return  identity  so  that  the  returned  term  can  be
+                    ;; rewritten to sv::svex-alist-eval$
                     (mv `(identity (sv::svex-alist-eval ',alist ,env-orig))
                         `(nil t)))
                    
