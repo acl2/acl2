@@ -981,10 +981,11 @@
                                logapp-of-logapp)))))
 
   (defthm 4vec-part-select-of-concat-2
-    (implies (and (<= c-size start)
-                  (natp start)
+    (implies (and (natp start)
                   (natp size)
-                  (natp c-size))
+                  (natp c-size)
+                  (<= c-size start)
+                  )
              (equal (4vec-part-select start size (4vec-concat c-size term1 term2))
                     (4vec-part-select (- start c-size) size term2)))
     :hints (("goal"
@@ -1050,17 +1051,18 @@
                                BITOPS::LOGAPP-OF-J-0))))))
 
   (defthm 4vec-part-select-of-concat-3
-    (implies (and (< start c-size)
-                  (< c-size (+ start size))
-                  (natp start)
+    (implies (and (natp start)
                   (natp size)
-                  (natp c-size))
+                  (natp c-size)
+                  (case-split (<= start c-size))
+                  (case-split (< c-size (+ start size))))
              (equal (4vec-part-select start size
                                       (4vec-concat c-size term1 term2))
                     (4vec-concat (- c-size start)
                                  (4vec-rsh start term1)
                                  (4vec-part-select 0 (- size (- c-size start)) term2))))
     :hints (("goal"
+             :cases ((equal start c-size))
              :expand ((4vec-p term1)
                       (4vec-p term2)
                       (ACL2::LOGCONS 1
@@ -8557,6 +8559,8 @@ lognot)
       :hints (("Goal"
                :in-theory (e/d (acl2::zbp acl2::bool->bit) ())))))
 
+   
+
    (defthm 4vec-bitxor-assoc-and-comm
      (and (equal (sv::4vec-bitxor (sv::4vec-bitxor x y) z)
                  (sv::4vec-bitxor x (sv::4vec-bitxor y z)))
@@ -8697,6 +8701,39 @@ lognot)
                  (sv::4vec-bitxor x y))
           (equal (sv::4vec-bitxor y (sv::3vec-fix x))
                  (sv::4vec-bitxor y x))) 
+     :hints ((bitops::logbitp-reasoning)))
+
+   (local
+    (defthm 4vec-upper-and-lower-when-integerp
+      (implies (integerp x)
+               (and (equal (sv::4vec->lower x) x)
+                    (equal (sv::4vec->upper x) x)))
+      :hints (("Goal"
+               :in-theory (e/d (sv::4vec->lower
+                                sv::4vec->upper) ())))))
+
+   (defthm 4vec-bitor-equiv-under-mask-for-xor
+     (implies (and 
+                   (integerp mask)
+                   (equal (4vec-bitor mask x)
+                          (4vec-bitor mask y))
+                   (equal (4vec-bitor mask a)
+                          (4vec-bitor mask b)))
+              (equal (equal (4vec-bitor mask (sv::4vec-bitxor x a))
+                            (4vec-bitor mask (sv::4vec-bitxor y b)))
+                     t))
+     :hints ((bitops::logbitp-reasoning)))
+
+   (defthm 4vec-bitand-equiv-under-mask-for-xor
+     (implies (and 
+                   (integerp mask)
+                   (equal (4vec-bitand mask x)
+                          (4vec-bitand mask y))
+                   (equal (4vec-bitand mask a)
+                          (4vec-bitand mask b)))
+              (equal (equal (4vec-bitand mask (sv::4vec-bitxor x a))
+                            (4vec-bitand mask (sv::4vec-bitxor y b)))
+                     t))
      :hints ((bitops::logbitp-reasoning)))
   
    

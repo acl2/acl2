@@ -37,6 +37,9 @@
             acl2::loghead
             acl2::logtail
 	    acl2::defines
+	    acl2::and*
+	    acl2::or*
+	    acl2::if*
 
 	    sv::bitor
 	    sv::bitxor

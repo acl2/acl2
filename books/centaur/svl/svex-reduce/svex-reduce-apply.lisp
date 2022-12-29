@@ -700,3 +700,5 @@
                            (sv::svex-apply x y)))
            :in-theory (e/d (svex-reduce-w/-env-apply)
                            (4VEC-OVERRIDE-WHEN-INTEGERP)))))
+
+;;;;;;;;

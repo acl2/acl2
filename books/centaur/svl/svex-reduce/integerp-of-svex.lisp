@@ -103,8 +103,6 @@
                              SVEX-KIND)
                             ())))))
 
-
-
 (define integerp-of-svex ((x sv::svex-p)
                           &optional
                           ((env) 'env)
@@ -151,15 +149,14 @@
                          (equal x.fn 'sv::uor)
                          ;;(equal x.fn 'sv::uxor) same as sv::onehot0, expect natp
                          (equal x.fn 'sv::u-)
-                         ;;(equal x.fn 'sv::countones) same as sv::onehot0, expect natp 
+                         ;;(equal x.fn 'sv::countones) same as sv::onehot0, expect natp
                          ;; (equal x.fn 'sv::onehot) expects a natp
                          ;;(equal x.fn 'sv::onehot0) expects a natp, since there is not natp-of-svex, I am avoiding it here.
                          (equal x.fn 'sv::xdet)
-                         ;; (equal x.fn 'sv::clog2) same as sv::onehot0, expect natp 
+                         ;; (equal x.fn 'sv::clog2) same as sv::onehot0, expect natp
                          ))
                 (integerp-of-svex (car x.args)))
 
-               
                ((and (equal-len x.args 2)
                      (or (equal x.fn 'sv::bitand)
                          (equal x.fn 'sv::bitor)
@@ -176,8 +173,7 @@
                          (equal x.fn 'sv::+)
                          (equal x.fn 'sv::*)
                          ;;(equal x.fn 'sv::pow) ;; pow likely to get constants
-                         
-                         
+
                          (equal x.fn 'sv::b-)
 
                          (equal x.fn 'sv::<)
@@ -199,9 +195,9 @@
                      (or (equal x.fn 'sv::%)
                          (equal x.fn 'sv::/)))
                 (and (and (integerp (second x.args))
-                          (not (equal (second x.args) 0)))    
+                          (not (equal (second x.args) 0)))
                      (integerp-of-svex (first x.args))))
-               
+
                ((and (equal-len x.args 2)
                      (or (equal x.fn 'sv::signx)))
                 (and (posp (first x.args))
@@ -254,18 +250,30 @@
     :hints (("Goal"
              :in-theory (e/d () ((:e tau-system)))))))
 
-
 (memoize 'integerp-of-svex-fn
          :condition '(equal (svex-kind x) :call)
          ;;:aokp t
          )
 
+(define integer-listp-of-svexlist ((lst sv::svexlist-p)
+                                   &optional
+                                   ((env) 'env)
+                                   ((context rp::rp-term-listp) 'context))
+  :returns res
+  (if (atom lst)
+      (equal lst nil)
+    (and (integerp-of-svex (car lst))
+         (integer-listp-of-svexlist (cdr lst)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (progn
 
-  (defthm integerp-of-4vec
+  (local
+   (defthm integerp-of-4vec
     (integerp (4vec x x))
     :hints (("goal"
-             :in-theory (e/d (4vec) ()))))
+             :in-theory (e/d (4vec) ())))))
 
   (defthm integerp-of-4vec-concat
     (implies (and (force (natp a1))
@@ -326,7 +334,6 @@
                               2vec)
                              ()))))
 
-
   (defthm integerp-of-4vec-resor
     (implies (and (integerp a1)
                   (integerp a2))
@@ -348,8 +355,8 @@
                                acl2::logand-logior
                                acl2::commutativity-of-logand
                                bitops::commutativity-2-of-logand
-                              4vec
-                              2vec)
+                               4vec
+                               2vec)
                               (logior logand)))))
 
   (defthm integerp-of-4vec-lsh
@@ -366,7 +373,7 @@
 
   (local
    (use-ihs-extensions t))
-  
+
   (defthm integerp-of-4vec-===*
     (implies (and (integerp a1)
                   (integerp a2))
@@ -422,10 +429,10 @@
              :in-theory (e/d* (4vec
                                sv::3vec-bitor
                                2vec sv::4vec-wildeq
-                                    sv::3vec-reduction-and
-                                    sv::3vec-bitnot
-                                    sv::4vec-bitxor
-                                    sv::4vec->lower)
+                               sv::3vec-reduction-and
+                               sv::3vec-bitnot
+                               sv::4vec-bitxor
+                               sv::4vec->lower)
                               (logxor lognot logior logand)))
             ))
 
@@ -533,7 +540,7 @@
                                2vec)
                               (logxor lognot logior logand)))
             ))
-    
+
   )
 
 (progn
@@ -582,7 +589,6 @@
                                sv::svex-kind)
                               ()))))))
 
-
 (local
  (defthm remove-consp-hons-assoc-equal
    (iff (consp (hons-assoc-equal svex env))
@@ -610,7 +616,7 @@
             (equal (sv::svex-env-lookup svex
                                         (rp-evlt env-term a))
                    (4vec-fix (rp-evlt (cdr (hons-assoc-equal svex env))
-                            a))))
+                                      a))))
    :hints (("goal"
             ;;:induct (rp::falist-consistent-aux env env-term)
             :do-not-induct t
@@ -621,7 +627,6 @@
                              hons-assoc-equal
                              sv::svex-env-lookup)
                             ())))))
-   
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; main lemma.
@@ -629,11 +634,11 @@
 (defret integerp-of-svex-is-correct
   (implies (and ;;(equal (svex-kind svex) :var)
 
-                (sv::svex-p svex)
-                (rp::rp-term-listp context)
-                (integerp-of-svex svex env context)
-                (rp::eval-and-all context a)
-                (rp::falist-consistent-aux env env-term))
+            (sv::svex-p svex)
+            (rp::rp-term-listp context)
+            (integerp-of-svex svex env context)
+            (rp::eval-and-all context a)
+            (rp::falist-consistent-aux env env-term))
            (integerp (sv::svex-eval svex (rp-evlt env-term a))))
   :fn integerp-of-svex
   :hints (("goal"
@@ -655,7 +660,7 @@
                             4vec-reduction-and-to-4vec-bitand
                             expt floor logapp
                             posp natp
-                            
+
                             rp::rp-evl-of-variable
                             rp::rp-check-context-is-correct-iff)))
           (and stable-under-simplificationp
@@ -668,3 +673,17 @@
                                                   (cdr (hons-assoc-equal svex env))))
                                   (rp::attach-sc nil)
                                   (rp::rw-context-flg nil)))))))
+
+(defret integer-listp-of-svexlist-is-correct
+  (implies (and 
+            (sv::svexlist-p lst)
+            (rp::rp-term-listp context)
+            (integer-listp-of-svexlist lst env context)
+            (rp::eval-and-all context a)
+            (rp::falist-consistent-aux env env-term))
+           (integer-listp (sv::svexlist-eval lst (rp-evlt env-term a))))
+  :fn integer-listp-of-svexlist
+  :hints (("Goal"
+           :in-theory (e/d (integer-listp-of-svexlist
+                            sv::svexlist-eval)
+                           (svex-eval)))))
