@@ -703,25 +703,6 @@
 
 ;(in-theory (disable STORE-2D-ARRAY-ROW-RECOLLAPSE))
 
-;move
-;bozo think about whther i need both
-(defthm not-equal-nth-when-not-memberp-cheap
-  (implies (and (not (memberp a x))
-                (natp n)
-                (consp x))
-           (equal (equal (nth n x) a)
-                  (if (< n (len x)) nil (equal a nil))))
-  :hints (("Goal" :in-theory (e/d (memberp nth) (nth-of-cdr))))
-  :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil))))
-
-;move
-(defthmd not-equal-nth-when-not-memberp-no-limit
-  (implies (and (not (memberp a x))
-                (natp n)
-                (consp x))
-           (equal (equal a (nth n x))
-                  (if (< n (len x)) nil (equal a nil)))))
-
 ;; (defthm store-array-list-open-on-consp
 ;;   (implies (consp ref-list)
 ;;            (equal (STORE-ARRAY-LIST REF-LIST CONTENTS-LIST HEAP)
@@ -1922,17 +1903,6 @@
 ;;         (BVNOT 1 (getbit n x)))
 ;; :hints (("Goal" :in-theory (enable bvnot))))
 
-;(in-theory (disable list::nth-of-cons))
-
-;move
-(defthm nth-of-plus-of-cons-when-constant
-  (implies (and (syntaxp (quotep k))
-                (posp k)
-                (natp n))
-           (equal (nth (+ k n) (cons a rst))
-                  (nth (+ (+ -1 k) n) rst)))
-  :hints (("Goal" :in-theory (e/d (nth) (nth-of-cdr)))))
-
 ;; (defund keep-every-nth (n lst)
 ;;   (if (or (endp lst)
 ;;           (zp n))
@@ -2054,39 +2024,39 @@
 ;;            :in-theory (enable store-array-2d CONS-OF-NTH-AND-NTH-PLUS-1))))
 
 
-;bozo gen
-(defthmd oddp-9-tighten
-  (implies (and (oddp x)
-                (integerp x))
-           (equal (< x 9)
-                  (<= x 7))))
+;; ;bozo gen
+;; (defthmd oddp-9-tighten
+;;   (implies (and (oddp x)
+;;                 (integerp x))
+;;            (equal (< x 9)
+;;                   (<= x 7))))
 
-;bozo hope this doesn't loop
-(defthmd oddp-9-tighten2
-  (implies (and (not (equal x 9))
-                (oddp x)
-                (integerp x))
-           (equal (< 9 x)
-                  (< 7 x))))
+;; ;bozo hope this doesn't loop
+;; (defthmd oddp-9-tighten2
+;;   (implies (and (not (equal x 9))
+;;                 (oddp x)
+;;                 (integerp x))
+;;            (equal (< 9 x)
+;;                   (< 7 x))))
 
-(defthmd oddp-9-7-rule
-  (implies (and (oddp x)
-                (integerp x)
-                (<= x 9)
-                )
-           (equal (< 7 x)
-                  (equal x 9))))
+;; (defthmd oddp-9-7-rule
+;;   (implies (and (oddp x)
+;;                 (integerp x)
+;;                 (<= x 9)
+;;                 )
+;;            (equal (< 7 x)
+;;                   (equal x 9))))
 
 ;bozo hacky? expensive?
-(defthm not-greater-than-255-when-usb8
-  (implies (unsigned-byte-p 8 x)
-           (not (< 255 x))))
+;; (defthm not-greater-than-255-when-usb8
+;;   (implies (unsigned-byte-p 8 x)
+;;            (not (< 255 x))))
 
 ;gen?
 ;expensive?
-(defthm x-less-than-32-when-usb5
-  (implies (unsigned-byte-p 5 x)
-           (< x 32)))
+;; (defthm x-less-than-32-when-usb5
+;;   (implies (unsigned-byte-p 5 x)
+;;            (< x 32)))
 
 ;; (thm
 ;;  (implies (not (integerp x))
