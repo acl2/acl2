@@ -70,6 +70,7 @@
                           seq
                           seq-backtrack
                           string=>nats
+                          string-symbol-alistp
                           table-alist+
                           unsigned-byte-listp
                           fty::reserrf
