@@ -322,7 +322,7 @@
   '((:calpoly . "kestrel-calpoly")
     ;; note the capital L:
     (:leidos . "Leidos")
-    ;; (:leidos-gpt . "leidos-gpt")
+    (:leidos-gpt . "leidos-gpt")
     ))
 
 (defconst *ml-models*
