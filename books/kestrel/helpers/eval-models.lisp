@@ -302,7 +302,7 @@
                                                     state))
        ((when erp) (mv erp nil nil state)))
     (if provedp
-        (b* ((- (cw "Trivial (no hints needed)).~%.")) ;todo: print more, also tabulate these
+        (b* ((- (cw "Trivial (no hints needed)).~%")) ;todo: print more, also tabulate these
              ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
               (submit-event-helper-core `(skip-proofs ,defthm) print state))
              ((when erp) (mv erp nil nil state)))
