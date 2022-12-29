@@ -87,7 +87,7 @@
     (prog2$ (show-model-evaluation (first models) result-alist)
             (show-model-evaluations (rest models) result-alist))))
 
-;;Returns (mv erp first-working-rec-or-nil state).
+;;Returns (mv erp first-working-rec-num-or-nil state).
 (defun try-recs-in-order (recs rec-num checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit state)
   (declare (xargs :guard (and (help::recommendation-listp recs)
                               (posp rec-num)
@@ -142,7 +142,6 @@
                 state))
         ;; keep looking:
         (try-recs-in-order (rest recs) (+ 1 rec-num) checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit state)))))
-
 
 ;; Walks through the RECOMMENDATION-ALIST, evaluating, for each model, how many recs must be tried to find one that works, and how long that takes.
 ;; Returns (mv erp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
@@ -302,7 +301,7 @@
                                                     state))
        ((when erp) (mv erp nil nil state)))
     (if provedp
-        (b* ((- (cw "Trivial (no hints needed)).~%")) ;todo: print more, also tabulate these
+        (b* ((- (cw "Trivial: no hints needed for ~x0)~%" theorem-name)) ;todo: tabulate these
              ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
               (submit-event-helper-core `(skip-proofs ,defthm) print state))
              ((when erp) (mv erp nil nil state)))
