@@ -148,3 +148,11 @@
 
 (defthm not-<-of-nth-of-0-and-car
   (not (< (nth 0 x) (car x))))
+
+(defthm nth-of-plus-of-cons-when-constant
+  (implies (and (syntaxp (quotep k))
+                (posp k)
+                (natp n))
+           (equal (nth (+ k n) (cons a rst))
+                  (nth (+ (+ -1 k) n) rst)))
+  :hints (("Goal" :in-theory (e/d (nth) (nth-of-cdr)))))
