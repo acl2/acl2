@@ -236,7 +236,7 @@
        (events (discard-events-after-last-advice-event events theorems-to-try))
        (- (cw "(~x0 total events, ~x1 after discarding final events.)~%~%" len-all-events (len events)))
        ((when (null events))
-        (cw "~%SUMMARY for book ~s0: NO EVENTS TO TEST~%" filename)
+        (cw "~%SUMMARY for book ~s0: NO EVENTS TO TEST.  Theorems to try were ~X12.~%" filename theorems-to-try nil)
         (mv nil ; no error, but nothing to do for this book
             (list 0 0 0 0 0) state))
               ;; Ensures we are working in the same dir as the book:

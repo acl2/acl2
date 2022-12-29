@@ -14,6 +14,53 @@
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/utilities/shuffle-list2" :dir :system)
 
+(defun cons-with-string-carp (x)
+  (declare (xargs :guard t))
+  (and (consp x)
+       (stringp (car x))))
+
+(defun string<-cars (x1 x2)
+  (declare (xargs :guard (and (cons-with-string-carp x1)
+                              (cons-with-string-carp x2))))
+  (string< (car x1) (car x2)))
+
+(defmergesort merge-string<-of-cadr
+  merge-sort-string<-of-cadr
+  string<-cars
+  cons-with-string-carp
+  :extra-theorems nil)
+
+;; Returns (mv cdrs-for-car new-pairs).
+(defun cdrs-for-pairs-with-car (car pairs acc)
+  (declare (xargs :guard (and (true-listp pairs)
+                              (all-cons-with-string-carp pairs)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable all-cons-with-string-carp)))))
+  (if (endp pairs)
+      (mv (reverse acc) nil)
+    (let* ((pair (first pairs))
+           (this-car (car pair)))
+      (if (not (equal car this-car))
+          (mv (reverse acc) pairs)
+        (cdrs-for-pairs-with-car car (rest pairs) (cons (cdr pair) acc))))))
+
+;; The PAIRS come in sorted by cars.
+(defun group-pairs (pairs acc)
+  (declare (xargs :guard (and (true-listp pairs)
+                              (all-cons-with-string-carp pairs)
+                              (alistp acc))
+                  :measure (len pairs)
+                  :mode :program ; todo
+                  ))
+  (if (endp pairs)
+      (reverse acc)
+    (let* ((pair (first pairs))
+           (car (car pair)))
+      (mv-let (cdrs new-pairs)
+        (cdrs-for-pairs-with-car car (rest pairs) (cons (cdr pair) nil))
+        (and (mbt (< (len new-pairs) (len pairs)))
+             (group-pairs new-pairs (acons car cdrs acc)))))))
+
 ;move
 (defun string-starts-any-withp (string prefixes)
   (declare (xargs :guard (and (stringp string)
@@ -37,6 +84,7 @@
           (clear-keys-with-matching-prefixes (rest alist) prefixes acc)
         (clear-keys-with-matching-prefixes (rest alist) prefixes (cons pair acc))))))
 
+;; Walks through the BOOK-TO-THEOREMS-ALIST, replaying each book with advice.
 ;; Returns (mv erp event state).
 (defun replay-books-with-advice-fn-aux (book-to-theorems-alist
                                         base-dir
@@ -97,8 +145,10 @@
       (replay-books-with-advice-fn-aux (rest book-to-theorems-alist) base-dir num-recs-per-model print server-url models yes-count no-count maybe-count trivial-count error-count done-book-count state))))
 
 ;; Returns (mv erp event state).
-(defun replay-books-with-advice-fn (book-to-theorems-alist base-dir excluded-prefixes seed num-recs-per-model print server-url models num-books state)
-  (declare (xargs :guard (and (alistp book-to-theorems-alist)
+(defun replay-books-with-advice-fn (tests base-dir excluded-prefixes seed num-recs-per-model print server-url models num-tests state)
+  (declare (xargs :guard (and (alistp tests)
+                              (string-listp (strip-cars tests))
+                              (symbol-listp (strip-cdrs tests))
                               (stringp base-dir)
                               (string-listp excluded-prefixes)
                               (or (eq :random seed)
@@ -110,8 +160,8 @@
                               (or (eq :all models)
                                   (help::model-namep models) ; special case for a single model
                                   (help::model-namesp models))
-                              (or (eq :all num-books)
-                                  (natp num-books)))
+                              (or (eq :all num-tests)
+                                  (natp num-tests)))
                   :mode :program
                   :stobjs state))
   (b* ( ;; Elaborate options:
@@ -120,27 +170,29 @@
                  (if (help::model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
-       (book-to-theorems-alist (clear-keys-with-matching-prefixes book-to-theorems-alist excluded-prefixes nil))
        ((mv seed state)
         (if (eq :random seed)
             (random$ *m31* state)
           (mv seed state)))
        (- (cw "(Using random seed of ~x0.)~%" seed))
-       (- (cw "(Trying ~x0 recommendations per model.)~%" num-recs-per-model)))
-    (if (and (not (eq :all num-books))
-             (> num-books (len book-to-theorems-alist)))
-        (mv :not-enough-books nil state)
-      (b* ((shuffled-book-to-theorems-alist (shuffle-list2 book-to-theorems-alist seed))
-           (final-book-to-theorems-alist
-            (if (eq :all num-books) ; todo: don't shuffle in this case?
-                shuffled-book-to-theorems-alist
-              (take num-books shuffled-book-to-theorems-alist)))
-           (- (cw "(Processing ~x0 books.)~%" (len final-book-to-theorems-alist))))
-        (replay-books-with-advice-fn-aux final-book-to-theorems-alist base-dir num-recs-per-model print server-url models 0 0 0 0 0 0 state)))))
+       (- (cw "(Trying ~x0 recommendations per model.)~%" num-recs-per-model))
+       (tests (clear-keys-with-matching-prefixes tests excluded-prefixes nil))
+       ((when (and (not (eq :all num-tests))
+                   (> num-tests (len tests))))
+        (mv :not-enough-tests nil state))
+       (tests (if (eq :all num-tests)
+                  tests
+                (take num-tests (shuffle-list2 tests seed))))
+       (tests-sorted (merge-sort-string<-of-cadr tests))
+       (book-to-theorems-alist (group-pairs tests-sorted nil))
+       (book-to-theorems-alist (shuffle-list2 book-to-theorems-alist (minstd-rand0-next seed)))
+       (- (cw "(Processing ~x0 tests in ~x1 books.)~%" num-tests (len book-to-theorems-alist)))
+       )
+    (replay-books-with-advice-fn-aux book-to-theorems-alist base-dir num-recs-per-model print server-url models 0 0 0 0 0 0 state)))
 
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
 ;; Rec names should not include slash or digits?
-(defmacro replay-books-with-advice (book-to-theorems-alist ; maps book names (relative to BASE-DIR, with .lisp extension) to lists of defthm names.
+(defmacro replay-books-with-advice (tests ; pairs of the form (book-name . theorem-name) where book-names are relative to BASE-DIR and have the .lisp extension
                                     base-dir ; no trailing slash
                                     &key
                                     (excluded-prefixes 'nil) ; relative to BASE-DIR
@@ -151,4 +203,4 @@
                                     (num-books ':all) ; how many books to evaluate (TODO: Better to chose a random subset of theorems, rather than books?)
                                     (print 'nil)
                                     )
-  `(make-event (replay-books-with-advice-fn ,book-to-theorems-alist ,base-dir ,excluded-prefixes ,seed ,n ,print ,server-url ,models ,num-books state)))
+  `(make-event (replay-books-with-advice-fn ,tests ,base-dir ,excluded-prefixes ,seed ,n ,print ,server-url ,models ,num-books state)))

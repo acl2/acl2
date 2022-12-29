@@ -1,7 +1,7 @@
 ; MYIF, an alias for IF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,8 +15,6 @@
 
 ;; TODO: Now that we can rewrite an IF (which was not possible when we
 ;; introduced MYIF), perhaps MYIF could be used less or eliminated.
-
-;; TODO: Consider giving this a better name.
 
 (include-book "myif-def")
 

@@ -79,6 +79,7 @@
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/included-books-in-world" :dir :system)
+(include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-def" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
@@ -97,6 +98,7 @@
 ;(local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
 (local (include-book "kestrel/alists-light/lookup-eq" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -215,6 +217,40 @@
 ;; todo: rename (not necessarily about ml)?
 (defconst *ml-rec-types* (strip-cdrs *rec-to-symbol-alist*))
 
+(defund ml-rec-typep (type)
+  (declare (xargs :guard t))
+  (member-eq type *ml-rec-types*))
+
+(defthm ml-rec-typep-forward-to-symbolp
+  (implies (ml-rec-typep type)
+           (symbolp type))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable ml-rec-typep member-equal))))
+
+(defund ml-rec-type-listp (types)
+  (declare (xargs :guard t))
+  (if (not (consp types))
+      (null types)
+    (and (ml-rec-typep (first types))
+         (ml-rec-type-listp (rest types)))))
+
+(defthm ml-rec-type-listp-of-cdr
+  (implies (ml-rec-type-listp types)
+           (ml-rec-type-listp (cdr types)))
+  :hints (("Goal" :in-theory (enable ml-rec-type-listp))))
+
+(defthm ml-rec-typep-of-car
+  (implies (and (ml-rec-type-listp types)
+                (consp types))
+           (ml-rec-typep (car types)))
+  :hints (("Goal" :in-theory (enable ml-rec-type-listp))))
+
+(defthm ml-rec-type-listp-forward-to-symbol-listp
+  (implies (ml-rec-type-listp types)
+           (symbol-listp types))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable ml-rec-type-listp))))
+
 (defconst *all-rec-types* (cons :exact-hints *ml-rec-types*))
 
 (defund rec-typep (type)
@@ -234,11 +270,40 @@
     (and (rec-typep (first types))
          (rec-type-listp (rest types)))))
 
+(defthm rec-type-listp-of-cdr
+  (implies (rec-type-listp types)
+           (rec-type-listp (cdr types)))
+  :hints (("Goal" :in-theory (enable rec-type-listp))))
+
 (defthm rec-type-listp-forward-to-symbol-listp
   (implies (rec-type-listp types)
            (symbol-listp types))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable rec-type-listp))))
+
+(defund ml-rec-type-to-string (type)
+  (declare (xargs :guard (ml-rec-typep type)))
+  (car (rassoc type *rec-to-symbol-alist*)))
+
+(defthm stringp-of-ml-rec-type-to-string
+  (implies (ml-rec-typep type)
+           (stringp (ml-rec-type-to-string type)))
+  :hints (("Goal" :in-theory (enable ml-rec-type-to-string
+                                     ml-rec-typep
+                                     member-equal))))
+
+(defund ml-rec-types-to-strings (types)
+  (declare (xargs :guard (ml-rec-type-listp types)
+                  :guard-hints (("Goal" :in-theory (enable ml-rec-type-listp)))))
+  (if (endp types)
+      nil
+    (cons (ml-rec-type-to-string (first types))
+          (ml-rec-types-to-strings (rest types)))))
+
+(defthm string-listp-of-ml-rec-types-to-strings
+  (implies (ml-rec-type-listp types)
+           (string-listp (ml-rec-types-to-strings types)))
+  :hints (("Goal" :in-theory (enable ml-rec-types-to-strings))))
 
 (defund confidence-percentp (p)
   (declare (xargs :guard t))
@@ -257,7 +322,7 @@
   '((:calpoly . "kestrel-calpoly")
     ;; note the capital L:
     (:leidos . "Leidos")
-    ;; (:leidos-gpt . "leidos-gpt")
+    (:leidos-gpt . "leidos-gpt")
     ))
 
 (defconst *ml-models*
@@ -783,14 +848,18 @@
 ;; Returns a list of (<action-type> <action-object> <symbol-table>) tuples.
 (defund extract-actions-from-successful-recs (recs)
   (declare (xargs :guard (successful-recommendation-listp recs)
-                  :guard-hints (("Goal" :in-theory (enable successful-recommendation-listp)))))
+                  :verify-guards nil ; done below
+                  ))
   (if (endp recs)
       nil
     (let ((rec (first recs)))
-      (cons (list (successful-recommendation-type rec)
-                  (successful-recommendation-object rec)
-                  (successful-recommendation-symbol-table rec))
-            (extract-actions-from-successful-recs (rest recs))))))
+      (add-to-set-equal ; ensures no dups (can arise if recs are improved)
+       (list (successful-recommendation-type rec)
+             (successful-recommendation-object rec)
+             (successful-recommendation-symbol-table rec))
+       (extract-actions-from-successful-recs (rest recs))))))
+
+(verify-guards extract-actions-from-successful-recs :hints (("Goal" :in-theory (enable successful-recommendation-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1068,9 +1137,7 @@
          (book-map (acl2::lookup-equal "book_map" dict))
          ((mv erp book-map state) (parse-book-map book-map state))
          ((when erp)
-          (if (stringp erp)
-              (cw "WARNING: When parsing book map: ~s0.~%" erp)
-            (cw "WARNING: When parsing book map: ~x0.~%" erp))
+          (cw "WARNING: When parsing book map: ~@0.~%" erp)
           (mv nil ; supressing this error for now
               :none state))
          ((when (or (not (rationalp confidence))
@@ -1166,9 +1233,10 @@
 ;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
 ;; Returns a list of recs, which should contain no duplicates.
-(defun make-enable-recs (formula wrld)
+(defun make-enable-recs (formula num-recs wrld)
   (declare (xargs :guard (and ;; formula is an untranslated term
-                              (plist-worldp wrld))
+                          (natp num-recs)
+                          (plist-worldp wrld))
                   :mode :program ; because of acl2::translate-term
                   ))
   (let* ((translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
@@ -1176,7 +1244,8 @@
                                                  ;; Don't bother wasting time with trying to enable implies
                                                  ;; (I suppose we could try it if implies is disabled):
                                                  '(implies))))
-    (make-enable-recs-aux fns-to-try-enabling 1)))
+    ;; todo: how to choose when we can't return them all?:
+    (acl2::firstn num-recs (make-enable-recs-aux fns-to-try-enabling 1))))
 
 ;; (local
 ;;  (defthm recommendation-listp-of-make-enable-recs
@@ -1201,20 +1270,23 @@
            (hint-lists-from-history-events (rest (acl2::fargs event)) acc)
          (if (eq 'progn (acl2::ffn-symb event)) ; (progn e1 e2 ...)
              (hint-lists-from-history-events (acl2::fargs event) acc)
-           (if ;; todo: what else can we harvest hints from?
-               (not (member-eq (acl2::ffn-symb event) '(defthm defthmd)))
-               acc
-             (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
-               (if (not res)
-                   acc
-                 (let ((hints (cadr res)))
-                   (if (member-equal hints acc) ; todo: also look for equivalent hints?
-                       acc
-                     (cons hints acc)))))))))))
+           (if (eq 'skip-proofs (acl2::ffn-symb event)) ; (skip-proofs e1), needed because we skip-proofs when evaluating models on a book
+               (hint-lists-from-history-event (acl2::farg1 event) acc)
+             (if ;; todo: what else can we harvest hints from?
+                 (not (member-eq (acl2::ffn-symb event) '(defthm defthmd)))
+                 acc
+               (let ((res (assoc-keyword :hints (rest (rest (acl2::fargs event))))))
+                 (if (not res)
+                     acc
+                   (let ((hints (cadr res)))
+                     (if (member-equal hints acc) ; todo: also look for equivalent hints?
+                         acc
+                       (cons hints acc))))))))))))
 
  ;; Extends ACC with hint-lists from the EVENTS.  Hint lists from earlier EVENTS end up deeper in the result,
  ;; which seems good because more recent events are likely to be more relevant (todo: but what about dups).
- (defun hint-lists-from-history-events (events acc)
+ (defun hint-lists-from-history-events (events ; oldest first
+                                        acc)
    (declare (xargs :guard (and (true-listp events)
                                (true-listp acc))))
    (if (endp events)
@@ -1222,7 +1294,8 @@
      (hint-lists-from-history-events (rest events)
                                      (hint-lists-from-history-event (first events) acc)))))
 
-(defun make-exact-hint-recs (hint-lists base-name num confidence-percent acc)
+(defun make-exact-hint-recs (hint-lists ; newest first
+                             base-name num confidence-percent acc)
   (declare (xargs :guard (and (true-listp hint-lists)
                               (stringp base-name)
                               (posp num)
@@ -1242,21 +1315,29 @@
                                           )
                                 acc))))
 
-;; Extracts hints from events in the command history.  In the result, hints for more recent events come first and have higher numbers.
+;; Extracts hints from events in the command history.  In the result, hints for more recent events come first and have lower numbers.
 ;; The result should contain no exact duplicates, but the recs (which are all of type :exact-hints) might effectively duplicate other recommendations.
-(defund make-recs-from-history-events (events)
-  (make-exact-hint-recs (hint-lists-from-history-events events nil) "history" 1
+(defund make-recs-from-history-events (num-recs
+                                       events ; oldest first
+                                       )
+  (declare (xargs :guard (natp num-recs)
+                  :verify-guards nil ;todo
+                  ))
+  (make-exact-hint-recs (acl2::firstn num-recs (hint-lists-from-history-events events nil)) ; newest first
+                        "history"
+                        1 ; start numbering at 1
                         3 ; confidence-percent (quite high)
                         nil))
 
 ;; Returns (mv erp val state).
 ;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
-(defun make-recs-from-history (state)
-  (declare (xargs :mode :program
+(defun make-recs-from-history (num-recs state)
+  (declare (xargs :guard (natp num-recs)
+                  :mode :program
                   :stobjs state))
   (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state)) ; todo: how to get events, not commands (e.g., get what make-events expanded to)?
        ((when erp) (mv erp nil state)))
-    (mv nil (make-recs-from-history-events events) state)))
+    (mv nil (make-recs-from-history-events num-recs events) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3051,10 +3132,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;move
+(defun acons-all-to-val (keys val alist)
+  (declare (xargs :guard (and (true-listp keys)
+                              (alistp alist))))
+  (if (endp keys)
+      alist
+    (acons (first keys) val (acons-all-to-val (rest keys) val alist))))
+
 ;; Returns (mv erp recs state).
-(defun get-recs-from-ml-model (model num-recs checkpoint-clauses server-url debug print state)
+(defun get-recs-from-ml-model (model num-recs disallowed-rec-types checkpoint-clauses server-url debug print state)
   (declare (xargs :guard (and (model-namep model)
                               (natp num-recs)
+                              (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (stringp server-url)
                               (booleanp debug)
@@ -3078,6 +3168,9 @@
                (post-data (acons "use-group" model-string
                                  (acons "n" (acl2::nat-to-string num-recs)
                                         (make-numbered-checkpoint-entries 0 checkpoint-clauses))))
+               (post-data (acons-all-to-val (ml-rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types))
+                                            "off"
+                                            post-data))
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url post-data debug state))
                ((when erp)
@@ -3090,6 +3183,8 @@
        ((when erp) (mv erp nil state))
        (- (and (not (consp semi-parsed-recommendations))
                (cw "~% WARNING: No recommendations returned from server.~%")))
+       (- (and (not (equal num-recs (len semi-parsed-recommendations)))
+               (cw "~% WARNING: Number of recs returned from server is ~x0 but we requested ~x1.~%" (len semi-parsed-recommendations) num-recs)))
        ;; Parse the individual strings in the recs:
        ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
        ((when erp)
@@ -3122,23 +3217,24 @@
                   (mv nil nil state) ; don't bother creating recs as they will be disallowed below
                 (mv nil
                     ;; todo: translate outside make-enable-recs?:
-                    (make-enable-recs theorem-body (w state))
+                    (make-enable-recs theorem-body num-recs-per-model (w state))
                     state))
             (if (eq :history model)
                 ;; Make recs based on hints given to recent theorems:
                 (if (member-eq :exact-hints disallowed-rec-types)
                     (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-                  (make-recs-from-history state))
+                  (make-recs-from-history num-recs-per-model state))
               ;; It's a normal ML model:
-              (get-recs-from-ml-model model num-recs-per-model checkpoint-clauses server-url debug print state))))
+              (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses server-url debug print state))))
          ((when erp) (mv erp nil state))
-         ;; Remove any recs that are disallowed:
+         ;; Remove any recs that are disallowed (todo: drop this now?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
       (get-recs-from-models-aux (rest models) num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print
                                 ;; Associate this model with its recs in the result:
                                 (acons model recs acc)
                                 state))))
 
+;; Returns an alist from model names to rec-lists.
 ;; Returns (mv erp rec-alist state).
 (defun get-recs-from-models (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
