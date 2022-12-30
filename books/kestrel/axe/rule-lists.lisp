@@ -891,7 +891,7 @@
     signed-byte-p-of-bvif
 ;    inst-length-of-myif
 ;    index-into-program-of-bvif ;or should we enable index-into-program?
-    lookup-of-bvif ; drop or more?
+    ;; lookup-of-bvif ; drop or move?
 
     myif-of-constants-becomes-bvif
 
