@@ -2298,7 +2298,7 @@
                 (natp start2)
                 (natp size1)
                 (natp size2)
-                (<= SIZE2 START1))
+                (case-split (<= SIZE2 START1)))
            (equal (4vec-part-select start1 size1
                                     (4vec-part-select start2 size2 x))
                   0))
@@ -8544,6 +8544,7 @@ lognot)
                  bitops::logbitp-of-lognot
 
                  (:e INTEGER-LENGTH)
+                 (:e 4vec-p)
                  
                  
 
@@ -8734,6 +8735,15 @@ lognot)
               (equal (equal (4vec-bitand mask (sv::4vec-bitxor x a))
                             (4vec-bitand mask (sv::4vec-bitxor y b)))
                      t))
+     :hints ((bitops::logbitp-reasoning)))
+
+   (defthm 4vec-bitxor-of-the-same 
+     (and (implies (integerp x)
+                   (equal (sv::4vec-bitxor x (sv::4vec-bitxor x y))
+                          (sv::3vec-fix y)))
+          (implies (integerp x)
+                   (equal (sv::4vec-bitxor x x)
+                          0)))
      :hints ((bitops::logbitp-reasoning)))
   
    

@@ -236,7 +236,7 @@
                 (if (acl2::or* (integerp term1)
                                (integerp term2))
                     (bitand/or/xor-simple-constant-simplify fn term1 term2 t)
-                  (bitand/bitor-cancel-repeated fn term1 term2 :1masked nil)))
+                  (bitand/or/xor-cancel-repeated fn term1 term2)))
 
                ((when (equal size 1))
                 cur-term))
@@ -513,7 +513,7 @@
                             (not (natp s-size)))
                         (b* ((old-term (svex-reduce-w/-env old-term))
                              (term (svex-reduce-w/-env term)))
-                          (if (and (4vec-p s-start) (4vec-p s-size)
+                          (if (and* (4vec-p s-start) (4vec-p s-size)
                                    (4vec-p old-term) (4vec-p term))
                               (4vec-part-select
                                start size
@@ -702,7 +702,7 @@ but did not resolve the branch ~%" first))))
                          ((when (acl2::or* (integerp term1)
                                            (integerp term2)))
                           (bitand/or/xor-simple-constant-simplify fn term1 term2 nil)))
-                      (bitand/bitor-cancel-repeated fn term1 term2)))
+                      (bitand/or/xor-cancel-repeated fn term1 term2)))
                    (t (b* ((args-evaluated (svex-reduce-w/-env-lst args)))
                         (svex-reduce-w/-env-apply fn args-evaluated)))))))))
 
