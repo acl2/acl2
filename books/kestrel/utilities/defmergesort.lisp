@@ -112,7 +112,8 @@
                   (or (consp l1)
                       (consp l2)
                       (consp acc)))
-           :hints (("Goal" :in-theory (enable ,merge-name))))
+           :hints (("Goal" :induct t
+                    :in-theory (enable ,merge-name))))
 
          ;; Merge sort the list L
          (defund ,merge-sort-name (l)
