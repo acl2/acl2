@@ -2,7 +2,7 @@
 ; Written by Matt Kaufmann (with inspiration from Alessandro Coglio and Eric Smith)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; (depends-on "build/rewrite-constant.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
 
 (in-package "APT")
 

@@ -15,7 +15,6 @@
 (include-book "kestrel/utilities/quote" :dir :system) ;reduce?
 
 ;;TODO: Add support here for the rotate ops: leftrotate32 rightrotate32 leftrotate rightrotate.
-;;TODO: Maybe support bvnth?
 
 ;; Many BV operators, such as BVXOR and BVPLUS, can be trimmed in the sense
 ;; that if we are chopping their result we can also chop their arguments

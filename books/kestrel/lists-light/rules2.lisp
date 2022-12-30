@@ -1,7 +1,7 @@
 ; Mixed rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,7 @@
 ;; TODO: Organize these rules into simpler books.
 
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
-(include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
+(include-book "kestrel/typed-lists-light/items-have-len" :dir :system) ; drop
 ;(include-book "repeat" )
 (include-book "all-same" )
 (include-book "memberp" )
@@ -129,12 +129,13 @@
            :in-theory (e/d (subrange update-nth append) (take-update-nth)))))
 
 ;move to axe?
-(defthm cons-iff (iff (cons x y) t))
+(defthmd cons-iff (iff (cons x y) t))
 
-(defun double-cdr-induct (x y)
-  (if (endp x)
-      (list x y)
-    (double-cdr-induct (cdr x) (cdr y))))
+(local
+ (defun double-cdr-induct (x y)
+   (if (endp x)
+       (list x y)
+     (double-cdr-induct (cdr x) (cdr y)))))
 
 (defthmd equal-when-equal-of-car-and-car
   (implies (and (equal (car x) (car y))
@@ -169,13 +170,14 @@
            :induct (double-cdr-induct lst1 lst2)
            :do-not '(generalize eliminate-destructors))))
 
-;rename!
-(defthm fw-1
-  (implies (perm bag1 (update-nth n val bag2))
-           (memberp val bag1))
+;move
+(defthm memberp-when-perm-of-update-nth
+  (implies (perm x (update-nth n a y))
+           (memberp a x))
   :hints (("Goal" :in-theory (enable UPDATE-NTH))))
 
 ;disabled Tue Apr 13 15:37:50 2010
+;todo: drop.  just use nth-of-0
 (defthmd nth-when-n-is-zp
   (implies (zp n)
            (equal (nth n lst)
@@ -188,11 +190,8 @@
                 (and (integerp n) (< 0 n)))
            (memberp (nth n lst) (cdr lst)))
   :hints (("Goal" :in-theory (e/d (nth
-;len
-                                   nth-when-n-is-zp
-                                   ) (CANCEL_PLUS-LESSP-CORRECT
-;LIST::LEN-EQUAL-1-REWRITE
-                                      ))
+                                   nth-when-n-is-zp)
+                                  (cancel_plus-lessp-correct))
            :do-not '(generalize eliminate-destructors))))
 
 ;this can loop if we are turning car into nth 0...
@@ -202,19 +201,11 @@
                   (or (and (integerp n) (< 0 n))
                       (memberp (car lst) (cdr lst)))))
   :hints (("Goal" :in-theory (e/d (nth
-                                   ;len
-                                   nth-when-n-is-zp
-                                     ) (CANCEL_PLUS-LESSP-CORRECT
-; LIST::LEN-EQUAL-1-REWRITE
-                                        ))
+                                   nth-when-n-is-zp)
+                                  (cancel_plus-lessp-correct))
            :do-not '(generalize eliminate-destructors))))
 
 (theory-invariant (incompatible (:rewrite memberp-nth-and-cdr) (:rewrite CAR-BECOMES-NTH-OF-0)))
-
-
-(defthm memberp-of-update-nth-same
-  (MEMBERP val (UPDATE-NTH n val lst))
-  :hints (("Goal" :in-theory (enable update-nth))))
 
 ;; (thm
 ;;  (equal (MEMBERP (CAR LST) (BAG::REMOVE-1 (NTH N LST) LST))
@@ -351,17 +342,17 @@
 ;;           (perm (APPEND (NTHCDR k lst) (SUBRANGE i j lst))
 ;;                      (nthcdr i lst))))
 
-;move
-(defthmd nth-with-large-index-2
-  (implies (and (<= (len l) n)
-                (syntaxp (not (and (consp n)
-                                   (equal (car n) 'quote)
-                                   (equal (cadr n) '0)))))
-           (equal (nth n l)
-                  (if (zp n)
-                      (nth 0 l)
-                    nil)))
-  :hints (("Goal" :in-theory (enable nth))))
+;; ;move
+;; (defthmd nth-with-large-index-2
+;;   (implies (and (<= (len l) n)
+;;                 (syntaxp (not (and (consp n)
+;;                                    (equal (car n) 'quote)
+;;                                    (equal (cadr n) '0)))))
+;;            (equal (nth n l)
+;;                   (if (zp n)
+;;                       (nth 0 l)
+;;                     nil)))
+;;   :hints (("Goal" :in-theory (enable nth))))
 
 ;disabled since this introduces perm
 (defthmd memberp-nth-when-perm
@@ -372,14 +363,6 @@
            (memberp (nth n lst1) lst2)))
 
 ;(local (in-theory (disable LIST::UPDATE-NTH-EQUAL-REWRITE)))
-
-(defthm update-nth-take-last-element
-  (implies (and (< n (len lst))
-                (integerp n) ;drop?
-                )
-           (equal (UPDATE-NTH n val (TAKE (+ 1 n) lst))
-                  (append (TAKE n lst) (list val))))
-  :hints (("Goal" :in-theory (enable take))))
 
 ;bozo naming of LIST::APPEND-OF-NON-CONSP-2 vs. LIST::APPEND-OF-NON-CONSP-one
 
@@ -700,7 +683,6 @@
               (equal y (cdr x)) ;bozo okay to introduce cdr?
               )))
 
-
 ;expensive
 (defthmd cons-car-self-equal-self
   (implies (equal z (car x))
@@ -951,27 +933,6 @@
   :hints (("Goal" :in-theory (e/d (all-equal$ repeat all-equal$-when-true-listp)
                                   (cons-onto-repeat)))))
 
-;move
-(defthm firstn-of-len
-  (equal (firstn (len x) x)
-         (true-list-fix x)))
-
-(defthm equal-of-firstn-and-take
-  (implies (natp n)
-           (equal (equal (firstn n x) (take n x))
-                  (<= n (len x))))
-  :hints (("Goal" :in-theory (enable take firstn))))
-
-(defthm equal-of-take-and-firstn
-  (implies (natp n)
-           (equal (EQUAL (TAKE N X) (FIRSTN N X))
-                  (<= n (len x))))
-  :hints (("Goal" :use (:instance equal-of-firstn-and-take)
-           :in-theory (disable equal-of-firstn-and-take))))
-
-(defthm true-listp-of-firstn
-  (true-listp (firstn n x)))
-
 ;gross?
 (defthmd append-of-take-and-cons-when-nth
   (implies (and (equal y (nth n x))
@@ -990,9 +951,6 @@
                   (append (firstn (+ 1 n) x) z)))
   :hints (("Goal" :in-theory (enable ;list::car-append list::cdr-append
                               ))))
-
-(defthm true-listp-of-true-list-fix2
-  (true-listp (true-list-fix x)))
 
 (defthm append-of-firstn-of-cons-of-nth
   (implies (and (natp n)
@@ -1022,7 +980,8 @@
                        (equal (car k) x)
                        (equal (cdr k) nil)))))
 
-(defthm equal-of-len-and-negative-constant
+;drop?
+(defthmd <-of-len-and-negative-constant
   (implies (and (syntaxp (quotep k))
                 (< k 0))
            (equal (< k (len x))
@@ -1034,13 +993,6 @@
   :hints (("Goal" :in-theory (e/d (items-have-len firstn) (take-of-nthcdr-becomes-subrange
                                                            TAKE-OF-CDR-BECOMES-SUBRANGE
                                                            FIRSTN-BECOMES-TAKE-GEN)))))
-
-(defthm items-have-len-of-take
-  (implies (and (natp end)
-                (<= end (len lst))
-                (items-have-len n lst))
-           (items-have-len n (take end lst)))
-  :hints (("Goal" :in-theory (e/d (take) (take-of-cdr-becomes-subrange)))))
 
 (defthm items-have-len-of-subrange-hack-gen
   (implies (and (natp start)
@@ -1072,7 +1024,7 @@
 ;;            :in-theory (e/d ( subrange ITEMS-HAVE-LEN) (take-of-nthcdr-becomes-subrange)))))
 
 ;move
-;restrict to non-constants
+;restrict to non-constants?
 (defthm equal-of-cons-and-cons-same-arg2
   (equal (equal (cons x y) (cons z y))
          (equal x z)))
@@ -1551,22 +1503,6 @@
            (equal (append x (cons a b))
                   (append (append x (list a))
                           b))))
-
-(defthm equal-of-true-list-fix-and-true-list-fix-forward
-  (implies (equal (true-list-fix x)
-                  (true-list-fix y))
-           (equal (len x) (len y)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :induct (DOUBLE-CDR-INDUCT x y)
-           :in-theory (e/d (len true-list-fix) (len-of-cdr)))))
-
-;move
-;now in std
-(defthm equal-of-append-and-append-same-arg2
-  (equal (equal (append x1 y) (append x2 y))
-         (equal (true-list-fix x1)
-                (true-list-fix x2)))
-  :hints (("Goal" :in-theory (enable equal-of-true-list-fix-and-true-list-fix-forward))))
 
 (defthm equal-of-append-of-cons-and-append-cancel
   (implies (true-listp z)

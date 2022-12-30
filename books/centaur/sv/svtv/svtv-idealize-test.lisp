@@ -25,6 +25,8 @@
 
 (in-package "SV")
 
+; Matt K. mod: Avoid ACL2(p) error from clause-processor that returns a stobj.
+(set-waterfall-parallelism nil)
 
 (include-book "svtv-stobj-defsvtv")
 (include-book "svtv-idealize")

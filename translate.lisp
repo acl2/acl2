@@ -17855,15 +17855,10 @@
       (remove-do-loop$-guards args))))
 
 #-acl2-loop-only
-(defvar *hcomp-loop$-alist* nil)
-
-#-acl2-loop-only
 (defmacro loop$ (&whole loop$-form &rest args)
-  (let ((term (or (loop$-alist-term loop$-form
-                                    *hcomp-loop$-alist*)
-                  (loop$-alist-term loop$-form
-                                    (global-val 'loop$-alist
-                                                (w *the-live-state*))))))
+  (let ((term (loop$-alist-term loop$-form
+                                (global-val 'loop$-alist
+                                            (w *the-live-state*)))))
     `(cond (*aokp* (loop ,@(remove-loop$-guards args)))
            (t ,(or term
                    '(error "Unable to translate loop$ (defun given directly ~
@@ -20252,7 +20247,7 @@
          (translate11-macrolet-alist1
           (car defs) stobjs-out bindings known-stobjs flet-alist form ctx
           wrld state-vars))
-        (entries 
+        (entries
          (translate11-macrolet-alist
           (cdr defs) stobjs-out bindings known-stobjs flet-alist form ctx
           wrld state-vars)))
@@ -20307,7 +20302,7 @@
            (body (car (last x))))
       (mv-let (erp msg)
         (er-progn-cmp
-         (chk-no-duplicate-defuns-cmp names ctx) 
+         (chk-no-duplicate-defuns-cmp names ctx)
          (chk-local-def-declare-form-list nil names declare-form-list ctx)
          (chk-local-def-return-last-table names nil wrld ctx))
         (cond
@@ -21374,26 +21369,136 @@
 ; We hons-copy the resulting lambda object.  Before we did this, it was
 ; possible that when looking up a lambda object in the cl-cache, the result
 ; succeeded with an object EQUAL to it that was not EQ.  Here is an example.
+; But to do the experiment with the current code, where this problem has been
+; fixed, you must first redefine translate11-lambda-object so that it does not
+; do hons-copy.  There are two calls of that function in
+; translate11-lambda-object that must be dealt with.  In addition, to confirm
+; the claims in this explanation you must drop into raw Lisp and redefine
+; install-defs-for-add-trip so that after LET binding *1*-def it saves that
+; pointer, as by executing (setq saved-*1*-def *1*-def), before doing (setf
+; (car tail) *1*-def).  Now do (lp) and (logic).  During the experiment below
+; we drop into raw Lisp several times to save certain lambda objects.  We
+; explain below.
 
-;   (defun sum-doubles (lst)
-;     (declare (xargs :guard (integer-listp lst)
-;                  :verify-guards nil))
-;     (loop$ for x of-type integer in lst sum (+ x x)))
-;   (make-event `(defconst *m* ',(loop$ for i from 1 to 10000000 collect i)))
-;   ; The following reports:
-;   ; 0.92 seconds realtime, 0.93 seconds runtime
-;   (time$ (sum-doubles *m*))
-;   (verify-guards sum-doubles
-;     :hints (("Goal"
-;              :in-theory (enable apply$ badge)
-;              :expand ((ev$ '(binary-+ x x)
-;                            (list (cons 'x (car lst))))))))
-;   (u)
-;   ; The following reports about double the previous time.
-;   (time$ (sum-doubles *m*))
-;   ; 2.02 seconds realtime, 2.02 seconds runtime
 
-; Our solution is to apply hons-copy (called just above) so that the translated
+; (include-book "projects/apply/top" :dir :system)
+; (make-event `(defconst *m* ',(loop$ for i from 1 to 10000000 collect i)))
+; (defun sum-doubles (lst)
+;   (declare (xargs :guard (integer-listp lst)
+;                :verify-guards nil))
+;   (loop$ for x of-type integer in lst sum (+ x x)))
+; (value :q)
+; (setq obj0
+;   (unquote  (nth 1 (nth 2 (nth 2 (car (nth 1 (nth 4 saved-*1*-def))))))))
+; (lp)
+; (print-cl-cache)
+; (time$ (sum-doubles *m*))
+; ; 0.76 seconds realtime, 0.76 seconds runtime
+; (print-cl-cache)
+; (value :q)
+; (eq obj0
+;     (access cl-cache-line
+;             (car (access cl-cache *cl-cache* :alist))
+;             :lambda-object))
+; ; = T
+; (lp)
+; (verify-guards sum-doubles
+;   :hints (("Goal"
+;            :in-theory (enable apply$ badge)
+;            :expand ((ev$ '(binary-+ x x)
+;                          (list (cons 'x (car lst))))))))
+; (print-cl-cache)
+; (value :q)
+; (setq obj1
+;       (access cl-cache-line
+;               (car (access cl-cache *cl-cache* :alist))
+;               :lambda-object))
+; (eq obj1
+;     (unquote (cadr (nth 3 (getpropc 'sum-doubles 'unnormalized-body
+;                                     nil (w state))))))
+; ; = T
+; (eq obj0 obj1)
+; ; = NIL
+; (equal obj0 obj1)
+; ; = T
+; (lp)
+; (u)
+; (print-cl-cache)
+; (value :q)
+; (eq obj1
+;       (access cl-cache-line
+;               (car (access cl-cache *cl-cache* :alist))
+;               :lambda-object))
+; ; = T
+; (lp)
+; (time$ (sum-doubles *m*))
+; ; 1.83 seconds realtime, 1.83 seconds runtime
+; (print-cl-cache)
+; (value :q)
+; (time$ (loop for e in *m* always (equal obj0 obj1)))
+; ; 1.10 seconds realtime, 1.10 seconds runtime
+; (time$ (loop for e in *m* always (equal obj0 obj0)))
+; ; 0.04 seconds realtime, 0.04 seconds runtime
+; (lp)
+
+; Question: Why does the first (sum-doubles *m*) take 0.76 seconds but the
+; second one take 1.83, which is about 1.07 seconds longer?
+
+; Explanation:
+
+; Immediately after the defun of sum-doubles we grab obj0.  Inspection of
+; saved-*1*-def shows that that form is the raw Lisp definition of
+; ACL2_*1*_ACL2::SUM-DOUBLES and that obj0 is the lambda object passed to
+; ACL2_*1*_ACL2::SUM$ in that definition.
+
+; Before running sum-doubles the first time we print the cache and see that it
+; only has one line.  That line comes from the loop$ in the make-event.  That
+; line is irrelevant to our experiment.
+
+; Then we run (sum-doubles *m*) for the first time.  Obj0 is being applied 10
+; million times.  The first time apply$-lambda applies obj0, it sets up a new
+; cache line for obj0, as we confirm in the subsequent drop into raw Lisp.
+
+; Then we verify-guards.  After that, print-cl-cache shows that the cache
+; looks the same, except that the :abs-event-no of the first cache line
+; has been incremented because verify-guards updated the cache.  However,
+; the :lambda-object in our cache line has been changed.  It is no longer
+; obj0 but is obj1 instead.  The two are EQUAL but not EQ.  Our fate
+; is sealed!
+
+; Verify-guards changes the cache because after succeeding, it scans the
+; unnormalized body of the function just verified, sum-doubles, collects all
+; the well-formed lambda objects -- which are now known to be guard verified --
+; and adds a :GOOD cache line for each.  We confirm above that the new first
+; line in the cache is the appropriate evg from the unnormalized-body of
+; sum-doubles.
+
+; The (u) changes the :status of our cache line from :GOOD to :UNKNOWN.
+
+; So the second (sum-doubles *m*) is run, apply$-lambda looks for obj0 in the
+; cache and finds a suitable cache line, but it finds it with the EQUAL check
+; in hons-equal-lite, not the EQ check.  The :status is :UNKNOWN, so
+; apply$-lambda again verifies the guards and sets the status to :GOOD.  Then,
+; for the next 9,999,999 times obj0 is applied, it finds the obj1 line for obj0
+; using EQUAL.
+
+; The result is sum-doubles takes about 1.07 seconds longer the second time.
+; The last two time$ commands above show us that the 10 million EQUAL checks
+; take 1.10 seconds, while 10 million EQ tests take 0.04 seconds, which is
+; about the difference we're seeing in the times of the sum-doubles calls.
+
+; It would be nice if the lambda objects used by the *1* functions were EQ to
+; the lambda objects seen by verify-guards.  But this would be hard to achieve
+; because those in *1* functions are created rather far away from
+; verify-guards.  In particular, defuns-fn (via install-event-defuns which
+; calls install-event which calls put-cltl-command) leaves the original
+; untranslated user-level defun as the global val of 'cltl-command.  Then later
+; extend-world1 re-translates the defun, using a fresh call of
+; translate11-lambda-object to create a new copy.  The path is circuitous:
+; extend-world1 calls add-trip which recovers the 'cltl-command value and calls
+; oneify-cltl-code which calls oneify which calls translate11-lambda-object.
+
+; Our solution is to apply hons-copy so that the translated
 ; lambda object is unique.  Thus, we now call hons-equal-lite where we formerly
 ; called equal in fetch-cl-cache-line.  It may seem tempting to call eq there,
 ; but lambdas in raw Lisp function bodies are very unlikely to be honsed.  We
@@ -23157,7 +23262,7 @@
       (cond
        ((eq (cddr entry) :macrolet) ; X is a call of a macrolet-bound symbol
         (mv-let (erp expansion)
-          (macrolet-expand x (cadr entry) ctx wrld state-vars)          
+          (macrolet-expand x (cadr entry) ctx wrld state-vars)
           (cond (erp ; expansion is a msg
                  (trans-er+? cform x ctx "~@0" expansion))
                 (t (translate11 expansion ilk stobjs-out bindings known-stobjs

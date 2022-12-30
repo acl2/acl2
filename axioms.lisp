@@ -24823,8 +24823,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (mv-let (nullp temp state)
                     (read-acl2-oracle state) ; clears *next-acl2-oracle-value*
                     (declare (ignore nullp))
-                    (cond (temp (mv step-limit temp nil nil nil nil state))
-                          (t (mv step-limit nil x1 x2 x3 x4 state)))))))
+                    (cond
+                     (temp (mv step-limit temp "Time-limit" nil nil nil state))
+                     (t (mv step-limit nil x1 x2 x3 x4 state)))))))
 
 #+acl2-par
 (defmacro catch-time-limit5@par (form)
@@ -24860,7 +24861,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (mv-let (nullp temp)
                     (read-acl2-oracle@par state);clears *next-acl2-oracle-value*
                     (declare (ignore nullp))
-                    (cond (temp (mv step-limit temp nil nil nil nil))
+                    (cond (temp (mv step-limit temp "Time-limit" nil nil nil))
                           (t (mv step-limit nil x1 x2 x3 x4)))))))
 
 (defconst *interrupt-string*
@@ -27573,6 +27574,7 @@ Lisp definition."
      er
      er-let*
      er-progn
+     er-soft
      error-fms
      error-in-parallelism-mode
      error1

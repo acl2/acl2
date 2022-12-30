@@ -2529,7 +2529,7 @@
  (270 54 (:REWRITE O^-O-FIRST-EXPT-3))
  (263 16 (:REWRITE OCMP-LT))
  (218 109 (:TYPE-PRESCRIPTION O*-FINITE))
- (183 6 (:REWRITE |(b > 1)  =>  (a < b  <=>  a-1 < b-1|))
+ (183 6 (:REWRITE |(b > 1)  =>  (a < b  <=>  a-1 < b-1)|))
  (174 134 (:REWRITE O-FINP-O-RST))
  (159 12 (:REWRITE |0 < a  =  ~(a = 0)|))
  (150 12 (:REWRITE |~(a=0)  =>  (a < b  <=>  a-1 < b-1)|))

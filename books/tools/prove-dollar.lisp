@@ -4,8 +4,8 @@
 
 (in-package "ACL2")
 
-; (depends-on "build/rewrite-constant.certdep" :dir :system)
-; (depends-on "build/prove-spec-var.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
 
 (include-book "xdoc/top" :dir :system)
 
@@ -93,7 +93,9 @@
           (cond ((eq prover-error-output-off t)
 ; "Call depth" and  "Evaluation" are dealt with above the trans-eval call.
                  '(("Failure")
-                   ("Step-limit")))
+                   ("Step-limit")
+                   ("Time-limit")
+                   ("Theory")))
                 ((string-listp prover-error-output-off)
                  (pairlis$ prover-error-output-off nil))
                 (t (er hard ctx

@@ -113,9 +113,22 @@
           (mv |a| |b|)))
       (c::bitxor-sint-sint |a| |b|))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |l| (|x|)
+  (declare (xargs :guard (c::uintp |x|)
+                  :guard-hints (("Goal" :in-theory (enable c::assign)))))
+  (let ((|x| (if (c::boolean-from-sint
+                  (c::lt-uint-uint |x| (c::uint-dec-const 100)))
+                 (let ((|x| (c::assign
+                             (c::add-uint-uint |x| (c::uint-dec-const 1)))))
+                   |x|)
+               |x|)))
+    (c::mul-uint-uint (c::uint-dec-const 10) |x|)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| |g| |h| |i| |j| |k| :file-name "assign" :header t)
+(c::atc |f| |g| |h| |i| |j| |k| |l| :file-name "assign" :header t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

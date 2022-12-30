@@ -28,7 +28,7 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-; (depends-on "build/rewrite-constant.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
 
 (in-package "ACL2")
 (include-book "std/util/bstar" :dir :system)

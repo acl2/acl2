@@ -156,7 +156,7 @@
 ; eliminates tests that originally had a "bogus" match that has since been
 ; eliminated by Rule 1.  But it deserves thought.
 
-; (depends-on "build/rewrite-constant.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
 
 (in-package "ACL2")
 

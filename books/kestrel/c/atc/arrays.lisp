@@ -18,6 +18,8 @@
 
 (include-book "symbolic-execution-rules/integers")
 
+(local (include-book "std/lists/len" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-arrays
@@ -269,13 +271,16 @@
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        (define ,<type>-array-length ((array ,<type>-arrayp))
-         :returns (length natp :rule-classes (:rewrite :type-prescription))
+         :returns (length posp :rule-classes (:rewrite :type-prescription))
          :short ,(str::cat "Length of an array of "
                            type-string
                            ".")
          (len (,<type>-array->elements array))
          :hooks (:fix)
          ///
+
+         (more-returns
+          (length natp))
 
          (defruled ,<type>-array-length-alt-def
            (implies (,<type>-arrayp array)

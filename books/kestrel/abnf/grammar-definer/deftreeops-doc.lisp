@@ -40,6 +40,11 @@
       of these specialized tree matching predicates.")
 
     (xdoc::p
+     "In addition, this @('deftreeops') macro also generates
+      theorems about trees that satisfy
+      the generated grammar-specific matching predicates.")
+
+    (xdoc::p
      "We plan to extend this @('deftreeops') macro
       to generate additional grammar-specific operations on trees."))
 
@@ -82,7 +87,7 @@
        where @('lang') indicates the language that the grammar refers to.")
      (xdoc::p
       "In the rest of this documentation page,
-       let @('prefix') be this symbol.")))
+       let @('<prefix>') be this symbol.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,14 +104,14 @@
 
     (xdoc::desc
      (list
-      "@('prefix-matchp')"
-      "@('prefix-list-elem-matchp')"
-      "@('prefix-list-rep-matchp')"
-      "@('prefix-list-list-conc-matchp')"
-      "@('prefix-list-list-alt-matchp')")
+      "@('<prefix>-matchp')"
+      "@('<prefix>-list-elem-matchp')"
+      "@('<prefix>-list-rep-matchp')"
+      "@('<prefix>-list-list-conc-matchp')"
+      "@('<prefix>-list-list-alt-matchp')")
      (xdoc::p
       "Tree matching predicates, specialized to @('*grammar*').
-       The predicates are put in the same package as @('prefix').")
+       The predicates are put in the same package as @('<prefix>').")
      (xdoc::p
       "Each predicate takes two arguments:")
      (xdoc::ol
@@ -152,4 +157,35 @@
       (xdoc::seetopic "acl2::macro-aliases-table" "Macro aliases")
       " are also generated that link the macro names to the function names:
        this way, the predicates can be opened (in proofs)
-       via their macro names.")))))
+       via their macro names."))
+
+    (xdoc::desc
+     "@('<prefix>-nonleaf-when-<rulename>')"
+     (xdoc::p
+      "For each rule name defined in the grammar,
+       a theorem saying that a tree that matches the rule name
+       is a non-leaf tree."))
+
+    (xdoc::desc
+     "@('<prefix>-rulename-when-<rulename>')"
+     (xdoc::p
+      "For each rule name defined in the grammar,
+       a theorem saying that a tree that matches the rule name
+       has exactly that rule name."))
+
+    (xdoc::desc
+     "@('<prefix>-branches-match-alt-when-<rulename>')"
+     (xdoc::p
+      "For each rule name defined in the grammar,
+       a theorem saying that if a tree matches the rule name
+       then its branches match the alternation that defines the rule name."))
+
+    (xdoc::desc
+     "@('<prefix>-alternatives-when-<rulename>')"
+     (xdoc::p
+      "For each rule name defined in the grammar,
+       a theorem saying that
+       if a list of list of trees matches
+       the alternation that defines the rule name
+       then the list of list of trees matches
+       one of the alternatives (each of which is a concatenation.")))))

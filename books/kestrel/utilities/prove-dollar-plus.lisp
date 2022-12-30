@@ -17,7 +17,7 @@
 (include-book "prove-dollar-nice")
 
 ;; Returns (mv erp provedp failure-info state), where failure-info may be
-;; :step-limit-reached or :unknown.
+;; :step-limit-reached, :time-limit-reached, or :unknown.
 ;; TODO: How to determine if the time-limit was reached?
 (defun prove$+-fn (term ; untranslated (todo: optimize if known to be translated?)
                    hints
@@ -57,11 +57,14 @@
               ;; negative prover-steps means reached the step limit
               (progn$ (and print (cw "Failed to prove (step limit of ~x0 reached).~%" step-limit))
                       (mv nil nil :step-limit-reached state))
-            (progn$ (and print (cw "Failed to prove (unknown reason).~%" prover-steps))
-                    (mv nil nil :unknown state))))))))
+            (if (member-eq 'time-limit-reached (get-event-data 'abort-causes state))
+                (progn$ (and print (cw "Failed to prove (time limit of ~x0 reached).~%" time-limit))
+                        (mv nil nil :time-limit-reached state))
+              (progn$ (and print (cw "Failed to prove (unknown reason).~%" prover-steps))
+                      (mv nil nil :unknown state)))))))))
 
 ;; Returns (mv erp provedp failure-info state), where failure-info may be
-;; :step-limit-reached or :unknown.
+;; :step-limit-reached, :time-limit-reached, or :unknown.
 (defmacro prove$+ (term
                    &key
                    (hints 'nil)

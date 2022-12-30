@@ -11,22 +11,18 @@
 (in-package "ABNF")
 
 (include-book "../grammar-parser/executable")
+(include-book "../grammar-printer/executable")
 (include-book "../notation/syntax-abstraction")
 
-(include-book "kestrel/error-checking/ensure-value-is-constant-name" :dir :system)
-(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
-(include-book "std/lists/len" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "kestrel/std/system/constant-namep" :dir :system)
 (include-book "kestrel/std/system/constant-value" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
-(include-book "kestrel/std/util/tuple" :dir :system)
+(include-book "kestrel/std/util/error-value-tuples" :dir :system)
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel alistp-when-symbol-alistp
-  (implies (symbol-alistp x)
-           (alistp x)))
+(local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-alists/symbol-alistp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,31 +95,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-process-grammar (grammar (ctx ctxp) state)
-  :returns (mv erp (grammar acl2::symbolp) state)
+(define deftreeops-process-grammar (grammar (wrld plist-worldp))
+  :returns (mv erp
+               (grammar acl2::symbolp)
+               (rules rulelistp))
   :short "Process the @('*grammar*') input."
-  (b* (((er &) (ensure-value-is-constant-name$ grammar
-                                               "The *GRAMMAR* input"
-                                               t
-                                               nil))
-       (rules (constant-value grammar (w state)))
+  (b* (((reterr) nil nil)
+       ((unless (constant-namep grammar wrld))
+        (reterr (msg "The *GRAMMAR* input ~x0 must be the name of a constant."
+                     grammar)))
+       (rules (constant-value grammar wrld))
        ((unless (and (rulelistp rules)
                      (consp rules)))
-        (er-soft+ ctx t nil
-                  "The *GRAMMAR* input is the name of a constant, ~
-                   but its value ~x0 is not a non-empty ABNF grammar."
-                  rules)))
-    (value grammar))
-  :prepwork ((local (in-theory (enable acl2::ensure-value-is-constant-name)))))
+        (reterr (msg "The *GRAMMAR* input is the name of a constant, ~
+                      but its value ~x0 is not a non-empty ABNF grammar."
+                     rules))))
+    (retok grammar rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-process-prefix (prefix (ctx ctxp) state)
-  :returns (mv erp (prefix acl2::symbolp) state)
+(define deftreeops-process-prefix (prefix)
+  :returns (mv erp (prefix acl2::symbolp))
   :short "Process the @(':prefix') input."
-  (b* (((er &) (ensure-value-is-symbol$ prefix "The :PREFIX input" t nil)))
-    (value prefix))
-  :prepwork ((local (in-theory (enable acl2::ensure-value-is-symbol)))))
+  (b* (((reterr) nil)
+       ((unless (acl2::symbolp prefix))
+        (reterr (msg "The :PREFIX input ~x0 must be a symbol." prefix))))
+    (retok prefix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,36 +133,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-process-inputs ((args true-listp) (ctx ctxp) state)
+(define deftreeops-process-inputs ((args true-listp) (wrld plist-worldp))
   :returns (mv erp
-               (val (std::tuple (grammar acl2::symbolp)
-                                (prefix acl2::symbolp)
-                                val))
-               state)
+               (grammar acl2::symbolp)
+               (rules rulelistp)
+               (prefix acl2::symbolp))
   :short "Process all the inputs."
-  (b* (((fun (irr)) (list nil nil))
+  (b* (((reterr) nil nil nil)
        ((mv erp grammar options)
         (partition-rest-and-keyword-args args *deftreeops-allowed-options*))
        ((when (or erp
                   (not (consp grammar))
                   (not (endp (cdr grammar)))))
-        (er-soft+ ctx t (irr)
-                  "The inputs must be the constant name for the grammar ~
-                   followed by the options ~&0."
-                  *deftreeops-allowed-options*))
+        (reterr (msg "The inputs must be the constant name for the grammar ~
+                      followed by the options ~&0."
+                     *deftreeops-allowed-options*)))
        (grammar (car grammar))
-       ((er grammar :iferr (irr))
-        (deftreeops-process-grammar grammar ctx state))
+       ((erp grammar rules) (deftreeops-process-grammar grammar wrld))
        (prefix-option (assoc-eq :prefix options))
        ((unless (consp prefix-option))
-        (er-soft+ ctx t (irr) "The :PREFIX input must be supplied."))
+        (reterr (msg "The :PREFIX input must be supplied.")))
        (prefix (cdr prefix-option))
-       ((er prefix :iferr (irr))
-        (deftreeops-process-prefix prefix ctx state)))
-    (value (list grammar prefix)))
-  ///
-  (more-returns
-   (val true-listp :rule-classes :type-prescription)))
+       ((erp prefix) (deftreeops-process-prefix prefix)))
+    (retok grammar rules prefix))
+  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -326,19 +317,155 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define deftreeops-gen-rulename-thms ((rules rulelistp)
+                                      (prefix acl2::symbolp))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the theorems about
+          the rule names defined by the rules of the grammar."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate theorems for each rule name, not for each rule.
+     Since in general a grammar may have more than one rule
+     with the same rule name on the left
+     (even in a "
+    (xdoc::seetopic "well-formedness" "well-formed")
+    " grammar, there may be incremental rules),
+     we keep track of the rule names encountered so far,
+     to avoid duplicates.
+     We generate the theorems in the order in which
+     the rule names first appear on the left of rules."))
+  (deftreeops-gen-rulename-thms-aux rules nil prefix)
+
+  :prepwork
+  ((define deftreeops-gen-rulename-thms-aux ((rules rulelistp)
+                                             (done rulename-listp)
+                                             (prefix acl2::symbolp))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp rules)) nil)
+          (rule (car rules))
+          (rulename (rule->name rule))
+          ((when (member-equal rulename done))
+           (deftreeops-gen-rulename-thms-aux (cdr rules) done prefix))
+          (cst-matchp
+           (add-suffix-to-fn prefix "-MATCHP"))
+          (cst-list-list-alt-matchp
+           (add-suffix-to-fn prefix "-LIST-LIST-ALT-MATCHP"))
+          (cst-list-list-conc-matchp
+           (add-suffix-to-fn prefix "-LIST-LIST-CONC-MATCHP"))
+          (rulename-string (rulename->get rulename))
+          (rulename-upstring (str::upcase-string rulename-string))
+          (cst-nonleaf-when-rulename
+           (packn-pos (list prefix '-nonleaf-when- rulename-upstring)
+                      prefix))
+          (cst-rulename-when-rulename
+           (packn-pos (list prefix '-rulename-when- rulename-upstring)
+                      prefix))
+          (cst-branches-match-alt-when-rulename
+           (packn-pos (list prefix '-branches-match-alt-when- rulename-upstring)
+                      prefix))
+          (cst-alternatives-when-rulename
+           (packn-pos (list prefix '-alternatives-when- rulename-upstring)
+                      prefix))
+          (alt (lookup-rulename rulename rules))
+          (alt-string (pretty-print-alternation alt))
+          (events
+           `((defruled ,cst-nonleaf-when-rulename
+               (implies (,cst-matchp cst ,rulename-string)
+                        (equal (tree-kind cst) :nonleaf))
+               :in-theory '(,cst-matchp
+                            tree-nonleaf-when-match-rulename/group/option
+                            (:e element-kind)
+                            (:e member-equal)))
+             (defruled ,cst-rulename-when-rulename
+               (implies (,cst-matchp cst ,rulename-string)
+                        (equal (tree-nonleaf->rulename? cst)
+                               (rulename ,rulename-string)))
+               :in-theory '(,cst-matchp
+                            tree-rulename-when-match-rulename
+                            (:e element-kind)
+                            (:e element-rulename->get)
+                            (:e rulename)))
+             (defruled ,cst-branches-match-alt-when-rulename
+               (implies (,cst-matchp cst ,rulename-string)
+                        (,cst-list-list-alt-matchp
+                         (tree-nonleaf->branches cst) ,alt-string))
+               :in-theory '(,cst-matchp
+                            ,cst-list-list-alt-matchp
+                            tree-branches-match-alt-when-match-rulename
+                            tree-terminatedp
+                            (:e element-kind)
+                            (:e element-rulename->get)
+                            (:e lookup-rulename))
+               :use ,cst-nonleaf-when-rulename)
+             ,@(and
+                ;; We temporarily avoid generating this theorem
+                ;; if there are more than 10 alternatives,
+                ;; because it may be slow to prove.
+                ;; We plan to find more scalable hints for this theorem,
+                ;; so we can remove this limitation.
+                (<= (len alt) 10)
+                `((defruled ,cst-alternatives-when-rulename
+                    (implies (,cst-list-list-alt-matchp cstss ,alt-string)
+                             (or ,@(deftreeops-gen-rulename-thms-aux-aux
+                                     alt cst-list-list-conc-matchp)))
+                    :do-not '(preprocess)
+                    :in-theory
+                    '(,cst-list-list-alt-matchp
+                      ,cst-list-list-conc-matchp
+                      tree-list-list-match-alternation-p-when-atom-alternation
+                      tree-list-list-match-alternation-p-of-cons-alternation
+                      tree-list-list-match-concatenation-p-of-cons-concatenation))))))
+          (more-events (deftreeops-gen-rulename-thms-aux
+                         (cdr rules) (cons rulename done) prefix)))
+       (append events more-events))
+     :guard-hints (("Goal" :in-theory (disable add-suffix-to-fn)))
+
+     :prepwork
+     ((define deftreeops-gen-rulename-thms-aux-aux
+        ((alt alternationp) (cst-list-list-conc-matchp acl2::symbolp))
+        :returns (disjuncts true-listp)
+        :parents nil
+        (cond ((endp alt) nil)
+              (t (cons `(,cst-list-list-conc-matchp
+                         cstss
+                         ,(pretty-print-concatenation (car alt)))
+                       (deftreeops-gen-rulename-thms-aux-aux
+                         (cdr alt) cst-list-list-conc-matchp)))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define deftreeops-gen-everything ((grammar acl2::symbolp)
+                                   (rules rulelistp)
                                    (prefix acl2::symbolp))
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
   (b* ((matchers (deftreeops-gen-matchers grammar prefix))
+       (rulename-thms (deftreeops-gen-rulename-thms rules prefix))
        (event `(defsection ,(add-suffix grammar "-TREE-OPERATIONS")
                  :parents (,grammar)
                  :short ,(str::cat
                           "Tree operations specialized to @(tsee "
                           (str::downcase-string (symbol-name grammar))
                           ").")
-                 ,@matchers)))
+                 ,@matchers
+                 ,@rulename-thms)))
     event))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-process-inputs-and-gen-everything ((args true-listp)
+                                                      (call pseudo-event-formp)
+                                                      (wrld plist-worldp))
+  :returns (mv erp (event pseudo-event-formp))
+  :parents (deftreeops-implementation)
+  :short "Process the inputs and generate the events."
+  (b* (((reterr) '(_))
+       ((when (deftreeops-table-lookup call wrld))
+        (retok '(value-triple :redundant)))
+       ((erp grammar rules prefix) (deftreeops-process-inputs args wrld)))
+    (retok (deftreeops-gen-everything grammar rules prefix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -348,17 +475,16 @@
                        state)
   :returns (mv erp (event pseudo-event-formp) state)
   :parents (deftreeops-implementation)
-  :short "Process the inputs and generate the events."
-  (b* (((when (deftreeops-table-lookup call (w state)))
-        (value '(value-triple :redundant)))
-       ((er (list grammar prefix) :iferr '(_))
-        (deftreeops-process-inputs args ctx state)))
-    (value (deftreeops-gen-everything grammar prefix))))
+  :short "Event expansion of @(tsee deftreeops)."
+  (b* (((mv erp event)
+        (deftreeops-process-inputs-and-gen-everything args call (w state)))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
+    (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection deftreeops-macro-definition
   :parents (deftreeops-implementation)
-  :short "Definition of the @(tsee deftreeops) macro."
+  :short "Definition of @(tsee deftreeops)."
   (defmacro deftreeops (&whole call &rest args)
     `(make-event (deftreeops-fn ',args ',call 'deftreeops state))))

@@ -56,8 +56,8 @@
 ; To certify this book:
 ; (certify-book "expander").
 
-; (depends-on "build/rewrite-constant.certdep" :dir :system)
-; (depends-on "build/prove-spec-var.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
 
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)

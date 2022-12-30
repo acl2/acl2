@@ -12,6 +12,25 @@
 
 (program)
 
+;; Look inside certain wrappers:
+(defun unwrap-cmd-for-ubi (cmd)
+  (if (not (consp cmd))
+      cmd
+    (if (eq 'local (car cmd)) ; (local <cmd>)
+        (unwrap-cmd-for-ubi (cadr cmd))
+      (if (eq 'with-output (car cmd)) ; (with-output ... <cmd>)
+          (unwrap-cmd-for-ubi (car (last cmd)))
+        (if (and (eq 'progn (car cmd)) ; (progn <cmd> (value-triple :invisible))
+                 (equal (cddr cmd) '((value-triple :invisible))))
+            (unwrap-cmd-for-ubi (cadr cmd))
+          cmd)))))
+
+(defun boot-strap-command-p (cmd)
+  (let ((cmd (unwrap-cmd-for-ubi cmd)))
+    (and (consp cmd)
+         (member-eq (car cmd) '(exit-boot-strap-mode
+                                reset-prehistory)))))
+
 (defun cmds-back-to-boot-strap (wrld acc)
 
 ; We accumulate into acc the commands back to, but not including the boot-strap
@@ -24,9 +43,7 @@
         ((and (eq (caar wrld) 'command-landmark)
               (eq (cadar wrld) 'global-value))
          (let ((cmd (access-command-tuple-form (cddar wrld))))
-           (cond ((and (consp cmd)
-                       (member-eq (car cmd) '(exit-boot-strap-mode
-                                              reset-prehistory)))
+           (cond ((boot-strap-command-p cmd)
                   acc)
                  (t (cmds-back-to-boot-strap (cdr wrld) (cons cmd acc))))))
         (t (cmds-back-to-boot-strap (cdr wrld) acc))))
@@ -42,16 +59,6 @@
     add-include-book-dir
     add-include-book-dir!
     set-in-theory-redundant-okp))
-
-;; Look inside certain wrappers when deciding to keep a command:
-(defun unwrap-cmd-for-ubi (cmd)
-  (if (not (consp cmd))
-      cmd
-    (if (eq 'local (car cmd))
-        (cadr cmd)
-      (if (eq 'with-output (car cmd))
-          (car (last cmd))
-        cmd))))
 
 (defun initial-keeper-cmds-length (cmds keeper-cmds acc)
   (cond ((endp cmds) acc)

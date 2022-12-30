@@ -13,7 +13,7 @@
 ;; See also suppress-invariant-risk.lisp
 ;; See also books/std/system/invariant-risk.lisp.
 
-(include-book "kestrel/utilities/world" :dir :system) ; todo: reduce, for all-functions-in-world
+(include-book "kestrel/world-light/all-functions-in-world" :dir :system)
 
 ;; Keeps the elements of FNS that have invariant-risk.
 (defun filter-invariant-risk-functions (fns wrld)

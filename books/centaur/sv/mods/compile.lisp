@@ -1027,6 +1027,8 @@ svex-assigns-compose)).</li>
                   (svex-alist-fix acc))))
     (svar-map-truncate-by-var-decls (cdr x) var-decls acc))
   ///
+  (local ; Matt K. mod 12/2022 to avoid rewrite stack overflow with latest useless-runes
+   (in-theory (disable svarlist-addr-p-badguy-not-member-when-addr-p)))
   (defret vars-of-<fn>
     (implies (and (svarlist-addr-p (alist-vals (svar-map-fix x)))
                   (svarlist-addr-p (svex-alist-vars acc)))
@@ -1148,7 +1150,7 @@ svex-assigns-compose)).</li>
     (equal (svexlist-vars (svex-alist-vals x))
            (svex-alist-vars x))
     :hints(("Goal" :in-theory (enable svex-alist-vals svex-alist-vars svexlist-vars))))
-  
+
   (verify-guards svex-normalize-assigns
     :guard-debug t
     :hints (("goal" :do-not-induct t
@@ -1162,11 +1164,11 @@ svex-assigns-compose)).</li>
   (local (defthm svex-alist-vars-of-cdr-last
            (equal (svex-alist-vars (cdr (last x))) nil)
            :hints(("Goal" :in-theory (enable last svex-alist-vars)))))
-  
+
   (local (defthm vars-of-fast-alist-clean
            (implies (svarlist-addr-p (svex-alist-vars x))
                     (svarlist-addr-p (svex-alist-vars (fast-alist-clean x))))))
-  
+
   (local (in-theory (disable fast-alist-clean)))
 
   (defret vars-of-svex-normalize-assigns
@@ -1186,7 +1188,7 @@ svex-assigns-compose)).</li>
            (implies (svarlist-addr-p (svex-alist-keys x))
                     (not (svex-lookup (svarlist-addr-p-badguy y) x)))
            :hints(("Goal" :in-theory (enable svex-lookup svex-alist-keys svarlist-addr-p)))))
-  
+
   (local (defthm svarlist-addr-p-keys-of-fast-alist-clean
            (implies (svarlist-addr-p (svex-alist-keys x))
                     (svarlist-addr-p (svex-alist-keys (fast-alist-clean x))))))
@@ -1196,16 +1198,16 @@ svex-assigns-compose)).</li>
                     (no-duplicatesp-equal (svex-alist-keys (fast-alist-fork x acc))))
            :hints(("Goal" :in-theory (enable svex-alist-keys
                                              svex-lookup)))))
-  
+
   (local (defthm no-duplicate-keys-of-fast-alist-clean
            (no-duplicatesp-equal (svex-alist-keys (fast-alist-clean x)))
            :hints(("Goal" :in-theory (enable svex-alist-keys
                                              fast-alist-clean)))))
-  
+
   (local (defthm no-duplicate-keys-of-fast-alist-clean
            (no-duplicatesp-equal (svex-alist-keys (fast-alist-clean x)))
            :hints(("Goal" :in-theory (enable svex-alist-keys)))))
-  
+
   (defret keys-of-svex-normalize-assigns
     (implies (svarlist-addr-p (aliases-vars aliases))
              (svarlist-addr-p (svex-alist-keys res-assigns)))
@@ -1264,7 +1266,7 @@ svex-assigns-compose)).</li>
 ;;                  ;; Bozo -- convert this to a zero-extend when possible?
 ;;                  (make-svex-call
 ;;                   :fn 'bit?
-;;                   :args (list (svex-quote (2vec (sparseint-val (svex-mask-lookup (make-svex-var :name key) masks)))) 
+;;                   :args (list (svex-quote (2vec (sparseint-val (svex-mask-lookup (make-svex-var :name key) masks))))
 ;;                               ;; care
 ;;                               (make-svex-var :name val)
 ;;                               ;; don't-care
