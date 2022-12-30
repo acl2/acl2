@@ -60,6 +60,7 @@
      and its type is @('type')."))
   ((expr expr)
    (type type)
+   (term pseudo-termp)
    (events pseudo-event-form-list)
    (thm-name symbol)
    (thm-index pos)
@@ -74,6 +75,7 @@
   :type pexpr-goutp
   :body (make-pexpr-gout :expr (irr-expr)
                          :type (irr-type)
+                         :term nil
                          :events nil
                          :thm-name nil
                          :thm-index 1
@@ -112,6 +114,7 @@
      because these are boolean expressions,
      so in a way the type is known."))
   ((expr expr)
+   (term pseudo-termp)
    (events pseudo-event-form-list)
    (thm-name symbol)
    (thm-index pos)
@@ -125,6 +128,7 @@
   :short "An irrelevant output for C boolean expression generation."
   :type bexpr-goutp
   :body (make-bexpr-gout :expr (irr-expr)
+                         :term nil
                          :events nil
                          :thm-name nil
                          :thm-index 1
@@ -156,6 +160,7 @@
         (make-pexpr-gout
          :expr expr
          :type type
+         :term var
          :events nil
          :thm-name nil
          :thm-index gin.thm-index
@@ -187,6 +192,7 @@
                                        state)))
     (make-pexpr-gout :expr expr
                      :type type
+                     :term var
                      :events (list thm-event)
                      :thm-name thm-name
                      :thm-index thm-index
@@ -227,6 +233,7 @@
        ((when (not gin.proofs))
         (make-pexpr-gout :expr expr
                          :type type
+                         :term term
                          :events nil
                          :thm-name nil
                          :thm-index gin.thm-index
@@ -267,6 +274,7 @@
                                        state)))
     (make-pexpr-gout :expr expr
                      :type type
+                     :term term
                      :events (list thm-event)
                      :thm-name thm-name
                      :thm-index thm-index
@@ -316,6 +324,7 @@
         (retok
          (make-pexpr-gout :expr expr
                           :type out-type
+                          :term term
                           :events arg-events
                           :thm-name nil
                           :thm-index gin.thm-index
@@ -396,6 +405,7 @@
     (retok
      (make-pexpr-gout :expr expr
                       :type out-type
+                      :term term
                       :events (append arg-events
                                       okp-lemma-event?
                                       (list thm-event))
@@ -452,6 +462,7 @@
         (retok
          (make-pexpr-gout :expr expr
                           :type out-type
+                          :term term
                           :events (append arg1-events arg2-events)
                           :thm-name nil
                           :thm-index gin.thm-index
@@ -552,6 +563,7 @@
     (retok
      (make-pexpr-gout :expr expr
                       :type out-type
+                      :term term
                       :events (append arg1-events
                                       arg2-events
                                       okp-lemma-event?
@@ -601,6 +613,7 @@
         (retok (make-pexpr-gout
                 :expr expr
                 :type out-type
+                :term term
                 :events arg-events
                 :thm-name nil
                 :thm-index gin.thm-index
@@ -693,6 +706,7 @@
     (retok
      (make-pexpr-gout :expr expr
                       :type out-type
+                      :term term
                       :events (append arg-events
                                       okp-lemma-event?
                                       (list thm-event))
@@ -755,6 +769,7 @@
        ((when (not gin.proofs))
         (retok
          (make-bexpr-gout :expr expr
+                          :term term
                           :events arg-events
                           :thm-name nil
                           :thm-index gin.thm-index
@@ -794,6 +809,7 @@
                                                 :hints hints
                                                 :enable nil)))
     (retok (make-bexpr-gout :expr expr
+                            :term term
                             :events (append arg-events
                                             (list thm-event))
                             :thm-name thm-name
@@ -958,6 +974,7 @@
                     :expr (make-expr-arrsub :arr arr.expr
                                             :sub sub.expr)
                     :type out-type
+                    :term term
                     :events (append arr.events sub.events)
                     :thm-name nil
                     :thm-index sub.thm-index
@@ -973,6 +990,7 @@
                            :expr (make-expr-member :target arg.expr
                                                    :name member)
                            :type mem-type
+                           :term term
                            :events arg.events
                            :thm-name nil
                            :thm-index arg.thm-index
@@ -983,6 +1001,7 @@
                            :expr (make-expr-memberp :target arg.expr
                                                     :name member)
                            :type mem-type
+                           :term term
                            :events arg.events
                            :thm-name nil
                            :thm-index arg.thm-index
@@ -1035,6 +1054,7 @@
                                         :name member)
                                   :sub index.expr)
                            :type elem-type
+                           :term term
                            :events (append index.events struct.events)
                            :thm-name nil
                            :thm-index struct.thm-index
@@ -1048,6 +1068,7 @@
                                         :name member)
                                   :sub index.expr)
                            :type elem-type
+                           :term term
                            :events (append index.events struct.events)
                            :thm-name nil
                            :thm-index struct.thm-index
@@ -1084,6 +1105,7 @@
                                    state)))
             (retok (make-pexpr-gout :expr arg.expr
                                     :type (type-sint)
+                                    :term term
                                     :events arg.events
                                     :thm-name nil
                                     :thm-index arg.thm-index
@@ -1134,6 +1156,7 @@
                                     :then then.expr
                                     :else else.expr)
               :type then.type
+              :term term
               :events (append test.events then.events else.events)
               :thm-name nil
               :thm-index else.thm-index
@@ -1194,6 +1217,7 @@
             (retok (make-bexpr-gout
                     :expr (make-expr-unary :op (unop-lognot)
                                            :arg arg.expr)
+                    :term term
                     :events arg.events
                     :thm-name nil
                     :thm-index arg.thm-index
@@ -1215,6 +1239,7 @@
                     :expr (make-expr-binary :op (binop-logand)
                                             :arg1 arg1.expr
                                             :arg2 arg2.expr)
+                    :term term
                     :events (append arg1.events arg2.events)
                     :thm-name nil
                     :thm-index arg2.thm-index
@@ -1236,6 +1261,7 @@
                     :expr (make-expr-binary :op (binop-logor)
                                             :arg1 arg1.expr
                                             :arg2 arg2.expr)
+                    :term term
                     :events (append arg1.events arg2.events)
                     :thm-name nil
                     :thm-index arg2.thm-index
@@ -1314,6 +1340,7 @@
      in the same order."))
   ((exprs expr-list)
    (types type-list)
+   (terms pseudo-term-listp)
    (events pseudo-event-form-list)
    (thm-name symbol)
    (thm-index pos)
@@ -1328,6 +1355,7 @@
   :type pexprs-goutp
   :body (make-pexprs-gout :exprs nil
                           :types nil
+                          :terms nil
                           :events nil
                           :thm-name nil
                           :thm-index 1
@@ -1352,6 +1380,7 @@
        ((when (endp terms))
         (retok (make-pexprs-gout :exprs nil
                                  :types nil
+                                 :terms nil
                                  :events nil
                                  :thm-name nil
                                  :thm-index gin.thm-index
@@ -1381,6 +1410,7 @@
     (retok (make-pexprs-gout
             :exprs (cons first.expr rest.exprs)
             :types (cons first.type rest.types)
+            :terms terms
             :events (append first.events rest.events)
             :thm-name nil
             :thm-index rest.thm-index
@@ -1428,6 +1458,7 @@
      the execution of the expression terminates."))
   ((expr exprp)
    (type typep)
+   (term pseudo-termp)
    (affect symbol-listp)
    (limit pseudo-term)
    (events pseudo-event-form-list)
@@ -1444,6 +1475,7 @@
   :type expr-goutp
   :body (make-expr-gout :expr (irr-expr)
                         :type (irr-type)
+                        :term nil
                         :affect nil
                         :limit nil
                         :events nil
@@ -1495,6 +1527,7 @@
        ((when (not pure.proofs))
         (retok (make-expr-gout :expr pure.expr
                                :type pure.type
+                               :term term
                                :affect nil
                                :limit bound
                                :events pure.events
@@ -1532,6 +1565,7 @@
                                             :enable nil)))
     (retok (make-expr-gout :expr pure.expr
                            :type pure.type
+                           :term term
                            :limit bound
                            :events (append pure.events (list event))
                            :thm-name thm-name
@@ -1620,6 +1654,7 @@
                                         :name (symbol-name called-fn))
                                   :args args.exprs)
             :type out-type
+            :term term
             :affect affect
             :limit `(binary-+ '2 ,limit)
             :events args.events
