@@ -38,7 +38,7 @@
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
-(include-book "kestrel/bv-lists/nth2" :dir :system) ; todo: drop?
+;(include-book "kestrel/bv-lists/nth2" :dir :system) ; todo: drop?
 ;(include-book "kestrel/bv-lists/list-patterns" :dir :system) ; for getbit-is-always-0 and getbit-is-always-1
 (include-book "kestrel/bv-lists/array-patterns" :dir :system) ; for every-nth
 (include-book "kestrel/lists-light/add-to-end" :dir :system)
@@ -530,7 +530,7 @@
                          (sbvlt sbvlt arg1 (ifix arg2) (ifix arg3)) ;probably okay - may not be needed if guards for the defining functions were better
                          (sbvle sbvle arg1 arg2 arg3)
                          (s s arg1 arg2 arg3) ;unguarded
-                         (nth2 nth2 arg1 arg2 arg3)
+;;                         (nth2 nth2 arg1 arg2 arg3)
                          (myif myif arg1 arg2 arg3)     ;unguarded
                          (boolif boolif arg1 arg2 arg3) ;unguarded
                          (array-elem-2d array-elem-2d arg1 arg2 arg3) ;drop?

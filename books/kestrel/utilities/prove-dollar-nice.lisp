@@ -61,7 +61,8 @@
                        step-limit
                        state)
   (declare (xargs :guard (and (booleanp otf-flg)
-                              (or (natp time-limit)
+                              (or (and (rationalp time-limit)
+                                       (<= 0 time-limit))
                                   (null time-limit))
                               (or (natp step-limit)
                                   (null step-limit)))

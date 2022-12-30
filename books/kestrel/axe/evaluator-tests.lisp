@@ -941,9 +941,9 @@
                          (IF
                           (EQ 'MYIF FN)
                           (MV T (MYIF ARG1 ARG2 ARG3))
-                          (IF
-                           (EQ 'NTH2 FN)
-                           (MV T (NTH2 ARG1 ARG2 ARG3))
+                          ;; (IF
+                          ;;  (EQ 'NTH2 FN)
+                          ;;  (MV T (NTH2 ARG1 ARG2 ARG3))
                            (IF
                             (EQ 'S FN)
                             (MV T (S ARG1 ARG2 ARG3))
@@ -1097,7 +1097,8 @@
                                                         ARG3))
                                                       (MV
                                                        NIL
-                                                       NIL))))))))))))))))))))))))))))))))))))))))
+                                                       NIL)))))))))))))))))))))))))))) ;)
+                           )))))))))))
                (LET
                 ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
                 (IF
@@ -2369,9 +2370,9 @@
                                     (IF
                                      (EQ 'MYIF FN)
                                      (MV T (MYIF ARG1 ARG2 ARG3))
-                                     (IF
-                                      (EQ 'NTH2 FN)
-                                      (MV T (NTH2 ARG1 ARG2 ARG3))
+                                     ;; (IF
+                                     ;;  (EQ 'NTH2 FN)
+                                     ;;  (MV T (NTH2 ARG1 ARG2 ARG3))
                                       (IF
                                        (EQ 'S FN)
                                        (MV T (S ARG1 ARG2 ARG3))
@@ -2523,7 +2524,9 @@
                                                                     ARG3))
                                                                  (MV
                                                                   NIL
-                                                                  NIL))))))))))))))))))))))))))))))))))))))))
+                                                                  NIL))))))))))))))))))))))))))))
+;)
+                                      )))))))))))
                           (LET
                            ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
                            (IF
