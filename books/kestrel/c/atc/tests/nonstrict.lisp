@@ -77,7 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |notandor| (|x|)
+(defun |andor| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
   (c::sint-from-boolean
    (and (or (and (c::boolean-from-sint
@@ -92,12 +92,12 @@
                  (c::boolean-from-sint
                   (c::le-sint-sint |x|
                                    (c::sint-dec-const 200)))))
-        (not (and (c::boolean-from-sint
-                   (c::le-sint-sint (c::sint-dec-const 4)
-                                    |x|))
-                  (c::boolean-from-sint
-                   (c::le-sint-sint |x|
-                                    (c::sint-dec-const 6))))))))
+        (and (c::boolean-from-sint
+              (c::le-sint-sint (c::sint-dec-const 4)
+                               |x|))
+             (c::boolean-from-sint
+              (c::le-sint-sint |x|
+                               (c::sint-dec-const 6)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -107,6 +107,6 @@
         |ifor|
         |condand|
         |condor|
-        |notandor|
+        |andor|
         :file-name "nonstrict"
         :header t)

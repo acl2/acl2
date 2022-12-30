@@ -1165,7 +1165,7 @@
        Based on its form, we dispatch to different code,
        after recursively processing sub-expressions.")
      (xdoc::p
-      "If the term is a call of @(tsee not), @(tsee and), or @(tsee or),
+      "If the term is a call of @(tsee and) or @(tsee or),
        we recursively translate the arguments,
        which must be an expression term returning a boolean,
        and we construct a logical expression
@@ -1187,18 +1187,6 @@
        See  @(tsee atc-gen-expr-pure) for an explanation."))
     (b* (((reterr) (irr-bexpr-gout))
          ((bexpr-gin gin) gin)
-         ((mv okp arg-term) (fty-check-not-call term))
-         ((when okp)
-          (b* (((erp (bexpr-gout arg))
-                (atc-gen-expr-bool arg-term gin state)))
-            (retok (make-bexpr-gout
-                    :expr (make-expr-unary :op (unop-lognot)
-                                           :arg arg.expr)
-                    :events arg.events
-                    :thm-name nil
-                    :thm-index arg.thm-index
-                    :names-to-avoid arg.names-to-avoid
-                    :proofs nil))))
          ((mv okp arg1-term arg2-term) (fty-check-and-call term))
          ((when okp)
           (b* (((erp (bexpr-gout arg1))

@@ -1113,15 +1113,13 @@
        This converts a pure expression term returning a C type
        to an expression term returning boolean.")
      (xdoc::li
-      "A call of one of the following functions and macros
+      "A call of one of the following macros
        on expression terms for @('fn') returning booleans:"
       (xdoc::ul
-       (xdoc::li "@(tsee not)")
        (xdoc::li "@(tsee and)")
        (xdoc::li "@(tsee or)"))
-      "The first one is a function, while the other two are macros.
-       This represents the corresponding C logical operator
-       (negation @('!'), conjunction @('&&'), disjunction @('||'));
+      "This represents the corresponding C logical operator
+       conjunction @('&&') or disjunction @('||'));
        conjunctions and disjunctions are represented non-strictly."))
 
     (xdoc::p
