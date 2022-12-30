@@ -1,3 +1,4 @@
+; Originally part of...
 ; XDOC Documentation System for ACL2
 ; Copyright (C) 2009-2015 Centaur Technology
 ;
@@ -28,14 +29,11 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "XDOC")
+; In 2022, moved from books/xdoc/full-escape-symbol.lisp
+; and from XDOC to ACL2 package, and fixed escaping of backslash.
+; Eric McCarthy (mccarthy@kestrel.edu).
 
-(include-book "misc/symbol-print-full-escapes" :dir :system)
-
-#||
-This code has been moved to books/misc/symbol-print-full-escapes.lisp
-at the same time the code was fixed to escape backslashes in the string.
-- Eric McCarthy (mccarthy@kestrel.edu)
+(in-package "ACL2")
 
 (defun bar-escape-chars (x)
   (declare (xargs :guard (character-listp x)))
@@ -61,12 +59,13 @@ at the same time the code was fixed to escape backslashes in the string.
       (coerce (bar-escape-chars (coerce x 'list)) 'string)
     x))
 
-(defun full-escape-symbol (x)
-  (declare (type symbol x))
-  (concatenate 'string "|" (bar-escape-string (symbol-package-name x)) "|::|"
-               (bar-escape-string (symbol-name x)) "|"))
-||#
+(defun bar-escape-name (x)
+  (declare (type string x))
+  (concatenate 'string "|" (bar-escape-string x) "|"))
 
 (defun full-escape-symbol (x)
   (declare (type symbol x))
-  (acl2::full-escape-symbol x))
+  (concatenate 'string
+               (bar-escape-name (symbol-package-name x))
+               "::"
+               (bar-escape-name (symbol-name x))))

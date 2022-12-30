@@ -1,6 +1,6 @@
 ; ACL2 Programming Language Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -35,7 +35,7 @@
    (xdoc::p
     "Since our formalization of the ACL2 primitive functions
      is written in the ACL2 logical language,
-     we make use the executable ACL2 primitive functions of the logical language
+     we use the executable ACL2 primitive functions of the logical language
      to formalize the ACL2 primitive functions of the ACL2 programming language.
      However, note that the latter operate on our model of ACL2 values,
      i.e. on the @(tsee value) fixtype,

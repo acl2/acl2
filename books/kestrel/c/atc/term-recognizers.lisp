@@ -184,14 +184,13 @@
    (xdoc::p
     "We just check whether the term is
      a call of a @('boolean-from-<type>') function
-     or a call of @(tsee not), @(tsee and), or @(tsee or)."))
+     or a call of @(tsee and) or @(tsee or)."))
   (b* (((mv andp & &) (check-and-call term))
        ((when andp) t)
        ((mv orp & &) (check-or-call term))
        ((when orp) t))
     (case-match term
-      ((fn . &) (if (or (member-eq fn *atc-boolean-from-type-fns*)
-                        (eq fn 'not))
+      ((fn . &) (if (member-eq fn *atc-boolean-from-type-fns*)
                     t
                   nil))
       (& nil))))
