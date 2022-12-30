@@ -693,7 +693,8 @@
                                (disabled 'nil))
   :returns (pp-lst)
   (b* (((when (or disabled
-                  (not (cons-count-compare term 20))
+                  (not (cons-count-compare term 20)) ;; if this is a small
+                  ;; term, don't try to generalize by binding..
                   (not (mbt (and (pp-term-p term)
                                  (rp-termp term)
                                  t)))))
@@ -701,16 +702,19 @@
        ((mv honsed-pp-term pp-binds & valid)
         (pp-term-bind term nil 0))
        ((unless valid)
-        (cwe "In pp-flatten-with-binds, pp-term-bind returned invalid bindings.
-                                          for incoming term: ~p0 ~%" term)
+        (cwe "In pp-flatten-with-binds, pp-term-bind returned invalid bindings. ~
+              for incoming term: ~p0 ~%" term)
         (pp-flatten term signed))
        (pp-lst (pp-flatten-memoized honsed-pp-term signed))
        ((mv res-pp-lst valid) (pp-apply-bindings pp-lst pp-binds))
        ((unless valid)
-        (cwe "In pp-flatten-with-binds, pp-apply-bindings returned invalid.
-                                          for incoming term: ~p0. bindings: ~p1
-                                          and flattened term: ~p2 ~%" term
-                                          pp-binds pp-lst)
+        (fmt-to-comment-window
+         "In pp-flatten-with-binds, pp-apply-bindings returned invalid. ~
+             for incoming term: ~p0. bindings: ~p1 and flattened term: ~
+             ~p2. This may be because the term grew too large. See if there is ~
+                                          any warning above. ~%"
+         (pairlis2 acl2::*base-10-chars* (list term pp-binds pp-lst))
+         0 '(nil 3 4 nil)  nil)
         (pp-flatten term signed))
        (res-pp-lst (if (pp-lst-orderedp res-pp-lst)
                        res-pp-lst

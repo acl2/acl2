@@ -27,37 +27,6 @@
 
 (in-package "RP")
 
-;; (progn
-;;   (include-book "centaur/sv/top" :dir :system)
-;;   (include-book "centaur/vl/loader/top" :dir :system)
-;;   (include-book "oslib/ls" :dir :system))
-
-;; (progn
-;;   (acl2::defconsts
-;;     (*original-mult1-vl-design* state)
-;;     (b* (((mv loadresult state)
-;;           (vl::vl-load (vl::make-vl-loadconfig
-;;                         :start-files '("DT_SB4_RP_128x128_multgen.sv")))))
-;;       (mv (vl::vl-loadresult->design loadresult) state)))
-;;   (acl2::defconsts
-;;     (*original-mult1-sv-design*)
-;;     (b* (((mv errmsg sv-design & &)
-;;           (vl::vl-design->sv-design "DT_SB4_RP_128x128_spec"
-;;                                     *original-mult1-vl-design*
-;;                                     (vl::make-vl-simpconfig))))
-;;       (and errmsg
-;;            (acl2::raise "~@0~%" errmsg))
-;;       sv-design))
-;;   (sv::defsvtv  mult1-svtv
-;;     :mod *original-mult1-sv-design*
-;;     :inputs '(("IN1" a)
-;;               ("IN2" b))
-;;     :outputs
-;;     '(("design_res" design_res)
-;;       ("design_is_correct" design_is_correct))))
-
-;;;;
-
 (include-book "fnc-defs")
 (include-book "centaur/svl/top" :dir :system)
 
@@ -309,18 +278,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; adder pattern functions...
-
-#|(defconst *adder-pattern-necessary-pairs*
-'((ha+1-c-chain ha+1-s-chain)
-(ha+1-s-chain ha+1-c-chain)
-
-(ha-c-chain ha-s-chain)
-(ha-s-chain ha-c-chain)
-
-(fa-s-chain fa-c-chain)
-(fa-c-chain fa-s-chain)
-
-))|#
 
 (local
  (in-theory (e/d (sv::svex-kind)
@@ -619,48 +576,6 @@
            (sv::4vec-bitor (sv::4vec-bitand x y)
                            (sv::4vec-bitand z
                                             (sv::4vec-bitxor x y))))
-          ((= method 41)
-           (sv::4vec-bitor  (sv::4vec-bitand y ;;y=in0, z= in^in2^in3, x=temp
-                                             (sv::4vec-bitxor 1
-                                                              (sv::4vec-bitxor y z)))
-                            (sv::4vec-bitand x
-                                             (sv::4vec-bitxor y z))
-                            ))
-          ((= method 42)
-           (sv::4vec-bitor  (sv::4vec-bitand z ;;y=in0, z= in^in2^in3, x=temp
-                                             (sv::4vec-bitxor 1
-                                                              (sv::4vec-bitxor x z)))
-                            (sv::4vec-bitand y
-                                             (sv::4vec-bitxor x z))
-                            ))
-          ((= method 43)
-           (sv::4vec-bitor  (sv::4vec-bitand y ;;y=in0, z= in^in2^in3, x=temp
-                                             (sv::4vec-bitxor 1
-                                                              (sv::4vec-bitxor y x)))
-                            (sv::4vec-bitand z
-                                             (sv::4vec-bitxor y x))
-                            ))
-          ((= method 44)
-           (sv::4vec-bitor  (sv::4vec-bitand z ;;y=in0, z= in^in2^in3, x=temp
-                                             (sv::4vec-bitxor 1
-                                                              (sv::4vec-bitxor y z)))
-                            (sv::4vec-bitand x
-                                             (sv::4vec-bitxor y z))
-                            ))
-          ((= method 45)
-           (sv::4vec-bitor  (sv::4vec-bitand x ;;y=in0, z= in^in2^in3, x=temp
-                                             (sv::4vec-bitxor 1
-                                                              (sv::4vec-bitxor x z)))
-                            (sv::4vec-bitand y
-                                             (sv::4vec-bitxor x z))
-                            ))
-          ((= method 46)
-           (sv::4vec-bitor  (sv::4vec-bitand x ;;y=in0, z= in^in2^in3, x=temp
-                                             (sv::4vec-bitxor 1
-                                                              (sv::4vec-bitxor y x)))
-                            (sv::4vec-bitand z
-                                             (sv::4vec-bitxor y x))
-                            ))
 
           (t
            (sv::4vec-bitor (sv::4vec-bitand x y)
@@ -690,11 +605,7 @@
                        (c-spec (list (logcar x) (logcar y) (logcar z)))
                        (fa-c-chain method (logcdr x) (logcdr y) (logcdr z)))))
       :hints (("goal"
-               :do-not-induct t
-               :in-theory (e/d* (;;bitops::ihsext-inductions
-                                 ;;bitops::ihsext-recursive-redefs
-                                 )
-                                ())))))
+               :do-not-induct t))))
 
   (define look-for-fa-c-chain-pattern-aux (&key
                                            (x1 'x1)
@@ -737,6 +648,28 @@
     (hons-copy '(member-equal 'fa-s-chain found-patterns))
     )
 
+  ;; this is  to recollect the  found patterns so  missed fa-s patterns  may be
+  ;; found. (sometimes the same fa-s may  appear in different shapes within the
+  ;; same svex.  some would be  caught in quick search  and some could  only be
+  ;; caught in slow  search. For the latter group, recollecting  the found fa-c
+  ;; is necessary.)
+  (create-look-for-pattern-fnc :name fa-c-chain-itself-pattern
+                               :prepwork ((create-case-match-macro fa-c-chain-itself-pattern
+                                                                   ('fa-c-chain m x y z))
+                                          (local
+                                           (in-theory (disable fa-c-chain))))
+                               :body
+                               (cond ((fa-c-chain-itself-pattern-p svex)
+                                      (fa-c-chain-itself-pattern-body
+                                       svex
+                                       (and (natp m)
+                                            (list (make-pattern-fn-call
+                                                   :fn 'fa-c-chain
+                                                   :extra-arg m
+                                                   :rule nil
+                                                   :args (list x y z)))))))
+                               :warrant-hyps ((apply$-warrant-fa-c-chain)))
+
   ;; most-common pattern
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-01
                                :prepwork ((create-case-match-macro fa-c-chain-pattern-0
@@ -772,14 +705,14 @@
                                                 :args args))))))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
-  (create-look-for-pattern-fnc :name fa-c-chain-pattern-2
-                               :prepwork ((create-case-match-macro fa-c-chain-pattern-2
+  (create-look-for-pattern-fnc :name fa-c-chain-pattern-2a
+                               :prepwork ((create-case-match-macro fa-c-chain-pattern-2a
                                                                    ('sv::bitor  ('sv::bitand y2 z2)
                                                                                 ('sv::bitand x1
                                                                                              (or/xor? y1 z1)))))
                                :body
-                               (and (fa-c-chain-pattern-2-p svex)
-                                    (fa-c-chain-pattern-2-body
+                               (and (fa-c-chain-pattern-2a-p svex)
+                                    (fa-c-chain-pattern-2a-body
                                      svex
                                      (b* (((unless (or (equal or/xor? 'sv::bitor)
                                                        (equal or/xor? 'sv::bitxor)))
@@ -802,14 +735,44 @@
                                               :args args)))))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
-  (create-look-for-pattern-fnc :name fa-c-chain-pattern-3
-                               :prepwork ((create-case-match-macro fa-c-chain-pattern-3
+  (create-look-for-pattern-fnc :name fa-c-chain-pattern-2b
+                               :prepwork ((create-case-match-macro fa-c-chain-pattern-2b
+                                                                   ('sv::bitor  ('sv::bitand y2 z2)
+                                                                                ('sv::bitand (or/xor? y1 z1)
+                                                                                             x1))))
+                               :body
+                               (and (fa-c-chain-pattern-2b-p svex)
+                                    (fa-c-chain-pattern-2b-body
+                                     svex
+                                     (b* (((unless (or (equal or/xor? 'sv::bitor)
+                                                       (equal or/xor? 'sv::bitxor)))
+                                           nil)
+                                          ((mv x y z valid) (look-for-fa-c-chain-pattern-aux
+                                                             :x2 x1))
+                                          ((unless valid) nil)
+                                          (args (acl2::merge-sort-lexorder (list x y z))))
+                                       (list (make-pattern-fn-call
+                                              :fn 'fa-c-chain
+                                              :extra-arg (cond ((equal or/xor? 'sv::bitor)
+                                                                0)
+                                                               ((equal (car args) x)
+                                                                1)
+                                                               ((equal (cadr args) x)
+                                                                2)
+                                                               ((equal (caddr args) x)
+                                                                3))
+                                              :rule *fa-c-chain-rule*
+                                              :args args)))))
+                               :warrant-hyps ((apply$-warrant-fa-c-chain)))
+
+  (create-look-for-pattern-fnc :name fa-c-chain-pattern-3a
+                               :prepwork ((create-case-match-macro fa-c-chain-pattern-3a
                                                                    ('sv::bitor  ('sv::bitand x1
                                                                                              (or/xor? y1 z1))
                                                                                 ('sv::bitand y2 z2))))
                                :body
-                               (and (fa-c-chain-pattern-3-p svex)
-                                    (fa-c-chain-pattern-3-body
+                               (and (fa-c-chain-pattern-3a-p svex)
+                                    (fa-c-chain-pattern-3a-body
                                      svex
                                      (b* (((unless (or (equal or/xor? 'sv::bitor)
                                                        (equal or/xor? 'sv::bitxor)))
@@ -832,111 +795,47 @@
                                               :args args)))))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
-  (create-look-for-pattern-fnc :name fa-c-chain-pattern-4
-                               :prepwork ((create-case-match-macro fa-c-chain-pattern-4
-                                                                   ('sv::bitor  ('sv::bitand y0
-                                                                                             ('sv::bitxor ('sv::bitxor 1 y2)
-                                                                                                          z2))
-                                                                                ('sv::bitand x1
-                                                                                             ('sv::bitxor y1 z1)))))
-                               :body (and (fa-c-chain-pattern-4-p svex)
-                                          (fa-c-chain-pattern-4-body
-                                           svex
-                                           (b* (((mv x y z valid) (look-for-fa-c-chain-pattern-aux
-                                                                   :x2 x1))
-                                                (valid (and valid
-                                                            (or (equal y0 y)
-                                                                (equal y0 z))))
-                                                ((mv y z) (if (equal y0 z) (mv z y) (mv y z)))
-                                                ((unless valid) nil)
-                                                (args (acl2::merge-sort-lexorder (list x y z))))
-                                             (list (make-pattern-fn-call
-                                                    :fn 'fa-c-chain
-                                                    :extra-arg (cond ((equal (car args) x)
-                                                                      (if (equal (cadr args) y) 41 44))
-                                                                     ((equal (cadr args) x)
-                                                                      (if (equal (caddr args) y) 42 45))
-                                                                     ((equal (caddr args) x)
-                                                                      (if (equal (cadr args) y) 43 46)))
-                                                    :rule *fa-c-chain-rule*
-                                                    :args args)))))
+  (create-look-for-pattern-fnc :name fa-c-chain-pattern-3b
+                               :prepwork ((create-case-match-macro fa-c-chain-pattern-3b
+                                                                   ('sv::bitor  ('sv::bitand (or/xor? y1 z1)
+                                                                                             x1)
+                                                                                ('sv::bitand y2 z2))))
+                               :body
+                               (and (fa-c-chain-pattern-3b-p svex)
+                                    (fa-c-chain-pattern-3b-body
+                                     svex
+                                     (b* (((unless (or (equal or/xor? 'sv::bitor)
+                                                       (equal or/xor? 'sv::bitxor)))
+                                           nil)
+                                          ((mv x y z valid) (look-for-fa-c-chain-pattern-aux
+                                                             :x2 x1))
+                                          ((unless valid) nil)
+                                          (args (acl2::merge-sort-lexorder (list x y z))))
+                                       (list (make-pattern-fn-call
+                                              :fn 'fa-c-chain
+                                              :extra-arg (cond ((equal or/xor? 'sv::bitor)
+                                                                0)
+                                                               ((equal (car args) x)
+                                                                1)
+                                                               ((equal (cadr args) x)
+                                                                2)
+                                                               ((equal (caddr args) x)
+                                                                3))
+                                              :rule *fa-c-chain-rule*
+                                              :args args)))))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
-
-  (create-look-for-pattern-fnc :name fa-c-chain-pattern-5
-                               :prepwork ((create-case-match-macro fa-c-chain-pattern-5
-                                                                   ('sv::bitor ('sv::bitand
-                                                                                y0
-                                                                                ('sv::bitxor 1 ('sv::bitxor y2 z2)))
-                                                                               ('sv::bitand x1
-                                                                                            ('sv::bitxor y1 z1)))))
-                               :body (and (fa-c-chain-pattern-5-p svex)
-                                          (fa-c-chain-pattern-5-body
-                                           svex
-                                           (b* (((mv x y z valid) (look-for-fa-c-chain-pattern-aux
-                                                                   :x2 x1))
-                                                (valid (and valid
-                                                            (or (equal y0 y)
-                                                                (equal y0 z))))
-                                                ((mv y z) (if (equal y0 z) (mv z y) (mv y z)))
-                                                ((unless valid) nil)
-                                                (args (acl2::merge-sort-lexorder (list x y z))))
-                                             (list (make-pattern-fn-call
-                                                    :fn 'fa-c-chain
-                                                    :extra-arg (cond ((equal (car args) x)
-                                                                      (if (equal (cadr args) y) 41 44))
-                                                                     ((equal (cadr args) x)
-                                                                      (if (equal (caddr args) y) 42 45))
-                                                                     ((equal (caddr args) x)
-                                                                      (if (equal (cadr args) y) 43 46)))
-                                                    :rule *fa-c-chain-rule*
-                                                    :args args)))))
-                               :warrant-hyps ((apply$-warrant-fa-c-chain)))
-
-  ;; this was necessary for something...
-  #|(create-look-for-pattern-fnc :name fa-c-chain-pattern-6
-                               :prepwork ((create-case-match-macro fa-c-chain-pattern-6
-                                                                   ('sv::bitor x ('sv::bitand x-not y))))
-                               :body (and (fa-c-chain-pattern-6-p svex)
-                                          (fa-c-chain-pattern-6-body
-                                           svex
-                                           (b* (((mv y valid)
-                                                 (case-match x-not
-                                                   (('sv::bitxor 1 a)
-                                                    (mv y (equal a x)))
-                                                   (& (mv y nil))))
-                                                ((mv y valid)
-                                                 (if valid
-                                                     (mv y valid)
-                                                   (case-match y
-                                                     (('sv::bitxor 1 a)
-                                                      (mv x-not (equal a x)))
-                                                     (& (mv y nil)))))
-                                                ((Unless valid) nil)
-                                                (args (acl2::merge-sort-lexorder (list x y 1))))
-                                             (list (make-pattern-fn-call
-                                                    :fn 'fa-c-chain
-                                                    :extra-arg 0
-                                                    :rule *fa-c-chain-rule*
-                                                    :args args)))))
-                               :warrant-hyps ((apply$-warrant-fa-c-chain)))|#
-
-  
 
   (create-look-for-pattern-fnc :name fa-c-chain-pattern
                                :prepwork ()
                                :body (append (look-for-fa-c-chain-pattern-01 svex)
-                                             (look-for-fa-c-chain-pattern-2 svex)
-                                             (look-for-fa-c-chain-pattern-3 svex)
-
-                                             ;;(look-for-fa-c-chain-pattern-4 svex)
-                                             ;;(look-for-fa-c-chain-pattern-5 svex)
-                                             ;;(look-for-fa-c-chain-pattern-6 svex)
-                                             ;;(look-for-fa-c-chain-pattern-7 svex)
+                                             (look-for-fa-c-chain-pattern-2a svex)
+                                             (look-for-fa-c-chain-pattern-2b svex)
+                                             (look-for-fa-c-chain-pattern-3a svex)
+                                             (look-for-fa-c-chain-pattern-3b svex)
+                                             (look-for-fa-c-chain-itself-pattern svex)
                                              )
                                :warrant-hyps ((apply$-warrant-fa-c-chain))
                                :inline nil))
-
-
 
 (progn
   (define ha-s-chain (x y)
@@ -953,20 +852,20 @@
                        1
                        (s-spec (list (logcar x) (logcar y)))
                        (ha-s-chain (logcdr x) (logcdr y)))))
-      :hints (("Goal"
+      :hints (("goal"
                :in-theory (e/d* (sv::4vec
                                  ;;bitops::ihsext-inductions
                                  bitops::ihsext-recursive-redefs
                                  sv::4vec-bitxor
-                                 SV::4VEC->LOWER
-                                 SV::4VEC->UPPER
-                                 SV::4VEC-RSH
-                                 sv::4VEC-SHIFT-CORE
-                                 svl::Bits
-                                 SV::4VEC-PART-SELECT
-                                 SV::4VEC-CONCAT)
+                                 sv::4vec->lower
+                                 sv::4vec->upper
+                                 sv::4vec-rsh
+                                 sv::4vec-shift-core
+                                 svl::bits
+                                 sv::4vec-part-select
+                                 sv::4vec-concat)
                                 (floor
-                                 SVL::EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1
+                                 svl::equal-of-4vec-concat-with-size=1
                                  logand
                                  ))))))
 
@@ -1260,7 +1159,6 @@
                        (ha+1-s-chain (logcdr x) (logcdr y)))))
       :hints (("Goal"
                :in-theory (e/d* (sv::4vec
-                                 ;;bitops::ihsext-inductions
                                  bitops::ihsext-recursive-redefs
                                  sv::4vec-bitxor
                                  SV::4VEC->LOWER
@@ -1467,13 +1365,9 @@
     (append
      (look-for-fa-s-chain-pattern svex)
      (look-for-fa-c-chain-pattern svex)
-
-     ;;(look-for-fa-s-chain-pattern-2 svex)
      ))
    (t
-    (append ;;(look-for-fa-s-chain-pattern svex)
-     ;;(look-for-fa-c-chain-pattern svex)
-
+    (append
      (look-for-ha-s-chain-pattern svex)
      (look-for-ha-c-chain-pattern svex)
 
@@ -1757,16 +1651,10 @@
                              (sv::Svex-eval$ (cons x y) env)))
              :in-theory (e/d (SV::SVEX-EVAL$
                               SV::SVEXlist-EVAL$
-                              ;;SV::SVEX-CALL->FN
                               SV::FNSYM-FIX
-                              ;;SV::SVEX-CALL->ARGS
                               sv::svex-kind
                               SV::SVEX-P
                               PATTERN-CALL
-                              ;;PATTERN-FN-CALL->ARGS
-                              ;;pattern-fn-call->extra-arg
-                              ;;pattern-fn-call->fn
-
                               SV::SVEX-CALL->ARGS
                               SV::SVEX-CALL->fn
                               )
@@ -1798,21 +1686,6 @@
     :hints (("Goal"
              :in-theory (e/d (SV::SVEX-ALIST-EVAL$) ())))))
 
-;;:i-am-here
-#|(define unmatched-arg-alist-p (x)
-:enabled t
-:Returns res
-(if (atom x)
-(equal x nil)
-(and (consp (car x))
-(sv::Svex-p (caar x))
-(sv::Svexlist-p (cdar x))
-(unmatched-arg-alist-p (cdr x))))
-///
-(defret hons-assoc-equal-of-<fn>
-(implies res
-(and (sv::Svexlist-p (cdr (hons-assoc-equal key x)))))))|#
-
 (defsection find-fa-s-for-orphan-fa-c
   (define process-unmatched-fa-c-chains ((pattern-alist alistp)
                                          (collected alistp))
@@ -1826,7 +1699,9 @@
             (process-unmatched-fa-c-chains (cdr pattern-alist)
                                            collected))
            (fns (cdar pattern-alist))
-           ((unless (equal fns '(fa-c-chain)))
+           ((unless (equal fns '(fa-c-chain))
+              ;;(ec-call (member-equal 'fa-c-chain fns))
+              )
             ;; maybe this  should be  a member-equal  test that  says fa-c-chain
             ;; exists but fa-s-chain doesn't
             (process-unmatched-fa-c-chains (cdr pattern-alist)
@@ -2136,161 +2011,73 @@
       (implies (alistp x)
                (alistp (fast-alist-clean x)))))
 
-  (define find-s-from-found-c-in-svex ((svex sv::svex-p)
-                                       (limit natp))
-    :returns (res sv::Svex-p :hyp (sv::Svex-p svex))
-    :measure (nfix limit)
-    ;; 1. find each entry that have fa-c-chain but not fa-s-chain
-    ;; 2. create another fast-alist whose entry is each argument, and value are accompanying args.
-    ;; 3. if there is nothing, return svex as is.
+  (defconst *find-full-adders-in-svex-alist-limit*
+    6)
 
-    ;; 3. go through the svex and try to find those args in bitxor chains, then
-    ;; replace them on the spot (if  *fa-c-chain-rule* is set to t, which means
-    ;; rewrite all fa-c patterns unconditionally.) (if *fa-c-chain-rule* is not
-    ;; t, then  regroup bitxors so that  they can be caught  by another regular
-    ;; pass of gather-adder-patterns..  and replace-adder-patterns-in-svex)
+  (define pattern-alist-has-complete-full-adder-patterns-p ((pattern-alist alistp))
+    (if (atom pattern-alist)
+        0
+      (+ (if (subsetp-equal '(fa-c-chain fa-s-chain)
+                            (true-list-fix (cdar pattern-alist)))
+             1 0)
+         (pattern-alist-has-complete-full-adder-patterns-p (cdr pattern-alist)))))
 
-    ;; for example  if in1,in2,in3  are args  of a  fa-c, and  we get  the term
-    ;; (bitxor  (bitxor (bitxor  in0 in1)  in2) in3),  this will  be caught  by
-    ;; looking up in3 on the fa-c-pattern-alist and tracking in1 and in2 as the
-    ;; arguments. then it  will become either (bitxor (bitxor  (bitxor in1 in2)
-    ;; in3) in0) if *fa-c-chain-rule* is not  t, or (bitxor (fa-s-chain in1 in2
-    ;; in3) in0) if *fa-c-chain-rule* is t.
-
-    ;; 4. if the above  parsing of svex causes any changes  (this can be easily
-    ;; done with hons-equal check. Because of honsing, it should be fast), then
-    ;; decrease the  limit and make  a recersive  call to this  function. Don't
-    ;; forget to free up pattern-alist
-    (b* (((when (zp limit))
-          (progn$
-           (cw "Limit reached. Will not parse again for full-adder patterns. ~%")
-           svex))
-         (- (cw " Searching for full-adder patterns now. ~%"))
-         (- (time-tracker :rewrite-adders-in-svex :end))
-         (- (time-tracker :rewrite-adders-in-svex :init
-                          :times '(1 2 3 4 5)
-                          :interval 5
-                          ))
-         (- (time-tracker :rewrite-adders-in-svex :start!))
-         ((mv pattern-alist &)
-          (gather-adder-patterns-in-svex svex nil nil 1))
-         (svex (replace-adder-patterns-in-svex svex pattern-alist 1))
-         (- (fast-alist-free pattern-alist))
-
-         ;; TODO: I can add a check here  to see if there is any unmatched fa-c
-         ;; pattern without consing anything.
-
-         ;; search again after replacements so args can match when looking for fa-s patterns.
-         ((mv pattern-alist &)
-          (gather-adder-patterns-in-svex svex nil nil 1))
-         (pattern-alist (fast-alist-clean pattern-alist))
-         (unmatched-arg-alist (process-unmatched-fa-c-chains pattern-alist nil))
-
-         (- (time-tracker :rewrite-adders-in-svex :stop))
-         (- (time-tracker :rewrite-adders-in-svex :print?
-                          :min-time 0
-                          :msg "This pass took ~st seconds."))
-
-         (- (fast-alist-free pattern-alist))
-         ((unless unmatched-arg-alist)
-          svex)
-
-         (- (cw "Searching for orphan fa-c patterns to see if they have an unfound fa-s counterpart.. ~%"))
-         (- (time-tracker :rewrite-adders-in-svex :end))
-         (- (time-tracker :rewrite-adders-in-svex :init
-                          :times '(1 2 3 4 5)
-                          :interval 5
-                          ))
-         (- (time-tracker :rewrite-adders-in-svex :start!))
-
-         (new-svex (find-s-from-found-c-in-svex-aux svex unmatched-arg-alist))
-         (- (clear-memoize-table 'find-s-from-found-c-in-svex-aux))
-
-         (- (fast-alist-free unmatched-arg-alist))
-
-         (- (time-tracker :rewrite-adders-in-svex :stop))
-         (- (time-tracker :rewrite-adders-in-svex :print?
-                          :min-time 0
-                          :msg "This took ~st seconds."))
-
-         ((when (hons-equal new-svex svex))
-          (progn$ (cw "Couldn't find any fa-s for orphan fa-c patterns~%")
-                  svex)))
-      (find-s-from-found-c-in-svex new-svex (1- limit)))
-
-    ///
-    (defret <fn>-is-correct
-      (implies (and (force (sv::svex-p svex))
-                    (force (warrants-for-adder-pattern-match)))
-               (equal (sv::svex-eval$ res env)
-                      (sv::svex-eval$ svex env)))
-      :hints (("Goal"
-               :in-theory (e/d () ()))))
-    )
-
-  ;; (find-s-from-found-c-in-svex #!SV'(sv::concat 1
-  ;;                                               (bitor (bitand x y)
-  ;;                                                      (bitor (bitand y z)
-  ;;                                                             (bitand x z)))
-  ;;                                               (bitxor (bitxor x y)
-  ;;                                                       (bitxor (bitxor k (bitxor m z))
-  ;;                                                               l)))
-  ;;                              3)
-
-  (defconst *find-s-from-found-c-in-svex-alist-limit*
-    4)
-
-  (define find-s-from-found-c-in-svex-alist ((svex-alist sv::svex-alist-p)
-                                             (limit natp))
+  (define find-full-adders-in-svex-alist ((svex-alist sv::svex-alist-p)
+                                          (limit natp))
     :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p svex-alist))
     :measure (nfix limit)
     (b* (((when (zp limit))
           (progn$
-           (cw "- Iteration limit of ~% is reached. Will not parse again for full-adder patterns. ~%" *find-s-from-found-c-in-svex-alist-limit*)
+           (cw "- Iteration limit of ~p0 is reached. Will not parse again for full-adder patterns. ~%" *find-full-adders-in-svex-alist-limit*)
            svex-alist))
-         (- (and (equal limit *find-s-from-found-c-in-svex-alist-limit*)
+         (- (and (equal limit *find-full-adders-in-svex-alist-limit*)
                  (cw "- Searching for full-adder patterns now. ~%")))
+         (- (cw "- Pass #~p0:~%" (+ 1 (- limit) *find-full-adders-in-svex-alist-limit*)))
 
-         ;;(- (rp::cwe "in find-s-from-found-c-in-svex-alist. Incoming svex-alist: ~p0 ~%" svex-alist))
+         ;;(- (rp::cwe "in find-full-adders-in-svex-alist. Incoming svex-alist: ~p0 ~%" svex-alist))
 
          ((mv pattern-alist &)
           (gather-adder-patterns-in-svex-alist svex-alist nil nil 1))
          (svex-alist (replace-adder-patterns-in-svex-alist svex-alist pattern-alist 1))
          (- (clear-memoize-table 'replace-adder-patterns-in-svex))
+         (pattern-alist (fast-alist-clean pattern-alist))
+         (replaced-pattern-cnt (pattern-alist-has-complete-full-adder-patterns-p pattern-alist))
+         (- (cw "- After the quick search, ~p0 full-adder patterns are found and replaced.~%" replaced-pattern-cnt))
          (- (fast-alist-free pattern-alist))
-
-         ;; TODO: I can add a check here  to see if there is any unmatched fa-c
-         ;; pattern without consing anything.
 
          ;; search again after replacements so args can match when looking for fa-s patterns.
          ((mv pattern-alist &)
           (gather-adder-patterns-in-svex-alist svex-alist nil nil 1))
          (pattern-alist (fast-alist-clean pattern-alist))
+
+         (new-pattern-cnt (pattern-alist-has-complete-full-adder-patterns-p pattern-alist))
+         ((when (> new-pattern-cnt 0))
+          (progn$ (cw "- Replacement after the previous quick search revealed ~p0 more full-adder patterns, which are all replaced. Let's make another pass.~%"
+                      new-pattern-cnt)
+                  (b* ((svex-alist (replace-adder-patterns-in-svex-alist svex-alist pattern-alist 1))
+                       (- (fast-alist-free pattern-alist)))
+                    (find-full-adders-in-svex-alist svex-alist (1- limit)))))
+
+         ;; TODO:  HERE I  can look  for bitxors  with at  least 3  elements to
+         ;; decide if any fa-s might be mising before consing below..
+
          (unmatched-arg-alist (process-unmatched-fa-c-chains pattern-alist nil))
          (- (fast-alist-free pattern-alist))
 
-         ((unless unmatched-arg-alist)
-          (progn$ (if pattern-alist
-                      (cw "- Some fa-c patterns are found, and they all had a matching fa-s pattern after a quick search.~%")
-                    (cw "- No new full adder patterns are found.~%"))
-                  svex-alist))
+         (- (cw "Will now look more carefully if we have missed any fa-s pattern that has a counterpart fa-c pattern.~%" ))
 
-         (- (cw "- Found ~p0 fa-c patterns that did have a counterpart fa-s pattern after a quick search. Will try to find those counterparts fa-s patterns more carefully.~%" (/ (len unmatched-arg-alist) 3)))
-         ;;(- (cwe "unmatched-arg-alist: ~p0 ~%" unmatched-arg-alist))
          (new-svex-alist (find-s-from-found-c-in-svex-alist-aux svex-alist unmatched-arg-alist))
-
-         ;;(- (rp::cwe "in find-s-from-found-c-in-svex-alist. after find-s-from-found-c-in-svex-alist-aux ~p0 ~%" new-svex-alist))
 
          (- (clear-memoize-table 'find-s-from-found-c-in-svex-aux))
          (- (fast-alist-free unmatched-arg-alist))
 
          ((when (hons-equal new-svex-alist svex-alist))
-          (progn$ (cw "- Couldn't find any fa-s for the orphan fa-c patterns. This may mean there is a problem. ~%")
+          (progn$ (cw "- Could not find any missed fa-s. ~%")
                   svex-alist))
 
-         (- (cw "- Some (maybe all) orphan fa-c patterns were succesfully matched with counterpart fa-s patterns. Now going to start looking for full-adders again. ~%"))
+         (- (cw "- Some missed fa-s patterns are found and their shape is updated. This will reveal more fa patterns during quick search. So will now do another pass. (There might be an overlap in statistics below) ~%"))
          )
-      (find-s-from-found-c-in-svex-alist new-svex-alist (1- limit)))
+      (find-full-adders-in-svex-alist new-svex-alist (1- limit)))
     ///
     (defret <fn>-is-correct
       (implies (and (force (sv::svex-alist-p svex-alist))
@@ -2300,7 +2087,7 @@
       :hints (("Goal"
                :in-theory (e/d () ()))))))
 
-;; (find-s-from-found-c-in-svex-alist #!SV'((first .
+;; (find-full-adders-in-svex-alist #!SV'((first .
 ;;                                                 (bitor (bitand x y)
 ;;                                                        (bitor (bitand y z)
 ;;                                                               (bitand x z))))
@@ -2308,45 +2095,6 @@
 ;;                                                  (bitxor (bitxor k (bitxor x z))
 ;;                                                          y)))
 ;;                                    3)
-
-(define rewrite-adders-in-svex ((svex sv::Svex-p))
-  :Returns (res sv::Svex-p :hyp (sv::svex-p svex))
-  (b* ((- (cw "Starting: rp::rewrite-adders-in-svex ~%"))
-       (- (time-tracker :rewrite-adders-in-svex :end))
-       (- (time-tracker :rewrite-adders-in-svex :init
-                        :times '(1 2 3 4 5)
-                        :interval 5
-                        ))
-       (- (time-tracker :rewrite-adders-in-svex :start!))
-
-       (svex (find-s-from-found-c-in-svex svex 4))
-
-       ;; ((mv pattern-alist &)
-       ;;  (gather-adder-patterns-in-svex svex nil nil 1))
-       ;; (svex (replace-adder-patterns-in-svex svex pattern-alist 1))
-
-       ((mv pattern-alist &)
-        (gather-adder-patterns-in-svex svex nil nil 2))
-       (svex (replace-adder-patterns-in-svex svex pattern-alist 2))
-
-       (- (clear-memoize-table 'replace-adder-patterns-in-svex))
-       (- (fast-alist-free pattern-alist))
-       (- (time-tracker :rewrite-adders-in-svex :stop))
-       (- (time-tracker :rewrite-adders-in-svex :print?
-                        :min-time 0
-                        :msg "Searching for adders took ~st seconds."))
-       (- (cw "Finished: rp::rewrite-adders-in-svex ~% ")))
-
-    svex)
-  ///
-  (defret <fn>-is-correct
-    (implies (and (force (sv::svex-p svex))
-                  (force (warrants-for-adder-pattern-match)))
-             (equal (sv::svex-eval$ res env)
-                    (sv::svex-eval$ svex env)))
-    :fn rewrite-adders-in-svex
-    :hints (("Goal"
-             :in-theory (e/d () ())))))
 
 (define rewrite-adders-in-svex-alist ((svex-alist sv::Svex-alist-p))
   :Returns (res sv::Svex-alist-p :hyp (sv::Svex-alist-p svex-alist))
@@ -2358,7 +2106,13 @@
                         :interval 5
                         ))
        (- (time-tracker :rewrite-adders-in-svex :start!))
-       (svex-alist (find-s-from-found-c-in-svex-alist svex-alist *find-s-from-found-c-in-svex-alist-limit*))
+
+       (svex-alist (find-full-adders-in-svex-alist svex-alist *find-full-adders-in-svex-alist-limit*))
+
+       ;;(svex-alist (find-full-adders-in-svex-alist svex-alist (1- *find-full-adders-in-svex-alist-limit*)))
+
+       ;;(- (cwe "resulting svexl-alist ~p0 ~%" (svl::svex-alist-to-svexl-alist svex-alist)))
+
        (- (time-tracker :rewrite-adders-in-svex :stop))
        (- (time-tracker :rewrite-adders-in-svex :print?
                         :min-time 0
@@ -2374,6 +2128,7 @@
                         :interval 5
                         ))
        (- (time-tracker :rewrite-adders-in-svex :start!))
+       (- (cw "- Searching for other adders (e.g., half-adder) now.~%"))
        ((mv pattern-alist &)
         (gather-adder-patterns-in-svex-alist svex-alist nil nil 2))
        (svex-alist (replace-adder-patterns-in-svex-alist svex-alist pattern-alist 2))
@@ -2394,6 +2149,33 @@
                     (sv::svex-alist-eval$ svex-alist env)))
     :hints (("Goal"
              :in-theory (e/d () ())))))
+
+(define rewrite-adders-in-svex ((svex sv::Svex-p))
+  :Returns (res sv::Svex-p :hyp (sv::svex-p svex))
+  ;; It is easier to manage the simplification algo in one place. So I am using
+  ;; rewrite-adders-in-svex-alist here as well.
+  ;; In practice, I don't expect this function to be ever used.
+  (b* ((svex-alist (acons 'res svex nil))
+       (svex-alist (rewrite-adders-in-svex-alist svex-alist)))
+    (if (and (consp svex-alist) (consp (car svex-alist))) ;; for guards
+        (cdar svex-alist)
+      svex))
+  ///
+  (defret <fn>-is-correct
+    (implies (and (force (sv::svex-p svex))
+                  (force (warrants-for-adder-pattern-match)))
+             (equal (sv::svex-eval$ res env)
+                    (sv::svex-eval$ svex env)))
+    :fn rewrite-adders-in-svex
+    :hints (("Goal"
+             :Expand ((sv::svex-alist-eval$
+                       (rewrite-adders-in-svex-alist (list (cons 'res svex)))
+                       env))
+             :use ((:instance rewrite-adders-in-svex-alist-is-correct
+                              (svex-alist (LIST (CONS 'RES SVEX)))))
+             :in-theory (e/d (sv::svex-alist-eval$
+                              SV::SVEX-ALIST-EVAL)
+                             (rewrite-adders-in-svex-alist-is-correct))))))
 
 (def-rp-rule trigger-rewrite-adders-in-svex-alist
   (implies (and (force (sv::svex-alist-p alist))
@@ -2416,12 +2198,8 @@
 (defmacro defthmrp-multiplier (&rest args)
   `(make-event
     (b* ((args ',args)
-         ;;(- (cw "args: ~p0 ~%" args))
          (then-fgl (cdr (extract-keyword-from-args :then-fgl args)))
-         (args (remove-keywords-from-args '(:then-fgl) args))
-         ;;(args (rev args))
-         ;;(- (cw "args: ~p0 ~%" args))
-         )
+         (args (remove-keywords-from-args '(:then-fgl) args)))
       `(encapsulate
          nil
 
@@ -2533,8 +2311,6 @@
                      ,thm-body)
             ,@args))
 
-
-
          (with-output :off :all :on (error)
            (local
             (defun my-badge-userfn (fn)
@@ -2559,14 +2335,7 @@
                              ,local-thm-name
                              (apply$-userfn my-apply$-userfn)
                              (badge-userfn my-badge-userfn)
-
                              ,@warrant-bindings-for-hints
-
-                             ;; (apply$-warrant-foo
-                             ;;  (lambda ()
-                             ;;    t))
-                             ;; (apply$-warrant-foo2
-                             ;;  (lambda () t))
                              ))
 
                       :expand ((:free (x y)
@@ -2601,84 +2370,3 @@
     `(make-event
       (defthm-with-temporary-warrants-fn ',thm-name ',thm-body ',args state))
     ))
-
-;; (defthm-with-temporary-warrants test
-;;   (and (equal (map-foo (append x y))
-;;               (append (map-foo x) (map-foo y)))
-;;        (equal (map-foo2 (append x y))
-;;               (append (map-foo2 x) (map-foo2 y))))
-;;   :fns (foo foo2)
-;;   :defthm-macro rp::defthmrp)
-
-;; :i-am-here
-
-;; (include-book "svtv-top")
-
-;; (defthmrp-multiplier mult-correct-test-with-svtv-
-;;   (implies (and (warrants-for-adder-pattern-match)
-;;                 (integerp x)
-;;                 (integerp y))
-;;            (b* (((sv::svassocs design_res)
-;;                  (sv::svtv-run (mult1-svtv)
-;;                                `((a . ,x)
-;;                                  (b . ,y))
-;;                                :include '(design_res))))
-;;              (equal design_res
-;;                     (Loghead 256 (* (logext 128 x)
-;;                                     (logext 128 y))))))
-;;   :lambda-opt nil)
-
-;; :i-am-here
-
-;; (set-evisc-tuple '(nil 6 7 nil))
-
-;; (time$
-;;  (b* ((svex (cdr (assoc-equal 'design_res (sv::svtv->outexprs (mult1-svtv)))))
-;;       ;;(svex (svl::hons-list 'sv::partsel 0 3 svex))
-;;       (svex (time$ (svl::svex-reduce-w/-env svex nil)))
-;;       ((mv pattern-alist &)
-;;        (time$ (gather-adder-patterns-in-svex svex nil nil)))
-;;       ;;(- (cw "pattern-alist: ~p0" pattern-alist))
-;;       (res
-;;        (time$ (replace-adder-patterns-in-svex svex pattern-alist)))
-
-;;       (res (time$ (svl::svex-to-svexl res)))
-
-;;       )
-;;    (len res)))
-
-;; #|(progn
-;; (defwarrant-rp  HA-C-CHAIN)
-;; (add-rp-rule APPLY$-FA-C-CHAIN)
-;; (add-rp-rule APPLY$-HA-S-CHAIN)
-;; (add-rp-rule APPLY$-FA-S-CHAIN)
-
-;; (rp::disable-rules
-;; '((:executable-counterpart APPLY$-WARRANT-HA-C-CHAIN)
-;; (:executable-counterpart APPLY$-WARRANT-FA-C-CHAIN)
-;; (:executable-counterpart APPLY$-WARRANT-HA-S-CHAIN)
-;; (:executable-counterpart APPLY$-WARRANT-FA-S-CHAIN))))|#
-
-;; ;;(bump-rule trigger-rewrite-adders-in-svex-alist)
-
-;; (b* ((svex (cdr (assoc-equal 'design_res (sv::svtv->outexprs (mult1-svtv)))))
-;;      ;;(svex (svl::hons-list 'sv::partsel 0 3 svex))
-;;      (- (cw "entering hons-copy ~%"))
-;;      (svex (hons-copy svex))
-;;      (- (cw "entering svl::svex-reduce-w/-env ~%"))
-;;      (svex (time$ (svl::svex-reduce-w/-env svex nil)))
-
-;;      (- (cw "entering gather-adder-patterns-in-svex ~%"))
-;;      ((mv pattern-alist &)
-;;       (time$ (gather-adder-patterns-in-svex svex nil nil)))
-;;      ;;(- (cw "pattern-alist: ~p0" pattern-alist))
-
-;;      (- (cw "entering replace-adder-patterns-in-svex ~%"))
-;;      (res
-;;       (time$ (replace-adder-patterns-in-svex svex pattern-alist)))
-
-;;      (- (cw "entering svl::svex-to-svexl ~%"))
-;;      (svexl (time$ (svl::svex-to-svexl res)))
-
-;;      )
-;;   svexl)
