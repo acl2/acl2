@@ -405,7 +405,7 @@
     (retok
      (make-pexpr-gout :expr expr
                       :type out-type
-                      :term term
+                      :term `(,op-arg-type ,arg-term)
                       :events (append arg-events
                                       okp-lemma-event?
                                       (list thm-event))
@@ -559,11 +559,13 @@
                                        hints
                                        thm-index
                                        names-to-avoid
-                                       state)))
+                                       state))
+       ((when (eq op-arg1-type-arg2-type 'quote))
+        (reterr (raise "Internal error: function symbol is QUOTE."))))
     (retok
      (make-pexpr-gout :expr expr
                       :type out-type
-                      :term term
+                      :term `(,op-arg1-type-arg2-type ,arg1-term ,arg2-term)
                       :events (append arg1-events
                                       arg2-events
                                       okp-lemma-event?
@@ -706,7 +708,7 @@
     (retok
      (make-pexpr-gout :expr expr
                       :type out-type
-                      :term term
+                      :term `(,op-name ,arg-term)
                       :events (append arg-events
                                       okp-lemma-event?
                                       (list thm-event))
@@ -796,8 +798,9 @@
        ((unless (type-nonchar-integerp arg-type))
         (reterr (raise "Internal error: non-integer type ~x0." arg-type)))
        (arg-fixtype (integer-type-to-fixtype arg-type))
+       (boolean-from-arg-fixtype (pack 'boolean-from- arg-fixtype))
        (booleanp-of-boolean-from-arg-fixtype
-        (pack 'booleanp-of-boolean-from- arg-fixtype))
+        (pack 'booleanp-of- boolean-from-arg-fixtype))
        (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
        (hints `(("Goal" :in-theory '(,arg-thm
                                      ,test-value-when-arg-type-pred
@@ -809,7 +812,7 @@
                                                 :hints hints
                                                 :enable nil)))
     (retok (make-bexpr-gout :expr expr
-                            :term term
+                            :term `(,boolean-from-arg-fixtype ,arg-term)
                             :events (append arg-events
                                             (list thm-event))
                             :thm-name thm-name
@@ -909,7 +912,7 @@
                                       :names-to-avoid arg.names-to-avoid
                                       :proofs arg.proofs)))
             (atc-gen-expr-unary term op in-type out-type
-                                arg-term arg.expr arg.type
+                                arg.term arg.expr arg.type
                                 arg.events arg.thm-name
                                 gin state)))
          ((mv okp op arg1-term arg2-term in1-type in2-type out-type)
@@ -928,7 +931,7 @@
                                       :names-to-avoid arg2.names-to-avoid
                                       :proofs arg2.proofs)))
             (atc-gen-expr-binary term op in1-type in2-type out-type
-                                 arg1-term arg2-term
+                                 arg1.term arg2.term
                                  arg1.expr arg2.expr
                                  arg1.type arg2.type
                                  arg1.events arg2.events
@@ -943,7 +946,7 @@
                                       :names-to-avoid arg.names-to-avoid
                                       :proofs arg.proofs)))
             (atc-gen-expr-conv term tyname in-type out-type
-                               arg-term arg.expr arg.type
+                               arg.term arg.expr arg.type
                                arg.events arg.thm-name
                                gin state)))
          ((mv okp arr-term sub-term in-type1 in-type2 out-type)
@@ -1288,7 +1291,7 @@
                                       :proofs arg.proofs)))
             (atc-gen-expr-bool-from-type term
                                          in-type
-                                         arg-term
+                                         arg.term
                                          arg.expr
                                          arg.type
                                          arg.events
@@ -1410,7 +1413,7 @@
     (retok (make-pexprs-gout
             :exprs (cons first.expr rest.exprs)
             :types (cons first.type rest.types)
-            :terms terms
+            :terms (cons first.term rest.terms)
             :events (append first.events rest.events)
             :thm-name nil
             :thm-index rest.thm-index
@@ -1527,7 +1530,7 @@
        ((when (not pure.proofs))
         (retok (make-expr-gout :expr pure.expr
                                :type pure.type
-                               :term term
+                               :term pure.term
                                :affect nil
                                :limit bound
                                :events pure.events
@@ -1565,7 +1568,7 @@
                                             :enable nil)))
     (retok (make-expr-gout :expr pure.expr
                            :type pure.type
-                           :term term
+                           :term pure.term
                            :limit bound
                            :events (append pure.events (list event))
                            :thm-name thm-name
