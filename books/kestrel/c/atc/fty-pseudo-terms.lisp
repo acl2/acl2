@@ -605,3 +605,37 @@
                    (pseudo-term-listp terms))
               (pseudo-term-listp (fsublis-var-lst subst terms)))
      :enable acl2::symbol-pseudoterm-alistp-alt-def)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines fty-if-to-if*
+  :short "Replace each @(tsee if) with @(tsee if*) in a term."
+
+  (define fty-if-to-if* ((term pseudo-termp))
+    :returns (term1 pseudo-termp)
+    (pseudo-term-case
+     term
+     :null (pseudo-term-fix term)
+     :quote (pseudo-term-fix term)
+     :var (pseudo-term-fix term)
+     :fncall (pseudo-term-fncall (if (eq term.fn 'if) 'if* term.fn)
+                                 (fty-if-to-if*-lst term.args))
+     :lambda (pseudo-term-lambda term.formals
+                                 (fty-if-to-if* term.body)
+                                 (fty-if-to-if*-lst term.args)))
+    :measure (pseudo-term-count term))
+
+  (define fty-if-to-if*-lst ((terms pseudo-term-listp))
+    :returns (terms1 pseudo-term-listp)
+    (cond ((endp terms) nil)
+          (t (cons (fty-if-to-if* (car terms))
+                   (fty-if-to-if*-lst (cdr terms)))))
+    :measure (pseudo-term-list-count terms)
+    ///
+    (defret len-of-fty-if-to-if*-lst
+      (equal (len terms1)
+             (len terms))))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards fty-if-to-if*))
