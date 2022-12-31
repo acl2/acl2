@@ -3518,7 +3518,6 @@
                                    *atc-wrapper-rules*
                                    *atc-distributivity-over-if-rewrite-rules*
                                    *atc-identifier-rules*
-                                   *atc-not-rules*
                                    *atc-integer-size-rules*
                                    *atc-limit-rules*
                                    *atc-not-error-rules*
@@ -3577,7 +3576,6 @@
                               *atc-wrapper-rules*
                               *atc-distributivity-over-if-rewrite-rules*
                               *atc-identifier-rules*
-                              *atc-not-rules*
                               *atc-integer-size-rules*
                               *atc-limit-rules*
                               *atc-not-error-rules*
