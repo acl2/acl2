@@ -306,7 +306,7 @@
 (define eval-intern-in-package-of-symbol ((x valuep)
                                           (y valuep)
                                           (packages package-listp))
-  :returns (result maybe-valuep)
+  :returns (result value-optionp)
   :short "Evaluation semantics of @(tsee intern-in-package-of-symbol)."
   :long
   (xdoc::topstring
@@ -385,7 +385,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-pkg-imports ((x valuep) (packages package-listp))
-  :returns (result maybe-valuep)
+  :returns (result value-optionp)
   :short "Evaluation semantics of @(tsee pkg-imports)."
   :long
   (xdoc::topstring
@@ -417,7 +417,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-pkg-witness ((x valuep) (packages package-listp))
-  :returns (result maybe-valuep)
+  :returns (result value-optionp)
   :short "Evaluation semantics of @(tsee pkg-witness)."
   :long
   (xdoc::topstring

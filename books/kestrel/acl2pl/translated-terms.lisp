@@ -149,10 +149,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-tterm
+(fty::defoption tterm-option
   tterm
-  :short "Fixtype of translated terms and @('nil')."
-  :pred maybe-ttermp)
+  :short "Fixtype of optional translated terms."
+  :pred tterm-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
