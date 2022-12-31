@@ -216,7 +216,7 @@
    (xdoc::p
     "Support has been added to represent and generate
      code that handles structures by value,
-     in addition to by pointer.")
+     in addition to code that handles structures by pointer.")
 
    (xdoc::p
     "An option to generate header files has been added.
