@@ -52,4 +52,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::deftreeops *imf-grammar-rules* :prefix imf-cst)
+(deftreeops *imf-grammar-rules* :prefix imf-cst)

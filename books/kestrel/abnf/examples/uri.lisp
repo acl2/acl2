@@ -105,4 +105,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::deftreeops *all-uri-grammar-rules* :prefix uri-cst)
+(deftreeops *all-uri-grammar-rules* :prefix uri-cst)

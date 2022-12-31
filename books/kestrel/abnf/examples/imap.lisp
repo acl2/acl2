@@ -53,4 +53,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::deftreeops *imap-grammar-rules* :prefix imap-cst)
+(deftreeops *imap-grammar-rules* :prefix imap-cst)
