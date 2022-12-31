@@ -15576,8 +15576,6 @@
 ; (trace$
 ;  (translate-hints+1)
 ;  (translate-hints+1@par)
-;  (translate-hints2)
-;  (translate-hints2@par)
 ;  (translate-hints1)
 ;  (apply-override-hints@par)
 ;  (apply-override-hints)
@@ -16316,8 +16314,8 @@
         (t ; term is (caddr (cdr hint)); we allow any term here
          (value@par nil))))
 
-(defun@par translate-hints1 (name-tree lst hint-type override-hints ctx wrld
-                                       state)
+(defun@par translate-hints1 (name-tree lst hint-type override-hints
+                                       seen ctx wrld state)
 
 ; A note on the taxonomy of translated hints.  A "hint setting" is a pair of
 ; the form (key . val), such as (:DO-NOT-INDUCT . T) or (:USE . (lmi-lst
@@ -16329,6 +16327,8 @@
 ; Thus, following the :HINTS keyword to defthm, the user types "hints" (in
 ; untranslated form).  This function takes a lst, which is supposed be some
 ; hints, and translates it or else causes an error.
+
+; Seen is the list of goal names (each a string) that have been encountered.
 
 ; Essay on the Handling of Override-hints
 
@@ -16359,84 +16359,71 @@
 ; selected by find-applicable-hint-settings -- namely, by passing the world's
 ; override-hints to eval-and-translate-hint-expression.
 
-  (cond ((atom lst)
-         (cond ((null lst) (value@par nil))
-               (t (er@par soft ctx
-                    "The :HINTS keyword is supposed to have a true-list as ~
-                     its value, but ~x0 is not one.  See :DOC hints."
-                    lst))))
-        ((and (consp (car lst))
-              (stringp (caar lst))
-              (null (cdar lst)))
-         (translate-hints1@par name-tree (cdr lst) hint-type override-hints ctx
-                               wrld state))
-        (t (er-let*@par
-            ((hint (cond ((and (consp (car lst))
-                               (stringp (caar lst)))
-                          (translate-hint@par name-tree (car lst) hint-type ctx
-                                              wrld state))
-                         (t (translate-hint-expression@par
-                             name-tree (car lst) hint-type ctx wrld state))))
-             (rst (translate-hints1@par name-tree (cdr lst) hint-type
-                                        override-hints ctx wrld state)))
-            (er-progn@par
-             (cond ((eq hint-type 'override)
-                    (check-translated-override-hint@par hint (car lst) ctx state))
-                   (t (value@par nil)))
-             (value@par (cons (cond ((atom hint) hint) ; nil
-                                    ((and (consp (car lst))
-                                          (stringp (caar lst)))
-                                     (cond (override-hints
-                                            (list* (car hint) ; (caar lst)
-                                                   (cons :KEYWORD-ALIST
-                                                         (cdar lst))
-                                                   (cons :NAME-TREE
-                                                         name-tree)
-                                                   (cdr hint)))
-                                           (t hint)))
-                                    ((eq (car hint)
-                                         'eval-and-translate-hint-expression)
-                                     hint)
-                                    (t (er hard ctx
-                                           "Internal error: Unexpected ~
-                                            translation ~x0 for hint ~x1.  ~
-                                            Please contact the ACL2 ~
-                                            implementors."
-                                           hint (car lst))))
-                              rst)))))))
-
-(defun@par warn-on-duplicate-hint-goal-specs (lst seen ctx state)
-  (cond ((endp lst)
-         (state-mac@par))
-        ((and (consp (car lst))
-              (stringp (caar lst)))
-         (if (member-equal (caar lst) seen)
-             (pprogn@par (warning$@par ctx ("Hints")
-                           "The goal-spec ~x0 is explicitly associated with ~
-                            more than one hint.  All but the first of these ~
-                            hints may be ignored.  If you intended to give ~
-                            all of these hints, combine them into a single ~
-                            hint of the form (~x0 :kwd1 val1 :kwd2 val2 ...). ~
-                            ~ See :DOC hints-and-the-waterfall."
-                           (caar lst))
-                         (warn-on-duplicate-hint-goal-specs@par (cdr lst) seen
-                                                                ctx state))
-           (warn-on-duplicate-hint-goal-specs@par (cdr lst)
-                                                  (cons (caar lst) seen)
-                                                  ctx state)))
-        (t (warn-on-duplicate-hint-goal-specs@par (cdr lst) seen ctx state))))
-
-(defun@par translate-hints2 (name-tree lst hint-type override-hints ctx wrld state)
-  (cond ((warning-disabled-p "Hints")
-         (translate-hints1@par name-tree lst hint-type override-hints ctx wrld
-                               state))
-        (t
-         (er-let*@par ((hints (translate-hints1@par name-tree lst hint-type
-                                                    override-hints ctx wrld
-                                                    state)))
-                      (pprogn@par (warn-on-duplicate-hint-goal-specs@par
-                                   lst nil ctx state)
-                                  (value@par hints))))))
+  (cond
+   ((atom lst)
+    (cond ((null lst) (value@par nil))
+          (t (er@par soft ctx
+               "The :HINTS keyword is supposed to have a true-list as its ~
+                value, but ~x0 is not one.  See :DOC hints."
+               lst))))
+   (t
+    (let ((goal-name (and (consp (car lst))
+                          (stringp (caar lst))
+                          (caar lst))))
+      (cond
+       ((and goal-name
+             (null (cdar lst)))
+        (translate-hints1@par name-tree (cdr lst) hint-type override-hints
+                              seen ctx wrld state))
+       (t
+        (er-let*@par
+         ((hint (cond (goal-name
+                       (pprogn@par
+                        (if (member-string-equal goal-name seen)
+                            (warning$@par ctx "Hints"
+                              "The goal-spec ~x0 is explicitly associated ~
+                               with more than one hint.  All but the first of ~
+                               these hints may be ignored.  If you intended ~
+                               to give all of these hints, consider combining ~
+                               them into a single hint of the form (~x0 :kwd1 ~
+                               val1 :kwd2 val2 ...).  See :DOC hints and :DOC ~
+                               hints-and-the-waterfall; community book ~
+                               books/hints/merge-hint.lisp might also be ~
+                               helpful."
+                              goal-name)
+                            (state-mac@par))
+                        (translate-hint@par name-tree (car lst) hint-type ctx
+                                            wrld state)))
+                      (t (translate-hint-expression@par
+                          name-tree (car lst) hint-type ctx wrld state))))
+          (rst (translate-hints1@par name-tree (cdr lst) hint-type
+                                     override-hints
+                                     (cond (goal-name (cons goal-name seen))
+                                           (t seen))
+                                     ctx wrld state)))
+         (er-progn@par
+          (cond ((eq hint-type 'override)
+                 (check-translated-override-hint@par hint (car lst) ctx state))
+                (t (value@par nil)))
+          (value@par (cons (cond ((atom hint) hint) ; nil
+                                 (goal-name
+                                  (cond (override-hints
+                                         (list* (car hint)
+                                                (cons :KEYWORD-ALIST
+                                                      (cdar lst))
+                                                (cons :NAME-TREE
+                                                      name-tree)
+                                                (cdr hint)))
+                                        (t hint)))
+                                 ((eq (car hint)
+                                      'eval-and-translate-hint-expression)
+                                  hint)
+                                 (t (er hard ctx
+                                        "Internal error: Unexpected ~
+                                         translation ~x0 for hint ~x1.  ~
+                                         Please contact the ACL2 implementors."
+                                        hint (car lst))))
+                           rst))))))))))
 
 (defun override-hints (wrld)
   (declare (xargs :guard (and (plist-worldp wrld)
@@ -16445,7 +16432,7 @@
   (cdr (assoc-eq :override (table-alist 'default-hints-table wrld))))
 
 (defun@par translate-hints (name-tree lst ctx wrld state)
-  (translate-hints2@par name-tree lst nil (override-hints wrld) ctx wrld
+  (translate-hints1@par name-tree lst nil (override-hints wrld) nil ctx wrld
                         state))
 
 (defun@par translate-hints+1 (name-tree lst default-hints ctx wrld state)
@@ -16470,18 +16457,18 @@
 
 (defun translate-override-hints (name-tree lst ctx wrld state)
   #-acl2-par
-  (translate-hints2 name-tree lst 'override
+  (translate-hints1 name-tree lst 'override
                     nil ; no override-hints are applied
-                    ctx wrld state)
+                    nil ctx wrld state)
   #+acl2-par
   (if (f-get-global 'waterfall-parallelism state)
       (cmp-to-error-triple
-       (translate-hints2@par name-tree lst 'override
+       (translate-hints1@par name-tree lst 'override
                              nil ; no override-hints are applied
-                             ctx wrld state))
-    (translate-hints2 name-tree lst 'override
+                             nil ctx wrld state))
+    (translate-hints1 name-tree lst 'override
                       nil ; no override-hints are applied
-                      ctx wrld state)))
+                      nil ctx wrld state)))
 
 (defun@par apply-override-hint1
   (override-hint cl-id clause hist pspv ctx wrld
