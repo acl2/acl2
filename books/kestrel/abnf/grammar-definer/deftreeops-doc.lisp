@@ -188,4 +188,19 @@
        if a list of list of trees matches
        the alternation that defines the rule name
        then the list of list of trees matches
-       one of the alternatives (each of which is a concatenation.")))))
+       one of the alternatives (each of which is a concatenation."))
+
+    (xdoc::desc
+     "@('<prefix>-match-alt<i>-<rulename>')"
+     (xdoc::p
+      "For each rule name defined in the grammar,
+       and for each alternative @('<i>') (starting from 1)
+       that defines the rule name,
+       a theorem saying that
+       if a list of list of trees matches that alternative
+       (which is a concatenation)
+       then the list of list of trees has the same length as the concatenation
+       and each list of trees matches
+       the corresponding repetition of the concatenation.
+       For now we only generate this theorem
+       when the alternative is a singleton concatenation.")))))
