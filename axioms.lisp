@@ -27669,7 +27669,6 @@ Lisp definition."
      translate-hint
      translate-hints
      translate-hints1
-     translate-hints2
      translate-hints+1
      translate-hint-expression
      translate-hint-expressions
@@ -27692,7 +27691,6 @@ Lisp definition."
      translate-use-hint
      translate-use-hint1
      translate-x-hint-value
-     warn-on-duplicate-hint-goal-specs
      waterfall-msg
      waterfall-print-clause
      waterfall-step

@@ -221,6 +221,7 @@
      to execute the block items completely."))
   ((items block-item-list)
    (type type)
+   (term pseudo-termp)
    (limit pseudo-term)
    (events pseudo-event-form-list)
    (thm-name symbol)
@@ -236,6 +237,7 @@
   :type stmt-goutp
   :body (make-stmt-gout :items nil
                         :type (irr-type)
+                        :term nil
                         :limit nil
                         :events nil
                         :thm-name nil
@@ -511,6 +513,7 @@
         (retok (make-stmt-gout
                 :items (list (block-item-stmt stmt))
                 :type expr.type
+                :term expr.term
                 :limit (pseudo-term-fncall
                         'binary-+
                         (list (pseudo-term-quote 3)
@@ -584,6 +587,7 @@
                                      thm-index names-to-avoid state)))
     (retok (make-stmt-gout :items items
                            :type expr.type
+                           :term expr.term
                            :limit items-limit
                            :events (append expr.events
                                            (list stmt-event)
@@ -597,6 +601,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-if/ifelse-stmt ((term pseudo-termp)
+                                (test-term pseudo-termp)
                                 (then-term pseudo-termp)
                                 (else-term pseudo-termp)
                                 (test-expr exprp)
@@ -676,6 +681,7 @@
          (make-stmt-gout
           :items (list (block-item-stmt stmt))
           :type type
+          :term term
           :limit (pseudo-term-fncall
                   'binary-+
                   (list
@@ -860,6 +866,7 @@
      (make-stmt-gout
       :items items
       :type type
+      :term `(if ,test-term ,then-term ,else-term)
       :limit items-limit
       :events (append test-events
                       then-events
@@ -1173,7 +1180,7 @@
                                             else-enter-scope-events
                                             (stmt-gout->events gout)))
                  else-context))))
-          (atc-gen-if/ifelse-stmt term then-term else-term
+          (atc-gen-if/ifelse-stmt term test.term then.term else.term
                                   test.expr then.items else.items
                                   then.type else.type
                                   then.limit else.limit
@@ -1302,6 +1309,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type type
+                        :term term
                         :limit limit
                         :events (append init.events body.events)
                         :thm-name nil
@@ -1394,6 +1402,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type type
+                        :term term
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -1460,6 +1469,7 @@
           (retok (make-stmt-gout
                   :items items
                   :type type
+                  :term term
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -1576,6 +1586,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type body.type
+                        :term term
                         :limit limit
                         :events (append arr.events
                                         sub.events
@@ -1680,6 +1691,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type body.type
+                        :term term
                         :limit limit
                         :events (append struct.events
                                         member.events)
@@ -1806,6 +1818,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type body.type
+                        :term term
                         :limit limit
                         :events (append struct.events
                                         index.events
@@ -1899,6 +1912,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type type
+                        :term term
                         :limit limit
                         :events (append init.events body.events)
                         :thm-name nil
@@ -1982,6 +1996,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type type
+                        :term term
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -2037,6 +2052,7 @@
           (retok (make-stmt-gout
                   :items items
                   :type type
+                  :term term
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -2055,6 +2071,7 @@
           (retok (make-stmt-gout
                   :items nil
                   :type (type-void)
+                  :term term
                   :limit (pseudo-term-quote 1)
                   :events nil
                   :thm-name nil
@@ -2076,6 +2093,7 @@
            ((equal terms gin.affect)
             (retok (make-stmt-gout :items nil
                                    :type (type-void)
+                                   :term term
                                    :limit (pseudo-term-quote 1)
                                    :events nil
                                    :thm-name nil
@@ -2138,6 +2156,7 @@
           (retok (make-stmt-gout
                   :items (list (block-item-stmt loop-stmt))
                   :type (type-void)
+                  :term term
                   :limit limit
                   :events nil
                   :thm-name nil
@@ -2149,6 +2168,7 @@
             (retok (make-stmt-gout
                     :items nil
                     :type (type-void)
+                    :term term
                     :limit (pseudo-term-quote 1)
                     :events nil
                     :thm-name nil
@@ -2211,6 +2231,7 @@
           (retok (make-stmt-gout
                   :items (list (block-item-stmt (stmt-expr call-expr)))
                   :type (type-void)
+                  :term term
                   :limit `(binary-+ '5 ,limit)
                   :events args.events
                   :thm-name nil
