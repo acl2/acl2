@@ -13,8 +13,6 @@
 ;; A formalization of rank-1 constraint systems (R1CSes) in sparse form (with
 ;; only non-zero entries in the vectors represented).
 
-;; See also ../dense/r1cs.lisp.
-
 ;; TODO: Consider not requiring the prime to actually be prime.
 
 (include-book "../valuations")
@@ -277,7 +275,7 @@
   ;; We have our own xdoc topic called r1cs:
   :suppress-xdoc t)
 
-;; Since checking the guards if very slow when the prime is large:
+;; Since checking the guards is very slow when the prime is large:
 (in-theory (disable (:e r1cs)))
 
 ;; Compute the dot product of the vector of coefficients and the vector of
