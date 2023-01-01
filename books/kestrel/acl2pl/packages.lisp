@@ -62,15 +62,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-package
+(fty::defoption package-option
   package
-  :short "Fixtype of packages and @('nil')."
-  :pred maybe-packagep)
+  :short "Fixtype of optional packages."
+  :pred package-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define package-lookup ((name stringp) (packages package-listp))
-  :returns (package? maybe-packagep)
+  :returns (package? package-optionp)
   :short "Look up a package in a list, by name."
   :long
   (xdoc::topstring
@@ -98,7 +98,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define import-lookup ((name stringp) (imports symbol-value-listp))
-  :returns (symbol? maybe-symbol-valuep)
+  :returns (symbol? symbol-value-optionp)
   :short "Find a symbol with a given name in a package import list."
   :long
   (xdoc::topstring

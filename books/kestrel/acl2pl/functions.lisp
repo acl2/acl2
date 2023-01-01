@@ -75,15 +75,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-function
+(fty::defoption function-option
   function
-  :short "Fixtype of functions and @('nil')."
-  :pred maybe-functionp)
+  :short "Fixtype of optional functions."
+  :pred function-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define function-lookup ((name symbol-valuep) (functions function-setp))
-  :returns (function? maybe-functionp)
+  :returns (function? function-optionp)
   :short "Look up a function in a set, by name."
   :long
   (xdoc::topstring

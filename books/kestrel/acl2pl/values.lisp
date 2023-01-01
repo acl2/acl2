@@ -1,6 +1,6 @@
 ; ACL2 Programming Language Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -66,10 +66,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-symbol-value
+(fty::defoption symbol-value-option
   symbol-value
-  :short "Fixtype of symbol values and @('nil')."
-  :pred maybe-symbol-valuep)
+  :short "Fixtype of optional symbol values."
+  :pred symbol-value-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -219,10 +219,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-value
+(fty::defoption value-option
   value
-  :short "Fixtype of values and @('nil')."
-  :pred maybe-valuep)
+  :short "Fixtype of optional values."
+  :pred value-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
