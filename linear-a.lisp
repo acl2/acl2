@@ -1468,14 +1468,6 @@
 ;; needed here.  Besides, I'm not sure what the right value would be
 ;; for a real number!
 
-(defmacro fn-count-evg-max-val ()
-
-; Warning: (* 2 (fn-count-evg-max-val)) must be a (signed-byte 30); see
-; fn-count-evg-rec and max-form-count-lst.  Modulo that requirement, we just
-; pick a large natural number rather arbitrarily.
-
-  200000)
-
 (defmacro fn-count-evg-max-val-neg ()
   (-f (fn-count-evg-max-val)))
 

@@ -6142,57 +6142,6 @@
         (t (and (dumb-occur-lst (car args) top-clause)
                 (all-args-occur-in-top-clausep (cdr args) top-clause)))))
 
-(defun cons-count-bounded-ac (x i max)
-
-; We accumulate into i the number of conses in x, bounding our result by max,
-; which is generally not less than i at the top level.
-
-; With the xargs declarations shown below, we can verify termination and guards
-; as follows.
-
-;   (verify-termination (cons-count-bounded-ac
-;                        (declare (xargs :verify-guards nil))))
-;
-;   (defthm lemma-1
-;     (implies (integerp i)
-;              (integerp (cons-count-bounded-ac x i max)))
-;     :rule-classes (:rewrite :type-prescription))
-;
-;   (defthm lemma-2
-;     (implies (integerp i)
-;              (>= (cons-count-bounded-ac x i max) i))
-;     :rule-classes :linear)
-;
-;   (defthm lemma-3
-;     (implies (and (integerp i)
-;                   (integerp max)
-;                   (<= i max))
-;              (<= (cons-count-bounded-ac x i max)
-;                  max))
-;     :rule-classes :linear)
-;
-;   (verify-guards cons-count-bounded-ac)
-
-  (declare (type (signed-byte 30) i max)
-           (xargs :guard (<= i max)
-                  :measure (acl2-count x)
-                  :ruler-extenders :lambdas))
-  (the (signed-byte 30)
-    (cond ((or (atom x) (>= i max))
-           i)
-          (t (let ((i (cons-count-bounded-ac (car x) (1+f i) max)))
-               (declare (type (signed-byte 30) i))
-               (cons-count-bounded-ac (cdr x) i max))))))
-
-(defun cons-count-bounded (x)
-
-; We return the number of conses in x, except we bound our result by
-; (fn-count-evg-max-val).  We choose (fn-count-evg-max-val) as our bound simply
-; because that bound is used in the similar computation of fn-count-evg.
-
-  (the (signed-byte 30)
-    (cons-count-bounded-ac x 0 (fn-count-evg-max-val))))
-
 (mutual-recursion
 
 (defun max-form-count (term)

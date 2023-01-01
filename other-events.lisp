@@ -24386,6 +24386,298 @@
                           on)))
          (value :invisible)))))
 
+; The following code supports the explain-giant-lambda-object utility that the
+; user might invoke when hons-copy-lambda-object? signals an error because a
+; lambda is too big.  We wait to now to introduce this stuff because it
+; mentions trace-evisceration-alist which was only recently defined above.
+
+(defun fetch-addr1 (n x)
+
+; N is coerced to a nat.  We enumerate the ``pseudo-elements'' of x from 1 and
+; consider the (possibly invisible) dot at the end to be at position (len x)+1
+; and return |.|, and the final cdr (often nil) to be at position (len x)+2.
+; If n exceeds (len x)+2 we return nil.  Thus, if x is (a b . c), then
+; (fetch-addr1 1 x) = a, ; (fetch-addr1 2 x) = b, (fetch-addr1 3 x) = |.|,
+; (fetch-addr1 4 x) = c.
+
+; We adopt this unconventional enumeration so that our addresses match those
+; used by walkabout.
+
+  (cond
+   ((consp x)
+    (cond
+     ((zp n) nil)
+     ((eql n 1) (car x))
+     (t (fetch-addr1 (- n 1) (cdr x)))))
+   ((zp n) nil)
+   ((eql n 1) '|.|)
+   ((eql n 2) x)
+   (t nil)))
+
+(defun fetch-addr (addr x)
+
+; Addr is assumed to be a list of positive nats, each being the 1-based
+; position of a ``pseudo-element'' in the object to which it refers.  We
+; navigate down to the same substructure of x that walkabout would if the user
+; typed that sequence of numbers.
+
+; We adopt this unconventional enumeration so that our addresses match those
+; used by walkabout.
+
+  (cond
+   ((endp addr) x)
+   (t (let ((x1 (fetch-addr1 (car addr) x))
+            (addr1 (cdr addr)))
+        (cond
+         ((and (atom x1) addr1)
+          nil)
+         (t (fetch-addr addr1 x1)))))))
+
+(mutual-recursion
+
+(defun explore-giant-term (term raddr bq-lst i min max)
+
+; In the following when we say ``cons-count'' of an object we mean the number
+; of conses in it, but bounded by max.  We explore term looking for big quoted
+; constants, i.e., those whose cons-counts equal or exceed min. We also compute
+; the cons-count of the ``matrix'' of term.  The matrix of term is term itself
+; with the large constants replaced by terms of 0 cons-counts.  We return (mv
+; bq-lst i).  where bq-lst is a ``big quote list'' (explained below) and i is
+; the total cons-count of the matrix of term.  The bq-lst contains triples (cc
+; addr . bq), where bq is a big quote collected from term, addr is its address
+; and cc is the cons-count of bq.  By ``address'' we mean a list of nats for
+; navigating to term from the top.  E.g., address (1 3 2) in the term ((lambda
+; (x y) (foo z)) a b) is z.  We accumulate address in reverse order, as raddr.
+
+; However, this whole exploration stops if the cons-count of the matrix of term
+; exceeds max.  So we might not find all of the large constants.  The indicator
+; that this has occurred is if the returned i is max or greater.
+
+  (cond
+   ((>= i max)
+    (mv bq-lst i))
+   ((variablep term) (mv bq-lst i))
+   ((fquotep term)
+    (let ((qi (cons-count-bounded-ac term 0 max)))
+      (cond
+       ((< qi min) ; term is not a ``large'' quoted constant
+        (mv bq-lst (+ qi i)))
+       (t (mv (cons (cons qi (cons (revappend raddr nil) term))
+                    bq-lst)
+              i)))))
+   ((flambdap (ffn-symb term))
+
+; We know the fnn-symb is a well-formed lambda expression, (LAMBDA vars body),
+; where vars is a true-list of symbols (with cons-count (len vars)). 
+
+    (mv-let (bq-lst1 i1)
+      (explore-giant-term
+       (lambda-body (ffn-symb term))
+       (cons 3 (cons 1 raddr))
+       bq-lst
+       (+ 4 (len (lambda-formals (ffn-symb term))) i)
+       min max)
+      (explore-giant-term-lst (fargs term)
+                                          2 raddr bq-lst1 i1 min max)))
+   (t (explore-giant-term-lst (fargs term)
+                                          2 raddr bq-lst (+ 1 i) min max))))
+
+(defun explore-giant-term-lst (terms n raddr bq-lst i min max)
+  (cond
+   ((endp terms)
+    (mv bq-lst i))
+   (t (mv-let (bq-lst1 i1)
+        (explore-giant-term
+         (car terms)
+         (cons n raddr)
+         bq-lst i min max)
+        (explore-giant-term-lst (cdr terms)
+                                (+ 1 n) raddr
+                                bq-lst1 (+ 1 i1) min max))))))
+
+(defun tilde-*-big-constants-phrase (bq-lst)
+  (cond
+   ((endp bq-lst) nil)
+   (t (cons
+       (msg "* ~X01~|  accounts for at ~
+             least ~x2 conses:~|~  ~Y34"
+            `(fetch-addr ',(cadr (car bq-lst)) (@ giant-lambda-object))
+            nil
+            (car (car bq-lst))
+            (cddr (car bq-lst))
+            (evisc-tuple 3 6 nil nil))
+       (tilde-*-big-constants-phrase (cdr bq-lst))))))
+
+(defun explain-giant-lambda-object-fn (state)
+
+; We recover the most recent excessively large lambda object reported by
+; hons-copy-lambda-object? and try to determine why it is so big.  We focus
+; entirely on finding an explanation in its body.  It is possible that it's
+; large because it has hundreds of thousands of formals and a ridiculous
+; DECLARE form.  But we completely ignore the LAMBDA, the formals, and the
+; declaration (if any).  We think these sources of conses contribute relatively
+; few to a count that has exceeded (lambda-object-count-max-val).
+
+  (er-let*
+      ((quoted-lambda-obj (read-hons-copy-lambda-object-culprit state))
+       (lambda-obj (assign giant-lambda-object (unquote quoted-lambda-obj)))
+       (body (value (lambda-object-body lambda-obj)))) 
+    (let* ((max (lambda-object-count-max-val))
+           (qmin (floor max 1000))
+           (qmax (floor max 2)))
+      (mv-let (bq-lst i)
+        (explore-giant-term body
+                            (if (lambda-object-dcl lambda-obj)
+                                '(4)
+                                '(3))
+                            nil 0 qmin qmax)
+        (let ((bq-lst (merge-sort-car-> bq-lst))
+              (chan (f-get-global 'standard-co state)))
+          (pprogn
+
+; We partition the possible explanations into 5 cases:
+
+; (a1) There is one big quoted constant and the matrix of the body is ok (not
+;      excessive).
+
+; (a2) There are multiple big quoted constants and the matrix of the body is ok
+;      (not excessive)
+
+; (a3) There are no big constants and the matrix of the body is ok (not
+;      excessive) -- which indicates the formals and declare account for the
+;      size.
+
+; (b) There are no big quoted constants and the matrix (i.e., the body) is
+;     excessive.
+
+; (c) There are large constants and a large matrix
+
+           (cond
+            ((null lambda-obj)
+             (fms "No giant lambda object has been encountered yet."
+                  nil
+                  chan state nil))
+            ((and (consp bq-lst) ; (a1)
+                  (null (cdr bq-lst))
+                  (< i qmax))
+             (fms
+              "The offending lambda object is~%~X01.~%You may retrieve this ~
+               object with (@ GIANT-LAMBDA-OBJECT).~%~%The reason it is so ~
+               big is probably due to the fact that at address ~X23 you'll ~
+               see the quoted constant ~X45, which contains at least ~x6 ~
+               conses.  You can retrieve this constant with ~X73.  ~
+               Alternatively, you can explore the giant lambda object with ~
+               walkabout (see :DOC walkabout).  The walkabout command ~X83 ~
+               will take you from the top of the lambda object to the large ~
+               constant.~%~%See :DOC explain-giant-lambda-object for ~
+               suggestions."
+              (list (cons #\0 lambda-obj)
+                    (cons #\1 (evisc-tuple 10 12
+                                           (trace-evisceration-alist state)
+                                           nil))
+                    (cons #\2 (cadr (car bq-lst)))
+                    (cons #\3 nil)
+                    (cons #\4 (cddr (car bq-lst)))
+                    (cons #\5 (evisc-tuple 3 6 nil nil))
+                    (cons #\6 (car (car bq-lst)))
+                    (cons #\7 `(fetch-addr ',(cadr (car bq-lst))
+                                           (@ giant-lambda-object)))
+                    (cons #\8 `(cmds ,@(cadr (car bq-lst)))))
+              chan state nil))
+            ((and (consp bq-lst) ; (a2)
+                  (< i qmax))
+             (fms
+              "The offending lambda object is~%~X01.~%You may retrieve this ~
+               object with (@ GIANT-LAMBDA-OBJECT).~%~%This lambda object ~
+               contains ~x2 large constants (described below) and the body of ~
+               the lambda itself is small (no more than ~x3 conses not ~
+               counting the large constants detailed below).~%~%The large ~
+               constants are sketched below.  The addresses, (i1 i2 ... in), ~
+               shown in the FETCH-ADDR forms are the locations of the ~
+               constants.  Executing the FETCH-ADDR forms will retrieve the ~
+               indicated constant.  Alternatively, if you use walkabout (see ~
+               :DOC walkabout) to explore the giant lambda object and you are ~
+               standing at the top of the object and wish to go to the ~
+               constant at address (i1 i2 ... in), use the walkabout command ~
+               (cmds i1 i2 ... in).~%~%~*4See :DOC ~
+               explain-giant-lambda-object for suggestions."
+              (list (cons #\0 lambda-obj)
+                    (cons #\1 (evisc-tuple 10 12
+                                           (trace-evisceration-alist state)
+                                           nil))
+                    (cons #\2 (len bq-lst))
+                    (cons #\3 i)
+                    (cons #\4 (list "" "~@*~%" "~@*~%" "~@*."
+                                    (tilde-*-big-constants-phrase bq-lst))))
+              chan state nil))
+            ((and (null bq-lst) ; (b)
+                  (>= i qmax))
+             (fms
+              "The offending lambda object is~%~X01.~%You may retrieve this ~
+               object with (@ GIANT-LAMBDA-OBJECT).~%~%This lambda object ~
+               apparently contains no quoted constants with more than ~x2 ~
+               conses.  We say ``apparently'' because we stopped looking when ~
+               the body's cons-count reached ~x3 conses.  This lambda object ~
+               has a large body and quoted constants apparently don't ~
+               contribute.~%~%See :DOC explain-giant-lambda-object for ~
+               suggestions."
+              (list (cons #\0 lambda-obj)
+                    (cons #\1 (evisc-tuple 10 12
+                                           (trace-evisceration-alist state)
+                                           nil))
+                    (cons #\2 qmin)
+                    (cons #\3 i))
+              chan state nil))
+            ((and (consp bq-lst) ; (c)
+                  (>= i qmax))
+             (fms
+              "The offending lambda object is~%~X01.~%You may retrieve this ~
+               object with (@ GIANT-LAMBDA-OBJECT).~%~%This lambda object ~
+               contains at least ~x2 large constant~#5~[~/s~] (described ~
+               below) and the body of the lambda itself is large too ~
+               (containing at least ~x3 conses not counting the large ~
+               constant~#5~[~/s~] detailed below).  We stopped looking for ~
+               large constants when the body's cons-count reached ~x3.~%~%The ~
+               large constant~#5~[ is~/s are~] sketched below.  The ~
+               address~#5~[~/es~], (i1 i2 ... in), shown in the FETCH-ADDR ~
+               form~#5~[ is~/s are~] the location~#5~[~/s~] of the ~
+               constant~#5~[~/s~].  Executing a FETCH-ADDR form will retrieve ~
+               the indicated constant.  Alternatively, if you use walkabout ~
+               (see :DOC walkabout) to explore the giant lambda object and ~
+               you are standing at the top of the object and wish to go to ~
+               the constant at address (i1 i2 ... in), use the walkabout ~
+               command (cmds i1 i2 ... in).~%~%~*4See :DOC ~
+               explain-giant-lambda-object for suggestions."
+              (list (cons #\0 lambda-obj)
+                    (cons #\1 (evisc-tuple 10 12
+                                           (trace-evisceration-alist state)
+                                           nil))
+                    (cons #\2 (len bq-lst))
+                    (cons #\3 i)
+                    (cons #\4 (list "" "~@*~%" "~@*~%and~%" "~@*."
+                                    (tilde-*-big-constants-phrase bq-lst)))
+                    (cons #\5 (if (cdr bq-lst)
+                                  1
+                                  0)))
+              chan state nil))
+            (t ; (a3) (and (null bq-lst) (< i qmax))
+             (fms
+              "The offending lambda object is~%~X01.~%You may retrieve this ~
+               object with (@ GIANT-LAMBDA-OBJECT).~%~%But the body of this ~
+               lambda object contains no more than ~x2 conses, so the ~
+               excessive size is due to the formals and declaration (if ~
+               any).~%~%See :DOC explain-giant-lambda-object for suggestions."
+              (list (cons #\0 lambda-obj)
+                    (cons #\1 (evisc-tuple 10 12
+                                           (trace-evisceration-alist state)
+                                           nil))
+                    (cons #\2 i))
+              chan state nil)))
+           (value nil)))))))
+
+(defmacro explain-giant-lambda-object ()
+  '(explain-giant-lambda-object-fn state))
+
 (defun defexec-extract-key (x keyword result result-p)
 
 ; X is a keyword-value-listp from an xargs declaration, and result-p indicates
