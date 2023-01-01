@@ -10,6 +10,7 @@
 
 (in-package "PFCS")
 
+(include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
 (include-book "well-formedness")
