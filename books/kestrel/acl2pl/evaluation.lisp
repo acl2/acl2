@@ -1,6 +1,6 @@
 ; ACL2 Programming Language Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -74,7 +74,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define get-leftmost-nonconst ((terms tterm-listp))
-  :returns (term? maybe-ttermp)
+  :returns (term? tterm-optionp)
   :short "Return the leftmost term in a list that is not a quoted constant."
   :long
   (xdoc::topstring
@@ -129,7 +129,7 @@
               (primitive-function-namep name)))
    (arguments value-listp)
    (program programp))
-  :returns (result maybe-valuep)
+  :returns (result value-optionp)
   :short "Call a primitive function on some arguments."
   :long
   (xdoc::topstring
