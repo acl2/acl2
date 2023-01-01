@@ -14,6 +14,8 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
+(include-book "kestrel/std/basic/if-star" :dir :system)
+
 (local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -647,6 +649,9 @@
    (xdoc::p
     "We then generate a theorem for the conditional statement,
      based on the theorems for the test and branches.
+     We turn the ACL2 @(tsee if) into @(tsee if*),
+     to prevent unwanted case splits in terms that may contain this term.
+     We use proof builder commands to split on this @(tsee if*).
      The limit for the conditional statement is
      one more than the sum of the ones for the branches;
      we could take one plus the maximum,
@@ -790,13 +795,14 @@
         (fresh-logical-name-with-$s-suffix if-stmt-thm nil names-to-avoid wrld))
        (if-stmt-limit
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
-       (uterm (untranslate$ term nil state))
+       (term* `(if* ,test-term ,then-term ,else-term))
+       (uterm* (untranslate$ term* nil state))
        (if-stmt-formula `(and (equal (exec-stmt ',stmt
                                                 ,gin.compst-var
                                                 ,gin.fenv-var
                                                 ,gin.limit-var)
-                                     (mv ,uterm ,gin.compst-var))
-                              (,type-pred ,uterm)))
+                                     (mv ,uterm* ,gin.compst-var))
+                              (,type-pred ,uterm*)))
        (if-stmt-formula (atc-contextualize if-stmt-formula gin.context nil))
        (if-stmt-formula
         `(implies (and (compustatep ,gin.compst-var)
@@ -826,10 +832,21 @@
                                  (:e stmt-if->then)
                                  ,then-stmt-thm
                                  booleanp-compound-recognizer)))))
+       (if-stmt-instructions
+        `((in-theory nil)
+          (casesplit ,test-term)
+          (claim (equal (if* ,test-term ,then-term ,else-term)
+                        ,then-term)
+                 :hints (("Goal" :in-theory '(acl2::if*-when-true))))
+          (prove :hints ,if-stmt-hints)
+          (claim (equal (if* ,test-term ,then-term ,else-term)
+                        ,else-term)
+                 :hints (("Goal" :in-theory '(acl2::if*-when-false))))
+          (prove :hints ,if-stmt-hints)))
        ((mv if-stmt-event &)
         (evmac-generate-defthm if-stmt-thm
                                :formula if-stmt-formula
-                               :hints if-stmt-hints
+                               :instructions if-stmt-instructions
                                :enable nil))
        ;; We temporarily do not submit the following two events,
        ;; because they fail in some examples,
