@@ -889,7 +889,7 @@
       :thm-name items-thm-name
       :thm-index thm-index
       :names-to-avoid names-to-avoid
-      :proofs nil))))
+      :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
