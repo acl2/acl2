@@ -85,6 +85,7 @@
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
+(include-book "kestrel/world-light/world-since-boot-strap" :dir :system)
 (include-book "kestrel/strings-light/downcase" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/untranslated-terms/conjuncts-of-uterm" :dir :system)
@@ -1256,6 +1257,7 @@
 
 (mutual-recursion
  ;; Extends ACC with hint-lists from the EVENT.
+ ;; TODO: Many of the structured constructs here can no longer appear, due to how we are getting defthm events from the world
  (defun hint-lists-from-history-event (event acc)
    (declare (xargs :guard (and ;; event
                            (true-listp acc)
@@ -1335,8 +1337,9 @@
   (declare (xargs :guard (natp num-recs)
                   :mode :program
                   :stobjs state))
-  (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state)) ; todo: how to get events, not commands (e.g., get what make-events expanded to)?
-       ((when erp) (mv erp nil state)))
+  (b* ((events ;;(acl2::get-command-sequence-fn 1 :max state)
+        (acl2::top-level-defthms-in-world (w state)))
+       )
     (mv nil (make-recs-from-history-events num-recs events) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
