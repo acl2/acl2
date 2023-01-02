@@ -90,6 +90,28 @@
    :hints (("Goal"
             :in-theory (e/d (svex-p 4vec-p) ())))))
 
+#|(skip-proofs
+ (defines bitand-xor-bad-pattern
+   :prepwork ((rp::create-case-match-macro bad-pattern
+                                           ('sv::bitxor 1 ('sv::bitxor 1 k))))
+   (define bitand-xor-bad-pattern ((x svex-p))
+     :measure (sv::Svex-count x)
+     (sv::Svex-case
+      x
+      :var nil
+      :quote nil
+      :call (or (and (bad-pattern-p x)
+                     (not (rp::cwe "bad pattern: ~p0 ~%" x)))
+                (bitand-xor-bad-pattern-list x.args))))
+   (define bitand-xor-bad-pattern-list ((lst svexlist-p))
+     :measure (sv::Svex-count lst)
+     (and (consp lst)
+          (or (bitand-xor-bad-pattern (car lst))
+              (bitand-xor-bad-pattern-list (cdr lst)))))
+   ///
+   (memoize 'bitand-xor-bad-pattern
+            :condition '(eq (sv::svex-kind x) :call))))|#
+
 (define bitand/or/xor-simple-constant-simplify (fn (arg1 svex-p)
                                                    (arg2 svex-p)
                                                    &optional 1masked)
@@ -312,9 +334,13 @@
   ;; TODO: Maybe a limit should be imposed for cancelling repeated in bitxor...
 
   (defconst *bitxor-cancel-repeated-limit*
-    3)
-  
-  (define bitxor-collect-repeated (svex leaves (limit natp))
+    10)
+
+  (define bitxor-collect-repeated (svex
+                                   leaves
+                                   (limit natp)
+                                   &key
+                                   (collect-4vecs 'collect-4vecs))
     :Returns (commons sv::Svexlist-p :hyp (and (sv::Svex-p svex))
                       :hints (("Goal"
                                :in-theory (e/d (svex-p
@@ -325,9 +351,9 @@
      ((zp limit)
       nil)
      ((member-hons-equal svex leaves)
-      (and ;;(not (4vec-p svex)) ;; don't clear constants as they likely come from bitnot.
+      (and (or collect-4vecs (not (4vec-p svex))) ;; don't clear constants as they likely come from bitnot.
            (list svex)))
-     (t 
+     (t
       (case-match svex
         (('bitxor x y)
          (append (bitxor-collect-repeated x leaves (1- limit))
@@ -345,7 +371,7 @@
       (mv svex nil))
      ((hons-equal svex node-to-remove)
       (mv 0 t))
-     (t 
+     (t
       (case-match svex
         (('bitxor x y)
          (b* (((mv new-x success-x)
@@ -380,9 +406,17 @@
            ((Unless success-2) ;; expected to never happen
             (bitxor-remove-nodes-from-both svex1 svex2 (cdr nodes-to-remove)))
            ((unless (integerp-of-svex (car nodes-to-remove)))
-            (bitxor-remove-nodes-from-both svex1 svex2 (cdr nodes-to-remove))))
+            (progn$ (rp::cwe "integerp-of-svex check has failed for ~p0~%" (car nodes-to-remove))
+                    (bitxor-remove-nodes-from-both svex1 svex2 (cdr nodes-to-remove)))))
 
         (bitxor-remove-nodes-from-both new-svex1 new-svex2 (cdr nodes-to-remove))))))
+
+(define extract-from-unfloat (x)
+  :Returns (res svex-p :hyp (svex-p x))
+  (case-match x
+    (('sv::unfloat y)
+     (extract-from-unfloat y))
+    (& x)))
 
 (define bitand/or/xor-cancel-repeated (fn
                                        (x sv::svex-p)
@@ -398,6 +432,8 @@
   (case fn
     (sv::bitor
      (b* ((under-xor nil)
+          (x (extract-from-unfloat x))
+          (y (extract-from-unfloat y))
           (l1 (bitand/or/xor-collect-leaves x 'sv::bitor))
           ((mv y changed-y) (bitand/bitor-cancel-repeated-aux y l1 0))
           (l2 (bitand/or/xor-collect-leaves y 'sv::bitor))
@@ -407,21 +443,38 @@
          (svex-reduce-w/-env-apply fn (hons-list x y)))))
     (sv::bitand
      (b* ((under-xor nil)
+          (x (extract-from-unfloat x))
+          (y (extract-from-unfloat y))
           (l1 (bitand/or/xor-collect-leaves x 'sv::bitand))
           ((mv y changed-y) (bitand/bitor-cancel-repeated-aux y l1  -1))
           (l2 (bitand/or/xor-collect-leaves y 'sv::bitand))
-          ((mv x changed-x) (bitand/bitor-cancel-repeated-aux x l2  -1)))
-       (if (or changed-x changed-y)
-           (bitand/or/xor-simple-constant-simplify 'sv::bitand x y nil)
-         (svex-reduce-w/-env-apply fn (hons-list x y)))))
+          ((mv x changed-x) (bitand/bitor-cancel-repeated-aux x l2  -1))
+          (result
+           (if (or changed-x changed-y)
+               (bitand/or/xor-simple-constant-simplify 'sv::bitand x y nil)
+             (svex-reduce-w/-env-apply fn (hons-list x y))))
+          #|(- (and (bitand-xor-bad-pattern result)
+          (acl2::raise "Found bitand-xor-bad-pattern. Input fn: ~p0, x:~p1, y:~p2. Result: ~p3~%" ;
+          fn x y result)))|#)
+       result))
     (sv::bitxor
-     (b* ((limit *bitxor-cancel-repeated-limit*)
+     (b* ((x (extract-from-unfloat x))
+          (y (extract-from-unfloat y))
+          (collect-4vecs (or* (equal x 1)
+                              (equal y 1)))
+          (limit *bitxor-cancel-repeated-limit*)
           (leaves (bitand/or/xor-collect-leaves x 'sv::bitxor))
           (commons (bitxor-collect-repeated y leaves limit))
           (- (and commons
                   (rp::cwe "Some commons in botxor are found: ~p0 in x:~p1 and y:~p2~%" commons x y)))
-          ((mv x y) (bitxor-remove-nodes-from-both x y commons)))
-       (svex-reduce-w/-env-apply fn (hons-list x y))))
+          ((mv x y) (bitxor-remove-nodes-from-both x y commons))
+
+          (result (svex-reduce-w/-env-apply fn (hons-list x y)))
+
+          
+          )
+       result
+       ))
     (otherwise
      (svex-reduce-w/-env-apply fn (hons-list x y)))))
 
@@ -580,39 +633,43 @@
   (equal (4vec-part-select 0 1 x)
          x))
 
-(local
- (defun eval-bitand-lst (lst env)
-   (if (atom lst)
-       -1
-     (4vec-bitand (svex-eval (car lst) env)
-                  (eval-bitand-lst (cdr lst) env)))))
+(defun svex-eval-bitand-lst (lst env)
+  (if (atom lst)
+      -1
+    (4vec-bitand (svex-eval (car lst) env)
+                 (svex-eval-bitand-lst (cdr lst) env))))
+
+(defun svex-eval-bitxor-lst (lst env)
+  (if (atom lst)
+      0
+    (sv::4vec-bitxor (svex-eval (car lst) env)
+                     (svex-eval-bitxor-lst (cdr lst) env))))
+
+(defun svex-eval-bitor-lst (lst env)
+  (if (atom lst)
+      0
+    (4vec-bitor (svex-eval (car lst) env)
+                (svex-eval-bitor-lst (cdr lst) env))))
 
 (local
- (defun eval-bitor-lst (lst env)
-   (if (atom lst)
-       0
-     (4vec-bitor (svex-eval (car lst) env)
-                 (eval-bitor-lst (cdr lst) env)))))
+ (defthm 3VEC-P-of-SVEX-EVAL-BITOR-LST
+   (sv::3vec-p (SVEX-EVAL-BITOR-LST lst env))))
 
 (local
- (defthm 3VEC-P-of-EVAL-BITOR-LST
-   (sv::3vec-p (EVAL-BITOR-LST lst env))))
+ (defthm 3VEC-P-of-Svex-Eval-Bitand-Lst
+   (sv::3vec-p (Svex-Eval-Bitand-Lst lst env))))
 
 (local
- (defthm 3VEC-P-of-EVAL-BITand-LST
-   (sv::3vec-p (EVAL-BITand-LST lst env))))
+ (defthm 4VEC-P-of-SVEX-EVAL-BITOR-LST
+   (sv::4vec-p (SVEX-EVAL-BITOR-LST lst env))))
 
 (local
- (defthm 4VEC-P-of-EVAL-BITOR-LST
-   (sv::4vec-p (EVAL-BITOR-LST lst env))))
+ (defthm 4VEC-P-of-Svex-Eval-Bitand-Lst
+   (sv::4vec-p (Svex-Eval-Bitand-Lst lst env))))
 
 (local
- (defthm 4VEC-P-of-EVAL-BITand-LST
-   (sv::4vec-p (EVAL-BITand-LST lst env))))
-
-(local
- (defthm when-eval-bitor-lst-evals-to-zero
-   (implies (and (equal (4vec-part-select 0 1 (eval-bitor-lst leaves env))
+ (defthm when-svex-eval-bitor-lst-evals-to-zero
+   (implies (and (equal (4vec-part-select 0 1 (svex-eval-bitor-lst leaves env))
                         0)
                  (member-equal svex leaves))
             (equal (4vec-part-select 0 1 (svex-eval svex env))
@@ -620,20 +677,20 @@
    :otf-flg t
    :hints (("goal"
             :do-not-induct t
-            :induct (eval-bitor-lst leaves env)
-            :in-theory (e/d (eval-bitor-lst
+            :induct (svex-eval-bitor-lst leaves env)
+            :in-theory (e/d (svex-eval-bitor-lst
                              4vec-part-select-of-4vec-bitor-better
                              member-equal)
                             ()))
            (and stable-under-simplificationp
                 '(:use ((:instance when-4vec-bitor-is-zero
-                                   (x (4VEC-PART-SELECT 0 1 (EVAL-BITOR-LST (CDR LEAVES) ENV)))
+                                   (x (4VEC-PART-SELECT 0 1 (SVEX-EVAL-BITOR-LST (CDR LEAVES) ENV)))
                                    (y (4VEC-PART-SELECT 0 1 (SVEX-EVAL (CAR
                                                                         LEAVES) ENV))))))))))
 
 (local
- (defthm when-eval-bitand-lst-evals-to-one
-   (implies (and (equal (4vec-part-select 0 1 (eval-bitand-lst leaves env))
+ (defthm when-svex-eval-bitand-lst-evals-to-one
+   (implies (and (equal (4vec-part-select 0 1 (svex-eval-bitand-lst leaves env))
                         1)
                  (member-equal svex leaves))
             (equal (4vec-part-select 0 1 (svex-eval svex env))
@@ -641,28 +698,28 @@
    :otf-flg t
    :hints (("goal"
             :do-not-induct t
-            :induct (eval-bitand-lst leaves env)
-            :in-theory (e/d (eval-bitand-lst
+            :induct (svex-eval-bitand-lst leaves env)
+            :in-theory (e/d (svex-eval-bitand-lst
                              4vec-part-select-of-4vec-bitand-better
                              member-equal)
                             ()))
            (and stable-under-simplificationp
                 '(:use ((:instance WHEN-4VEC-BITAND-IS-ONE-WITH-ONE-BIT-MASK
-                                   (x (4VEC-PART-SELECT 0 1 (EVAL-BITand-LST (CDR LEAVES) ENV)))
+                                   (x (4VEC-PART-SELECT 0 1 (Svex-Eval-Bitand-Lst (CDR LEAVES) ENV)))
                                    (y (4VEC-PART-SELECT 0 1 (SVEX-EVAL (CAR LEAVES) ENV))))))))))
 
 (local
- (defthm when-eval-bitor-lst-evals-to-nonzero
+ (defthm when-svex-eval-bitor-lst-evals-to-nonzero
    (implies (and (equal (4vec-part-select 0 1 (svex-eval svex env))
                         1)
                  (member-equal svex leaves))
-            (equal (4vec-part-select 0 1 (eval-bitor-lst leaves env))
+            (equal (4vec-part-select 0 1 (svex-eval-bitor-lst leaves env))
                    1))
    :otf-flg t
    :hints (("goal"
             :do-not-induct t
-            :induct (eval-bitor-lst leaves env)
-            :in-theory (e/d (eval-bitor-lst
+            :induct (svex-eval-bitor-lst leaves env)
+            :in-theory (e/d (svex-eval-bitor-lst
                              4vec-part-select-of-4vec-bitor-better
                              member-equal
                              PUSH-3VEC-FIX-INTO-4VEC-PART-SELECT)
@@ -671,17 +728,17 @@
                              ))))))
 
 (local
- (defthm when-eval-bitand-lst-evals-to-0
+ (defthm when-svex-eval-bitand-lst-evals-to-0
    (implies (and (equal (4vec-part-select 0 1 (svex-eval svex env))
                         0)
                  (member-equal svex leaves))
-            (equal (4vec-part-select 0 1 (eval-bitand-lst leaves env))
+            (equal (4vec-part-select 0 1 (svex-eval-bitand-lst leaves env))
                    0))
    :otf-flg t
    :hints (("goal"
             :do-not-induct t
-            :induct (eval-bitand-lst leaves env)
-            :in-theory (e/d (eval-bitand-lst
+            :induct (svex-eval-bitand-lst leaves env)
+            :in-theory (e/d (svex-eval-bitand-lst
                              4vec-part-select-of-4vec-bitand-better
                              member-equal
                              PUSH-3VEC-FIX-INTO-4VEC-PART-SELECT)
@@ -793,52 +850,52 @@
                  (single-bit-part-select-case-splitter clause)))))
 
 (local
- (defthm EVAL-BITOR-LST-ored-with-a-member
+ (defthm SVEX-EVAL-BITOR-LST-ored-with-a-member
    (implies (MEMBER-EQUAL SVEX LEAVES)
-            (equal (4VEC-BITOR (EVAL-BITOR-LST LEAVES ENV)
+            (equal (4VEC-BITOR (SVEX-EVAL-BITOR-LST LEAVES ENV)
                                (SVEX-EVAL SVEX ENV))
-                   (EVAL-BITOR-LST LEAVES ENV)))
+                   (SVEX-EVAL-BITOR-LST LEAVES ENV)))
    :hints (("Goal"
-            :in-theory (e/d (EVAL-BITOR-LST) ())))))
+            :in-theory (e/d (SVEX-EVAL-BITOR-LST) ())))))
 
 (local
- (defthm EVAL-BITAND-LST-anded-with-a-member
+ (defthm SVEX-EVAL-BITAND-LST-anded-with-a-member
    (implies (MEMBER-EQUAL SVEX LEAVES)
-            (equal (4VEC-BITAND (EVAL-BITAND-LST LEAVES ENV)
+            (equal (4VEC-BITAND (SVEX-EVAL-BITAND-LST LEAVES ENV)
                                 (SVEX-EVAL SVEX ENV))
-                   (EVAL-BITAND-LST LEAVES ENV)))
+                   (SVEX-EVAL-BITAND-LST LEAVES ENV)))
    :hints (("Goal"
-            :in-theory (e/d (EVAL-BITAND-LST) ())))))
+            :in-theory (e/d (SVEX-EVAL-BITAND-LST) ())))))
 
 (local
- (defthm integerp-of-eval-bitor-lst
+ (defthm integerp-of-svex-eval-bitor-lst
    (implies (and
              (sv::svexlist-p lst)
              (rp::rp-term-listp context)
              (integer-listp-of-svexlist lst env context)
              (rp::eval-and-all context a)
              (rp::falist-consistent-aux env env-term))
-            (integerp (eval-bitor-lst lst (rp-evlt env-term a))))
+            (integerp (svex-eval-bitor-lst lst (rp-evlt env-term a))))
    :hints (("Goal"
             :induct (len lst)
             :do-not-induct t
-            :in-theory (e/d (eval-bitor-lst
+            :in-theory (e/d (svex-eval-bitor-lst
                              INTEGER-LISTP-OF-SVEXLIST)
                             (rp-trans))))))
 
 (local
- (defthm integerp-of-eval-bitand-lst
+ (defthm integerp-of-svex-eval-bitand-lst
    (implies (and
              (sv::svexlist-p lst)
              (rp::rp-term-listp context)
              (integer-listp-of-svexlist lst env context)
              (rp::eval-and-all context a)
              (rp::falist-consistent-aux env env-term))
-            (integerp (eval-bitand-lst lst (rp-evlt env-term a))))
+            (integerp (svex-eval-bitand-lst lst (rp-evlt env-term a))))
    :hints (("Goal"
             :induct (len lst)
             :do-not-induct t
-            :in-theory (e/d (eval-bitand-lst
+            :in-theory (e/d (svex-eval-bitand-lst
                              INTEGER-LISTP-OF-SVEXLIST)
                             (rp-trans))))))
 
@@ -910,13 +967,13 @@
                  (rp::falist-consistent-aux env env-term)
                  )
             (equal
-             (4vec-bitor (eval-bitor-lst leaves (rp-evlt env-term a))
+             (4vec-bitor (svex-eval-bitor-lst leaves (rp-evlt env-term a))
                          (svex-eval simplified-svex (rp-evlt env-term a)))
-             (4vec-bitor (eval-bitor-lst leaves (rp-evlt env-term a))
+             (4vec-bitor (svex-eval-bitor-lst leaves (rp-evlt env-term a))
                          (svex-eval svex (rp-evlt env-term a)))))
    :fn bitand/bitor-cancel-repeated-aux
    ;;:otf-flg t
-   :hints (("Goal" 
+   :hints (("Goal"
             :induct (bitand/bitor-cancel-repeated-aux svex leaves  new-val :limit limit)
             :do-not-induct t
             :expand ((:free (x)
@@ -1017,17 +1074,17 @@
              (bitops::logbitp-reasoning)
              ))
 
-   (defthm width-of-eval-bitand-lst-lemma
+   (defthm width-of-svex-eval-bitand-lst-lemma
      (implies (and (member-equal svex leaves)
                    (natp width)
                    (equal (4vec-part-select 0 width (svex-eval svex env))
                           (svex-eval svex env)))
-              (equal (4vec-part-select 0 width (eval-bitand-lst leaves env))
-                     (eval-bitand-lst leaves env)))
+              (equal (4vec-part-select 0 width (svex-eval-bitand-lst leaves env))
+                     (svex-eval-bitand-lst leaves env)))
      :hints (("goal"
               :in-theory (e/d (move-over-part-select-from-4vec-bitand
                                member-equal
-                               eval-bitand-lst
+                               svex-eval-bitand-lst
                                4vec-part-select-of-4vec-bitand-better)
                               ()))))))
 
@@ -1040,9 +1097,9 @@
                  (rp::eval-and-all context a)
                  (rp::falist-consistent-aux env env-term))
             (equal
-             (4vec-bitand (eval-bitand-lst leaves (rp-evlt env-term a))
+             (4vec-bitand (svex-eval-bitand-lst leaves (rp-evlt env-term a))
                           (svex-eval simplified-svex (rp-evlt env-term a)))
-             (4vec-bitand (eval-bitand-lst leaves (rp-evlt env-term a))
+             (4vec-bitand (svex-eval-bitand-lst leaves (rp-evlt env-term a))
                           (svex-eval svex (rp-evlt env-term a)))))
    :fn bitand/bitor-cancel-repeated-aux
    :otf-flg t
@@ -1083,86 +1140,92 @@
                              acl2::member-equal-newvar-components-1))))))
 
 (local
- (defthm eval-bitor/bitand-lst-of-append
-   (and (equal (eval-bitor-lst (append x y) env)
-               (4vec-bitor (eval-bitor-lst x env)
-                           (eval-bitor-lst y env)))
-        (equal (eval-bitand-lst (append x y) env)
-               (4vec-bitand (eval-bitand-lst x env)
-                            (eval-bitand-lst y env))))
+ (defthm eval-bitor/bitand/bitxor-lst-of-append
+   (and (equal (svex-eval-bitor-lst (append x y) env)
+               (4vec-bitor (svex-eval-bitor-lst x env)
+                           (svex-eval-bitor-lst y env)))
+        (equal (svex-eval-bitand-lst (append x y) env)
+               (4vec-bitand (svex-eval-bitand-lst x env)
+                            (svex-eval-bitand-lst y env)))
+        (equal (svex-eval-bitxor-lst (append x y) env)
+               (sv::4vec-bitxor (svex-eval-bitxor-lst x env)
+                                (svex-eval-bitxor-lst y env))))
    :otf-flg t
    :hints (("goal"
-            :induct (eval-bitor-lst x env)
+            :induct (svex-eval-bitor-lst x env)
             :do-not-induct t
-            :expand ((eval-bitor-lst y env)
-                     (eval-bitand-lst y env))
-            :in-theory (e/d (eval-bitor-lst
-                             eval-bitand-lst) ())))))
+            :expand ((svex-eval-bitor-lst y env)
+                     (svex-eval-bitand-lst y env)
+                     (svex-eval-bitxor-lst y env))
+            :in-theory (e/d (svex-eval-bitxor-lst
+                             svex-eval-bitor-lst
+                             svex-eval-bitand-lst)
+                            ())))))
 
 (local
- (defthm eval-bitor-lst-of-bitand/or/xor-collect-leaves
+ (defthm svex-eval-bitor-lst-of-bitand/or/xor-collect-leaves
    (and
     (equal
-     (sv::3vec-fix (eval-bitor-lst (bitand/or/xor-collect-leaves svex 'sv::bitor) env))
+     (sv::3vec-fix (svex-eval-bitor-lst (bitand/or/xor-collect-leaves svex 'sv::bitor) env))
      (sv::3vec-fix (svex-eval svex env))))
    :hints (("goal"
-            :in-theory (e/d (eval-bitor-lst
-                             eval-bitand-lst
+            :in-theory (e/d (svex-eval-bitor-lst
+                             svex-eval-bitand-lst
                              bitand/or/xor-collect-leaves
 
                              )
                             ())))))
 
 (local
- (defthm eval-bitand-lst-of-bitand/or/xor-collect-leaves
+ (defthm svex-eval-bitand-lst-of-bitand/or/xor-collect-leaves
    (equal
-    (sv::3vec-fix (eval-bitand-lst (bitand/or/xor-collect-leaves svex 'sv::bitand) env))
+    (sv::3vec-fix (svex-eval-bitand-lst (bitand/or/xor-collect-leaves svex 'sv::bitand) env))
     (sv::3vec-fix (svex-eval svex env)))
    :hints (("goal"
-            :in-theory (e/d (eval-bitor-lst
-                             eval-bitand-lst
+            :in-theory (e/d (svex-eval-bitor-lst
+                             svex-eval-bitand-lst
                              bitand/or/xor-collect-leaves)
                             ())))))
 (local
- (defthm eval-bitor-lst-of-bitand/or/xor-collect-leaves-2
+ (defthm svex-eval-bitor-lst-of-bitand/or/xor-collect-leaves-2
    (and (equal
          (sv::4vec-bitor other
-                         (eval-bitor-lst (bitand/or/xor-collect-leaves svex 'sv::bitor) env)
+                         (svex-eval-bitor-lst (bitand/or/xor-collect-leaves svex 'sv::bitor) env)
                          )
          (sv::4vec-bitor (svex-eval svex env)
                          other))
         (equal
-         (sv::4vec-bitor (eval-bitor-lst (bitand/or/xor-collect-leaves svex 'sv::bitor) env)
+         (sv::4vec-bitor (svex-eval-bitor-lst (bitand/or/xor-collect-leaves svex 'sv::bitor) env)
                          other)
          (sv::4vec-bitor (svex-eval svex env)
                          other)))
    :hints (("goal"
-            :use ((:instance eval-bitor-lst-of-bitand/or/xor-collect-leaves))
+            :use ((:instance svex-eval-bitor-lst-of-bitand/or/xor-collect-leaves))
             :in-theory (e/d ()
-                            (eval-bitor-lst-of-bitand/or/xor-collect-leaves))))))
+                            (svex-eval-bitor-lst-of-bitand/or/xor-collect-leaves))))))
 
 (local
- (defthm eval-bitand-lst-of-bitand/or/xor-collect-leaves-2
+ (defthm svex-eval-bitand-lst-of-bitand/or/xor-collect-leaves-2
    (and (equal
          (sv::4vec-bitand other
-                          (eval-bitand-lst (bitand/or/xor-collect-leaves svex 'sv::bitand) env)
+                          (svex-eval-bitand-lst (bitand/or/xor-collect-leaves svex 'sv::bitand) env)
                           )
          (sv::4vec-bitand (svex-eval svex env)
                           other))
         (equal
-         (sv::4vec-bitand (eval-bitand-lst (bitand/or/xor-collect-leaves svex 'sv::bitand) env)
+         (sv::4vec-bitand (svex-eval-bitand-lst (bitand/or/xor-collect-leaves svex 'sv::bitand) env)
                           other)
          (sv::4vec-bitand (svex-eval svex env)
                           other)))
    :hints (("goal"
-            :use ((:instance eval-bitand-lst-of-bitand/or/xor-collect-leaves))
+            :use ((:instance svex-eval-bitand-lst-of-bitand/or/xor-collect-leaves))
             :in-theory (e/d ()
-                            (eval-bitand-lst-of-bitand/or/xor-collect-leaves))))))
+                            (svex-eval-bitand-lst-of-bitand/or/xor-collect-leaves))))))
 
 (local
  (defthm 4vec-p-of-EVAL-BITOR/and-LST
-   (and (sv::4vec-p (EVAL-BITOR-LST lst env))
-        (sv::4vec-p (EVAL-BITand-LST lst env)))))
+   (and (sv::4vec-p (SVEX-EVAL-BITOR-LST lst env))
+        (sv::4vec-p (Svex-Eval-Bitand-Lst lst env)))))
 
 (local
  (defret bitxor-remove-node-correct
@@ -1197,6 +1260,30 @@
                              bitxor-remove-nodes-from-both)
                             ())))))
 
+(defret extract-from-unfloat-correct
+  (and (equal (sv::4vec-bitxor (svex-eval res env) other)
+              (sv::4vec-bitxor (svex-eval x env) other))
+       (equal (sv::4vec-bitxor other (svex-eval res env))
+              (sv::4vec-bitxor (svex-eval x env) other))
+       (equal (sv::4vec-bitand (svex-eval res env) other)
+              (sv::4vec-bitand (svex-eval x env) other))
+       (equal (sv::4vec-bitand other (svex-eval res env))
+              (sv::4vec-bitand (svex-eval x env) other))
+       (equal (sv::4vec-bitor (svex-eval res env) other)
+              (sv::4vec-bitor (svex-eval x env) other))
+       (equal (sv::4vec-bitor other (svex-eval res env))
+              (sv::4vec-bitor (svex-eval x env) other)))
+  :fn extract-from-unfloat
+  :hints (("Goal"
+           :expand ((:free (args) (svex-apply 'sv::unfloat args)))
+           :in-theory (e/d (svex-eval
+                            svex-kind
+                            SVEX-CALL->FN
+                            SVEX-CALL->ARGS
+                            SVEXLIST-EVAL
+                            extract-from-unfloat)
+                           ()))))
+
 (defret bitand/or/xor-cancel-repeated-correct
   (implies (and (fnsym-p fn)
                 (sv::svex-p x)
@@ -1212,20 +1299,19 @@
   :hints (("goal"
            :do-not-induct t
            :use ( (:instance bitand/bitor-cancel-repeated-aux-correct-1
-                             (svex y)
-                             (leaves (bitand/or/xor-collect-leaves x 'bitor))
+                             (svex (extract-from-unfloat y))
+                             (leaves (bitand/or/xor-collect-leaves (extract-from-unfloat x) 'bitor))
 
                              (new-val 0)
                              (under-xor nil)
                              (limit *bitand/bitor-cancel-repeated-aux-limit*))
                   (:instance bitand/bitor-cancel-repeated-aux-correct-1
-                             (svex x)
+                             (svex (extract-from-unfloat x))
                              (leaves (bitand/or/xor-collect-leaves
                                       (mv-nth 0
                                               (bitand/bitor-cancel-repeated-aux
-                                               y
-                                               (bitand/or/xor-collect-leaves x
-                                                                             'bitor)
+                                               (extract-from-unfloat y)
+                                               (bitand/or/xor-collect-leaves (extract-from-unfloat x) 'bitor)
                                                0
                                                :under-xor nil))
                                       'bitor))
@@ -1233,20 +1319,20 @@
                              (under-xor nil)
                              (limit *bitand/bitor-cancel-repeated-aux-limit*))
                   (:instance bitand/bitor-cancel-repeated-aux-correct-2
-                             (svex y)
-                             (leaves (bitand/or/xor-collect-leaves x
+                             (svex (extract-from-unfloat y))
+                             (leaves (bitand/or/xor-collect-leaves (extract-from-unfloat x)
                                                                    'bitand))
 
                              (new-val -1)
                              (under-xor nil)
                              (limit *bitand/bitor-cancel-repeated-aux-limit*))
                   (:instance bitand/bitor-cancel-repeated-aux-correct-2
-                             (svex x)
+                             (svex (extract-from-unfloat x))
                              (leaves (bitand/or/xor-collect-leaves
                                       (mv-nth 0
                                               (bitand/bitor-cancel-repeated-aux
-                                               y
-                                               (bitand/or/xor-collect-leaves x
+                                               (extract-from-unfloat y)
+                                               (bitand/or/xor-collect-leaves (extract-from-unfloat x)
                                                                              'bitand)
                                                -1
                                                :under-xor nil))
@@ -1260,7 +1346,416 @@
            :in-theory (e/d (bitand/or/xor-cancel-repeated
                             4vec-part-select-of-4vec-bitor-better
                             4vec-part-select-of-4vec-bitand-better)
-                           (eval-bitor-lst-of-bitand/or/xor-collect-leaves
+                           (svex-eval-bitor-lst-of-bitand/or/xor-collect-leaves
                             bitand/bitor-cancel-repeated-aux-correct-1
                             bitand/bitor-cancel-repeated-aux-correct-2
                             )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; bitxor/or/and-equiv
+
+(define bitand/or/xor-collect-leaves2 ((svex)
+                                       (fn)
+                                       (limit natp)) ;
+  :returns (mv (leaves sv::svexlist-p :hyp (and (sv::Svex-p svex)
+                                                (not (equal fn ':var)))
+                       :hints (("Goal"
+                                :in-theory (e/d (svex-p
+                                                 4vec-p)
+                                                ()))))
+               (limit-reached-p booleanp))
+  :verify-guards nil
+  (case-match svex
+    ((this-fn x y)
+     (b* (((when (zp limit))
+           (mv (list svex) t)) ;; want to sent limit-reached-p to t only when there is more to go.
+          ((unless (equal this-fn fn))
+           (mv (list svex) nil))
+          ((mv l1 r1) (bitand/or/xor-collect-leaves2 x fn (1- limit)))
+          ((mv l2 r2) (bitand/or/xor-collect-leaves2 y fn (1- limit))))
+       (mv (append l1 l2)
+           (or r1 r2))))
+    (& (mv (list svex) nil)))
+  ///
+  (defret true-listp-of-<fn>
+    (true-listp leaves))
+  (verify-guards bitand/or/xor-collect-leaves2)
+
+  (defret <fn>-is-correct
+    (and (implies (equal fn 'bitand)
+                  (equal (svex-eval-bitand-lst leaves env)
+                         (sv::3vec-fix (svex-eval svex env))))
+         (implies (equal fn 'bitor)
+                  (equal (svex-eval-bitor-lst leaves env)
+                         (sv::3vec-fix (svex-eval svex env))))
+         (implies (equal fn 'bitxor)
+                  (equal (svex-eval-bitxor-lst leaves env)
+                         (sv::3vec-fix (svex-eval svex env)))))
+    :fn bitand/or/xor-collect-leaves2
+    :hints (("Goal"
+             :in-theory (e/d (bitand/or/xor-collect-leaves2) ())))))
+
+(define bitxor/or/and-equiv-precheck ((svex)
+                                      (fn)
+                                      (leaves)
+                                      (limit natp)) ;; should be size of leaves (max)
+  :Returns (mv (found-cnt natp :hyp (natp limit))
+               (traversed-cnt natp :hyp (natp limit)))
+  :verify-guards :after-returns
+  (if (member-hons-equal svex leaves)
+      (mv 1 1)
+    (case-match svex
+      ((this-fn x y)
+       (b* (((unless (equal this-fn fn))
+             (mv 0 1))
+            ((mv f1 t1) (bitxor/or/and-equiv-precheck x fn leaves limit))
+            ((when (>= t1 limit))
+             (mv 0 t1))
+            ((mv f2 t2) (bitxor/or/and-equiv-precheck y fn leaves limit)))
+         (mv (+ f1 f2) (+ t1 t2))))
+      (& ;; return limit here as traversed so it stops searching
+       (mv 0 limit)))))
+
+;; This is to append l1 and l2 in the same order as given in leaves.
+(define bitxor/or/and-equiv-aux-append ((l1 true-listp)
+                                        (l2 true-listp)
+                                        (leaves true-listp))
+  :measure (+ (len leaves) (len l1) (len l2))
+  :returns (res true-listp :hyp (and (true-listp l1)
+                                     (true-listp l2)))
+  (cond
+   ((atom l1) l2)
+   ((atom l2) l1)
+   ((atom leaves) ;; should never come here
+    (append l1 l2))
+   ((equal (car l1) (car leaves))
+    (cons (car l1)
+          (bitxor/or/and-equiv-aux-append (cdr l1) l2 leaves)))
+   ((equal (car l2) (car leaves))
+    (cons (car l2)
+          (bitxor/or/and-equiv-aux-append l1 (cdr l2) leaves)))
+   (t (bitxor/or/and-equiv-aux-append l1 l2 (cdr leaves))))
+  ///
+  (defret <fn>-is-correct
+    (and (equal (svex-eval-bitand-lst res env)
+                (4vec-bitand (svex-eval-bitand-lst l1 env)
+                             (svex-eval-bitand-lst l2 env)))
+         (equal (svex-eval-bitor-lst res env)
+                (4vec-bitor (svex-eval-bitor-lst l1 env)
+                            (svex-eval-bitor-lst l2 env)))
+         (equal (svex-eval-bitxor-lst res env)
+                (sv::4vec-bitxor (svex-eval-bitxor-lst l1 env)
+                                 (svex-eval-bitxor-lst l2 env))))
+    :fn bitxor/or/and-equiv-aux-append
+    :hints (("goal"
+             :expand ((svex-eval-bitand-lst l2 env)
+                      (svex-eval-bitxor-lst l1 env)
+                      (svex-eval-bitxor-lst l2 env))
+             :induct (bitxor/or/and-equiv-aux-append l1 l2 leaves)
+             :in-theory (e/d (svex-eval-bitand-lst
+                              svex-eval-bitxor-lst)
+                             ())))))
+
+
+(define remove-equal-once (x l)
+  :returns (res true-listp :hyp (true-listp l))
+  (cond ((atom l) nil)
+        ((equal x (car l))
+         (cdr l))
+        (t (cons-with-hint (car l)
+                           (remove-equal-once x (cdr l))
+                           l)))
+  ///
+  (defret count-of-<fn>
+    (implies (member-equal x l)
+             (< (acl2-count (remove-equal-once x l))
+                (acl2-count l)))
+    :rule-classes (:linear :rewrite))
+  (defthm eval-bitxor-lst-of-remove-pair-equal-lemma
+    (implies (member-equal x lst)
+             (equal (sv::4vec-bitxor (svex-eval x env)
+                                     (svex-eval-bitxor-lst (remove-equal-once x lst) env))
+                    (svex-eval-bitxor-lst lst env)))
+    :hints (("goal"
+             :in-theory (e/d (remove-equal-once) ())))))
+
+(define remove-pair-equal ((lst true-listp))
+  :prepwork
+  ()
+  (cond
+   ((atom lst) nil)
+   (t
+    (b* (((Unless (integerp (car lst)))
+          (cons-with-hint (car lst)
+                          (remove-pair-equal (cdr lst))
+                          lst))
+         ((when (member-equal (car lst) (cdr lst)))
+          (remove-pair-equal (remove-equal-once (car lst) (cdr lst)))))
+
+      (cons-with-hint (car lst)
+                      (remove-pair-equal (cdr lst))
+                      lst))))
+  ///
+
+  (local
+   (defthmd svex-eval-when-integerp
+     (implies (integerp x)
+              (equal (sv::svex-eval x env)
+                     x))
+     :hints (("Goal"
+              :in-theory (e/d (sv::svex-eval
+                               sv::svex-kind
+                               SV::SVEX-QUOTE->VAL
+                               )
+                              ())))))
+
+  (local
+   (defthm eval-bitxor-lst-of-remove-pair-equal-lemma-2
+     (implies (member-equal x lst)
+              (equal (svex-eval-bitxor-lst lst env)
+                     (sv::4vec-bitxor (svex-eval x env)
+                                      (svex-eval-bitxor-lst (remove-equal-once x lst) env))))
+     :hints (("goal"
+              :in-theory (e/d (remove-equal-once) ())))))
+
+  (defthm eval-bitxor-lst-of-remove-pair-equal
+    (equal (svex-eval-bitxor-lst (remove-pair-equal lst) env)
+           (svex-eval-bitxor-lst lst env))
+    :hints (("Goal"
+             :in-theory (e/d (svex-eval-when-integerp
+                              remove-pair-equal)
+                             (eval-bitxor-lst-of-remove-pair-equal-lemma)))
+            )))
+
+(local
+ (defthm eval-bitor/and-lst-of-remove-duplicates-equal-lemma
+   (implies (member-equal x lst)
+            (and (equal (4vec-bitand (svex-eval x env)
+                                     (svex-eval-bitand-lst lst env))
+                        (svex-eval-bitand-lst lst env))
+                 (equal (4vec-bitor (svex-eval x env)
+                                    (svex-eval-bitor-lst lst env))
+                        (svex-eval-bitor-lst lst env))))))
+
+(local
+ (defthm eval-bitor/and-lst-of-remove-duplicates-equal
+   (and (equal (svex-eval-bitor-lst (remove-duplicates-equal lst) env)
+               (svex-eval-bitor-lst lst env))
+        (equal (svex-eval-bitand-lst (remove-duplicates-equal lst) env)
+               (svex-eval-bitand-lst lst env)))
+   :hints (("Goal"
+            :in-theory (e/d (svex-eval-bitor-lst
+                             svex-eval-bitand-lst
+                             remove-duplicates-equal)
+                            ())))))
+
+(define bitxor/or/and-equiv-aux ((svex)
+                                 (fn)
+                                 (leaves true-listp))
+  :Returns (mv (leaves2 true-listp)
+               valid)
+  :verify-guards :after-returns
+
+  (if (member-hons-equal svex leaves)
+      (mv (list svex) t)
+    (case-match svex
+      ((this-fn x y)
+       (b* (((unless (equal this-fn fn))
+             (mv nil nil))
+            ((mv l1 valid1) (bitxor/or/and-equiv-aux x fn leaves))
+            ((unless valid1)
+             (mv nil nil))
+            ((mv l2 valid2) (bitxor/or/and-equiv-aux y fn leaves))
+            ((unless valid2)
+             (mv nil nil)))
+         (mv (bitxor/or/and-equiv-aux-append l1 l2 leaves) t)))
+      (&
+       (mv nil nil))))
+  ///
+  (defret <fn>-is-correct
+    (and (implies (and (equal fn 'bitand)
+                       valid)
+                  (and (equal (svex-eval-bitand-lst leaves2 env)
+                              (sv::3vec-fix (svex-eval svex env)))
+                       (equal (svex-eval-bitand-lst (remove-duplicates-equal leaves2) env)
+                              (sv::3vec-fix (svex-eval svex env)))))
+         (implies (and (equal fn 'bitor)
+                       valid)
+                  (and (equal (svex-eval-bitor-lst leaves2 env)
+                              (sv::3vec-fix (svex-eval svex env)))
+                       (equal (svex-eval-bitor-lst (remove-duplicates-equal leaves2) env)
+                              (sv::3vec-fix (svex-eval svex env)))))
+         (implies (and (equal fn 'bitxor)
+                       valid)
+                  (and (equal (svex-eval-bitxor-lst leaves2 env)
+                              (sv::3vec-fix (svex-eval svex env)))
+                       (equal (svex-eval-bitxor-lst (remove-pair-equal leaves2) env)
+                              (sv::3vec-fix (svex-eval svex env))))))
+    :fn bitxor/or/and-equiv-aux
+    ))
+
+#|(define has-two-ones (x)
+(b* ((x (true-list-fix x)))
+(and (member-equal 1 x)
+(member-equal 1 (cdr (member-equal 1 x))))))|#
+
+(define bitxor/or/and-equiv-iter (fn
+                                  arg1 arg2
+                                  other-svex
+                                  (cnt natp))
+  :returns (equiv)
+  :guard (<= cnt *bitxor/or/and-equiv-iter-limit*)
+  :measure (nfix (- *bitxor/or/and-equiv-iter-limit* cnt))
+  :prepwork
+  ((defconst *bitxor/or/and-equiv-iter-limit*
+     5))
+
+  (if (zp (- *bitxor/or/and-equiv-iter-limit* cnt))
+      nil
+    (b* (((mv leaves1 limit-reached1)
+          (bitand/or/xor-collect-leaves2 arg1 fn cnt))
+         ((mv leaves2 limit-reached2)
+          (bitand/or/xor-collect-leaves2 arg2 fn cnt))
+         (leaves (append leaves1 leaves2))
+         (limit-reached (or limit-reached1 limit-reached2)) ;; if t, it means can iter again.
+
+         (leaves (cond ((or (equal fn 'bitor)
+                            (equal fn 'bitand))
+                        (remove-duplicates-equal leaves))
+                       ((equal fn 'bitxor)
+                        ;; Removing  pairs from  bitxor requires  the removed
+                        ;; ones to be integer. I am only doing it for contants
+                        ;; here because I don't want  to add that here because
+                        ;; it requires context
+                        (remove-pair-equal leaves))
+                       (t leaves)))
+
+         (len-leaves (len leaves))
+         ((mv found-cnt traversed-cnt)
+          (bitxor/or/and-equiv-precheck other-svex fn leaves
+                                        (* 2 len-leaves) ;; give some leeway for repated vars
+                                        ))
+         ((when (or* (> traversed-cnt (* 2 len-leaves))
+                     (< found-cnt len-leaves)))
+          (and limit-reached
+               (bitxor/or/and-equiv-iter fn arg1 arg2 other-svex (1+ cnt))))
+         ((mv leaves2 valid)
+          (bitxor/or/and-equiv-aux other-svex fn leaves))
+
+         (leaves2 (cond ((or (equal fn 'bitor)
+                             (equal fn 'bitand))
+                         (remove-duplicates-equal leaves2))
+                        ((equal fn 'bitxor)
+                         ;; Removing  pairs from  bitxor requires  the removed
+                         ;; ones to be integer. I am only doing it for contants
+                         ;; here because I don't want  to add that here because
+                         ;; it requires context
+                         (remove-pair-equal leaves2))
+                        (t  leaves2)))
+
+         #|(- (and (equal fn 'bitxor)
+         (has-two-ones leaves)
+         valid
+         (equal leaves2 leaves)
+         ;; if the below message appears, I can implement a way to remove pairs of integers from bitxor.
+         (rp::cwe "In svl::bitxor/or/and-equiv-iter. Leaves of bitxor have two ones: ~p0. This may mean a fix is necessary... ~%" leaves)))|#
+         )
+      (and valid
+           (equal leaves2 leaves))))
+  ///
+
+  (local
+   (defthm eval-bitor/and-lst-of-remove-duplicates-equal-2
+     (implies (syntaxp (and (consp lst)
+                            (equal (car lst) 'binary-append)))
+              (and (equal (svex-eval-bitor-lst (remove-duplicates-equal lst) env)
+                          (svex-eval-bitor-lst lst env))
+                   (equal (svex-eval-bitand-lst (remove-duplicates-equal lst) env)
+                          (svex-eval-bitand-lst lst env))
+                   (equal (svex-eval-bitxor-lst (remove-pair-equal lst) env)
+                          (svex-eval-bitxor-lst lst env))))))
+
+  (local
+   (in-theory (disable eval-bitor/and-lst-of-remove-duplicates-equal
+                       eval-bitxor-lst-of-remove-pair-equal
+                       bitxor/or/and-equiv-aux-is-correct)))
+
+  (defret <fn>-is-correct
+    (and (implies (and (or (equal fn 'bitand)
+                           (equal fn 'bitor)
+                           (equal fn 'bitxor))
+                       equiv)
+                  (equal (svex-eval `(,fn ,arg1 ,arg2) env)
+                         (sv::3vec-fix (svex-eval other-svex env))))
+         )
+    :fn bitxor/or/and-equiv-iter
+    :hints ((and stable-under-simplificationp
+                 '(:use ((:instance bitxor/or/and-equiv-aux-is-correct
+                                    (svex other-svex)
+                                    (fn 'bitand)
+                                    (leaves (remove-duplicates-equal
+                                             (append (mv-nth 0
+                                                             (bitand/or/xor-collect-leaves2 arg1 'bitand
+                                                                                            cnt))
+                                                     (mv-nth 0
+                                                             (bitand/or/xor-collect-leaves2 arg2 'bitand
+                                                                                            cnt))))))
+                         (:instance bitxor/or/and-equiv-aux-is-correct
+                                    (svex other-svex)
+                                    (fn 'bitxor)
+                                    (leaves (remove-pair-equal
+                                             (append (mv-nth 0
+                                                             (bitand/or/xor-collect-leaves2 arg1 'bitxor
+                                                                                            cnt))
+                                                     (mv-nth 0
+                                                             (bitand/or/xor-collect-leaves2 arg2 'bitxor
+                                                                                            cnt))))))
+                         (:instance bitxor/or/and-equiv-aux-is-correct
+                                    (svex other-svex)
+                                    (fn 'bitor)
+                                    (leaves (REMOVE-DUPLICATES-EQUAL
+                                             (append (mv-nth 0
+                                                             (bitand/or/xor-collect-leaves2 arg1 'bitor
+                                                                                            cnt))
+                                                     (mv-nth 0
+                                                             (bitand/or/xor-collect-leaves2 arg2 'bitor
+                                                                                            cnt))))))
+                         ))))))
+
+(define bitxor/or/and-equiv (fn arg1 arg2 other-svex)
+  :returns (equiv)
+
+  (case-match other-svex
+    ((fn-2 arg1-2 arg2-2)
+     (b* (((Unless (equal fn-2 fn))
+           nil)
+          ((when ;; quick check first.
+               (or (and* (equal arg1 arg1-2)
+                         (equal arg2 arg2-2))
+                   (and* (equal arg2 arg1-2)
+                         (equal arg1 arg2-2))))
+           t))
+       (bitxor/or/and-equiv-iter fn arg1 arg2 other-svex 1))))
+  ///
+  (defret <fn>-is-correct
+    (implies (and equiv
+                  (or (equal fn 'bitand)
+                      (equal fn 'bitor)
+                      (equal fn 'bitxor)))
+             (equal (svex-eval `(,fn ,arg1 ,arg2) env)
+                    (svex-eval other-svex env)))
+    :rule-classes (:rewrite)))
+
+;; (bitxor/or/and-equiv 'bitor 'e '(bitor f (bitor d (bitor a (bitor c b))))
+;;                      '(bitor (bitor (bitor a b) c) (bitor d (bitor e f))))
+
+;; (bitxor/or/and-equiv 'bitor '(bitor a b) 'c
+;;                      '(bitor (bitor a c) b))
+
+;; (bitxor/or/and-equiv 'bitor '(bitor a b) '(bitor a c)
+;;                      '(bitor (bitor a (bitor a (bitor a c))) b))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

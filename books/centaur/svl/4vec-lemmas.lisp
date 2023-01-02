@@ -8745,7 +8745,10 @@ lognot)
                    (equal (sv::4vec-bitxor x x)
                           0)))
      :hints ((bitops::logbitp-reasoning)))
-  
+
+   
+
+   
    
    )
 

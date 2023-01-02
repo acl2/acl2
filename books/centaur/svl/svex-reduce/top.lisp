@@ -30,3 +30,4 @@
 (include-book "bitnot-to-bitxor")
 (include-book "integerp-of-svex")
 (include-book "simplify-bitand-or-xor")
+(include-book "bitxor-or-and-equiv-for-eval-dollar")
