@@ -18,13 +18,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule r1cs::sparse-vectorp-of-append
+(defrule sparse-vectorp-of-append
   (equal (r1cs::sparse-vectorp (append x y))
          (and (r1cs::sparse-vectorp (true-list-fix x))
               (r1cs::sparse-vectorp y)))
   :enable r1cs::sparse-vectorp)
 
-(defrule r1cs::sparse-vectorp-of-rev
+(defrule sparse-vectorp-of-rev
   (equal (r1cs::sparse-vectorp (rev x))
          (r1cs::sparse-vectorp (true-list-fix x)))
   :enable (r1cs::sparse-vectorp
@@ -46,21 +46,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define r1cs-pseudo-var-to-pfcs ((pvar r1cs::pseudo-varp))
-  :returns (expr expressionp)
-  :short "Translate an R1CS pseudo-variable to a PFCS expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "An R1CS pseudo-variable is either a symbol or the number 1.
-     We translate the latter to the PFCS onstant 1,
-     and a symbol to a PFCS variable with the same symbol."))
-  (if (eql pvar 1)
-      (expression-const 1)
-    (expression-var pvar)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define r1cs-vec-elem-to-pfcs (elem)
   :guard (and (true-listp elem)
               (equal (len elem) 2)
@@ -74,11 +59,17 @@
     "An element of an R1CS (sparse) vector is
      a list of two elements:
      an integer coefficient and a pseudo-variable.
-     We translate this into a PFCS multiplication
-     of the PFCS integer constant corresponding to the coefficient
-     and of the PFCS expression for the pseudo-variable."))
-  (make-expression-mul :arg1 (expression-const (first elem))
-                       :arg2 (r1cs-pseudo-var-to-pfcs (second elem))))
+     If the pseudo-variable is 1, we generate a constant with the coefficient.
+     Otherwise, if the coefficient is 1 and the pseudo-variable is a symbol,
+     we generate a variable.
+     Otherwise, we generate a multiplication
+     of the coefficient by the variable."))
+  (b* ((coeff (first elem))
+       (pvar (second elem)))
+    (cond ((equal pvar 1) (expression-const coeff))
+          ((equal coeff 1) (expression-var pvar))
+          (t (make-expression-mul :arg1 (expression-const (first elem))
+                                  :arg2 (expression-var pvar))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
