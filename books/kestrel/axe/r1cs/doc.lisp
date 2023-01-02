@@ -1,6 +1,6 @@
 ; Documentation for R1CS verification with Axe
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -136,7 +136,7 @@ core function."))
    (xdoc::p "3. Lift the R1CS into logic.  This is done by calling @('lift-r1cs') (or a specialized variant of it, like @('lift-semaphore-r1cs') or  @('lift-zcash-r1cs').  It is often largely automatic.")
 
    (xdoc::&&
-    (xdoc::p "4. Invoke the Axe Prover.  This is done by calling @(see verify-r1cs) (or a variant of it, like @(see zksemaphore::verify-semaphore-r1cs) or @(see zcash::verify-zcash-r1cs).  You pass it:")
+    (xdoc::p "4. Invoke the Axe Prover.  This is done by calling @(see verify-r1cs) (or a variant of it, like @(see zksemaphore::verify-semaphore-r1cs) or @(see zcash::verify-zcash-r1cs)).  You pass it:")
 
     (xdoc::ul-from-string
      "The R1CS
