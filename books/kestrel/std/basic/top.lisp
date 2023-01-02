@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "good-pseudo-termp")
+(include-book "good-pseudo-term-listp")
 (include-book "good-valuep")
 (include-book "if-star")
 (include-book "maybe-string-fix")
