@@ -848,34 +848,27 @@
                                :formula if-stmt-formula
                                :instructions if-stmt-instructions
                                :enable nil))
-       ;; We temporarily do not submit the following two events,
-       ;; because they fail in some examples,
-       ;; due to ACL2's splitting over IFs
-       ;; and thus preventing the use of previously proved theorems
-       ;; about IF terms.
-       ;; We plan to refine our proof generation approach
-       ;; to overcome this issue.
        ((mv item
             item-limit
-            & ; item-thm-event
+            item-thm-event
             item-thm-name
             thm-index
             names-to-avoid)
         (atc-gen-block-item-stmt gin.fn gin.fn-guard gin.context
                                  stmt if-stmt-limit if-stmt-thm
-                                 type term
+                                 type term*
                                  gin.compst-var gin.fenv-var gin.limit-var
                                  gin.compst-var
                                  thm-index names-to-avoid state))
        ((mv items
             items-limit
-            & ; items-thm-event
+            items-thm-event
             items-thm-name
             thm-index
             names-to-avoid)
         (atc-gen-block-item-list-one gin.fn gin.fn-guard gin.context
                                      item item-limit item-thm-name
-                                     type term
+                                     type term*
                                      gin.compst-var gin.fenv-var gin.limit-var
                                      gin.compst-var
                                      thm-index names-to-avoid state)))
@@ -883,7 +876,7 @@
      (make-stmt-gout
       :items items
       :type type
-      :term `(if ,test-term ,then-term ,else-term)
+      :term term*
       :limit items-limit
       :events (append test-events
                       then-events
@@ -891,9 +884,8 @@
                       (list then-stmt-event)
                       (list else-stmt-event)
                       (list if-stmt-event)
-                      ;; (list item-thm-event)
-                      ;; (list items-thm-event)
-                      )
+                      (list item-thm-event)
+                      (list items-thm-event))
       :thm-name items-thm-name
       :thm-index thm-index
       :names-to-avoid names-to-avoid
@@ -1147,7 +1139,7 @@
                                    :inscope then-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs gin.proofs)
+                                   :proofs test.proofs)
                                   state)))
                 (retok
                  (change-stmt-gout gout
@@ -1189,7 +1181,7 @@
                                    :inscope else-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs gin.proofs)
+                                   :proofs test.proofs)
                                   state)))
                 (retok
                  (change-stmt-gout gout
