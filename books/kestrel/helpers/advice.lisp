@@ -201,19 +201,41 @@
            (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoints)))))
 
 (defconst *rec-to-symbol-alist*
-  '(("add-by-hint" . :add-by-hint) ; rare
+  '(;; For these, training data is obtained by removing the entire "hint
+    ;; setting" (e.g., the entire ":by XXX"):
+    ("add-by-hint" . :add-by-hint) ; rare
     ("add-cases-hint" . :add-cases-hint) ; rare
-    ("add-disable-hint" . :add-disable-hint)
-    ("add-do-not-hint" . :add-do-not-hint) ; very rare
-    ("add-enable-hint" . :add-enable-hint)
-    ("add-expand-hint" . :add-expand-hint)
-    ("add-hyp" . :add-hyp)
     ("add-induct-hint" . :add-induct-hint)
-    ("add-library" . :add-library)
     ("add-nonlinearp-hint" . :add-nonlinearp-hint) ; very rare
+
+    ;; For these, gathering training data always involves removing individual
+    ;; items to :use or :expand:
+    ("add-expand-hint" . :add-expand-hint)
     ("add-use-hint" . :add-use-hint)
-    ;; Confusingly named: Does not indicate a :use hint and the "lemma" is often a defun (treated like add-enable-hint):
-    ("use-lemma" . :use-lemma)))
+
+    ;; For :in-theory, gathering training data involves either removing
+    ;; individual items to enable or disable (when the :in-theory is an enable,
+    ;; disable, or e/d), or else removing the whole :in-theory:
+    ("add-disable-hint" . :add-disable-hint)
+    ("add-enable-hint" . :add-enable-hint)
+
+    ;; For :do-not, gathering training data involves either removing individual
+    ;; items (if the :do-not is given a quoted list of symbols), or else
+    ;; removing the whole :do-not:
+    ("add-do-not-hint" . :add-do-not-hint)
+
+    ;; Confusingly named: Does not indicate a :use hint and the "lemma" is
+    ;; often a defun.  Gathering training data involves artificially "knocking
+    ;; out" rules used in a successful proof.  This is often treated like
+    ;; add-enable-hint.
+    ("use-lemma" . :use-lemma)
+
+    ;; Gathering training data involves artificially "knocking out" supporting
+    ;; books used in a successful proof.
+    ("add-library" . :add-library)
+
+    ("add-hyp" . :add-hyp) ; can change the meaning of the theorem!
+    ))
 
 ;; todo: rename (not necessarily about ml)?
 (defconst *ml-rec-types* (strip-cdrs *rec-to-symbol-alist*))
