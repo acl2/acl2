@@ -2231,6 +2231,7 @@
 
 (define atc-gen-fun-correct-thm ((fn symbolp)
                                  (fn-guard symbolp)
+                                 (fn-def* symbolp)
                                  (prog-const symbolp)
                                  (compst-var symbolp)
                                  (fenv-var symbolp)
@@ -2306,7 +2307,7 @@
                                (:e tyname-to-type)
                                (:e ,(pack 'type- (type-kind body-type)))
                                ,pop-frame-thm
-                               ,fn))))
+                               ,fn-def*))))
        ((mv lemma-event &) (evmac-generate-defthm lemma-name
                                                   :formula lemma-formula
                                                   :hints lemma-hints
@@ -2395,7 +2396,7 @@
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
        ((mv fn-def*-events
-            & ; fn-def*
+            fn-def*
             names-to-avoid)
         (atc-gen-fn-def* fn names-to-avoid wrld))
        ((erp typed-formals formals-events modular-proofs names-to-avoid)
@@ -2534,6 +2535,7 @@
                   (if modular-proofs
                       (atc-gen-fun-correct-thm fn
                                                fn-guard
+                                               fn-def*
                                                prog-const
                                                compst-var
                                                fenv-var

@@ -12,14 +12,7 @@
 
 (include-book "values")
 
-(include-book "kestrel/std/basic/good-pseudo-termp" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local
- (std::deflist good-pseudo-term-listp (acl2::x)
-   :guard (pseudo-term-listp acl2::x)
-   (good-pseudo-termp acl2::x)))
+(include-book "kestrel/std/basic/good-pseudo-term-listp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

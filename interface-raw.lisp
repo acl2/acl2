@@ -1325,11 +1325,15 @@
             (consp (cadr x))
             (eq (car (cadr x)) 'lambda))
 
-; Just as we apply hons-copy when translating lambda objects in
-; translate11-lambda-object, we hons-copy here as well, to support fast lookup
-; by fetch-cl-cache-line.
+; Just as we apply hons-copy-lambda-object? when translating lambda objects in
+; translate11-lambda-object, we hons-copy-lambda-object? here as well, to
+; support fast lookup by fetch-cl-cache-line.
 
-           (hons-copy x))
+           (mv-let (erp val)
+             (hons-copy-lambda-object? x)
+             (cond
+              (erp (interface-er "~@0" val))
+              (t val))))
           (t x)))
    ((eq (car x) 'lambda$)
     (mv-let (flg tx bindings)
