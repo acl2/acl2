@@ -833,8 +833,7 @@
                                  ,then-stmt-thm
                                  booleanp-compound-recognizer)))))
        (if-stmt-instructions
-        `((in-theory nil)
-          (casesplit ,test-term)
+        `((casesplit ,test-term)
           (claim (equal (if* ,test-term ,then-term ,else-term)
                         ,then-term)
                  :hints (("Goal" :in-theory '(acl2::if*-when-true))))
