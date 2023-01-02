@@ -12,23 +12,9 @@
 
 (include-book "abstract-syntax")
 
-(include-book "kestrel/crypto/r1cs/sparse/r1cs" :dir :system)
+(include-book "r1cs-lib-ext")
 
 (include-book "std/util/defprojection" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule sparse-vectorp-of-append
-  (equal (r1cs::sparse-vectorp (append x y))
-         (and (r1cs::sparse-vectorp (true-list-fix x))
-              (r1cs::sparse-vectorp y)))
-  :enable r1cs::sparse-vectorp)
-
-(defrule sparse-vectorp-of-rev
-  (equal (r1cs::sparse-vectorp (rev x))
-         (r1cs::sparse-vectorp (true-list-fix x)))
-  :enable (r1cs::sparse-vectorp
-           rev))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
