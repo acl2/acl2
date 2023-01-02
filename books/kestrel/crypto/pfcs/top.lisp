@@ -16,6 +16,7 @@
 (include-book "well-formedness")
 (include-book "semantics")
 (include-book "proof-support")
+(include-book "r1cs-subset")
 (include-book "r1cs-bridge")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
