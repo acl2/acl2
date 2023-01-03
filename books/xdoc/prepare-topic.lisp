@@ -335,9 +335,7 @@
        (short-str  (str::printtree->str short-acc))
 
        ((mv err &) (parse-xml short-str))
-       (state
-        (if (and err (xdoc-verbose-p))
-            (pprogn
+       (- (and err (xdoc-verbose-p)
 
 ; The following message formerly started with "WARNING" instead of "; xdoc
 ; error".  But we want to be consistent with the macro xdoc-error, to make it
@@ -345,13 +343,10 @@
 ; error".  For the user, the difference between parsing errors and preprocessor
 ; errors seems small, not worth requiring searching for two different things.
 
-             (prog2$ (note-xdoc-error) state)
-             (fms "~|~%; xdoc error: problem with :short in topic ~x0:~%"
-                  (list (cons #\0 name))
-                  *standard-co* state nil) 
-             (princ$ err *standard-co* state)
-             (fms "~%~%" nil *standard-co* state nil))
-          state))
+             (prog2$ (note-xdoc-error)
+                     (print-xdoc-error
+                      "~|~%; xdoc error: problem with :short in topic ~x0:~%~x1~%~%"
+                      (list name err)))))
 
        (acc (b* (((unless err)
                   (str::printtree-rconcat short-acc acc))
@@ -371,18 +366,13 @@
        (long-str (str::printtree->str long-acc))
        ((mv err &) (parse-xml long-str))
 
-       (state
-        (if (and err (xdoc-verbose-p))
-            (pprogn
-             (prog2$ (note-xdoc-error) state)
+       (- (and err (xdoc-verbose-p)
+               (prog2$ (note-xdoc-error)
 ; See comment above regarding the use of "; xdoc error" instead of "WARNING"
 ; just below.
-             (fms "~|~%; xdoc error: problem with :long in topic ~x0:~%"
-                  (list (cons #\0 name))
-                  *standard-co* state nil)
-             (princ$ err *standard-co* state)
-             (fms "~%~%" nil *standard-co* state nil))
-          state))
+                       (print-xdoc-error
+                        "~|~%; xdoc error: problem with :long in topic ~x0:~%~x1~%~%"
+                        (list name err)))))
 
        (acc (b* (((unless err)
                   (str::printtree-rconcat long-acc acc))
