@@ -19,6 +19,7 @@
 (include-book "theorem-generation")
 
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
+(include-book "kestrel/std/basic/if-star" :dir :system)
 
 (local (in-theory (disable state-p)))
 
@@ -822,6 +823,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-expr-cond ((term pseudo-termp)
+                           (test-term pseudo-termp)
+                           (then-term pseudo-termp)
+                           (else-term pseudo-termp)
+                           (test-expr exprp)
+                           (then-expr exprp)
+                           (else-expr exprp)
+                           (then-type typep)
+                           (else-type typep)
+                           (test-events pseudo-event-form-listp)
+                           (then-events pseudo-event-form-listp)
+                           (else-events pseudo-event-form-listp)
+                           (gin pexpr-ginp)
+                           state)
+  (declare (ignore test-term state))
+  :returns (mv erp (gout pexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents a ternary conditional expression."
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       ((unless (equal then-type else-type))
+        (reterr
+         (msg "When generating C code for the function ~x0, ~
+               two branches ~x1 and ~x2 of a conditional term ~
+               have different types ~x3 and ~x4; ~
+               use conversion operations, if needed, ~
+               to make the branches of the same type."
+              gin.fn then-term else-term then-type else-type)))
+       (type then-type))
+    (retok
+     (make-pexpr-gout
+      :expr (make-expr-cond :test test-expr
+                            :then then-expr
+                            :else else-expr)
+      :type type
+      :term term
+      :events (append test-events then-events else-events)
+      :thm-name nil
+      :thm-index gin.thm-index
+      :names-to-avoid gin.names-to-avoid
+      :proofs nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atc-gen-expr-pure/bool
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -1144,27 +1189,17 @@
                                     :thm-index then.thm-index
                                     :names-to-avoid then.names-to-avoid
                                     :proofs nil)
-                                   state))
-               ((unless (equal then.type else.type))
-                (reterr
-                 (msg "When generating C code for the function ~x0, ~
-                       two branches ~x1 and ~x2 of a conditional term ~
-                       have different types ~x3 and ~x4; ~
-                       use conversion operations, if needed, ~
-                       to make the branches of the same type."
-                      gin.fn then-term else-term then.type else.type))))
-            (retok
-             (make-pexpr-gout
-              :expr (make-expr-cond :test test.expr
-                                    :then then.expr
-                                    :else else.expr)
-              :type then.type
-              :term term
-              :events (append test.events then.events else.events)
-              :thm-name nil
-              :thm-index else.thm-index
-              :names-to-avoid else.names-to-avoid
-              :proofs nil)))))
+                                   state)))
+            (atc-gen-expr-cond term test-term then-term else-term
+                               test.expr then.expr else.expr
+                               then.type else.type
+                               test.events then.events else.events
+                               (change-pexpr-gin
+                                gin
+                                :thm-index else.thm-index
+                                :names-to-avoid else.names-to-avoid
+                                :proofs else.proofs)
+                               state))))
       (reterr
        (msg "When generating C code for the function ~x0, ~
              at a point where ~

@@ -14,8 +14,6 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
-(include-book "kestrel/std/basic/if-star" :dir :system)
-
 (local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
