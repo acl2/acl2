@@ -3935,6 +3935,7 @@
             iprint-hard-bound     ;;; see just above
             trace-co              ;;; see just above
             trace-specs           ;;; see just above
+            giant-lambda-object   ;;; see just above
             show-custom-keyword-hint-expansion
             timer-alist                ;;; preserve accumulated summary info
             main-timer                 ;;; preserve accumulated summary info
@@ -8021,9 +8022,9 @@
 (defun walkabout-huh (state)
   (pprogn (princ$ "Huh?" *standard-co* state)
           (newline *standard-co* state)
-          (mv 'continue nil state)))
+          (mv 'continue nil nil state)))
 
-(defun walkabout1 (i x state intern-flg evisc-tuple alt-evisc-tuple)
+(defun walkabout1 (i x cmds state intern-flg evisc-tuple alt-evisc-tuple)
 
 ; X is a list and we are at position i within it.  This function
 ; reads commands from *standard-oi* and moves us around in x.  This
@@ -8031,114 +8032,138 @@
 ; xi, from i and x each time.  It would be better to maintain the
 ; current tail of x so nx could be fast.
 
-  (mv-let
-   (dotp xi)
-   (walkabout-nth i x)
-   (pprogn
-    (mv-let (col state)
-            (fmt1 (if dotp ".~%:" "~y0~|:")
-                  (list (cons #\0 xi))
-                  0
-                  *standard-co* state
-                  (if (eq alt-evisc-tuple :none)
-                      evisc-tuple
-                    alt-evisc-tuple))
-            (declare (ignore col))
-            state)
+  (let ((skip-printingp (consp i)) ; (car i) = 'skip-printing
+        (i (if (consp i) (cdr i) i)))
     (mv-let
-     (signal val state)
-     (mv-let
-      (erp obj state)
-      (with-infixp-nil
-       (read-object *standard-oi* state))
-      (cond
-       (erp (mv 'exit nil state))
-       (t (let ((obj (cond ((not intern-flg) obj)
-                           ((symbolp obj)
-                            (intern (symbol-name obj) "ACL2"))
-                           ((atom obj) obj)
-                           ((symbolp (car obj)) ; probably always true
-                            (cons (intern (symbol-name (car obj)) "ACL2")
-                                  (cdr obj)))
-                           (t obj))))
-            (case obj
-              (nx (if (walkabout-ip (1+ i) x)
-                      (mv 'continue (1+ i) state)
-                    (walkabout-huh state)))
-              (bk (if (= i 0)
-                      (walkabout-huh state)
-                    (mv 'continue (1- i) state)))
-              (0 (mv 'up nil state))
-              (pp (mv 'continue-fullp nil state))
-              (= (mv 'exit xi state))
-              (q (mv 'exit :invisible state))
-              (otherwise
-               (cond
-                ((and (integerp obj) (> obj 0))
-                 (cond
-                  ((atom xi)
-                   (walkabout-huh state))
-                  ((walkabout-ip (1- obj) xi)
-                   (walkabout1 (1- obj) xi state intern-flg evisc-tuple
-                               :none))
-                  (t (walkabout-huh state))))
-                ((and (consp obj)
-                      (eq (car obj) 'pp))
-                 (mv-let (print-level print-length)
-                         (let ((args (cdr obj)))
-                           (case-match args
-                             ((print-level print-length)
-                              (mv print-level print-length))
-                             ((n) (mv n n))
-                             (& (mv :bad nil))))
-                         (cond ((and (or (natp print-level)
-                                         (null print-level))
-                                     (or (natp print-length)
-                                         (null print-length)))
-                                (mv 'continue-fullp
-                                    (evisc-tuple print-level print-length
-                                                 nil nil)
-                                    state))
-                               (t (walkabout-huh state)))))
-                ((and (consp obj)
-                      (eq (car obj) '=)
-                      (consp (cdr obj))
-                      (symbolp (cadr obj))
-                      (null (cddr obj)))
-                 (pprogn
-                  (f-put-global 'walkabout-alist
-                                (cons (cons (cadr obj) xi)
-                                      (f-get-global 'walkabout-alist
-                                                    state))
-                                state)
-                  (mv-let (col state)
-                          (fmt1 "(walkabout= ~x0) is~%"
-                                (list (cons #\0 (cadr obj)))
-                                0 *standard-co* state (ld-evisc-tuple state))
-                          (declare (ignore col))
-                          (mv 'continue nil state))))
-                (t (walkabout-huh state)))))))))
-     (cond
-      ((eq signal 'continue)
-       (walkabout1 (or val i) x state intern-flg evisc-tuple :none))
-      ((eq signal 'up)
-       (mv 'continue nil state))
-      ((eq signal 'continue-fullp)
-       (walkabout1 i x state intern-flg evisc-tuple val))
-      (t (mv 'exit val state)))))))
+      (dotp xi)
+      (walkabout-nth i
+                     x)
+      (pprogn
+       (if skip-printingp
+           state
+           (mv-let (col state)
+             (fmt1 (if dotp ".~%:" "~y0~|:")
+                   (list (cons #\0 xi))
+                   0
+                   *standard-co* state
+                   (if (eq alt-evisc-tuple :none)
+                       evisc-tuple
+                       alt-evisc-tuple))
+             (declare (ignore col))
+             state))
+       (mv-let
+         (signal val cmds state)
+         (mv-let
+           (erp obj cmds state)
+           (with-infixp-nil
+            (if cmds
+                (mv-let (col state)
+                  (fmt1 "~x0~|" (list (cons #\0 (car cmds)))
+                        0
+                        *standard-co* state
+                        nil)
+                  (declare (ignore col))
+                  (mv nil (car cmds) (cdr cmds) state))
+                (mv-let (erp obj state)
+                  (read-object *standard-oi* state)
+                  (mv erp obj nil state))))
+           (cond
+            (erp (mv 'exit nil nil state))
+            (t (let ((obj (cond ((not intern-flg) obj)
+                                ((symbolp obj)
+                                 (intern (symbol-name obj) "ACL2"))
+                                ((atom obj) obj)
+                                ((symbolp (car obj)) ; probably always true
+                                 (cons (intern (symbol-name (car obj)) "ACL2")
+                                       (cdr obj)))
+                                (t obj))))
+                 (case obj
+                   (nx (if (walkabout-ip (1+ i) x)
+                           (mv 'continue (1+ i) cmds state)
+                           (walkabout-huh state)))
+                   (bk (if (= i 0)
+                           (walkabout-huh state)
+                           (mv 'continue (1- i) cmds state)))
+                   (0 (mv 'up nil cmds state))
+                   (pp (mv 'continue-fullp nil cmds state))
+                   (= (mv 'exit xi cmds state))
+                   (q (mv 'exit :invisible nil state))
+                   (otherwise
+                    (cond
+                     ((and (integerp obj) (> obj 0))
+                      (cond
+                       ((atom xi)
+                        (walkabout-huh state))
+                       ((walkabout-ip (1- obj) xi)
+                        (walkabout1 (1- obj) xi cmds state intern-flg evisc-tuple
+                                    :none))
+                       (t (walkabout-huh state))))
+                     ((and (consp obj)
+                           (eq (car obj) 'pp))
+                      (mv-let (print-level print-length)
+                        (let ((args (cdr obj)))
+                          (case-match args
+                            ((print-level print-length)
+                             (mv print-level print-length))
+                            ((n) (mv n n))
+                            (& (mv :bad nil))))
+                        (cond ((and (or (natp print-level)
+                                        (null print-level))
+                                    (or (natp print-length)
+                                        (null print-length)))
+                               (mv 'continue-fullp
+                                   (evisc-tuple print-level print-length
+                                                nil nil)
+                                   cmds
+                                   state))
+                              (t (walkabout-huh state)))))
+                     ((and (consp obj)
+                           (eq (car obj) '=)
+                           (consp (cdr obj))
+                           (symbolp (cadr obj))
+                           (null (cddr obj)))
+                      (pprogn
+                       (f-put-global 'walkabout-alist
+                                     (cons (cons (cadr obj) xi)
+                                           (f-get-global 'walkabout-alist
+                                                         state))
+                                     state)
+                       (mv-let (col state)
+                         (fmt1 "(walkabout= ~x0) is~%"
+                               (list (cons #\0 (cadr obj)))
+                               0 *standard-co* state (ld-evisc-tuple state))
+                         (declare (ignore col))
+                         (mv 'continue nil cmds state))))
+                     ((and (consp obj)
+                           (eq (car obj) 'cmds)
+                           (true-listp (cdr obj)))
+                      (mv 'continue
+                          (cons 'skip-printing i)
+                          (append (cdr obj) cmds)
+                          state))
+                     (t (walkabout-huh state)))))))))
+         (cond
+          ((eq signal 'continue)
+           (walkabout1 (or val i) x cmds state intern-flg evisc-tuple :none))
+          ((eq signal 'up)
+           (mv 'continue nil cmds state))
+          ((eq signal 'continue-fullp)
+           (walkabout1 i x cmds state intern-flg evisc-tuple val))
+          (t (mv 'exit val nil state))))))))
 
 (defun walkabout (x state)
   (pprogn
    (fms "Commands:~|0, 1, 2, ..., nx, bk, pp, (pp n), (pp lev len), =, (= ~
-         symb), and q.~%~%"
+         symb), (cmds c1 c2 ... cn), and q.~%~%"
         nil *standard-co* state nil)
-   (mv-let (signal val state)
+   (mv-let (signal val cmds state)
            (walkabout1 0 (list x)
+                       nil
                        state
                        (not (equal (current-package state) "ACL2"))
                        (evisc-tuple 2 3 nil nil)
                        :none)
-           (declare (ignore signal))
+           (declare (ignore signal cmds))
            (value val))))
 
 (defun walkabout=-fn (var state)
@@ -15576,8 +15601,6 @@
 ; (trace$
 ;  (translate-hints+1)
 ;  (translate-hints+1@par)
-;  (translate-hints2)
-;  (translate-hints2@par)
 ;  (translate-hints1)
 ;  (apply-override-hints@par)
 ;  (apply-override-hints)
@@ -16316,8 +16339,8 @@
         (t ; term is (caddr (cdr hint)); we allow any term here
          (value@par nil))))
 
-(defun@par translate-hints1 (name-tree lst hint-type override-hints ctx wrld
-                                       state)
+(defun@par translate-hints1 (name-tree lst hint-type override-hints
+                                       seen ctx wrld state)
 
 ; A note on the taxonomy of translated hints.  A "hint setting" is a pair of
 ; the form (key . val), such as (:DO-NOT-INDUCT . T) or (:USE . (lmi-lst
@@ -16329,6 +16352,8 @@
 ; Thus, following the :HINTS keyword to defthm, the user types "hints" (in
 ; untranslated form).  This function takes a lst, which is supposed be some
 ; hints, and translates it or else causes an error.
+
+; Seen is the list of goal names (each a string) that have been encountered.
 
 ; Essay on the Handling of Override-hints
 
@@ -16359,84 +16384,71 @@
 ; selected by find-applicable-hint-settings -- namely, by passing the world's
 ; override-hints to eval-and-translate-hint-expression.
 
-  (cond ((atom lst)
-         (cond ((null lst) (value@par nil))
-               (t (er@par soft ctx
-                    "The :HINTS keyword is supposed to have a true-list as ~
-                     its value, but ~x0 is not one.  See :DOC hints."
-                    lst))))
-        ((and (consp (car lst))
-              (stringp (caar lst))
-              (null (cdar lst)))
-         (translate-hints1@par name-tree (cdr lst) hint-type override-hints ctx
-                               wrld state))
-        (t (er-let*@par
-            ((hint (cond ((and (consp (car lst))
-                               (stringp (caar lst)))
-                          (translate-hint@par name-tree (car lst) hint-type ctx
-                                              wrld state))
-                         (t (translate-hint-expression@par
-                             name-tree (car lst) hint-type ctx wrld state))))
-             (rst (translate-hints1@par name-tree (cdr lst) hint-type
-                                        override-hints ctx wrld state)))
-            (er-progn@par
-             (cond ((eq hint-type 'override)
-                    (check-translated-override-hint@par hint (car lst) ctx state))
-                   (t (value@par nil)))
-             (value@par (cons (cond ((atom hint) hint) ; nil
-                                    ((and (consp (car lst))
-                                          (stringp (caar lst)))
-                                     (cond (override-hints
-                                            (list* (car hint) ; (caar lst)
-                                                   (cons :KEYWORD-ALIST
-                                                         (cdar lst))
-                                                   (cons :NAME-TREE
-                                                         name-tree)
-                                                   (cdr hint)))
-                                           (t hint)))
-                                    ((eq (car hint)
-                                         'eval-and-translate-hint-expression)
-                                     hint)
-                                    (t (er hard ctx
-                                           "Internal error: Unexpected ~
-                                            translation ~x0 for hint ~x1.  ~
-                                            Please contact the ACL2 ~
-                                            implementors."
-                                           hint (car lst))))
-                              rst)))))))
-
-(defun@par warn-on-duplicate-hint-goal-specs (lst seen ctx state)
-  (cond ((endp lst)
-         (state-mac@par))
-        ((and (consp (car lst))
-              (stringp (caar lst)))
-         (if (member-equal (caar lst) seen)
-             (pprogn@par (warning$@par ctx ("Hints")
-                           "The goal-spec ~x0 is explicitly associated with ~
-                            more than one hint.  All but the first of these ~
-                            hints may be ignored.  If you intended to give ~
-                            all of these hints, combine them into a single ~
-                            hint of the form (~x0 :kwd1 val1 :kwd2 val2 ...). ~
-                            ~ See :DOC hints-and-the-waterfall."
-                           (caar lst))
-                         (warn-on-duplicate-hint-goal-specs@par (cdr lst) seen
-                                                                ctx state))
-           (warn-on-duplicate-hint-goal-specs@par (cdr lst)
-                                                  (cons (caar lst) seen)
-                                                  ctx state)))
-        (t (warn-on-duplicate-hint-goal-specs@par (cdr lst) seen ctx state))))
-
-(defun@par translate-hints2 (name-tree lst hint-type override-hints ctx wrld state)
-  (cond ((warning-disabled-p "Hints")
-         (translate-hints1@par name-tree lst hint-type override-hints ctx wrld
-                               state))
-        (t
-         (er-let*@par ((hints (translate-hints1@par name-tree lst hint-type
-                                                    override-hints ctx wrld
-                                                    state)))
-                      (pprogn@par (warn-on-duplicate-hint-goal-specs@par
-                                   lst nil ctx state)
-                                  (value@par hints))))))
+  (cond
+   ((atom lst)
+    (cond ((null lst) (value@par nil))
+          (t (er@par soft ctx
+               "The :HINTS keyword is supposed to have a true-list as its ~
+                value, but ~x0 is not one.  See :DOC hints."
+               lst))))
+   (t
+    (let ((goal-name (and (consp (car lst))
+                          (stringp (caar lst))
+                          (caar lst))))
+      (cond
+       ((and goal-name
+             (null (cdar lst)))
+        (translate-hints1@par name-tree (cdr lst) hint-type override-hints
+                              seen ctx wrld state))
+       (t
+        (er-let*@par
+         ((hint (cond (goal-name
+                       (pprogn@par
+                        (if (member-string-equal goal-name seen)
+                            (warning$@par ctx "Hints"
+                              "The goal-spec ~x0 is explicitly associated ~
+                               with more than one hint.  All but the first of ~
+                               these hints may be ignored.  If you intended ~
+                               to give all of these hints, consider combining ~
+                               them into a single hint of the form (~x0 :kwd1 ~
+                               val1 :kwd2 val2 ...).  See :DOC hints and :DOC ~
+                               hints-and-the-waterfall; community book ~
+                               books/hints/merge-hint.lisp might also be ~
+                               helpful."
+                              goal-name)
+                            (state-mac@par))
+                        (translate-hint@par name-tree (car lst) hint-type ctx
+                                            wrld state)))
+                      (t (translate-hint-expression@par
+                          name-tree (car lst) hint-type ctx wrld state))))
+          (rst (translate-hints1@par name-tree (cdr lst) hint-type
+                                     override-hints
+                                     (cond (goal-name (cons goal-name seen))
+                                           (t seen))
+                                     ctx wrld state)))
+         (er-progn@par
+          (cond ((eq hint-type 'override)
+                 (check-translated-override-hint@par hint (car lst) ctx state))
+                (t (value@par nil)))
+          (value@par (cons (cond ((atom hint) hint) ; nil
+                                 (goal-name
+                                  (cond (override-hints
+                                         (list* (car hint)
+                                                (cons :KEYWORD-ALIST
+                                                      (cdar lst))
+                                                (cons :NAME-TREE
+                                                      name-tree)
+                                                (cdr hint)))
+                                        (t hint)))
+                                 ((eq (car hint)
+                                      'eval-and-translate-hint-expression)
+                                  hint)
+                                 (t (er hard ctx
+                                        "Internal error: Unexpected ~
+                                         translation ~x0 for hint ~x1.  ~
+                                         Please contact the ACL2 implementors."
+                                        hint (car lst))))
+                           rst))))))))))
 
 (defun override-hints (wrld)
   (declare (xargs :guard (and (plist-worldp wrld)
@@ -16445,7 +16457,7 @@
   (cdr (assoc-eq :override (table-alist 'default-hints-table wrld))))
 
 (defun@par translate-hints (name-tree lst ctx wrld state)
-  (translate-hints2@par name-tree lst nil (override-hints wrld) ctx wrld
+  (translate-hints1@par name-tree lst nil (override-hints wrld) nil ctx wrld
                         state))
 
 (defun@par translate-hints+1 (name-tree lst default-hints ctx wrld state)
@@ -16470,18 +16482,18 @@
 
 (defun translate-override-hints (name-tree lst ctx wrld state)
   #-acl2-par
-  (translate-hints2 name-tree lst 'override
+  (translate-hints1 name-tree lst 'override
                     nil ; no override-hints are applied
-                    ctx wrld state)
+                    nil ctx wrld state)
   #+acl2-par
   (if (f-get-global 'waterfall-parallelism state)
       (cmp-to-error-triple
-       (translate-hints2@par name-tree lst 'override
+       (translate-hints1@par name-tree lst 'override
                              nil ; no override-hints are applied
-                             ctx wrld state))
-    (translate-hints2 name-tree lst 'override
+                             nil ctx wrld state))
+    (translate-hints1 name-tree lst 'override
                       nil ; no override-hints are applied
-                      ctx wrld state)))
+                      nil ctx wrld state)))
 
 (defun@par apply-override-hint1
   (override-hint cl-id clause hist pspv ctx wrld

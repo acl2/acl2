@@ -52,4 +52,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::deftreeops *smtp-grammar-rules* :prefix smtp-cst)
+(deftreeops *smtp-grammar-rules* :prefix smtp-cst)

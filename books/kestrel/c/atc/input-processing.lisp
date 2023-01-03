@@ -622,7 +622,12 @@
   :returns (mv erp
                (prog-const symbolp)
                (wf-thm symbolp)
-               (fn-thms symbol-symbol-alistp :hyp (symbol-listp target-fns)))
+               (fn-thms symbol-symbol-alistp
+                        :hyp (symbol-listp target-fns))
+               (fn-limits symbol-symbol-alistp
+                          :hyp (symbol-listp target-fns))
+               (fn-body-limits symbol-symbol-alistp
+                               :hyp (symbol-listp target-fns)))
   :short "Process the @(':const-name') input."
   :long
   (xdoc::topstring
@@ -643,11 +648,24 @@
      The thing appended differs across the theorems:
      thus, their names are all distinct by construction.")
    (xdoc::p
+    "Besides the names of the generated theorems,
+     we also return the names of the soon-to-be-generated limit functions.
+     There will be one limit function for each target function,
+     whose name is obtained by adding @('-limit')
+     after the constant name and the target function name:
+     this will express a limit sufficient to execute the target function.
+     There will be also an additional limit function
+     for each recursive target function,
+     whose name is obtained by adding @('-body-limit')
+     after the constant name and the target function name;
+     this will express a limit sufficient to run
+     any instance of the loop body.")
+   (xdoc::p
     "If the @(':proofs') input is @('nil'),
      the @(':const-name') input must be absent
      and we return @('nil') for this as well as for the theorem names.
      No constant and theorems are generated when @(':proofs') is @('nil')."))
-  (b* (((reterr) nil nil nil)
+  (b* (((reterr) nil nil nil nil nil)
        (const-name-option (assoc-eq :const-name options))
        ((when (not proofs))
         (if (consp const-name-option)
@@ -655,7 +673,7 @@
                           the :CONST-NAME input must be absent, ~
                           but it is ~x0 instead."
                          (cdr const-name-option)))
-          (retok nil nil nil)))
+          (retok nil nil nil nil nil)))
        (const-name (if (consp const-name-option)
                        (cdr const-name-option)
                      :auto))
@@ -678,8 +696,9 @@
         (reterr (msg "The generated theorem name ~x0 ~
                       for the well-formedness theorem is invalid: ~@1"
                      wf-thm msg?)))
-       ((erp fn-thms) (atc-process-const-name-aux target-fns prog-const wrld)))
-    (retok prog-const wf-thm fn-thms))
+       ((erp fn-thms fn-limits fn-body-limits)
+        (atc-process-const-name-aux target-fns prog-const wrld)))
+    (retok prog-const wf-thm fn-thms fn-limits fn-body-limits))
 
   :prepwork
 
@@ -689,9 +708,14 @@
                                        (prog-const symbolp)
                                        (wrld plist-worldp))
      :returns (mv erp
-                  (fn-thms symbol-symbol-alistp :hyp (symbol-listp target-fns)))
-     (b* (((reterr) nil)
-          ((when (endp target-fns)) (retok nil))
+                  (fn-thms symbol-symbol-alistp
+                           :hyp (symbol-listp target-fns))
+                  (fn-limits symbol-symbol-alistp
+                             :hyp (symbol-listp target-fns))
+                  (fn-body-limits symbol-symbol-alistp
+                                  :hyp (symbol-listp target-fns)))
+     (b* (((reterr) nil nil nil)
+          ((when (endp target-fns)) (retok nil nil nil))
           (fn (car target-fns))
           (fn-thm (packn (list prog-const "-" (symbol-name fn) "-CORRECT")))
           (msg? (acl2::fresh-namep-msg-weak fn-thm nil wrld))
@@ -700,10 +724,30 @@
                          for the correctness theorem of the function ~x1 ~
                          is invalid: ~@2"
                         fn-thm fn msg?)))
-          ((erp fn-thms) (atc-process-const-name-aux (cdr target-fns)
-                                                     prog-const
-                                                     wrld)))
-       (retok (acons fn fn-thm fn-thms)))
+          ((erp fn-thms fn-limits fn-body-limits)
+           (atc-process-const-name-aux (cdr target-fns) prog-const wrld))
+          (fn-limit (packn (list prog-const "-" (symbol-name fn) "-LIMIT")))
+          (msg? (acl2::fresh-namep-msg-weak fn-limit 'function wrld))
+          ((when msg?)
+           (reterr (msg "The generated function name ~x0 ~
+                         for the limit of the function ~x1 ~
+                         is invalid: ~@2"
+                        fn-limit fn msg?)))
+          ((when (not (irecursivep+ fn wrld)))
+           (retok (acons fn fn-thm fn-thms)
+                  (acons fn fn-limit fn-limits)
+                  fn-body-limits))
+          (fn-body-limit
+           (packn (list prog-const "-" (symbol-name fn) "-BODY-LIMIT")))
+          (msg? (acl2::fresh-namep-msg-weak fn-body-limit 'function wrld))
+          ((when msg?)
+           (reterr (msg "The generated function name ~x0 ~
+                         for the body limit of the function ~x1 ~
+                         is invalid: ~@2"
+                        fn-body-limit fn msg?))))
+       (retok (acons fn fn-thm fn-thms)
+              (acons fn fn-limit fn-limits)
+              (acons fn fn-body-limit fn-body-limits)))
      :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -751,10 +795,13 @@
                (prog-const symbolp)
                (wf-thm symbolp)
                (fn-thms symbol-symbol-alistp)
+               (fn-limits symbol-symbol-alistp)
+               (fn-body-limits symbol-symbol-alistp)
                (print evmac-input-print-p)
                state)
   :short "Process all the inputs."
-  (b* (((reterr) nil "" "" nil (irr-pprint-options) nil nil nil nil nil state)
+  (b* (((reterr)
+        nil "" "" nil (irr-pprint-options) nil nil nil nil nil nil nil state)
        (wrld (w state))
        ((mv erp targets options)
         (partition-rest-and-keyword-args args *atc-allowed-options*))
@@ -768,7 +815,7 @@
        ((erp header) (atc-process-header options))
        ((erp pretty-printing) (atc-process-pretty-printing options))
        ((erp proofs) (atc-process-proofs options))
-       ((erp prog-const wf-thm fn-thms)
+       ((erp prog-const wf-thm fn-thms fn-limits fn-body-limits)
         (atc-process-const-name options target-fns proofs wrld))
        ((erp print) (atc-process-print options)))
     (retok targets
@@ -780,5 +827,7 @@
            prog-const
            wf-thm
            fn-thms
+           fn-limits
+           fn-body-limits
            print
            state)))

@@ -84,4 +84,6 @@
      (set-inhibit-warnings "disable"
                            "double-rewrite"
                            "free"
-                           "theory")))
+                           "subsume"
+                           "theory"
+                           "use")))

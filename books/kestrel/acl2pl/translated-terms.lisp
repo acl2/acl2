@@ -12,14 +12,7 @@
 
 (include-book "values")
 
-(include-book "kestrel/std/basic/good-pseudo-termp" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local
- (std::deflist good-pseudo-term-listp (acl2::x)
-   :guard (pseudo-term-listp acl2::x)
-   (good-pseudo-termp acl2::x)))
+(include-book "kestrel/std/basic/good-pseudo-term-listp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -149,10 +142,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-tterm
+(fty::defoption tterm-option
   tterm
-  :short "Fixtype of translated terms and @('nil')."
-  :pred maybe-ttermp)
+  :short "Fixtype of optional translated terms."
+  :pred tterm-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
