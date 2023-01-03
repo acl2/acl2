@@ -283,7 +283,7 @@
   ;; We have our own xdoc topic called r1cs:
   :suppress-xdoc t)
 
-;; Since checking the guards if very slow when the prime is large:
+;; Since checking the guards is very slow when the prime is large:
 (in-theory (disable (:e r1cs)))
 
 ;; Compute the dot product of the vector of coefficients and the vector of
