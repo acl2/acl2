@@ -61,7 +61,6 @@
  (2 2 (:REWRITE |(< x (+ c/d y))|))
  (2 2 (:REWRITE |(< 0 (/ x))|))
  (2 2 (:REWRITE |(< 0 (* x y))|))
- (1 1 (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
  )
 (ADE::GCD-ALG-IS-POSITIVE
  (25 5 (:REWRITE |(+ y x)|))

@@ -235,11 +235,14 @@
                    (svl-sum-col-bybit-aux (sv::4vec-rsh start mult)
                                           mcand
                                           col-index)))
+   :otf-flg t
    :hints (("Goal"
             :in-theory (e/d (svl-sum-col-bybit-aux
                              bits-is-bit-of-reverse
                              SVL::BITS-OF-RSH-NO-SYNTAXP
-                             svl-sum-col-bybit)
+                             svl-sum-col-bybit
+                             SV::2VEC
+                             SV::4VEC)
                             (bits-is-bit-of))))))
 
 (local

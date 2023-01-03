@@ -899,6 +899,7 @@
                (equal (bits (4vec-concat$ c-size term1 term2) start size )
                       (bits term2 (- start c-size) size )))
       :hints (("goal"
+               :cases ((equal c-size start))
                :in-theory (e/d (4vec-concat$
                                 4vec-part-select-of-concat-2)
                                (convert-4vec-concat-to-4vec-concat$

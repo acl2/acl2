@@ -198,7 +198,7 @@ Skipping for now.
   (receiver-statep (receiver-state rs)))
 
 (property (rs :receiver-state a b c :all)
-  (equal (g :received (ss rs :received a :received b :received c))
+  (equal (mget :received (msets rs :received a :received b :received c))
          c))
          
 (must-fail
@@ -226,6 +226,40 @@ Skipping for now.
               (^ (<= lo mid1)
                  (>= hi mid2))))))
 
-;(in-package "DEFDATA")
-;:redef!
-;(in-package "ACL2S")
+(defdata receiver-state (record (received . data)))
+
+(defdata value-type int)
+
+(defdata read-request   (list 'READ-REQUEST))
+(defdata read-response  (list 'READ-RESPONSE value-type))
+(defdata write-request  (list 'WRITE-REQUEST value-type))
+(defdata write-response (list 'WRITE-RESPONSE))
+(defdata repl-request   (list 'REPL-REQUEST nat value-type))
+(defdata repl-response  (list 'REPL-RESPONSE))
+
+(defdata operation (oneof read-request read-response
+                    write-request write-response
+                    repl-request repl-response))
+
+(check (operationp (list 'READ-REQUEST)))
+(check (operationp (list 'READ-RESPONSE 1)))
+(check (operationp (list 'WRITE-REQUEST 1)))
+(check (operationp (list 'WRITE-RESPONSE)))
+(check (operationp (list 'REPL-REQUEST 1 2)))
+(check (operationp (list 'REPL-RESPONSE)))
+(check (write-requestp '(write-request 3)))
+
+(defdata name (map nat nat))
+
+(defdata d2 (map loi loi))
+(defdata lloi (listof loi))
+(defdata d3 (map lloi lloi))
+(defdata d4 (map loi lloi))
+(defdata d5 (map lloi loi))
+
+(defdata d6
+  (record (a . loi)
+          (b . int)
+          (c . non-neg-rational)))
+
+(defdata d7 (map d6 d6))

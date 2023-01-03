@@ -28,3 +28,13 @@
   ;; TODO: We should probably produce an applicability condition that the guard of <
   ;; is satisfied by items that satisfy real/rationalp.
   (defmergesort merge-< merge-sort-< < real/rationalp))
+
+;; A test with :verify-guards nil
+(deftest
+  (defun my< (x y) (< x y))
+  (defmergesort merge-my< merge-sort-my< my< rationalp :verify-guards nil))
+
+;; A test where there are elements that are equivalent but not equal (lists of the same length)
+(deftest
+  (defun len< (x y) (declare (xargs :guard (and (true-listp x) (true-listp y)))) (< (len x) (len y)))
+  (defmergesort merge-len< merge-sort-len< len< true-listp :verify-guards nil))

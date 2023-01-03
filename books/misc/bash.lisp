@@ -2,8 +2,8 @@
 ; Written by Matt Kaufmann (original date October, 2006)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; (depends-on "build/rewrite-constant.certdep" :dir :system)
-; (depends-on "build/prove-spec-var.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
 
 (in-package "ACL2")
 

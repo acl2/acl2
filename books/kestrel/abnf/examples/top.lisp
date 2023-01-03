@@ -15,7 +15,6 @@
 (include-book "imf")
 (include-book "smtp")
 (include-book "imap")
-(include-book "json")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -13,7 +13,7 @@
 
 (include-book "../../language/integer-operations")
 
-(include-book "../integer-conversions")
+(include-book "../../representation/integer-conversions")
 
 (include-book "integers")
 (include-book "value-integer-get")

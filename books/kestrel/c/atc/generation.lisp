@@ -68,13 +68,36 @@
      to make the code more readable and more easily extensible,
      at a performance cost that should be unimportant.
      These product fixtypes have names @('...-gin') and @('...-gout'),
-     where @('...') is derived from the corresponding function name,
+     where @('...') is related to the corresponding function name,
      and where the @('g') in @('gin') and @('gout')
      conveys the reference to code and event generation functions.
-     See the code generation functions documentation
-     for a description of the components of these fixtypes;
-     also note that some components follow the naming conventions
-     described in @(see atc-implementation)."))
+     Most components follow the naming conventions
+     described in @(see atc-implementation).
+     Other components common to all these types are:")
+   (xdoc::ul
+    (xdoc::li
+     "@('proofs') is a flag that is threaded through
+      and that is used to determine and to indicate
+      whether modular proofs are generated or not.
+      We are incrementally developing a new approch to proof generation
+      that generates compositional and more efficient theorems
+      as each ACL2 construct is translated to the corresponding C construct.
+      Not all constructs are currently covered:
+      as soon as a non-covered construct is encountered,
+      we stop generating modular theorems and we set the flag;
+      prior to attempting to generate a modular theorem,
+      the flag is checked, and modular theorem generation is skipped,
+      even if the current construct is covered,
+      but the reason is that previous constructs were not covered,
+      and thus we cannot reliably generate a modular proof for a construct
+      when we don't have modular proofs for the sub-constructs.
+      Eventually we will eliminate this flag,
+      once modular proof generation covers all the constructs.")
+    (xdoc::p
+     "@('events') is a list of theorem events generated
+      for a construct and its sub-constructs."))
+   (xdoc::p
+    "Other components are described where the types are defined."))
   :order-subtopics t
   :default-parent t)
 

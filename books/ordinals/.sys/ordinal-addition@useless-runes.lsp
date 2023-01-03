@@ -758,7 +758,7 @@
  (2 2 (:REWRITE DEFAULT-+-2))
  (2 2 (:REWRITE DEFAULT-+-1))
  )
-(BAD)
+(|a<=b => (o-first-expt a) <= (o-first-expt b)|)
 (O-FIRST-EXPT-O--<)
 (|a <= b  =>  a+(b-a) = b :l1|)
 (|a <= b  =>  a+(b-a) = b|
@@ -1144,7 +1144,7 @@
  (1 1 (:REWRITE |~(a < a)|))
  (1 1 (:REWRITE O-FIRST-EXPT-O-P))
  )
-(|(b > 1)  =>  (a < b  <=>  a-1 < b-1|
+(|(b > 1)  =>  (a < b  <=>  a-1 < b-1)|
  (545 94 (:REWRITE O-FIRST-EXPT-O-INFP))
  (456 20 (:REWRITE O-FIRST-EXPT-<))
  (227 92 (:REWRITE O-FIRST-EXPT-DEF-O-FINP))

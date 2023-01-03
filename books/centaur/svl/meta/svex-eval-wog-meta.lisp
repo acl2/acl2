@@ -28,7 +28,7 @@
 (include-book "../svex-eval-wog-openers")
 (include-book "../svexl/svexl")
 (include-book "../svexl/svexl-correct")
-(include-book "../svex-reduce-with-env")
+(include-book "../svex-reduce/top")
 ;;(include-book "centaur/sv/svex/rewrite" :dir :system)
 
 (include-book "std/alists/remove-assocs" :dir :system)
@@ -349,7 +349,8 @@
            (svexlist-count-gt (cdr acl2::x)
                               (svex-count-gt (car acl2::x) (1- val)))))))
 
-(define svex-eval-wog-meta-main (term)
+(define svex-eval-wog-meta-main (term
+                                 (context rp::rp-term-listp))
   (case-match term
       (('svex-eval-wog ('quote svex) env)
        (b* ((env-orig env)
@@ -375,7 +376,7 @@ fast-alist. Consider making it one for a better performance.~%"))
                  ((unless (and large-svex
                                (svex-p svex)))
                   (mv term nil))
-                 (svex (svex-reduce-w/-env svex env-falist))
+                 (svex (svex-reduce-w/-env svex :env env-falist))
                  (svexl (svex-to-svexl svex)))
               (mv `(svexl-eval ',svexl ,env-orig)
                   `(nil t t))))
@@ -383,39 +384,45 @@ fast-alist. Consider making it one for a better performance.~%"))
           (mv term nil)))))
     (& (mv term nil))))
 
-(define svex-alist-eval-meta-aux (term &key (convert-to-svexl 't))
+(define svex-alist-eval-meta-aux (term
+                                  (context rp::rp-term-listp)
+                                  &key
+                                  (convert-to-svexl 't))
   (case-match term
       (('sv::svex-alist-eval ('quote alist) env)
        (b* ((- (cw "Entering svex-eval-alist-meta ~%"))
             (- (or convert-to-svexl
-                   (cw "convert-to-svexl is disabled~%")))
+                   (cw " (convert-to-svexl is disabled)~%")))
             (env-orig env)
             (env (rp::ex-from-rp env)))
          (case-match env
              (('falist ('quote env-falist) &)
-              (b* ((- (cw "Calling sv::svex-alist-p ~%"))
+              (b* (
                    ((Unless (sv::svex-alist-p alist)) ;; for guards
                     (mv term nil))
-                   (- (cw "Starting: svl::svex-alist-reduce-w/-env ~%"))
+                   
+                   (- (cw "Starting: svl::svex-alist-reduce-w/-env. ~%"))
                    (- (time-tracker :svex-alist-eval-meta-aux :end))
                    (- (time-tracker :svex-alist-eval-meta-aux :init
                                     :times '(1 2 3 4 5)
                                     :interval 5
                                     ))
                    (- (time-tracker :svex-alist-eval-meta-aux :start!))
-                   (alist (svex-alist-reduce-w/-env alist env-falist))
-                   
-                   (- (cw "Finished: svl::svex-alist-reduce-w/-env. "))
+                   (alist (svexalist-convert-bitnot-to-bitxor alist))
+                   (alist (svex-alist-reduce-w/-env alist :env env-falist))
                    (- (time-tracker :svex-alist-eval-meta-aux :stop))
                    (- (time-tracker :svex-alist-eval-meta-aux :print?
                                     :min-time 0
                                     :msg "The total runtime of svl::svex-alist-reduce-w/-env ~
 was ~st seconds."))
+                   
                    ;;(- (cw "Starting: sv::svex-alist-rewrite-top ~%"))
                    ;;(alist (sv::svex-alist-rewrite-top alist))
                    ;;(alist (sv::svex-alist-rewrite-fixpoint alist))
 
                    ((unless convert-to-svexl)
+                    ;; return  identity  so  that  the  returned  term  can  be
+                    ;; rewritten to sv::svex-alist-eval$
                     (mv `(identity (sv::svex-alist-eval ',alist ,env-orig))
                         `(nil t)))
                    
@@ -436,13 +443,15 @@ was ~st seconds."))
                 (mv term nil))))))
       (& (mv term nil))))
 
-(define svex-alist-eval-meta (term)
+(define svex-alist-eval-meta (term
+                              (context rp::rp-term-listp))
   :enabled t
-  (svex-alist-eval-meta-aux term :convert-to-svexl t))
+  (svex-alist-eval-meta-aux term context :convert-to-svexl t))
 
-(define svex-alist-eval-meta-w/o-svexl (term)
+(define svex-alist-eval-meta-w/o-svexl (term
+                                        (context rp::rp-term-listp))
   :enabled t
-  (svex-alist-eval-meta-aux term :convert-to-svexl nil))
+  (svex-alist-eval-meta-aux term context :convert-to-svexl nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; svexl-eval-meta (svexl-eval-wog-meta)
@@ -1047,8 +1056,10 @@ was ~st seconds."))
    (defthm rp-evl-of-svex-eval-wog-meta-main
        (implies (and (rp-evl-meta-extract-global-facts)
                      (rp::rp-termp term)
-                     (svex-eval-wog-formula-checks state))
-                (equal (rp-evlt (mv-nth 0 (svex-eval-wog-meta-main term)) a)
+                     (svex-eval-wog-formula-checks state)
+                     (rp::rp-term-listp context)
+                     (rp::eval-and-all context a))
+                (equal (rp-evlt (mv-nth 0 (svex-eval-wog-meta-main term context)) a)
                        (rp-evlt term a)))
      :hints (("goal"
               :use ((:instance rp-evl-of-svex-eval-wog-meta
@@ -1411,7 +1422,7 @@ was ~st seconds."))
 
    (defthm rp-termp-svex-eval-wog-meta-main
        (implies (and (rp::rp-termp term))
-                (rp::rp-termp (mv-nth 0 (svex-eval-wog-meta-main term))))
+                (rp::rp-termp (mv-nth 0 (svex-eval-wog-meta-main term context))))
      :hints (("goal"
               :do-not-induct t
               :do-not '(preprocess)
@@ -1660,7 +1671,7 @@ was ~st seconds."))
    (defthm valid-sc-svex-eval-wog-meta-main
        (implies (and (rp::valid-sc term a)
                      (rp::rp-termp term))
-                (rp::valid-sc (mv-nth 0 (svex-eval-wog-meta-main term))
+                (rp::valid-sc (mv-nth 0 (svex-eval-wog-meta-main term context))
                               a))
      :hints (("goal"
               :do-not-induct t

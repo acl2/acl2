@@ -15,6 +15,8 @@
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "std/lists/top" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-generation-contexts
@@ -29,7 +31,7 @@
      there is a growing logical context consisting of
      conditional tests and of @(tsee let) and @(tsee mv-let) bindings.
      We call these tests and bindings `premises',
-     which is not an ideal term because
+     which is not ideal terminology because
      it is essentially synonmous of `hypotheses',
      which in ACL2 refers specifically to terms (conditions) and not bindings.
      So we use `premises' because it is not used as much in ACL2;
@@ -49,19 +51,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only consider bindings of the computation state.
+    "We include bindings of the computation state.
      Each such binding consists of
      a variable for the computation state
      (contained in @('compst-var') in the code generation code),
      and a term that must represent a computation state.
      The meaning is that the variable is bound to the term.")
    (xdoc::p
-    "There are clearly more kinds of premises to add here,
-     which we will add as we extend our modular proof generation approach.
-     We add a dummy kind just so there are at least two tags,
-     otherwise currently there may be downstream errors."))
+    "We also include terms that are tests of @(tsee if)s.")
+   (xdoc::p
+    "We may add more kinds later."))
   (:compustate ((var symbolp)
                 (term any)))
+  (:test ((term any)))
   (:other ())
   :pred atc-premisep)
 
@@ -80,7 +82,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-contextualize (term (context atc-contextp))
+(define atc-contextualize (term (context atc-contextp) (skip-cs booleanp))
   :returns term1
   :short "Put a term into a context."
   :long
@@ -88,11 +90,22 @@
    (xdoc::p
     "We go through the context elements,
      generating code for them
-     and ending with the term given as input."))
+     and ending with the term given as input.")
+   (xdoc::p
+    "The @('skip-cs') flag controls whether
+     we skip over the computation state bindings or not.
+     For certain generated lemmas that apply just to ACL2 terms,
+     and not to relations between ACL2 terms and C constructs,
+     we skip over the bindings of computation states,
+     because there are no computation states mentioned in the lemmas."))
   (b* (((when (endp context)) term)
        (premise (car context)))
     (atc-premise-case
      premise
-     :compustate `(let ((,premise.var ,premise.term))
-                    ,(atc-contextualize term (cdr context)))
+     :compustate (if skip-cs
+                     (atc-contextualize term (cdr context) skip-cs)
+                   `(let ((,premise.var ,premise.term))
+                      ,(atc-contextualize term (cdr context) skip-cs)))
+     :test `(implies ,premise.term
+                     ,(atc-contextualize term (cdr context) skip-cs))
      :other (raise "Internal error: reached :OTHER case of ATC-PREMISE."))))

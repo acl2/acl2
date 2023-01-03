@@ -464,7 +464,8 @@
   :returns (num-val num-val-p)
   :short "A @('bin-val') parse tree is abstracted to
           its corresponding numeric value notation."
-  (b* (((fun (fail)) (prog2$ (abstract-fail) (num-val-direct nil)))
+  (b* (((fun (fail)) (prog2$ (abstract-fail)
+                             (num-val-direct (num-base-bin) nil)))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
        ((unless (and (consp treess)
@@ -477,8 +478,8 @@
        (tree-rest (car trees-rest))
        (rest (abstract-bin-val-rest tree-rest)))
     (if (nat-listp rest)
-        (num-val-direct (cons 1st-num rest))
-      (num-val-range 1st-num rest)))
+        (num-val-direct (num-base-bin) (cons 1st-num rest))
+      (num-val-range (num-base-bin) 1st-num rest)))
   :guard-hints (("Goal"
                  :use (:instance
                        return-type-of-abstract-bin-val-rest
@@ -491,7 +492,8 @@
   :returns (num-val num-val-p)
   :short "A @('dec-val') parse tree is abstracted to
           its corresponding numeric value notation."
-  (b* (((fun (fail)) (prog2$ (abstract-fail) (num-val-direct nil)))
+  (b* (((fun (fail)) (prog2$ (abstract-fail)
+                             (num-val-direct (num-base-dec) nil)))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
        ((unless (and (consp treess)
@@ -504,8 +506,8 @@
        (tree-rest (car trees-rest))
        (rest (abstract-dec-val-rest tree-rest)))
     (if (nat-listp rest)
-        (num-val-direct (cons 1st-num rest))
-      (num-val-range 1st-num rest)))
+        (num-val-direct (num-base-dec) (cons 1st-num rest))
+      (num-val-range (num-base-dec) 1st-num rest)))
   :guard-hints (("Goal"
                  :use (:instance
                        return-type-of-abstract-dec-val-rest
@@ -518,7 +520,8 @@
   :returns (num-val num-val-p)
   :short "A @('hex-val') parse tree is abstracted to
           its corresponding numeric value notation."
-  (b* (((fun (fail)) (prog2$ (abstract-fail) (num-val-direct nil)))
+  (b* (((fun (fail)) (prog2$ (abstract-fail)
+                             (num-val-direct (num-base-hex) nil)))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
        ((unless (and (consp treess)
@@ -531,8 +534,8 @@
        (tree-rest (car trees-rest))
        (rest (abstract-hex-val-rest tree-rest)))
     (if (nat-listp rest)
-        (num-val-direct (cons 1st-num rest))
-      (num-val-range 1st-num rest)))
+        (num-val-direct (num-base-hex) (cons 1st-num rest))
+      (num-val-range (num-base-hex) 1st-num rest)))
   :guard-hints (("Goal"
                  :use (:instance
                        return-type-of-abstract-hex-val-rest
@@ -545,7 +548,8 @@
   :returns (num-val num-val-p)
   :short "A @('(bin-val / dec-val / hex-val )') parse tree is abstracted to
           its corresponding numeric value notation."
-  (b* (((fun (fail)) (prog2$ (abstract-fail) (num-val-direct nil)))
+  (b* (((fun (fail)) (prog2$ (abstract-fail)
+                             (num-val-direct (num-base-bin) nil)))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
        ((unless (consp treess)) (fail))
@@ -565,7 +569,8 @@
   :returns (num-val num-val-p)
   :short "A @('num-val') parse tree is abstracted to
           its corresponding numeric value notation."
-  (b* (((fun (fail)) (prog2$ (abstract-fail) (num-val-direct nil)))
+  (b* (((fun (fail)) (prog2$ (abstract-fail)
+                             (num-val-direct (num-base-bin) nil)))
        ((unless (tree-case tree :nonleaf)) (fail))
        (treess (tree-nonleaf->branches tree))
        ((unless (and (consp treess)

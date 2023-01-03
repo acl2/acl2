@@ -2070,7 +2070,13 @@
      Each theorem is contextualized to the initial computation state;
      this is what @('context') contains.
      We return the variable table, along with the theorem events,
-     whose names are stored in the variable table."))
+     whose names are stored in the variable table.")
+   (xdoc::p
+    "The @('-0') suffix that we use for the generated theorem name
+     is motivated by the fact that these are the theorems
+     for the initial symbol table;
+     as we update the symbol table in the course of generating code,
+     we use positive indices as suffixes."))
   (b* (((mv scope events names-to-avoid)
         (atc-gen-init-inscope-aux fn fn-guard fn-formals typed-formals
                                   compst-var context names-to-avoid wrld)))
@@ -2096,14 +2102,14 @@
           (type (atc-var-info->type info))
           (var-thm (atc-var-info->thm info))
           (type-pred (type-to-recognizer type wrld))
-          (name (pack fn '- var '-in-scope))
+          (name (pack fn '- var '-in-scope-0))
           ((mv name names-to-avoid)
            (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
           (formula `(and (equal (read-var (ident ,(symbol-name var))
                                           ,compst-var)
                                 ,var)
                          (,type-pred ,var)))
-          (formula (atc-contextualize formula context))
+          (formula (atc-contextualize formula context nil))
           (formula `(implies (and (compustatep ,compst-var)
                                   (,fn-guard ,@fn-formals))
                              ,formula))
@@ -2169,7 +2175,7 @@
                                   name nil names-to-avoid wrld))
        (formula `(equal (pop-frame ,compst-var)
                         ,compst0-var))
-       (formula (atc-contextualize formula context))
+       (formula (atc-contextualize formula context nil))
        (formula `(implies (and (compustatep ,compst-var)
                                (,fn-guard ,@(formals+ fn wrld)))
                           (let ((,compst0-var ,compst-var))

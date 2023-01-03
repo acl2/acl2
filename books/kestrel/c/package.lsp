@@ -64,6 +64,7 @@
                defxdoc+
                doublet-listp
                doublets-to-alist
+               dumb-negate-lit
                e/d*
                enable*
                ensure-function-is-defined$

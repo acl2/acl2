@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "../integer-conversions")
+(include-book "../../representation/integer-conversions")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 

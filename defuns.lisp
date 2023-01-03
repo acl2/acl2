@@ -6165,8 +6165,7 @@
                     names 'guard guards *t*
                     (putprop-x-lst2-unless
                      names 'split-types-term split-types-terms *t*
-                     (putprop-x-lst1
-                      names 'symbol-class :program wrld1))))))
+                     wrld1)))))
       (value (cons wrld2 nil))))))
 
 ; Now we develop the output for the defun event.

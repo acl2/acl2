@@ -827,34 +827,14 @@
                   (putprop
                    name 'macro-body macro-body
                    (putprop
-                    name-fn 'symbol-class :common-lisp-compliant
+                    name-fn 'symbol-class :program
                     (putprop
                      name-fn 'formals formals
                      (putprop
                       name-fn 'stobjs-in stobjs-in
                       (putprop
                        name-fn 'stobjs-out *error-triple-sig*
-
-; The above may make sense, but the following act of fakery deserves
-; some comment.  In order to get, e.g. defconst-fn, to work before
-; it is defined in a boot-strap, we give it a body, which makes
-; ev-fncall think it is ok to take a short cut and use the Common Lisp
-; definition.  Of course, we are asking for trouble by laying down
-; this recursive call!  But it never happens.
-
-                       (putprop
-                        name-fn 'def-bodies
-                        (list (make def-body
-                                    :formals formals
-                                    :hyp nil
-                                    :concl (cons name-fn formals)
-                                    :equiv 'equal
-                                    :rune
-                                    *fake-rune-for-anonymous-enabled-rule*
-                                    :nume 0 ; fake
-                                    :recursivep nil
-                                    :controller-alist nil))
-                        wrld)))))))))
+                       wrld))))))))
               (& (er hard 'primordial-event-macro-and-fn
                      "The supplied form ~x0 was not of the required ~
                       shape.  Every element of ~
@@ -3079,11 +3059,11 @@
                (declare (ignore val))
                (cond
                 (erp
-                 (er soft 'theory-invariant
-                     "The specified theory invariant fails for the current ~
-                      ACL2 world, and hence is rejected.  This failure can ~
-                      probably be overcome by supplying an appropriate ~
-                      in-theory event first."))
+                 (er-soft 'theory-invariant "Theory"
+                          "The specified theory invariant fails for the ~
+                           current ACL2 world, and hence is rejected.  This ~
+                           failure can probably be overcome by supplying an ~
+                           appropriate in-theory event first."))
                 (t (value key)))))))))))))
 
 #+acl2-loop-only
@@ -8751,25 +8731,88 @@
    ((null wrld) (mv nil cmds cbds state))
    ((and (eq (caar wrld) 'command-landmark)
          (eq (cadar wrld) 'global-value))
-    (let ((form
-           (or (access-command-tuple-last-make-event-expansion (cddar wrld))
-               (access-command-tuple-form (cddar wrld))))
+    (let ((form0 (access-command-tuple-form (cddar wrld)))
           (cbd (access-command-tuple-cbd (cddar wrld))))
-      (cond ((equal form '(exit-boot-strap-mode))
+      (cond ((equal form0 '(exit-boot-strap-mode))
              (mv nil cmds cbds state))
             (t (mv-let
-                (erp val state)
-                (chk-embedded-event-form form nil
-                                         wrld ctx state names nil nil t)
-                (declare (ignore val))
-                (cond
-                 (erp (mv erp nil nil state))
-                 (t
-                  (get-portcullis-cmds
-                   (cdr wrld)
-                   (cons form cmds)
-                   (cons cbd cbds)
-                   names ctx state))))))))
+                 (erp val state)
+                 (chk-embedded-event-form form0 nil wrld ctx state names nil
+                                          nil nil)
+                 (cond
+                  (erp (mv erp nil nil state))
+                  (t
+                   (let* ((exp (access-command-tuple-last-make-event-expansion
+                                (cddar wrld)))
+                          (form
+                           (if exp
+
+; We restore LOCAL and other wrappers.  Before we did this we had problems as
+; indicated by the tests below.
+
+;;; Test 1
+; acl2
+; (local (make-event (prog2$ (cw "@@@ Stuff @@@~%")
+;                            '(local (defun f2 (x) x)))
+;                    :check-expansion t))
+; (certify-book "foo" ?)
+; (quit)
+; acl2
+; ; Should not print "Stuff", but formerly did so.
+; (include-book "foo")
+
+;;; Test 2
+; acl2
+; (local (make-event '(defun f2 (x) x)))
+; (certify-book "foo" ?)
+; (quit)
+; acl2
+; (include-book "foo")
+; ; Should fail, but formerly did not.
+; (pe 'f2)
+; ; Formerly, this presented a name conflict that shouldn't exist.
+; (defun f2 (x y) (cons x y))
+
+;;; Test 3:  A local event that's not from make-event was also in the world
+;;; after include-book, when it didn't belong.
+; acl2
+; (local (progn (defun f1 (x) x) (make-event '(defun f2 (x) x))))
+; (certify-book "foo" ?)
+; (quit)
+; acl2
+; (include-book "foo")
+; ; Should fail, but formerly did not.
+; (pe 'f1)
+; ; Formerly, this presented a name conflict that shouldn't exist.
+; (defun f1 (x y) (cons x y))
+; ; Should fail, but doesn't.
+; (pe 'f2)
+; ; Formerly, this presented a name conflict that shouldn't exist.
+; (defun f2 (x y) (cons x y))
+
+;;; Test 4: It's actually not just about local; it's about other wrappers too.
+;;; Formerly the setting of guard-checking to nil was being ignored.
+; acl2
+; (defun bad (x) (declare (xargs :mode :program)) (car x))
+; (with-guard-checking-event
+;   nil
+;   (make-event (prog2$ (car 3) '(local (defun f2 (x) x)))
+;               :check-expansion t))
+; (certify-book "foo" ?)
+; (quit)
+; acl2
+; (include-book "foo")
+
+                               (mv-let (wrappers base-form)
+                                 (destructure-expansion val)
+                                 (declare (ignore base-form))
+                                 (rebuild-expansion wrappers exp))
+                             form0)))
+                     (get-portcullis-cmds
+                      (cdr wrld)
+                      (cons form cmds)
+                      (cons cbd cbds)
+                      names ctx state)))))))))
    (t (get-portcullis-cmds (cdr wrld) cmds cbds names ctx state))))
 
 #-acl2-loop-only
@@ -10323,9 +10366,10 @@
 ; familiar-name.
 
           (let* ((pair (assoc-familiar-name familiar-name actual-alist))
+                 (wrld (w state))
                  (full-book-string
                   (book-name-to-filename full-book-name
-                                         (w state)
+                                         wrld
                                          'tilde-*-book-hash-phrase1))
                  (msg
                   (cond (pair (msg "-- its certificate requires the book ~
@@ -10336,7 +10380,9 @@
                                     full-book-name; see :DOC full-book-name) ~
                                     -- has been included"
                                    full-book-string
-                                   (car pair)))
+                                   (book-name-to-filename (car pair)
+                                                          wrld
+                                                          'tilde-*-book-hash-phrase1)))
                         (t    (msg "-- its certificate requires the book ~
                                     \"~s0\", but that book has not been ~
                                     included, nor has any book with the same ~
@@ -14047,19 +14093,6 @@
                                       ch state)
                        (print-object$ `(setq *hcomp-macro-alist*
                                          ',macro-alist)
-                                      ch state)
-                       (print-object$ '(when (eq *readtable*
-                                                 *reckless-acl2-readtable*)
-                                         (setq *set-hcomp-loop$-alist* t))
-                                      ch state)
-                       (print-object$ `(when *set-hcomp-loop$-alist*
-; Debug:
-;                                        (cw "@@ Setting ~
-;                                             *hcomp-loop$-alist*:~%~x0~%"
-;                                            ',expansion-filename)
-                                         (setq *hcomp-loop$-alist*
-                                               ',(top-level-loop$-alist
-                                                  (w *the-live-state*))))
                                       ch state)))
        (print-object$ '(hcomp-init) ch state)
        (newline ch state)

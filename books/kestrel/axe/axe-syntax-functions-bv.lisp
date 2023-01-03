@@ -60,7 +60,7 @@
                     sbvdiv sbvrem
                     leftrotate rightrotate ;; see unsigned-byte-p-of-leftrotate and unsigned-byte-p-of-rightrotate
                     bvif
-                    bvnth ;drop?
+                    ;; bvnth ;drop?
                     ))
     (and (consp dargs)
          (let ((width (first dargs)))

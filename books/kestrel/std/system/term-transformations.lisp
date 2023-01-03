@@ -17,6 +17,7 @@
 (include-book "close-lambdas")
 (include-book "conjoin")
 (include-book "conjoin-equalities")
+(include-book "dumb-negate-lit")
 (include-book "fapply-term")
 (include-book "fapply-terms-same-args")
 (include-book "fapply-unary-to-terms")

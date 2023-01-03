@@ -756,7 +756,8 @@ checks vacuity of hypotheses by default, and the default configuration for this
 uses another attachable stub function @('fgl-toplevel-vacuity-check-config').</p>
 
 <p>An @(see fgl-sat-config) object is either an @(see
-fgl-satlink-monolithic-sat-config) or an @(see fgl-ipasir-config) object.  When
+fgl-satlink-monolithic-sat-config), an @(see fgl-ipasir-config), or an @(see fgl-exhaustive-test-config)
+ object.  When
 it is a @(see fgl-satlink-monolithic-sat-config), satisfiability is checked by
 perhaps performing some
 <see topic='@(url aignet::aignet-comb-transforms)'>AIG transformations</see>
@@ -768,18 +769,23 @@ checked by calling an
 <see topic='@(url ipasir::ipasir)'>IPASIR</see>
 incremental SAT shared library, which may allow the
 current check to benefit from learned lemmas and heuristic information from
-previous checks.</p>
+previous checks.  Finally, when it is an @(see fgl-exhaustive-test-config),
+satisfiability is checked by exhaustive testing of the AIG using <see
+topic='@(url aignet::vector-simulation)'>vector simulation</see>, perhaps after
+some AIG transformations.  This requires that the AIG have 37 or fewer inputs,
+corresponding to the number of entries in FGL's Boolean variable database (see
+@(see fgl-getting-bits-from-objects).</p>
 
-<p>Both the @(see fgl-satlink-monolithic-sat-config) and @(see
-fgl-ipasir-config) types are simple tagged products, and they have two fields
-in common:</p>
+<p>All three such config object types are simple tagged products, and they have
+two fields in common:</p>
 <ul>
 <li>@('ignore-pathcond') says to ignore the path condition when checking satisfiability</li>
 <li>@('ignore-constraint') says to ignore the constraint condition (see @(see def-fgl-boolean-constraint) when checking satisfiability.</li>
 </ul>
 
 <p>The other fields of the @(see fgl-satlink-monolithic-sat-config) object are
-as follows:</p>
+as follows.  The @('transform') and @('transform-config-override') fields also
+pertain to @('fgl-exhaustive-test-config') objects:</p>
 
 <ul>
 

@@ -32,6 +32,7 @@
 
 (make-event
  `(defsection atc-exec-binary-strict-pure-rules
+    :parents (atc-symbolic-execution-rules)
     :short "Rules for executing strict pure binary operations."
     :long
     (xdoc::topstring

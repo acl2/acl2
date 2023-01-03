@@ -1,5 +1,5 @@
 ; This book contains the model and proof of skipping refinement for
-; stack machine with buffer capacity = 3
+; stack machine with buffer capacity = 2
 
 (in-package "ACL2S")
 
@@ -114,7 +114,7 @@
   (and (inst-memp l)
        (<= (len l) (ibuf-capacity))))
 
-(program)
+;(program)
 (defun nth-inst-buff-enum (n)
   (let ((imem (nth-inst-mem n)))
     (if (<= (len imem) (ibuf-capacity))
@@ -123,7 +123,7 @@
             (i2 (cadr imem))
             (i3 (caddr imem)))
         (list i1 i2 i3)))))
-(logic)
+;(logic)
 (verify-guards inst-buffp)
 (register-custom-type inst-buff t nth-inst-buff-enum inst-buffp)
  
@@ -195,13 +195,15 @@
             (nxt-ibuf nil))
         (istate imem nxt-pc nxt-stk nxt-ibuf)))))
 
+#|
 (defthm mset-ibuf-nil
-  (equal (s :ibuf
-            nil (s :imem (g :imem s) nil))
-         (s :imem (g :imem s) nil))
-  :hints (("goal" :use (:instance acl2::s-diff-s1 (b :ibuf) (a :imem) (x (g :imem s)) (y nil)
+  (equal (mset :ibuf
+            nil (mset :imem (mget :imem s) nil))
+         (mset :imem (mget :imem s) nil))
+  :hints (("goal" :use (:instance acl2::mset-diff-mset1 (b :ibuf) (a :imem) (x (mget :imem s)) (y nil)
                                   (r nil))
-           :in-theory (disable acl2::s-diff-s1))))
+           :in-theory (disable acl2::mset-diff-mset1))))
+|#
 
 (defun commited-state (s)
   (let* ((stk (istate-stk s))
@@ -228,7 +230,6 @@
                              (t cms))))
            (equal s-cms s)))))
   
-
 (defthm good-statep-implies-istatep
   (implies (good-statep s)
            (istatep s)))
@@ -238,10 +239,13 @@
            (good-statep (commited-state s)))
   :hints (("goal" :in-theory (e/d (istate istatep)(impl-step)))))
 
+(in-theory (disable acl2-count
+                    nth))
+
 (defthm good-state-inductive
   (implies (good-statep s)
            (good-statep (impl-step s)))
-  :hints (("goal" :in-theory (e/d (istate istatep)
+  :hints (("goal" :in-theory (e/d (istatep istate)
                                   (instp)))))
 
 (defun ref-map (s)
@@ -273,6 +277,22 @@ instruction."
   (or (equal v (spec-step (spec-step w)))
       (equal v (spec-step (spec-step (spec-step w))))))
 
+(in-theory (disable
+            good-statep-implies-istatep
+            istatep-stk-selector
+            stackp
+            istatep-imem-selector
+            (:type-prescription nat-listp)
+            defdata::nat-listp--nth--integerp
+            default-car
+            default-cdr
+            acl2::non-empty-record-consp
+            (:type-prescription sstatep-unique-tag)
+            acl2::mset-diff-mset2
+            acl2::field-not-empty-implies-record-not-empty1
+            acl2::non-empty-record-consp-car
+            ))
+
 ;; Final theorem BSTK refines STK
 (defthm bstk-skip-refines-stk
   (implies (and (good-statep s)
@@ -291,4 +311,3 @@ instruction."
            (e/d (stk-step-inst
                  istate sstate)
                 (instp )))))
-

@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection theorems-about-osets
-  :parents (acl2::theorems-about-non-kestrel-books)
+  :parents (acl2::kestrel-utilities)
   :short (xdoc::topstring
           "Theorems about "
           (xdoc::seetopic "std/osets" "finite sets")

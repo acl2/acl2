@@ -81,31 +81,31 @@
   (local (xdoc::set-default-parents core-rule-definitions))
 
   (def-rule-const *alpha*
-    (/_ (%- #x41 #x5a))
-    (/_ (%- #x61 #x7a)))
+    (/_ (%x- #x41 #x5a))
+    (/_ (%x- #x61 #x7a)))
 
   (def-rule-const *bit*
     (/_ "0")
     (/_ "1"))
 
   (def-rule-const *char*
-    (/_ (%- #x01 #x7f)))
+    (/_ (%x- #x01 #x7f)))
 
   (def-rule-const *cr*
-    (/_ (%. #x0d)))
+    (/_ (%x. #x0d)))
 
   (def-rule-const *crlf*
     (/_ *cr* *lf*))
 
   (def-rule-const *ctl*
-    (/_ (%- #x00 #x1f))
-    (/_ (%. #x7f)))
+    (/_ (%x- #x00 #x1f))
+    (/_ (%x. #x7f)))
 
   (def-rule-const *digit*
-    (/_ (%- #x30 #x39)))
+    (/_ (%x- #x30 #x39)))
 
   (def-rule-const *dquote*
-    (/_ (%. #x22)))
+    (/_ (%x. #x22)))
 
   (def-rule-const *hexdig*
     (/_ *digit*)
@@ -117,23 +117,23 @@
     (/_ "F"))
 
   (def-rule-const *htab*
-    (/_ (%. #x09)))
+    (/_ (%x. #x09)))
 
   (def-rule-const *lf*
-    (/_ (%. #x0a)))
+    (/_ (%x. #x0a)))
 
   (def-rule-const *lwsp*
     (/_ (*_ (!_ (/_ *wsp*)
                 (/_ *crlf* *wsp*)))))
 
   (def-rule-const *octet*
-    (/_ (%- #x00 #xff)))
+    (/_ (%x- #x00 #xff)))
 
   (def-rule-const *sp*
-    (/_ (%. #x20)))
+    (/_ (%x. #x20)))
 
   (def-rule-const *vchar*
-    (/_ (%- #x21 #x7e)))
+    (/_ (%x- #x21 #x7e)))
 
   (def-rule-const *wsp*
     (/_ *sp*)

@@ -26,4 +26,5 @@
          help::defthm-advice-fn
          help::defthm-advice
          defthm-advice ; synonym in ACL2 package
+         help::all-successful-actions-for-checkpoints ; for Matt's tool
          ))
