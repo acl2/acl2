@@ -2077,7 +2077,7 @@
 ;;   :hints (("Goal" :in-theory (e/d (bvor)))))
 
 ;bozo move up
-(in-theory (disable assoc-equal))
+;(in-theory (disable assoc-equal))
 
 ;bozo APPEND-TRUE-LISTP-TYPE-PRESCRIPTION vs. list::APPEND-TRUE-LISTP-TYPE-PRESCRIPTION
 
@@ -3238,9 +3238,10 @@
 ;;
 ;; stuff about arrays of unsigned bytes (BOZO gen to array of arbitrary type elements - we have that notion in ../bvseq/arrays)
 ;;
-(in-theory (disable true-listp)) ;bozo
+(in-theory (disable ;true-listp
+                    )) ;bozo
 
-(in-theory (disable take
+(in-theory (disable ;take
                     ;;BV-ARRAYP-LIST
                     ))
 
@@ -3724,7 +3725,7 @@
 ;;                            )
 ;;            :in-theory (disable bv-array-read BITXOR-OF-BVCHOP-ARG2 BITXOR-OF-GETBIT-ARG2))))
 
-(defthm lookup-of-bvif
+(defthmd lookup-of-bvif
   (equal (lookup (bvif size test a b) program)
          (myif test (lookup (bvchop size a) program)
                (lookup (bvchop size b) program)))
@@ -3924,9 +3925,3 @@
 ;;                          bvmult-pad-arg2
 ;;                          bvxor-pad-arg1
 ;;                          bvxor-pad-arg2))
-
-;; (defthm val-of-myif
-;;   (equal (val n (myif test x y))
-;;          (myif test (val n x)
-;;                (val n y)))
-;;   :hints (("Goal" :in-theory (enable myif))))
