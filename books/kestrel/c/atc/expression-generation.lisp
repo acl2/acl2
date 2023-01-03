@@ -21,6 +21,8 @@
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
 (include-book "kestrel/std/basic/if-star" :dir :system)
 
+(local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
+
 (local (in-theory (disable state-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1175,21 +1177,30 @@
                                     :proofs gin.proofs)
                                    state))
                ((erp (pexpr-gout then))
-                (atc-gen-expr-pure then-term
-                                   (change-pexpr-gin
-                                    gin
-                                    :thm-index test.thm-index
-                                    :names-to-avoid test.names-to-avoid
-                                    :proofs nil)
-                                   state))
+                (b* ((then-cond (untranslate$ test-term t state))
+                     (then-premise (atc-premise-test then-cond))
+                     (then-context (append gin.context (list then-premise))))
+                  (atc-gen-expr-pure then-term
+                                     (change-pexpr-gin
+                                      gin
+                                      :context then-context
+                                      :thm-index test.thm-index
+                                      :names-to-avoid test.names-to-avoid
+                                      :proofs test.proofs)
+                                     state)))
                ((erp (pexpr-gout else))
-                (atc-gen-expr-pure else-term
-                                   (change-pexpr-gin
-                                    gin
-                                    :thm-index then.thm-index
-                                    :names-to-avoid then.names-to-avoid
-                                    :proofs nil)
-                                   state)))
+                (b* ((not-test-term (dumb-negate-lit test-term))
+                     (else-cond (untranslate$ not-test-term nil state))
+                     (else-premise (atc-premise-test else-cond))
+                     (else-context (append gin.context (list else-premise))))
+                  (atc-gen-expr-pure else-term
+                                     (change-pexpr-gin
+                                      gin
+                                      :context else-context
+                                      :thm-index then.thm-index
+                                      :names-to-avoid then.names-to-avoid
+                                      :proofs test.proofs)
+                                     state))))
             (atc-gen-expr-cond term test-term then-term else-term
                                test.expr then.expr else.expr
                                then.type else.type
@@ -1198,7 +1209,7 @@
                                 gin
                                 :thm-index else.thm-index
                                 :names-to-avoid else.names-to-avoid
-                                :proofs else.proofs)
+                                :proofs (and then.proofs else.proofs))
                                state))))
       (reterr
        (msg "When generating C code for the function ~x0, ~
