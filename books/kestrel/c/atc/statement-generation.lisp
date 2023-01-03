@@ -14,8 +14,6 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
-(include-book "kestrel/std/basic/if-star" :dir :system)
-
 (local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -833,8 +831,7 @@
                                  ,then-stmt-thm
                                  booleanp-compound-recognizer)))))
        (if-stmt-instructions
-        `((in-theory nil)
-          (casesplit ,test-term)
+        `((casesplit ,test-term)
           (claim (equal (if* ,test-term ,then-term ,else-term)
                         ,then-term)
                  :hints (("Goal" :in-theory '(acl2::if*-when-true))))
