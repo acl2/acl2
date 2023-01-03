@@ -834,17 +834,20 @@
                            (else-expr exprp)
                            (then-type typep)
                            (else-type typep)
+                           (test-thm symbolp)
+                           (then-thm symbolp)
+                           (else-thm symbolp)
                            (test-events pseudo-event-form-listp)
                            (then-events pseudo-event-form-listp)
                            (else-events pseudo-event-form-listp)
                            (gin pexpr-ginp)
                            state)
-  (declare (ignore test-term state))
   :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents a ternary conditional expression."
   (b* (((reterr) (irr-pexpr-gout))
        ((pexpr-gin gin) gin)
+       (wrld (w state))
        ((unless (equal then-type else-type))
         (reterr
          (msg "When generating C code for the function ~x0, ~
@@ -853,19 +856,75 @@
                use conversion operations, if needed, ~
                to make the branches of the same type."
               gin.fn then-term else-term then-type else-type)))
-       (type then-type))
+       (type then-type)
+       (expr (make-expr-cond :test test-expr
+                             :then then-expr
+                             :else else-expr))
+       ((when (not gin.proofs))
+        (retok
+         (make-pexpr-gout
+          :expr expr
+          :type type
+          :term term
+          :events (append test-events then-events else-events)
+          :thm-name nil
+          :thm-index gin.thm-index
+          :names-to-avoid gin.names-to-avoid
+          :proofs nil)))
+       (thm-index gin.thm-index)
+       (names-to-avoid gin.names-to-avoid)
+       (thm-name (pack gin.fn '-correct- thm-index))
+       (thm-index (1+ thm-index))
+       ((mv thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
+       (type-pred (type-to-recognizer type wrld))
+       (term* `(condexpr (if* ,test-term ,then-term ,else-term)))
+       (uterm* (untranslate$ term* nil state))
+       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
+                             ,uterm*)
+                      (,type-pred ,uterm*)))
+       (formula (atc-contextualize formula gin.context nil))
+       (formula `(implies (and (compustatep ,gin.compst-var)
+                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
+                          ,formula))
+       (hints `(("Goal" :in-theory '(exec-expr-pure-when-cond
+                                     (:e expr-kind)
+                                     (:e expr-cond->test)
+                                     ,test-thm
+                                     (:e expr-cond->then)
+                                     ,then-thm
+                                     (:e expr-cond->else)
+                                     ,else-thm
+                                     condexpr
+                                     booleanp-compound-recognizer))))
+       (instructions
+        `((casesplit ,test-term)
+          (claim (equal (if* ,test-term ,then-term ,else-term)
+                        ,then-term)
+                 :hints (("Goal" :in-theory '(acl2::if*-when-true))))
+          (prove :hints ,hints)
+          (claim (equal (if* ,test-term ,then-term ,else-term)
+                        ,else-term)
+                 :hints (("Goal" :in-theory '(acl2::if*-when-false))))
+          (prove :hints ,hints)))
+       ((mv thm-event &)
+        (evmac-generate-defthm thm-name
+                               :formula formula
+                               :instructions instructions
+                               :enable nil)))
     (retok
      (make-pexpr-gout
-      :expr (make-expr-cond :test test-expr
-                            :then then-expr
-                            :else else-expr)
+      :expr expr
       :type type
-      :term term
-      :events (append test-events then-events else-events)
-      :thm-name nil
-      :thm-index gin.thm-index
-      :names-to-avoid gin.names-to-avoid
-      :proofs nil))))
+      :term term*
+      :events (append test-events
+                      then-events
+                      else-events
+                      (list thm-event))
+      :thm-name thm-name
+      :thm-index thm-index
+      :names-to-avoid names-to-avoid
+      :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1204,12 +1263,17 @@
             (atc-gen-expr-cond term test-term then-term else-term
                                test.expr then.expr else.expr
                                then.type else.type
+                               test.thm-name then.thm-name else.thm-name
                                test.events then.events else.events
                                (change-pexpr-gin
                                 gin
                                 :thm-index else.thm-index
                                 :names-to-avoid else.names-to-avoid
-                                :proofs (and then.proofs else.proofs))
+                                :proofs nil
+                                ;; this is temporarily off,
+                                ;; pending solving handling of guard theorems:
+                                ;; (and then.proofs else.proofs)
+                                )
                                state))))
       (reterr
        (msg "When generating C code for the function ~x0, ~
