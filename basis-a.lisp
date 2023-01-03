@@ -9067,7 +9067,7 @@
 (defun book-name-to-filename (x wrld ctx)
 
 ; If x is a sysfile then we return the absolute pathname obtained by
-; concenating the absolulte directory string represented by the sysfile-key of
+; concenating the absolute directory string represented by the sysfile-key of
 ; x with the sysfile-filename of x, which should be a relative pathname.
 
 ; If x is a sysfile whose key is not in the project-dir-alist of wrld, then a

@@ -85,6 +85,7 @@
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
+(include-book "kestrel/world-light/world-since-boot-strap" :dir :system)
 (include-book "kestrel/strings-light/downcase" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/untranslated-terms/conjuncts-of-uterm" :dir :system)
@@ -200,19 +201,41 @@
            (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoints)))))
 
 (defconst *rec-to-symbol-alist*
-  '(("add-by-hint" . :add-by-hint) ; rare
+  '(;; For these, training data is obtained by removing the entire "hint
+    ;; setting" (e.g., the entire ":by XXX"):
+    ("add-by-hint" . :add-by-hint) ; rare
     ("add-cases-hint" . :add-cases-hint) ; rare
-    ("add-disable-hint" . :add-disable-hint)
-    ("add-do-not-hint" . :add-do-not-hint) ; very rare
-    ("add-enable-hint" . :add-enable-hint)
-    ("add-expand-hint" . :add-expand-hint)
-    ("add-hyp" . :add-hyp)
     ("add-induct-hint" . :add-induct-hint)
-    ("add-library" . :add-library)
     ("add-nonlinearp-hint" . :add-nonlinearp-hint) ; very rare
+
+    ;; For these, gathering training data always involves removing individual
+    ;; items to :use or :expand:
+    ("add-expand-hint" . :add-expand-hint)
     ("add-use-hint" . :add-use-hint)
-    ;; Confusingly named: Does not indicate a :use hint and the "lemma" is often a defun (treated like add-enable-hint):
-    ("use-lemma" . :use-lemma)))
+
+    ;; For :in-theory, gathering training data involves either removing
+    ;; individual items to enable or disable (when the :in-theory is an enable,
+    ;; disable, or e/d), or else removing the whole :in-theory:
+    ("add-disable-hint" . :add-disable-hint)
+    ("add-enable-hint" . :add-enable-hint)
+
+    ;; For :do-not, gathering training data involves either removing individual
+    ;; items (if the :do-not is given a quoted list of symbols), or else
+    ;; removing the whole :do-not:
+    ("add-do-not-hint" . :add-do-not-hint)
+
+    ;; Confusingly named: Does not indicate a :use hint and the "lemma" is
+    ;; often a defun.  Gathering training data involves artificially "knocking
+    ;; out" rules used in a successful proof.  This is often treated like
+    ;; add-enable-hint.
+    ("use-lemma" . :use-lemma)
+
+    ;; Gathering training data involves artificially "knocking out" supporting
+    ;; books used in a successful proof.
+    ("add-library" . :add-library)
+
+    ("add-hyp" . :add-hyp) ; can change the meaning of the theorem!
+    ))
 
 ;; todo: rename (not necessarily about ml)?
 (defconst *ml-rec-types* (strip-cdrs *rec-to-symbol-alist*))
@@ -1256,6 +1279,7 @@
 
 (mutual-recursion
  ;; Extends ACC with hint-lists from the EVENT.
+ ;; TODO: Many of the structured constructs here can no longer appear, due to how we are getting defthm events from the world
  (defun hint-lists-from-history-event (event acc)
    (declare (xargs :guard (and ;; event
                            (true-listp acc)
@@ -1335,8 +1359,9 @@
   (declare (xargs :guard (natp num-recs)
                   :mode :program
                   :stobjs state))
-  (b* (((mv erp events state) (acl2::get-command-sequence-fn 1 :max state)) ; todo: how to get events, not commands (e.g., get what make-events expanded to)?
-       ((when erp) (mv erp nil state)))
+  (b* ((events ;;(acl2::get-command-sequence-fn 1 :max state)
+        (acl2::top-level-defthms-in-world (w state)))
+       )
     (mv nil (make-recs-from-history-events num-recs events) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -10,11 +10,15 @@
 
 (in-package "PFCS")
 
+(include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
 (include-book "well-formedness")
 (include-book "semantics")
 (include-book "proof-support")
+(include-book "r1cs-lib-ext")
+(include-book "r1cs-subset")
+(include-book "r1cs-bridge")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

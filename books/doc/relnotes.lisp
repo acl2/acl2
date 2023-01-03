@@ -127,15 +127,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
-
-   (xdoc::p
-    "@(tsee Read-string) and @('read-string-light-fn') now take a required package
-     argument, which can be @('nil') to represent the @(see current-package),
-     thus providing the previous behavior.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
 
    (xdoc::p
@@ -146,6 +137,14 @@
    (xdoc::p
     "The parsing generation tools
      have been significantly extended and improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "acl2pl::acl2-programming-language"
+                             "ACL2 Programming Language Library"))
+
+   (xdoc::p
+    "Some fixtype names have been improved and made more consistent.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -208,7 +207,7 @@
    (xdoc::p
     "Support has been added to represent and generate
      code that handles structures by value,
-     in addition to by pointer.")
+     in addition to code that handles structures by pointer.")
 
    (xdoc::p
     "An option to generate header files has been added.
@@ -238,6 +237,15 @@
 
    (xdoc::p
     "Added a theorem.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
+
+   (xdoc::p
+    "@(tsee Read-string) and @('read-string-light-fn') now take a required package
+     argument, which can be @('nil') to represent the @(see current-package),
+     thus providing the previous behavior.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

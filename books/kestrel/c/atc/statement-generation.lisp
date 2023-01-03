@@ -221,6 +221,7 @@
      to execute the block items completely."))
   ((items block-item-list)
    (type type)
+   (term pseudo-termp)
    (limit pseudo-term)
    (events pseudo-event-form-list)
    (thm-name symbol)
@@ -236,6 +237,7 @@
   :type stmt-goutp
   :body (make-stmt-gout :items nil
                         :type (irr-type)
+                        :term nil
                         :limit nil
                         :events nil
                         :thm-name nil
@@ -511,6 +513,7 @@
         (retok (make-stmt-gout
                 :items (list (block-item-stmt stmt))
                 :type expr.type
+                :term expr.term
                 :limit (pseudo-term-fncall
                         'binary-+
                         (list (pseudo-term-quote 3)
@@ -584,6 +587,7 @@
                                      thm-index names-to-avoid state)))
     (retok (make-stmt-gout :items items
                            :type expr.type
+                           :term expr.term
                            :limit items-limit
                            :events (append expr.events
                                            (list stmt-event)
@@ -597,6 +601,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-if/ifelse-stmt ((term pseudo-termp)
+                                (test-term pseudo-termp)
                                 (then-term pseudo-termp)
                                 (else-term pseudo-termp)
                                 (test-expr exprp)
@@ -642,6 +647,9 @@
    (xdoc::p
     "We then generate a theorem for the conditional statement,
      based on the theorems for the test and branches.
+     We turn the ACL2 @(tsee if) into @(tsee if*),
+     to prevent unwanted case splits in terms that may contain this term.
+     We use proof builder commands to split on this @(tsee if*).
      The limit for the conditional statement is
      one more than the sum of the ones for the branches;
      we could take one plus the maximum,
@@ -676,6 +684,7 @@
          (make-stmt-gout
           :items (list (block-item-stmt stmt))
           :type type
+          :term term
           :limit (pseudo-term-fncall
                   'binary-+
                   (list
@@ -784,13 +793,14 @@
         (fresh-logical-name-with-$s-suffix if-stmt-thm nil names-to-avoid wrld))
        (if-stmt-limit
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
-       (uterm (untranslate$ term nil state))
+       (term* `(if* ,test-term ,then-term ,else-term))
+       (uterm* (untranslate$ term* nil state))
        (if-stmt-formula `(and (equal (exec-stmt ',stmt
                                                 ,gin.compst-var
                                                 ,gin.fenv-var
                                                 ,gin.limit-var)
-                                     (mv ,uterm ,gin.compst-var))
-                              (,type-pred ,uterm)))
+                                     (mv ,uterm* ,gin.compst-var))
+                              (,type-pred ,uterm*)))
        (if-stmt-formula (atc-contextualize if-stmt-formula gin.context nil))
        (if-stmt-formula
         `(implies (and (compustatep ,gin.compst-var)
@@ -820,39 +830,42 @@
                                  (:e stmt-if->then)
                                  ,then-stmt-thm
                                  booleanp-compound-recognizer)))))
+       (if-stmt-instructions
+        `((casesplit ,test-term)
+          (claim (equal (if* ,test-term ,then-term ,else-term)
+                        ,then-term)
+                 :hints (("Goal" :in-theory '(acl2::if*-when-true))))
+          (prove :hints ,if-stmt-hints)
+          (claim (equal (if* ,test-term ,then-term ,else-term)
+                        ,else-term)
+                 :hints (("Goal" :in-theory '(acl2::if*-when-false))))
+          (prove :hints ,if-stmt-hints)))
        ((mv if-stmt-event &)
         (evmac-generate-defthm if-stmt-thm
                                :formula if-stmt-formula
-                               :hints if-stmt-hints
+                               :instructions if-stmt-instructions
                                :enable nil))
-       ;; We temporarily do not submit the following two events,
-       ;; because they fail in some examples,
-       ;; due to ACL2's splitting over IFs
-       ;; and thus preventing the use of previously proved theorems
-       ;; about IF terms.
-       ;; We plan to refine our proof generation approach
-       ;; to overcome this issue.
        ((mv item
             item-limit
-            & ; item-thm-event
+            item-thm-event
             item-thm-name
             thm-index
             names-to-avoid)
         (atc-gen-block-item-stmt gin.fn gin.fn-guard gin.context
                                  stmt if-stmt-limit if-stmt-thm
-                                 type term
+                                 type term*
                                  gin.compst-var gin.fenv-var gin.limit-var
                                  gin.compst-var
                                  thm-index names-to-avoid state))
        ((mv items
             items-limit
-            & ; items-thm-event
+            items-thm-event
             items-thm-name
             thm-index
             names-to-avoid)
         (atc-gen-block-item-list-one gin.fn gin.fn-guard gin.context
                                      item item-limit item-thm-name
-                                     type term
+                                     type term*
                                      gin.compst-var gin.fenv-var gin.limit-var
                                      gin.compst-var
                                      thm-index names-to-avoid state)))
@@ -860,6 +873,7 @@
      (make-stmt-gout
       :items items
       :type type
+      :term term*
       :limit items-limit
       :events (append test-events
                       then-events
@@ -867,13 +881,12 @@
                       (list then-stmt-event)
                       (list else-stmt-event)
                       (list if-stmt-event)
-                      ;; (list item-thm-event)
-                      ;; (list items-thm-event)
-                      )
+                      (list item-thm-event)
+                      (list items-thm-event))
       :thm-name items-thm-name
       :thm-index thm-index
       :names-to-avoid names-to-avoid
-      :proofs nil))))
+      :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1123,7 +1136,7 @@
                                    :inscope then-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs gin.proofs)
+                                   :proofs test.proofs)
                                   state)))
                 (retok
                  (change-stmt-gout gout
@@ -1165,7 +1178,7 @@
                                    :inscope else-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs gin.proofs)
+                                   :proofs test.proofs)
                                   state)))
                 (retok
                  (change-stmt-gout gout
@@ -1173,7 +1186,7 @@
                                             else-enter-scope-events
                                             (stmt-gout->events gout)))
                  else-context))))
-          (atc-gen-if/ifelse-stmt term then-term else-term
+          (atc-gen-if/ifelse-stmt term test.term then.term else.term
                                   test.expr then.items else.items
                                   then.type else.type
                                   then.limit else.limit
@@ -1302,6 +1315,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type type
+                        :term term
                         :limit limit
                         :events (append init.events body.events)
                         :thm-name nil
@@ -1394,6 +1408,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type type
+                        :term term
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -1460,6 +1475,7 @@
           (retok (make-stmt-gout
                   :items items
                   :type type
+                  :term term
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -1576,6 +1592,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type body.type
+                        :term term
                         :limit limit
                         :events (append arr.events
                                         sub.events
@@ -1680,6 +1697,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type body.type
+                        :term term
                         :limit limit
                         :events (append struct.events
                                         member.events)
@@ -1806,6 +1824,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type body.type
+                        :term term
                         :limit limit
                         :events (append struct.events
                                         index.events
@@ -1899,6 +1918,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type type
+                        :term term
                         :limit limit
                         :events (append init.events body.events)
                         :thm-name nil
@@ -1982,6 +2002,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type type
+                        :term term
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -2037,6 +2058,7 @@
           (retok (make-stmt-gout
                   :items items
                   :type type
+                  :term term
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -2055,6 +2077,7 @@
           (retok (make-stmt-gout
                   :items nil
                   :type (type-void)
+                  :term term
                   :limit (pseudo-term-quote 1)
                   :events nil
                   :thm-name nil
@@ -2076,6 +2099,7 @@
            ((equal terms gin.affect)
             (retok (make-stmt-gout :items nil
                                    :type (type-void)
+                                   :term term
                                    :limit (pseudo-term-quote 1)
                                    :events nil
                                    :thm-name nil
@@ -2138,6 +2162,7 @@
           (retok (make-stmt-gout
                   :items (list (block-item-stmt loop-stmt))
                   :type (type-void)
+                  :term term
                   :limit limit
                   :events nil
                   :thm-name nil
@@ -2149,6 +2174,7 @@
             (retok (make-stmt-gout
                     :items nil
                     :type (type-void)
+                    :term term
                     :limit (pseudo-term-quote 1)
                     :events nil
                     :thm-name nil
@@ -2211,6 +2237,7 @@
           (retok (make-stmt-gout
                   :items (list (block-item-stmt (stmt-expr call-expr)))
                   :type (type-void)
+                  :term term
                   :limit `(binary-+ '5 ,limit)
                   :events args.events
                   :thm-name nil
