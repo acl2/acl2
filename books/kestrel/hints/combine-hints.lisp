@@ -71,13 +71,25 @@
         (enable `(union-theories '(,@(cdr form1)) ,form2))
         (t (er hard? 'merge-in-theory-hints "Can't merge :in-theory ~x0." form1))))))
 
-;; val1 can override part of val2 if needed.
+;; Note that the forms get evaluated.
+;; TODO: Do better if both forms are quoted lists
+(defun merge-do-not-hints (form1 form2)
+  (declare (xargs :guard t))
+  `(union-eq ,form1 ,form2))
+
+;; Returns a new value to be used for KEY.
+;; val1 can override all or part of val2 if needed.
 (defun merge-hint-vals (key val1 val2)
   (declare (xargs :guard (keywordp key)))
   (case key
     (:use (merge-use-hints val1 val2))
     (:expand (merge-expand-hints val1 val2))
     (:in-theory (merge-in-theory-hints val1 val2))
+    (:do-not (merge-do-not-hints val1 val2))
+    (:by val1) ; can't really merge, so just use val1
+    (:cases val1) ; can't really merge, so just use val1
+    (:induct val1) ; can't really merge, so just use val1
+    (:nonlinearp val1) ; can't really merge, so just use val1
     (t (er hard? 'merge-hint-vals "Merging of ~x0 hints not yet supported." key))))
 
 ;; Returns a keyword-value-list.  Overwrites whatever is needed to support binding KEY to VAL.
@@ -92,7 +104,7 @@
       (if (eq key this-key)
           (cons this-key (cons (merge-hint-vals key val this-val) (rest (rest hint-settings))))
         (if (incompatible-hint-settings key this-key)
-            ;; Must remve this hint-setting.  Then keep going.
+            ;; Must remove this hint-setting.  Then keep going.
             (merge-hint-setting-into-hint-settings key val (rest (rest hint-settings)))
           (cons this-key (cons this-val (merge-hint-setting-into-hint-settings key val (rest (rest hint-settings))))))))))
 
