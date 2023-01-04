@@ -79,6 +79,7 @@
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/included-books-in-world" :dir :system)
+(include-book "kestrel/hints/combine-hints" :dir :system)
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-def" :dir :system)
@@ -1845,7 +1846,7 @@
              ;; The include-book brought in the desired name (and that thing can be :used), so now try the proof, :use-ing the item:
              (b* ( ; todo: ensure this is nice:
                   ;; todo: also disable the item, if appropriate
-                  (hints-with-use (cons `("Goal" :use ,item-to-use) hints))
+                  (hints-with-use (acl2::merge-hint-setting-into-goal-hint :use item-to-use hints))
                   ((mv provedp state) (prove$-no-error 'try-use-with-include-book formula hints-with-use otf-flg step-limit time-limit state)))
                (if provedp
                    ;; We proved it with the :use hint.  Now, try again without the :use (just the include-book):
@@ -2417,7 +2418,7 @@
     (if (symbol-that-can-be-usedp item (w state)) ; todo: what if it's defined but can't be :used?
         (b* (                                     ;; todo: ensure this is nice:
              ;; todo: also disable the item, if appropriate
-             (new-hints (cons `("Goal" :use ,item) theorem-hints))
+             (new-hints (acl2::merge-hint-setting-into-goal-hint :use item theorem-hints))
              ((mv provedp state) (prove$-no-error 'try-add-use-hint
                                                   theorem-body
                                                   new-hints
@@ -2506,13 +2507,12 @@
         (and (acl2::print-level-at-least-tp print) (cw "fail (term not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; todo: ensure this is nice:
-       (new-hints (cons `("Goal" :expand ,item) theorem-hints))
+       (new-hints (acl2::merge-hint-setting-into-goal-hint :expand item theorem-hints))
        ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (acl2::submit-event-helper
        ;;                  (make-thm-to-attempt theorem-body
        ;;                                       ;; todo: ensure this is nice:
-       ;;                                       (cons `("Goal" :expand ,item)
-       ;;                                             theorem-hints)
+       ;;                                       (acl2::merge-hint-setting-into-goal-hint :expand item theorem-hints)
        ;;                                       theorem-otf-flg)
        ;;                  t nil state))
        ((mv provedp state) (prove$-no-error 'try-add-expand-hint
@@ -2560,7 +2560,7 @@
        ;; TTODO: Include any necessary books first
        ;; todo: ensure this is nice:
        ;; todo: remove existing hints?
-       (new-hints (cons `("Goal" :by ,item) theorem-hints))
+       (new-hints (acl2::merge-hint-setting-into-goal-hint :by item theorem-hints))
        ((mv provedp failure-info state)
         (prove$-no-error-with-failure-info 'try-add-by-hint
                                            theorem-body
@@ -2598,12 +2598,12 @@
         (and (acl2::print-level-at-least-tp print) (cw "fail (terms not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; todo: ensure this is nice:
-       (new-hints (cons `("Goal" :cases ,item) theorem-hints))
+       (new-hints (acl2::merge-hint-setting-into-goal-hint :cases item theorem-hints))
        ;; Now see whether we can prove the theorem using the new hyp:
        ;; ((mv erp state) (acl2::submit-event-helper
        ;;                  (make-thm-to-attempt theorem-body
        ;;                                       ;; todo: ensure this is nice:
-       ;;                                       (cons `("Goal" :cases ,item)
+       ;;                                       (acl2::merge-hint-setting-into-goal-hint  :cases item
        ;;                                             theorem-hints)
        ;;                                       theorem-otf-flg)
        ;;                  t nil state))
@@ -2643,7 +2643,7 @@
         (mv nil nil state) ; or we could return erp=t here
         )
        ;; todo: ensure this is nice:
-       (new-hints (cons `("Goal" :nonlinearp ,item) theorem-hints))
+       (new-hints (acl2::merge-hint-setting-into-goal-hint :nonlinearp item theorem-hints))
        ((mv provedp state) (prove$-no-error 'try-add-nonlinearp-hint
                                             theorem-body
                                             new-hints
@@ -2677,7 +2677,7 @@
            (ignore theorem-name))
   (b* ( ;; Can't easily check the :do-not hint syntactically...
        ;; todo: ensure this is nice:
-       (new-hints (cons `("Goal" :do-not ,item) theorem-hints))
+       (new-hints (acl2::merge-hint-setting-into-goal-hint :do-not item theorem-hints))
        ((mv provedp state) (prove$-no-error 'try-add-do-not-hint
                                             theorem-body
                                             new-hints
