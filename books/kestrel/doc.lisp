@@ -18,6 +18,7 @@
 (include-book "apt/doc")
 (include-book "axe/doc")
 (include-book "arithmetic-light/doc")
+(include-book "built-ins/top")
 (include-book "bv/doc")
 (include-book "bv-lists/doc")
 (include-book "auto-termination/top") ; omits some books (see file for why)
