@@ -537,6 +537,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-fn-gthm* ((fn symbolp)
+                          (names-to-avoid symbol-listp)
+                          (wrld plist-worldp))
+  :returns (mv (event pseudo-event-formp)
+               (name symbolp)
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate a local theorem that is like the guard theorem of @('fn')
+          but with all the @(tsee if)s replaced with @(tsee if*)s."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Ideally, here we would use @(tsee guard-theorem)
+     to retrieve the guard theorem,
+     and then we would apply @(tsee fty-if-to-if*) to it,
+     to obtain the formula of the theorem.
+     However, @(tsee guard-theorem) is in program mode,
+     and takes @(tsee state) as an argument,
+     so it cannot be called in logic mode via @(tsee magic-ev-fncall).
+     To avoid putting this ATC code, and any ATC code that calls it,
+     in program mode, thus losing all static type checking,
+     here we generate a @(tsee make-event)
+     that defers the call of @(tsee guard-theorem)
+     to the time in which the theorem is submitted."))
+  (b* ((name (pack fn '-gthm*))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       (event
+        `(make-event
+          (let* ((formula
+                  (fty-if-to-if*
+                   (guard-theorem ',fn :limited nil (w state) state)))
+                 (hints (list (list "Goal"
+                                    :in-theory
+                                    ''(if*))
+                              (list 'and
+                                    'stable-under-simplificationp
+                                    (list 'quote
+                                          (list :by
+                                                (list :guard-theorem
+                                                      ',fn))))))
+                 (event (list 'defthm ',name formula
+                              :rule-classes nil
+                              :hints hints)))
+            event))))
+    (mv event name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-cfun-fun-env-thm-name ((fn symbolp)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
@@ -2399,6 +2447,10 @@
             fn-def*
             names-to-avoid)
         (atc-gen-fn-def* fn names-to-avoid wrld))
+       ((mv & ; fn-gthm*-event -- do not submit it yet
+            & ; fn-gthm*
+            names-to-avoid)
+        (atc-gen-fn-gthm* fn names-to-avoid wrld))
        ((erp typed-formals formals-events modular-proofs names-to-avoid)
         (atc-typed-formals
          fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
@@ -2577,6 +2629,8 @@
                                        (list fn-fun-env-event)
                                        (list fn-guard-event)
                                        fn-def*-events
+                                       ;; do not submit it yet:
+                                       ;; (list fn-gthm*-event)
                                        formals-events
                                        (and modular-proofs
                                             (list init-scope-expand-event
