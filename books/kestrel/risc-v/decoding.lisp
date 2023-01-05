@@ -10,7 +10,6 @@
 
 (in-package "RISCV")
 
-(include-book "bytes")
 (include-book "library-extensions")
 
 (include-book "instructions")

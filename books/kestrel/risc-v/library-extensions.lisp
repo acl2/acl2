@@ -10,10 +10,10 @@
 
 (in-package "RISCV")
 
-(include-book "bytes")
-
 (include-book "ihs/basic-definitions" :dir :system)
 
+(include-book "kestrel/fty/ubyte5" :dir :system)
+(include-book "kestrel/fty/ubyte6" :dir :system)
 (include-book "kestrel/fty/ubyte8" :dir :system)
 (include-book "kestrel/fty/ubyte16" :dir :system)
 (include-book "kestrel/fty/ubyte32" :dir :system)

@@ -11,7 +11,6 @@
 (in-package "RISCV")
 
 (include-book "library-extensions")
-(include-book "bytes")
 
 (include-book "kestrel/fty/ubyte16" :dir :system)
 (include-book "kestrel/fty/ubyte32" :dir :system)
