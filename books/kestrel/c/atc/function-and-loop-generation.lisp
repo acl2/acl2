@@ -2546,7 +2546,7 @@
             names-to-avoid)
         (atc-gen-fn-def* fn names-to-avoid wrld))
        ((mv fn-gthm*-event
-            & ; fn-gthm*
+            fn-gthm*
             names-to-avoid)
         (atc-gen-fn-gthm* fn names-to-avoid wrld))
        ((erp typed-formals formals-events modular-proofs names-to-avoid)
@@ -2611,6 +2611,7 @@
                        :affect affect
                        :fn fn
                        :fn-guard fn-guard
+                       :fn-gthm fn-gthm*
                        :compst-var compst-var
                        :fenv-var fenv-var
                        :limit-var limit-var
@@ -3922,6 +3923,7 @@
                                            :inscope (list typed-formals)
                                            :fn fn
                                            :fn-guard nil
+                                           :fn-gthm nil
                                            :compst-var nil
                                            :fenv-var nil
                                            :limit-var nil
