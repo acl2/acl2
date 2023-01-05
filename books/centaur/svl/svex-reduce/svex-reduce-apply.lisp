@@ -26,10 +26,9 @@
 
 (in-package "SVL")
 
-(include-book "centaur/sv/svex/eval" :dir :system)
+(include-book "base")
 
 (include-book "projects/rp-rewriter/top" :dir :system)
-
 (include-book "../fnc-defs")
 
 (local
@@ -98,11 +97,12 @@
 (defund svex-apply-constant-cases-fn (argsvar optable)
   (b* (((when (atom optable))
         '((otherwise
-           (or (hard-error
-                'svex-apply-cases-wog-fn-meta
-                "attempting to apply unknown function ~x0~%"
-                (list (cons #\0 fn)))
-               (sv::4vec-x)))))
+           (hons fn args)
+           #|(or (hard-error
+           'svex-apply-cases-wog-fn-meta
+           "attempting to apply unknown function ~x0~%"
+           (list (cons #\0 fn)))
+           (sv::4vec-x))|#)))
        ((list sym fn args) (car optable))
        (entry-for-quoted
         (svex-apply-CONSTANTS-collect-arg-meta 0 (len args) argsvar ))
@@ -110,18 +110,6 @@
         `(,fn . ,entry-for-quoted)))
     (cons (cons sym (cons call 'nil))
           (svex-apply-constant-cases-fn argsvar (cdr optable)))))
-
-(defun hons-list-macro (acl2::lst)
-  (declare (xargs :guard t))
-  (if (consp acl2::lst)
-      (cons 'hons
-            (cons (car acl2::lst)
-                  (cons (hons-list-macro (cdr acl2::lst))
-                        nil)))
-    nil))
-
-(DEFMACRO hons-LIST (&REST ARGS)
-  (hons-list-macro ARGS))
 
 ;; (define bit?!-resolve ((test sv::4vec-p) then else (shift-amount natp))
 ;;   (cond ((equal test -1) then)
@@ -157,7 +145,6 @@
             :in-theory (e/d (sv::4vec->upper
                              sv::4vec->lower
                              ) ())))))
-
 
 (local
  (defthm svex-p-of-consed
@@ -300,11 +287,11 @@
 
 (local
  (defthm svex-p-of-fn-call-reconstructed
-   (implies (AND (FNSYM-P FN)
-                 (SVEXLIST-P ARGS))
-            (SVEX-P (CONS FN ARGS)))
-   :hints (("Goal"
-            :in-theory (e/d (SVEX-P) ())))))
+   (implies (and (fnsym-p fn)
+                 (svexlist-p args))
+            (svex-p (cons fn args)))
+   :hints (("goal"
+            :in-theory (e/d (svex-p) ())))))
 
 (define svex-reduce-w/-env-apply-specials (fn args)
   :returns (res svex-p :hyp (and (FNSYM-P fn)
@@ -360,8 +347,6 @@
           (third args)))
       (bit?!-resolve test (second args) (third args) (expt 2 30))))
 
-   
-
    ((and (or (equal fn 'sv::bitor)
              (equal fn 'sv::bitand)
              (equal fn 'sv::bitxor))
@@ -383,8 +368,6 @@
                  (('sv::unfloat x) x)
                  (& arg2))))
       (hons-list fn arg1 arg2)))
-
-   
 
    ((and (equal fn 'sv::unfloat)
          (equal-len args 1))
@@ -415,8 +398,12 @@
 
 (define svex-reduce-w/-env-apply (fn args)
   :guard (true-listp args)
-  :returns (res svex-p :hyp (and (FNSYM-P fn)
-                                 (SVEXLIST-P args)))
+  :returns (res svex-p
+                :hyp (and (FNSYM-P fn)
+                          (SVEXLIST-P args))
+                :hints (("Goal"
+                         :expand (SVEX-P (LIST FN ARGS))
+                         :in-theory (e/d () ()))))
   (let* ((fn (fnsym-fix fn)))
     (svex-apply-constant-cases fn args)))
 
@@ -425,96 +412,95 @@
            :do-not-induct t
            :in-theory (e/d () ()))))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Proofs
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local
- (defthm SV::4VEC-BIT?!-of-constants
-   (and (equal (SV::4VEC-BIT?! -1 then else)
+ (defthm sv::4vec-bit?!-of-constants
+   (and (equal (sv::4vec-bit?! -1 then else)
                (4vec-fix then))
-        (equal (SV::4VEC-BIT?! 0 then else)
+        (equal (sv::4vec-bit?! 0 then else)
                (4vec-fix else))
-        (equal (SV::4VEC-BIT?! '(0 . -1) then else)
+        (equal (sv::4vec-bit?! '(0 . -1) then else)
                (4vec-fix else))
-        (equal (SV::4VEC-BIT?! '(-1 . 0) then else)
+        (equal (sv::4vec-bit?! '(-1 . 0) then else)
                (4vec-fix else)))
-   :hints (("Goal"
-            :expand ((:free (x y) (SV::4VEC-BIT?! 0 x y))
-                     (:free (x y) (SV::4VEC-BIT?! -1 x y))
-                     (:free (x y) (SV::4VEC-BIT?! '(0 . -1) x y))
-                     (:free (x y) (SV::4VEC-BIT?! '(-1 . 0) x y)))
+   :hints (("goal"
+            :expand ((:free (x y) (sv::4vec-bit?! 0 x y))
+                     (:free (x y) (sv::4vec-bit?! -1 x y))
+                     (:free (x y) (sv::4vec-bit?! '(0 . -1) x y))
+                     (:free (x y) (sv::4vec-bit?! '(-1 . 0) x y)))
             :in-theory (e/d ()
-                            (4VEC-BIT?!-WHEN-TEST-IS-QUOTED))))))
+                            (4vec-bit?!-when-test-is-quoted))))))
 
 (local
- (defthm SV::4VEC-BIT?-of-constants
-   (and (equal (SV::4VEC-BIT? -1 then else)
+ (defthm sv::4vec-bit?-of-constants
+   (and (equal (sv::4vec-bit? -1 then else)
                (4vec-fix then))
-        (equal (SV::4VEC-BIT? 0 then else)
-               (4vec-fix else))
-        #|(equal (SV::4VEC-BIT? '(0 . -1) then else)
-        (4vec-fix else))
-        (equal (SV::4VEC-BIT? '(-1 . 0) then else)
-        (4vec-fix else))|#)
-   :hints (("Goal"
-            :expand ((:free (x y) (SV::4VEC-BIT? 0 x y))
-                     (:free (x y) (SV::4VEC-BIT? -1 x y))
-                     (:free (x y) (SV::4VEC-BIT? '(0 . -1) x y))
-                     (:free (x y) (SV::4VEC-BIT? '(-1 . 0) x y)))
-            :in-theory (e/d (SV::3VEC-BIT?)
-                            ())))))
-
-
-
-(local
- (defthm svex-eval-opener-when-call
-   (implies (and (syntaxp (and (consp fn)
-                               (quotep fn)))
-                 (fnsym-p fn))
-            (equal (svex-eval (cons fn args) env)
-                   (SV::SVEX-APPLY fn
-                                   (SVEXLIST-EVAL args env))))
-   :hints (("Goal"
-            :expand (svex-eval (cons fn args) env)
-            :in-theory (e/d (SVEX-CALL->FN
-                             SVEX-VAR->NAME
-                             SVEX-KIND
-                             SVEX-CALL->ARGS)
+        (equal (sv::4vec-bit? 0 then else)
+               (4vec-fix else)))
+   :hints (("goal"
+            :expand ((:free (x y) (sv::4vec-bit? 0 x y))
+                     (:free (x y) (sv::4vec-bit? -1 x y))
+                     (:free (x y) (sv::4vec-bit? '(0 . -1) x y))
+                     (:free (x y) (sv::4vec-bit? '(-1 . 0) x y)))
+            :in-theory (e/d (sv::3vec-bit?)
                             ())))))
 
 (local
- (defthm svex-eval-when-4vec-p
-   (implies (4vec-p x)
-            (equal (svex-eval x env)
-                   x))
-   :hints (("Goal"
-            :expand ((SVEX-EVAL X ENV)
-                     (4VEC-P X))
-            :in-theory (e/d (SVEX-KIND
-                             SV::SVEX-QUOTE->VAL)
+ (svex-eval-lemma-tmpl
+  (defthm svex-eval-opener-when-call
+    (implies (and (syntaxp (and (consp fn)
+                                (quotep fn)))
+                  (fnsym-p fn))
+             (equal (svex-eval (cons fn args) env)
+                    (sv::svex-apply fn
+                                    (svexlist-eval args env))))
+    :hints (("goal"
+             :expand (svex-eval (cons fn args) env)
+             :in-theory (e/d (svex-call->fn
+                              svex-var->name
+                              svex-kind
+                              svex-call->args)
+                             ()))))))
+
+(local
+ (svex-eval-lemma-tmpl
+  (defthm svex-eval-when-4vec-p
+    (implies (4vec-p x)
+             (equal (svex-eval x env)
+                    x))
+    :hints (("Goal"
+             :expand ((SVEX-EVAL X ENV)
+                      (4VEC-P X))
+             :in-theory (e/d (SVEX-KIND
+                              SV::SVEX-QUOTE->VAL)
+                             ()))))))
+
+(local
+ (in-theory (disable sv::svex-apply$-is-svex-apply)))
+
+(svex-eval-lemma-tmpl
+ (defthm svex-eval-of-bit?!-resolve-correct
+   (implies (sv::4vec-p test)
+            (equal
+             (svex-eval (bit?!-resolve test then else limit) env)
+             (svex-eval `(sv::bit?! ,test ,then ,else) env)))
+   :hints (("goal"
+            :expand ((bit?!-resolve test then else limit)
+                     (bit?!-resolve 0 then else limit)
+                     (bit?!-resolve -1 then else limit)
+                     (bit?!-resolve '(0 . -1)
+                                    then else limit)
+                     (bit?!-resolve '(-1 . 0)
+                                    then else limit)
+                     (:free (x y)
+                            (sv::svex-apply x y)))
+            :induct (bit?!-resolve test then else limit)
+            :do-not-induct t
+            :in-theory (e/d (bit?!-resolve)
                             ())))))
-
-(defthm bit?!-resolve-correct
-  (implies (sv::4vec-p test)
-           (equal
-            (svex-eval (bit?!-resolve test then else limit) env)
-            (svex-eval `(sv::bit?! ,test ,then ,else) env)))
-  :hints (("goal"
-           :expand (
-                    (bit?!-resolve test then else limit)
-                    (bit?!-resolve 0 then else limit)
-                    (bit?!-resolve -1 then else limit)
-                    (bit?!-resolve '(0 . -1)
-                                   then else limit)
-                    (bit?!-resolve '(-1 . 0)
-                                   then else limit)
-                    (:free (x y)
-                           (sv::svex-apply x y)))
-           :induct (bit?!-resolve test then else limit)
-           :do-not-induct t
-           :in-theory (e/d (bit?!-resolve) ()))))
-
 
 (progn
   (local
@@ -535,81 +521,82 @@
   (local
    (use-arithmetic-5 nil)))
 
-
-(defthm bit?-resolve-correct
-  (implies (and (sv::4vec-p test)
-                (sv::3vec-p test))
-           (equal
-            (svex-eval (bit?-resolve test then else limit) env)
-            (svex-eval `(sv::bit? ,test ,then ,else) env)))
-  :hints (("subgoal *1/11"
-           :use ((:instance 4vec-concat-of-part-select-and-rsh
-                            (size (calc-bit-repetition test test 1073741824))
-                            (y (sv::4vec-bit? test (svex-eval then env)
-                                              (svex-eval else env))))))
-          ("subgoal *1/6"
-           :use ((:instance 4vec-concat-of-part-select-and-rsh
-                            (size (calc-bit-repetition test test 1073741824))
-                            (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
-          ("subgoal *1/7"
-           :use ((:instance 4vec-concat-of-part-select-and-rsh
-                            (size (calc-bit-repetition test test 1073741824))
-                            (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
-          ("subgoal *1/8"
-           :use ((:instance 4vec-concat-of-part-select-and-rsh
-                            (size (calc-bit-repetition test test 1073741824))
-                            (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
-          ("subgoal *1/9"
-           :use ((:instance 4vec-concat-of-part-select-and-rsh
-                            (size (calc-bit-repetition test test 1073741824))
-                            (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
-          ("subgoal *1/10"
-           :use ((:instance 4vec-concat-of-part-select-and-rsh
-                            (size (calc-bit-repetition test test 1073741824))
-                            (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
-          ("goal"
-           :expand (
-                    (bit?-resolve test then else limit)
-                    (bit?-resolve 0 then else limit)
-                    (bit?-resolve -1 then else limit)
-                    (bit?-resolve '(0 . -1)
-                                  then else limit)
-                    (bit?-resolve '(-1 . 0)
-                                  then else limit)
-                    (:free (x y)
-                           (sv::svex-apply x y)))
-           :induct (bit?-resolve test then else limit)
-           :do-not-induct t
-           :in-theory (e/d (bit?-resolve
-                            bits
-                            convert-4vec-concat-to-4vec-concat$)
-                           (4vec-concat-of-part-select-and-rsh
-                            equal-of-4vec-concat$-with-posp-size)))))
+(svex-eval-lemma-tmpl
+ (defthm svex-eval-of-bit?-resolve-correct
+   (implies (and (sv::4vec-p test)
+                 (sv::3vec-p test))
+            (equal
+             (svex-eval (bit?-resolve test then else limit) env)
+             (svex-eval `(sv::bit? ,test ,then ,else) env)))
+   :hints (("subgoal *1/11"
+            :use ((:instance 4vec-concat-of-part-select-and-rsh
+                             (size (calc-bit-repetition test test 1073741824))
+                             (y (sv::4vec-bit? test (svex-eval then env)
+                                               (svex-eval else env))))))
+           ("subgoal *1/6"
+            :use ((:instance 4vec-concat-of-part-select-and-rsh
+                             (size (calc-bit-repetition test test 1073741824))
+                             (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
+           ("subgoal *1/7"
+            :use ((:instance 4vec-concat-of-part-select-and-rsh
+                             (size (calc-bit-repetition test test 1073741824))
+                             (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
+           ("subgoal *1/8"
+            :use ((:instance 4vec-concat-of-part-select-and-rsh
+                             (size (calc-bit-repetition test test 1073741824))
+                             (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
+           ("subgoal *1/9"
+            :use ((:instance 4vec-concat-of-part-select-and-rsh
+                             (size (calc-bit-repetition test test 1073741824))
+                             (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
+           ("subgoal *1/10"
+            :use ((:instance 4vec-concat-of-part-select-and-rsh
+                             (size (calc-bit-repetition test test 1073741824))
+                             (y (sv::4vec-bit? test (svex-eval then env) (svex-eval else env))))))
+           ("goal"
+            :expand (
+                     (bit?-resolve test then else limit)
+                     (bit?-resolve 0 then else limit)
+                     (bit?-resolve -1 then else limit)
+                     (bit?-resolve '(0 . -1)
+                                   then else limit)
+                     (bit?-resolve '(-1 . 0)
+                                   then else limit)
+                     (:free (x y)
+                            (sv::svex-apply x y)))
+            :induct (bit?-resolve test then else limit)
+            :do-not-induct t
+            :in-theory (e/d (bit?-resolve
+                             bits
+                             convert-4vec-concat-to-4vec-concat$)
+                            (4vec-concat-of-part-select-and-rsh
+                             equal-of-4vec-concat$-with-posp-size))))))
 
 (local
- (defthm bit?!-resolve-is-svex-apply-when-4vec-p
-   (implies (and (sv::4vec-p test)
-                 (4vec-p (bit?!-resolve test then else limit)))
-            (equal
-             (svex-eval (bit?!-resolve test then else limit) env)
-             (sv::svex-apply 'sv::bit?! (list (svex-eval test env)
-                                              (svex-eval then env)
-                                              (svex-eval else env)))))
-   :hints (("goal"
-            :use ((:instance bit?!-resolve-correct))
-            :expand (
-                     #|(:free (x y)
-                     (sv::svex-apply x y))|#
-                     (:free (x y)
-                            (sv::4vec-p (cons 'SV::BIT?!  y)))
-                     (:free (x y)
-                            (sv::4vec-p (cons 'CONCAT  y))))
+ (svex-eval-lemma-tmpl
+  (defthm bit?!-resolve-is-svex-apply-when-4vec-p
+    (implies (and (sv::4vec-p test)
+                  (4vec-p (bit?!-resolve test then else limit)))
+             (equal
+              (svex-eval (bit?!-resolve test then else limit) env)
+              (sv::svex-apply 'sv::bit?! (list (svex-eval test env)
+                                               (svex-eval then env)
+                                               (svex-eval else env)))))
+    :hints (("goal"
+             :use ((:instance svex-eval-of-bit?!-resolve-correct))
+             :expand (
+                      #|(:free (x y)
+                      (sv::svex-apply x y))|#
+                      (:free (x y)
+                             (sv::4vec-p (cons 'SV::BIT?!  y)))
+                      (:free (x y)
+                             (sv::4vec-p (cons 'CONCAT  y))))
 
-            :do-not-induct t
-            :in-theory (e/d (bit?!-resolve
+             :do-not-induct t
+             :in-theory (e/d (bit?!-resolve
 
-                             )
-                            (bit?!-resolve-correct))))))
+                              )
+                             (svex-eval-of-bit?!-resolve-correct)))))))
 
 (local
  (defthm 4VEC-BITOR-of-1
@@ -619,46 +606,67 @@
             :expand (4VEC-BITOR -1 then)
             :in-theory (e/d (SV::3VEC-BITOR) ())))))
 
-
-(defthm svex-reduce-w/-env-apply-specials-correct
-  (equal (svex-eval (svex-reduce-w/-env-apply-specials fn args) env)
-         (svex-eval `(,fn . ,args) env))
+(defthm 4vec-p-of-SVEX-EVAL$-forward-chaining-1
+  (and (implies (not (consp (svex-eval$ svex env)))
+                (integerp (svex-eval$ svex env))))
+  :rule-classes :forward-chaining
   :hints (("Goal"
-           :do-not-induct t
-           :expand ((SV::4VEC->LOWER (CAR ARGS))
-                    (SVEXLIST-EVAL ARGS ENV)
-                    (SVEX-EVAL (CAR ARGS) ENV)
-                    (SVEX-KIND (CAR ARGS))
-                    (SVEX-CALL->FN (CAR ARGS))
-                    (:free (x y) (SV::4VEC-BIT? -1 x y))
-                    (:free (x y) (SV::4VEC-BIT? 0 x y))
-                    (:free (x y) (4VECLIST-NTH-SAFE x y))
-                    (:free (x y) (nth x y))
-                    (:free (x) (SV::SVEX-APPLY 'BITAND x))
-                    (:free (x) (SV::SVEX-APPLY 'sv::unfloat x))
-                    (:free (x) (SV::SVEX-APPLY 'SV::BITOR x))
-                    (:free (x) (SV::SVEX-APPLY 'SV::BITxOR x))
-                    (:free (x) (SV::SVEX-APPLY 'SV::BITnot x))
-                    (:free (x) (SV::SVEX-APPLY 'sv::? x))
-                    (:free (x) (SV::SVEX-APPLY 'sv::?* x))
-                    (:free (x) (SV::SVEX-APPLY 'sv::?! x))
-                    (:free (x) (SV::SVEX-APPLY 'sv::bit?! x))
-                    (:free (x) (SV::SVEX-APPLY 'sv::bit? x)))
-           :in-theory (e/d (svex-reduce-w/-env-apply-specials
-                            4VEC-?
-                            SVEX-CALL->ARGS
-                            SV::4VEC-BIT?!
-                            4VEC-P
-                            4VEC-?*
-                            SV::3VEC-BIT?
-                            SV::3VEC-?*
-                            ;;SV::4VEC-BIT?!
-                            SV::4VEC-?!
-                            SV::4VEC->UPPER
-                            SV::3VEC-?)
-                           ()))))
+           :use ((:instance SV::RETURN-TYPE-OF-SVEX-EVAL$.VAL
+                            (sv::x svex)
+                            (sv::env env)))
+           :in-theory (e/d (4vec-p)
+                           (SV::RETURN-TYPE-OF-SVEX-EVAL$.VAL)))))
 
+(defthm 4vec-p-of-SVEX-EVAL$-forward-chaining-2
+  (implies (consp (svex-eval$ svex env))
+           (and (integerp (car (svex-eval$ svex env)))
+                (integerp (cdr (svex-eval$ svex env)))))
+  :rule-classes :forward-chaining
+  :hints (("Goal"
+           :use ((:instance SV::RETURN-TYPE-OF-SVEX-EVAL$.VAL
+                            (sv::x svex)
+                            (sv::env env)))
+           :in-theory (e/d (4vec-p)
+                           (SV::RETURN-TYPE-OF-SVEX-EVAL$.VAL)))))
 
+(svex-eval-lemma-tmpl
+ (defthm svex-eval-of-svex-reduce-w/-env-apply-specials-correct
+   (equal (svex-eval (svex-reduce-w/-env-apply-specials fn args) env)
+          (svex-eval `(,fn . ,args) env))
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((sv::4vec->lower (car args))
+                     (svexlist-eval args env)
+                     (svex-eval (car args) env)
+                     (svex-kind (car args))
+                     (svex-call->fn (car args))
+                     (:free (x y) (sv::4vec-bit? -1 x y))
+                     (:free (x y) (sv::4vec-bit? 0 x y))
+                     (:free (x y) (4veclist-nth-safe x y))
+                     (:free (x y) (nth x y))
+                     (:free (x) (sv::svex-apply 'bitand x))
+                     (:free (x) (sv::svex-apply 'sv::unfloat x))
+                     (:free (x) (sv::svex-apply 'sv::bitor x))
+                     (:free (x) (sv::svex-apply 'sv::bitxor x))
+                     (:free (x) (sv::svex-apply 'sv::bitnot x))
+                     (:free (x) (sv::svex-apply 'sv::? x))
+                     (:free (x) (sv::svex-apply 'sv::?* x))
+                     (:free (x) (sv::svex-apply 'sv::?! x))
+                     (:free (x) (sv::svex-apply 'sv::bit?! x))
+                     (:free (x) (sv::svex-apply 'sv::bit? x)))
+            :in-theory (e/d (svex-reduce-w/-env-apply-specials
+                             4vec-?
+                             svex-call->args
+                             sv::4vec-bit?!
+                             4vec-p
+                             4vec-?*
+                             sv::3vec-bit?
+                             sv::3vec-?*
+                             ;;sv::4vec-bit?!
+                             sv::4vec-?!
+                             sv::4vec->upper
+                             sv::3vec-?)
+                            ())))))
 
 (local
  (defthm svex-eval-when-fn-is-absent
@@ -690,15 +698,16 @@
                              svex-call->args)
                             ())))))
 
-(defthm svex-reduce-w/-env-apply-correct
-  (implies (and (force (fnsym-p fn)))
-           (equal (svex-eval (svex-reduce-w/-env-apply fn args) env)
-                  (svex-eval `(,fn . ,args) env)))
-  :hints (("goal"
-           :do-not-induct t
-           :expand ((:free (x y)
-                           (sv::svex-apply x y)))
-           :in-theory (e/d (svex-reduce-w/-env-apply)
-                           (4VEC-OVERRIDE-WHEN-INTEGERP)))))
+(svex-eval-lemma-tmpl
+ (defthm svex-eval-svex-reduce-w/-env-apply-correct
+   (implies (and (force (fnsym-p fn)))
+            (equal (svex-eval (svex-reduce-w/-env-apply fn args) env)
+                   (svex-eval `(,fn . ,args) env)))
+   :hints (("goal"
+            :do-not-induct t
+            :expand ((:free (x y)
+                            (sv::svex-apply x y)))
+            :in-theory (e/d (svex-reduce-w/-env-apply)
+                            (4VEC-OVERRIDE-WHEN-INTEGERP))))))
 
 ;;;;;;;;

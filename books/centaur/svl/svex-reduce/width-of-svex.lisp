@@ -25,7 +25,7 @@
 
 (in-package "SVL")
 
-(include-book "centaur/sv/svex/eval" :dir :system)
+(include-book "base")
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
@@ -222,19 +222,20 @@
                              ())))))
 
 (Local
- (defret <fn>-is-correct-when-quoted
-   (implies (and width
-                 (equal (svex-kind x) :quote))
-            (equal (4vec-part-select 0 width (svex-eval x env))
-                   (svex-eval x env)))
-   :fn width-of-svex
-   :hints (("goal"
-            :in-theory (e/d (4vec-concat
-                             4vec-part-select
-                             4vec-p
-                             sv::svex-quote->val
-                             width-of-svex)
-                            (loghead logapp))))))
+ (svex-eval-lemma-tmpl
+  (defret svex-eval-<fn>-is-correct-when-quoted
+    (implies (and width
+                  (equal (svex-kind x) :quote))
+             (equal (4vec-part-select 0 width (svex-eval x env))
+                    (svex-eval x env)))
+    :fn width-of-svex
+    :hints (("goal"
+             :in-theory (e/d (4vec-concat
+                              4vec-part-select
+                              4vec-p
+                              sv::svex-quote->val
+                              width-of-svex)
+                             (loghead logapp)))))))
 
 (local
  (defthm 4vec-part-select-lemma-1
@@ -294,11 +295,12 @@
                              (BITOPS::LOGHEAD-OF-LOGAND))))))
 
 (local
- (defthm svex-eval-when-svex-is-natp
+ (svex-eval-lemma-tmpl
+  (defthm svex-eval-when-svex-is-natp
    (implies (natp x)
             (equal (svex-eval x env) x))
    :hints (("Goal"
-            :in-theory (e/d (svex-eval svex-kind SV::SVEX-QUOTE->VAL) ())))))
+            :in-theory (e/d (svex-eval svex-kind SV::SVEX-QUOTE->VAL) ()))))))
 
 (local
  (defthm 4vec-concat-of-0-is-4vec-part-select
@@ -393,7 +395,11 @@
                              4VEC
                              4vec-part-install) ())))))
 
-(defret <fn>-is-correct-1
+(local
+ (in-theory (disable sv::svex-apply$-is-svex-apply)))
+
+(svex-eval-lemma-tmpl
+ (defret svex-eval-<fn>-is-correct-1
   (implies (and width
                 (sv::Svex-p x))
            (equal (4vec-part-select 0 width (svex-eval x env))
@@ -402,17 +408,17 @@
   :hints (("goal"
            :expand ((:free (fn x y)
                            (svex-apply fn (cons x y)))
-                    (SVEXLIST-EVAL (SVEX-CALL->ARGS X)
-                                   ENV)
-                    (SVEXLIST-EVAL (CDR (SVEX-CALL->ARGS X))
-                                   ENV)
-                    (SVEXLIST-EVAL (CDDR (SVEX-CALL->ARGS X))
-                                   ENV)
-                    (SVEXLIST-EVAL (CDDDR (SVEX-CALL->ARGS X))
-                                   ENV))
+                    (svexlist-eval (svex-call->args x)
+                                   env)
+                    (svexlist-eval (cdr (svex-call->args x))
+                                   env)
+                    (svexlist-eval (cddr (svex-call->args x))
+                                   env)
+                    (svexlist-eval (cdddr (svex-call->args x))
+                                   env))
            :in-theory (e/d (svex-p
                             nfix
-                            ;;4VEC-PART-INSTALL
+                            ;;4vec-part-install
                             4vec-concat$
                             width-of-svex
                             4vec-part-select-of-4vec-bitxor-better
@@ -426,12 +432,13 @@
                             4vec-part-select-of-4vec-bit?!
                             4vec-part-select-of-4vec-bit?)))
           (and stable-under-simplificationp
-               '(:use ((:instance width-of-svex-is-correct-when-quoted))))))
+               '(:use ((:instance svex-eval-<fn>-is-correct-when-quoted)))))))
 
-(defret <fn>-is-correct
+(svex-eval-lemma-tmpl
+ (defret svex-eval-<fn>-is-correct
   (implies (and width
                 (equal free-var-width width)
                 (sv::Svex-p x))
            (equal (4vec-part-select 0 free-var-width (svex-eval x env))
                   (svex-eval x env)))
-  :fn width-of-svex)
+  :fn width-of-svex))

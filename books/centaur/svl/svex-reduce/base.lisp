@@ -1,6 +1,5 @@
-; SVL - Listener-based Hierachical Symbolic Vector Hardware Analysis Framework
-; Copyright (C) 2021 Centaur Technology
-; Copyright (C) 2022 Intel Corporation
+
+; Copyright (C) 2023 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -22,12 +21,40 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
+;
 ; Original author: Mertcan Temel <mert.temel@intel.com>
 
 (in-package "SVL")
 
-(include-book "svex-reduce-with-env")
-(include-book "bitnot-to-bitxor")
-(include-book "integerp-of-svex")
-(include-book "simplify-bitand-or-xor")
+(include-book "centaur/sv/svex/eval" :dir :system)
+(include-book "centaur/sv/svex/eval-dollar" :dir :system)
+(include-book "tools/templates" :dir :system)
 
+(defun hons-list-macro (acl2::lst)
+  (declare (xargs :guard t))
+  (if (consp acl2::lst)
+      (cons 'hons
+            (cons (car acl2::lst)
+                  (cons (hons-list-macro (cdr acl2::lst))
+                        nil)))
+    nil))
+
+(DEFMACRO hons-LIST (&REST ARGS)
+  (hons-list-macro ARGS))
+
+(defmacro svex-eval-lemma-tmpl (form)
+  `(progn
+     ,form
+     ,(acl2::template-subst
+       form
+       :atom-alist '((svex-eval . svex-eval$)
+                     (svex-apply . svex-apply$)
+                     (svexlist-eval . svexlist-eval$)
+                     (svex-alist-eval . svex-alist-eval$))
+       :str-alist '(("SVEX-EVAL" . "SVEX-EVAL$")
+                    ("SVEX-APPLY" . "SVEX-APPLY$")
+                    ("SVEXLIST-EVAL" . "SVEXLIST-EVAL$")
+                    ("SVEX-ALIST-EVAL" . "SVEX-ALIST-EVAL$"))
+       :pkg-sym 'pkg
+       )
+     ))

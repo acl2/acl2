@@ -103,12 +103,16 @@
            ;;:aokp t
            )
 
-  (defret-mutual <fn>-correct
-    (defret <fn>-correct
+  (local
+   (in-theory (disable sv::svex-apply$-is-svex-apply)))
+  
+  (svex-eval-lemma-tmpl
+   (defret-mutual <fn>-correct
+    (defret svex-eval-of-<fn>-correct
       (equal (svex-eval res a)
              (svex-eval svex a))
       :fn svex-convert-bitnot-to-bitxor)
-    (defret <fn>-correct
+    (defret svexlist-eval-<fn>-correct
       (equal (svexlist-eval res a)
              (svexlist-eval lst a))
       :fn svexlist-convert-bitnot-to-bitxor)
@@ -128,7 +132,7 @@
                               svex-kind
                               SVEX-CALL->FN
                               4VECLIST-NTH-SAFE)
-                             ())))))
+                             ()))))))
 
 
 
@@ -141,10 +145,15 @@
            (svex-convert-bitnot-to-bitxor (cdar alist))
            (svexalist-convert-bitnot-to-bitxor (cdr alist))))
   ///
-  (defret <fn>-correct
-    (equal (svex-alist-eval res a)
-           (svex-alist-eval alist a))
-    :hints (("Goal"
-             :expand ((SVEX-ALIST-EVAL ALIST A))
-             :in-theory (e/d (SVEX-ALIST-EVAL)
-                             ())))))
+  (local
+   (in-theory (disable sv::svex-alist-eval$-is-svex-alist-eval)))
+   
+  (svex-eval-lemma-tmpl
+   (defret svex-alist-eval-of-<fn>-correct
+     (equal (svex-alist-eval res a)
+            (svex-alist-eval alist a))
+     :hints (("Goal"
+              :expand ((SVEX-ALIST-EVAL ALIST A)
+                       (SVEX-ALIST-EVAL NIL A))
+              :in-theory (e/d (SVEX-ALIST-EVAL)
+                              ()))))))

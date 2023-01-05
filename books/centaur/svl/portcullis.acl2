@@ -66,7 +66,12 @@
 	    sv::svexlist-eval$
 	    sv::svex-alist-eval	
 	    sv::svex-alist-eval$
-	    sv::4VECLIST-NTH-SAFE
+	    sv::4veclist-nth-safe
+	    sv::svex-eval-when-quote
+	    sv::svex-eval-when-fncall
+	    sv::svex-eval$-when-quote
+	    sv::svex-eval$-when-fncall
+
 	    sv::svex-call->fn
 	    sv::svex-kind
 	    sv::fnsym-p

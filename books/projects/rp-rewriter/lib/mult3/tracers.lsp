@@ -320,5 +320,13 @@ Valid:~x8~%~%"
 
   (profile 'rp::calculate-c-hash)
 
+  (profile 'rp::sort-sum-meta)
+
+  (profile 'rp::sort-pp-lists)
+
+  (profile 'rp::sort-sum-meta-aux2)
+
+  (profile 'rp::pp-term-to-pp-lists)
+  (profile 'rp::merge-sorted-pp-lists)
   
   )

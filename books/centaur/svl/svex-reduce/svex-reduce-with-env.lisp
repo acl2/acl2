@@ -26,7 +26,7 @@
 
 (in-package "SVL")
 
-(include-book "centaur/sv/svex/eval" :dir :system)
+(include-book "base")
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
@@ -514,7 +514,7 @@
                         (b* ((old-term (svex-reduce-w/-env old-term))
                              (term (svex-reduce-w/-env term)))
                           (if (and* (4vec-p s-start) (4vec-p s-size)
-                                   (4vec-p old-term) (4vec-p term))
+                                    (4vec-p old-term) (4vec-p term))
                               (4vec-part-select
                                start size
                                (4vec-part-install s-start s-size old-term
@@ -791,32 +791,34 @@ but did not resolve the branch ~%" first))))
 ;;                             '((X QUOTE 0) (Y . B))))
 
 (local
- (defthm svex-eval-opener-when-call
-   (implies (and (syntaxp (and (consp fn)
-                               (quotep fn)))
-                 (fnsym-p fn))
-            (equal (svex-eval (cons fn args) env)
-                   (SV::SVEX-APPLY fn
-                                   (SVEXLIST-EVAL args env))))
-   :hints (("Goal"
-            :expand (svex-eval (cons fn args) env)
-            :in-theory (e/d (SVEX-CALL->FN
-                             SVEX-VAR->NAME
-                             SVEX-KIND
-                             SVEX-CALL->ARGS)
-                            ())))))
+ (svex-eval-lemma-tmpl
+  (defthm svex-eval-opener-when-call
+    (implies (and (syntaxp (and (consp fn)
+                                (quotep fn)))
+                  (fnsym-p fn))
+             (equal (svex-eval (cons fn args) env)
+                    (sv::svex-apply fn
+                                    (SVEXLIST-EVAL args env))))
+    :hints (("Goal"
+             :expand (svex-eval (cons fn args) env)
+             :in-theory (e/d (SVEX-CALL->FN
+                              SVEX-VAR->NAME
+                              SVEX-KIND
+                              SVEX-CALL->ARGS)
+                             ()))))))
 
 (local
- (defthm svex-eval-when-4vec-p
-   (implies (4vec-p x)
-            (equal (svex-eval x env)
-                   x))
-   :hints (("Goal"
-            :expand ((SVEX-EVAL X ENV)
-                     (4VEC-P X))
-            :in-theory (e/d (SVEX-KIND
-                             SV::SVEX-QUOTE->VAL)
-                            ())))))
+ (svex-eval-lemma-tmpl
+  (defthm svex-eval-when-4vec-p
+    (implies (4vec-p x)
+             (equal (svex-eval x env)
+                    x))
+    :hints (("Goal"
+             :expand ((SVEX-EVAL X ENV)
+                      (4VEC-P X))
+             :in-theory (e/d (SVEX-KIND
+                              SV::SVEX-QUOTE->VAL)
+                             ()))))))
 
 (progn
   (local
@@ -829,8 +831,8 @@ but did not resolve the branch ~%" first))))
               (sv::3vec-p (4vec-rsh size val)))
      :hints (("Goal"
               :expand ((4vec-rsh size val)
-                       (SV::4VEC->UPPER SIZE)
-                       (SV::4VEC->UPPER SIZE))
+                       (sv::4vec->upper size)
+                       (sv::4vec->upper size))
               :in-theory (e/d (4VEC-SHIFT-CORE
                                sv::3vec-p)
                               ())))))
@@ -846,19 +848,20 @@ but did not resolve the branch ~%" first))))
             :in-theory (e/d (SV::3VEC-BITOR) ())))))
 
 (local
- (defthm svex-reduce-w/-env-apply-correct-when-returns-4vec-p
-   (implies (and (force (fnsym-p fn))
-                 (4vec-p (svex-reduce-w/-env-apply fn args)))
-            (and (equal (equal (svex-reduce-w/-env-apply fn args) x)
-                        (equal (svex-eval `(,fn . ,args) (rp-evlt env-term a)) x))
-                 (equal (equal (4vec-part-select start size (svex-reduce-w/-env-apply fn args)) x)
-                        (equal (4vec-part-select start size (svex-eval `(,fn . ,args) (rp-evlt env-term a))) x))))
-   :hints (("goal"
-            :do-not-induct t
-            :use ((:instance svex-reduce-w/-env-apply-correct
-                             (env (rp-evlt env-term a))))
-            :in-theory (e/d ()
-                            (svex-reduce-w/-env-apply-correct))))))
+ (svex-eval-lemma-tmpl
+  (defthm svex-eval-svex-reduce-w/-env-apply-correct-when-returns-4vec-p
+    (implies (and (force (fnsym-p fn))
+                  (4vec-p (svex-reduce-w/-env-apply fn args)))
+             (and (equal (equal (svex-reduce-w/-env-apply fn args) x)
+                         (equal (svex-eval `(,fn . ,args) (rp-evlt env-term a)) x))
+                  (equal (equal (4vec-part-select start size (svex-reduce-w/-env-apply fn args)) x)
+                         (equal (4vec-part-select start size (svex-eval `(,fn . ,args) (rp-evlt env-term a))) x))))
+    :hints (("goal"
+             :do-not-induct t
+             :use ((:instance svex-eval-svex-reduce-w/-env-apply-correct
+                              (env (rp-evlt env-term a))))
+             :in-theory (e/d ()
+                             (svex-eval-svex-reduce-w/-env-apply-correct)))))))
 
 (local
  (defthm 4vec-p-implies-integerp-when-not-consp
@@ -988,34 +991,35 @@ SVEX-CALL->FN)
         (HONS-ASSOC-EQUAL SVEX ENV))))
 
 (local
- (defthmd svex-eval-when-entry-is-absent
-   (IMPLIES (AND (RP::FALIST-CONSISTENT-AUX ENV ENV-TERM)
-                 ;; (CONSP SVEX)
-                 ;; (EQUAL (CAR SVEX) :VAR)
-                 (equal (svex-kind svex) :var)
-                 (NOT (HONS-ASSOC-EQUAL SVEX ENV))
-                 (SVEX-P SVEX))
-            (and (equal (EQUAL '(-1 . 0)
-                               (SVEX-EVAL SVEX (RP-EVLT ENV-TERM A)))
-                        t)
-                 (equal (EQUAL '(-1 . 0)
-                               (SV::SVEX-ENV-LOOKUP SVEX (RP-EVLT ENV-TERM A)))
-                        t)))
-   :rule-classes :rewrite
-   :hints (("Goal"
-            :do-not-induct t
-            :expand ((SVEX-EVAL SVEX (RP-EVLT ENV-TERM A)))
-            :in-theory (e/d (svex-kind
-                             SVEX-P
-                             SVEX-ENV-LOOKUP-when-svex-p
-                             ;;SVEX-VAR->NAME
-                             ;;SV::SVEX-ENV-LOOKUP
-                             ;;SV::SVAR-FIX
-                             )
-                            ())))))
+ (svex-eval-lemma-tmpl
+  (defthmd svex-eval-when-entry-is-absent
+    (IMPLIES (AND (RP::FALIST-CONSISTENT-AUX ENV ENV-TERM)
+                  ;; (CONSP SVEX)
+                  ;; (EQUAL (CAR SVEX) :VAR)
+                  (equal (svex-kind svex) :var)
+                  (NOT (HONS-ASSOC-EQUAL SVEX ENV))
+                  (SVEX-P SVEX))
+             (and (equal (EQUAL '(-1 . 0)
+                                (SVEX-EVAL SVEX (RP-EVLT ENV-TERM A)))
+                         t)
+                  (equal (EQUAL '(-1 . 0)
+                                (SV::SVEX-ENV-LOOKUP SVEX (RP-EVLT ENV-TERM A)))
+                         t)))
+    :rule-classes :rewrite
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((SVEX-EVAL SVEX (RP-EVLT ENV-TERM A)))
+             :in-theory (e/d (svex-kind
+                              SVEX-P
+                              SVEX-ENV-LOOKUP-when-svex-p
+                              ;;SVEX-VAR->NAME
+                              ;;SV::SVEX-ENV-LOOKUP
+                              ;;SV::SVAR-FIX
+                              )
+                             ()))))))
 
 (local
- (defthmd svex-eval-when-entry-is-present-but-not-4vec-p
+ (defthmd when-entry-is-present-but-not-4vec-p
    (IMPLIES (AND (RP::FALIST-CONSISTENT-AUX ENV ENV-TERM)
                  ;; (CONSP SVEX)
                  ;; (EQUAL (CAR SVEX) :VAR)
@@ -1032,7 +1036,6 @@ SVEX-CALL->FN)
    :rule-classes :rewrite
    :hints (("Goal"
             :do-not-induct t
-            :expand ((SVEX-EVAL SVEX (RP-EVLT ENV-TERM A)))
             :in-theory (e/d (svex-kind
                              SVEX-P
 
@@ -1321,22 +1324,7 @@ SVEX-CALL->FN)
  (defthm 4VEC-bit?-of-4vec-part-select-constants
    (implies (and (natp start)
                  (natp size))
-            (and #|(equal (SV::4VEC-BIT?
-             (4VEC-PART-SELECT 0 SIZE '(-1 . 0))
-             (4VEC-PART-SELECT START SIZE
-             then)
-             (4VEC-PART-SELECT START SIZE
-             else))
-             (4VEC-PART-SELECT START SIZE
-             else))
-             (equal (SV::4VEC-BIT?
-             (4VEC-PART-SELECT 0 SIZE '(0 . -1))
-             (4VEC-PART-SELECT START SIZE
-             then)
-             (4VEC-PART-SELECT START SIZE
-             else))
-             (4VEC-PART-SELECT START SIZE
-             else))|#
+            (and
              (equal (SV::4VEC-BIT? (4VEC-PART-SELECT 0 SIZE '-1)
                                    (4VEC-PART-SELECT START SIZE
                                                      then)
@@ -1354,17 +1342,12 @@ SVEX-CALL->FN)
                                       else))))
    :hints (("Goal"
             :use ((:instance SV::4VEC-BIT?-of-constants)
-                  #| (:instance 4vec-part-select-of-4vec-bit?
-                  (test '(-1 . 0)))
-                  (:instance 4vec-part-select-of-4vec-bit?
-                  (test '(0 . -1)))|#
                   (:instance 4vec-part-select-of-4vec-bit?
                              (test -1))
                   (:instance 4vec-part-select-of-4vec-bit?
                              (test 0)))
             :in-theory (e/d () (SV::4VEC-BIT?-of-constants
                                 4vec-part-select-of-4vec-bit?
-
                                 ))))))
 
 (progn
@@ -1425,19 +1408,19 @@ SVEX-CALL->FN)
  (defthm 4vec-res-of-dont-care-and-z-masked
    (implies (and (natp start)
                  (natp size))
-            (and (equal (sv::4vec-res (4VEC-PART-SELECT 0 SIZE '(-1 . 0))
-                                      (4VEC-PART-SELECT start SIZE other))
-                        (4VEC-PART-SELECT 0 SIZE '(-1 . 0)))
-                 (equal (sv::4vec-res (4VEC-PART-SELECT start SIZE other)
-                                      (4VEC-PART-SELECT 0 SIZE '(-1 . 0)))
-                        (4VEC-PART-SELECT 0 SIZE '(-1 . 0)))
-                 (equal (sv::4vec-res (4VEC-PART-SELECT 0 SIZE '(0 . -1))
-                                      (4VEC-PART-SELECT start SIZE other))
-                        (4VEC-PART-SELECT start SIZE other))
-                 (equal (sv::4vec-res (4VEC-PART-SELECT start SIZE other)
-                                      (4VEC-PART-SELECT 0 SIZE '(0 . -1)))
-                        (4VEC-PART-SELECT start SIZE other))))
-   :hints (("Goal"
+            (and (equal (sv::4vec-res (4vec-part-select 0 size '(-1 . 0))
+                                      (4vec-part-select start size other))
+                        (4vec-part-select 0 size '(-1 . 0)))
+                 (equal (sv::4vec-res (4vec-part-select start size other)
+                                      (4vec-part-select 0 size '(-1 . 0)))
+                        (4vec-part-select 0 size '(-1 . 0)))
+                 (equal (sv::4vec-res (4vec-part-select 0 size '(0 . -1))
+                                      (4vec-part-select start size other))
+                        (4vec-part-select start size other))
+                 (equal (sv::4vec-res (4vec-part-select start size other)
+                                      (4vec-part-select 0 size '(0 . -1)))
+                        (4vec-part-select start size other))))
+   :hints (("goal"
             :use ((:instance 4vec-res-of-dont-care-and-z)
                   (:instance 4vec-part-select-of-4vec-res
                              (x '(-1 . 0))
@@ -1457,32 +1440,32 @@ SVEX-CALL->FN)
 
 (local
  (defthm 3vec-fix-of-4vec-part-select-of-dont-care
-   (EQUAL (SV::3VEC-FIX (4VEC-PART-SELECT 0 SIZE '(-1 . 0)))
-          (4VEC-PART-SELECT 0 SIZE '(-1 . 0)))
-   :hints (("Goal"
-            :in-theory (e/d (4VEC-PART-SELECT
-                             (:REWRITE ACL2::|(* 0 x)|)
-                             (:REWRITE ACL2::|(+ (+ x y) z)|)
-                             (:REWRITE ACL2::|(+ 0 x)|)
-                             (:REWRITE ACL2::|(+ y x)|)
-                             (:REWRITE ACL2::|(equal (if a b c) x)|)
-                             (:REWRITE ACL2::|(logand y x)|)
-                             (:REWRITE ACL2::|(logior y x)|)
-                             (:REWRITE ACL2::|(mod 0 y)|)
-                             (:REWRITE SV::4VEC->LOWER-OF-4VEC)
-                             (:REWRITE SV::4VEC->UPPER-OF-4VEC)
-                             (:REWRITE 4VEC-ZERO-EXT-IS-4VEC-CONCAT)
-                             (:REWRITE ACL2::LOGAND-MASK)
-                             (:REWRITE ACL2::LOGIOR-0-X)
-                             (:REWRITE ACL2::MOD-X-Y-=-X+Y . 2)
-                             (:REWRITE ACL2::REMOVE-WEAK-INEQUALITIES)
-                             (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
-                             (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
-                             (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
-                             4VEC-CONCAT
-                             sv::4VEC->UPPER
-                             sv::4VEC->LOWER
-                             SV::3VEC-FIX)
+   (equal (sv::3vec-fix (4vec-part-select 0 size '(-1 . 0)))
+          (4vec-part-select 0 size '(-1 . 0)))
+   :hints (("goal"
+            :in-theory (e/d (4vec-part-select
+                             (:rewrite acl2::|(* 0 x)|)
+                             (:rewrite acl2::|(+ (+ x y) z)|)
+                             (:rewrite acl2::|(+ 0 x)|)
+                             (:rewrite acl2::|(+ y x)|)
+                             (:rewrite acl2::|(equal (if a b c) x)|)
+                             (:rewrite acl2::|(logand y x)|)
+                             (:rewrite acl2::|(logior y x)|)
+                             (:rewrite acl2::|(mod 0 y)|)
+                             (:rewrite sv::4vec->lower-of-4vec)
+                             (:rewrite sv::4vec->upper-of-4vec)
+                             (:rewrite 4vec-zero-ext-is-4vec-concat)
+                             (:rewrite acl2::logand-mask)
+                             (:rewrite acl2::logior-0-x)
+                             (:rewrite acl2::mod-x-y-=-x+y . 2)
+                             (:rewrite acl2::remove-weak-inequalities)
+                             (:type-prescription acl2::expt-type-prescription-integerp-base)
+                             (:type-prescription acl2::expt-type-prescription-nonnegative-base)
+                             (:type-prescription acl2::expt-type-prescription-positive-base)
+                             4vec-concat
+                             sv::4vec->upper
+                             sv::4vec->lower
+                             sv::3vec-fix)
                             ())))))
 
 (local
@@ -1495,7 +1478,7 @@ SVEX-CALL->FN)
                  (equal (4vec-bitand  (4vec-part-select start size x)
                                       (4vec-part-select 0 size -1))
                         (sv::3vec-fix (4vec-part-select start size x)))))
-   :hints (("Goal"
+   :hints (("goal"
             :use ((:instance 4vec-bitand-with--1)
                   (:instance 4vec-part-select-of-4vec-bitand-better
                              (val1 -1)
@@ -1566,24 +1549,24 @@ SVEX-CALL->FN)
      (equal (4vec-part-select 0 size
                               (4vec-part-select 0 size x))
             (4vec-part-select 0 size x))
-     :hints (("Goal"
+     :hints (("goal"
               :in-theory (e/d (4vec-part-select
-                               4VEC-CONCAT
-                               4VEC
-                               SV::4VEC->UPPER
-                               SV::4VEC->LOWER)
+                               4vec-concat
+                               4vec
+                               sv::4vec->upper
+                               sv::4vec->lower)
                               ((:e tau-system)
-                               4VEC-CONCAT-INSERT-4VEC-PART-SELECT))))))
+                               4vec-concat-insert-4vec-part-select))))))
   (local
    (use-arithmetic-5 nil)))
 
 (local
  (defthm rp-evlt-when-quotep-lemma
-   (implies (QUOTEP (CDR (HONS-ASSOC-EQUAL SVEX ENV)))
-            (equal (RP-EVLT (CDR (HONS-ASSOC-EQUAL SVEX ENV))
-                            A)
-                   (CADDR (HONS-ASSOC-EQUAL SVEX ENV))))
-   :hints (("Goal"
+   (implies (quotep (cdr (hons-assoc-equal svex env)))
+            (equal (rp-evlt (cdr (hons-assoc-equal svex env))
+                            a)
+                   (caddr (hons-assoc-equal svex env))))
+   :hints (("goal"
             :in-theory (e/d (rp-trans) ())))))
 
 (local
@@ -1613,7 +1596,6 @@ SVEX-CALL->FN)
         (implies (acl2-numberp other)
                  (equal (+ x (- x) other) other)))))
 
-
 (local
  (defthmd 4vec-concat-insert-4vec-part-select-local
    (implies
@@ -1637,6 +1619,9 @@ SVEX-CALL->FN)
 (progn
   (local
    (in-theory (disable (:DEFINITION ACL2::APPLY$-BADGEP)
+                       SVEX-EVAL$-SVEX-REDUCE-W/-ENV-APPLY-CORRECT-WHEN-RETURNS-4VEC-P
+                       SVEX-EVAL-SVEX-REDUCE-W/-ENV-APPLY-CORRECT-WHEN-RETURNS-4VEC-P
+                       sv::svex-apply$-is-svex-apply
                        (:definition rp::Eval-and-all)
                        (:REWRITE
                         ACL2::SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL)
@@ -1723,6 +1708,9 @@ SVEX-CALL->FN)
                        (:REWRITE ACL2::DEFAULT-LESS-THAN-2)
                        ACL2::|(equal c (/ x))|
 
+                       rp::falist-consistent-aux
+                       rp::eval-and-all
+                       
                        (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX)
                        (:TYPE-PRESCRIPTION 4VECLIST-NTH-SAFE)
                        (:TYPE-PRESCRIPTION SV::4VEC-BIT?!)
@@ -1735,143 +1723,149 @@ SVEX-CALL->FN)
                        (:TYPE-PRESCRIPTION 4VEC-BITAND)
                        )))
 
+  (svex-eval-lemma-tmpl
+   (with-output
+     :off :All
+     :on (error summary)
 
-  
-  
-  (with-output
-    :off :All
-    :on (error summary)
+     (defret-mutual svex-eval-of-svex-reduce-w/-env-correct
 
-    (defret-mutual svex-reduce-w/-env-correct
+       (defret svex-eval-of-svex-and/or/xor-reduce-w/-env-masked-correct
+         (implies (and (svex-p svex)
+                       (natp start)
+                       (natp size)
+                       (rp::rp-term-listp context)
+                       (rp::eval-and-all context a)
+                       (sub-alistp env big-env)
+                       (rp::falist-consistent-aux big-env env-term))
+                  (and (equal (svex-eval (svex-and/or/xor-reduce-w/-env-masked svex start size) (rp-evlt env-term a))
+                              (4vec-part-select start size (svex-eval svex (rp-evlt env-term a))))
 
-      (defret svex-and/or/xor-reduce-w/-env-masked-correct
-        (implies (and (svex-p svex)
-                      (natp start)
-                      (natp size)
-                      (rp::rp-term-listp context)
-                      (rp::eval-and-all context a)
-                      (rp::falist-consistent-aux env env-term))
-                 (and (equal (svex-eval (svex-and/or/xor-reduce-w/-env-masked svex start size) (rp-evlt env-term a))
-                             (4vec-part-select start size (svex-eval svex (rp-evlt env-term a))))
+                       #|(implies (or (acl2::and* (acl2::or* (equal (car svex) 'bitor)
+                       (equal (car svex) 'bitand) ; ;
+                       (equal (car svex) 'bitxor)) ; ;
+                       (equal-len (cdr svex) 2)) ; ;
+                       (acl2::and* (equal (car svex) 'sv::unfloat) ; ;
+                       (equal-len (cdr svex) 1))) ; ;
+; ; ; ; ;
+                       (all-xor/and/or-nodes-are-masked-p res size (rp-evlt env-term a)))|#
+                       ))
+         :fn svex-and/or/xor-reduce-w/-env-masked)
 
-                      #|(implies (or (acl2::and* (acl2::or* (equal (car svex) 'bitor)
-                                                          (equal (car svex) 'bitand)
-                                                          (equal (car svex) 'bitxor))
-                                               (equal-len (cdr svex) 2))
-                                   (acl2::and* (equal (car svex) 'sv::unfloat)
-                                               (equal-len (cdr svex) 1)))
-                                   
-                               (all-xor/and/or-nodes-are-masked-p res size (rp-evlt env-term a)))|#
-                      ))
-        :fn svex-and/or/xor-reduce-w/-env-masked)
+       (defret svex-eval-of-svex-reduce-w/-env-masked-correct
+         (implies (and (svex-p svex)
+                       (natp start)
+                       (natp size)
+                       (rp::rp-term-listp context)
+                       (rp::eval-and-all context a)
+                       (sub-alistp env big-env)
+                       (rp::falist-consistent-aux big-env env-term))
+                  (and (equal (svex-eval (svex-reduce-w/-env-masked svex start size) (rp-evlt env-term a))
+                              (4vec-part-select start size (svex-eval svex (rp-evlt env-term a))))
 
-      (defret svex-reduce-w/-env-masked-correct
-        (implies (and (svex-p svex)
-                      (natp start)
-                      (natp size)
-                      (rp::rp-term-listp context)
-                      (rp::eval-and-all context a)
-                      (rp::falist-consistent-aux env env-term))
-                 (and (equal (svex-eval (svex-reduce-w/-env-masked svex start size) (rp-evlt env-term a))
-                             (4vec-part-select start size (svex-eval svex (rp-evlt env-term a))))
+                       #|(implies (or (acl2::and* (acl2::or* (equal (car svex) 'bitor)
+                       (equal (car svex) 'bitand) ; ;
+                       (equal (car svex) 'bitxor)) ; ;
+                       (equal-len (cdr svex) 2)) ; ;
+                       (acl2::and* (equal (car svex) 'sv::unfloat) ; ;
+                       (equal-len (cdr svex) 1))) ; ;
+                       (all-xor/and/or-nodes-are-masked-p res size (rp-evlt env-term a)))|#))
+         :fn svex-reduce-w/-env-masked)
+       (defret svex-eval-of-svex-reduce-w/-env-correct
+         (implies (and (svex-p svex)
+                       (rp::rp-term-listp context)
+                       (rp::eval-and-all context a)
+                       (sub-alistp env big-env)
+                       (rp::falist-consistent-aux big-env env-term))
+                  (equal (svex-eval (svex-reduce-w/-env svex) (rp-evlt env-term a))
+                         (svex-eval svex (rp-evlt env-term a))))
+         :fn svex-reduce-w/-env)
+       (defret svex-eval-of-svex-reduce-w/-env-lst-correct
+         (implies (and (svexlist-p svex-list)
+                       (rp::rp-term-listp context)
+                       (rp::eval-and-all context a)
+                       (sub-alistp env big-env)
+                       (rp::falist-consistent-aux big-env env-term))
+                  (equal (svexlist-eval (svex-reduce-w/-env-lst svex-list) (rp-evlt env-term a))
+                         (svexlist-eval svex-list (rp-evlt env-term a))))
+         :fn svex-reduce-w/-env-lst)
+       :mutual-recursion svex-reduce-w/-env
+       ;;:otf-flg t
+       :hints (("Goal"
+                :do-not-induct t
 
-                      #|(implies (or (acl2::and* (acl2::or* (equal (car svex) 'bitor)
-                                                          (equal (car svex) 'bitand)
-                                                          (equal (car svex) 'bitxor))
-                                               (equal-len (cdr svex) 2))
-                                   (acl2::and* (equal (car svex) 'sv::unfloat)
-                                               (equal-len (cdr svex) 1)))
-                      (all-xor/and/or-nodes-are-masked-p res size (rp-evlt env-term a)))|#))
-        :fn svex-reduce-w/-env-masked)
-      (defret svex-reduce-w/-env-correct
-        (implies (and (svex-p svex)
-                      (rp::rp-term-listp context)
-                      (rp::eval-and-all context a)
-                      (rp::falist-consistent-aux env env-term))
-                 (equal (svex-eval (svex-reduce-w/-env svex) (rp-evlt env-term a))
-                        (svex-eval svex (rp-evlt env-term a))))
-        :fn svex-reduce-w/-env)
-      (defret svex-reduce-w/-env-lst-correct
-        (implies (and (svexlist-p svex-list)
-                      (rp::rp-term-listp context)
-                      (rp::eval-and-all context a)
-                      (rp::falist-consistent-aux env env-term))
-                 (equal (svexlist-eval (svex-reduce-w/-env-lst svex-list) (rp-evlt env-term a))
-                        (svexlist-eval svex-list (rp-evlt env-term a))))
-        :fn svex-reduce-w/-env-lst)
-      :mutual-recursion svex-reduce-w/-env
-      ;;:otf-flg t
-      :hints (("Goal"
-               :do-not-induct t
+                :expand (
+                         (svex-eval svex (rp-evlt env-term a))
+                         (svex-eval (cons (car svex)
+                                          (svex-reduce-w/-env-lst (cdr svex)))
+                                    env-term)
+                         (:free (x y) (4vec-p (cons x y)))
+                         (:free (x y) (4VECLIST-NTH-SAFE x y))
+                         (:free (x y) (nth x y))
+                         (:free (x) (sv::svex-apply 'partsel x))
+                         (:free (x) (sv::svex-apply 'concat x))
+                         (:free (args) (sv::svex-apply 'sv::unfloat args))
+                         (:free (args) (sv::svex-apply 'sv::signx args))
+                         (:free (args) (sv::svex-apply 'sv::zerox args))
+                         (:free (args) (sv::svex-apply 'sv::rsh args))
+                         (:free (args) (sv::svex-apply 'sv::lsh args))
+                         (:free (args) (sv::svex-apply 'sv::bit? args))
+                         (:free (args) (sv::svex-apply 'sv::bitnot args))
+                         (:free (args) (sv::svex-apply 'sv::bitand args))
+                         (:free (args) (sv::svex-apply 'sv::bitor args))
+                         (:free (args) (sv::svex-apply 'sv::bitxor args))
+                         (:free (args) (sv::svex-apply 'sv::res args))
+                         (:free (args) (sv::svex-apply 'sv::?* args))
+                         (:free (args) (sv::svex-apply 'sv::?! args))
+                         (:free (args) (sv::svex-apply 'sv::? args))
+                         (:free (args) (sv::svex-apply 'sv::bit?! args))
+                         (:free (args) (sv::svex-apply 'sv::partinst args)))
+                :in-theory (e/d
+                            (svex-eval-svex-reduce-w/-env-apply-correct-when-returns-4vec-P
+                             svex-reduce-w/-env-masked
+                             svex-and/or/xor-reduce-w/-env-masked
+                             sv::svex-quote->val
+                             svex-env-lookup-when-svex-p
+                             4vec-part-select-of-4vec-bitnot-reverse
+                             4vec-concat-with-0-to-4vec-part-select
+                             4vec-part-select-of-4vec-bitxor-better
+                             4vec-part-select-of-4vec-bitor-better
+                             4vec-part-select-of-4vec-bitand-better
+                             svex-eval-when-entry-is-absent
+                             when-entry-is-present-but-not-4vec-p
+                             ;;convert-4vec-concat-to-4vec-concat$
+                             ;;4vec-concat-insert-4vec-part-select
+                             4vec-concat-insert-4vec-part-select-local
+                             ;;4vec-concat-insert-4vec-part-select-to-concat$
+                             ;; 4vec-concat-of-4vec-part-select-same-size
+                             svex-reduce-w/-env
+                             svex-call->fn
+                             svex-call->args
+                             svex-kind
+                             bits
+                             ;;svex-env-lookup-when-svex-p
+                             svex-reduce-w/-env-lst
 
-               :expand (
-                        (SVEX-EVAL SVEX (RP-EVLT ENV-TERM A))
-                        (SVEX-EVAL (CONS (CAR SVEX)
-                                         (SVEX-REDUCE-W/-ENV-LST (CDR SVEX)))
-                                   ENV-TERM)
-                        (:free (x y) (4vec-p (cons x y)))
-                        (:free (x y) (4VECLIST-NTH-SAFE x y))
-                        (:free (x y) (nth x y))
-                        (:free (x) (SV::SVEX-APPLY 'PARTSEL x))
-                        (:free (x) (SV::SVEX-APPLY 'concat x))
-                        (:free (args) (SV::SVEX-APPLY 'SV::UNFLOAT args))
-                        (:free (args) (SV::SVEX-APPLY 'SV::SIGNX args))
-                        (:free (args) (SV::SVEX-APPLY 'SV::ZEROX args))
-                        (:free (args) (SV::SVEX-APPLY 'SV::rsh args))
-                        (:free (args) (SV::SVEX-APPLY 'SV::lsh args))
-                        (:free (args) (SV::SVEX-APPLY 'SV::BIT? args))
-                        (:free (args) (SV::SVEX-APPLY 'SV::BITnot args))
-                        (:free (args) (SV::SVEX-APPLY 'SV::BITand args))
-                        (:free (args) (SV::SVEX-APPLY 'SV::BITor args))
-                        (:free (args) (SV::SVEX-APPLY 'SV::BITxor args))
-                        (:free (args) (SV::SVEX-APPLY 'SV::RES args))
-                        (:free (args) (SV::SVEX-APPLY 'sv::?* args))
-                        (:free (args) (SV::SVEX-APPLY 'sv::?! args))
-                        (:free (args) (SV::SVEX-APPLY 'sv::? args))
-                        (:free (args) (SV::SVEX-APPLY 'SV::BIT?! args))
-                        (:free (args) (SV::SVEX-APPLY 'SV::PARTINST args)))
-               :in-theory (e/d (svex-reduce-w/-env-masked
-                                SVEX-AND/OR/XOR-REDUCE-W/-ENV-MASKED
-                                SV::SVEX-QUOTE->VAL
-                                SVEX-ENV-LOOKUP-when-svex-p
-                                4vec-part-select-of-4vec-bitnot-reverse
-                                4vec-concat-with-0-to-4vec-part-select
-                                4vec-part-select-of-4vec-bitxor-better
-                                4vec-part-select-of-4vec-bitor-better
-                                4vec-part-select-of-4vec-bitand-better
-                                svex-eval-when-entry-is-absent
-                                svex-eval-when-entry-is-present-but-not-4vec-p
-                                ;;convert-4vec-concat-to-4vec-concat$
-                                ;;4vec-concat-insert-4vec-part-select
-                                4vec-concat-insert-4vec-part-select-local
-                                ;;4VEC-CONCAT-INSERT-4VEC-PART-SELECT-to-concat$
-                                ;; 4vec-concat-of-4vec-part-select-same-size
-                                svex-reduce-w/-env
-                                SVEX-CALL->FN
-                                SVEX-CALL->ARGS
-                                svex-kind
-                                bits
-                                ;;SVEX-ENV-LOOKUP-when-svex-p
-                                svex-reduce-w/-env-lst
+                             4vec-concat$-of-term2=0
 
-                                4VEC-CONCAT$-OF-TERM2=0
+                             4vec-sign-ext-to-4vec-concat)
+                            ())))))))
 
-                                4vec-sign-ext-to-4vec-concat)
-                               ()))))))
-
-(defret svex-alist-reduce-w/-env-correct
-  (implies (and (sv::svex-alist-p svex-alist)
-                (rp::rp-term-listp context)
-                (rp::eval-and-all context a)
-                (rp::falist-consistent-aux env env-term))
-           (equal (sv::svex-alist-eval res-alist (rp-evlt env-term a))
-                  (sv::svex-alist-eval svex-alist (rp-evlt env-term a))))
-  :fn svex-alist-reduce-w/-env
-  :hints (("Goal"
-           :do-not-induct t
-           :induct (svex-alist-reduce-w/-env svex-alist)
-           :in-theory (e/d (svex-alist-reduce-w/-env
-                            sv::svex-alist-eval)
-                           ()))))
+(svex-eval-lemma-tmpl
+ (defret svex-alist-eval-of-svex-alist-reduce-w/-env-correct
+   (implies (and (sv::svex-alist-p svex-alist)
+                 (rp::rp-term-listp context)
+                 (rp::eval-and-all context a)
+                 (sub-alistp env big-env)
+                 (rp::falist-consistent-aux big-env env-term))
+            (equal (svex-alist-eval res-alist (rp-evlt env-term a))
+                   (svex-alist-eval svex-alist (rp-evlt env-term a))))
+   :fn svex-alist-reduce-w/-env
+   :hints (("Goal"
+            :do-not-induct t
+            :induct (svex-alist-reduce-w/-env svex-alist)
+            :in-theory (e/d (svex-alist-reduce-w/-env
+                             sv::svex-alist-eval)
+                            ())))))
 
 ;;;;;;
