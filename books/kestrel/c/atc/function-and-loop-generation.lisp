@@ -45,6 +45,8 @@
 
 (local (in-theory (disable pseudo-event-form-listp)))
 
+(local (in-theory (disable default-car default-cdr)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; move to a more general library:
