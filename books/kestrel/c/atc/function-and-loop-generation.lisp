@@ -28,20 +28,24 @@
 (include-book "std/typed-alists/keyword-symbol-alistp" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-builtin-logic-defuns))
+
 (local (include-book "kestrel/std/system/all-fnnames" :dir :system))
 (local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (include-book "projects/apply/loop" :dir :system))
 (local (in-theory (disable acl2::loop-book-theory)))
 
-(local (in-theory (disable state-p)))
-
 (local (in-theory (disable pseudo-event-form-listp)))
+
+(local (in-theory (disable default-car default-cdr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,6 +66,13 @@
               (pseudo-term-count term)))
   :expand ((pseudo-term-count term))
   :rule-classes :linear)
+
+(defrulel doublet-listp-of-cons
+  (equal (doublet-listp (cons a b))
+         (and (true-listp a)
+              (equal (len a) 2)
+              (doublet-listp b)))
+  :enable (doublet-listp length))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -182,7 +193,8 @@
        (type (if pointerp
                  (type-pointer type)
                type)))
-    (mv type arg)))
+    (mv type arg))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -222,7 +234,8 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv event name names-to-avoid)))
+    (mv event name names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,7 +303,9 @@
 
   :prepwork
 
-  ((define atc-typed-formals-prelim-alist ((fn symbolp)
+  ((local (in-theory (enable acons)))
+
+   (define atc-typed-formals-prelim-alist ((fn symbolp)
                                            (fn-guard symbolp)
                                            (formals symbol-listp)
                                            (guard pseudo-termp)
@@ -366,6 +381,7 @@
           (info (make-atc-var-info :type type :thm name))
           (prelim-alist (acons arg info prelim-alist)))
        (retok prelim-alist events proofs names-to-avoid))
+     :prepwork ((local (in-theory (enable acons))))
      :verify-guards nil ; done below
      ///
      (verify-guards atc-typed-formals-prelim-alist
@@ -459,12 +475,9 @@
     (retok (cons param params)))
   :prepwork ((local
               (in-theory
-               (e/d
-                (symbol-listp-of-strip-cars-when-atc-symbol-varinfo-alistp)
-                ;; for speed:
-                (always$
-                 member-equal
-                 symbol-name-lst))))))
+               (enable
+                symbol-listp-of-strip-cars-when-atc-symbol-varinfo-alistp
+                alistp-when-atc-string-objinfo-alistp-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -495,7 +508,8 @@
                               :body (untranslate$ guard t state)
                               :verify-guards nil
                               :enable nil)))
-    (mv event name names-to-avoid)))
+    (mv event name names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -533,7 +547,123 @@
                                                  :enable nil)))
     (mv (list event-def event-def*)
         fn-def*
-        names-to-avoid)))
+        names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-fn-gthm* ((fn symbolp)
+                          (names-to-avoid symbol-listp)
+                          (wrld plist-worldp))
+  :returns (mv (event pseudo-event-formp)
+               (name symbolp)
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate a local theorem that is like the guard theorem of @('fn')
+          but with all the @(tsee if)s replaced with @(tsee if*)s."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Ideally, here we would use @(tsee guard-theorem)
+     to retrieve the guard theorem,
+     and then we would apply @(tsee fty-if-to-if*) to it,
+     to obtain the formula of the theorem.
+     However, @(tsee guard-theorem) is in program mode,
+     and takes @(tsee state) as an argument,
+     so it cannot be called in logic mode via @(tsee magic-ev-fncall).
+     To avoid putting this ATC code, and any ATC code that calls it,
+     in program mode, thus losing all static type checking,
+     here we generate a @(tsee make-event)
+     that defers the call of @(tsee guard-theorem)
+     to the time in which the theorem is submitted.")
+   (xdoc::p
+    "Even though proving this theorem is conceptually very easy,
+     straightforwar hints like @(':use') of the guard theorem
+     in the theory consisting solely of @(tsee if*)
+     fails to scale, on moderately large guard theorems,
+     due to ACL2 splitting on @(tsee if)s.
+     To prevent case splitting,
+     first we prove that the guard theorem formula with @(tsee if*)
+     is equivalent to the original one with @(tsee if),
+     via the theory consisting solely of @(tsee if*),
+     which appears to work without @(tsee if) splitting.
+     Then we use proof builder instructions
+     to apply that lemma as a rewrite rule
+     to the guard theorem formula with @(tsee if),
+     thus obtaining the original guard formula,
+     which we prove via a @(':by') hints.
+     There is a complication due to the fact that,
+     if the guard theorem contains @(tsee let)s,
+     the left side of the lemma has those expanded,
+     which would prevent the rewrite rule from applying.
+     Thus, prior to the rewriting proof builder command,
+     we expand @(tsee let)s, via the @('bash') command in the empty theory,
+     which appears to achieve what is needed here
+     (there seems to be no proof builder command
+     to explicitly expand @(tsee let)s).
+     But note that, if there is no @(tsee let), and thus no change,
+     the @('bash') command is regarded as failing by the proof builder;
+     so we wrap that into an @('orelse') that essentially makes it
+     optionally applicable.
+     The resulting somewhat complicated proof strategy
+     works on all our current examples (at the time of this writing),
+     but it is not clear that it is a universal strategy;
+     we may need to refine it in the future.
+     A last complication to handle is the fact that
+     some guard theorems are just @('t'),
+     making it impossible to create a rewrite rule
+     that rewrites @('t') to anything (including itself, in this case).
+     So we single out that case by just generating
+     a theorem whose formula is @('t').
+     It is possible that other guard theorems (besides @('t'))
+     are not terms allowed as left sides of rewrite rules:
+     in that case, we will refine the approach here.."))
+  (b* ((name (pack fn '-gthm*))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       (event
+        `(make-event
+          (let* ((if-formula (guard-theorem ',fn :limited nil (w state) state))
+                 (if*-formula (fty-if-to-if* if-formula)))
+            (if (equal if*-formula acl2::*t*)
+                (list 'defthm
+                      ',name
+                      t
+                      :rule-classes
+                      nil
+                      :hints
+                      (list (list "Goal"
+                                  :in-theory
+                                  nil)))
+              (let* ((lemma (list 'defthmd
+                                  'lemma
+                                  (list 'equal
+                                        if*-formula
+                                        if-formula)
+                                  :hints
+                                  (list (list "Goal"
+                                              :in-theory
+                                              ''(if*)))))
+                     (instructions (list '(orelse
+                                           (bash ("Goal" :in-theory nil))
+                                           succeed)
+                                         '(rewrite lemma)
+                                         (list 'prove
+                                               :hints
+                                               (list (list "Goal"
+                                                           :by
+                                                           (list :guard-theorem
+                                                                 ',fn)))))))
+                (list 'defrule
+                      ',name
+                      if*-formula
+                      :rule-classes
+                      nil
+                      :instructions
+                      instructions
+                      :prep-lemmas
+                      (list lemma))))))))
+    (mv event name names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -878,7 +1008,12 @@
                            (atc-gen-fn-result-thm-aux1 (cdr affect)
                                                        typed-formals))
                   (raise "Internal error: variable ~x0 not found in ~x1."
-                         (car affect) typed-formals))))))
+                         (car affect) typed-formals)))))
+     :verify-guards :after-returns
+     :prepwork
+     ((local
+       (in-theory (enable alistp-when-atc-symbol-varinfo-alistp-rewrite
+                          acons)))))
 
    (define atc-gen-fn-result-thm-aux2 ((results atc-symbol-varinfo-alistp)
                                        (index? maybe-natp)
@@ -908,7 +1043,8 @@
                (atc-gen-fn-result-thm-aux2 (cdr results)
                                            (and index? (1+ index?))
                                            fn-call
-                                           wrld))))))
+                                           wrld)))
+     :guard-hints (("Goal" :in-theory (enable good-atom-listp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1166,7 +1302,8 @@
     (mv (append bindings more-bindings)
         (append hyps more-hyps)
         (append subst more-subst)
-        (append inst more-inst))))
+        (append inst more-inst)))
+  :prepwork ((local (in-theory (enable pseudo-termp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1767,6 +1904,7 @@
                        fn term))))))
     (retok nil))
   :measure (pseudo-term-count term)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :prepwork
   ((local (in-theory
            (enable symbol-listp-of-strip-cars-when-atc-symbol-varinfo-alistp)))))
@@ -1775,7 +1913,8 @@
 
 (define atc-gen-omap-update-formals ((typed-formals atc-symbol-varinfo-alistp))
   :returns (mv (term pseudo-termp
-                     :hyp (atc-symbol-varinfo-alistp typed-formals))
+                     :hyp (atc-symbol-varinfo-alistp typed-formals)
+                     :hints (("Goal" :in-theory (enable pseudo-termp))))
                (all-integers-p booleanp))
   :short "Generate a term that is an @(tsee omap::update) nest
           for the formals of a function."
@@ -1808,7 +1947,8 @@
                                  (compst-var symbolp))
   :returns (term pseudo-termp
                  :hyp (and (symbolp compst-var)
-                           (atc-symbol-varinfo-alistp typed-formals)))
+                           (atc-symbol-varinfo-alistp typed-formals))
+                 :hints (("Goal" :in-theory (enable pseudo-termp))))
   :short "Generate a term that is an @(tsee add-var) nest
           for the formals of a function."
   :long
@@ -1986,7 +2126,8 @@
         scopep-thm
         omap-update-nest
         t
-        names-to-avoid)))
+        names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2063,7 +2204,8 @@
                                :formula formula
                                :hints hints
                                :enable nil)))
-    (mv event name add-var-nest names-to-avoid)))
+    (mv event name add-var-nest names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2178,7 +2320,8 @@
                        (make-atc-var-info :type type :thm name))
                  inscope-rest)
            (cons event events-rest)
-           names-to-avoid)))))
+           names-to-avoid))
+     :guard-hints (("Goal" :in-theory (enable good-atom-listp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2225,7 +2368,8 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv event name names-to-avoid)))
+    (mv event name names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2338,7 +2482,8 @@
     (mv (list lemma-event local-event)
         (list exported-event)
         name
-        names-to-avoid)))
+        names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2356,10 +2501,11 @@
   :guard (not (eq fn 'quote))
   :returns (mv erp
                (fundef fundefp)
-               (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
+               (local-event pseudo-event-form-listp)
+               (exported-event pseudo-event-form-listp)
                (updated-prec-fns atc-symbol-fninfo-alistp
-                                 :hyp (atc-symbol-fninfo-alistp prec-fns))
+                                 :hyp (atc-symbol-fninfo-alistp prec-fns)
+                                 :hints (("Goal" :in-theory (enable acons))))
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
   :short "Generate a C function definition
@@ -2399,6 +2545,10 @@
             fn-def*
             names-to-avoid)
         (atc-gen-fn-def* fn names-to-avoid wrld))
+       ((mv fn-gthm*-event
+            & ; fn-gthm*
+            names-to-avoid)
+        (atc-gen-fn-gthm* fn names-to-avoid wrld))
        ((erp typed-formals formals-events modular-proofs names-to-avoid)
         (atc-typed-formals
          fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
@@ -2577,6 +2727,7 @@
                                        (list fn-fun-env-event)
                                        (list fn-guard-event)
                                        fn-def*-events
+                                       (list fn-gthm*-event)
                                        formals-events
                                        (and modular-proofs
                                             (list init-scope-expand-event
@@ -2677,6 +2828,7 @@
          :verify-guards nil
          :enable nil)))
     (mv event name measure-vars names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp)))
   ///
 
   (defret atc-gen-loop-measure-fn-name-not-quote
@@ -2764,7 +2916,14 @@
                                                          state)))
       (retok (cons new-term new-terms))))
 
+  :prepwork ((local (in-theory (enable pseudo-termp
+                                       length))))
+
+  :verify-guards nil ; done below
   ///
+  (verify-guards atc-gen-loop-tthm-formula
+    :hints (("Goal" :in-theory (enable pseudo-termp
+                                       pseudo-term-listp))))
 
   (defret-mutual len-of-atc-gen-loop-tthm-formula/lst
     (defret len-of-atc-gen-loop-tthm-formula
@@ -2902,7 +3061,8 @@
               exec-stmt-while-for-fn-thm-event)
         exec-stmt-while-for-fn
         exec-stmt-while-for-fn-thm
-        names-to-avoid)))
+        names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2951,7 +3111,8 @@
                    :use ,appcond-thm)))))
     (mv natp-of-measure-of-fn-thm-event
         natp-of-measure-of-fn-thm
-        names-to-avoid)))
+        names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3020,7 +3181,8 @@
                                 o<))))))
     (retok termination-of-fn-thm-event
            termination-of-fn-thm
-           names-to-avoid)))
+           names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3088,11 +3250,15 @@
     ///
     (defret len-of-atc-loop-body-term-subst-lst
       (equal (len new-terms)
-             (len terms))))
+             (len terms))
+      :hints (("Goal" :in-theory (enable len)))))
 
   :ruler-extenders :all
 
-  :returns-hints nil ; for speed
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+
+  :returns-hints (("Goal" :in-theory (enable symbol-fix
+                                             pseudo-termp)))
 
   :verify-guards nil ; done below
   ///
@@ -3710,7 +3876,8 @@
                (exported-events pseudo-event-form-listp)
                (updated-prec-fns atc-symbol-fninfo-alistp
                                  :hyp (and (symbolp fn)
-                                           (atc-symbol-fninfo-alistp prec-fns)))
+                                           (atc-symbol-fninfo-alistp prec-fns))
+                                 :hints (("Goal" :in-theory (enable acons))))
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
   :short "Generate a C loop from a recursive ACL2 function,
