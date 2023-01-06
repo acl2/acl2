@@ -34,6 +34,7 @@
 (local (include-book "kestrel/std/system/all-fnnames" :dir :system))
 (local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -234,8 +235,7 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv event name names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -508,8 +508,7 @@
                               :body (untranslate$ guard t state)
                               :verify-guards nil
                               :enable nil)))
-    (mv event name names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -547,8 +546,7 @@
                                                  :enable nil)))
     (mv (list event-def event-def*)
         fn-def*
-        names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -662,8 +660,7 @@
                       instructions
                       :prep-lemmas
                       (list lemma))))))))
-    (mv event name names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1043,8 +1040,7 @@
                (atc-gen-fn-result-thm-aux2 (cdr results)
                                            (and index? (1+ index?))
                                            fn-call
-                                           wrld)))
-     :guard-hints (("Goal" :in-theory (enable good-atom-listp))))))
+                                           wrld))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2126,8 +2122,7 @@
         scopep-thm
         omap-update-nest
         t
-        names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2204,8 +2199,7 @@
                                :formula formula
                                :hints hints
                                :enable nil)))
-    (mv event name add-var-nest names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+    (mv event name add-var-nest names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2320,8 +2314,7 @@
                        (make-atc-var-info :type type :thm name))
                  inscope-rest)
            (cons event events-rest)
-           names-to-avoid))
-     :guard-hints (("Goal" :in-theory (enable good-atom-listp))))))
+           names-to-avoid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2368,8 +2361,7 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv event name names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2482,8 +2474,7 @@
     (mv (list lemma-event local-event)
         (list exported-event)
         name
-        names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2828,7 +2819,6 @@
          :verify-guards nil
          :enable nil)))
     (mv event name measure-vars names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp)))
   ///
 
   (defret atc-gen-loop-measure-fn-name-not-quote
@@ -3061,8 +3051,7 @@
               exec-stmt-while-for-fn-thm-event)
         exec-stmt-while-for-fn
         exec-stmt-while-for-fn-thm
-        names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3111,8 +3100,7 @@
                    :use ,appcond-thm)))))
     (mv natp-of-measure-of-fn-thm-event
         natp-of-measure-of-fn-thm
-        names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3181,8 +3169,7 @@
                                 o<))))))
     (retok termination-of-fn-thm-event
            termination-of-fn-thm
-           names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+           names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

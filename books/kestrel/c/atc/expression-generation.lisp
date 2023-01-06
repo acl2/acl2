@@ -25,6 +25,7 @@
 (local (acl2::disable-builtin-logic-defuns))
 
 (local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 
 (local (in-theory (disable default-car default-cdr)))
@@ -209,8 +210,7 @@
                      :thm-index thm-index
                      :names-to-avoid names-to-avoid
                      :proofs t))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           good-atom-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -292,8 +292,7 @@
                      :thm-name thm-name
                      :thm-index thm-index
                      :names-to-avoid names-to-avoid
-                     :proofs t))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+                     :proofs t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -427,8 +426,7 @@
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
                       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp
-                                           pseudo-termp
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp
                                            pseudo-term-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -591,8 +589,7 @@
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
                       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-term-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -735,8 +732,7 @@
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
                       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp
-                                           pseudo-termp
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp
                                            pseudo-term-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -841,8 +837,7 @@
                             :thm-index (1+ gin.thm-index)
                             :names-to-avoid names-to-avoid
                             :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp
-                                           pseudo-termp
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp
                                            pseudo-term-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -947,8 +942,7 @@
       :thm-index thm-index
       :names-to-avoid names-to-avoid
       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp
-                                           pseudo-termp
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp
                                            pseudo-term-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1703,8 +1697,7 @@
                            :thm-name thm-name
                            :thm-index (1+ pure.thm-index)
                            :names-to-avoid names-to-avoid
-                           :proofs t)))
-  :prepwork ((local (in-theory (enable good-atom-listp)))))
+                           :proofs t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
