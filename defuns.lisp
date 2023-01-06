@@ -6900,13 +6900,26 @@
 
   (not (non-identical-defp def1 def2 chk-measure-p wrld)))
 
-(defun redundant-or-reclassifying-defunp0 (defun-mode symbol-class
-                                            ld-skip-proofsp chk-measure-p def
-                                            wrld)
+(defun redundant-or-reclassifying-defunp (defun-mode symbol-class
+                                          ld-skip-proofsp chk-measure-p def
+                                          wrld)
 
-; See redundant-or-reclassifying-defunp.  This function has the same behavior
-; as that one, except in this one, if parameter chk-measure-p is nil, then
-; measure checking is suppressed.
+; Def is a defuns tuple such as (fn args ...dcls... body) that has been
+; submitted to defuns with mode defun-mode.  We determine whether fn is already
+; defined in wrld and has an "identical" definition (up to defun-mode).  We
+; return either nil, a message (cons pair suitable for printing with ~@),
+; 'redundant, 'reclassifying, or 'verify-guards.  'Redundant is returned if
+; there is an existing definition for fn that is identical-defp to def and has
+; mode :program or defun-mode, except that in this case 'verify-guards is
+; returned if the symbol-class was :ideal but this definition indicates
+; promotion to :common-lisp-compliant.  'Reclassifying is returned if there is
+; an existing definition for fn that is identical-defp to def but in mode
+; :program while defun-mode is :logic.  Otherwise nil or an explanatory
+; message, suitable for printing using " Note that ~@0.", is returned.
+
+; Functions further up the call tree will decide what to do with a result of
+; 'verify-guards.  But a perfectly reasonable action would be to cause an error
+; suggesting the use of verify-guards instead of defun.
 
   (cond ((function-symbolp (car def) wrld)
          (let* ((wrld1 (decode-logical-name (car def) wrld))
@@ -7172,53 +7185,20 @@
                  (t nil))))
         (t nil)))
 
-(defun redundant-or-reclassifying-defunp (defun-mode symbol-class
-                                            ld-skip-proofsp def wrld)
-
-; Def is a defuns tuple such as (fn args ...dcls... body) that has been
-; submitted to defuns with mode defun-mode.  We determine whether fn is already
-; defined in wrld and has an "identical" definition (up to defun-mode).  We
-; return either nil, a message (cons pair suitable for printing with ~@),
-; 'redundant, 'reclassifying, or 'verify-guards.  'Redundant is returned if
-; there is an existing definition for fn that is identical-defp to def and has
-; mode :program or defun-mode, except that in this case 'verify-guards is
-; returned if the symbol-class was :ideal but this definition indicates
-; promotion to :common-lisp-compliant.  'Reclassifying is returned if there is
-; an existing definition for fn that is identical-defp to def but in mode
-; :program while defun-mode is :logic.  Otherwise nil or an explanatory
-; message, suitable for printing using " Note that ~@0.", is returned.
-
-; Functions further up the call tree will decide what to do with a result of
-; 'verify-guards.  But a perfectly reasonable action would be to cause an error
-; suggesting the use of verify-guards instead of defun.
-
-  (redundant-or-reclassifying-defunp0 defun-mode symbol-class
-                                      ld-skip-proofsp t def wrld))
-
-(defun redundant-or-reclassifying-defunsp10 (defun-mode symbol-class
-                                              ld-skip-proofsp chk-measure-p
-                                              def-lst wrld ans)
-
-; See redundant-or-reclassifying-defunsp1.  This function has the same behavior
-; as that one, except in this one, if parameter chk-measure-p is nil, then
-; measure checking is suppressed.
-
+(defun redundant-or-reclassifying-defunsp1 (defun-mode symbol-class
+                                            ld-skip-proofsp chk-measure-p
+                                            def-lst wrld ans)
   (cond ((null def-lst) ans)
-        (t (let ((x (redundant-or-reclassifying-defunp0
+        (t (let ((x (redundant-or-reclassifying-defunp
                      defun-mode symbol-class ld-skip-proofsp chk-measure-p
                      (car def-lst) wrld)))
              (cond
               ((consp x) x) ; a message
               ((eq ans x)
-               (redundant-or-reclassifying-defunsp10
+               (redundant-or-reclassifying-defunsp1
                 defun-mode symbol-class ld-skip-proofsp chk-measure-p
                 (cdr def-lst) wrld ans))
               (t nil))))))
-
-(defun redundant-or-reclassifying-defunsp1 (defun-mode symbol-class
-                                             ld-skip-proofsp def-lst wrld ans)
-  (redundant-or-reclassifying-defunsp10 defun-mode symbol-class ld-skip-proofsp
-                                        t def-lst wrld ans))
 
 (defun recover-defs-lst (fn wrld)
 
@@ -7309,27 +7289,24 @@
 
   (cond
    ((null def-lst) 'redundant)
-   (t (let ((ans (redundant-or-reclassifying-defunp0
+   (t (let ((ans (redundant-or-reclassifying-defunp
                   defun-mode symbol-class ld-skip-proofsp chk-measure-p
                   (car def-lst) wrld)))
         (cond ((consp ans) ans) ; a message
-              (t (let ((ans (redundant-or-reclassifying-defunsp10
+              (t (let ((ans (redundant-or-reclassifying-defunsp1
                              defun-mode symbol-class ld-skip-proofsp
                              chk-measure-p (cdr def-lst) wrld ans)))
                    (cond ((eq ans 'redundant)
                           (cond
-                           ((or (eq defun-mode :program)
-                                (let ((recp (getpropc (caar def-lst) 'recursivep
-                                                      nil wrld)))
-                                  (if (and (consp recp)
-                                           (consp (cdr recp)))
-                                      (set-equalp-eq (strip-cars def-lst) recp)
-                                    (null (cdr def-lst)))))
+                           ((set-equalp-eq (strip-cars def-lst)
+                                           (get-clique (caar def-lst) wrld))
                             ans)
-                           (t (msg "for :logic mode definitions to be ~
-                                    redundant, if one is defined with ~
-                                    mutual-recursion then both must be ~
-                                    defined in the same mutual-recursion.~|~%"))))
+                           (t (msg "for definitions to be redundant, if one ~
+                                    is defined with mutual-recursion then the ~
+                                    old and new definition must occur in ~
+                                    mutual-recursion events that define the ~
+                                    same set of function symbols.  See :DOC ~
+                                    redundant-events.~|~%"))))
                          ((and (eq ans 'reclassifying)
                                (not (set-equalp-eq (strip-cars def-lst)
                                                    (get-clique (caar def-lst)
@@ -12325,7 +12302,7 @@
    (t
 
 ; We do not allow users to use 'verify-termination-boot-strap.  Why?  See the
-; comment in redundant-or-reclassifying-defunp0 about "verify-termination is
+; comment in redundant-or-reclassifying-defunp about "verify-termination is
 ; now just a macro for make-event", and see the discussion about make-event at
 ; the end of :doc verify-termination.
 

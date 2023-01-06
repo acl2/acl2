@@ -14,9 +14,17 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-builtin-logic-defuns))
+
 (local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
+(local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/alists/assoc" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
+(local (in-theory (disable default-car default-cdr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,7 +102,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-make-mv-nth-terms ((indices nat-listp) (term pseudo-termp))
-  :returns (terms pseudo-term-listp)
+  :returns (terms pseudo-term-listp
+                  :hints (("Goal" :in-theory (enable pseudo-termp))))
   :short "Create a list of @(tsee mv-nth)s applied to a term
           for a list of indices."
   (cond ((endp indices) nil)
@@ -200,7 +209,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred stmt-ginp)
+  :pred stmt-ginp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -228,7 +238,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred stmt-goutp)
+  :pred stmt-goutp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;
 
@@ -325,7 +336,8 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv item item-limit event name thm-index names-to-avoid)))
+    (mv item item-limit event name thm-index names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -415,7 +427,8 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv items items-limit event name thm-index names-to-avoid)))
+    (mv items items-limit event name thm-index names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -596,7 +609,9 @@
                            :thm-name items-thm-name
                            :thm-index thm-index
                            :names-to-avoid names-to-avoid
-                           :proofs t))))
+                           :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp
+                                           good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -886,7 +901,9 @@
       :thm-name items-thm-name
       :thm-index thm-index
       :names-to-avoid names-to-avoid
-      :proofs t))))
+      :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp
+                                           good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2252,7 +2269,12 @@
               gin.fn term))))
     (atc-gen-return-stmt term gin gin.affect state))
 
+  :prepwork ((local (in-theory (disable equal-of-type-pointer
+                                        equal-of-type-struct))))
+
   :measure (pseudo-term-count term)
+
+  :hints (("Goal" :in-theory (enable o< o-finp)))
 
   :verify-guards nil ; done below
 
@@ -2265,11 +2287,7 @@
 
   (verify-guards atc-gen-stmt
     :hints (("Goal"
-             :in-theory (disable atc-gen-stmt
-                                 append
-                                 member-equal
-                                 equal-of-type-pointer
-                                 equal-of-type-struct)))))
+             :in-theory (disable atc-gen-stmt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2299,7 +2317,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred lstmt-ginp)
+  :pred lstmt-ginp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2327,7 +2346,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred lstmt-goutp)
+  :pred lstmt-goutp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;
 
@@ -2492,6 +2512,7 @@
                             :names-to-avoid body.names-to-avoid
                             :proofs nil)))
   :measure (pseudo-term-count term)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))
   ///
 

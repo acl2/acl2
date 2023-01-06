@@ -30,6 +30,7 @@
 
 (in-package "CMR")
 
+(Include-book "misc/beta-reduce" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "tools/templates" :dir :system)
@@ -47,20 +48,31 @@
       (function-deps-lst (cdr fns) wrld (acl2::all-fnnames1 nil body acc)))))
 
 (mutual-recursion
- (defun collect-toposort-function-deps (fn wrld seen toposort)
+ ;; any function that has a dependency on a fn given in skip list will
+ ;; be returned in a separate list with the same name. Also, for anything given
+ ;; in skip, their  dependencies will not be  determined. For example,
+ ;; if skip='(apply$), then  we don't want to attempt to  find all the
+ ;; children functions of apply$, and we want to know which functions depend on
+ ;; apply$. Thos that depend on apply$ will be returned as the 3rd value.
+ (defun collect-toposort-function-deps (fn wrld skip seen toposort)
    (declare (xargs :mode :program))
-   (b* (((when (member-eq fn seen))
-         (mv seen toposort))
+   (b* (((when (or (member-eq fn seen)
+                   (member-eq fn skip)))
+         (mv seen toposort skip))
         (clique (or (getpropc fn 'acl2::recursivep nil wrld) (list fn)))
         (deps (function-deps-lst clique wrld nil))
         (seen (append clique seen))
-        ((mv seen toposort)
-         (collect-toposort-function-deps-list deps wrld seen toposort)))
-     (mv seen (append clique toposort))))
- (defun collect-toposort-function-deps-list (fns wrld seen toposort)
-   (b* (((when (atom fns)) (mv seen toposort))
-        ((mv seen toposort) (collect-toposort-function-deps (car fns) wrld seen toposort)))
-     (collect-toposort-function-deps-list (cdr fns) wrld seen toposort))))
+        ((mv seen toposort skip)
+         (collect-toposort-function-deps-list deps wrld skip seen toposort))
+        (skip (if (intersection$ skip deps)
+                  (append clique skip)
+                skip)))
+     (mv seen (append clique toposort) skip)))
+ (defun collect-toposort-function-deps-list (fns wrld skip seen toposort)
+   (b* (((when (atom fns)) (mv seen toposort skip))
+        ((mv seen toposort skip)
+         (collect-toposort-function-deps (car fns) wrld skip seen toposort)))
+     (collect-toposort-function-deps-list (cdr fns) wrld skip seen toposort))))
 
 (defun formula-check-tests (formulas state)
   (declare (xargs :stobjs state :mode :program))
@@ -127,7 +139,7 @@
           (def-formula-check-definition-thm-fn-aux
             (cdr name-lst) evl flags formula-check switch-hyps wrld))
          (flag (if flags `(:flag ,(cdr (assoc-equal name flags))) nil))
-         
+
          ((list lemma hint defthm)
           (acl2::template-subst
            `((defthmd <evl>-of-<name>-lemma
@@ -140,13 +152,13 @@
                                       (list (:@proj <formals> (cons '<formal> <formal>))))
                                (<name> . <formals>)))
                ,@flag)
-             
+
              (:instance <evl>-meta-extract-formula
                         (acl2::name '<name>)
                         (acl2::a
                          (list (:@proj <formals> (cons '<formal> <formal>))))
                         (acl2::st state))
-             
+
              (defthm <evl>-of-<name>-when-<formula-check>
                (implies (and (<formula-check> state)
                              (<evl>-meta-extract-global-facts))
@@ -178,11 +190,11 @@
       ((equal recursivep nil)
        '(defthm <evl>-of-<name>-when-<formula-check>
           (implies (:@ :switch-hyps
-                    (and (<evl>-meta-extract-global-facts)
-                        (<formula-check> state)))
+                       (and (<evl>-meta-extract-global-facts)
+                            (<formula-check> state)))
                    (:@ (not :switch-hyps)
-                    (and (<formula-check> state)
-                         (<evl>-meta-extract-global-facts)))
+                       (and (<formula-check> state)
+                            (<evl>-meta-extract-global-facts)))
                    (equal (<evl> (list '<name> . <formals>) env)
                           (<name> (:@proj <formals>
                                           (<evl> <formal> env)))))
@@ -214,11 +226,11 @@
 
           (defthm <evl>-of-<name>-when-<formula-check>
             (implies (:@ :switch-hyps
-                      (and (<evl>-meta-extract-global-facts)
-                           (<formula-check> state)))
+                         (and (<evl>-meta-extract-global-facts)
+                              (<formula-check> state)))
                      (:@ (not :switch-hyps)
-                      (and (<formula-check> state)
-                          (<evl>-meta-extract-global-facts)))
+                         (and (<formula-check> state)
+                              (<evl>-meta-extract-global-facts)))
                      (equal (<evl> (list '<name> . <formals>) env)
                             (<name> (:@proj <formals>
                                             (<evl> <formal> env)))))
@@ -267,15 +279,87 @@
   `(make-event
     (def-formula-check-definition-thm-fn ',name ',evl ',formula-check ',switch-hyps (w state))))
 
-(defun def-formula-checks-definition-thm-list-fn (x evl name switch-hyps)
+(defun def-formula-check-definition-only-body-thm-fn (name evl formula-check switch-hyps skip wrld)
+  (declare (xargs :mode :program))
+  (declare (ignorable skip))
+  (b* (;;(recursivep (fgetprop name 'acl2::recursivep nil wrld))
+       (formals (acl2::formals name wrld))
+
+       (body (getpropc name 'acl2::unnormalized-body nil wrld))
+       ;;(body (acl2::beta-reduce-pseudo-termp body))
+
+       (eval-rules
+        ;; ideally, everything evaluator symbol should have evaluator's package
+        ;; but not doing that  has been ok so far. The below  list of rules are
+        ;; added long after def-formula-checks has started  to be used. So I am
+        ;; making sure that they are in evaluator's package.
+        (acl2::template-subst
+         `(<evl>-of-equal-call
+           <evl>-of-variable
+           <evl>-of-fncall-args
+
+           ;; BOZO: the lst version of an evaluator should be
+           ;; taken from  the user or pulled  from ACL2 world
+           ;; if possible.  Here, I am assuming that  its name
+           ;; would be <evl>-lst
+           <evl>-LST-OF-ATOM
+           <evl>-LST-OF-CONS)
+         :str-alist `(("<EVL>" . ,(symbol-name evl)))
+         :pkg-sym evl)))
+    (acl2::template-subst
+     `(defthmd <evl>-of-<name>-when-<formula-check>
+        (implies (:@ :switch-hyps
+                     (and (<evl>-meta-extract-global-facts)
+                          (<formula-check> state)))
+                 (:@ (not :switch-hyps)
+                     (and (<formula-check> state)
+                          (<evl>-meta-extract-global-facts)))
+                 (equal (<evl> (list '<name> . <formals>) env)
+                        (<evl> '<body> (list (:@proj <formals>
+                                                     (CONS '<formal> (<evl> <formal> env)))))))
+        :hints(("Goal"
+                :in-theory '(meta-extract-formula-<name>-when-<formula-check>
+                             (:definition synp)
+                             (:definition assoc-equal)
+                             (:executable-counterpart car)
+                             (:executable-counterpart cdr)
+                             (:executable-counterpart equal)
+                             (:rewrite car-cons)
+                             (:rewrite cdr-cons)
+                             ,@eval-rules)
+                :use ((:instance <evl>-meta-extract-formula
+                                 (acl2::name '<name>)
+                                 (acl2::a (list (:@proj <formals>
+                                                        (CONS '<formal> (<evl> <formal> env)))))
+                                 #|(acl2::a env)|#
+                                 (acl2::st state))))))
+     :str-alist `(("<NAME>" . ,(symbol-name name))
+                  ("<EVL>" . ,(symbol-name evl))
+                  ("<FORMULA-CHECK>" . ,(symbol-name formula-check)))
+     :atom-alist `((<name> . ,name)
+                   (<evl> . ,evl)
+                   (<formula-check> . ,formula-check)
+                   (<body> . ,body)
+                   (<formals> . ,formals))
+     :subsubsts `((<formals> . ,(formals-subsubsts formals)))
+     :features (and switch-hyps '(:switch-hyps))
+     :pkg-sym formula-check)))
+
+(defmacro def-formula-check-definition-only-body-thm (name evl formula-check &optional switch-hyps skip)
+  `(make-event
+    (def-formula-check-definition-only-body-thm-fn ',name ',evl ',formula-check ',switch-hyps ',skip  (w state))))
+
+(defun def-formula-checks-definition-thm-list-fn (x evl name switch-hyps skip)
   (if (atom x)
       nil
-    (cons `(def-formula-check-definition-thm ,(car x) ,evl ,name ,switch-hyps)
-          (def-formula-checks-definition-thm-list-fn (cdr x) evl name switch-hyps))))
+    (cons (if (member-equal (car x) skip)
+              `(def-formula-check-definition-only-body-thm ,(car x) ,evl ,name ,switch-hyps ,skip)
+            `(def-formula-check-definition-thm ,(car x) ,evl ,name ,switch-hyps))
+          (def-formula-checks-definition-thm-list-fn (cdr x) evl name switch-hyps skip))))
 
-(defmacro def-formula-checks-definition-thm-list (x evl name &optional switch-hyps)
+(defmacro def-formula-checks-definition-thm-list (x evl name &optional switch-hyps skip)
   `(make-event
-    (cons 'progn (def-formula-checks-definition-thm-list-fn ,x ',evl ',name ',switch-hyps))))
+    (cons 'progn (def-formula-checks-definition-thm-list-fn ,x ',evl ',name ',switch-hyps ',skip))))
 
 (defun filter-defined-functions (fns wrld)
   (if (atom fns)
@@ -284,13 +368,17 @@
         (cons (car fns) (filter-defined-functions (cdr fns) wrld))
       (filter-defined-functions (cdr fns) wrld))))
 
-(defun def-formula-checks-fn (name fns evl evl-base-fns switch-hyps wrld)
+(defun def-formula-checks-fn (name fns evl evl-base-fns switch-hyps skip wrld)
   (declare (xargs :mode :program))
   (b* ((evl-base-fns (if evl-base-fns evl-base-fns
                        (cdr (assoc-equal 'evl-base-fns
                                          (table-alist 'formula-checks-eval wrld)))))
        (evl (if evl evl (cdr (assoc-equal 'evl (table-alist 'formula-checks-eval wrld)))))
-       ((mv ?seen deps) (collect-toposort-function-deps-list fns wrld evl-base-fns nil))
+       (skip (loop$ for s in skip ;; avoid skippping a fn if it is in evl-base-fns
+                    when (not (member-equal s evl-base-fns))
+                    collect s))
+       ((mv ?seen deps ?skip)
+        (collect-toposort-function-deps-list fns wrld skip evl-base-fns nil))
        (deps (acl2::rev deps))
        ;; BOZO. Someday we could deal with constrained functions more
        ;; generally.  For now, we hope that any constrained functions that fns
@@ -304,11 +392,15 @@
         (in-theory (enable assoc-equal)))
        (def-formula-checker ,name ,defined-deps)
        (local (def-formula-checker-lemmas ,name ,defined-deps))
-       (def-formula-checks-definition-thm-list ',defined-deps ,evl ,name ,switch-hyps))))
+       (def-formula-checks-definition-thm-list ',defined-deps ,evl ,name ,switch-hyps ,skip))))
 
-(defmacro def-formula-checks (name fns &key (evl 'nil) (evl-base-fns 'nil) (switch-hyps 'nil))
+(defmacro def-formula-checks (name fns &key
+                                   (evl 'nil)
+                                   (evl-base-fns 'nil)
+                                   (switch-hyps 'nil)
+                                   (skip ''(apply$ loop$)))
   `(make-event
-    (def-formula-checks-fn ',name ',fns ',evl ,evl-base-fns ,switch-hyps (w state))))
+    (def-formula-checks-fn ',name ',fns ',evl ,evl-base-fns ,switch-hyps ,skip (w state))))
 
 (defmacro def-formula-checks-default-evl (evl evl-base-fns)
   `(progn
@@ -316,9 +408,7 @@
             'evl ',evl)
      (table formula-checks-eval
             'evl-base-fns ,evl-base-fns)))
-
 #|
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; EXAMPLE USE
@@ -388,5 +478,4 @@
                              (ex-evl y a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-||#
+|#

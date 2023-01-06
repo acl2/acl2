@@ -25,8 +25,8 @@
 ; Original authors: Sol Swords <sswords@centtech.com>
 ;                   Jared Davis <jared@centtech.com>
 
-; (depends-on "build/rewrite-constant.certdep" :dir :system)
-; (depends-on "build/prove-spec-var.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
 
 (in-package "ACL2")
 

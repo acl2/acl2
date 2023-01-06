@@ -138,7 +138,6 @@
            :in-theory (e/d (BOOL->BIT)
                            (+-is-sum)))))
 
-
 (def-rp-rule sign-ext-compress
   (implies (bitp x)
            (and (equal (svl::4vec-concat$ 1 x (rp::-- x))
@@ -267,7 +266,6 @@
                     (sv::4vec-?* x y z)))
     :hints (("goal"
              :in-theory (e/d (bitp) ())))))
-
 
 ;; -------------------------------------------------------------------------
 ;; 4vec-symwildeq lemmas
@@ -469,7 +467,6 @@
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
 
-
 ;; ---------------------------------------------------------------------------
 ;; SVL functions (bits, 4vec-rsh, etc.) and bit-of lemmas
 
@@ -583,7 +580,6 @@
   (implies (posp amount)
            (equal (sv::4vec-rsh amount (bit-of x pos))
                   0)))
-
 
 ;; ---------------------------------------------------------------------------
 ;; 4vec   logical  operators   (4vec-?,   4vec-?*,  4vec-bitxor,   4vec-bitand,
@@ -728,7 +724,18 @@
                          (binary-xor (bits-to-bit-of (svl::bits x start1 1))
                                      (bits-to-bit-of (svl::bits y start2 1))))))
     :hints (("goal"
-             :in-theory (e/d (bitp) ())))))
+             :in-theory (e/d (bitp) ()))))
+
+  (def-rp-rule binary-xor-of-1-is-bnary-not
+    (and (equal (binary-xor 1 x)
+                (binary-not x))
+         (equal (binary-xor x 1)
+                (binary-not x)))
+    :hints (("Goal"
+             :in-theory (e/d (binary-not binary-xor) ()))))
+
+  
+  )
 
 (progn
   (encapsulate
@@ -898,7 +905,6 @@
                     (binary-not (bits-to-bit-of (svl::bits x start 1)))))
     :hints (("Goal"
              :in-theory (e/d (bitp) ())))))
-
 
 
 ;; --------------------------------------------------------------------------------
@@ -1350,12 +1356,11 @@
                             +-is-sum
                             svl::bits-of-bits-1)))))
 
-
 (def-rp-rule bits-of----of-bitp
   (implies (and (syntaxp (quotep size))
                 (posp size)
                 (bitp x)
-                (natp start)) 
+                (natp start))
            (equal (svl::bits (-- x) start size)
                   (if (equal size 1)
                       x
@@ -1364,7 +1369,6 @@
                                        (svl::bits (-- x) 0 (1- size))))))
   :hints (("Goal"
            :in-theory (e/d (-- svl::bits) (+-is-sum)))))
-
 
 
 
@@ -1671,7 +1675,6 @@
 (progn
   ;; Find Full and Half adder patterns from SVEX when defined with the + sign
 
-
   (defund tertiaryp (x)
     (or (= x 0)
         (= x 1)
@@ -1757,18 +1760,18 @@
   ;; don't want that.
   (def-rp-rule 4vec-plus-when-bitp
     (implies (and (bitp x)
-		  (bitp y))
-	     (equal (sv::4vec-plus x y)
-		    (svl::4vec-list (s-spec (list x y))
-				    (c-spec (list x y)))))
+                  (bitp y))
+             (equal (sv::4vec-plus x y)
+                    (svl::4vec-list (s-spec (list x y))
+                                    (c-spec (list x y)))))
     :hints (("Goal"
-	     :in-theory (e/d (bitp) ()))))
+             :in-theory (e/d (bitp) ()))))
 
   (defthmd 4vec-plus-when-bitp-side-cond
     (implies (and (bitp x)
-		  (bitp y))
-	     (and (tertiaryp (svl::4vec-list (s-spec (list x y))
-				             (c-spec (list x y))))
+                  (bitp y))
+             (and (tertiaryp (svl::4vec-list (s-spec (list x y))
+                                             (c-spec (list x y))))
                   (bitp (s-spec (list x y)))
                   (bitp (c-spec (list x y)))))
     :hints (("Goal"
@@ -1778,30 +1781,29 @@
                 4vec-plus-when-bitp-side-cond))
 
 #|(progn
-  (def-rp-rule HA-patterned-4vec-plus
-    (implies (and (bitp x)
-		  (bitp y))
-	     (equal (sv::4vec-plus x y)
-		    (svl::4vec-list (s-spec (list x y))
-				    (c-spec (list x y)))))
-    :hints (("Goal"
-	     :in-theory (e/d (bitp) ()))))
+(def-rp-rule HA-patterned-4vec-plus
+(implies (and (bitp x)
+(bitp y))
+(equal (sv::4vec-plus x y)
+(svl::4vec-list (s-spec (list x y))
+(c-spec (list x y)))))
+:hints (("Goal"
+:in-theory (e/d (bitp) ()))))
 
-  (add-rp-rule HA-patterned-4vec-plus :rw-direction :both)
+(add-rp-rule HA-patterned-4vec-plus :rw-direction :both)
 
-  (def-rp-rule FA-patterned-4vec-plus
-    (implies (and (bitp x)
-		  (bitp y)
-		  (bitp z))
-	     (equal (sv::4vec-plus (sv::4vec-part-select 0 2 (sv::4vec-plus x y))
-				   z)
-		    (svl::4vec-list (s-spec (list x y z))
-				    (c-spec (list x y z)))))
-    :hints (("Goal"
-	     :in-theory (e/d (bitp) ()))))
+(def-rp-rule FA-patterned-4vec-plus
+(implies (and (bitp x)
+(bitp y)
+(bitp z))
+(equal (sv::4vec-plus (sv::4vec-part-select 0 2 (sv::4vec-plus x y))
+z)
+(svl::4vec-list (s-spec (list x y z))
+(c-spec (list x y z)))))
+:hints (("Goal"
+:in-theory (e/d (bitp) ()))))
 
-  (add-rp-rule FA-patterned-4vec-plus :rw-direction :both))|#
-
+(add-rp-rule FA-patterned-4vec-plus :rw-direction :both))|#
 
 (progn
   (def-rp-rule pull-out-dumb-twos-complement
@@ -1810,7 +1812,7 @@
                   (integerp else)
                   (natp start)
                   (natp size))
-	     (equal (sv::4vec-? test
+             (equal (sv::4vec-? test
                                 (sv::4vec-part-select start size
                                                       (sv::4vec-plus t1 1))
                                 else)
@@ -1832,7 +1834,6 @@
   (add-rp-rule pull-out-dumb-twos-complement
                :rw-direction :both))
 
-
 ;; reduction or/and stuff
 (def-rp-rule 4vec-reduction-and-of---bitp
   (implies (bitp x)
@@ -1841,8 +1842,7 @@
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
 
-
-(def-rp-rule 
+(def-rp-rule
   4vec-reduction-or-to-4vec-bitor-for-mult-proofs
   (implies (and (integerp x)
                 (equal (sv::4vec-rsh 7 x) 0)
@@ -1854,22 +1854,25 @@
            :in-theory '(svl::4vec-reduction-or-to-4vec-bitor))))
 
 (rp::def-rp-rule 4vec-times-to-*
-   (implies (and (integerp x)
-                 (integerp y))
-            (equal (sv::4vec-times x y)
-                   (* x y)))
-   :hints (("Goal"
-            :in-theory (e/d (SV::4VEC->UPPER
-                             SV::4VEC->LOWER
-                             sv::4vec-times) ()))))
-
-
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (sv::4vec-times x y)
+                  (* x y)))
+  :hints (("Goal"
+           :in-theory (e/d (SV::4VEC->UPPER
+                            SV::4VEC->LOWER
+                            sv::4vec-times) ()))))
 
 
 
 (bump-all-meta-rules)
 
 (bump-rule 4vec-plus-to-HA-FA-helper-1)
+
+;; where there is a mismatch at the end of a 4vec-concat$ term, the meta
+;; checking equiv keeps getting called to keep failing over and over again. But
+;; this should separate the problem and take care of it nicely.
+(bump-rule svl::equal-of-4vec-concat$-with-posp-size)
 
 ;;(bump-down-rp-rule (:META medw-compress-meta . equal))
 ;;(bump-down-rp-rule (:META make-sc-fgl-ready-meta-main . equal))

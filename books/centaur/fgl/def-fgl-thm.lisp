@@ -167,7 +167,9 @@ This probably will someday need to change.</p>
 
 (defconst *fgl-param-thm-keywords*
   '(:concl :hyp :rule-classes :hints :parents :short :long
-    :param-bindings :param-hyp :split-params :solve-params :split-concl :repeat-concl))
+    :param-bindings :param-hyp :split-params :solve-params
+    :split-concl :repeat-concl
+    :allow-irrel-casesplit-vars))
 
 (defun fgl-param-thm-fn (args)
   (declare (xargs :mode :program))
@@ -202,6 +204,8 @@ This probably will someday need to change.</p>
                              :split-concl ,(let ((look (assoc-keyword :split-concl args)))
                                              (or (not look) (cadr look)))
                              :repeat-concl ,(cadr (assoc-keyword :repeat-concl args))
+                             :allow-irrel-casesplit-vars
+                             ,(cadr (assoc-keyword :allow-irrel-casesplit-vars args))
                              :fgl-config (default-fgl-config . ,args))
               '(:clause-processor (fgl-interp-cp clause (default-fgl-config . ,args) interp-st state)))
       ,@rule-classes)))

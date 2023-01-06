@@ -21,9 +21,13 @@
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
 (include-book "kestrel/std/basic/if-star" :dir :system)
 
-(local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-builtin-logic-defuns))
 
-(local (in-theory (disable state-p)))
+(local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
+(local (include-book "kestrel/std/system/w" :dir :system))
+
+(local (in-theory (disable default-car default-cdr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,7 +54,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred pexpr-ginp)
+  :pred pexpr-ginp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -69,7 +74,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred pexpr-goutp)
+  :pred pexpr-goutp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;
 
@@ -102,7 +108,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred bexpr-ginp)
+  :pred bexpr-ginp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -123,7 +130,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred bexpr-goutp)
+  :pred bexpr-goutp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;
 
@@ -200,7 +208,9 @@
                      :thm-name thm-name
                      :thm-index thm-index
                      :names-to-avoid names-to-avoid
-                     :proofs t)))
+                     :proofs t))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp
+                                           good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -282,7 +292,8 @@
                      :thm-name thm-name
                      :thm-index thm-index
                      :names-to-avoid names-to-avoid
-                     :proofs t)))
+                     :proofs t))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -415,7 +426,10 @@
                       :thm-name thm-name
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
-                      :proofs t))))
+                      :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp
+                                           pseudo-termp
+                                           pseudo-term-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -576,7 +590,9 @@
                       :thm-name thm-name
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
-                      :proofs t))))
+                      :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp
+                                           pseudo-term-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -718,7 +734,10 @@
                       :thm-name thm-name
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
-                      :proofs t))))
+                      :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp
+                                           pseudo-termp
+                                           pseudo-term-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -821,7 +840,10 @@
                             :thm-name thm-name
                             :thm-index (1+ gin.thm-index)
                             :names-to-avoid names-to-avoid
-                            :proofs t))))
+                            :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp
+                                           pseudo-termp
+                                           pseudo-term-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -924,7 +946,10 @@
       :thm-name thm-name
       :thm-index thm-index
       :names-to-avoid names-to-avoid
-      :proofs t))))
+      :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable good-atom-listp
+                                           pseudo-termp
+                                           pseudo-term-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1405,6 +1430,8 @@
             gin.fn term)))
     :measure (pseudo-term-count term))
 
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+
   :verify-guards nil ; done below
   ///
   (verify-guards atc-gen-expr-pure))
@@ -1426,7 +1453,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred pexprs-ginp)
+  :pred pexprs-ginp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1446,7 +1474,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred pexprs-goutp)
+  :pred pexprs-goutp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;
 
@@ -1518,7 +1547,8 @@
             :proofs rest.proofs)))
   :verify-guards nil ; done below
   ///
-  (verify-guards atc-gen-expr-pure-list))
+  (verify-guards atc-gen-expr-pure-list
+    :hints (("Goal" :in-theory (enable pseudo-term-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1541,7 +1571,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred expr-ginp)
+  :pred expr-ginp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1566,7 +1597,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred expr-goutp)
+  :pred expr-goutp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;
 
@@ -1671,7 +1703,8 @@
                            :thm-name thm-name
                            :thm-index (1+ pure.thm-index)
                            :names-to-avoid names-to-avoid
-                           :proofs t))))
+                           :proofs t)))
+  :prepwork ((local (in-theory (enable good-atom-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1762,4 +1795,6 @@
             :thm-index args.thm-index
             :names-to-avoid args.names-to-avoid
             :proofs nil)))))
-    (atc-gen-expr-noncall term gin state)))
+    (atc-gen-expr-noncall term gin state))
+  :prepwork ((local (in-theory (enable pseudo-termp
+                                       pseudo-term-listp)))))

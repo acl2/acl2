@@ -53,6 +53,22 @@
 (local
  (include-Book "proofs/rp-state-functions-lemmas"))
 
+(defsection defwarrant-rp
+  :parents (rp-utilities)
+  :short "Calls defwarrant and register the resulting rule with RP, and disbled executable counterpart for the warrant"
+  (defmacro defwarrant-rp (fn)
+    `(make-event
+      (b* ((fn ',fn))
+        (acl2::template-subst
+         `(progn
+            (defwarrant <fn>)
+            (rp::disable-rules
+             '((:e apply$-warrant-<fn>)))
+            (rp::add-rp-rule apply$-<fn>))
+         :atom-alist `((<fn> . ,fn))
+         :str-alist `(("<FN>" . ,(symbol-name fn)))
+         :pkg-sym fn)))))
+
 (progn
   (defund pull-keys-from-rest-args (rest-args keys)
     (if (or (atom rest-args)

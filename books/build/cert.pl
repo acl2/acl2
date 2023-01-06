@@ -1299,8 +1299,13 @@ unless ($no_makefile) {
     my $builddir = make_encode(canonical_path("$acl2_books/build"));
     print $mf "\$(${var_prefix}_ALLCERTS) : ${builddir}/acl2-version.certdep ${builddir}/universal-dependency.certdep\n\n";
 
-    # Add a trivial recipe to build the required files in case they're missing.
-    print $mf "${builddir}/%.certdep :\n\ttouch \$@\n\n";
+    # Add a recipe to raise an error if a certdep file is missing.
+    print $mf "%.certdep :\n";
+    print $mf "\t\@echo \"** Missing \$\@\"\n";
+    print $mf "\t\@echo \"** Certdep files may be created by running 'make build/Makefile-features' under books/\"\n";
+    print $mf "\t\@echo \"** If this file does not exist after that, it is likely an incorrect dependency.\"\n";
+    print $mf "\t\@echo \"** See books/build/Makefile-deps to find what file depends on it.\"\n";
+    print $mf "\t\@false\n\n";
 
     foreach my $incl (@include_afters) {
         print $mf "\ninclude $incl\n";

@@ -245,7 +245,8 @@
                              bits-is-bit-of-reverse
                              SVL::BITS-OF-RSH-NO-SYNTAXP
                              svl-sum-col-bybit)
-                            (bits-is-bit-of))))))
+                            (bits-is-bit-of
+                             SVL::4VEC->UPPER-AND-LOWER-WHEN-INTEGERP))))))
 
 (local
  (encapsulate
@@ -725,10 +726,10 @@
                   (integerp y)
                   (integerp carry-in)
                   #|(syntaxp (or (and (not (equal y '0))
-                  (not (equal y ''0)))
-                  (and (or (equal y '0)
-                  (equal y ''0))
-                  (or (equal x '0)
+                  (not (equal y ''0))) ; ;
+                  (and (or (equal y '0) ; ;
+                  (equal y ''0)) ; ;
+                  (or (equal x '0) ; ;
                   (equal x ''0)))))|#
                   (natp size))
              (equal (svl::4vec-plus++ x y carry-in size)
@@ -746,6 +747,8 @@
     :hints (("goal"
              :in-theory (e/d (4vec-adder) ()))))
 
+  
+  
   (def-rp-rule 4vec-adder-opener-size>0
     (implies (not (zp size))
              (equal (4vec-adder x y carry-in size)
@@ -759,7 +762,16 @@
                                                      (1- size))))))
     :hints (("goal"
              :in-theory (e/d (4vec-adder
-                              s-c-spec) ())))))
+                              s-c-spec) ()))))
+
+  (def-rp-rule 4vec-adder-opener-size==1
+    (equal (4vec-adder x y carry-in 1)
+           (s-of-c-trig (s-spec (list (bits-to-bit-of (svl::bits x 0 1))
+                                      (bits-to-bit-of (svl::bits y 0 1))
+                                      carry-in))))
+    :hints (("goal"
+             :in-theory (e/d (4vec-adder
+                              s-spec) ())))))
 
 (defmacro svl::sign-ext (num size)
   `(logapp ,size ,num (- (svl::bits ,num (1- ,size) 1))))

@@ -233,6 +233,7 @@
                                           col-index)))
    :hints (("Goal"
             :in-theory (e/d (svl-sum-col-bybit-aux
+                             sv::2vec sv::4vec
                              bits-is-bit-of-reverse
                              SVL::BITS-OF-RSH-NO-SYNTAXP
                              svl-sum-col-bybit)

@@ -683,9 +683,9 @@ rules))||#
          ;; Check if the rule has a corresponding for-rp rule
          (corresponding-rp-rule (hons-assoc-equal rule-name
                                                   (table-alist 'corresponding-rp-rule (w state))))
-         (corresponding-rp-rule-opener (hons-assoc-equal
+         #|(corresponding-rp-rule-opener (hons-assoc-equal
                                         rule-name
-                                        (table-alist 'corresponding-rp-rule-openers (w state))))
+                                        (table-alist 'corresponding-rp-rule-openers (w state))))|#
          (rule-name (if corresponding-rp-rule (cdr corresponding-rp-rule)
                       rule-name))
 
@@ -724,14 +724,14 @@ rules))||#
          (rules (custom-rewrite-with-meta-extract rule-name rule-new-synp
                                                   warning  state))
 
-         (rules-for-rp-openers
+         #|(rules-for-rp-openers
           (and corresponding-rp-rule-opener
                (symbolp (cdr corresponding-rp-rule-opener))
                (custom-rewrite-with-meta-extract (cdr corresponding-rp-rule-opener)
-                                                 nil warning state)))
+                                                 nil warning state)))|#
 
-         (rules (append rules-for-rp-openers
-                        rules))
+         #|(rules (append rules-for-rp-openers
+                        rules))|#
          
          #|(rules (try-to-add-rule-fnc rules rule-fnc-alist))||#
          ((when (not (rule-list-syntaxp rules)))
@@ -852,10 +852,18 @@ alist
 
            (rune (if given-type rule (get-rune-name name state)))
 
-           ((when (case-match rune ((':executable-counterpart &) t)))
+           ((when (case-match rune
+                    ((':executable-counterpart &) t)
+                    ((':e &) t)))
             (cons (if e/d
                       `(enable-exc-counterpart ,(second rune))
                     `(disable-exc-counterpart ,(second rune)))
+                  rest))
+           ((when (case-match rune
+                    ((&) t)))
+            (cons (if e/d
+                      `(enable-exc-counterpart ,(first rune))
+                    `(disable-exc-counterpart ,(first rune)))
                   rest))
 
            (rune-entry (hons-assoc-equal rune (table-alist ruleset (w state))))
@@ -1338,7 +1346,7 @@ values will cause runes to be not retrieved from the table for all.")))
        (rp-state (update-suppress-not-simplified-error
                   (and suppress-not-simplified-error t)
                   rp-state))
-
+       
        ((mv runes-inside-out runes-outside-in disabled-exc-rules)
         (if (or runes-inside-out runes-outside-in)
             (mv runes-inside-out runes-outside-in
@@ -1346,6 +1354,13 @@ values will cause runes to be not retrieved from the table for all.")))
                  (table-alist 'rp-exc-rules (w state))))
           (get-enabled-rules-from-table state :ruleset ruleset)))
 
+       ;; make all the for-rp-opener-rules inside out and enabled
+       ;; automatically...
+       (for-rp-opener-rules (table-alist 'corresponding-rp-rule-openers (w state)))
+       (for-rp-opener-rules (if (alistp for-rp-opener-rules) (strip-cdrs for-rp-opener-rules) nil))
+
+       (runes-inside-out (append for-rp-opener-rules runes-inside-out))
+       
        (rules-alist-inside-out (get-rules runes-inside-out state :new-synps new-synps))
        (rules-alist-outside-in (get-rules runes-outside-in state :new-synps
                                           new-synps))
@@ -1365,21 +1380,21 @@ values will cause runes to be not retrieved from the table for all.")))
                                               nil
                                               rp-state))
 
-       (rule-alist-inside-out (get-rules runes-inside-out state
-                                         :new-synps new-synps))
-       (rule-alist-outside-in (get-rules runes-outside-in state
-                                         :new-synps new-synps))
+       ;; (rule-alist-inside-out (get-rules runes-inside-out state
+       ;;                                   :new-synps new-synps))
+       ;; (rule-alist-outside-in (get-rules runes-outside-in state
+       ;;                                   :new-synps new-synps))
 
-       (rp-state (rp-state-init-rules-aux rule-alist-inside-out
+       (rp-state (rp-state-init-rules-aux rules-alist-inside-out
                                           :inside-out
                                           rp-state))
-       (rp-state (rp-state-init-rules-aux rule-alist-outside-in
+       (rp-state (rp-state-init-rules-aux rules-alist-outside-in
                                           :outside-in
                                           rp-state))
        (rp-state (rp-state-init-rules-aux disabled-exc-rules
                                           :exc
                                           rp-state))
 
-       (- (fast-alist-clean rule-alist-inside-out))
-       (- (fast-alist-clean rule-alist-outside-in)))
+       (- (fast-alist-clean rules-alist-inside-out))
+       (- (fast-alist-clean rules-alist-outside-in)))
     rp-state))

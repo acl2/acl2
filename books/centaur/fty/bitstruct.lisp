@@ -400,6 +400,9 @@
 (define bitstruct-fields-fix (fields xvar)
   (b* (((when (atom fields)) xvar)
        ((bitstruct-field field) (car fields))
+       ((when field.subfield-hierarchy)
+        ;; skip this, it's just a subfield
+        (bitstruct-fields-fix (cdr fields) xvar))
        (sel `(bitops::part-select ,xvar :width ,field.width :low ,field.lsb))
        (signed (if field.signedp
 		   `(logext ,field.width ,sel)
@@ -883,11 +886,12 @@
 		     (b ,(+ 1 x.width))))))
     `(define ,field.updater ((,field.name ,field.pred)
 			     (,x.xvar ,x.pred))
-       :returns (,new-x ,x.pred
+       ,@(and (not field.subfield-hierarchy)
+              `(:returns (,new-x ,x.pred
 			,@(and (not x.fullp)
 			       `(:hints (("goal" :in-theory (enable ,x.pred ,x.fix
 								    part-select-at-0-of-unsigned-byte-identity
-								    logext-part-select-at-0-identity))))))
+								    logext-part-select-at-0-identity))))))))
        :no-function t
        ,@(and x.inline `(:inline ,x.inline))
        :parents (,x.name)

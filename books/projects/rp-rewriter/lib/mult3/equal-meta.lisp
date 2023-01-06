@@ -42,7 +42,7 @@
 (include-book "fnc-defs")
 
 (define rp-equal-cnt-memoized (term1 term2)
-  (rp-equal-cnt term1 term2 0))
+  (rp-equal-cnt term1 term2 2))
 
 (memoize 'rp-equal-cnt-memoized)
 

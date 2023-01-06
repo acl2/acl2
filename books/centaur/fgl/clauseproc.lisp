@@ -689,7 +689,7 @@
                           above.~%" ans))
                 (t   (cw "Counterexample verified!~%"))))
        (interp-st (interp-st-check-bvar-db-ctrex-consistency interp-st state))
-       (interp-st (update-interp-st->debug-info ctrex-bindings interp-st)))
+       (interp-st (update-interp-st->debug-info (cons "Counterexample." ctrex-bindings) interp-st)))
     (mv "Counterexample." interp-st state))
   ///
 
