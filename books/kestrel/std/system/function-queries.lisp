@@ -20,6 +20,7 @@
 (include-book "fundef-disabledp")
 (include-book "fundef-enabledp")
 (include-book "guard-theorem-no-simplify")
+(include-book "guard-theorem-no-simplify-dollar")
 (include-book "guard-verified-p")
 (include-book "guard-verified-p-plus")
 (include-book "ibody")
