@@ -283,6 +283,13 @@
      but does no simplification and does not take a state argument.
      See the documentation for details, and for why it may be useful.")
 
+   (xdoc::p
+    "A new utility @(tsee guard-theorem-no-simplify$) has been added,
+     which is a logic-mode guard-verified version
+     of the built-in @(tsee guard-theorem-no-simplify).
+     See the documentation for details,
+     including functional differences with @(tsee guard-theorem-no-simplify).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
