@@ -277,6 +277,12 @@
      See the documentation for details,
      including functional differences with @('termination-theorem').")
 
+   (xdoc::p
+    "A new utility @(tsee guard-theorem-no-simplify) has been added,
+     which is based on the built-in @(tsee guard-theorem)
+     but does no simplification and does not take a state argument.
+     See the documentation for details, and for why it may be useful.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
