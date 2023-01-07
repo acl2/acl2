@@ -29,12 +29,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule sparse-vectorp-of-append
-  (equal (r1cs::sparse-vectorp (append x y))
-         (and (r1cs::sparse-vectorp (true-list-fix x))
-              (r1cs::sparse-vectorp y)))
-  :enable r1cs::sparse-vectorp)
-
 (defrule sparse-vectorp-of-rev
   (equal (r1cs::sparse-vectorp (rev x))
          (r1cs::sparse-vectorp (true-list-fix x)))

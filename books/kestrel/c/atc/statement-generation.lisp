@@ -18,6 +18,7 @@
 (local (acl2::disable-builtin-logic-defuns))
 
 (local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -337,8 +338,7 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv item item-limit event name thm-index names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+    (mv item item-limit event name thm-index names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -428,8 +428,7 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv items items-limit event name thm-index names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+    (mv items items-limit event name thm-index names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -612,8 +611,7 @@
                            :thm-index thm-index
                            :names-to-avoid names-to-avoid
                            :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           good-atom-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -904,8 +902,7 @@
       :thm-index thm-index
       :names-to-avoid names-to-avoid
       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           good-atom-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
