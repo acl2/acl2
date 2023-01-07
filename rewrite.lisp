@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; Copyright (C) 2023, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -13659,7 +13659,7 @@
 ; DO$.  It's a mild stretch to blame this on DO$ since technically it's an
 ; inductively proved lemma about DO$.
 
-               (mv (cons-term fn 
+               (mv (cons-term fn
                               (list (fargn term 1)
                                     (fargn term 2)
                                     (fargn term 3)

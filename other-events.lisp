@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; Copyright (C) 2023, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -24468,7 +24468,7 @@
    ((flambdap (ffn-symb term))
 
 ; We know the fnn-symb is a well-formed lambda expression, (LAMBDA vars body),
-; where vars is a true-list of symbols (with cons-count (len vars)). 
+; where vars is a true-list of symbols (with cons-count (len vars)).
 
     (mv-let (bq-lst1 i1)
       (explore-giant-term
@@ -24521,7 +24521,7 @@
   (er-let*
       ((quoted-lambda-obj (read-hons-copy-lambda-object-culprit state))
        (lambda-obj (assign giant-lambda-object (unquote quoted-lambda-obj)))
-       (body (value (lambda-object-body lambda-obj)))) 
+       (body (value (lambda-object-body lambda-obj))))
     (let* ((max (lambda-object-count-max-val))
            (qmin (floor max 1000))
            (qmax (floor max 2)))

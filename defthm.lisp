@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; Copyright (C) 2023, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -11105,6 +11105,28 @@
 (defmacro monitored-runes ()
   `(monitored-runes-fn state))
 
+(defun unconditional-monitor-tuples (x-lst ctx state)
+
+; This function takes a list of base symbols and/or runes, converts it into a
+; list of monitorable runes, and then creates a doublet for the
+; brr-monitored-runes in which each rune is given the break condition *t*.
+; The resulting list of doublets can be appended to brr-monitored-runes to
+; monitor all of the runes derived from x-lst.  This function causes an error,
+; for example, no monitorable runes are found among the x-lst runes.
+
+; This function is only used when the brr commands :eval$, :go$, and :ok$ are
+; executed.  Those commands are defined in *brkpt1-aliases* to call
+; proceed-from-brkpt1 with a list of runes (or base symbols) that are to be
+; added to the list of monitored runes.  (Other brr commands call
+; proceed-from-brkpt1, but those commands supply t or nil as the ``list of
+; runes'' and those values are treated differently.)
+
+  (cond
+   ((endp x-lst) (value nil))
+   (t (er-let* ((runes (runes-to-monitor (car x-lst) ctx state))
+                (rest (unconditional-monitor-tuples (cdr x-lst) ctx state)))
+        (value (append (pairlis-x2 runes (list *t*)) rest))))))
+
 (defun proceed-from-brkpt1 (action runes ctx state)
 
 ; Action may be
@@ -11121,29 +11143,43 @@
 ; design for that yet.
 
   (er-let*
-   ((lst (cond ((eq runes t)
-                (value nil))
-               ((eq runes nil)
+      ((tuples (cond ((eq runes t)
+                      (value nil))
+                     ((eq runes nil)
 
 ; This special case avoids getting an error when calling runes-to-monitor.
 
-                (value nil))
-               (t (runes-to-monitor runes ctx state)))))
-   (pprogn
-    (put-brr-local 'saved-standard-oi
-                   (f-get-global 'standard-oi state)
-                   state)
-    (put-brr-local 'saved-brr-monitored-runes
-                   (get-brr-global 'brr-monitored-runes state)
-                   state)
-    (put-brr-local 'saved-brr-evisc-tuple
-                   (get-brr-global 'brr-evisc-tuple state)
-                   state)
-    (if (eq runes t)
-        state
-        (f-put-global 'brr-monitored-runes lst state))
-    (put-brr-local 'action action state)
-    (exit-brr-wormhole state))))
+                      (value nil))
+                     (t (unconditional-monitor-tuples
+                         (if (or (symbolp runes)
+                                 (and (consp runes)
+                                      (keywordp (car runes))))
+; If runes is a symbol or starts with a keyword, it is coerced into a
+; singleton list.
+                             (list runes)
+                             runes)
+                         ctx state)))))
+    (pprogn
+     (put-brr-local 'saved-standard-oi
+                    (f-get-global 'standard-oi state)
+                    state)
+     (put-brr-local 'saved-brr-monitored-runes
+                    (get-brr-global 'brr-monitored-runes state)
+                    state)
+     (put-brr-local 'saved-brr-evisc-tuple
+                    (get-brr-global 'brr-evisc-tuple state)
+                    state)
+     (if (eq runes t)
+         state
+         (f-put-global 'brr-monitored-runes
+                       (append tuples
+                               (remove1-assoc-equal?-lst
+                                (strip-cars tuples)
+                                (get-brr-global 'brr-monitored-runes
+                                                state)))
+                       state))
+     (put-brr-local 'action action state)
+     (exit-brr-wormhole state))))
 
 (defun exit-brr (state)
 
