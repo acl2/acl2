@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -550,7 +550,7 @@
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
          stmt-thm-name nil names-to-avoid wrld))
-       (uterm (untranslate$ term nil state))
+       (uterm (untranslate$ expr.term nil state))
        (stmt-formula `(and (equal (exec-stmt ',stmt
                                              ,gin.compst-var
                                              ,gin.fenv-var
@@ -584,7 +584,7 @@
             names-to-avoid)
         (atc-gen-block-item-stmt gin.fn gin.fn-guard gin.context
                                  stmt stmt-limit stmt-thm-name
-                                 expr.type term
+                                 expr.type expr.term
                                  gin.compst-var gin.fenv-var gin.limit-var
                                  gin.compst-var
                                  thm-index names-to-avoid state))
@@ -596,7 +596,7 @@
             names-to-avoid)
         (atc-gen-block-item-list-one gin.fn gin.fn-guard gin.context
                                      item item-limit item-thm-name
-                                     expr.type term
+                                     expr.type expr.term
                                      gin.compst-var gin.fenv-var gin.limit-var
                                      gin.compst-var
                                      thm-index names-to-avoid state)))
@@ -1125,7 +1125,7 @@
                                  state))
              ((erp (stmt-gout then) then-context)
               (b* (((reterr) (irr-stmt-gout) nil)
-                   (then-cond (untranslate$ test-term t state))
+                   (then-cond (untranslate$ test.term t state))
                    (then-premise (atc-premise-test then-cond))
                    (then-context (append gin.context
                                          (list then-premise)))
@@ -1166,7 +1166,7 @@
                  then-context)))
              ((erp (stmt-gout else) else-context)
               (b* (((reterr) (irr-stmt-gout) nil)
-                   (not-test-term (dumb-negate-lit test-term))
+                   (not-test-term (dumb-negate-lit test.term))
                    (else-cond (untranslate$ not-test-term t state))
                    (else-premise (atc-premise-test else-cond))
                    (else-context (append gin.context

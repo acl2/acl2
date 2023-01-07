@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -376,7 +376,7 @@
                                               ,okp-lemma-formula))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard)
+                     :in-theory '(,gin.fn-guard if*)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -412,7 +412,7 @@
                                        gin.context
                                        expr
                                        out-type
-                                       term
+                                       `(,op-arg-type ,arg-term)
                                        gin.compst-var
                                        hints
                                        thm-index
@@ -523,7 +523,7 @@
                                               ,okp-lemma-formula))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard)
+                     :in-theory '(,gin.fn-guard if*)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -567,20 +567,21 @@
                                  ,type-pred-of-op-arg1-type-arg2-type
                                  ,@(and op-arg1-type-arg2-type-okp
                                         (list okp-lemma-name)))))))
+       ((when (eq op-arg1-type-arg2-type 'quote))
+        (reterr (raise "Internal error: function symbol is QUOTE.")))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
                                        gin.fn-guard
                                        gin.context
                                        expr
                                        out-type
-                                       term
+                                       `(,op-arg1-type-arg2-type ,arg1-term
+                                                                 ,arg2-term)
                                        gin.compst-var
                                        hints
                                        thm-index
                                        names-to-avoid
-                                       state))
-       ((when (eq op-arg1-type-arg2-type 'quote))
-        (reterr (raise "Internal error: function symbol is QUOTE."))))
+                                       state)))
     (retok
      (make-pexpr-gout :expr expr
                       :type out-type
@@ -594,6 +595,7 @@
                       :names-to-avoid names-to-avoid
                       :proofs t)))
   :guard-hints (("Goal" :in-theory (enable good-atom-listp
+                                           pseudo-termp
                                            pseudo-term-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -685,7 +687,7 @@
                                               ,okp-lemma-formula))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard)
+                     :in-theory '(,gin.fn-guard if*)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -720,7 +722,7 @@
                                        gin.context
                                        expr
                                        out-type
-                                       term
+                                       `(,op-name ,arg-term)
                                        gin.compst-var
                                        hints
                                        thm-index
@@ -806,23 +808,24 @@
                                       thm-name nil gin.names-to-avoid wrld))
        (arg-type-pred (type-to-recognizer arg-type wrld))
        (arg-uterm (untranslate$ arg-term nil state))
-       (uterm (untranslate$ term nil state))
+       ((unless (type-nonchar-integerp arg-type))
+        (reterr (raise "Internal error: non-integer type ~x0." arg-type)))
+       (arg-fixtype (integer-type-to-fixtype arg-type))
+       (boolean-from-arg-fixtype (pack 'boolean-from- arg-fixtype))
+       (term* `(,boolean-from-arg-fixtype ,arg-term))
+       (uterm* (untranslate$ term* nil state))
        (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
                              ,arg-uterm)
                       (,arg-type-pred ,arg-uterm)
                       (valuep ,arg-uterm)
                       (equal (test-value ,arg-uterm)
-                             ,uterm)
-                      (booleanp ,uterm)))
+                             ,uterm*)
+                      (booleanp ,uterm*)))
        (formula (atc-contextualize formula gin.context nil))
        (formula `(implies (and (compustatep ,gin.compst-var)
                                (,gin.fn-guard ,@(formals+ gin.fn wrld)))
                           ,formula))
        (test-value-when-arg-type-pred (pack 'test-value-when- arg-type-pred))
-       ((unless (type-nonchar-integerp arg-type))
-        (reterr (raise "Internal error: non-integer type ~x0." arg-type)))
-       (arg-fixtype (integer-type-to-fixtype arg-type))
-       (boolean-from-arg-fixtype (pack 'boolean-from- arg-fixtype))
        (booleanp-of-boolean-from-arg-fixtype
         (pack 'booleanp-of- boolean-from-arg-fixtype))
        (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
@@ -836,7 +839,7 @@
                                                 :hints hints
                                                 :enable nil)))
     (retok (make-bexpr-gout :expr expr
-                            :term `(,boolean-from-arg-fixtype ,arg-term)
+                            :term term*
                             :events (append arg-events
                                             (list thm-event))
                             :thm-name thm-name
@@ -919,17 +922,20 @@
                                      ,then-thm
                                      (:e expr-cond->else)
                                      ,else-thm
-                                     condexpr
                                      booleanp-compound-recognizer))))
        (instructions
         `((casesplit ,test-term)
-          (claim (equal (if* ,test-term ,then-term ,else-term)
+          (claim (equal (condexpr (if* ,test-term ,then-term ,else-term))
                         ,then-term)
-                 :hints (("Goal" :in-theory '(acl2::if*-when-true))))
+                 :hints (("Goal" :in-theory '(acl2::if*-when-true
+                                              condexpr))))
+          (expand (condexpr (if* ,test-term ,then-term ,else-term)))
           (prove :hints ,hints)
-          (claim (equal (if* ,test-term ,then-term ,else-term)
+          (claim (equal (condexpr (if* ,test-term ,then-term ,else-term))
                         ,else-term)
-                 :hints (("Goal" :in-theory '(acl2::if*-when-false))))
+                 :hints (("Goal" :in-theory '(acl2::if*-when-false
+                                              condexpr))))
+          (expand (condexpr (if* ,test-term ,then-term ,else-term)))
           (prove :hints ,hints)))
        ((mv thm-event &)
         (evmac-generate-defthm thm-name
@@ -1265,7 +1271,7 @@
                                     :proofs gin.proofs)
                                    state))
                ((erp (pexpr-gout then))
-                (b* ((then-cond (untranslate$ test-term t state))
+                (b* ((then-cond (untranslate$ test.term t state))
                      (then-premise (atc-premise-test then-cond))
                      (then-context (append gin.context (list then-premise))))
                   (atc-gen-expr-pure then-term
@@ -1277,7 +1283,7 @@
                                       :proofs test.proofs)
                                      state)))
                ((erp (pexpr-gout else))
-                (b* ((not-test-term (dumb-negate-lit test-term))
+                (b* ((not-test-term (dumb-negate-lit test.term))
                      (else-cond (untranslate$ not-test-term nil state))
                      (else-premise (atc-premise-test else-cond))
                      (else-context (append gin.context (list else-premise))))
@@ -1289,7 +1295,7 @@
                                       :names-to-avoid then.names-to-avoid
                                       :proofs test.proofs)
                                      state))))
-            (atc-gen-expr-cond term test-term then-term else-term
+            (atc-gen-expr-cond term test.term then.term else.term
                                test.expr then.expr else.expr
                                then.type else.type
                                test.thm-name then.thm-name else.thm-name
@@ -1298,11 +1304,7 @@
                                 gin
                                 :thm-index else.thm-index
                                 :names-to-avoid else.names-to-avoid
-                                :proofs nil
-                                ;; this is temporarily off,
-                                ;; pending solving handling of guard theorems:
-                                ;; (and then.proofs else.proofs)
-                                )
+                                :proofs (and then.proofs else.proofs))
                                state))))
       (reterr
        (msg "When generating C code for the function ~x0, ~
@@ -1680,13 +1682,13 @@
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil pure.names-to-avoid wrld))
        (type-pred (type-to-recognizer pure.type wrld))
-       (uterm (untranslate$ term nil state))
+       (uterm* (untranslate$ pure.term nil state))
        (formula `(and (equal (exec-expr-call-or-pure ',pure.expr
                                                      ,gin.compst-var
                                                      ,gin.fenv-var
                                                      ,gin.limit-var)
-                             (mv ,uterm ,gin.compst-var))
-                      (,type-pred ,uterm)))
+                             (mv ,uterm* ,gin.compst-var))
+                      (,type-pred ,uterm*)))
        (formula (atc-contextualize formula gin.context nil))
        (formula `(implies (and (compustatep ,gin.compst-var)
                                (,gin.fn-guard ,@(formals+ gin.fn wrld))
