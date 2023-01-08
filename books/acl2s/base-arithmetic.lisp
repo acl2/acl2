@@ -671,6 +671,50 @@ I commented out some disabled theorems that seem fine to me.
   :hints (("goal" :in-theory (enable o<)))
   :rule-classes ((:rewrite :backchain-limit-lst 2)))
 
+(encapsulate
+ ()
+ (local
+   (defthm mul-frac-1
+     (implies (and (rationalp a)
+                   (rationalp b)
+                   (rationalp c)
+                   (pos-rationalp d)
+                   (< a (* b (/ c d))))
+              (< (* d a)
+                 (* d (* b (/ c d)))))))
+
+ (local
+   (defthm mul-frac-2
+     (implies (and (rationalp a)
+                   (rationalp c)
+                   (pos-rationalp b)
+                   (pos-rationalp d)
+                   (< a (/ (* c b) d)))
+              (< (/ a b)
+                 (/ (/ (* c b) d) b)))))
+
+ (defthm multiply-fractions
+   (implies (and (rationalp a)
+                 (rationalp c)
+                 (pos-rationalp b)
+                 (pos-rationalp d))
+            (equal (< (* a (/ b)) (* c (/ d)))
+                   (< (* a d) (* c b))))
+   :hints (("Goal" :use (mul-frac-1 mul-frac-2)))))
+
+; The following is a proof of EWD-1297 and is included as a test
+(encapsulate
+ ()
+ (local (in-theory (disable acl2::|(* (+ x y) z)|)))
+
+ (local (defthm ewd-1297
+          (implies (and (rationalp a)
+                        (rationalp c)
+                        (pos-rationalp b)
+                        (pos-rationalp d)
+                        (< (/ a b) (/ c d)))
+                   (and (< (/ a b) (/ (+ a c) (+ b d)))
+                        (< (/ (+ a c) (+ b d)) (/ c d)))))))
 
 #|
 
