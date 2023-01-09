@@ -11,6 +11,9 @@
 
 (in-package "ACL2")
 
+;; Note that truncate is less well supported for reasonong than floor, so
+;; consider enabling truncate-becomes-floor.
+
 (local (include-book "floor"))
 (local (include-book "numerator"))
 (local (include-book "times"))
@@ -79,6 +82,26 @@
            (<= 0 (truncate i j)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable truncate))))
+
+;; todo: gen?
+(defthm truncate-upper-bound-linear
+  (implies (and (<= 0 i)
+                (<= 0 j)
+                (rationalp i)
+                (rationalp j))
+           ;; the phrasing of the * term matches our normal form
+           (<= (truncate i j) (* i (/ j))))
+  :rule-classes ((:linear :trigger-terms ((truncate i j))))
+  :hints (("Goal" :in-theory (enable truncate-becomes-floor))))
+
+(defthm my-truncate-lower-bound-linear
+  (implies (and (<= 0 i)
+                (< 0 j)
+                (rationalp i)
+                (rationalp j))
+           (< (+ -1 (/ i j)) (truncate i j)))
+  :rule-classes ((:linear :trigger-terms ((truncate i j))))
+  :hints (("Goal" :in-theory (enable truncate-becomes-floor))))
 
 (defthm <=-of-truncate-same-linear
   (implies (and (rationalp i)
