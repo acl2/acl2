@@ -2007,86 +2007,87 @@
     :hints (("Goal"
              :in-theory (e/d (SV::SVEX-ALIST-EVAL$) ())))))
 ;;:i-am-here
-(defines fix-order-of-fa/ha-s-args
-  :verify-guards nil
-  (define fix-order-of-fa/ha-s-args ((x sv::svex-p))
-    :measure (sv::svex-count x)
-    :returns (res sv::svex-p :hyp (sv::svex-p x))
-    (sv::svex-case
-     x
-     :var x
-     :quote x
-     :call (case-match x
-             (('fa-s-chain & & &)
-              (b* ((lst1 (fix-order-of-fa/ha-s-args-list x.args))
-                   (lst2 (acl2::merge-sort-lexorder lst1)))
-                (sv::svex-call x.fn lst2)))
-             (('ha-s-chain & &)
-              (b* ((lst1 (fix-order-of-fa/ha-s-args-list x.args))
-                   (lst2 (acl2::merge-sort-lexorder lst1)))
-                (sv::svex-call x.fn lst2)))
-             (& (sv::svex-call
-                 x.fn
-                 (fix-order-of-fa/ha-s-args-list x.args))))))
-  (define fix-order-of-fa/ha-s-args-list ((lst sv::svexlist-p))
-    :measure (sv::svexlist-count lst)
-    :returns (res sv::svexlist-p :hyp (sv::svexlist-p lst))
-    (if (atom lst)
-        nil
-      (hons (fix-order-of-fa/ha-s-args (car lst))
-            (fix-order-of-fa/ha-s-args-list (cdr lst)))))
+(defsection fix-order-of-fa/ha-s-args
+  (defines fix-order-of-fa/ha-s-args
+    :verify-guards nil
+    (define fix-order-of-fa/ha-s-args ((x sv::svex-p))
+      :measure (sv::svex-count x)
+      :returns (res sv::svex-p :hyp (sv::svex-p x))
+      (sv::svex-case
+       x
+       :var x
+       :quote x
+       :call (case-match x
+               (('fa-s-chain & & &)
+                (b* ((lst1 (fix-order-of-fa/ha-s-args-list x.args))
+                     (lst2 (acl2::merge-sort-lexorder lst1)))
+                  (sv::svex-call x.fn lst2)))
+               (('ha-s-chain & &)
+                (b* ((lst1 (fix-order-of-fa/ha-s-args-list x.args))
+                     (lst2 (acl2::merge-sort-lexorder lst1)))
+                  (sv::svex-call x.fn lst2)))
+               (& (sv::svex-call
+                   x.fn
+                   (fix-order-of-fa/ha-s-args-list x.args))))))
+    (define fix-order-of-fa/ha-s-args-list ((lst sv::svexlist-p))
+      :measure (sv::svexlist-count lst)
+      :returns (res sv::svexlist-p :hyp (sv::svexlist-p lst))
+      (if (atom lst)
+          nil
+        (hons (fix-order-of-fa/ha-s-args (car lst))
+              (fix-order-of-fa/ha-s-args-list (cdr lst)))))
 
-  ///
+    ///
 
-  (local
-   (defthm svexlist-p-implies-true-listp
-     (implies (sv::svexlist-p lst)
-              (true-listp lst))))
+    (local
+     (defthm svexlist-p-implies-true-listp
+       (implies (sv::svexlist-p lst)
+                (true-listp lst))))
   
-  (verify-guards fix-order-of-fa/ha-s-args)
+    (verify-guards fix-order-of-fa/ha-s-args)
 
-  (memoize 'fix-order-of-fa/ha-s-args
-           :condition '(eq (sv::svex-kind x) :call))
+    (memoize 'fix-order-of-fa/ha-s-args
+             :condition '(eq (sv::svex-kind x) :call))
 
-  (defret-mutual <fn>-is-correct
-    (defret <fn>-is-correct
-      (implies (and (warrants-for-adder-pattern-match)
-                    (sv::svex-p x))
-               (equal (sv::svex-eval$ res env)
-                      (sv::svex-eval$ x env)))
-      :fn fix-order-of-fa/ha-s-args)
-    (defret <fn>-is-correct
-      (implies (and (warrants-for-adder-pattern-match)
-                    (sv::svexlist-p lst))
-               (equal (sv::svexlist-eval$ res env)
-                      (sv::svexlist-eval$ lst env)))
-      :fn fix-order-of-fa/ha-s-args-list)
-    :hints (("Goal"
+    (defret-mutual <fn>-is-correct
+      (defret <fn>-is-correct
+        (implies (and (warrants-for-adder-pattern-match)
+                      (sv::svex-p x))
+                 (equal (sv::svex-eval$ res env)
+                        (sv::svex-eval$ x env)))
+        :fn fix-order-of-fa/ha-s-args)
+      (defret <fn>-is-correct
+        (implies (and (warrants-for-adder-pattern-match)
+                      (sv::svexlist-p lst))
+                 (equal (sv::svexlist-eval$ res env)
+                        (sv::svexlist-eval$ lst env)))
+        :fn fix-order-of-fa/ha-s-args-list)
+      :hints (("Goal"
              
-             :expand ((:free (args)
-                             (sv::svex-apply$ 'ha-s-chain args))
-                      (:free (args)
-                             (sv::svex-apply$ 'fa-s-chain args))
-                      (acl2::merge-sort-lexorder (cdr x))
-                      (fix-order-of-fa/ha-s-args-list lst)
-                      (fix-order-of-fa/ha-s-args x))
-             :in-theory (e/d (acl2::merge-lexorder
-                              acl2::merge-sort-lexorder
-                              ha-s-chain
-                              fa-s-chain
-                              sv::svex-call->fn
-                              sv::svex-call->args)
-                             ())))))
+               :expand ((:free (args)
+                               (sv::svex-apply$ 'ha-s-chain args))
+                        (:free (args)
+                               (sv::svex-apply$ 'fa-s-chain args))
+                        (acl2::merge-sort-lexorder (cdr x))
+                        (fix-order-of-fa/ha-s-args-list lst)
+                        (fix-order-of-fa/ha-s-args x))
+               :in-theory (e/d (acl2::merge-lexorder
+                                acl2::merge-sort-lexorder
+                                ha-s-chain
+                                fa-s-chain
+                                sv::svex-call->fn
+                                sv::svex-call->args)
+                               ())))))
 
-(define fix-order-of-fa/ha-s-args-alist ((alist sv::svex-alist-p))
-  :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p alist))
-  (if (atom alist)
+  (define fix-order-of-fa/ha-s-args-alist ((alist sv::svex-alist-p))
+    :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p alist))
+    (if (atom alist)
         nil
-    (acons (caar alist)
-           (fix-order-of-fa/ha-s-args (cdar alist))
-           (fix-order-of-fa/ha-s-args-alist (cdr alist))))
-  ///
-  (defret <fn>-is-correct
+      (acons (caar alist)
+             (fix-order-of-fa/ha-s-args (cdar alist))
+             (fix-order-of-fa/ha-s-args-alist (cdr alist))))
+    ///
+    (defret <fn>-is-correct
       (implies (and (warrants-for-adder-pattern-match)
                     (sv::svex-alist-p alist))
                (equal (sv::svex-alist-eval$ res env)
@@ -2094,7 +2095,12 @@
       :fn fix-order-of-fa/ha-s-args-alist
       :hints (("Goal"
                :in-theory (e/d (SV::SVEX-ALIST-EVAL$) ()))))
-  )
+    ))
+
+
+;; :i-am-here
+
+;; (defines 
 
 
 ;;:i-am-here
