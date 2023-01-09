@@ -13997,6 +13997,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     read-file-iterate-safe
     #+acl2-devel plist-worldp-with-formals ; *the-live-state* (performance)
     set-cbd-fn1
+    read-hons-copy-lambda-object-culprit ; reads wormhole data from oracle
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -14618,6 +14619,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (gag-state . nil)
     (gag-state-saved . nil) ; saved when gag-state is set to nil
     (get-internal-time-as-realtime . nil) ; seems harmless to change
+    (giant-lambda-object . nil)
     (global-ctx . nil)
     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode
     (gstackp . nil)
@@ -24823,8 +24825,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (mv-let (nullp temp state)
                     (read-acl2-oracle state) ; clears *next-acl2-oracle-value*
                     (declare (ignore nullp))
-                    (cond (temp (mv step-limit temp nil nil nil nil state))
-                          (t (mv step-limit nil x1 x2 x3 x4 state)))))))
+                    (cond
+                     (temp (mv step-limit temp "Time-limit" nil nil nil state))
+                     (t (mv step-limit nil x1 x2 x3 x4 state)))))))
 
 #+acl2-par
 (defmacro catch-time-limit5@par (form)
@@ -24860,7 +24863,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (mv-let (nullp temp)
                     (read-acl2-oracle@par state);clears *next-acl2-oracle-value*
                     (declare (ignore nullp))
-                    (cond (temp (mv step-limit temp nil nil nil nil))
+                    (cond (temp (mv step-limit temp "Time-limit" nil nil nil))
                           (t (mv step-limit nil x1 x2 x3 x4)))))))
 
 (defconst *interrupt-string*
@@ -27573,6 +27576,7 @@ Lisp definition."
      er
      er-let*
      er-progn
+     er-soft
      error-fms
      error-in-parallelism-mode
      error1
@@ -27667,7 +27671,6 @@ Lisp definition."
      translate-hint
      translate-hints
      translate-hints1
-     translate-hints2
      translate-hints+1
      translate-hint-expression
      translate-hint-expressions
@@ -27690,7 +27693,6 @@ Lisp definition."
      translate-use-hint
      translate-use-hint1
      translate-x-hint-value
-     warn-on-duplicate-hint-goal-specs
      waterfall-msg
      waterfall-print-clause
      waterfall-step

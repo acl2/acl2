@@ -3,8 +3,8 @@
  "portcullis")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
-; (depends-on "build/rewrite-constant.certdep" :dir :system)
-; (depends-on "build/prove-spec-var.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
 
 (in-package "ACL2S")
 
@@ -551,21 +551,24 @@ I commented out some disabled theorems that seem fine to me.
 
 #!acl2
 (local
- (set-default-hints
-  '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)
-    (acl2s::stage acl2s::negp)
-    (acl2s::stage acl2s::posp)
-    (acl2s::stage acl2s::natp)
-    (acl2s::stage acl2s::non-pos-integerp)
-    (acl2s::stage acl2s::neg-ratiop)
-    (acl2s::stage acl2s::pos-ratiop)
-    (acl2s::stage acl2s::non-neg-ratiop)
-    (acl2s::stage acl2s::non-pos-ratiop)
-    (acl2s::stage acl2s::ratiop)
-    (acl2s::stage acl2s::neg-rationalp)
-    (acl2s::stage acl2s::pos-rationalp)
-    (acl2s::stage acl2s::non-neg-rationalp)
-    (acl2s::stage acl2s::non-pos-rationalp))))
+  (set-default-hints
+   '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)
+     ;; Used compound-recognizer rules and I thought that may obviate the need
+     ;; for stage hints, but mod-plus-simplify-a<n-+b+n fails!
+     (acl2s::stage acl2s::negp)
+     (acl2s::stage acl2s::posp)
+     (acl2s::stage acl2s::natp)
+     (acl2s::stage acl2s::non-pos-integerp)
+     (acl2s::stage acl2s::neg-ratiop)
+     (acl2s::stage acl2s::pos-ratiop)
+     (acl2s::stage acl2s::non-neg-ratiop)
+     (acl2s::stage acl2s::non-pos-ratiop)
+     (acl2s::stage acl2s::ratiop)
+     (acl2s::stage acl2s::neg-rationalp)
+     (acl2s::stage acl2s::pos-rationalp)
+     (acl2s::stage acl2s::non-neg-rationalp)
+     (acl2s::stage acl2s::non-pos-rationalp)
+     )))
 
 (include-book "arithmetic-5/top" :dir :system)
 

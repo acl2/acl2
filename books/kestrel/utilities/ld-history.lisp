@@ -53,17 +53,21 @@
           (most-recent-failed-command-aux (rest ld-history) whole-ld-history event-types)
         (let* ((entry-input (ld-history-entry-input entry))
                ;; Strip must-fail, if present (TODO: What else to strip?):
-               (entry-input (if (and (consp entry-input)
-                                     (eq 'must-fail (car entry-input))
-                                     (= 1 (len (cdr entry-input))))
+               (must-failp (and (consp entry-input)
+                                (eq 'must-fail (car entry-input))
+                                (= 1 (len (cdr entry-input)))))
+               (entry-input (if must-failp
                                 (cadr entry-input)
                               entry-input)))
           (if (and (consp entry-input)
-                   (member-eq (car entry-input) event-types) ;todo: rule? verify-termination?  verify-guards? what about other kinds of proofs?
+                   (member-eq (car entry-input) event-types) ;todo: support rule? verify-termination? verify-guards? other things?
                    (let ((results (ld-history-entry-results entry)))
                      (and (consp results) ; should have length 3
-                          (first results) ; non-nil error means the theorem failed
-                          )))
+                          (let ((failedp (first results)))
+                            (if must-failp
+                                (not failedp) ; ensure that the must-fail *didn't* fail, thus it contains a theorem that did fail
+                              ;; usual case: non-nil error means the theorem failed:
+                              failedp)))))
               entry-input
             ;; Keep looking:
             (most-recent-failed-command-aux (rest ld-history) whole-ld-history event-types)))))))

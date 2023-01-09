@@ -19,6 +19,7 @@
 (include-book "kestrel/event-macros/screen-printing" :dir :system)
 (include-book "kestrel/std/system/add-suffix-to-fn-lst" :dir :system)
 (include-book "kestrel/std/system/genvar-dollar" :dir :system)
+(include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
 (include-book "kestrel/std/system/measure-plus" :dir :system)
 (include-book "kestrel/std/system/one-way-unify-dollar" :dir :system)
 (include-book "kestrel/std/system/termination-theorem-dollar" :dir :system)
@@ -495,6 +496,44 @@
                               :verify-guards nil
                               :enable nil)))
     (mv event name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-fn-def* ((fn symbolp)
+                         (names-to-avoid symbol-listp)
+                         (wrld plist-worldp))
+  :returns (mv (events pseudo-event-form-listp)
+               (name symbolp)
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate a local theorem that defines @('fn') using @(tsee if*)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In order to have more control on case splitting,
+     in our new modular proof generation approach,
+     we use @(tsee if*) instead of @(tsee if).
+     The target functions use @(tsee if) of course,
+     so we need to convert their definition to use @(tsee if*).
+     We do so by generating, for each target function,
+     a rule that expands it to its body
+     but with @(tsee if) replaced with @(tsee if*)."))
+  (b* (((mv event-def fn-def names-to-avoid)
+        (install-not-normalized-event fn t names-to-avoid wrld))
+       (fn-def* (pack fn "-DEF*"))
+       ((mv fn-def* names-to-avoid)
+        (fresh-logical-name-with-$s-suffix fn-def* nil names-to-avoid wrld))
+       (body (ubody+ fn wrld))
+       (body* (fty-if-to-if* body))
+       (formula `(equal (,fn ,@(formals+ fn wrld))
+                        ,body*))
+       (hints `(("Goal" :in-theory '(,fn-def if*))))
+       ((mv event-def* &) (evmac-generate-defthm fn-def*
+                                                 :formula formula
+                                                 :hints hints
+                                                 :enable nil)))
+    (mv (list event-def event-def*)
+        fn-def*
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2070,7 +2109,13 @@
      Each theorem is contextualized to the initial computation state;
      this is what @('context') contains.
      We return the variable table, along with the theorem events,
-     whose names are stored in the variable table."))
+     whose names are stored in the variable table.")
+   (xdoc::p
+    "The @('-0') suffix that we use for the generated theorem name
+     is motivated by the fact that these are the theorems
+     for the initial symbol table;
+     as we update the symbol table in the course of generating code,
+     we use positive indices as suffixes."))
   (b* (((mv scope events names-to-avoid)
         (atc-gen-init-inscope-aux fn fn-guard fn-formals typed-formals
                                   compst-var context names-to-avoid wrld)))
@@ -2096,14 +2141,14 @@
           (type (atc-var-info->type info))
           (var-thm (atc-var-info->thm info))
           (type-pred (type-to-recognizer type wrld))
-          (name (pack fn '- var '-in-scope))
+          (name (pack fn '- var '-in-scope-0))
           ((mv name names-to-avoid)
            (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
           (formula `(and (equal (read-var (ident ,(symbol-name var))
                                           ,compst-var)
                                 ,var)
                          (,type-pred ,var)))
-          (formula (atc-contextualize formula context))
+          (formula (atc-contextualize formula context nil))
           (formula `(implies (and (compustatep ,compst-var)
                                   (,fn-guard ,@fn-formals))
                              ,formula))
@@ -2169,7 +2214,7 @@
                                   name nil names-to-avoid wrld))
        (formula `(equal (pop-frame ,compst-var)
                         ,compst0-var))
-       (formula (atc-contextualize formula context))
+       (formula (atc-contextualize formula context nil))
        (formula `(implies (and (compustatep ,compst-var)
                                (,fn-guard ,@(formals+ fn wrld)))
                           (let ((,compst0-var ,compst-var))
@@ -2186,6 +2231,7 @@
 
 (define atc-gen-fun-correct-thm ((fn symbolp)
                                  (fn-guard symbolp)
+                                 (fn-def* symbolp)
                                  (prog-const symbolp)
                                  (compst-var symbolp)
                                  (fenv-var symbolp)
@@ -2261,7 +2307,7 @@
                                (:e tyname-to-type)
                                (:e ,(pack 'type- (type-kind body-type)))
                                ,pop-frame-thm
-                               ,fn))))
+                               ,fn-def*))))
        ((mv lemma-event &) (evmac-generate-defthm lemma-name
                                                   :formula lemma-formula
                                                   :hints lemma-hints
@@ -2349,6 +2395,10 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
+       ((mv fn-def*-events
+            fn-def*
+            names-to-avoid)
+        (atc-gen-fn-def* fn names-to-avoid wrld))
        ((erp typed-formals formals-events modular-proofs names-to-avoid)
         (atc-typed-formals
          fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
@@ -2485,6 +2535,7 @@
                   (if modular-proofs
                       (atc-gen-fun-correct-thm fn
                                                fn-guard
+                                               fn-def*
                                                prog-const
                                                compst-var
                                                fenv-var
@@ -2525,6 +2576,7 @@
                  (local-events (append progress-start?
                                        (list fn-fun-env-event)
                                        (list fn-guard-event)
+                                       fn-def*-events
                                        formals-events
                                        (and modular-proofs
                                             (list init-scope-expand-event
@@ -3512,7 +3564,6 @@
                                    *atc-wrapper-rules*
                                    *atc-distributivity-over-if-rewrite-rules*
                                    *atc-identifier-rules*
-                                   *atc-not-rules*
                                    *atc-integer-size-rules*
                                    *atc-limit-rules*
                                    *atc-not-error-rules*
@@ -3571,7 +3622,6 @@
                               *atc-wrapper-rules*
                               *atc-distributivity-over-if-rewrite-rules*
                               *atc-identifier-rules*
-                              *atc-not-rules*
                               *atc-integer-size-rules*
                               *atc-limit-rules*
                               *atc-not-error-rules*

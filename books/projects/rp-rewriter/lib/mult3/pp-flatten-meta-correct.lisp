@@ -512,6 +512,12 @@
                              (:definition quotep)))))))
 
 (local
+ (defthm VALID-SC-SUBTERMS-LST-strip-cdrs-append
+   (equal (VALID-SC-SUBTERMS-LST (STRIP-CDRS (APPEND x y)) a)
+          (and (VALID-SC-SUBTERMS-LST (STRIP-CDRS x) a)
+               (VALID-SC-SUBTERMS-LST (STRIP-CDRS y) a))))) 
+
+(local
  (defthm sort-sum-meta-aux2-returns-valid-sc
    (implies (valid-sc term a)
             (valid-sc-subterms-lst

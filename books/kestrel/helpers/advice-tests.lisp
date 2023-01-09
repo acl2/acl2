@@ -16,7 +16,7 @@
 ;; A simple test, with extensive guard checking
 (deftest
   (defthm-advice test (equal x x) :rule-classes nil
-    :models nil ; don't contact the server
+    :models '(:enable :history) ; don't contact the server (todo: allow :non-ml and :ml)
     )
   )
 
@@ -25,6 +25,15 @@
   (defthm-advice test2
     (equal (len (append x y))
            (+ (len x) (len y)))
-    :models nil ; don't contact the server
+    :models '(:enable :history) ; don't contact the server
     )
   )
+
+;; TODO: How can I test (advice) in a book, given that it requires a failed theorem in the command history?
+;; ;; Check for issues like guard violations:
+;; ;(deftest
+;; (set-guard-checking :all)
+;; (must-fail (defthm mod-test (implies (natp x) (< (mod x 8) 200))))
+;; (advice :models nil ; don't contact the server
+;;         )
+;; ;)

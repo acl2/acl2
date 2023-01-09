@@ -22,6 +22,7 @@
                           bool
                           char-fix
                           chars=>nats
+                          constant-namep
                           constant-value
                           defmacro+
                           defxdoc+
@@ -31,6 +32,7 @@
                           ensure-value-is-string$
                           ensure-value-is-symbol$
                           er-soft+
+                          erp
                           explode
                           fun
                           implode
@@ -62,10 +64,14 @@
                           pseudo-event-formp
                           pseudo-event-form-listp
                           read-file-characters
+                          reterr
+                          retok
                           return-raw
                           seq
                           seq-backtrack
                           string=>nats
+                          string-symbol-alistp
+                          string-symbollist-alistp
                           table-alist+
                           unsigned-byte-listp
                           fty::reserrf

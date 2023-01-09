@@ -1,6 +1,6 @@
 ; R1CSes in sparse form
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -92,6 +92,12 @@
               (equal 2 (len x))
               (integerp (first x))
               (pseudo-varp (second x))
+              (sparse-vectorp y)))
+  :hints (("Goal" :in-theory (enable sparse-vectorp))))
+
+(defthm sparse-vectorp-of-append
+  (equal (sparse-vectorp (append x y))
+         (and (sparse-vectorp (true-list-fix x))
               (sparse-vectorp y)))
   :hints (("Goal" :in-theory (enable sparse-vectorp))))
 

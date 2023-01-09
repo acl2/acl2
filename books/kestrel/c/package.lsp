@@ -64,6 +64,7 @@
                defxdoc+
                doublet-listp
                doublets-to-alist
+               dumb-negate-lit
                e/d*
                enable*
                ensure-function-is-defined$
@@ -99,6 +100,7 @@
                fquotep
                fresh-logical-name-with-$s-suffix
                fsubcor-var
+               fsublis-fn-simple
                fsublis-var
                fsublis-var-lst
                genvar
@@ -106,6 +108,7 @@
                get-ruleset
                implode
                impossible
+               install-not-normalized-event
                irecursivep+
                keyword-listp
                keyword-symbol-alistp

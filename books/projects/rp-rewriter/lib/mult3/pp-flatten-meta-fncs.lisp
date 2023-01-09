@@ -1223,7 +1223,10 @@
                (sort-sum-meta-aux2 rest))
               ((unless rest-valid)
                (mv nil nil)))
-           (mv t (merge-sorted-pp-lists pp-lists1 pp-lists2))))
+           (mv t
+               (append pp-lists1 pp-lists2)
+               ;;(merge-sorted-pp-lists pp-lists1 pp-lists2)
+               )))
         (& (b* (((unless (pp-term-p term-orig))
                  (mv nil nil))
                 ((when (or (include-fnc term 's)
@@ -1241,6 +1244,12 @@
              (mv t res)))))
     ///
 
+
+    (defthm rp-term-list-listp-strip-cdrs-append
+      (equal (RP-TERM-LIST-LISTP (STRIP-CDRS (APPEND a b)))
+             (and (RP-TERM-LIST-LISTP (STRIP-CDRS a))
+                  (RP-TERM-LIST-LISTP (STRIP-CDRS b)))))
+    
     (defthm rp-term-list-listp-strip-cdrs-sort-sum-meta-aux2
       (implies (rp-termp term)
                (rp-term-list-listp (strip-cdrs (mv-nth 1 (sort-sum-meta-aux2

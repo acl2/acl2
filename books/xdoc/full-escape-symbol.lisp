@@ -30,12 +30,21 @@
 
 (in-package "XDOC")
 
+(include-book "misc/symbol-print-full-escapes" :dir :system)
+
+#||
+This code has been moved to books/misc/symbol-print-full-escapes.lisp
+at the same time the code was fixed to escape backslashes in the string.
+- Eric McCarthy (mccarthy@kestrel.edu)
+
 (defun bar-escape-chars (x)
   (declare (xargs :guard (character-listp x)))
   (cond ((atom x)
          nil)
         ((eql (car x) #\|)
          (list* #\\ #\| (bar-escape-chars (cdr x))))
+        ((eql (car x) #\\)
+         (list* #\\ #\\ (bar-escape-chars (cdr x))))
         (t
          (cons (car x) (bar-escape-chars (cdr x))))))
 
@@ -46,9 +55,9 @@
 
 (defun bar-escape-string (x)
   (declare (type string x))
-  ;; Dumb optimization: don't need to escape anything unless there's a #\|
+  ;; Dumb optimization: don't need to escape anything unless there's a #\| or #\\
   ;; somewhere.
-  (if (position #\| x)
+  (if (or (position #\| x) (position #\\ x))
       (coerce (bar-escape-chars (coerce x 'list)) 'string)
     x))
 
@@ -56,3 +65,8 @@
   (declare (type symbol x))
   (concatenate 'string "|" (bar-escape-string (symbol-package-name x)) "|::|"
                (bar-escape-string (symbol-name x)) "|"))
+||#
+
+(defun full-escape-symbol (x)
+  (declare (type symbol x))
+  (acl2::full-escape-symbol x))

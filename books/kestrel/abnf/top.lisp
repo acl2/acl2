@@ -12,6 +12,7 @@
 
 (include-book "notation/top")
 (include-book "grammar-parser/top")
+(include-book "grammar-printer/top")
 (include-book "grammar-definer/top")
 (include-book "operations/top")
 (include-book "parsing-tools/top")

@@ -100,6 +100,7 @@
 
 ;; Often we'll know (true-listp l) and no case split will occur.
 ;; Not quite the same as true-listp-of-update-nth in std.
+;; Note that a related rule, true-listp-update-nth, is built-in but is a :type-prescription rule.
 (defthm true-listp-of-update-nth-2
   (equal (true-listp (update-nth key val l))
          (if (true-listp l)

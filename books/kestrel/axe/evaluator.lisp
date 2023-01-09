@@ -37,7 +37,9 @@
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
-(include-book "kestrel/bv-lists/list-patterns" :dir :system) ; for getbit-is-always-0 and getbit-is-always-1
+(include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
+;(include-book "kestrel/bv-lists/nth2" :dir :system) ; todo: drop?
+;(include-book "kestrel/bv-lists/list-patterns" :dir :system) ; for getbit-is-always-0 and getbit-is-always-1
 (include-book "kestrel/bv-lists/array-patterns" :dir :system) ; for every-nth
 (include-book "kestrel/lists-light/add-to-end" :dir :system)
 (include-book "kestrel/lists-light/group" :dir :system) ;drop?
@@ -306,29 +308,29 @@
          (firstn n lst))
   :hints (("Goal" :in-theory (enable firstn-unguarded))))
 
-(defund getbit-is-always-0-unguarded (n items)
-  (declare (xargs :guard t))
-  (if (atom items)
-      t
-      (and (equal 0 (getbit (nfix n) (ifix (car items))))
-           (getbit-is-always-0-unguarded n (cdr items)))))
+;; (defund getbit-is-always-0-unguarded (n items)
+;;   (declare (xargs :guard t))
+;;   (if (atom items)
+;;       t
+;;       (and (equal 0 (getbit (nfix n) (ifix (car items))))
+;;            (getbit-is-always-0-unguarded n (cdr items)))))
 
-(defthm getbit-is-always-0-unguarded-correct
-  (equal (getbit-is-always-0-unguarded n items)
-         (getbit-is-always-0 n items))
-  :hints (("Goal" :in-theory (enable getbit-is-always-0-unguarded getbit-is-always-0))))
+;; (defthm getbit-is-always-0-unguarded-correct
+;;   (equal (getbit-is-always-0-unguarded n items)
+;;          (getbit-is-always-0 n items))
+;;   :hints (("Goal" :in-theory (enable getbit-is-always-0-unguarded getbit-is-always-0))))
 
-(defund getbit-is-always-1-unguarded (n items)
-  (declare (xargs :guard t))
-  (if (atom items)
-      t
-      (and (equal 1 (getbit (nfix n) (ifix (car items))))
-           (getbit-is-always-1-unguarded n (cdr items)))))
+;; (defund getbit-is-always-1-unguarded (n items)
+;;   (declare (xargs :guard t))
+;;   (if (atom items)
+;;       t
+;;       (and (equal 1 (getbit (nfix n) (ifix (car items))))
+;;            (getbit-is-always-1-unguarded n (cdr items)))))
 
-(defthm getbit-is-always-1-unguarded-correct
-  (equal (getbit-is-always-1-unguarded n items)
-         (getbit-is-always-1 n items))
-  :hints (("Goal" :in-theory (enable getbit-is-always-1-unguarded getbit-is-always-1))))
+;; (defthm getbit-is-always-1-unguarded-correct
+;;   (equal (getbit-is-always-1-unguarded n items)
+;;          (getbit-is-always-1 n items))
+;;   :hints (("Goal" :in-theory (enable getbit-is-always-1-unguarded getbit-is-always-1))))
 
 
     ;; TODO: Consider having different evaluators for rewriting and for evaluating test cases when sweeping and merging
@@ -458,8 +460,8 @@
                   (take take-unguarded arg1 arg2) ;see take-unguarded-correct
                   (firstn firstn-unguarded arg1 arg2) ;see firstn-unguarded-correct
                   (binary-append binary-append-unguarded arg1 arg2) ;see binary-append-unguarded-correct
-                  (getbit-is-always-0 getbit-is-always-0-unguarded arg1 arg2) ;see getbit-is-always-0-unguarded-correct
-                  (getbit-is-always-1 getbit-is-always-1-unguarded arg1 arg2) ;see getbit-is-always-1-unguarded-correct
+                  ;; (getbit-is-always-0 getbit-is-always-0-unguarded arg1 arg2) ;see getbit-is-always-0-unguarded-correct
+                  ;; (getbit-is-always-1 getbit-is-always-1-unguarded arg1 arg2) ;see getbit-is-always-1-unguarded-correct
                   (signed-byte-p signed-byte-p arg1 arg2)     ;unguarded
                   (unsigned-byte-p unsigned-byte-p arg1 arg2) ;unguarded
 
@@ -528,7 +530,7 @@
                          (sbvlt sbvlt arg1 (ifix arg2) (ifix arg3)) ;probably okay - may not be needed if guards for the defining functions were better
                          (sbvle sbvle arg1 arg2 arg3)
                          (s s arg1 arg2 arg3) ;unguarded
-                         (nth2 nth2 arg1 arg2 arg3)
+;;                         (nth2 nth2 arg1 arg2 arg3)
                          (myif myif arg1 arg2 arg3)     ;unguarded
                          (boolif boolif arg1 arg2 arg3) ;unguarded
                          (array-elem-2d array-elem-2d arg1 arg2 arg3) ;drop?
@@ -545,7 +547,7 @@
                                 (update-nth2 update-nth2 arg1 arg2 arg3 arg4)
                                 (bv-array-clear bv-array-clear arg1 arg2 arg3 arg4)
                                 (bvcat bvcat-unguarded arg1 arg2 arg3 arg4)
-                                (bvnth bvnth arg1 arg2 (nfix arg3) arg4)
+                                ;; (bvnth bvnth arg1 arg2 (nfix arg3) arg4)
                                 (bv-array-read bv-array-read-unguarded arg1 arg2 arg3 arg4)
                                 (bvif bvif-unguarded arg1 arg2 arg3 arg4))
                               (acons 5 '((update-subrange2 update-subrange2 arg1 arg2 arg3 arg4 arg5) ;new

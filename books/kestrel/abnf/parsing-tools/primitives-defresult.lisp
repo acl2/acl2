@@ -72,12 +72,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-direct ((nats nat-listp) (input nat-listp))
-  :returns (mv (tree abnf::tree-resultp)
+  :returns (mv (tree tree-resultp)
                (rest-input nat-listp))
   :short "Parse a direct numeric value consisting of given natural numbers."
   (b* (((mv nats input) (parse-direct-aux nats input))
        ((when (reserrp nats)) (mv (reserrf-push nats) input)))
-    (mv (abnf::tree-leafterm nats)
+    (mv (tree-leafterm nats)
         input))
   :hooks (:fix)
 
@@ -138,7 +138,7 @@
 
 (define parse-range ((min natp) (max natp) (input nat-listp))
   :guard (<= min max)
-  :returns (mv (tree abnf::tree-resultp)
+  :returns (mv (tree tree-resultp)
                (rest-input nat-listp))
   :short "Parse a range numeric value consisting of given minimum and maximum."
   (b* (((mv nat? input1) (parse-next input))
@@ -150,7 +150,7 @@
                          (lnfix max))))
         (mv (reserrf (list :found nat :required (lnfix min) (lnfix max)))
             (nat-list-fix input))))
-    (mv (abnf::tree-leafterm (list nat))
+    (mv (tree-leafterm (list nat))
         input1))
   :hooks (:fix)
   ///
@@ -169,13 +169,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-ichars ((chars acl2::stringp) (input nat-listp))
-  :returns (mv (tree abnf::tree-resultp)
+  :returns (mv (tree tree-resultp)
                (rest-input nat-listp))
   :short "Parse a case-insensitive character value consisting of
           a given string of characters."
   (b* (((mv nats input) (parse-ichars-aux (str::explode chars) input))
        ((when (reserrp nats)) (mv (reserrf-push nats) input)))
-    (mv (abnf::tree-leafterm nats)
+    (mv (tree-leafterm nats)
         input))
   :hooks (:fix)
 
@@ -197,7 +197,7 @@
           ((mv nat? input1) (parse-next input))
           ((when (reserrp nat?)) (mv (reserrf-push nat?) (nat-list-fix input)))
           (nat nat?)
-          ((unless (abnf::nat-match-insensitive-char-p nat (car chars)))
+          ((unless (nat-match-insensitive-char-p nat (car chars)))
            (mv (reserrf (list :found nat :required (acl2::char-fix (car chars))))
                (nat-list-fix input)))
           ((mv nats? input2) (parse-ichars-aux (cdr chars) input1))
@@ -236,13 +236,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-schars ((chars acl2::stringp) (input nat-listp))
-  :returns (mv (tree abnf::tree-resultp)
+  :returns (mv (tree tree-resultp)
                (rest-input nat-listp))
   :short "Parse a case-sensitive character value consisting of
           a given string of characters."
   (b* (((mv nats input) (parse-schars-aux (str::explode chars) input))
        ((when (reserrp nats)) (mv (reserrf-push nats) input)))
-    (mv (abnf::tree-leafterm nats)
+    (mv (tree-leafterm nats)
         input))
   :hooks (:fix)
 
@@ -264,7 +264,7 @@
           ((mv nat? input1) (parse-next input))
           ((when (reserrp nat?)) (mv (reserrf-push nat?) (nat-list-fix input)))
           (nat nat?)
-          ((unless (abnf::nat-match-sensitive-char-p nat (car chars)))
+          ((unless (nat-match-sensitive-char-p nat (car chars)))
            (mv (reserrf (list :found nat :required (acl2::char-fix (car chars))))
                (nat-list-fix input)))
           ((mv nats? input2) (parse-schars-aux (cdr chars) input1))

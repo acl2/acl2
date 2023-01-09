@@ -4492,12 +4492,18 @@
         ((eq (car name) 'lambda)
          (cond
           ((well-formed-lambda-objectp name wrld)
-           (value-cmp
 
-; We call hons-copy here for the same reason that is given in
-; translate11-lambda-object.
+; We call hons-copy-lambda-object? here for the same reason that is given in
+; translate11-lambda-object.  Our convention is to call
+; hons-copy-lambda-object?  on QUOTEd lambda objects and name isn't quoted.  So
+; we quote it just so the error message is nice.  And then we unquote the
+; returned value when there's no error.
 
-            (hons-copy name)))
+           (mv-let (erp val)
+             (hons-copy-lambda-object? (kwote name))
+             (cond
+              (erp (er-cmp ctx "~@0" val))
+              (t (value-cmp (unquote val))))))
           (t (er-cmp ctx
                      "~x0 is not a well-formed LAMBDA expression.  See :DOC ~
                       verify-guards."
@@ -6165,8 +6171,7 @@
                     names 'guard guards *t*
                     (putprop-x-lst2-unless
                      names 'split-types-term split-types-terms *t*
-                     (putprop-x-lst1
-                      names 'symbol-class :program wrld1))))))
+                     wrld1)))))
       (value (cons wrld2 nil))))))
 
 ; Now we develop the output for the defun event.

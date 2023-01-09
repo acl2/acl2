@@ -34,7 +34,7 @@
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ;needed?
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
-(include-book "kestrel/bv-lists/bvnth" :dir :system) ; for nth2
+;(include-book "kestrel/bv-lists/bvnth" :dir :system) ; for nth2
 (include-book "kestrel/utilities/mydefconst" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
 (include-book "kestrel/lists-light/prefixp" :dir :system)
@@ -347,15 +347,15 @@
 ;;          x)
 ;;   :hints (("Goal" :in-theory (enable sbvdiv floor-by-4))))
 
-;move
-(defthmd bvchop-of-nth2-becomes-bv-array-read
-  (implies (and (unsigned-byte-p n x)
-                (natp n)
-                (natp size))
-           (equal (bvchop size (nth2 n x data))
-                  (bv-array-read size (expt 2 n) x data)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer nth2 ceiling-of-lg)
-                                  (nth-of-bv-array-write-becomes-bv-array-read)))))
+;; ;move
+;; (defthmd bvchop-of-nth2-becomes-bv-array-read
+;;   (implies (and (unsigned-byte-p n x)
+;;                 (natp n)
+;;                 (natp size))
+;;            (equal (bvchop size (nth2 n x data))
+;;                   (bv-array-read size (expt 2 n) x data)))
+;;   :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer nth2 ceiling-of-lg)
+;;                                   (nth-of-bv-array-write-becomes-bv-array-read)))))
 
 (defthm sbvlt-of-one-more-hack
   (implies (integerp x)
@@ -3289,8 +3289,6 @@
                                    logapp-equal-rewrite
                                    bvcat-equal-rewrite-alt bvcat-equal-rewrite
                                    )))))
-
-(in-theory (disable BV-ARRAY-WRITE-OF-BV-ARRAY-WRITE-DIFF-CONSTANT-INDICES)) ;move up -will this break anything?
 
 (defthm bvlt-of-max-arg2
   (implies (and (syntaxp (and (quotep k)
@@ -16855,39 +16853,39 @@
            :use (:instance split-bv (y (bvchop 2 x)) (m 1) (n 2))
            :in-theory (enable bvlt bvcat logapp))))
 
-(defthmd equal-of-nth2-and-bv-array-read
-  (implies (and (natp len)
-                (natp index)
-                (< index len)
-                (natp width2)
-                (<= width2 width)
-                (unsigned-byte-p width index)
-                )
-           (equal (equal (nth2 width index data) (bv-array-read width2 len index data))
-                  (unsigned-byte-p width2 (nth2 width index data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener nth2) (nth-becomes-bv-array-read2)))))
+;; (defthmd equal-of-nth2-and-bv-array-read
+;;   (implies (and (natp len)
+;;                 (natp index)
+;;                 (< index len)
+;;                 (natp width2)
+;;                 (<= width2 width)
+;;                 (unsigned-byte-p width index)
+;;                 )
+;;            (equal (equal (nth2 width index data) (bv-array-read width2 len index data))
+;;                   (unsigned-byte-p width2 (nth2 width index data))))
+;;   :hints (("Goal" :in-theory (e/d (bv-array-read-opener nth2) (nth-becomes-bv-array-read2)))))
 
-;rename?
-(defthmd equal-of-nth2-and-bv-array-read-alt
-  (implies (and (natp len)
-                (natp index)
-                (< index len)
-                (natp width2)
-                (<= width2 width)
-                (unsigned-byte-p width index)
-                )
-           (equal (equal (bv-array-read width2 len index data) (nth2 width index data))
-                  (unsigned-byte-p width2 (nth2 width index data))))
-  :hints (("Goal" :use (:instance equal-of-nth2-and-bv-array-read)
-           :in-theory (disable equal-of-nth2-and-bv-array-read))))
+;; ;rename?
+;; (defthmd equal-of-nth2-and-bv-array-read-alt
+;;   (implies (and (natp len)
+;;                 (natp index)
+;;                 (< index len)
+;;                 (natp width2)
+;;                 (<= width2 width)
+;;                 (unsigned-byte-p width index)
+;;                 )
+;;            (equal (equal (bv-array-read width2 len index data) (nth2 width index data))
+;;                   (unsigned-byte-p width2 (nth2 width index data))))
+;;   :hints (("Goal" :use (:instance equal-of-nth2-and-bv-array-read)
+;;            :in-theory (disable equal-of-nth2-and-bv-array-read))))
 
-(defthm unsigned-byte-p-of-nth2
-  (implies (and (unsigned-byte-p width index)
-                (< index (len data))
-                (natp size)
-                (all-unsigned-byte-p size data))
-           (unsigned-byte-p size (nth2 width index data)))
-  :hints (("Goal" :in-theory (enable nth2))))
+;; (defthm unsigned-byte-p-of-nth2
+;;   (implies (and (unsigned-byte-p width index)
+;;                 (< index (len data))
+;;                 (natp size)
+;;                 (all-unsigned-byte-p size data))
+;;            (unsigned-byte-p size (nth2 width index data)))
+;;   :hints (("Goal" :in-theory (enable nth2))))
 
 ;fixme gen a lot or improve axe to not need this
 (defthm hack-for-aes-cbc

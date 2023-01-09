@@ -17855,15 +17855,10 @@
       (remove-do-loop$-guards args))))
 
 #-acl2-loop-only
-(defvar *hcomp-loop$-alist* nil)
-
-#-acl2-loop-only
 (defmacro loop$ (&whole loop$-form &rest args)
-  (let ((term (or (loop$-alist-term loop$-form
-                                    *hcomp-loop$-alist*)
-                  (loop$-alist-term loop$-form
-                                    (global-val 'loop$-alist
-                                                (w *the-live-state*))))))
+  (let ((term (loop$-alist-term loop$-form
+                                (global-val 'loop$-alist
+                                            (w *the-live-state*)))))
     `(cond (*aokp* (loop ,@(remove-loop$-guards args)))
            (t ,(or term
                    '(error "Unable to translate loop$ (defun given directly ~
@@ -19945,6 +19940,123 @@
              (strip-cars (table-alist 'return-last-table wrld)))))
    (t (value-cmp nil))))
 
+(defmacro fn-count-evg-max-val ()
+
+; Warning: (* 2 (fn-count-evg-max-val)) must be a (signed-byte 30); see
+; fn-count-evg-rec and max-form-count-lst.  Modulo that requirement, we just
+; pick a large natural number rather arbitrarily.
+
+  200000)
+
+(defun cons-count-bounded-ac (x i max)
+
+; We accumulate into i the number of conses in x, bounding our result by max,
+; which is generally not less than i at the top level.
+
+; With the xargs declarations shown below, we can verify termination and guards
+; as follows.
+
+;   (verify-termination (cons-count-bounded-ac
+;                        (declare (xargs :verify-guards nil))))
+;
+;   (defthm lemma-1
+;     (implies (integerp i)
+;              (integerp (cons-count-bounded-ac x i max)))
+;     :rule-classes (:rewrite :type-prescription))
+;
+;   (defthm lemma-2
+;     (implies (integerp i)
+;              (>= (cons-count-bounded-ac x i max) i))
+;     :rule-classes :linear)
+;
+;   (defthm lemma-3
+;     (implies (and (integerp i)
+;                   (integerp max)
+;                   (<= i max))
+;              (<= (cons-count-bounded-ac x i max)
+;                  max))
+;     :rule-classes :linear)
+;
+;   (verify-guards cons-count-bounded-ac)
+
+  (declare (type (signed-byte 30) i max)
+           (xargs :guard (<= i max)
+                  :measure (acl2-count x)
+                  :ruler-extenders :lambdas))
+  (the (signed-byte 30)
+    (cond ((or (atom x) (>= i max))
+           i)
+          (t (let ((i (cons-count-bounded-ac (car x) (1+f i) max)))
+               (declare (type (signed-byte 30) i))
+               (cons-count-bounded-ac (cdr x) i max))))))
+
+(defun cons-count-bounded (x)
+
+; We return the number of conses in x, except we bound our result by
+; (fn-count-evg-max-val).  We choose (fn-count-evg-max-val) as our bound simply
+; because that bound is used in the similar computation of fn-count-evg.
+
+  (the (signed-byte 30)
+    (cons-count-bounded-ac x 0 (fn-count-evg-max-val))))
+
+(defmacro lambda-object-count-max-val ()
+
+; Warning: (* 2 (lambda-object-count-max-val)) must be a (signed-byte 30); see
+; fn-count-evg-rec and max-form-count-lst.  Modulo that requirement, we just
+; pick a large natural number rather arbitrarily.
+
+  200000)
+
+(defun setq-hons-copy-lambda-object-culprit (obj)
+
+; Put obj into the wormhole associated with hons-copy-lambda-object.
+
+  (wormhole-eval 'hons-copy-lambda-object-wormhole
+                 '(lambda (whs)
+                    (set-wormhole-data whs obj))
+                 nil))
+
+(defun hons-copy-lambda-object? (obj)
+
+; Warning: We assume that obj is a quoted well-formed lambda object.  This
+; assumption is not apparent in this code since in the non-erroneous case we
+; just hons-copy it.  But in the erroneous case we store obj in a wormhole
+; where it might be subsequently extracted and analyzed by
+; explain-giant-lambda-object.  There we depend on the fact that
+; (lambda-object-body (unquote obj)) is a term!
+
+; We return (mv erp val), where normally erp is nil and val is the hons-copy of
+; obj. But if the cons-count of obj exceeds (lambda-object-count-max-val), erp
+; is t and val is an error msg.  Furthermore, when erp is t, we store obj in
+; the wormhole-data field of the wormhole named
+; hons-copy-lambda-object-wormhole.  See read-hons-copy-lambda-object-culprit.
+
+  (let ((i (the (signed-byte 30)
+                (cons-count-bounded-ac obj 0 (lambda-object-count-max-val)))))
+    (cond
+     ((>= i (lambda-object-count-max-val))
+      (prog2$
+       (setq-hons-copy-lambda-object-culprit obj)
+       (mv t
+           (msg "You have created an excessively large quoted lambda object, ~
+                 namely~%~X01.  See :DOC explain-giant-lambda-object."
+                obj
+                (evisc-tuple 6 10 nil nil)))))
+     (t (mv nil (hons-copy obj))))))
+
+(defun read-hons-copy-lambda-object-culprit (state)
+
+; Read the culprit stored in the hons-copy-lambda-object wormhole
+; as though it came from the ACL2 oracle.
+
+  #+acl2-loop-only
+  (read-acl2-oracle state)
+  #-acl2-loop-only
+  (value (wormhole-data
+          (cdr
+           (assoc-eq 'hons-copy-lambda-object-wormhole
+                     *wormhole-status-alist*)))))
+
 (mutual-recursion
 
 (defun translate11-local-def (form name bound-vars args edcls body
@@ -20252,7 +20364,7 @@
          (translate11-macrolet-alist1
           (car defs) stobjs-out bindings known-stobjs flet-alist form ctx
           wrld state-vars))
-        (entries 
+        (entries
          (translate11-macrolet-alist
           (cdr defs) stobjs-out bindings known-stobjs flet-alist form ctx
           wrld state-vars)))
@@ -20307,7 +20419,7 @@
            (body (car (last x))))
       (mv-let (erp msg)
         (er-progn-cmp
-         (chk-no-duplicate-defuns-cmp names ctx) 
+         (chk-no-duplicate-defuns-cmp names ctx)
          (chk-local-def-declare-form-list nil names declare-form-list ctx)
          (chk-local-def-return-last-table names nil wrld ctx))
         (cond
@@ -21373,32 +21485,151 @@
 
 ; We hons-copy the resulting lambda object.  Before we did this, it was
 ; possible that when looking up a lambda object in the cl-cache, the result
-; succeeded with an object EQUAL to it that was not EQ.  Here is an example.
+; succeeded with an object EQUAL to it that was not EQ.  This hurt the
+; execution performance of the lambda object in the ACL2 loop.  It also exposed
+; a curious phenomenon: undoing a verify-guards could make a lambda perform
+; even slower than it did before the verify-guards.
 
-;   (defun sum-doubles (lst)
-;     (declare (xargs :guard (integer-listp lst)
-;                  :verify-guards nil))
-;     (loop$ for x of-type integer in lst sum (+ x x)))
-;   (make-event `(defconst *m* ',(loop$ for i from 1 to 10000000 collect i)))
-;   ; The following reports:
-;   ; 0.92 seconds realtime, 0.93 seconds runtime
-;   (time$ (sum-doubles *m*))
-;   (verify-guards sum-doubles
-;     :hints (("Goal"
-;              :in-theory (enable apply$ badge)
-;              :expand ((ev$ '(binary-+ x x)
-;                            (list (cons 'x (car lst))))))))
-;   (u)
-;   ; The following reports about double the previous time.
-;   (time$ (sum-doubles *m*))
-;   ; 2.02 seconds realtime, 2.02 seconds runtime
+; We give an example script below that causes the problem and demonstrates that
+; the cache is finding an EQUAL but not EQ lambda in a certain situation.  But
+; to carry out this script with the current code (where this problem has been
+; fixed!) you must first redefine translate11-lambda-object so that it does not
+; do hons-copy.  There are two calls of that function in
+; translate11-lambda-object that must be dealt with.  In addition, to confirm
+; the claims in this explanation you must drop into raw Lisp and arrange to
+; save some data so you can test the EQUAL v EQ claims.  In particular, drop
+; into raw Lisp and redefine install-defs-for-add-trip so that after LET
+; binding *1*-def it saves that pointer, as by executing (setq saved-*1*-def
+; *1*-def), before doing (setf (car tail) *1*-def).  Now do (lp) and (logic).
+; During the experiment below we drop into raw Lisp several times to save
+; certain lambda objects, naming them obj0 and obj1.  We explain below.
 
-; Our solution is to apply hons-copy (called just above) so that the translated
-; lambda object is unique.  Thus, we now call hons-equal-lite where we formerly
-; called equal in fetch-cl-cache-line.  It may seem tempting to call eq there,
-; but lambdas in raw Lisp function bodies are very unlikely to be honsed.  We
-; might sometime try to fix this by somehow incorporating hons-copy into the
-; raw Lisp definition of lambda$.
+; Start by modifying these sources as described above.
+; (include-book "projects/apply/top" :dir :system)
+; (make-event `(defconst *m* ',(loop$ for i from 1 to 10000000 collect i)))
+; (defun sum-doubles (lst)
+;   (declare (xargs :guard (integer-listp lst)
+;                :verify-guards nil))
+;   (loop$ for x of-type integer in lst sum (+ x x)))
+; (value :q)
+; (setq obj0
+;   (unquote  (nth 1 (nth 2 (nth 2 (car (nth 1 (nth 4 saved-*1*-def))))))))
+; (lp)
+; (print-cl-cache)
+; (time$ (sum-doubles *m*))
+; ; 0.76 seconds realtime, 0.76 seconds runtime
+; (print-cl-cache)
+; (value :q)
+; (eq obj0
+;     (access cl-cache-line
+;             (car (access cl-cache *cl-cache* :alist))
+;             :lambda-object))
+; ; = T
+; (lp)
+; (verify-guards sum-doubles
+;   :hints (("Goal"
+;            :in-theory (enable apply$ badge)
+;            :expand ((ev$ '(binary-+ x x)
+;                          (list (cons 'x (car lst))))))))
+; (print-cl-cache)
+; (value :q)
+; (setq obj1
+;       (access cl-cache-line
+;               (car (access cl-cache *cl-cache* :alist))
+;               :lambda-object))
+; (eq obj1
+;     (unquote (cadr (nth 3 (getpropc 'sum-doubles 'unnormalized-body
+;                                     nil (w state))))))
+; ; = T
+; (eq obj0 obj1)
+; ; = NIL
+; (equal obj0 obj1)
+; ; = T
+; (lp)
+; (u)
+; (print-cl-cache)
+; (value :q)
+; (eq obj1
+;       (access cl-cache-line
+;               (car (access cl-cache *cl-cache* :alist))
+;               :lambda-object))
+; ; = T
+; (lp)
+; (time$ (sum-doubles *m*))
+; ; 1.83 seconds realtime, 1.83 seconds runtime
+; (print-cl-cache)
+; (value :q)
+; (time$ (loop for e in *m* always (equal obj0 obj1)))
+; ; 1.10 seconds realtime, 1.10 seconds runtime
+; (time$ (loop for e in *m* always (equal obj0 obj0)))
+; ; 0.04 seconds realtime, 0.04 seconds runtime
+; (lp)
+
+; Question: Why does the first (sum-doubles *m*) take 0.76 seconds but the
+; second one take 1.83, which is about 1.07 seconds longer?
+
+; Explanation:
+
+; Immediately after the defun of sum-doubles we grab obj0.  Inspection of
+; saved-*1*-def shows that that form is the raw Lisp definition of
+; ACL2_*1*_ACL2::SUM-DOUBLES and that obj0 is the lambda object passed to
+; ACL2_*1*_ACL2::SUM$ in that definition.
+
+; Before running sum-doubles the first time we print the cache and see that it
+; only has one line.  That line comes from the loop$ in the make-event.  That
+; line is irrelevant to our experiment.
+
+; Then we run (sum-doubles *m*) for the first time.  Obj0 is being applied 10
+; million times.  The first time apply$-lambda applies obj0, it sets up a new
+; cache line for obj0, as we confirm in the subsequent drop into raw Lisp.
+
+; Then we verify-guards.  After that, print-cl-cache shows that the cache
+; looks the same, except that the :abs-event-no of the first cache line
+; has been incremented because verify-guards updated the cache.  However,
+; the :lambda-object in our cache line has been changed.  It is no longer
+; obj0 but is obj1 instead.  The two are EQUAL but not EQ.  Our fate
+; is sealed!
+
+; Verify-guards changes the cache because after succeeding, it scans the
+; unnormalized body of the function just verified, sum-doubles, collects all
+; the well-formed lambda objects -- which are now known to be guard verified --
+; and adds a :GOOD cache line for each.  We confirm above that the new first
+; line in the cache is the appropriate evg from the unnormalized-body of
+; sum-doubles.
+
+; The (u) changes the :status of our cache line from :GOOD to :UNKNOWN.
+
+; So the second (sum-doubles *m*) is run, apply$-lambda looks for obj0 in the
+; cache and finds a suitable cache line, but it finds it with the EQUAL check
+; in hons-equal-lite, not the EQ check.  The :status is :UNKNOWN, so
+; apply$-lambda again verifies the guards and sets the status to :GOOD.  Then,
+; for the next 9,999,999 times obj0 is applied, it finds the obj1 line for obj0
+; using EQUAL.
+
+; The result is sum-doubles takes about 1.07 seconds longer the second time.
+; The last two time$ commands above show us that the 10 million EQUAL checks
+; take 1.10 seconds, while 10 million EQ tests take 0.04 seconds, which is
+; about the difference we're seeing in the times of the sum-doubles calls.
+
+; It would be nice if the lambda objects used by the *1* functions were EQ to
+; the lambda objects seen by verify-guards.  But this would be hard to achieve
+; because those in *1* functions are created rather far away from
+; verify-guards.  In particular, defuns-fn (via install-event-defuns which
+; calls install-event which calls put-cltl-command) leaves the original
+; untranslated user-level defun as the global val of 'cltl-command.  Then later
+; extend-world1 re-translates the defun, using a fresh call of
+; translate11-lambda-object to create a new copy.  That re-translation is the
+; source of the EQUAL but not EQ lambda object.  The path is circuitous:
+; extend-world1 calls add-trip which recovers the 'cltl-command value and calls
+; oneify-cltl-code which calls oneify which calls translate11-lambda-object.
+
+; So rather than try to make verify-guards find the original (EQ) lambda object
+; we make translate11-lambda-object hons-copy its answer, so that the
+; translated lambda object is unique.  Thus, we now call hons-equal-lite where
+; we formerly called equal in fetch-cl-cache-line.  It may seem tempting to
+; call eq there, but lambdas in raw Lisp function bodies are very unlikely to
+; be honsed.  We might sometime try to fix this by somehow incorporating
+; hons-copy into the raw Lisp definition of lambda$.
 
   (cond
    ((and (eq stobjs-out t)
@@ -21407,11 +21638,17 @@
 ; Since we are not translating for execution, our intent is simply to let
 ; normal logic run its course.
 
-    (translate11-var-or-quote-exit
-     x
-     (hons-copy `(QUOTE ,x))
-     stobjs-out bindings known-stobjs flet-alist
-     cform ctx wrld state-vars))
+    (mv-let (erp val)
+      (hons-copy-lambda-object? `(QUOTE ,x))
+      (cond
+       (erp
+        (trans-er+? cform x ctx "~@0" val))
+       (t 
+        (translate11-var-or-quote-exit
+         x
+         val
+         stobjs-out bindings known-stobjs flet-alist
+         cform ctx wrld state-vars)))))
    ((and (or (eq (car x) 'LAMBDA)
              (eq (car x) 'LAMBDA$))
          (true-listp x)
@@ -21698,11 +21935,10 @@
                              must be tame and ~x0 is not.  ~@1"
                             body
                             *gratuitous-lambda-object-restriction-msg*))
-                          (t (translate11-var-or-quote-exit
-                              x
-                              (hons-copy
-                               (if lambda-casep
-                                   `(QUOTE ,x)
+                          (t (mv-let (erp val)
+                               (hons-copy-lambda-object?
+                                (if lambda-casep
+                                    `(QUOTE ,x)
 
 ; We ALWAYS put an (IGNORABLE . vars) entry at the end of our edcls.  If the
 ; tguard is *T* then we needn't put anything else.  (We know there aren't any
@@ -21710,29 +21946,29 @@
 ; the user wrote may have been augmented by the TYPE declarations so we have to
 ; put tguard into the xargs and, in any case, we need to set :SPLIT-TYPES to T.
 
-                                 (let ((edcls1
-                                        (if (equal tguard *T*)
-                                            `((IGNORABLE ,@vars))
+                                    (let ((edcls1
+                                           (if (equal tguard *T*)
+                                               `((IGNORABLE ,@vars))
 ; Note that the IGNORABLE entry is guaranteed to be last because there cannot
 ; have been an IGNORABLE entry in edcls.  The XARGS entry may be before or
 ; after any TYPE entries depending on its location originally.
-                                            (put-assoc-eq
-                                             'IGNORABLE vars
-                                             (put-assoc-eq
-                                              'XARGS
-                                              `(:GUARD ,tguard :SPLIT-TYPES T)
-                                              edcls))))
-                                       (vars1
-                                        (if allow-free-varsp
-                                            (append
-                                             vars
-                                             (revappend free-vars-guard nil)
-                                             (set-difference-eq
-                                              (revappend free-vars-body nil)
-                                              free-vars-guard))
-                                          vars)))
+                                               (put-assoc-eq
+                                                'IGNORABLE vars
+                                                (put-assoc-eq
+                                                 'XARGS
+                                                 `(:GUARD ,tguard :SPLIT-TYPES T)
+                                                 edcls))))
+                                          (vars1
+                                           (if allow-free-varsp
+                                               (append
+                                                vars
+                                                (revappend free-vars-guard nil)
+                                                (set-difference-eq
+                                                 (revappend free-vars-body nil)
+                                                 free-vars-guard))
+                                               vars)))
 
-                                   (let ((new-tbody
+                                      (let ((new-tbody
 
 ; We tag the translated lambda body.  At one time, we avoiding doing that when
 ; proving theorems, with a special case for stobjs-out = t, so that the
@@ -21751,15 +21987,22 @@
 ;
 ; For a related comment see untranslate1-lambda-object.
 
-                                          (tag-translated-lambda$-body
-                                           x tbody)))
-                                     `(QUOTE
-                                       (LAMBDA
-                                        ,vars1
-                                        (DECLARE ,@edcls1)
-                                        ,new-tbody))))))
-                              stobjs-out bindings known-stobjs flet-alist
-                              cform ctx wrld state-vars))))))))))))))))))
+                                             (tag-translated-lambda$-body
+                                              x tbody)))
+                                        `(QUOTE
+                                          (LAMBDA
+                                           ,vars1
+                                           (DECLARE ,@edcls1)
+                                           ,new-tbody))))))
+                               (cond
+                                (erp
+                                 (trans-er+? cform x ctx "~@0" val))
+                                (t
+                                 (translate11-var-or-quote-exit
+                                  x
+                                  val
+                                  stobjs-out bindings known-stobjs flet-alist
+                                  cform ctx wrld state-vars)))))))))))))))))))))
    (t (trans-er+? cform x ctx
                   "Every LAMBDA object and lambda$ term must be a true list ~
                    of at least 3 elements, e.g., (LAMBDA vars ...dcls... ~
@@ -23157,7 +23400,7 @@
       (cond
        ((eq (cddr entry) :macrolet) ; X is a call of a macrolet-bound symbol
         (mv-let (erp expansion)
-          (macrolet-expand x (cadr entry) ctx wrld state-vars)          
+          (macrolet-expand x (cadr entry) ctx wrld state-vars)
           (cond (erp ; expansion is a msg
                  (trans-er+? cform x ctx "~@0" expansion))
                 (t (translate11 expansion ilk stobjs-out bindings known-stobjs

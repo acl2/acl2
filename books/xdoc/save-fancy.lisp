@@ -192,18 +192,11 @@
        ;; ((mv err &) (parse-xml short-str))
        (err xtopic.short-err)
        (short-str short)
-       (state
-        (if err
-            (pprogn
-             (prog2$ (note-xdoc-error) state)
+       (- (and err
+               (prog2$ (note-xdoc-error)
 ; See comment regarding the use of "; xdoc error" instead of "WARNING"
 ; in preprocess-topic (file prepare-topic.lisp).
-             (fms "~|~%; xdoc error: problem with :short in topic ~x0:~%"
-                  (list (cons #\0 name))
-                  *standard-co* state nil)
-             (princ$ err *standard-co* state)
-             (fms "~%~%" nil *standard-co* state nil))
-          state))
+                       (print-xdoc-error "~|~%; xdoc error: problem with :short in topic ~x0:~%~x1~%~%" (list name err)))))
        (short-str-xml
         (b* (((unless err)
               short-str)
@@ -228,18 +221,12 @@
        ;; ((mv err &) (parse-xml long-str))
        (err xtopic.long-err)
        (long-str long)
-       (state
-        (if err
-            (pprogn
-             (prog2$ (note-xdoc-error) state)
+       (-
+        (and err
+             (prog2$ (note-xdoc-error)
 ; See comment regarding the use of "; xdoc error" instead of "WARNING"
 ; in preprocess-topic (file prepare-topic.lisp).
-             (fms "~|~%; xdoc error: problem with :long in topic ~x0:~%"
-                  (list (cons #\0 name))
-                  *standard-co* state nil)
-             (princ$ err *standard-co* state)
-             (fms "~%~%" nil *standard-co* state nil))
-          state))
+                     (print-xdoc-error "~|~%; xdoc error: problem with :long in topic ~x0:~%~x1~%~%" (list name err)))))
        (long-str-xml
         (b* (((unless err)
               long-str)

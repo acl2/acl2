@@ -5,7 +5,7 @@
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 
-; (depends-on "build/rewrite-constant.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
 
 (in-package "CGEN")
 

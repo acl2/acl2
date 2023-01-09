@@ -38,7 +38,6 @@
 (include-book "identifiers")
 (include-book "wrappers")
 (include-book "if-distributivity")
-(include-book "not")
 (include-book "returns")
 (include-book "executable-counterparts")
 (include-book "limit")
@@ -162,7 +161,6 @@
           *atc-distributivity-over-if-rewrite-rules*
           *atc-identifier-rules*
           *atc-integer-const-rules*
-          *atc-not-rules*
           *atc-integer-size-rules*
           *atc-integer-ops-1-return-rewrite-rules*
           *atc-integer-ops-2-return-rewrite-rules*

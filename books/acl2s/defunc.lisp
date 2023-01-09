@@ -633,6 +633,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (typed-undef (get1 :typed-undef kwd-alist))
        (generalize-rules?
         (get1 :generate-generalize-rules kwd-alist))
+       (try-induct-fc?
+        (get1 :try-induct-function-contractp kwd-alist))
        ((mv body-rm-hyps no-hyps?-rm-hyps)
         (make-contract-body name ic oc formals d? t f-c-thm? typed-undef pkg w))
        ((mv no-force-body-hyps &)
@@ -663,7 +665,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                  ;; hints are treated as extra
                  ,(append `(("Goal" :induct ,(cons name formals)))
                           hints)))
-       (rhints (if recursivep
+       (rhints (if (and recursivep try-induct-fc?)
                    ihints
                  (and hints `(:hints ,hints))))
        (rewrite-class-rm-hyps (if no-hyps?-rm-hyps
@@ -701,6 +703,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                 ,@(and otf-flg `(:otf-flg ,otf-flg))
                 ,@(and instructions `(:instructions ,instructions)))))
        (rewrite-fc (and rewrite-fc (list (wrap-skip-fun rewrite-fc))))
+       (induct-rewrite-fc (and (not (equal rewrite-fc induct-rewrite-fc))
+                               induct-rewrite-fc))
        (induct-rewrite-fc-h
         `(DEFTHM ,contract-name ,body-hyps ,@rhints
            ,@(and rclass-hyps `(:rule-classes ,rclass-hyps))
@@ -715,6 +719,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                 ,@(and otf-flg `(:otf-flg ,otf-flg))
                 ,@(and instructions `(:instructions ,instructions)))))
        (rewrite-fc-h (and rewrite-fc-h (wrap-skip-fun rewrite-fc-h)))
+       (rewrite-fc-h (and (not (equal rewrite-fc-h induct-rewrite-fc-h))
+                          rewrite-fc-h))
        (rewrite-fc-h (and rewrite-fc-h
                           `((with-output :off :all :on (comment error)
                                          ,rewrite-fc-h))))
@@ -750,6 +756,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      (skip-function-contractp
       `(encapsulate
         ()
+        (set-induction-depth-limit 3)
         (with-output
          :off :all :on (error comment)
          ;; ,@induct-rewrite-fc-h)))
@@ -769,6 +776,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      ((and gen? no-hyps?-rm-hyps)
       `(encapsulate
         ()
+        (set-induction-depth-limit 3)
         (with-output
          :off :all :on comment
          (make-event
@@ -797,6 +805,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      (t
       `(encapsulate
         ()
+        (set-induction-depth-limit 3)
         (with-output
          :off :all :on comment
          (make-event '(:or ,@induct-rewrite-fc-h ,@rewrite-fc-h ,@non-strict-escape)))
@@ -1009,6 +1018,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      :termination-strictp :function-contract-strictp :body-contracts-strictp
      :force-ic-hyps-in-definitionp :force-ic-hyps-in-contract-thmp
      :skip-admissibilityp :skip-function-contractp :skip-body-contractsp
+     :try-induct-function-contractp 
      :rule-classes
      :instructions :function-contract-hints :otf-flg ;for contract defthm
      :body-contracts-hints ;for verify-guards event
@@ -1612,6 +1622,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (:skip-admissibilityp . nil)
          (:skip-function-contractp . nil)
          (:skip-body-contractsp . nil)
+         (:try-induct-function-contractp . t)
          (:rule-classes . nil)
          (:instructions . nil)
          (:function-contract-hints . nil)

@@ -1,6 +1,6 @@
 ; ACL2 Programming Language Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,14 +12,7 @@
 
 (include-book "values")
 
-(include-book "kestrel/std/basic/good-pseudo-termp" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local
- (std::deflist good-pseudo-term-listp (acl2::x)
-   :guard (pseudo-term-listp acl2::x)
-   (good-pseudo-termp acl2::x)))
+(include-book "kestrel/std/basic/good-pseudo-term-listp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,16 +55,24 @@
   (fty::deftagsum tterm
     :short "Fixtype of translated terms."
     :long
-    (xdoc::topstring-p
-     "A translated term is
-      a variable (any symbol),
-      a (quoted) constant (of any value), or
-      a function call.
-      The latter consists of a function (see @(tsee tfunction))
-      and a list of zero or more argument terms.
-      We do not constrain here the number of argument terms
-      to match the number of formal parameters of the lambda expression,
-      when the function is a lambda expression.")
+    (xdoc::topstring
+     (xdoc::p
+      "A translated term is
+       a variable (any symbol),
+       a (quoted) constant (of any value), or
+       a function call.
+       The latter consists of a function (see @(tsee tfunction))
+       and a list of zero or more argument terms.
+       We do not constrain here the number of argument terms
+       to match the number of formal parameters of the lambda expression,
+       when the function is a lambda expression.")
+     (xdoc::p
+      "Note that, for variables,
+       we use the symbol values formalized by @(tsee symbol-value),
+       not the ACL2 symbol.
+       The reason is the one explained in @(tsee symbol-value):
+       we want to represent all possible variables,
+       not just the ones that are valid for the current packages."))
     (:variable ((name symbol-value)))
     (:constant ((value value)))
     (:call ((function tfunction) (arguments tterm-list)))
@@ -80,15 +81,20 @@
   (fty::deftagsum tfunction
     :short "Fixtype of translated functions."
     :long
-    (xdoc::topstring-p
-     "The `translated' adjective refers to the fact that
-      this is a function in a translated term (see @(tsee tterm)).
-      A translated function is a named function (any symbol)
-      or a lambda expression;
-      the latter consists of zero or more parameters (any symbols)
-      and a body (any term).
-      We do not constrain a named function to differ from the symbol @('quote');
-      the type @(tsee tterm) has a separate constructor for quoted constants.")
+    (xdoc::topstring
+     (xdoc::p
+      "The `translated' adjective refers to the fact that
+       this is a function in a translated term (see @(tsee tterm)).
+       A translated function is a named function (any symbol)
+       or a lambda expression;
+       the latter consists of zero or more parameters (any symbols)
+       and a body (any term).
+       We do not constrain a named function
+       to differ from the symbol @('quote');
+       the type @(tsee tterm) has a separate constructor for quoted constants.")
+     (xdoc::p
+      "Note that we use symbol values, not symbols,
+       for the same reason explained in @(tsee tterm)."))
     (:named ((name symbol-value)))
     (:lambda ((parameters symbol-value-list) (body tterm)))
     :pred tfunctionp)
@@ -136,10 +142,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-tterm
+(fty::defoption tterm-option
   tterm
-  :short "Fixtype of translated terms and @('nil')."
-  :pred maybe-ttermp)
+  :short "Fixtype of optional translated terms."
+  :pred tterm-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -179,7 +185,7 @@
   (xdoc::topstring
    (xdoc::p
     "Even though ACL2 internally closes all lambda expressions,
-     in our formalization of translated terms we do assume or enforce that.
+     in our formalization of translated terms we do not assume or enforce that.
      In fact, we want to have more flexibility,
      and allow non-closed lambda expression.
      Thus, the free variables of a lambda expression,

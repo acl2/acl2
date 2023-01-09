@@ -300,22 +300,33 @@ Valid:~x8~%~%"
   (profile 'rp::pp-flatten-fn)
   (profile 'rp::unpack-booth-general-meta$)
   (profile 'rp::unpack-booth-general-postprocessor)
-  (profile 'rp::pp-radix8+-fix)
+  ;;(profile 'rp::pp-radix8+-fix)
   (profile 'rp::ex-from-pp-lst)
   (profile 'rp::c-of-s-fix-lst)
   (profile 'rp::maybe-bitp-precheck)
   (profile 'rp::c-pattern1-reduce)
+  (profile 'rp::new-sum-merge)
   (profile 'rp::c-pattern2-reduce)
   (profile 'rp::c-pattern0-reduce)
 
   (profile 'rp::4vec-branch-drop-r-case)
 
-  
+  (profile 'rp-equal-iter-pp+-meta)
 
   (profile 'rp::pp-lst-orderedp)
   (profile 'rp::pp-sum-sort-lst)
-  (profile 'rp::pp-radix8+-fix-aux-for-s/c-main)
+  ;;(profile 'rp::pp-radix8+-fix-aux-for-s/c-main)
   (profile 'rp::recollect-pp-lst-to-sc)
 
   (profile 'rp::calculate-c-hash)
+
+  (profile 'rp::sort-sum-meta)
+
+  (profile 'rp::sort-pp-lists)
+
+  (profile 'rp::sort-sum-meta-aux2)
+
+  (profile 'rp::pp-term-to-pp-lists)
+  (profile 'rp::merge-sorted-pp-lists)
+  
   )

@@ -656,17 +656,38 @@
                  (equal (equal (cons (car x) y) x)
                         (equal y (cdr x)))))))
 
+
+(local
+ (define svexl-eval-aux-with-reversed-node-env (x init-node-env env)
+   :verify-guards nil
+   (if (atom x)
+       init-node-env
+     (b* ((node-env (svexl-eval-aux-with-reversed-node-env (cdr x) init-node-env env))
+          (node-id (caar x))
+          (node (cdar x))
+          (eval-res (svexl-node-eval node node-env env)))
+       (hons-acons node-id eval-res node-env)))
+   ///
+   (defthm to-svexl-eval-aux-with-reversed-node-env
+     
+     (equal (svexl-eval-aux svexl-node-array init-node-env env)
+            (svexl-eval-aux-with-reversed-node-env (rev svexl-node-array) init-node-env env))
+     :hints (("Goal"
+              :in-theory (e/d (svexl-eval-aux)
+                              (svexl-eval-aux-is-svexl-eval-aux-wog)))))))
+
 (local
  (defthm svexl-eval-aux--svexl-and-node-env-inv
    (implies (and (svexl-node-array-p svexl-node-array)
                  ;;(svex-env-p env)
                  (svexl-node-env-inv svexl-node-array node-env env))
-            (equal (svexl-eval-aux svexl-node-array env)
+            (equal (svexl-eval-aux (rev svexl-node-array) nil env)
                    node-env))
    :hints (("Goal"
             :induct (svexl-node-env-inv svexl-node-array node-env env)
             :do-not-induct t
             :in-theory (e/d (svexl-eval-aux
+                             SVEXL-EVAL-AUX-WITH-REVERSED-NODE-ENV
                              equal-cons-1)
                             (svexl-node-eval-is-svexl-node-eval-wog
                              svexl-eval-aux-is-svexl-eval-aux-wog))))))
@@ -680,8 +701,8 @@
   :hints (("Goal"
            :do-not-induct t
            :expand ((svex-to-svexl svex)
-                    (:free (x rest)
-                           (svexl-eval-aux (cons x rest) env)))
+                    (:free (x rest node-env)
+                           (svexl-eval-aux (cons x rest) node-env env)))
            :use ((:instance svex-to-svexl-aux--svex-induct-1
                             (reuse-stats (svex-to-svexl-get-stats nil svex))
                             (svex svex)
@@ -716,8 +737,8 @@
   :hints (("Goal"
            :do-not-induct t
            :expand ((svexlist-to-svexllist lst)
-                    (:free (x rest)
-                           (svexl-eval-aux (cons x rest) env)))
+                    (:free (x rest node-env)
+                           (svexl-eval-aux (cons x rest) node-env env)))
            :use ((:instance svex-to-svexl-aux-lst--svexlist-induct1
                             (reuse-stats (svex-to-svexl-get-stats-lst nil lst))
                             (lst lst)

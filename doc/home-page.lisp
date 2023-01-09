@@ -69,6 +69,7 @@
     copyright                           ;;; t
     git-quick-start                     ;;; u
     talks                               ;;; v
+    start-here                          ;;; w
   ))
 
 (defconst *home-page*
@@ -364,7 +365,7 @@ the <a href=\"~sk\">ACL2 acknowledgments page</a>.
 
 The <i>ACL2 User's Manual</i> is a vast hypertext document.  If you are a
 newcomer to ACL2, we do <EM>not</EM> recommend that you wander off into the
-full documentation.  Instead start with the <a href=\"~sb\">ACL2-TUTORIAL</a>
+full documentation.  Instead start with the <a href=\"~sw\">START-HERE</a>
 documentation topic.  Experienced users tend mostly to use the manual as a
 reference manual, to look up concepts mentioned in error messages or vaguely
 remembered from their past experiences with ACL2.

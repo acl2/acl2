@@ -891,7 +891,7 @@
     signed-byte-p-of-bvif
 ;    inst-length-of-myif
 ;    index-into-program-of-bvif ;or should we enable index-into-program?
-    lookup-of-bvif ; drop or more?
+    ;; lookup-of-bvif ; drop or move?
 
     myif-of-constants-becomes-bvif
 
@@ -1137,13 +1137,14 @@
 (defun core-rules-non-bv ()
   (declare (xargs :guard t))
   '(all-unsigned-byte-p-of-update-nth
-    bvchop-8-bvnth-8 ;gen
+    ;; bvchop-8-bvnth-8 ;gen
     ;; bvchop-of-logtail-becomes-slice
-    getbit-of-bvnth-when-getbit-is-always-0
-    getbit-of-bvnth-when-getbit-is-always-1
-    bvnth-of-bvchop
-    bvnth-of-bvcat-8-case
-    bvnth-when-data-isnt-an-all-unsigned-byte-p))
+    ;; getbit-of-bvnth-when-getbit-is-always-0
+    ;; getbit-of-bvnth-when-getbit-is-always-1
+    ;; bvnth-of-bvchop
+    ;; bvnth-of-bvcat-8-case
+    ;; bvnth-when-data-isnt-an-all-unsigned-byte-p
+    ))
 
 (defun bvif-rules ()
   (declare (xargs :guard t))
@@ -1422,7 +1423,7 @@
      bv-array-write-of-bv-array-write-same-index
      getbit-list-of-bv-array-write
      ;; bv-array-write-tighten-when-quotep-data ;trying without this, since it led to a size mismatch between nested bv-array-writes
-     nth2-of-bv-array-write
+     ;; nth2-of-bv-array-write
      ;; ;is this stuff only used to get rid of logext-list?
      ;; push-bvchop-list-of-bv-array-write
      ;; push-bvchop-list-of-push-bvchop-list
@@ -1504,7 +1505,7 @@
 
 ;    logext-list-of-logext-list
 
-    bvchop-of-bvnth
+    ;; bvchop-of-bvnth
     cdr-of-update-nth
     car-of-update-nth))
 
@@ -1680,7 +1681,7 @@
             getbit-of-bvplus         ;use trim?
 
 ;for specs:
-            nth2-becomes-bvnth-for-natps-dag
+            ;; nth2-becomes-bvnth-for-natps-dag
 
             ;; bvor-disjoint-ones-arg1-gen
             ;; bvor-disjoint-ones-arg2-gen
@@ -1792,7 +1793,7 @@
 (defun introduce-bv-array-rules ()
   (declare (xargs :guard t))
   '(nth-becomes-bv-array-read
-    bvnth-becomes-bv-array-read
+    ;; bvnth-becomes-bv-array-read
     nth-of-bv-array-write-becomes-bv-array-read
     ;cons-becomes-bv-array-write-gen
     ))
@@ -2708,7 +2709,7 @@
 (table axe-rule-priorities-table 'bvchop-of-bitand -1)
 (table axe-rule-priorities-table 'bvchop-of-bitor -1)
 (table axe-rule-priorities-table 'bvchop-of-bitxor -1)
-(table axe-rule-priorities-table 'bvchop-of-bvnth -1)
+;; (table axe-rule-priorities-table 'bvchop-of-bvnth -1)
 (table axe-rule-priorities-table 'bvchop-of-bvnot -1)
 (table axe-rule-priorities-table 'bvchop-of-bvsx -1)
 (table axe-rule-priorities-table 'bvchop-of-bvuminus -1)

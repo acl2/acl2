@@ -512,6 +512,18 @@
 
 (defsection atc-boolean-from-integer-return-rules
   :short "Rules about the return types of @('boolean-from-<type>')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We also include the type prescription rules for these functions.
+     The reason is that we have observed that,
+     in the presence of the non-strict operators @('&&') and @('||'),
+     the symbolic execution may produce
+     equalities between @('t') and calls of these functions,
+     under a hypothesis that the call holds (i.e. is not @('nil')).
+     This situation arises because of the case splits engendered by
+     the rules for @(tsee exec-expr-pure) on @('&&') and @('||')
+     and the rules for @(tsee test-value)."))
 
   (defval *atc-boolean-from-integer-return-rules*
     '(booleanp-of-boolean-from-uchar
@@ -523,7 +535,17 @@
       booleanp-of-boolean-from-ulong
       booleanp-of-boolean-from-slong
       booleanp-of-boolean-from-ullong
-      booleanp-of-boolean-from-sllong)))
+      booleanp-of-boolean-from-sllong
+      (:t boolean-from-uchar)
+      (:t boolean-from-schar)
+      (:t boolean-from-ushort)
+      (:t boolean-from-sshort)
+      (:t boolean-from-uint)
+      (:t boolean-from-sint)
+      (:t boolean-from-ulong)
+      (:t boolean-from-slong)
+      (:t boolean-from-ullong)
+      (:t boolean-from-sllong))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

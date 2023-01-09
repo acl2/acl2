@@ -21,5 +21,9 @@
 (include-book "defthm-or-defaxiom-symbolp")
 (include-book "function-symbolsp")
 
+(include-book "all-functions-in-world")
+(include-book "world-triples-for")
+(include-book "world-since-boot-strap")
+
 (include-book "filter-defined-fns")
 (include-book "defined-fns-in-term")

@@ -1,6 +1,6 @@
 ; ACL2 Programming Language Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -62,15 +62,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-package
+(fty::defoption package-option
   package
-  :short "Fixtype of packages and @('nil')."
-  :pred maybe-packagep)
+  :short "Fixtype of optional packages."
+  :pred package-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define package-lookup ((name stringp) (packages package-listp))
-  :returns (package? maybe-packagep)
+  :returns (package? package-optionp)
   :short "Look up a package in a list, by name."
   :long
   (xdoc::topstring
@@ -98,7 +98,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define import-lookup ((name stringp) (imports symbol-value-listp))
-  :returns (symbol? maybe-symbol-valuep)
+  :returns (symbol? symbol-value-optionp)
   :short "Find a symbol with a given name in a package import list."
   :long
   (xdoc::topstring
@@ -114,7 +114,7 @@
      whose @(tsee symbol-package-name) is @('\"COMMON-LISP\"').")
    (xdoc::p
     "This function looks up a symbol, by name,
-     in a list of symbol that is meant to be a package import list.
+     in a list of symbols that is meant to be a package import list.
      We return the first symbol found, if any.
      If none is found, we return @('nil').")
    (xdoc::p

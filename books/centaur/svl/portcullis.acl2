@@ -37,7 +37,14 @@
             acl2::loghead
             acl2::logtail
 	    acl2::defines
-            
+	    acl2::and*
+	    acl2::or*
+	    acl2::if*
+
+	    sv::bitor
+	    sv::bitxor
+	    sv::bitand
+	    sv::bitnot
             sv::3vec-bitand
             sv::2vec
             sv::4vec
@@ -56,7 +63,15 @@
 	    sv::svex-fix
 	    sv::svexlist-p
 	    sv::svexlist-eval
-	    sv::4VECLIST-NTH-SAFE
+	    sv::svexlist-eval$
+	    sv::svex-alist-eval	
+	    sv::svex-alist-eval$
+	    sv::4veclist-nth-safe
+	    sv::svex-eval-when-quote
+	    sv::svex-eval-when-fncall
+	    sv::svex-eval$-when-quote
+	    sv::svex-eval$-when-fncall
+
 	    sv::svex-call->fn
 	    sv::svex-kind
 	    sv::fnsym-p
@@ -64,6 +79,9 @@
 	    sv::svex-call->args
 	    sv::svex-env-p
 	    sv::svex-eval
+	    sv::svex-apply
+	    sv::svex-eval$
+	    sv::svex-apply$
 	    sv::svex-var->name
 	    sv::svex-apply-cases
 	    std::defret
@@ -128,7 +146,8 @@
             acl2::svtv-run
             acl2::svl-run
             acl2::svl-flatten-design
-            
+
+	    acl2::defsection
             acl2::arglist
 	    acl2::value
             acl2::in

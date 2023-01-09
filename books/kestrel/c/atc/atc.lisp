@@ -129,9 +129,38 @@
    to their C types.
    The keys are unique and in the same order as the formal parameters."
 
+  "@('var-term-alist') is an alist from variables to terms
+   that keeps track of the current substitution context
+   as terms are recursively processed.
+   This alist collects the @(tsee let) and @(tsee mv-let) bindings
+   encountered along the way.
+   These are used to properly instantiate terms
+   limits associated to function calls,
+   because those limits apply to the functions' formals,
+   which must therefore be replaced not just with the actuals of the call,
+   but with those actuals with variables replaced with terms
+   according to the bindings that lead to the call."
+
   "@('affect') is a list of symbols consisting of
    the variables of array or structure type affected by
-   one of the functions in @('t1'), ..., @('tp')."
+   one of the functions in @('t1'), ..., @('tp').
+   This @('affect') is denoted as @('vars') in the user documentation."
+
+  "@('context') is the context in which theorems are generated
+   for each generated piece of C code."
+
+  "@('thm-index') is a positive integer
+   that is threaded through the code generation functions
+   to generate unique and readable local theorem names."
+
+  "@('compst-var') is a symbol used as a variable for
+   the computation state in generated theorems."
+
+  "@('fenv-var') is a symbol used as a variable for
+   the function environment in generated theorems."
+
+  "@('limit-var') is a symbol used as a variable for
+   the execution recursion limit in generated theorems."
 
   xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
@@ -158,6 +187,8 @@
             prog-const
             wf-thm
             fn-thms
+            & ; fn-limits
+            & ; fn-body-limits
             print
             state)
         (atc-process-inputs args state))

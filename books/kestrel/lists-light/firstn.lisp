@@ -146,3 +146,20 @@
            (equal (firstn len1 (take len2 lst))
                   (take len1 lst)))
   :hints (("Goal" :in-theory (enable take firstn))))
+
+(defthm firstn-of-len
+  (equal (firstn (len x) x)
+         (true-list-fix x)))
+
+(defthm equal-of-firstn-and-take
+  (implies (natp n)
+           (equal (equal (firstn n x) (take n x))
+                  (<= n (len x))))
+  :hints (("Goal" :in-theory (enable take firstn))))
+
+(defthm equal-of-take-and-firstn
+  (implies (natp n)
+           (equal (EQUAL (TAKE N X) (FIRSTN N X))
+                  (<= n (len x))))
+  :hints (("Goal" :use (:instance equal-of-firstn-and-take)
+           :in-theory (disable equal-of-firstn-and-take))))
