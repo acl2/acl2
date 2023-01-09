@@ -1462,3 +1462,34 @@ setting also happens when the book in which this form occurs is included in
 another book.  The build system attempts to accurately track which variables
 are defined where, for use by @(see ifdef) and @(see ifndef).</p>"
   :pkg "ACL2")
+
+
+(defxdoc acl2::include-events
+  :parents (cert.pl)
+  :short "A build-system-supported mechanism to include the events from a
+source-file as a @('progn') or @('encapsulate')."
+  :long "<p>Include-events reads the forms from a source file, which must begin
+with an @(see in-package) form, and submits those forms as a @('progn') or
+@('encapsulate').</p>
+
+<p>Usage:</p>
+@({
+ (include-book \"build/include-events\" :dir :system) ;; prerequisite
+
+ (include-events \"book-name.lisp\" :dir :system :encapsulate nil)
+ })
+
+<p>The @(':dir') argument works just like it does in @(see include-book).  The
+@(':encapsulate') argument says whether to submit the forms contained in the
+book as a @('progn') (if nil) or @('encapsulate nil') (if t).</p>
+
+<p>The filename argument should have the full extension of the source file.</p>
+
+<p>The cert.pl build system supports this in that if this form is in a book, it
+creates dependencies from that book on the source file that is included as well
+as any additional dependencies found in that source file.</p>
+
+<p>If a library has a book \"top\" that only includes other books, then \"top\"
+ could be included via @('include-events') rather than @('include-book') to
+save certification time.</p>"
+  :pkg "ACL2")
