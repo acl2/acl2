@@ -235,6 +235,7 @@
          unsigned-byte-hyps
          (hyp 't)
          concl
+         run-before-concl
          (lemma-defthm 'fgl::def-fgl-thm)
          lemma-args
          no-lemmas
@@ -290,6 +291,7 @@
        :enable enable
        :hyp hyp
        :concl concl
+       :run-before-concl run-before-concl
        :svtv svtv
        :triples-name triples
        :triple-val-alist triple-val-alist

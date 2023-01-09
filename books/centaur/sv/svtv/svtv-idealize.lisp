@@ -1631,6 +1631,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
          unsigned-byte-hyps
          (hyp 't)
          concl
+         (run-before-concl 'nil)
          (lemma-defthm 'fgl::def-fgl-thm)
          lemma-args
          lemma-nonlocal
@@ -1702,6 +1703,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
        :enable enable
        :hyp hyp
        :concl concl
+       :run-before-concl run-before-concl
        :svtv svtv
        :ideal ideal
        :lemma-nonlocal lemma-nonlocal
