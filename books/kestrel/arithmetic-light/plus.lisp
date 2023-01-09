@@ -169,6 +169,11 @@
          (< 0 y))
   :hints (("Goal" :cases ((< 0 y)))))
 
+(defthm <-of-+-cancel-1+-2+
+  (equal (< (+ x w) (+ y x z))
+         (< w (+ y z)))
+  :hints (("Goal" :cases ((< w (+ y z))))))
+
 (defthm <-of-+-cancel-1+-2
   (equal (< (+ x y) (+ z x))
          (< y z)))
