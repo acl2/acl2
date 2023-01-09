@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,6 +18,7 @@
 (local (acl2::disable-builtin-logic-defuns))
 
 (local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -200,6 +201,7 @@
    (affect symbol-list)
    (fn symbolp)
    (fn-guard symbol)
+   (fn-gthm symbol)
    (compst-var symbol)
    (fenv-var symbol)
    (limit-var symbol)
@@ -336,8 +338,7 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv item item-limit event name thm-index names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+    (mv item item-limit event name thm-index names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -427,8 +428,7 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv items items-limit event name thm-index names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable good-atom-listp))))
+    (mv items items-limit event name thm-index names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -485,6 +485,7 @@
                                      :inscope gin.inscope
                                      :fn gin.fn
                                      :fn-guard gin.fn-guard
+                                     :fn-gthm gin.fn-gthm
                                      :compst-var gin.compst-var
                                      :fenv-var gin.fenv-var
                                      :limit-var gin.limit-var
@@ -548,7 +549,7 @@
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
          stmt-thm-name nil names-to-avoid wrld))
-       (uterm (untranslate$ term nil state))
+       (uterm (untranslate$ expr.term nil state))
        (stmt-formula `(and (equal (exec-stmt ',stmt
                                              ,gin.compst-var
                                              ,gin.fenv-var
@@ -582,7 +583,7 @@
             names-to-avoid)
         (atc-gen-block-item-stmt gin.fn gin.fn-guard gin.context
                                  stmt stmt-limit stmt-thm-name
-                                 expr.type term
+                                 expr.type expr.term
                                  gin.compst-var gin.fenv-var gin.limit-var
                                  gin.compst-var
                                  thm-index names-to-avoid state))
@@ -594,7 +595,7 @@
             names-to-avoid)
         (atc-gen-block-item-list-one gin.fn gin.fn-guard gin.context
                                      item item-limit item-thm-name
-                                     expr.type term
+                                     expr.type expr.term
                                      gin.compst-var gin.fenv-var gin.limit-var
                                      gin.compst-var
                                      thm-index names-to-avoid state)))
@@ -610,8 +611,7 @@
                            :thm-index thm-index
                            :names-to-avoid names-to-avoid
                            :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           good-atom-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -902,8 +902,7 @@
       :thm-index thm-index
       :names-to-avoid names-to-avoid
       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           good-atom-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1115,6 +1114,7 @@
                                   :prec-tags gin.prec-tags
                                   :fn gin.fn
                                   :fn-guard gin.fn-guard
+                                  :fn-gthm gin.fn-gthm
                                   :compst-var gin.compst-var
                                   :thm-index gin.thm-index
                                   :names-to-avoid gin.names-to-avoid
@@ -1122,7 +1122,7 @@
                                  state))
              ((erp (stmt-gout then) then-context)
               (b* (((reterr) (irr-stmt-gout) nil)
-                   (then-cond (untranslate$ test-term t state))
+                   (then-cond (untranslate$ test.term t state))
                    (then-premise (atc-premise-test then-cond))
                    (then-context (append gin.context
                                          (list then-premise)))
@@ -1163,7 +1163,7 @@
                  then-context)))
              ((erp (stmt-gout else) else-context)
               (b* (((reterr) (irr-stmt-gout) nil)
-                   (not-test-term (dumb-negate-lit test-term))
+                   (not-test-term (dumb-negate-lit test.term))
                    (else-cond (untranslate$ not-test-term t state))
                    (else-premise (atc-premise-test else-cond))
                    (else-context (append gin.context
@@ -1273,6 +1273,7 @@
                                    :inscope gin.inscope
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
+                                   :fn-gthm gin.fn-gthm
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
                                    :limit-var gin.limit-var
@@ -1363,6 +1364,7 @@
                                    :inscope gin.inscope
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
+                                   :fn-gthm gin.fn-gthm
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
                                    :limit-var gin.limit-var
@@ -1528,6 +1530,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
@@ -1541,6 +1544,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index arr.thm-index
                                         :names-to-avoid arr.names-to-avoid
@@ -1554,6 +1558,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index sub.thm-index
                                         :names-to-avoid sub.names-to-avoid
@@ -1636,6 +1641,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
@@ -1673,6 +1679,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index struct.thm-index
                                         :names-to-avoid struct.names-to-avoid
@@ -1739,6 +1746,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
@@ -1776,6 +1784,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index struct.thm-index
                                         :names-to-avoid struct.names-to-avoid
@@ -1799,6 +1808,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index index.thm-index
                                         :names-to-avoid index.names-to-avoid
@@ -1882,6 +1892,7 @@
                                    :inscope gin.inscope
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
+                                   :fn-gthm gin.fn-gthm
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
                                    :limit-var gin.limit-var
@@ -1962,6 +1973,7 @@
                                    :inscope gin.inscope
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
+                                   :fn-gthm gin.fn-gthm
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
                                    :limit-var gin.limit-var
@@ -2236,6 +2248,7 @@
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn
                                        :fn-guard gin.fn-guard
+                                       :fn-gthm gin.fn-gthm
                                        :compst-var gin.compst-var
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
@@ -2306,6 +2319,7 @@
    (inscope atc-symbol-varinfo-alist-list)
    (fn symbol)
    (fn-guard symbol)
+   (fn-gthm symbol)
    (compst-var symbol)
    (fenv-var symbol)
    (limit-var symbol)
@@ -2449,6 +2463,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-gthm gin.fn-gthm
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
@@ -2480,6 +2495,7 @@
                        :affect affect
                        :fn gin.fn
                        :fn-guard gin.fn-guard
+                       :fn-gthm gin.fn-gthm
                        :compst-var gin.compst-var
                        :prec-fns gin.prec-fns
                        :prec-tags gin.prec-tags
