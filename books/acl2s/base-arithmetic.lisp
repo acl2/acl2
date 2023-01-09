@@ -693,14 +693,43 @@ I commented out some disabled theorems that seem fine to me.
               (< (/ a b)
                  (/ (/ (* c b) d) b)))))
 
- (defthm multiply-fractions
+ (defthm multiply-<-fractions
    (implies (and (rationalp a)
                  (rationalp c)
                  (pos-rationalp b)
                  (pos-rationalp d))
             (equal (< (* a (/ b)) (* c (/ d)))
                    (< (* a d) (* c b))))
-   :hints (("Goal" :use (mul-frac-1 mul-frac-2)))))
+   :hints (("Goal" :use (mul-frac-1 mul-frac-2))))
+
+ (local
+   (defthm mul-frac-3
+     (implies (and (rationalp a)
+                   (rationalp b)
+                   (rationalp c)
+                   (pos-rationalp d)
+                   (equal a (* b (/ c d))))
+              (equal (* d (* b (/ c d)))
+                     (* d a)))))
+
+ (local
+   (defthm mul-frac-4
+     (implies (and (rationalp a)
+                   (rationalp c)
+                   (pos-rationalp b)
+                   (pos-rationalp d)
+                   (equal a (/ (* c b) d)))
+              (equal (/ (/ (* c b) d) b)
+                     (/ a b)))))
+ 
+ (defthm multiply-=-fractions
+   (implies (and (rationalp a)
+                 (rationalp c)
+                 (pos-rationalp b)
+                 (pos-rationalp d))
+            (equal (equal (* a (/ b)) (* c (/ d)))
+                   (equal (* a d) (* c b))))
+   :hints (("Goal" :use (mul-frac-3 mul-frac-4)))))
 
 ; The following is a proof of EWD-1297 and is included as a test
 (encapsulate
