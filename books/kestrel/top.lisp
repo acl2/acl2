@@ -1,6 +1,6 @@
 ; Kestrel Books
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -37,6 +37,7 @@
 (include-book "ethereum/top")
 (include-book "file-io-light/top")
 (include-book "fty/top")
+(include-book "hints/top")
 (include-book "isar/top")
 (include-book "java/top")
 ;; (include-book "jvm/top")  ;; TODO: Uncomment when stable
