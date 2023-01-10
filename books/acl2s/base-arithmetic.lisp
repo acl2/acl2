@@ -673,6 +673,7 @@ I commented out some disabled theorems that seem fine to me.
 
 (encapsulate
  ()
+
  (local
    (defthm mul-frac-1
      (implies (and (rationalp a)
@@ -682,25 +683,63 @@ I commented out some disabled theorems that seem fine to me.
                    (< a (* b (/ c d))))
               (< (* d a)
                  (* d (* b (/ c d)))))))
+ 
+  (local
+    (defthm mul-frac-2
+      (implies (and (rationalp a)
+                    (rationalp c)
+                    (pos-rationalp b)
+                    (pos-rationalp d)
+                    (< a (/ (* c b) d)))
+               (< (/ a b)
+                  (/ (/ (* c b) d) b)))))
+    
+ (local
+   (defthm mul-frac-3
+     (implies (and (rationalp a)
+                   (rationalp b)
+                   (rationalp c)
+                   (neg-rationalp d)
+                   (< a (* b (/ c d))))
+              (> (* d a)
+                 (* d (* b (/ c d)))))))
 
  (local
-   (defthm mul-frac-2
+   (defthm mul-frac-4
      (implies (and (rationalp a)
                    (rationalp c)
-                   (pos-rationalp b)
-                   (pos-rationalp d)
+                   (neg-rationalp b)
+                   (non-0-rationalp d)
                    (< a (/ (* c b) d)))
-              (< (/ a b)
+              (> (/ a b)
                  (/ (/ (* c b) d) b)))))
 
- (defthm multiply-fractions
+ (defthm multiply-<-fractions
    (implies (and (rationalp a)
                  (rationalp c)
-                 (pos-rationalp b)
-                 (pos-rationalp d))
+                 (non-0-rationalp b)
+                 (non-0-rationalp d)
+                 (< 0 (* b d)))
             (equal (< (* a (/ b)) (* c (/ d)))
                    (< (* a d) (* c b))))
-   :hints (("Goal" :use (mul-frac-1 mul-frac-2)))))
+   :hints (("Goal" :use (mul-frac-1 mul-frac-2 mul-frac-3 mul-frac-4))))
+
+ (local
+   (defthm l1
+     (implies (and (rationalp a)
+                   (rationalp b)
+                   (non-0-rationalp x))
+              (equal (equal (* x a) (* x b))
+                     (equal a b)))))
+
+ (defthm multiply-=-fractions
+   (implies (and (rationalp a)
+                 (rationalp c)
+                 (non-0-rationalp b)
+                 (non-0-rationalp d))
+            (equal (equal (* a (/ b)) (* c (/ d)))
+                   (equal (* a d) (* c b))))
+   :hints (("Goal" :use (:instance l1 (x d) (b (* b (/ c d))))))))
 
 ; The following is a proof of EWD-1297 and is included as a test
 (encapsulate
