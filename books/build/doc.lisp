@@ -1467,7 +1467,7 @@ are defined where, for use by @(see ifdef) and @(see ifndef).</p>"
 (defxdoc acl2::include-events
   :parents (cert.pl)
   :short "A build-system-supported mechanism to include the events from a
-source-file as a @('progn') or @('encapsulate')."
+book as a @('progn') or @('encapsulate')."
   :long "<p>Include-events reads the forms from a source file, which must begin
 with an @(see in-package) form, and submits those forms as a @('progn') or
 @('encapsulate').</p>
@@ -1476,14 +1476,16 @@ with an @(see in-package) form, and submits those forms as a @('progn') or
 @({
  (include-book \"build/include-events\" :dir :system) ;; prerequisite
 
- (include-events \"book-name.lisp\" :dir :system :encapsulate nil)
+ (include-events \"book-name\" :dir :system :encapsulate nil)
  })
 
 <p>The @(':dir') argument works just like it does in @(see include-book).  The
 @(':encapsulate') argument says whether to submit the forms contained in the
 book as a @('progn') (if nil) or @('encapsulate nil') (if t).</p>
 
-<p>The filename argument should have the full extension of the source file.</p>
+<p>The name of the actual file to be loaded will be the filename argument with
+\".lisp\" appended. The related @(see include-src-events) does the same thing
+without adding the extension.</p>
 
 <p>The cert.pl build system supports this in that if this form is in a book, it
 creates dependencies from that book on the source file that is included as well
@@ -1493,3 +1495,9 @@ as any additional dependencies found in that source file.</p>
  could be included via @('include-events') rather than @('include-book') to
 save certification time.</p>"
   :pkg "ACL2")
+
+(defxdoc acl2::include-src-events
+  :parents (cert.pl)
+  :short "Like @(see include-events) but allows an arbitrary file extension."
+  :pkg "ACL2")
+

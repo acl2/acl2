@@ -263,7 +263,7 @@ sub scan_loads {
 	m/^[^;]*?   # not commented
           \(\s*
             (?:[^\s():]*::)?   # package prefix
-            (?<cmd>include-events|include-book-events)
+            (?<cmd>include-events|include-src-events)
             \s+
 	    "(?<fname>[^"]*)"
             (?:          # optional :dir argument
@@ -271,7 +271,7 @@ sub scan_loads {
               :(?<dirname>[^\s()]*))?
          /xi;
     if (@res) {
-	my $book = "$+{cmd}" eq "include-book-events";
+	my $book = "$+{cmd}" eq "include-events";
 	my $fname = $book ? "$+{fname}.lisp" : $+{fname};
 	my $ans = [loads_event, "$fname", uc($+{dirname} || "")];
 	debug_print_event($base, $ans);
