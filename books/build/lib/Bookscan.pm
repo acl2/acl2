@@ -251,7 +251,7 @@ sub scan_loads {
 
     
     my $regexp = "\\([\\s]*loads[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
-    my @res = $the_line =~ m/$regexp/i;
+    @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	my $ans = [loads_event, $+{fname}, uc($+{dirname} || "")];
 	debug_print_event($base, $ans);
@@ -263,7 +263,7 @@ sub scan_loads {
 	m/^[^;]*?   # not commented
           \(\s*
             (?:[^\s():]*::)?   # package prefix
-            include-events
+            (?<cmd>include-events|include-book-events)
             \s+
 	    "(?<fname>[^"]*)"
             (?:          # optional :dir argument
@@ -271,7 +271,9 @@ sub scan_loads {
               :(?<dirname>[^\s()]*))?
          /xi;
     if (@res) {
-	my $ans = [loads_event, "$+{fname}", uc($+{dirname} || "")];
+	my $book = "$+{cmd}" eq "include-book-events";
+	my $fname = $book ? "$+{fname}.lisp" : $+{fname};
+	my $ans = [loads_event, "$fname", uc($+{dirname} || "")];
 	debug_print_event($base, $ans);
 	return $ans;
     }

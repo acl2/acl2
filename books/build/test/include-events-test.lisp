@@ -2,7 +2,7 @@
 
 (include-book "build/include-events" :dir :system)
 
-(include-events "include-events-test1.lisp")
-(include-events "build/test/include-events-test3.lisp" :dir :system)
+(acl2::include-events "include-events-test1.lisp")
+(include-book-events "build/test/include-events-test3" :dir :system)
 
 (defun baz (x) (foo (bar x)))

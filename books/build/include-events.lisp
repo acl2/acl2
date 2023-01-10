@@ -40,8 +40,9 @@
                          '(encapsulate nil)
                        '(progn))
                    . ,(cdr contents))))))))
-            
-              
 
 (defmacro include-events (fname &key dir encapsulate)
   `(make-event (include-events-fn ,fname ,dir ,encapsulate state)))
+
+(defmacro include-book-events (fname &key dir encapsulate)
+  `(make-event (include-events-fn ,(concatenate 'string fname ".lisp") ,dir ,encapsulate state)))
