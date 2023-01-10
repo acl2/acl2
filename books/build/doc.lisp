@@ -1487,6 +1487,13 @@ book as a @('progn') (if nil) or @('encapsulate nil') (if t).</p>
 \".lisp\" appended. The related @(see include-src-events) does the same thing
 without adding the extension.</p>
 
+<p>The events read from the file are run in the current book's context. Among
+other things, this means that the connected book directory (see @(see cbd))
+remains the directory of the current book, not that of the loaded file, unless
+it is the same directory.  Include-event tries to compensate for this by
+rewriting @('include-book'), @('include-event'), and @('include-src-events')
+forms to correct the filenames.</p>
+
 <p>The cert.pl build system supports this in that if this form is in a book, it
 creates dependencies from that book on the source file that is included as well
 as any additional dependencies found in that source file.</p>
