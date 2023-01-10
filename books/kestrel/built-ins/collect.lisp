@@ -1,6 +1,6 @@
 ; Built-Ins Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,9 @@
 
 ; This file must not include any other file,
 ; because we are collecting only the built-in events.
+
+; TODO: get this file to work with ACL2(r)
+; cert_param: (non-acl2r)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
