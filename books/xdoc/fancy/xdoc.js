@@ -745,6 +745,21 @@ function datCollapse(dat_id)
 
 var warned_about_history_state = false;
 
+function includeBookFormForFrom(from)
+{
+    // Currently the "from" string is something like
+    //   kestrel/c/atc/table.lisp :DIR :SYSTEM
+    // If it ends in ".lisp :DIR :SYSTEM" we strip that and
+    // turn it into a usable include-book form like
+    //   (include-book "kestrel/c/atc/table" :dir :system)
+    var tailPart = ".lisp :DIR :SYSTEM";
+    if ( from.endsWith(tailPart) ) {
+	return "(include-book \"" + from.slice(0,-(tailPart.length)) + "\" :dir :system)";
+    } else {
+	return from;
+    }
+}
+
 function datLongTopic(key)
 {
     // Assumes xdata[key] is ready
@@ -793,7 +808,7 @@ function datLongTopic(key)
         // link to the specific file on GitHub:
         fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2/tree/master/books/"
             + from.slice(0,-13) // strip " :DIR :SYSTEM" from end
-            + "\">" + from + "</a></p>";
+            + "\">" + includeBookFormForFrom(from) + "</a></p>";
     }
     else {
         fromp = "<p class='from'>" + from + "</p>";
