@@ -43,6 +43,7 @@
                                        (term pseudo-termp)
                                        (compst-var symbolp)
                                        (hints true-listp)
+                                       (instructions true-listp)
                                        (thm-index posp)
                                        (names-to-avoid symbol-listp)
                                        state)
@@ -90,6 +91,7 @@
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
+                                            :instructions instructions
                                             :enable nil)))
     (mv event name (1+ thm-index) names-to-avoid)))
 

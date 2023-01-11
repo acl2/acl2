@@ -201,6 +201,7 @@
                                        var
                                        gin.compst-var
                                        hints
+                                       nil
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -284,6 +285,7 @@
                                        term
                                        gin.compst-var
                                        hints
+                                       nil
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -414,6 +416,7 @@
                                        `(,op-arg-type ,arg-term)
                                        gin.compst-var
                                        hints
+                                       nil
                                        thm-index
                                        names-to-avoid
                                        state)))
@@ -577,6 +580,7 @@
                                                                  ,arg2-term)
                                        gin.compst-var
                                        hints
+                                       nil
                                        thm-index
                                        names-to-avoid
                                        state)))
@@ -722,6 +726,7 @@
                                        `(,op-name ,arg-term)
                                        gin.compst-var
                                        hints
+                                       nil
                                        thm-index
                                        names-to-avoid
                                        state)))
