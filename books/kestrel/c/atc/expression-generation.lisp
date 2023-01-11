@@ -952,6 +952,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-expr-and ((arg1-term pseudo-termp)
+                          (arg2-term pseudo-termp)
+                          (arg1-expr exprp)
+                          (arg2-expr exprp)
+                          (arg1-events pseudo-event-form-listp)
+                          (arg2-events pseudo-event-form-listp)
+                          (gin bexpr-ginp)
+                          state)
+  (declare (ignore state))
+  :returns (gout bexpr-goutp)
+  :short "Generate a C expression from an ACL2 term
+          that represents a logical conjunction."
+  (b* (((bexpr-gin gin) gin)
+       (term `(if ,arg1-term ,arg2-term ''nil)))
+    (make-bexpr-gout
+     :expr (make-expr-binary :op (binop-logand)
+                             :arg1 arg1-expr
+                             :arg2 arg2-expr)
+     :term term
+     :events (append arg1-events arg2-events)
+     :thm-name nil
+     :thm-index gin.thm-index
+     :names-to-avoid gin.names-to-avoid
+     :proofs nil))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp
+                                           pseudo-term-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atc-gen-expr-pure/bool
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -1357,16 +1386,18 @@
                                     :names-to-avoid arg1.names-to-avoid
                                     :proofs nil)
                                    state)))
-            (retok (make-bexpr-gout
-                    :expr (make-expr-binary :op (binop-logand)
-                                            :arg1 arg1.expr
-                                            :arg2 arg2.expr)
-                    :term term
-                    :events (append arg1.events arg2.events)
-                    :thm-name nil
-                    :thm-index arg2.thm-index
-                    :names-to-avoid arg2.names-to-avoid
-                    :proofs nil))))
+            (retok (atc-gen-expr-and arg1-term
+                                     arg2-term
+                                     arg1.expr
+                                     arg2.expr
+                                     arg1.events
+                                     arg2.events
+                                     (change-bexpr-gin
+                                      gin
+                                      :thm-index arg2.thm-index
+                                      :names-to-avoid arg2.names-to-avoid
+                                      :proofs nil)
+                                     state))))
          ((mv okp arg1-term arg2-term) (fty-check-or-call term))
          ((when okp)
           (b* (((erp (bexpr-gout arg1))
