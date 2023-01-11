@@ -1378,16 +1378,20 @@
          ((when okp)
           (b* (((erp (bexpr-gout arg1))
                 (atc-gen-expr-bool arg1-term gin state))
+               (cond (untranslate$ arg1.term t state))
+               (premise (atc-premise-test cond))
+               (context (append gin.context (list premise)))
                ((erp (bexpr-gout arg2))
                 (atc-gen-expr-bool arg2-term
                                    (change-bexpr-gin
                                     gin
+                                    :context context
                                     :thm-index arg1.thm-index
                                     :names-to-avoid arg1.names-to-avoid
-                                    :proofs nil)
+                                    :proofs arg1.proofs)
                                    state)))
-            (retok (atc-gen-expr-and arg1-term
-                                     arg2-term
+            (retok (atc-gen-expr-and arg1.term
+                                     arg2.term
                                      arg1.expr
                                      arg2.expr
                                      arg1.events
