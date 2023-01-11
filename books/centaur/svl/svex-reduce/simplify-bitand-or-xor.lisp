@@ -227,18 +227,27 @@ x
   )
 
 (define bitand/or/xor-collect-leaves ((svex)
-                                      (fn))
+                                      (fn)
+                                      &key
+                                      ((limit integerp) '*bitand/bitor-cancel-repeated-aux-limit*))
   :Returns (leaves sv::Svexlist-p :hyp (and (sv::Svex-p svex)
                                             (not (equal fn ':var)))
                    :hints (("Goal"
                             :in-theory (e/d (svex-p
                                              4vec-p)
                                             ()))))
+  :prepwork
+  (
+   ;; TODO: (partial) memoization can help here  to increase the limit. This may
+   ;; require having a very large limit though, which might be bad again.
+   (defconst *bitand/or/xor-collect-leaves-limit* 
+     4))
   (case-match svex
     ((this-fn x y)
-     (if (equal this-fn fn)
-         (cons svex (append (bitand/or/xor-collect-leaves x fn)
-                            (bitand/or/xor-collect-leaves y fn)))
+     (if (and (>= limit 0)
+              (equal this-fn fn))
+         (cons svex (append (bitand/or/xor-collect-leaves x fn :limit (1- limit))
+                            (bitand/or/xor-collect-leaves y fn :limit (1- limit))))
        (list svex)))
     (& (list svex)))
   ///
@@ -270,7 +279,7 @@ x
    ;; TODO: (partial) memoization can help here  to increase the limit. This may
    ;; require having a very large limit though, which might be bad again.
    (defconst *bitand/bitor-cancel-repeated-aux-limit*
-     5))
+     6))
 
   :returns (mv (simplified-svex sv::svex-p
                                 :hyp (and (sv::svex-p svex)
@@ -313,8 +322,8 @@ x
          (equal (car svex) 'sv::bitxor)
          (equal-len (cdr svex) 2))
     (b* ((x (first (cdr svex))) (y (second (cdr svex)))
-         ((mv new-x changed-x) (bitand/bitor-cancel-repeated-aux x leaves new-val :limit (1- limit) :under-xor t))
-         ((mv new-y changed-y) (bitand/bitor-cancel-repeated-aux y leaves new-val :limit (1- limit) :under-xor t))
+         ((mv new-x changed-x) (bitand/bitor-cancel-repeated-aux x leaves new-val :limit (+ limit -1) :under-xor t))
+         ((mv new-y changed-y) (bitand/bitor-cancel-repeated-aux y leaves new-val :limit (+ limit -1) :under-xor t))
          ((Unless (and (or changed-x changed-y)
                        (integer-listp-of-svexlist leaves)))
           (mv svex nil))
@@ -334,7 +343,7 @@ x
   ;; TODO: Maybe a limit should be imposed for cancelling repeated in bitxor...
 
   (defconst *bitxor-cancel-repeated-limit*
-    10)
+    5)
 
   (define bitxor-collect-repeated (svex
                                    leaves
@@ -953,6 +962,7 @@ x
                 (sv::svexlist-p lst)
                 (rp::rp-term-listp context)
                 (integer-listp-of-svexlist lst env context)
+                (rp::valid-sc env-term a)
                 (rp::eval-and-all context a)
                 (sub-alistp env big-env)
                 (rp::falist-consistent-aux big-env env-term))
@@ -987,6 +997,7 @@ x
                 (sv::svexlist-p lst)
                 (rp::rp-term-listp context)
                 (integer-listp-of-svexlist lst env context)
+                (rp::valid-sc env-term a)
                 (rp::eval-and-all context a)
                 (sub-alistp env big-env)
                 (rp::falist-consistent-aux big-env env-term))
@@ -1086,6 +1097,7 @@ x
                        (svexlist-p leaves)
                        (sv::svex-p svex)
                        (rp::rp-term-listp context)
+                       (rp::valid-sc env-term a)
                        (rp::eval-and-all context a)
                        (sub-alistp env big-env)
                        (rp::falist-consistent-aux big-env env-term)
@@ -1229,6 +1241,7 @@ x
                        (svexlist-p leaves)
                        (sv::svex-p svex)
                        (rp::rp-term-listp context)
+                       (rp::valid-sc env-term a)
                        (rp::eval-and-all context a)
                        (sub-alistp env big-env)
                        (rp::falist-consistent-aux big-env env-term))
@@ -1313,7 +1326,7 @@ x
     (defthm svex-eval-bitor-lst-of-bitand/or/xor-collect-leaves
       (and
        (equal
-        (sv::3vec-fix (svex-eval-bitor-lst (bitand/or/xor-collect-leaves svex 'sv::bitor) env))
+        (sv::3vec-fix (svex-eval-bitor-lst (bitand/or/xor-collect-leaves svex 'sv::bitor :limit limit) env))
         (sv::3vec-fix (svex-eval svex env))))
       :hints (("goal"
                :in-theory (e/d (svex-eval-bitor-lst
@@ -1325,7 +1338,7 @@ x
 
     (defthm svex-eval-bitand-lst-of-bitand/or/xor-collect-leaves
       (equal
-       (sv::3vec-fix (svex-eval-bitand-lst (bitand/or/xor-collect-leaves svex 'sv::bitand) env))
+       (sv::3vec-fix (svex-eval-bitand-lst (bitand/or/xor-collect-leaves svex 'sv::bitand :limit limit) env))
        (sv::3vec-fix (svex-eval svex env)))
       :hints (("goal"
                :in-theory (e/d (svex-eval-bitor-lst
@@ -1336,12 +1349,12 @@ x
     (defthm svex-eval-bitor-lst-of-bitand/or/xor-collect-leaves-2
       (and (equal
             (sv::4vec-bitor other
-                            (svex-eval-bitor-lst (bitand/or/xor-collect-leaves svex 'sv::bitor) env)
+                            (svex-eval-bitor-lst (bitand/or/xor-collect-leaves svex 'sv::bitor :limit limit) env)
                             )
             (sv::4vec-bitor (svex-eval svex env)
                             other))
            (equal
-            (sv::4vec-bitor (svex-eval-bitor-lst (bitand/or/xor-collect-leaves svex 'sv::bitor) env)
+            (sv::4vec-bitor (svex-eval-bitor-lst (bitand/or/xor-collect-leaves svex 'sv::bitor :limit limit) env)
                             other)
             (sv::4vec-bitor (svex-eval svex env)
                             other)))
@@ -1353,12 +1366,12 @@ x
     (defthm svex-eval-bitand-lst-of-bitand/or/xor-collect-leaves-2
       (and (equal
             (sv::4vec-bitand other
-                             (svex-eval-bitand-lst (bitand/or/xor-collect-leaves svex 'sv::bitand) env)
+                             (svex-eval-bitand-lst (bitand/or/xor-collect-leaves svex 'sv::bitand :limit limit) env)
                              )
             (sv::4vec-bitand (svex-eval svex env)
                              other))
            (equal
-            (sv::4vec-bitand (svex-eval-bitand-lst (bitand/or/xor-collect-leaves svex 'sv::bitand) env)
+            (sv::4vec-bitand (svex-eval-bitand-lst (bitand/or/xor-collect-leaves svex 'sv::bitand :limit limit) env)
                              other)
             (sv::4vec-bitand (svex-eval svex env)
                              other)))
@@ -1396,6 +1409,7 @@ x
                    (svexlist-p nodes-to-remove)
 
                    (rp::rp-term-listp context)
+                   (rp::valid-sc env-term a)
                    (rp::eval-and-all context a)
 
                    (sub-alistp env big-env)
@@ -1452,6 +1466,7 @@ x
                       (sv::svex-p x)
                       (sv::svex-p y)
                       (rp::rp-term-listp context)
+                      (rp::valid-sc env-term a)
                       (rp::eval-and-all context a)
                       (sub-alistp env big-env)
                       (rp::falist-consistent-aux big-env env-term))
@@ -1590,8 +1605,8 @@ x
    (defret svex-eval-of-<fn>
      (implies (and (sv::svex-p x)
                    (rp::rp-term-listp context)
+                   (rp::valid-sc env-term a)
                    (rp::eval-and-all context a)
-
                    (sub-alistp env big-env)
                    (rp::falist-consistent-aux big-env env-term))
               (equal
@@ -1601,8 +1616,8 @@ x
    (defret svexlist-eval-of-<fn>
      (implies (and (sv::svexlist-p lst)
                    (rp::rp-term-listp context)
+                   (rp::valid-sc env-term a)
                    (rp::eval-and-all context a)
-
                    (sub-alistp env big-env)
                    (rp::falist-consistent-aux big-env env-term))
               (equal
@@ -1653,6 +1668,7 @@ x
  (defret svex-alist-eval-of-<fn>
    (implies (and (sv::svex-alist-p alist)
                  (rp::rp-term-listp context)
+                 (rp::valid-sc env-term a)
                  (rp::eval-and-all context a)
 
                  (sub-alistp env big-env)
