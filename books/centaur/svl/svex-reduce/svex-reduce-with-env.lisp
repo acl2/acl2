@@ -34,6 +34,7 @@
 
 (include-book "svex-reduce-apply")
 (include-book "simplify-bitand-or-xor")
+(include-book "simplify-dont-care-branch")
 
 (local
  (include-book "../4vec-lemmas"))
@@ -502,9 +503,10 @@
                            then))
                        (svex-reduce-w/-env-apply fn (hons-list test then else))))
                     (term1 (svex-reduce-w/-env-masked (second args) start size ))
-                    (term2 (svex-reduce-w/-env-masked (third args) start size )))
-                 (svex-reduce-w/-env-apply fn (hons-list test term1 term2))))
-
+                    (term2 (svex-reduce-w/-env-masked (third args) start size))
+                    (res (svex-reduce-w/-env-apply fn (hons-list test term1 term2)))
+                    (res (simplify-dont-care-branch res)))
+                 res))
               ((and* (equal fn 'sv::partinst)
                      (equal-len args 4))
                (b* ((s-start (svex-reduce-w/-env (first args)))
