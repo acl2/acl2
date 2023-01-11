@@ -693,6 +693,21 @@
                                             state)))
                         (value fal))))))))
 
+;; Corresponds to includeBookFormForFrom in fancy/xdoc.js
+(defun include-book-form-for-from (from)
+  ;; Check the exact pattern expected for `from`, so that the worst that could
+  ;; happen if the pattern changes is to revert to the previous behavior.
+  (if (or (not (stringp from))
+          (let ((from-len (length from)))
+            (or (not (> (length from) 18))
+                (not (equal (subseq from (- from-len 18) from-len)
+                            ".lisp :DIR :SYSTEM")))))
+      from
+    (concatenate 'string
+                 "(include-book \""
+                 (subseq from 0 (- (length from) 18))
+                 "\" :dir :system)")))
+
 (defun topic-to-text (x all-topics state)
   "Returns (MV TEXT STATE)"
   (b* ((name (cdr (assoc :name x)))
@@ -738,7 +753,7 @@
        (from  (cdr (assoc :from x)))
        (ans (if from
                 (b* ((ans (str::revappend-chars " -- " ans))
-                     (ans (str::revappend-chars from ans))
+                     (ans (str::revappend-chars (include-book-form-for-from from) ans))
                      (ans (cons #\Newline ans)))
                   ans)
               ans))
