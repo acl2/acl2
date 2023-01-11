@@ -249,9 +249,6 @@ sub scan_loads {
               :(?<dirname>[^\s()]*))?
          /xi;
 
-    
-    my $regexp = "\\([\\s]*loads[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
-    @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	my $ans = [loads_event, $+{fname}, uc($+{dirname} || "")];
 	debug_print_event($base, $ans);
