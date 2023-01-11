@@ -874,7 +874,6 @@
           that represents a ternary conditional expression."
   (b* (((reterr) (irr-pexpr-gout))
        ((pexpr-gin gin) gin)
-       (wrld (w state))
        ((unless (equal then-type else-type))
         (reterr
          (msg "When generating C code for the function ~x0, ~
@@ -898,22 +897,7 @@
           :thm-index gin.thm-index
           :names-to-avoid gin.names-to-avoid
           :proofs nil)))
-       (thm-index gin.thm-index)
-       (names-to-avoid gin.names-to-avoid)
-       (thm-name (pack gin.fn '-correct- thm-index))
-       (thm-index (1+ thm-index))
-       ((mv thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
-       (type-pred (type-to-recognizer type wrld))
        (term* `(condexpr (if* ,test-term ,then-term ,else-term)))
-       (uterm* (untranslate$ term* nil state))
-       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
-                             ,uterm*)
-                      (,type-pred ,uterm*)))
-       (formula (atc-contextualize formula gin.context nil))
-       (formula `(implies (and (compustatep ,gin.compst-var)
-                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
-                          ,formula))
        (hints `(("Goal" :in-theory '(exec-expr-pure-when-cond
                                      (:e expr-kind)
                                      (:e expr-cond->test)
@@ -937,11 +921,19 @@
                                               condexpr))))
           (expand (condexpr (if* ,test-term ,then-term ,else-term)))
           (prove :hints ,hints)))
-       ((mv thm-event &)
-        (evmac-generate-defthm thm-name
-                               :formula formula
-                               :instructions instructions
-                               :enable nil)))
+       ((mv thm-event thm-name thm-index names-to-avoid)
+        (atc-gen-expr-pure-correct-thm gin.fn
+                                       gin.fn-guard
+                                       gin.context
+                                       expr
+                                       type
+                                       term*
+                                       gin.compst-var
+                                       nil
+                                       instructions
+                                       gin.thm-index
+                                       gin.names-to-avoid
+                                       state)))
     (retok
      (make-pexpr-gout
       :expr expr
