@@ -112,9 +112,32 @@
                            (set-wormhole-data whs (1+ (nfix count))))))
                  nil))
 
+(encapsulate
+  (((print-xdoc-error * *) => *
+    :formals (str args)
+    :guard (and (stringp str)
+                (true-listp args))))
+
+  (local (defun print-xdoc-error (str args)
+           (declare (xargs :guard (and (stringp str)
+                                       (true-listp args))))
+           (declare (ignore str args))
+           nil))
+  (defthm print-xdoc-error-is-nil
+    (equal (print-xdoc-error str args) nil)))
+
+(defun print-xdoc-error-default (str args)
+  (declare (xargs :guard (and (stringp str)
+                              (true-listp args))))
+  (fmt-to-comment-window str
+                         (pairlis2 acl2::*base-10-chars* args)
+                         0 nil nil))
+
+(defattach print-xdoc-error print-xdoc-error-default)
+
 (defmacro xdoc-error (str ctx &rest args)
   (declare (xargs :guard (stringp str)))
   `(prog2$ (note-xdoc-error)
-           (cw ,(concatenate 'string "; xdoc error in ~x0: " str "~%")
-               ,ctx
-               ,@args)))
+           (print-xdoc-error
+            (concatenate 'string "; xdoc error in ~x0: " ,str "~%")
+            (list ,ctx . ,args))))

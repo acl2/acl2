@@ -512,6 +512,12 @@
                              (:definition quotep)))))))
 
 (local
+ (defthm VALID-SC-SUBTERMS-LST-strip-cdrs-append
+   (equal (VALID-SC-SUBTERMS-LST (STRIP-CDRS (APPEND x y)) a)
+          (and (VALID-SC-SUBTERMS-LST (STRIP-CDRS x) a)
+               (VALID-SC-SUBTERMS-LST (STRIP-CDRS y) a))))) 
+
+(local
  (defthm sort-sum-meta-aux2-returns-valid-sc
    (implies (valid-sc term a)
             (valid-sc-subterms-lst
@@ -617,38 +623,38 @@
 
 (progn
   (local
-   (defthmd eval-of-bit-of-1
+   (defthmd eval-of-logbit-1
      (implies (and (mult-formula-checks state)
                    (rp-evl-meta-extract-global-facts)
                    (equal (car term)
-                          'bit-of)
+                          'logbit$inline)
                    (consp term)
                    (consp (cdr term))
                    (consp (cddr term))
                    (not (cdddr term)))
               (equal (rp-evlt term a)
-                     (bit-of (rp-evlt (cadr term) a)
+                     (logbit (rp-evlt (cadr term) a)
                              (rp-evlt (caddr term) a))))
      :hints (("goal"
               :in-theory (e/d ()
                               (evl-of-extract-from-rp))))))
 
   (local
-   (defthm eval-of-bit-of
+   (defthm eval-of-logbit
      (implies (and (mult-formula-checks state)
                    (rp-evl-meta-extract-global-facts)
                    (equal (car (ex-from-rp term))
-                          'bit-of)
+                          'logbit$inline)
                    (consp (ex-from-rp term))
                    (consp (cdr (ex-from-rp term)))
                    (consp (cddr (ex-from-rp term)))
                    (not (cdddr (ex-from-rp term))))
               (equal (rp-evlt term a)
-                     (bit-of (rp-evlt (cadr (ex-from-rp term)) a)
+                     (logbit (rp-evlt (cadr (ex-from-rp term)) a)
                              (rp-evlt (caddr (ex-from-rp term)) a))))
      :hints (("goal"
               :in-theory (e/d (rp-evl-of-ex-from-rp-reverse
-                               eval-of-bit-of-1)
+                               eval-of-logbit-1)
                               (evl-of-extract-from-rp)))))))
 
 (progn
@@ -3366,7 +3372,7 @@
 (local
  (progn
    (create-regular-eval-lemma -- 1 mult-formula-checks)
-   (create-regular-eval-lemma bit-of 2 mult-formula-checks)
+   (create-regular-eval-lemma logbit$inline 2 mult-formula-checks)
    (create-regular-eval-lemma BINARY-? 3 mult-formula-checks)
    (create-regular-eval-lemma BINARY-and 2 mult-formula-checks)
    (create-regular-eval-lemma BINARY-or 2 mult-formula-checks)
@@ -3417,7 +3423,7 @@
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (create-and-list-instance
-                            regular-rp-evl-of_bit-of_when_mult-formula-checks
+                            regular-rp-evl-of_logbit$inline_when_mult-formula-checks
                             and-list)
                            ()))))
 
@@ -3434,7 +3440,7 @@
             :expand ((:free (x y hash) (and-list hash (cons x y))))
             :induct (pp-lists-to-term-p+ lst)
             :in-theory (e/d (pp-lists-to-term-p+
-                             regular-rp-evl-of_bit-of_when_mult-formula-checks
+                             regular-rp-evl-of_logbit$inline_when_mult-formula-checks
                              pp-lists-to-term-pp-lst)
                             ())))))
 
@@ -3715,7 +3721,7 @@
 
 (progn
 
-  (create-regular-eval-lemma bit-of 2 mult-formula-checks)
+  (create-regular-eval-lemma logbit$inline 2 mult-formula-checks)
   (create-regular-eval-lemma bitp 1 mult-formula-checks)
   (create-regular-eval-lemma ifix 1 mult-formula-checks)
   (create-regular-eval-lemma binary-and 2 mult-formula-checks)
@@ -3738,7 +3744,7 @@
     (implies (and (mult-formula-checks state)
                   (rp-evl-meta-extract-global-facts)
                   (b* ((term (ex-from-rp term)))
-                    (case-match term (('bit-of & &) t))))
+                    (case-match term (('logbit$inline & &) t))))
              (and (bitp (rp-evlt term a))
                   (bitp (rp-evl term a))))
     :hints (("Goal"
@@ -3797,7 +3803,7 @@
                                (:REWRITE VALID-SC-EX-FROM-RP-2)
                                (:TYPE-PRESCRIPTION O<)
                                (:DEFINITION EVAL-AND-ALL)
-                               (:REWRITE EVAL-OF-BIT-OF)
+                               (:REWRITE EVAL-OF-LOGBIT)
                                (:REWRITE DEFAULT-CDR)
                                (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                                ex-from-rp
@@ -3995,7 +4001,7 @@
                                 (:type-prescription valid-sc)
                                 (:type-prescription mult-formula-checks)
                                 (:type-prescription binary-and)
-                                (:rewrite eval-of-bit-of)
+                                (:rewrite eval-of-logbit)
 
                                 (:rewrite valid-sc-ex-from-rp-2)
                                 (:definition eval-and-all)
@@ -4053,7 +4059,7 @@
                                (:DEFINITION RP-TRANS)
                                (:REWRITE ATOM-RP-TERMP-IS-SYMBOLP)
                                (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                               (:REWRITE EVAL-OF-BIT-OF)
+                               (:REWRITE EVAL-OF-LOGBIT)
                                (:REWRITE EVAL-OF-BINARY-XOR)
                                (:REWRITE EVAL-OF-BINARY-OR)
                                (:DEFINITION INCLUDE-FNC)
@@ -4102,7 +4108,7 @@
                                (:DEFINITION RP-TRANS)
                                (:REWRITE ATOM-RP-TERMP-IS-SYMBOLP)
                                (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                               (:REWRITE EVAL-OF-BIT-OF)
+                               (:REWRITE EVAL-OF-LOGBIT)
                                (:REWRITE EVAL-OF-BINARY-XOR)
                                (:REWRITE EVAL-OF-BINARY-OR)
                                (:DEFINITION INCLUDE-FNC)

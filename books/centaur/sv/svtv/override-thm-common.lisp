@@ -42,6 +42,7 @@
    output-part-vars
    hyp
    concl
+   run-before-concl
    svtv
    ideal
    enable
@@ -108,25 +109,27 @@
        (template '(<defthm> <name>-override-lemma
                     (implies <hyp>
                              (b* ((run (:@ (not :use-ideal)
-                                        (svtv-run (<svtv>)
-                                                  (append <input-bindings>
-                                                         <input-vars>
-                                                         <override-tests>
-                                                         <override-bindings>
-                                                         <override-vals>)
-                                                 (:@ (not :use-ideal) :include)
-                                                 '<outputs-list>))
+                                           (svtv-run (<svtv>)
+                                                     (append <input-bindings>
+                                                             <input-vars>
+                                                             <override-tests>
+                                                             <override-bindings>
+                                                             <override-vals>)
+                                                     (:@ (not :use-ideal) :include)
+                                                     '<outputs-list>))
                                        (:@ :use-ideal
-                                        (svex-env-reduce '<outputs-list>
-                                                         (svtv-spec-run (<ideal>)
-                                                                        (append <input-bindings>
-                                                                                <input-vars>
-                                                                                <override-tests>
-                                                                                <override-bindings>
-                                                                                <override-vals>)))))
+                                           (svex-env-reduce '<outputs-list>
+                                                            (svtv-spec-run (<ideal>)
+                                                                           (append <input-bindings>
+                                                                                   <input-vars>
+                                                                                   <override-tests>
+                                                                                   <override-bindings>
+                                                                                   <override-vals>)))))
                                   ((svassocs <outputs>) run))
-                               (and <integerp-concls>
-                                    <concl>)))
+                               (progn$
+                                <run-before-concl>
+                                (and <integerp-concls>
+                                     <concl>))))
                     <args>)))
     (acl2::template-subst
      template
@@ -148,7 +151,8 @@
                                                             x.override-var-bindings))))
                    (<override-vals> . (list . ,(svtv-genthm-var-alist-termlist (append x.spec-override-vars x.override-vars))))
                    (<outputs-list> . ,x.output-vars))
-     :splice-alist `((<outputs> . ,x.output-vars)
+     :splice-alist `((<run-before-concl> . ,(and x.run-before-concl (list x.run-before-concl)))
+                     (<outputs> . ,x.output-vars)
                      (<integerp-concls> . ,(if x.no-integerp nil (svtv-genthm-integerp-conclusions x)))
                      (<args> . ,x.lemma-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))

@@ -1110,7 +1110,7 @@ svex-alist to svexl-alist conversion. ~%"))
                                )
 
                               (;;RP::RP-EVL-OF-VARIABLE
-                               svex-reduce-w/-env-correct
+                               ;;svex-reduce-w/-env-correct
                                nfix
                                (:REWRITE ACL2::ZP-OPEN)
                                (:REWRITE ACL2::NFIX-UNDER-NAT-EQUIV)

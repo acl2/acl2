@@ -61,7 +61,7 @@
   use-ihs-extensions
   :disabled t))
 
-(defun bits-to-bit-of (x)
+(defun bits-to-logbit (x)
   x)
 
 (local
@@ -93,16 +93,16 @@
   (local
    (use-arithmetic-5 t))
 
-  (defthmd bits-is-bit-of-nosyntaxp
+  (defthmd bits-is-logbit-nosyntaxp
     (implies (and (integerp num)
                   (natp start))
              (equal (svl::bits num start 1)
-                    (bit-of num start)))
+                    (logbit start num)))
     :hints (("goal"
              :in-theory (e/d (bitp
                               oddp
                               evenp
-                              bit-of
+                              logbit
                               sv::4vec-part-select
                               svl::bits
                               sv::4vec->lower
@@ -138,19 +138,32 @@
 
                               SVL::4VEC-PART-SELECT-IS-BITS)))))
 
-  (defthm bits-is-bit-of
+  (defthm bits-is-logbit
     (implies (and (syntaxp (atom (ex-from-rp num)))
                   (integerp num)
                   (natp start))
              (equal (svl::bits num start 1)
-                    (bit-of num start)))
+                    (logbit start num)))
     :hints (("Goal"
-             :in-theory (e/d (bits-is-bit-of-nosyntaxp) ()))))
+             :in-theory (e/d (bits-is-logbit-nosyntaxp) ()))))
 
-  (defthmd bits-is-bit-of-reverse
+  (rp::disable-rules '(svl::logbit-to-bits
+                       svl::logbit-to-bits-without-hyps))
+  
+  (def-rp-rule :disabled-for-acl2 t
+    logbit-to-bits
+    (implies (and (syntaxp (and (not (atom (ex-from-rp num)))
+                                (not (equal (car (ex-from-rp num))
+                                            'nth))))  
+                  (integerp num)
+                  (natp start))
+             (equal (logbit start num)
+                    (svl::bits num start 1))))
+  
+  (defthmd bits-is-logbit-reverse
     (implies (and (integerp num)
                   (natp start))
-             (equal (bit-of num start)
+             (equal (logbit start num)
                     (svl::bits num start 1)))))
 
 ;; multiplier-spec:
@@ -242,10 +255,10 @@
                                           col-index)))
    :hints (("Goal"
             :in-theory (e/d (svl-sum-col-bybit-aux
-                             bits-is-bit-of-reverse
+                             bits-is-logbit-reverse
                              SVL::BITS-OF-RSH-NO-SYNTAXP
                              svl-sum-col-bybit)
-                            (bits-is-bit-of
+                            (bits-is-logbit
                              SVL::4VEC->UPPER-AND-LOWER-WHEN-INTEGERP))))))
 
 (local
@@ -448,7 +461,8 @@
                                svl::natp-implies-integerp
                                svl::bitp-implies-natp
                                )
-                              (logbitp ash
+                              (LOGBIT-IS-BITS
+                               logbitp logbit ash
                                        ifix))))))
 
   (local
@@ -572,8 +586,8 @@
     (implies (not (zp col-index))
              (equal (svl-sum-col-bybit mult start mcand col-index)
                     (sum (and$
-                          (bits-to-bit-of (svl::bits mult start 1))
-                          (bits-to-bit-of (svl::bits mcand col-index 1)))
+                          (bits-to-logbit (svl::bits mult start 1))
+                          (bits-to-logbit (svl::bits mcand col-index 1)))
                          (svl-sum-col-bybit mult
                                             (1+ start)
                                             mcand (1- col-index)))))
@@ -601,8 +615,8 @@
 
   (def-rp-rule svl-sum-col-bybit-opener-col-index=0
     (equal (svl-sum-col-bybit mult start mcand 0)
-           (and$ (bits-to-bit-of (svl::bits mult start 1))
-                 (bits-to-bit-of (svl::bits mcand 0 1))))
+           (and$ (bits-to-logbit (svl::bits mult start 1))
+                 (bits-to-logbit (svl::bits mcand 0 1))))
     :hints (("goal"
              :in-theory (e/d (svl-sum-col-bybit) ())))))
 
@@ -661,7 +675,7 @@
     :hints (("Goal"
              :in-theory (e/d (2vec-adder
                               BIT-CONCAT)
-                             ())))))
+                             (LOGBIT-IS-BITS))))))
 
 (encapsulate
   nil
@@ -752,8 +766,8 @@
   (def-rp-rule 4vec-adder-opener-size>0
     (implies (not (zp size))
              (equal (4vec-adder x y carry-in size)
-                    (b* (((list s c) (s-c-spec (list (bits-to-bit-of (svl::bits x 0 1))
-                                                     (bits-to-bit-of (svl::bits y 0 1))
+                    (b* (((list s c) (s-c-spec (list (bits-to-logbit (svl::bits x 0 1))
+                                                     (bits-to-logbit (svl::bits y 0 1))
                                                      carry-in))))
                       (svl::4vec-concat$ 1 (s-of-c-trig s)
                                          (4vec-adder (sv::4vec-rsh 1 x)
@@ -766,8 +780,8 @@
 
   (def-rp-rule 4vec-adder-opener-size==1
     (equal (4vec-adder x y carry-in 1)
-           (s-of-c-trig (s-spec (list (bits-to-bit-of (svl::bits x 0 1))
-                                      (bits-to-bit-of (svl::bits y 0 1))
+           (s-of-c-trig (s-spec (list (bits-to-logbit (svl::bits x 0 1))
+                                      (bits-to-logbit (svl::bits y 0 1))
                                       carry-in))))
     :hints (("goal"
              :in-theory (e/d (4vec-adder
@@ -780,21 +794,23 @@
   `(logapp ,size ,num (- (svl::bits ,num (1- ,size) 1))))
 
 (def-rw-opener-error
-  bits-to-bit-of-opener-error
-  (bits-to-bit-of x))
+  bits-to-logbit-opener-error
+  (bits-to-logbit x))
 
 (def-rp-rule
-  bits-to-bit-of-opener
-  (equal (bits-to-bit-of x)
+  bits-to-logbit-opener
+  (equal (bits-to-logbit x)
          x))
 
-;; this should never be used because of (:rewrite bits-is-bit-of)?
-(def-rp-rule bits-to-bit-of-with-wrapper
+;; this should never be used because of (:rewrite bits-is-logbit)?
+(def-rp-rule bits-to-logbit-with-wrapper
   (implies (and (syntaxp (atom (ex-from-rp num)))
                 (integerp num)
                 (natp start))
-           (equal (bits-to-bit-of (svl::bits num start 1))
-                  (bit-of num start))))
+           (equal (bits-to-logbit (svl::bits num start 1))
+                  (logbit start num)))
+  :hints (("Goal"
+           :in-theory (e/d () (LOGBIT-IS-BITS)))))
 
 (encapsulate
   nil

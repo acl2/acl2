@@ -70,7 +70,7 @@
               (or (binary-fnc-p x)
                   (equal x ''0)
                   (equal x ''1)
-                  (bit-of-p x)))
+                  (logbit-p x)))
             (4vec-branch-drop-r-case-pattern-check else)))
       (('quote x)
        (and (sv::4vec-p x)
@@ -169,7 +169,7 @@
        
        acl2::logcar$inline
        acl2::logcdr$inline
-       acl2::logbit
+       acl2::logbit$inline
        unpack-booth
        --
        sum-list
@@ -180,7 +180,7 @@
        rp::s-c-spec
        rp::c-spec
        rp::s-spec
-       bit-of
+       
        ;; svl::bits
        ;; svl::4vec-bitand
        ;; svl::4vec-bitor

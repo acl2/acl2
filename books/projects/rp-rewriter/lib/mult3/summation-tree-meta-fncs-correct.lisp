@@ -795,7 +795,7 @@
                              (:REWRITE
                               REGULAR-RP-EVL-OF_s-C-RES_WHEN_MULT-FORMULA-CHECKS)
                              (:REWRITE
-                              REGULAR-RP-EVL-OF_BIT-OF_WHEN_MULT-FORMULA-CHECKS)
+                              REGULAR-RP-EVL-OF_LOGBIT$inline_WHEN_MULT-FORMULA-CHECKS)
                              (:REWRITE ACL2::FN-CHECK-DEF-NOT-QUOTE)
                              (:DEFINITION RP-EQUAL)
                              ;;(:DEFINITION SUM-LIST-EVAL)
@@ -1356,22 +1356,20 @@
    (defthm light-pp-termp-is-bitp
      (implies (and (rp-evl-meta-extract-global-facts :state state)
                    (mult-formula-checks state)
-                   (LIGHT-PP-TERM-P term)
+                   (light-pp-term-p term)
                    (valid-sc term a))
               (bitp (rp-evlt term a)))
-     :hints (("Goal"
+     :hints (("goal"
               :do-not-induct t
-              :expand ((LIGHT-PP-TERM-P TERM))
-              :in-theory (e/d* (LIGHT-PP-TERM-p
+              :expand ((light-pp-term-p term))
+              :in-theory (e/d* (light-pp-term-p
                                 is-rp
                                 regular-eval-lemmas-with-ex-from-rp
-                                ;;rp-evlt-of-ex-from-rp-reverse-only-atom
                                 is-if)
                                (bitp
                                 pp-term-p
-                                RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
-                                ;;rp-evlt-of-ex-from-rp
-                                EX-FROM-RP-LEMMA1
+                                rp-trans-is-term-when-list-is-absent
+                                ex-from-rp-lemma1
                                 rp-evlt-of-ex-from-rp))))))
 
   (local
@@ -2280,13 +2278,13 @@
 ;; create-s-instance lemmas
 
 ;; m2-of-bitp
-(defthm bitp-of-rp-evlt-of-binary-fnc-p/and-listp/bit-of-p
+(defthm bitp-of-rp-evlt-of-binary-fnc-p/and-listp/logbit-p
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (or (binary-fnc-p term)
                     (binary-fnc-p (ex-from-rp term))
-                    (bit-of-p term)
-                    (bit-of-p (ex-from-rp term))
+                    (logbit-p term)
+                    (logbit-p (ex-from-rp term))
                     (and-list-p term)
                     (and-list-p (ex-from-rp term))))
            (and (bitp (rp-evlt term a))
@@ -5349,10 +5347,10 @@
                       (a2 (ex-from-rp a2))
                       (a3 (ex-from-rp a3))
                       (a4 (ex-from-rp a4))
-                      (a1 (ex-from-rp (case-match a1 (('bit-of x &) x) (& a1))))
-                      (a2 (ex-from-rp (case-match a2 (('bit-of x &) x) (& a2))))
-                      (a3 (ex-from-rp (case-match a3 (('bit-of x &) x) (& a3))))
-                      (a4 (ex-from-rp (case-match a4 (('bit-of x &) x) (& a4)))))
+                      (a1 (ex-from-rp (case-match a1 (('logbit$inline x &) x) (& a1))))
+                      (a2 (ex-from-rp (case-match a2 (('logbit$inline x &) x) (& a2))))
+                      (a3 (ex-from-rp (case-match a3 (('logbit$inline x &) x) (& a3))))
+                      (a4 (ex-from-rp (case-match a4 (('logbit$inline x &) x) (& a4)))))
                    (or (and (equal a1 a2)
                             (equal a1 a3)
                             (not (equal a1 a4))
@@ -5650,7 +5648,7 @@
   :hints (("Goal"
            ;;:expand ((:free (x y) (and-list 0 (cons x y))))
            :in-theory (e/d* (regular-rp-evl-of_s_when_mult-formula-checks
-                             regular-rp-evl-of_bit-of_when_mult-formula-checks
+                             regular-rp-evl-of_logbit$inline_when_mult-formula-checks
                              and-eval-for-cross-product-pp;;-redef
                              cross-product-pp-aux-precollect
                              rp-evlt-of-ex-from-rp-reverse)
@@ -5688,7 +5686,8 @@
            :in-theory (e/d* (regular-rp-evl-of_s_when_mult-formula-checks
                              regular-rp-evl-of_binary-and_when_mult-formula-checks
                              regular-rp-evl-of_binary-and_when_mult-formula-checks_with-ex-from-rp
-                             regular-rp-evl-of_bit-of_when_mult-formula-checks
+                             regular-rp-evl-of_logbit$inline_when_mult-formula-checks
+  
                              and-eval-for-cross-product-pp;;-redef
                              cross-product-pp-aux-precollect2-aux
                              rp-evlt-of-ex-from-rp-reverse
@@ -5751,7 +5750,8 @@
                                   regular-rp-evl-of_binary-xor_when_mult-formula-checks_with-ex-from-rp
                                   regular-rp-evl-of_binary-or_when_mult-formula-checks
                                   regular-rp-evl-of_binary-or_when_mult-formula-checks_with-ex-from-rp
-                                  regular-rp-evl-of_bit-of_when_mult-formula-checks
+                                  regular-rp-evl-of_logbit$inline_when_mult-formula-checks
+  
                                   and-eval-for-cross-product-pp;;-redef
                                   cross-product-pp-aux-precollect2
                                   rp-evlt-of-ex-from-rp-reverse
@@ -5853,8 +5853,8 @@
                         regular-rp-evl-of_binary-and_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_and-list_when_mult-formula-checks
-                        regular-rp-evl-of_bit-of_when_mult-formula-checks_with-ex-from-rp
-                        regular-rp-evl-of_bit-of_when_mult-formula-checks
+                        regular-rp-evl-of_logbit$inline_when_mult-formula-checks_with-ex-from-rp
+                        regular-rp-evl-of_logbit$inline_when_mult-formula-checks
                         regular-rp-evl-of_--_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_--_when_mult-formula-checks
                         cross-product-pp-aux-for-pp-lst-aux

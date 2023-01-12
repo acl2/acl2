@@ -25,7 +25,7 @@
 
 (in-package "SVL")
 
-(include-book "centaur/sv/svex/eval" :dir :system)
+(include-book "base")
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
@@ -103,6 +103,45 @@
                              SVEX-KIND)
                             ())))))
 
+(define has-integerp-rp (term)
+  :prepwork ((local
+              (in-theory
+               (enable rp::is-rp-loose))))
+  (and (rp::is-rp-loose term)
+       (or (equal (cadr term) ''integerp)
+           (has-integerp-rp (caddr term))))
+  ///
+  (local
+   (defthm rp-evlt-of-rp-call
+     (implies (and (consp x)
+                   (equal (car x) 'rp))
+              (equal (rp-evlt x a)
+                     (rp (rp-evlt (cadr x) a)
+                         (rp-evlt (caddr x) a))))))
+  (local
+   (defthm rp-evlt-of-integerp-call
+     (implies (and (consp x)
+                   (equal (car x) 'integerp))
+              (equal (rp-evlt x a)
+                     (integerp (rp-evlt (cadr x) a))))))
+  (defthm has-integerp-rp-is-correct
+    (implies (and (rp::valid-sc term a)
+                  (has-integerp-rp term))
+             (and (integerp (rp-evlt term a))))
+    :hints (("goal"
+             :do-not-induct t
+             :expand ((rp::valid-sc term a))
+             :induct (has-integerp-rp term)
+             :in-theory (e/d (rp::context-from-rp
+                              rp::valid-sc rp::is-rp rp::is-if)
+                             (rp::rp-trans
+                              rp::rp-evl-and-side-cond-consistent-rp-rw-relieve-hyp
+                              rp::rp-term-listp
+                              rp::valid-sc-subterms
+                              rp::eval-and-all-context-from-when-valid-sc
+                              rp::valid-sc-cons
+                              rp::rp-evl-of-trans-list-lemma))))))
+
 (define integerp-of-svex ((x sv::svex-p)
                           &optional
                           ((env) 'env)
@@ -127,6 +166,8 @@
                  (- (and (4vec-p val)
                          (acl2::raise "Constants are expected to be quoted in the  given env. But given instead:~p0"
                                       (cons x val))))
+
+                 ((when (has-integerp-rp val)) t)
 
                  ((unless (rp::rp-termp val)) ;; this may be taken out with guards on env
                   nil)
@@ -251,7 +292,7 @@
              :in-theory (e/d () ((:e tau-system)))))))
 
 (memoize 'integerp-of-svex-fn
-         :condition '(equal (svex-kind x) :call)
+         :condition '(not (equal (svex-kind x) :quote))
          ;;:aokp t
          )
 
@@ -271,9 +312,9 @@
 
   (local
    (defthm integerp-of-4vec
-    (integerp (4vec x x))
-    :hints (("goal"
-             :in-theory (e/d (4vec) ())))))
+     (integerp (4vec x x))
+     :hints (("goal"
+              :in-theory (e/d (4vec) ())))))
 
   (defthm integerp-of-4vec-concat
     (implies (and (force (natp a1))
@@ -543,64 +584,106 @@
 
   )
 
-(progn
-  (local
-   (defthm posp-of-svex-implies
-     (implies (posp x)
-              (posp (svex-eval x env)))
-     :hints (("goal"
-              :expand ((svex-eval x env))
-              :in-theory (e/d (svex-eval
-                               sv::svex-quote->val
-                               sv::svex-kind)
-                              ())))))
+(local
+ (svex-eval-lemma-tmpl
+  (progn
+    (defthm posp-of-svex-implies-for-svex-eval
+      (implies (posp x)
+               (posp (svex-eval x env)))
+      :hints (("goal"
+               :expand ((svex-eval x env))
+               :in-theory (e/d (svex-eval
+                                sv::svex-quote->val
+                                sv::svex-kind)
+                               ()))))
 
-  (local
-   (defthm natp-of-svex-implies
-     (implies (natp x)
-              (natp (svex-eval x env)))
-     :hints (("goal"
-              :expand ((svex-eval x env))
-              :in-theory (e/d (svex-eval
-                               sv::svex-quote->val
-                               sv::svex-kind)
-                              ())))))
+    (defthm natp-of-svex-implies-for-svex-eval
+      (implies (natp x)
+               (natp (svex-eval x env)))
+      :hints (("goal"
+               :expand ((svex-eval x env))
+               :in-theory (e/d (svex-eval
+                                sv::svex-quote->val
+                                sv::svex-kind)
+                               ()))))
 
-  (local
-   (defthm integerp-of-svex-implies
-     (implies (integerp x)
-              (integerp (svex-eval x env)))
-     :hints (("goal"
-              :expand ((svex-eval x env))
-              :in-theory (e/d (svex-eval
-                               sv::svex-quote->val
-                               sv::svex-kind)
-                              ())))))
+    (defthm integerp-of-svex-implies-for-svex-eval
+      (implies (integerp x)
+               (integerp (svex-eval x env)))
+      :hints (("goal"
+               :expand ((svex-eval x env))
+               :in-theory (e/d (svex-eval
+                                sv::svex-quote->val
+                                sv::svex-kind)
+                               ()))))
 
-  (local
-   (defthm nonzero-of-svex-implies
-     (implies (and (integerp x)
-                   (not (equal x 0)))
-              (not (equal (svex-eval x env) 0)))
-     :hints (("goal"
-              :expand ((svex-eval x env))
-              :in-theory (e/d (svex-eval
-                               sv::svex-quote->val
-                               sv::svex-kind)
-                              ()))))))
+    (defthm nonzero-of-svex-implies-for-svex-eval
+      (implies (and (integerp x)
+                    (not (equal x 0)))
+               (not (equal (svex-eval x env) 0)))
+      :hints (("goal"
+               :expand ((svex-eval x env))
+               :in-theory (e/d (svex-eval
+                                sv::svex-quote->val
+                                sv::svex-kind)
+                               ())))))))
 
 (local
  (defthm remove-consp-hons-assoc-equal
    (iff (consp (hons-assoc-equal svex env))
         (hons-assoc-equal svex env))))
 
+(progn
+  (defun-sk sub-alistp (alist1 alist2)
+    (forall key
+            (implies (hons-assoc-equal key alist1)
+                     (equal (hons-assoc-equal key alist1)
+                            (hons-assoc-equal key alist2)))))
+
+  (defthm sub-alistp-of-self
+    (sub-alistp x x)
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm sub-alistp-of-with-nil
+    (sub-alistp nil x))
+
+  (defthm hons-assoc-equal-and-sub-alistp-lemma
+    (implies (and (sub-alistp alist1 alist2)
+                  (hons-assoc-equal key alist1))
+             (equal (hons-assoc-equal key alist2)
+                    (hons-assoc-equal key alist1)))
+    :hints (("Goal"
+             :do-not-induct t
+             :use ((:instance sub-alistp-necc))
+             :in-theory (e/d ()
+                             (sub-alistp)))))
+
+  (in-theory (disable sub-alistp)))
+
 (local
- (defthm rp::falist-consistent-aux-lemma
+ (defthm rp::falist-consistent-aux-lemma1
    (implies (and (rp::falist-consistent-aux env-falist term)
                  (hons-assoc-equal x env-falist))
             (equal (cdr (hons-assoc-equal x (rp-evlt term a)))
                    (rp-evlt (cdr (hons-assoc-equal x env-falist))
-                            a)))))
+                            a)))
+   :hints (("Goal"
+            :in-theory (e/d ()
+                            (sub-alistp))))))
+
+(local
+ (defthm rp::falist-consistent-aux-lemma
+   (implies (and (rp::falist-consistent-aux big-env-falist term)
+                 (hons-assoc-equal x env-falist)
+                 (sub-alistp env-falist big-env-falist))
+            (equal (cdr (hons-assoc-equal x (rp-evlt term a)))
+                   (rp-evlt (cdr (hons-assoc-equal x big-env-falist))
+                            a)))
+   :hints (("Goal"
+            :do-not-induct T
+            :in-theory (e/d ()
+                            (sub-alistp))))))
+
 (local
  (defthm rp::falist-consistent-aux-lemma-2
    (implies (and (rp::falist-consistent-aux env-falist term))
@@ -609,13 +692,14 @@
 
 (local
  (defthm falist-consistent-aux-lemma
-   (implies (and (rp::falist-consistent-aux env env-term)
+   (implies (and (rp::falist-consistent-aux big-env env-term)
+                 (sub-alistp env big-env)
                  (hons-assoc-equal svex env)
                  (equal (svex-kind svex) :var)
                  (sv::svex-p svex))
             (equal (sv::svex-env-lookup svex
                                         (rp-evlt env-term a))
-                   (4vec-fix (rp-evlt (cdr (hons-assoc-equal svex env))
+                   (4vec-fix (rp-evlt (cdr (hons-assoc-equal svex big-env))
                                       a))))
    :hints (("goal"
             ;;:induct (rp::falist-consistent-aux env env-term)
@@ -626,64 +710,178 @@
                              rp::falist-consistent-aux
                              hons-assoc-equal
                              sv::svex-env-lookup)
-                            ())))))
+                            (sub-alistp))))))
+
+(local
+ (defthm falist-consistent-aux-valid-sc-lemma-1
+   (implies (and (rp::falist-consistent-aux env env-term)
+                 (rp::valid-sc env-term a)
+                 (hons-assoc-equal svex env))
+            (rp::valid-sc (cdr (hons-assoc-equal svex env))
+                          a))
+   :hints (("Goal"
+            ;;:induct (hons-assoc-equal svex env)
+            ;;:do-not-induct t
+            :in-theory (e/d (rp::falist-consistent-aux
+                             rp::valid-sc
+                             rp::is-rp
+                             rp::is-if)
+                            ((:rewrite rp::valid-sc-cons)
+                             (:definition rp::rp-termp)
+                             (:definition rp::rp-term-listp)
+
+                             (:linear acl2::apply$-badgep-properties . 1)
+                             (:definition acl2::apply$-badgep)
+                             (:rewrite
+                              rp::rp-evl-and-side-cond-consistent-rp-rw-relieve-hyp)
+                             (:rewrite rp::valid-sc-caddr)))))))
+
+(local
+ (defthm falist-consistent-aux-valid-sc-lemma-2
+   (implies (and (rp::falist-consistent-aux big-env env-term)
+                 (rp::valid-sc env-term a)
+                 (sub-alistp env big-env)
+                 (hons-assoc-equal svex env))
+            (rp::valid-sc (cdr (hons-assoc-equal svex env))
+                          a))
+   :hints (("Goal"
+            :use ((:instance falist-consistent-aux-valid-sc-lemma-1
+                             (env big-env)))
+            ;;:induct (hons-assoc-equal svex env)
+            ;;:do-not-induct t
+            :in-theory (e/d ()
+                            (falist-consistent-aux-valid-sc-lemma-1))))))
+
+(local
+ (in-theory (disable sv::svex-apply$-is-svex-apply
+                     sv::svex-eval$-is-svex-eval
+                     sv::svexlist-eval$-is-svexlist-eval)))
+
+(Local
+ (defthm integerp-of-4vec-fix
+   (implies (integerp x)
+            (integerp (4vec-fix x)))))
+
+(local
+ (defthm rp-evlt-of-quoted
+   (implies (and (consp x)
+                 (equal (car x) 'quote))
+            (equal (rp-evlt x a)
+                   (unquote x)))))
+
+(local
+ (defthm rp-evlt-of-integerp-call
+   (implies (and (consp x)
+                 (equal (car x) 'integerp))
+            (equal (rp-evlt x a)
+                   (integerp (rp-evlt (cadr x) a))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; main lemma.
+(svex-eval-lemma-tmpl
+ (defret svex-eval-of-integerp-of-svex-is-correct
+   (and (implies (and ;;(equal (svex-kind svex) :var)
+                  (sub-alistp env big-env)
+                  (sv::svex-p svex)
+                  (rp::rp-term-listp context)
+                  (integerp-of-svex svex env context)
+                  (rp::valid-sc env-term a)
+                  (rp::eval-and-all context a)
+                  (rp::falist-consistent-aux big-env env-term))
+                 (integerp (sv::svex-eval svex (rp-evlt env-term a))))
+        )
+   :fn integerp-of-svex
+   :hints (("goal"
+            :do-not-induct t
+            :induct (integerp-of-svex svex env context)
+            :expand ((svex-eval svex (rp-evlt env-term a)))
+            :in-theory (e/d (sv::svex-quote->val
+                             svex-apply
+                             svexlist-eval
+                             svex-call->fn
+                             svex-var->name
+                             ;;sv::svex-env-lookup
+                             ;;sv::svar-fix
+                             sv::svex-call->args
+                             integerp-of-svex
 
-(defret integerp-of-svex-is-correct
-  (implies (and ;;(equal (svex-kind svex) :var)
+                             hons-assoc-equal)
+                            ((:definition acl2::apply$-badgep)
+                             (:rewrite acl2::apply$-badgep-properties . 1)
+                             (:definition rp::eval-and-all)
+                             (:rewrite rp::rp-evl-and-side-cond-consistent-rp-rw-relieve-hyp)
+                             (:definition subsetp-equal)
+                             (:definition member-equal)
+                             rp-trans
+                             rp::rp-trans-is-term-when-list-is-absent
+                             rp::valid-sc
+                             loghead
+                             4vec-reduction-and-to-4vec-bitand
+                             expt floor logapp
+                             posp natp
+                             sub-alistp
+                             rp::rp-evl-of-variable
+                             rp::rp-check-context-is-correct-iff)))
+           (and stable-under-simplificationp
+                '(:use ((:instance rp::rp-check-context-is-correct-iff
+                                   (rp::iff-flg t)
+                                   (rp::dont-rw nil)
+                                   (rp::context context)
+                                   (rp::a a)
+                                   (rp::term (list 'integerp
+                                                   (cdr (hons-assoc-equal svex env))))
+                                   (rp::attach-sc nil)
+                                   (rp::rw-context-flg nil))))))))
 
-            (sv::svex-p svex)
-            (rp::rp-term-listp context)
-            (integerp-of-svex svex env context)
-            (rp::eval-and-all context a)
-            (rp::falist-consistent-aux env env-term))
-           (integerp (sv::svex-eval svex (rp-evlt env-term a))))
-  :fn integerp-of-svex
-  :hints (("goal"
-           :do-not-induct t
-           :induct (integerp-of-svex svex env context)
-           :expand ((svex-eval svex (rp-evlt env-term a)))
-           :in-theory (e/d (sv::svex-quote->val
-                            svex-apply
-                            svexlist-eval
-                            svex-call->fn
-                            svex-var->name
-                            ;;sv::svex-env-lookup
-                            ;;sv::svar-fix
-                            sv::svex-call->args
-                            integerp-of-svex
+(svex-eval-lemma-tmpl
+ (defret svex-eval-of-integerp-of-svex-is-correct-env=nil
+   (implies (and (sv::svex-p svex)
+                 (integerp-of-svex svex nil context))
+            (integerp (sv::svex-eval svex svex-env)))
+   :fn integerp-of-svex
+   :hints (("goal"
+            :do-not-induct t
+            :induct (integerp-of-svex svex nil context)
+            :in-theory (e/d (sv::svex-quote->val
+                             svex-apply
+                             svexlist-eval
+                             svex-call->fn
+                             svex-var->name
+                             ;;sv::svex-env-lookup
+                             ;;sv::svar-fix
+                             sv::svex-call->args
+                             integerp-of-svex
 
-                            hons-assoc-equal)
-                           (loghead
-                            4vec-reduction-and-to-4vec-bitand
-                            expt floor logapp
-                            posp natp
+                             hons-assoc-equal)
+                            (loghead
+                             4vec-reduction-and-to-4vec-bitand
+                             expt floor logapp
+                             posp natp
+                             sub-alistp
+                             rp::rp-evl-of-variable
+                             rp::rp-check-context-is-correct-iff)))
+           )))
 
-                            rp::rp-evl-of-variable
-                            rp::rp-check-context-is-correct-iff)))
-          (and stable-under-simplificationp
-               '(:use ((:instance rp::rp-check-context-is-correct-iff
-                                  (rp::iff-flg t)
-                                  (rp::dont-rw nil)
-                                  (rp::context context)
-                                  (rp::a a)
-                                  (rp::term (list 'integerp
-                                                  (cdr (hons-assoc-equal svex env))))
-                                  (rp::attach-sc nil)
-                                  (rp::rw-context-flg nil)))))))
-
-(defret integer-listp-of-svexlist-is-correct
-  (implies (and 
-            (sv::svexlist-p lst)
-            (rp::rp-term-listp context)
-            (integer-listp-of-svexlist lst env context)
-            (rp::eval-and-all context a)
-            (rp::falist-consistent-aux env env-term))
-           (integer-listp (sv::svexlist-eval lst (rp-evlt env-term a))))
-  :fn integer-listp-of-svexlist
-  :hints (("Goal"
-           :in-theory (e/d (integer-listp-of-svexlist
-                            sv::svexlist-eval)
-                           (svex-eval)))))
+(svex-eval-lemma-tmpl
+ (defret svexlist-eval-of-integer-listp-of-svexlist-is-correct
+   (and (implies (and
+                  (sub-alistp env big-env)
+                  (sv::svexlist-p lst)
+                  (rp::rp-term-listp context)
+                  (integer-listp-of-svexlist lst env context)
+                  (rp::valid-sc env-term a)
+                  (rp::eval-and-all context a)
+                  (rp::falist-consistent-aux big-env env-term))
+                 (integer-listp (sv::svexlist-eval lst (rp-evlt env-term a))))
+        (implies (and
+                  (sv::svexlist-p lst)
+                  (integer-listp-of-svexlist lst nil context))
+                 (integer-listp (sv::svexlist-eval lst svex-env))))
+   :fn integer-listp-of-svexlist
+   :hints (("goal"
+            :in-theory (e/d (integer-listp-of-svexlist
+                             sv::svexlist-eval)
+                            (sub-alistp
+                             rp::falist-consistent-aux
+                             rp::eval-and-all
+                             svex-eval))))))

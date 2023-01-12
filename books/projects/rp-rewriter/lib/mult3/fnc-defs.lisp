@@ -461,12 +461,10 @@
 
 (add-macro-fn adder-sum adder-b+ t)
 
-(define bit-of ((num integerp)
-                (pos natp))
-  :returns (res bitp)
-  (bit-fix (acl2::logbit pos num))
-  ///
-  (add-rp-rule bitp-of-bit-of))
+(defthm bitp-of-logbit
+  (bitp (logbit x y)))
+
+(add-rp-rule bitp-of-logbit)
 
 #|(define medw-compress (term)
   term
@@ -520,27 +518,27 @@
 
 (define ba2 (n1 i1 n2 i2)
   :verify-guards nil
-  (and$ (bit-of n1 i1)
-        (bit-of n2 i2))
+  (and$ (logbit n1 i1)
+        (logbit n2 i2))
   ///
   (def-rp-rule bitp-ba2
     (bitp (ba2 n1 i1 n2 i2))))
 
 (define ba3 (n1 i1 n2 i2 n3 i3)
   :verify-guards nil
-  (and$ (bit-of n1 i1)
-        (bit-of n2 i2)
-        (bit-of n3 i3))
+  (and$ (logbit n1 i1)
+        (logbit n2 i2)
+        (logbit n3 i3))
   ///
   (def-rp-rule bitp-ba3
     (bitp (ba3 n1 i1 n2 i2 n3 i3))))
 
 (define ba4 (n1 i1 n2 i2 n3 i3 n4 i4)
   :verify-guards nil
-  (and$ (bit-of n1 i1)
-        (bit-of n2 i2)
-        (bit-of n3 i3)
-        (bit-of n4 i4))
+  (and$ (logbit n1 i1)
+        (logbit n2 i2)
+        (logbit n3 i3)
+        (logbit n4 i4))
   ///
   (def-rp-rule bitp-ba4
     (bitp (ba4 n1 i1 n2 i2 n3 i3 n4 i4))))
@@ -651,10 +649,10 @@
                     (sum-list-list (safe-i-nth 0 args)))
                    ((equal (car term) 'rp)
                     (safe-i-nth 1 args))
-                   ((equal (car term) 'bit-of)
-                    (bit-of
-                     (ifix (safe-i-nth 0 args))
-                     (nfix (safe-i-nth 1 args))))
+                   ((equal (car term) 'logbit$inline)
+                    (logbit
+                     (nfix (safe-i-nth 0 args))
+                     (ifix (safe-i-nth 1 args))))
                    ((equal (car term) '--)
                     (--
                      (safe-i-nth 0 args)))
@@ -965,13 +963,13 @@
       :hints (("Goal"
                :in-theory (e/d (binary-fnc-p) ())))))
 
-  (define bit-of-p (term)
+  (define logbit-p (term)
     :inline t
-    (case-match term (('bit-of & &) t))
+    (case-match term (('logbit$inline & &) t))
     ///
-    (defthm bit-of-p-implies-fc
-      (implies (bit-of-p term)
-               (case-match term (('bit-of & &) t)))
+    (defthm logbit-p-implies-fc
+      (implies (logbit-p term)
+               (case-match term (('logbit$inline & &) t)))
       :rule-classes :forward-chaining))
 
   (define bit-fix-p (term)
@@ -1075,7 +1073,7 @@
              (make-readable1 b)))
       #|(('binary-and & &)
       term)||#
-      (('binary-and ('bit-of a ('quote i)) ('bit-of b ('quote j)))
+      (('binary-and ('logbit$inline ('quote i) a) ('logbit$inline ('quote j) b))
        (progn$
 ;(cw "term~p0 ~%" term)
         (b* ((a (ex-from-rp-loose a))
@@ -1140,10 +1138,10 @@
               (str (str-cat-lst lst))
               (sym (intern$ str "RP")))
            sym))
-        (('bit-of name ('quote index))
+        (('logbit$inline ('quote index) name)
          (b* ((sym (sa  (ex-from-rp-loose name) index)))
            (symbol-name sym)))
-        (('bit-of name index)
+        (('logbit$inline index name)
          (b* ((sym (sa  (ex-from-rp-loose name) index)))
            (symbol-name sym)))
         (('binary-and x y)
@@ -1200,8 +1198,8 @@
                     (size natp))
   (if (zp size)
       0
-    (let ((sum (list (bit-of x 0)
-                     (bit-of y 0)
+    (let ((sum (list (logbit 0 x)
+                     (logbit 0 y)
                      carry-in)))
       (bit-concat
        (s-spec sum)
@@ -1308,7 +1306,7 @@
 
        acl2::logcar$inline
        acl2::logcdr$inline
-       acl2::logbit
+       acl2::logbit$inline
        unpack-booth
        --
        sum-list
@@ -1319,7 +1317,7 @@
        rp::s-c-spec
        rp::c-spec
        rp::s-spec
-       bit-of
+       logbit
        ;; svl::bits
        ;; svl::4vec-bitand
        ;; svl::4vec-bitor

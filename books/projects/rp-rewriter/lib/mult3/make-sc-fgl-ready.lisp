@@ -71,14 +71,14 @@
        ifix
        acl2::logcar$inline
        acl2::logcdr$inline
-       acl2::logbit
+       acl2::logbit$inline
 
        --
        sum-list
        binary-and
        and-list
 
-       bit-of
+       logbit
        ;; svl::bits
        ;; svl::4vec-bitand
        ;; svl::4vec-bitor
@@ -204,8 +204,8 @@
                                 (sum-list ,(make-sc-fgl-ready-meta s))
                                 (binary-sum (sum-list ,(make-sc-fgl-ready-meta pp))
                                             (sum-list ,(make-sc-fgl-ready-meta c))))))
-        (('bit-of x index)
-         `(acl2::logbit$inline ,index ,(make-sc-fgl-ready-meta x)))
+        (('logbit$inline index x)
+         `(logbit$inline ,index ,(make-sc-fgl-ready-meta x)))
 
         (('quote . &)
          term)
@@ -285,14 +285,7 @@
    ;;                            make-sc-fgl-ready-meta-formula-checks)
    (create-regular-eval-lemma logapp 3 make-sc-fgl-ready-meta-formula-checks)
 
-   (defthm
-     bit-of-is-logbit
-     (implies t
-              (equal (rp::bit-of x index)
-                     (logbit index x)))
-     :hints (("Goal"                             ;
-              :in-theory (e/d (rp::bit-of) ()))) ;
-     )
+   
 
    (defthm s-is-logcar
      (implies t

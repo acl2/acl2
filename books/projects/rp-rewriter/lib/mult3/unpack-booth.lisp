@@ -81,7 +81,7 @@
                               nil))
                             ((or (and-list-p (car pp-lst))
                                  (--.p (car pp-lst))
-                                 (bit-of-p (car pp-lst)))
+                                 (logbit-p (car pp-lst)))
                              (list (car pp-lst)))
                             ((binary-fnc-p (ex-from-rp (car pp-lst)))
                              (list (car pp-lst)))
@@ -832,7 +832,7 @@ t)
 
        #|((when (binary-fnc-p subterm))
        (mv term nil))|#
-       ((when (or (bit-of-p subterm)
+       ((when (or (logbit-p subterm)
                   (and (has-bitp-rp subterm-orig)
                        (atom subterm))))
         (b* ((res (create-and-list-instance (list subterm-orig))))
