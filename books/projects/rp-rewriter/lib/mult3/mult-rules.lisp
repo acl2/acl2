@@ -46,11 +46,12 @@
   (include-book "arithmetic-5/top" :dir :system)
   use-arithmetic-5))
 
-(def-rp-rule bit-of-bit-of-when-0
-  (equal (bit-of (bit-of x pos) 0)
-         (bit-of x pos))
+(def-rp-rule logbit-logbit-when-0
+  (equal (logbit 0 (logbit pos x))
+         (logbit pos x))
   :hints (("Goal"
-           :in-theory (e/d (bit-of) ()))))
+           :in-theory (e/d ()
+                           ()))))
 
 ;; pp-rules:
 
@@ -333,11 +334,11 @@
                                (single-c-p (ex-from-rp-loose side2))
                                (binary-fnc-p (ex-from-rp-loose side2))
                                (binary-sum-p (ex-from-rp-loose side2))
-                                  ;;(bit-of-p (ex-from-rp-loose side1))
+                                  ;;(logbit-p (ex-from-rp-loose side1))
                                )
                               #|(or (pp-has-bitp-rp side2)
                                   (single-s-p (ex-from-rp-loose side2))
-                                  (bit-of-p (ex-from-rp-loose side2))
+                                  (logbit-p (ex-from-rp-loose side2))
                                   (binary-fnc-p (ex-from-rp-loose side2)))||#)))
            (equal (equal side1 side2)
                   (equal (unpack-booth
@@ -447,20 +448,20 @@
          1))
 
 (progn
-  (def-rp-rule not-equal-bit-of-to-1
-    (equal (if (equal (bit-of x start) 1) nil t)
-           (equal (bit-of x start) 0)))
-  (def-rp-rule not-equal-bit-of-to-0
-    (equal (if (equal (bit-of x start) 0) nil t)
-           (equal (bit-of x start) 1))))
+  (def-rp-rule not-equal-logbit-to-1
+    (equal (if (equal (logbit start x) 1) nil t)
+           (equal (logbit start x) 0)))
+  (def-rp-rule not-equal-logbit-to-0
+    (equal (if (equal (logbit start x) 0) nil t)
+           (equal (logbit start x) 1))))
 
 
-(def-rp-rule bit-of-of---
+(def-rp-rule logbit-of---
   (implies (and (bitp x)
                 (natp index))
-           (equal (bit-of (-- x) index)
+           (equal (logbit index (-- x))
                   x))
   :hints (("Goal"
            :in-theory (e/d (bitp
-                            bit-of)
+                            logbit)
                            ()))))

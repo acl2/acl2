@@ -605,8 +605,8 @@
                              regular-rp-evl-of_unpack-booth_when_mult-formula-checks
                              regular-rp-evl-of_s-c-res_when_mult-formula-checks_with-ex-from-rp
                              regular-rp-evl-of_s-c-res_when_mult-formula-checks
-                             regular-rp-evl-of_bit-of_when_mult-formula-checks_with-ex-from-rp
-                             regular-rp-evl-of_bit-of_when_mult-formula-checks
+                             regular-rp-evl-of_logbit$inline_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_logbit$inline_when_mult-formula-checks
                              (:rewrite regular-rp-evl-of_--_when_mult-formula-checks)
                              )
                             (rp-termp

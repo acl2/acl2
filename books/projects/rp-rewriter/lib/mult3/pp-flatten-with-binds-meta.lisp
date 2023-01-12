@@ -236,7 +236,7 @@
             (equal term ''0))
         (mv (hons-copy term) pp-binds index t))
 
-       ((or (bit-of-p term)
+       ((or (logbit-p term)
             (has-bitp-rp orig))
         (b* ((entry (rp-assoc-w/-orig-term term pp-binds))
              ((when entry)
@@ -291,7 +291,7 @@
                                has-bitp-rp
                                is-rp
                                ex-from-rp
-                               bit-of-p
+                               logbit-p
                                pp-p
                                binary-or-p
                                binary-and-p
@@ -310,11 +310,11 @@
      :rule-classes :forward-chaining))
 
   (local
-   (defthm pp-term-p-of-bit-of-lemma
-     (pp-term-p (list 'bit-of x y)
+   (defthm pp-term-p-of-logbit-lemma
+     (pp-term-p (list 'logbit$inline x y)
                 :strict nil)
      :hints (("goal"
-              :expand (pp-term-p (list 'bit-of x y)
+              :expand (pp-term-p (list 'logbit$inline x y)
                                  :strict nil)
               :in-theory (e/d (binary-xor-p
                                binary-or-p
@@ -322,7 +322,7 @@
                                pp-term-p pp-p
                                is-rp
                                has-bitp-rp
-                               bit-of-p
+                               logbit-p
                                ex-from-rp
                                binary-?-p)
                               ())))))
@@ -479,7 +479,7 @@
          (not (binary-xor-p (intern-in-package-of-symbol string in-pkg)))
          (not (binary-?-p (intern-in-package-of-symbol string in-pkg)))
          (not (binary-not-p (intern-in-package-of-symbol string in-pkg)))
-         (not (bit-of-p (intern-in-package-of-symbol string in-pkg)))
+         (not (logbit-p (intern-in-package-of-symbol string in-pkg)))
          (not (pp-p (intern-in-package-of-symbol string in-pkg)))
          (not (bit-fix-p (intern-in-package-of-symbol string in-pkg))))
     :hints (("goal"
@@ -491,7 +491,7 @@
                               binary-or-p
                               binary-?-p
                               binary-not-p
-                              bit-of-p
+                              logbit-p
                               pp-p
                               binary-xor-p)
                              ()))))
@@ -619,7 +619,7 @@
          (term (ex-from-rp$ term)))
       (or (binary-fnc-p term)
           (single-s-p term)
-          (bit-of-p term)
+          (logbit-p term)
           (has-bitp-rp orig))))
 
   (define pp-apply-bindings-and-arg-lst ((and-arg-lst rp-term-listp)
@@ -1944,7 +1944,7 @@
                (pp-termp-of-rp-trans-induct (cadr term)))
               ((pp-p TERM)
                (pp-termp-of-rp-trans-induct (cadr term)))
-              ((OR (BIT-OF-P TERM)
+              ((OR (LOGBIT-P TERM)
                    (HAS-BITP-RP ORIG)
                    (BIT-FIX-P TERM)
                    (EQUAL TERM ''1)
@@ -1963,13 +1963,13 @@
 
    (local
     (defthm pp-termp-of-rp-trans-lemma2
-      (and (implies (bit-of-p (EX-FROM-RP TERM))
-                    (bit-of-p (EX-FROM-RP (RP-TRANS TERM))))
+      (and (implies (logbit-p (EX-FROM-RP TERM))
+                    (logbit-p (EX-FROM-RP (RP-TRANS TERM))))
            (implies (bit-fix-p (EX-FROM-RP TERM))
                     (bit-fix-p (EX-FROM-RP (RP-TRANS TERM)))))
       :rule-classes :rewrite
       :hints (("Goal"
-               :in-theory (e/d (bit-fix-p bit-of-p is-rp ex-from-rp pp-p rp-trans)
+               :in-theory (e/d (bit-fix-p logbit-p is-rp ex-from-rp pp-p rp-trans)
                                ())))))
    (local
     (defthm pp-p-implies-not-others
@@ -1982,8 +1982,8 @@
       :rule-classes (:rewrite :forward-chaining)))
 
    (local
-    (defthm bit-of-p-implies-not-others
-      (implies (bit-of-p term)
+    (defthm logbit-p-implies-not-others
+      (implies (logbit-p term)
                (and (not (binary-and-p term))
                     (not (binary-xor-p term))
                     (not (binary-or-p term))
@@ -2318,7 +2318,7 @@
 
    (local
     (defthm rp-trans-when-known-fncs
-      (and (implies (or (BIT-OF-P term)
+      (and (implies (or (LOGBIT-P term)
                         (binary-fnc-p term)
                         (pp-p term))
                     (equal (RP-TRANS term)
@@ -2338,7 +2338,7 @@
       (and (not (binary-?-p (trans-list lst)))
            (not (binary-or-p (trans-list lst)))
            (not (binary-not-p (trans-list lst)))
-           (not (bit-of-p (trans-list lst)))
+           (not (logbit-p (trans-list lst)))
            (not (binary-xor-p (trans-list lst)))
            (not (binary-and-p (trans-list lst)))
            (not (pp-p (trans-list lst))))

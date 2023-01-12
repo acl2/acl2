@@ -154,7 +154,24 @@
     :rule-classes nil)
 
   (rp::rp-attach-sc ifix-opener
-                    ifix-opener-side-cond))
+                    ifix-opener-side-cond)
+
+  (define has-rp-integerp (term)
+    :hints (("Goal"
+             :in-theory (e/d (rp::is-rp-loose) ())))
+    :guard-hints (("Goal"
+                   :in-theory (e/d (rp::is-rp-loose) ())))
+    (and (rp::is-rp-loose term)
+         (or (equal (cadr term) ''integerp)
+             (has-rp-integerp (caddr term)))))
+  
+  (rp::def-rp-rule :disabled-for-acl2 t
+    ifix-opener-with-sc
+    (implies (and (syntaxp (has-rp-integerp x))
+                  (integerp x))
+             (equal (ifix x)
+                    x)))
+  )
 
 (add-rp-rule sv::4vec-fix-of-4vec)
 

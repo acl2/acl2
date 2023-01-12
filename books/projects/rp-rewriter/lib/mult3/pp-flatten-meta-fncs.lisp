@@ -118,7 +118,7 @@
           ((or (binary-not-p term)
                (pp-p term))
            (and (pp-term-p (cadr term) :strict strict)))
-          ((or (bit-of-p term)
+          ((or (logbit-p term)
                (bit-fix-p term)
                (equal term ''1)
                (equal term ''0))
@@ -790,7 +790,7 @@
              (mv merged too-large1)))
           ((pp-p term)
            (pp-term-to-pp-lists (cadr term) sign))
-          ((bit-of-p term)
+          ((logbit-p term)
            (mv (list (cons sign (list term))) nil))
           ((bit-fix-p term)
            (mv (list (cons sign (list term))) nil))
@@ -821,7 +821,7 @@
     :hints (("goal"
              :in-theory (e/d () ())))))
 
-;; (pp-term-to-pp-lists `(binary-not (binary-or (bit-of a 1) (bit-of b 1))) nil)
+;; (pp-term-to-pp-lists `(binary-not (binary-or (logbit a 1) (logbit b 1))) nil)
 
 ;; (pp-term-to-pp-lists `(binary-or (binary-and b (binary-or x y)) a) t)
 ;; =
@@ -875,7 +875,7 @@
                          ((atom (cdr cur))
                           (cond ((equal (car cur) ''1)
                                  ''1)
-                                #|((or (bit-of-p (car cur))
+                                #|((or (logbit-p (car cur))
                                 (has-bitp-rp (car cur)))
                                 (car cur))|#
                                 (t (create-and-list-instance (list (car cur))))))
@@ -908,7 +908,7 @@
                                        (:free (x y) (BINARY-?-p (cons x y)))
                                        (:free (x y) (PP-P (cons x y)))
                                        (:free (x y) (BINARY-NOT-P (cons x y)))
-                                       (:free (x y) (BIT-OF-P (cons x y))))
+                                       (:free (x y) (LOGBIT-P (cons x y))))
                               :in-theory (e/d (ex-from-rp is-rp) ()))))
   :measure (cons-count term)
   :hints (("Goal"
@@ -917,12 +917,12 @@
     (cond ((or (atom term)
                (quotep term))
            term)
-          ((bit-of-p term-)
-           `(bit-of ,(ex-from-rp (cadr term-))
-                    ,(ex-from-rp (caddr term-))))
-          ((or (BINARY-AND-p term-)
-               (BINARY-OR-p term-)
-               (BINARY-XOR-p term-))
+          ((logbit-p term-)
+           `(logbit$inline ,(ex-from-rp (cadr term-))
+                           ,(ex-from-rp (caddr term-))))
+          ((or (binary-and-p term-)
+               (binary-or-p term-)
+               (binary-xor-p term-))
            (cons-with-hint
             (car term-)
             (cons-with-hint (pp-remove-extraneous-sc (cadr term-))
@@ -989,7 +989,7 @@
     (cond (disabled
            (list (if sign `(-- ,term) term)))
           ((and (case-match term
-                  (('binary-and ('bit-of & &) ('bit-of & &)) t))
+                  (('binary-and ('logbit$inline & &) ('logbit$inline & &)) t))
                 (not (rp-equal (cadr term) (caddr term))))
            (b* ((cur-single
                  (if (lexorder2- (cadr term) (caddr term))
@@ -1039,14 +1039,14 @@
     (b* (((when (case-match a (('rp ''bitp &) t)))
           t)
          (a (ex-from-rp a)))
-      (case-match a (('bit-of & &) t) (''1 t)))
+      (case-match a (('logbit$inline & &) t) (''1 t)))
     ///
     (defthm valid-single-bitp-implies
       (implies (valid-single-bitp a)
                (b* (((when (case-match a (('rp ''bitp &) t)))
                      t)
                     (a (ex-from-rp a)))
-                 (case-match a (('bit-of & &) t) (''1 t))))
+                 (case-match a (('logbit$inline & &) t) (''1 t))))
       :rule-classes :forward-chaining))
 
   (define sort-sum-meta-aux-aux (cur)
@@ -1062,7 +1062,7 @@
                (mv nil nil)))
            (mv t
                (cons nil (pp-remove-extraneous-sc-lst (sort-and$-list (cdr cur) 2))))))
-        (('bit-of & &)
+        (('logbit$inline & &)
          (mv t (list nil (pp-remove-extraneous-sc cur))))
         (''1
          (mv t (list nil cur)))

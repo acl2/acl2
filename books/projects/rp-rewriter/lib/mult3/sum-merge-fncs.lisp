@@ -196,7 +196,7 @@
       (b* (((mv rest rest-size) (and-list-hash-aux (cdr lst)))
            (cur (ex-from-rp (car lst))))
         (case-match cur
-          (('bit-of & ('quote x))
+          (('logbit$inline ('quote x) &)
            (mv (+ rest (* (+ 5 rest-size)
                           (1+ (ifix x))))
                (+ 55 rest-size)))
@@ -228,7 +228,7 @@
                                 :hyp (rp-term-listp lst))
     (if (and (consp lst)
              (atom (cdr lst))
-             (or (bit-of-p (ex-from-rp (car lst)))
+             (or (logbit-p (ex-from-rp (car lst)))
                  (has-bitp-rp (car lst))))
         (car lst)
       `(and-list ',(and-list-hash lst) (list . ,lst)))))
@@ -1149,7 +1149,7 @@
          t)
         (& (if (or (binary-fnc-p term)
                    (and-list-p term)
-                   (bit-of-p term)
+                   (logbit-p term)
                    (atom term))
                t
              (hard-error 'ordered-s/c-p
@@ -1167,7 +1167,7 @@
   (if (or (atom lst)
           (and-list-p (ex-from-rp/-- (car lst)))
           (binary-fnc-p (ex-from-rp/-- (car lst)))
-          (bit-of-p (ex-from-rp/-- (car lst)))
+          (logbit-p (ex-from-rp/-- (car lst)))
           (quotep (ex-from-rp/-- (car lst))))
       (and (pp-lst-orderedp lst)
            (or rep-ok (no-rep-p lst)))

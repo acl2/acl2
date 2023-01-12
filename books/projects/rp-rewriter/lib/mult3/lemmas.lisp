@@ -914,15 +914,15 @@
                            (+-is-SUM)))))
 
 
-(defthm bit-of-p-of-quoted
+(defthm logbit-p-of-quoted
   (implies (and (syntaxp (quotep x)))
-           (equal (bit-of-p (cons x y))
-                  (and (equal x 'bit-of)
+           (equal (logbit-p (cons x y))
+                  (and (equal x 'logbit$inline)
                        (consp y)
                        (consp (cdr y))
                        (not (cddr y)))))
   :hints (("Goal"
-           :in-theory (e/d (bit-of-p) ()))))
+           :in-theory (e/d (logbit-p) ()))))
 
 (defthm bit-fix-p-of-quoted
   (implies (and (syntaxp (quotep x)))

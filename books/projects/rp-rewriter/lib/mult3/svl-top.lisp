@@ -154,8 +154,8 @@
            (equal (- (- x))
                   x)))
 
-(def-rp-rule integerp-of-bit-of
-  (integerp (bit-of num pos)))
+(def-rp-rule integerp-of-logbit
+  (integerp (logbit pos num)))
 
 (def-rp-rule integerp-of-binary-fncs
   (and (integerp (binary-or x y))
@@ -163,7 +163,7 @@
        (integerp (binary-and x y))
        (integerp (binary-? x y z))
        (integerp (binary-not x))
-       (integerp (bit-of x y))))
+       (integerp (logbit x y))))
 
 (def-rp-rule integerp--
   (integerp (-- x)))
@@ -447,15 +447,16 @@
                               (:definition acl2::logcdr$inline)
                               (:definition floor))))))
 
-  (def-rp-rule 4vec-==-with-bit-of
-    (implies (and (integerp x)
-                  (natp start))
-             (and (equal (sv::4vec-== (bit-of x start) 0)
-                         (-- (svl::4vec-bitnot$ 1 (bit-of x start))))
-                  (equal (sv::4vec-== (bit-of x start) 1)
-                         (-- (bit-of x start)))))
+  (def-rp-rule 4vec-==-with-logbit
+    (implies t
+             #|(and (integerp x)
+                  (natp start))|#
+             (and (equal (sv::4vec-== (logbit start x) 0)
+                         (-- (svl::4vec-bitnot$ 1 (logbit start x))))
+                  (equal (sv::4vec-== (logbit start x) 1)
+                         (-- (logbit start x)))))
     :hints (("Goal"
-             :expand ((bit-of x start))
+             :expand ((logbit start x))
              :in-theory (e/d () ())))))
 
 (def-rp-rule 4vec-==-of=bitp-and-constant-bitp
@@ -468,7 +469,7 @@
            :in-theory (e/d (bitp) ()))))
 
 ;; ---------------------------------------------------------------------------
-;; SVL functions (bits, 4vec-rsh, etc.) and bit-of lemmas
+;; SVL functions (bits, 4vec-rsh, etc.) and logbit lemmas
 
 (encapsulate
   nil
@@ -476,16 +477,16 @@
   (local
    (use-arithmetic-5 t))
 
-  (defthm bits-is-bit-of-nosyntaxp
+  (defthm bits-is-logbit-nosyntaxp
     (implies (and (integerp num)
                   (natp start))
              (equal (svl::bits num start 1)
-                    (bit-of num start)))
+                    (logbit start num)))
     :hints (("goal"
              :in-theory (e/d (bitp
                               oddp
                               evenp
-                              bit-of
+                              logbit
                               sv::4vec-part-select
                               svl::bits
                               sv::4vec->lower
@@ -514,23 +515,23 @@
 
                               svl::4vec-part-select-is-bits)))))
 
-  (def-rp-rule bits-is-bit-of
+  (def-rp-rule bits-is-logbit
     (implies (and (syntaxp (atom (ex-from-rp num)))
                   (integerp num)
                   (natp start))
              (equal (svl::bits num start 1)
-                    (bit-of num start)))
+                    (logbit start num )))
     :hints (("Goal"
-             :in-theory (e/d (bits-is-bit-of-nosyntaxp) ()))))
+             :in-theory (e/d (bits-is-logbit-nosyntaxp) ()))))
 
-  (def-rp-rule bits-of-ifix-is-bit-of
+  (def-rp-rule bits-of-ifix-is-logbit
     (implies (and (syntaxp (atom (ex-from-rp num)))
                   (natp start))
              (equal (svl::bits (ifix num) start 1)
-                    (bit-of num start)))
+                    (logbit start num)))
     :hints (("Goal"
-             :in-theory (e/d (BIT-OF
-                              bits-is-bit-of-nosyntaxp) ()))))
+             :in-theory (e/d (LOGBIT
+                              bits-is-logbit-nosyntaxp) ()))))
 
   (def-rp-rule integerp-of-nth
     (implies (and (integer-listp lst)
@@ -541,44 +542,44 @@
              :in-theory (e/d (sum)
                              (+-IS-SUM)))))
 
-  (def-rp-rule bits-is-bit-of-for-nth
+  (def-rp-rule bits-is-logbit-for-nth
     (implies (and (natp start)
                   (force (natp x))
                   (force (< x (len y)))
                   (integer-listp y))
              (equal (svl::bits (nth x y) start 1)
-                    (bit-of (nth x y) start)))
+                    (logbit start (nth x y))))
     :hints (("Goal"
-             :in-theory (e/d (bits-is-bit-of-nosyntaxp) ()))))
+             :in-theory (e/d (bits-is-logbit-nosyntaxp) ()))))
 
-  (defthmd bits-is-bit-of-reverse
+  (defthmd bits-is-logbit-reverse
     (implies (and (integerp num)
                   (natp start))
-             (equal (bit-of num start)
+             (equal (logbit start num)
                     (svl::bits num start 1)))))
 
-(def-rp-rule bits-of-bit-of-out-of-range
+(def-rp-rule bits-of-logbit-out-of-range
   (implies (and (posp start)
                 (natp size))
-           (equal (svl::bits (bit-of x pos) start size)
+           (equal (svl::bits (logbit pos x) start size)
                   0)))
 
-(def-rp-rule bits-of-bit-of
-  (equal (svl::bits (bit-of x pos) 0 1)
-         (bit-of x pos))
+(def-rp-rule bits-of-logbit
+  (equal (svl::bits (logbit pos x) 0 1)
+         (logbit pos x))
   :otf-flg t
   :hints (("Goal"
            :do-not '(preprocess)
-           :cases ((bitp (bit-of x pos)))
+           :cases ((bitp (logbit pos x)))
            :in-theory (e/d (bitp)
-                           (BITP-OF-BIT-OF
-                            (:TYPE-PRESCRIPTION BIT-OF))))
+                           (BITP-OF-LOGBIT
+                            )))
           ("Subgoal 2"
            :in-theory (e/d () ()))))
 
-(def-rp-rule 4vec-rsh-of-bit-of-out-of-range
+(def-rp-rule 4vec-rsh-of-logbit-out-of-range
   (implies (posp amount)
-           (equal (sv::4vec-rsh amount (bit-of x pos))
+           (equal (sv::4vec-rsh amount (logbit pos x))
                   0)))
 
 ;; ---------------------------------------------------------------------------
@@ -601,11 +602,11 @@
                   (bitp y)
                   (bitp z))
              (and (equal (sv::4vec-? (svl::bits x start 1) y z)
-                         (binary-? (bits-to-bit-of (svl::bits x start 1)) y z))
+                         (binary-? (bits-to-logbit (svl::bits x start 1)) y z))
                   (equal (sv::4vec-? y (svl::bits x start 1) z)
-                         (binary-? y (bits-to-bit-of (svl::bits x start 1)) z))
+                         (binary-? y (bits-to-logbit (svl::bits x start 1)) z))
                   (equal (sv::4vec-? y z (svl::bits x start 1))
-                         (binary-? y z (bits-to-bit-of (svl::bits x start 1))))))
+                         (binary-? y z (bits-to-logbit (svl::bits x start 1))))))
     :hints (("goal"
              :in-theory (e/d (bitp) ()))))
 
@@ -616,11 +617,11 @@
                   (integerp y)
                   (bitp z))
              (and (equal (sv::4vec-? (svl::bits x start1 1) (svl::bits y start2 1) z)
-                         (binary-? (bits-to-bit-of (svl::bits x start1 1)) (bits-to-bit-of (svl::bits y start2 1)) z))
+                         (binary-? (bits-to-logbit (svl::bits x start1 1)) (bits-to-logbit (svl::bits y start2 1)) z))
                   (equal (sv::4vec-? (svl::bits x start1 1) z (svl::bits y start2 1))
-                         (binary-? (bits-to-bit-of (svl::bits x start1 1)) z (bits-to-bit-of (svl::bits y start2 1))))
+                         (binary-? (bits-to-logbit (svl::bits x start1 1)) z (bits-to-logbit (svl::bits y start2 1))))
                   (equal (sv::4vec-? z (svl::bits x start1 1) (svl::bits y start2 1))
-                         (binary-? z (bits-to-bit-of (svl::bits x start1 1)) (bits-to-bit-of (svl::bits y start2 1))))))
+                         (binary-? z (bits-to-logbit (svl::bits x start1 1)) (bits-to-logbit (svl::bits y start2 1))))))
     :hints (("goal"
              :in-theory (e/d (bitp) ()))))
 
@@ -632,9 +633,9 @@
                   (integerp y)
                   (integerp z))
              (and (equal (sv::4vec-? (svl::bits x start1 1) (svl::bits y start2 1) (svl::bits z start3 1))
-                         (binary-? (bits-to-bit-of (svl::bits x start1 1))
-                                   (bits-to-bit-of (svl::bits y start2 1))
-                                   (bits-to-bit-of (svl::bits z start3 1))))
+                         (binary-? (bits-to-logbit (svl::bits x start1 1))
+                                   (bits-to-logbit (svl::bits y start2 1))
+                                   (bits-to-logbit (svl::bits z start3 1))))
                   ))
     :hints (("goal"
              :in-theory (e/d (bitp) ())))))
@@ -655,11 +656,11 @@
                   (bitp y)
                   (bitp z))
              (and (equal (sv::4vec-?* (svl::bits x start 1) y z)
-                         (binary-? (bit-of x start) y z))
+                         (binary-? (logbit start x) y z))
                   (equal (sv::4vec-?* y (svl::bits x start 1) z)
-                         (binary-? y (bit-of x start) z))
+                         (binary-? y (logbit start x) z))
                   (equal (sv::4vec-?* y z (svl::bits x start 1))
-                         (binary-? y z (bit-of x start)))))
+                         (binary-? y z (logbit start x)))))
     :hints (("goal"
              :in-theory (e/d (bitp) ()))))
 
@@ -670,11 +671,11 @@
                   (integerp y)
                   (bitp z))
              (and (equal (sv::4vec-?* (svl::bits x start1 1) (svl::bits y start2 1) z)
-                         (binary-? (bits-to-bit-of (svl::bits x start1 1)) (bits-to-bit-of (svl::bits y start2 1)) z))
+                         (binary-? (bits-to-logbit (svl::bits x start1 1)) (bits-to-logbit (svl::bits y start2 1)) z))
                   (equal (sv::4vec-?* (svl::bits x start1 1) z (svl::bits y start2 1))
-                         (binary-? (bits-to-bit-of (svl::bits x start1 1)) z (bits-to-bit-of (svl::bits y start2 1))))
+                         (binary-? (bits-to-logbit (svl::bits x start1 1)) z (bits-to-logbit (svl::bits y start2 1))))
                   (equal (sv::4vec-?* z (svl::bits x start1 1) (svl::bits y start2 1))
-                         (binary-? z (bits-to-bit-of (svl::bits x start1 1)) (bits-to-bit-of (svl::bits y start2 1))))))
+                         (binary-? z (bits-to-logbit (svl::bits x start1 1)) (bits-to-logbit (svl::bits y start2 1))))))
     :hints (("goal"
              :in-theory (e/d (bitp) ()))))
 
@@ -686,9 +687,9 @@
                   (integerp y)
                   (integerp z))
              (and (equal (sv::4vec-?* (svl::bits x start1 1) (svl::bits y start2 1) (svl::bits z start3 1))
-                         (binary-? (bits-to-bit-of (svl::bits x start1 1))
-                                   (bits-to-bit-of (svl::bits y start2 1))
-                                   (bits-to-bit-of (svl::bits z start3 1))))
+                         (binary-? (bits-to-logbit (svl::bits x start1 1))
+                                   (bits-to-logbit (svl::bits y start2 1))
+                                   (bits-to-logbit (svl::bits z start3 1))))
                   ))
     :hints (("goal"
              :in-theory (e/d (bitp) ())))))
@@ -707,11 +708,11 @@
                   (natp start)
                   (bitp y))
              (and (equal (sv::4vec-bitxor (svl::bits x start 1)  y)
-                         (binary-xor (bits-to-bit-of (svl::bits x start 1))
+                         (binary-xor (bits-to-logbit (svl::bits x start 1))
                                      y))
                   (equal (sv::4vec-bitxor y (svl::bits x start 1))
                          (binary-xor y
-                                     (bits-to-bit-of (svl::bits x start 1))))))
+                                     (bits-to-logbit (svl::bits x start 1))))))
     :hints (("goal"
              :in-theory (e/d (bitp) ()))))
 
@@ -721,8 +722,8 @@
                   (natp start2)
                   (integerp y))
              (and (equal (sv::4vec-bitxor (svl::bits x start1 1) (svl::bits y start2 1))
-                         (binary-xor (bits-to-bit-of (svl::bits x start1 1))
-                                     (bits-to-bit-of (svl::bits y start2 1))))))
+                         (binary-xor (bits-to-logbit (svl::bits x start1 1))
+                                     (bits-to-logbit (svl::bits y start2 1))))))
     :hints (("goal"
              :in-theory (e/d (bitp) ()))))
 
@@ -754,7 +755,7 @@
                                   (svl::bits y 0 1))))
       :hints (("Goal"
                :in-theory (e/d (bitp
-                                bit-of
+                                logbit
                                 svl::Bits
                                 SV::4VEC-PART-SELECT
                                 SV::3VEC-BITAND
@@ -783,9 +784,9 @@
                   (natp start)
                   (bitp y))
              (and (equal (sv::4vec-bitand (svl::bits x start 1)  y)
-                         (binary-and (bits-to-bit-of (svl::bits x start 1)) y))
+                         (binary-and (bits-to-logbit (svl::bits x start 1)) y))
                   (equal (sv::4vec-bitand y (svl::bits x start 1))
-                         (binary-and y (bits-to-bit-of (svl::bits x start 1))))))
+                         (binary-and y (bits-to-logbit (svl::bits x start 1))))))
     :hints (("goal"
              :in-theory (e/d (bitp) ()))))
 
@@ -795,7 +796,7 @@
                   (natp start2)
                   (integerp y))
              (and (equal (sv::4vec-bitand (svl::bits x start1 1) (svl::bits y start2 1))
-                         (binary-and (bits-to-bit-of (svl::bits x start1 1)) (bits-to-bit-of (svl::bits y start2 1))))))
+                         (binary-and (bits-to-logbit (svl::bits x start1 1)) (bits-to-logbit (svl::bits y start2 1))))))
     :hints (("goal"
              :in-theory (e/d (bitp) ()))))
 
@@ -805,10 +806,10 @@
     (and (bitp (binary-and (svl::bits x 0 1)
                            (svl::bits y 0 1)))
          (bitp (binary-and x y))
-         (bitp (binary-and (bits-to-bit-of (svl::bits x start 1)) y))
-         (bitp (binary-and y (bits-to-bit-of (svl::bits x start 1))))
-         (bitp (binary-and (bits-to-bit-of (svl::bits x start1 1))
-                           (bits-to-bit-of (svl::bits y start2 1))))))
+         (bitp (binary-and (bits-to-logbit (svl::bits x start 1)) y))
+         (bitp (binary-and y (bits-to-logbit (svl::bits x start 1))))
+         (bitp (binary-and (bits-to-logbit (svl::bits x start1 1))
+                           (bits-to-logbit (svl::bits y start2 1))))))
 
   (rp-attach-sc 4vec-bitand-to-binary-and-when-atleast-one-is-bitp
                 4vec-bitand-is-binary-and-side-cond)
@@ -836,9 +837,9 @@
                   (natp start)
                   (bitp y))
              (and (equal (sv::4vec-bitor (svl::bits x start 1)  y)
-                         (binary-or (bits-to-bit-of (svl::bits x start 1)) y))
+                         (binary-or (bits-to-logbit (svl::bits x start 1)) y))
                   (equal (sv::4vec-bitor y (svl::bits x start 1))
-                         (binary-or y (bits-to-bit-of (svl::bits x start 1))))))
+                         (binary-or y (bits-to-logbit (svl::bits x start 1))))))
     :hints (("goal"
              :in-theory (e/d (bitp) ()))))
 
@@ -848,7 +849,7 @@
                   (natp start2)
                   (integerp y))
              (and (equal (sv::4vec-bitor (svl::bits x start1 1) (svl::bits y start2 1))
-                         (binary-or (bits-to-bit-of (svl::bits x start1 1)) (bits-to-bit-of (svl::bits y start2 1))))))
+                         (binary-or (bits-to-logbit (svl::bits x start1 1)) (bits-to-logbit (svl::bits y start2 1))))))
     :hints (("goal"
              :in-theory (e/d (bitp) ())))))
 
@@ -868,7 +869,7 @@
   (def-rp-rule 4vec-bitnot$-binary-not-when-integerp
     (implies (and (integerp x))
              (equal (svl::4vec-bitnot$ 1 x)
-                    (binary-not (bit-of x 0))))
+                    (binary-not (logbit 0 x))))
     :hints (("Goal"
              :in-theory (e/d (bitp
                               SV::4VEC-BITNOT
@@ -878,7 +879,7 @@
                               SV::4VEC
                               SV::4VEC-PART-SELECT
                               svl::4vec-bitnot$
-                              bit-of
+                              logbit
                               not$
                               m2
                               f2
@@ -902,7 +903,7 @@
     (implies (and (integerp x)
                   (natp start))
              (equal (svl::4vec-bitnot$ 1 (svl::bits x start 1))
-                    (binary-not (bits-to-bit-of (svl::bits x start 1)))))
+                    (binary-not (bits-to-logbit (svl::bits x start 1)))))
     :hints (("Goal"
              :in-theory (e/d (bitp) ())))))
 
@@ -1001,17 +1002,17 @@
                             binary-?)
                            ((:TYPE-PRESCRIPTION BIT-FIX))))))
 
-(def-rp-rule 4vec-fix-of-bit-of
-  (equal (svl::4vec-fix (bit-of x pos))
-         (bit-of x pos))
+(def-rp-rule 4vec-fix-of-logbit
+  (equal (svl::4vec-fix (logbit pos x))
+         (logbit pos x ))
   :hints (("goal"
-           :in-theory (e/d (bit-of
+           :in-theory (e/d (logbit
                             bitp)
                            (bit-fix)))))
 
-(def-rp-rule 3vec-fix-of-bit-of
-  (equal (sv::3vec-fix (bit-of x index))
-         (bit-of x index)))
+(def-rp-rule 3vec-fix-of-logbit
+  (equal (sv::3vec-fix (logbit index x))
+         (logbit index x)))
 
 (encapsulate
   nil
@@ -1043,7 +1044,7 @@
                          0)
                   (equal (svl::bits (binary-? x y z) start 1 )
                          0)
-                  (equal (svl::bits (bit-of x y) start 1 )
+                  (equal (svl::bits (logbit x y) start 1 )
                          0)
                   (equal (svl::bits (adder-and x y) start 1 )
                          0)))
@@ -1071,8 +1072,8 @@
                          (binary-xor x y))
                   (equal (svl::bits (binary-? x y z) 0 size )
                          (binary-? x y z))
-                  (equal (svl::bits (bit-of x y) 0 size )
-                         (bit-of x y))
+                  (equal (svl::bits (logbit x y) 0 size )
+                         (logbit x y))
                   (equal (svl::bits (adder-and x y) 0 size )
                          (adder-and x y))
                   (equal (svl::bits (adder-or x y) 0 size )
@@ -1081,7 +1082,7 @@
              :do-not '(preprocess)
              :in-theory (e/d (bits-of-binary-fns-lemma-2)
                              (svl::4vec-part-select-is-bits
-                              bits-is-bit-of
+                              bits-is-logbit
                               +-is-sum
                               svl::4vec-zero-ext-is-bits
                               svl::convert-4vec-concat-to-4vec-concat$
@@ -1098,40 +1099,41 @@
    (defthm lemma1
      (implies (and (not (zp start))
                    (bitp x))
-              (equal (bit-of x start)
+              (equal (logbit start x)
                      0))
      :hints (("goal"
-              :in-theory (e/d (bitp bit-of) ())))))
+              :in-theory (e/d (bitp logbit) ())))))
 
   (local
    (defthm lemma2
      (implies (and (bitp x))
-              (equal (bit-of x 0)
+              (equal (logbit 0 x)
                      x))
      :hints (("goal"
-              :in-theory (e/d (bitp bit-of) ())))))
+              :in-theory (e/d (bitp logbit) ())))))
 
-  ;; these lemmas are left disabled because "bit-of" should only appear when
+  ;; these lemmas are left disabled because "logbit" should only appear when
   ;; the first argument is an atom. so we should not need these lemmas. but i
   ;; leave these lemmas here just in case.
 
   (def-rp-rule :disabled t
-    bit-of-binary-fns
+    logbit-binary-fns
     (implies (not (zp start))
-             (and (equal (bit-of (or$ x y) start )
+             (and (equal (logbit start (or$ x y) )
                          0)
-                  (equal (bit-of (and$ x y) start)
+                  (equal (logbit start (and$ x y) )
                          0)
-                  (equal (bit-of (not$ x) start)
+                  (equal (logbit start (not$ x) )
                          0)
-                  (equal (bit-of (binary-xor x y) start )
+                  (equal (logbit start (binary-xor x y)  )
                          0)
-                  (equal (bit-of (binary-? x y z) start )
+                  (equal (logbit start (binary-? x y z)  )
                          0)))
     :hints (("goal"
              :do-not '(preprocess)
              :in-theory (e/d (bitp)
-                             (svl::4vec-part-select-is-bits
+                             (logbit
+                              svl::4vec-part-select-is-bits
                               equal-sides-to-s
                               svl::4vec-zero-ext-is-bits
                               svl::convert-4vec-concat-to-4vec-concat$
@@ -1139,17 +1141,17 @@
                               svl::4vec-zero-ext-is-4vec-concat)))))
 
   (def-rp-rule :disabled t
-    bit-of-binary-fns-start=0
+    logbit-binary-fns-start=0
     (implies t
-             (and (equal (bit-of (or$ x y) 0 )
+             (and (equal (logbit 0 (or$ x y) )
                          (or$ x y))
-                  (equal (bit-of (and$ x y) 0)
+                  (equal (logbit 0 (and$ x y))
                          (and$ x y))
-                  (equal (bit-of (not$ x) 0)
+                  (equal (logbit  0 (not$ x))
                          (not$ x))
-                  (equal (bit-of (binary-xor x y) 0)
+                  (equal (logbit 0 (binary-xor x y))
                          (binary-xor x y))
-                  (equal (bit-of (binary-? x y z) 0)
+                  (equal (logbit 0 (binary-? x y z))
                          (binary-? x y z))))
     :hints (("goal"
              :do-not '(preprocess)
@@ -1161,25 +1163,25 @@
                               svl::4vec-zero-ext-is-4vec-concat)))))
 
   (def-rp-rule :disabled t
-    bit-of-4vec-bitnot-main
+    logbit-4vec-bitnot-main
     (implies (bitp x)
-             (equal (bit-of (sv::4vec-bitnot x) 0)
+             (equal (logbit 0 (sv::4vec-bitnot x))
                     (svl::4vec-bitnot$ 1 x)))
     :hints (("goal"
-             :in-theory (e/d (bitp) (bitp-of-bit-of
-                                     (:type-prescription bit-of)
+             :in-theory (e/d (bitp) (bitp-of-logbit
+                                     
                                      )))))
 
   (def-rp-rule :disabled t
-    bit-of-4vec-bitnot
-    (equal (bit-of (sv::4vec-bitnot (bit-of x start)) 0)
-           (svl::4vec-bitnot$ 1 (bit-of x start)))
+    logbit-4vec-bitnot
+    (equal (logbit 0 (sv::4vec-bitnot (logbit start x)))
+           (svl::4vec-bitnot$ 1 (logbit start x)))
     :hints (("goal"
-             :use ((:instance bitp-of-bit-of
-                              (num x)
-                              (pos start)))
-             :in-theory (e/d (bitp) (bitp-of-bit-of
-                                     (:type-prescription bit-of)))))))
+             :use ((:instance bitp-of-logbit
+                              (y x)
+                              (x start)))
+             :in-theory (e/d (bitp) (bitp-of-logbit
+                                     ))))))
 
 (def-rp-rule bits-of-4vec-==-binary-fncs
   (and (equal (svl::bits (sv::4vec-== (binary-or x y) 1) '0 '1)
@@ -1272,22 +1274,22 @@
   concat-of-adder-and-is-f2
   (implies (bitp other)
            (and (equal (svl::4vec-concat$ size
-                                          (adder-and (bit-of x y) other)
+                                          (adder-and (logbit x y) other)
                                           other2)
                        (svl::4vec-concat$ size
-                                          (f2 (adder-sum (bit-of x y) other))
+                                          (f2 (adder-sum (logbit x y) other))
                                           other2))
                 (equal (svl::4vec-concat$ size
                                           other2
-                                          (adder-and (bit-of x y) other))
+                                          (adder-and (logbit x y) other))
                        (svl::4vec-concat$ size
                                           other2
-                                          (f2 (adder-sum (bit-of x y) other))))))
+                                          (f2 (adder-sum (logbit x y) other))))))
   :hints (("goal"
-           :cases ((bitp (bit-of x y)))
+           :cases ((bitp (logbit x y)))
            :in-theory (e/d (bitp)
-                           ((:type-prescription bit-of)
-                            (:rewrite bitp-of-bit-of))))))
+                           (
+                            (:rewrite bitp-of-logbit))))))
 
 (def-rp-rule :disabled t
   4vec-concat$-1-of-binary-and
@@ -1340,18 +1342,18 @@
                             bitp)
                            ()))))
 
-(def-rp-rule bit-of-of-bits
+(def-rp-rule logbit-of-bits
   (implies (and (natp index)
                 (natp start)
                 (natp size)
                 (integerp x))
-           (equal (bit-of (svl::bits x start size) index)
+           (equal (logbit index (svl::bits x start size))
                   (svl::bits (svl::bits x start size) index 1)))
   :hints (("goal"
-           :use ((:instance bits-is-bit-of
+           :use ((:instance bits-is-logbit
                             (num (svl::bits x start size))
                             (start index)))
-           :in-theory (e/d (bits-is-bit-of)
+           :in-theory (e/d (bits-is-logbit)
                            (
                             +-is-sum
                             svl::bits-of-bits-1)))))
@@ -1661,7 +1663,7 @@
                             loghead
                             f2
                             m2
-                            bit-of
+                            logbit
                             ;;ACL2::LIFIX$INLINE
                             +-is-sum
                             LOGHEAD-OF-+-IS-2VEC-ADDER-WITHOUT-CARRY
@@ -1862,6 +1864,7 @@ z)
            :in-theory (e/d (SV::4VEC->UPPER
                             SV::4VEC->LOWER
                             sv::4vec-times) ()))))
+
 
 
 

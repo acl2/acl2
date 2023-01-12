@@ -139,7 +139,7 @@
       (&
        (cond ((atom x)
               (mv -1 (check-context-for-integerp x context)))
-             ((or* (bit-of-p x)
+             ((or* (logbit-p x)
                    (binary-fnc-p x)
                    (has-bitp-rp x-orig))
               (mv 1 t))
@@ -294,18 +294,19 @@
     :gag-mode nil
     (rp::def-formula-checks */+-to-mult/adder-spec-meta-fchecks
       (svl::bits svl::4vec-concat$ *
-                 2vec-adder
+                 2vec-adder 
                  2VEC-SUBTRACT
                  unary--
                  SVL-MULT-FINAL-SPEC
                  binary-or binary-xor binary-and binary-?
-                 bit-of binary-not))))
+                 logbit$inline binary-not))))
 
 (with-output
   :off :all
   :gag-mode nil
   (local
    (progn
+     (in-theory (disable logbit))
      (rp::create-regular-eval-lemma svl::4VEC-CONCAT$ 3
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma SVL-MULT-FINAL-SPEC 3
@@ -326,7 +327,7 @@
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma binary-xor 2
                                     */+-to-mult/adder-spec-meta-fchecks)
-     (rp::create-regular-eval-lemma bit-of 2
+     (rp::create-regular-eval-lemma logbit$inline 2
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma binary-not 1
                                     */+-to-mult/adder-spec-meta-fchecks)
@@ -485,7 +486,7 @@
 
 (local
  (defthm calculate-vec-size-correct-lemma
-   (implies (and (OR* (BIT-OF-P (EX-FROM-RP X))
+   (implies (and (OR* (LOGBIT-P (EX-FROM-RP X))
                       (BINARY-FNC-P (EX-FROM-RP X))
                       (HAS-BITP-RP X))
                  (valid-sc x a)

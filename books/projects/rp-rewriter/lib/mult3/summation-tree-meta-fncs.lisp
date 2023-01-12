@@ -217,7 +217,7 @@
              (ifix (and (quotep (cadr term))
                         (consp (cdr (cadr term)))
                         (unquote (cadr term)))))
-            ((bit-of-p term)
+            ((logbit-p term)
              (ifix (and (quotep (caddr term))
                         (consp (cdr (caddr term)))
                         (unquote (caddr term)))))
@@ -682,7 +682,7 @@
               t)))
        ((or (single-s-p term)
             (binary-fnc-p term)
-            (bit-of-p term)
+            (logbit-p term)
             (and-list-p term))
         (mv 1 0 t))
        ((equal term ''1) (mv 1 1 t))
@@ -930,15 +930,15 @@
     (b* ((pp1 (ex-from-rp$ pp1))
          (pp2 (ex-from-rp$ pp2))
          ((unless (and (or (case-match pp1 (('and-list & ('list . &)) t))
-                           (bit-of-p (ex-from-rp$ pp1)))
+                           (logbit-p (ex-from-rp$ pp1)))
                        (or (case-match pp2 (('and-list & ('list . &)) t))
-                           (bit-of-p (ex-from-rp$ pp2)))))
+                           (logbit-p (ex-from-rp$ pp2)))))
           nil)
 
-         (pp1-lst (if (bit-of-p (ex-from-rp$ pp1))
+         (pp1-lst (if (logbit-p (ex-from-rp$ pp1))
                       (list (ex-from-rp$ pp1))
                     (cdr (caddr pp1))))
-         (pp2-lst (if (bit-of-p (ex-from-rp$ pp2))
+         (pp2-lst (if (logbit-p (ex-from-rp$ pp2))
                       (list (ex-from-rp$ pp2))
                     (cdr (caddr pp2)))))
       (and-lst-subsetp pp1-lst pp2-lst))))
@@ -2711,7 +2711,7 @@
                 (case-match pp (('list e)
                                 (b* ((e-ex (ex-from-rp$ e)))
                                   (or* (and-list-p e-ex)
-                                       (bit-of-p e-ex)
+                                       (logbit-p e-ex)
                                        (binary-fnc-p e-ex)
                                        (has-bitp-rp e))))))
            (mv nil (list (cadr pp)) nil))
@@ -3696,10 +3696,10 @@
               (a2 (ex-from-rp a2))
               (a3 (ex-from-rp a3))
               (a4 (ex-from-rp a4))
-              (a1 (ex-from-rp (case-match a1 (('bit-of x &) x) (& a1))))
-              (a2 (ex-from-rp (case-match a2 (('bit-of x &) x) (& a2))))
-              (a3 (ex-from-rp (case-match a3 (('bit-of x &) x) (& a3))))
-              (a4 (ex-from-rp (case-match a4 (('bit-of x &) x) (& a4)))))
+              (a1 (ex-from-rp (case-match a1 (('logbit$inline & x) x) (& a1))))
+              (a2 (ex-from-rp (case-match a2 (('logbit$inline & x) x) (& a2))))
+              (a3 (ex-from-rp (case-match a3 (('logbit$inline & x) x) (& a3))))
+              (a4 (ex-from-rp (case-match a4 (('logbit$inline & x) x) (& a4)))))
            (or (and (equal a1 a2)
                     (equal a1 a3)
                     (not (equal a1 a4))
@@ -3851,7 +3851,7 @@
          (has-bitp (has-bitp-rp cur-orig))
          (cur (ex-from-rp cur-orig)))
       (case-match cur
-        (('bit-of & &)
+        (('logbit$inline & &)
          (cross-product-pp-pattern-check-aux (cdr ppe-lst)))
         (('s & & &)
          (b* (((mv rest-valid rest-s/c-found)
@@ -3926,7 +3926,7 @@
            (b* (((mv pass s/c-count)
                  (cross-product-pp-pattern-check2-aux (cadr term))))
              (mv (and pass (equal s/c-count 0)) s/c-count)))
-          ((bit-of-p term)
+          ((logbit-p term)
            (mv t 0))
           ((single-s-p term)
            (mv t 1))
@@ -3981,7 +3981,7 @@
               (cons cur rest-lst)
               nil)))
       (case-match cur
-        (('bit-of & &)
+        (('logbit$inline & &)
          (mv rest-single-s/c
              (cons-with-hint cur rest-lst e-lst)
              t))
@@ -4041,7 +4041,7 @@
           ((or (binary-not-p term)
                (binary-or-p term)
                (binary-xor-p term)
-               (bit-of-p term)
+               (logbit-p term)
                (equal term ''1)
                (equal term ''0))
            (mv ''1 single-pp nil t))
@@ -4092,7 +4092,7 @@
      (mv ''1 t))
     (('and-list & ('list . lst))
      (mv (and-list-to-binary-and-aux lst) t))
-    (('bit-of & &)
+    (('logbit$inline & &)
      (mv term t))
     (& (mv term (or (binary-fnc-p term)
                     (equal term ''1)
@@ -4135,7 +4135,7 @@
            (mv nil (hard-error 'cross-product-pp-aux-for-pp-lst-aux
                                "Unexpected pp-lst element: ~p0 ~%"
                                (list (cons #\0 cur)))))))
-       ((or (bit-of-p cur)
+       ((or (logbit-p cur)
             (equal cur ''1))
         (b* ((res-e-lst (merge-sorted-and$-lists (list cur) e-lst))
              (cur-pp (create-and-list-instance res-e-lst))
@@ -4380,7 +4380,7 @@
               (cross-product-pp-aux-for-s/c-main single-s/c2 e-lst))
              (('binary-and x y)
               (cross-product-pp-aux-for-s/c-main single-s/c2 (list x y)))
-             (('bit-of & &)
+             (('logbit$inline & &)
               (cross-product-pp-aux-for-s/c-main single-s/c2 (list cur-pp)))
              (''1
               (cond ((single-s-p (ex-from-rp$ single-s/c2))
@@ -4753,22 +4753,22 @@
       (equal pp-lst nil)
     (b* ((cur (ex-from-rp-loose (car pp-lst))))
       (and (or (equal cur ''1)
-               (bit-of-p cur)
+               (logbit-p cur)
                (and (binary-not-p cur)
-                    (bit-of-p (cadr cur))))
+                    (logbit-p (cadr cur))))
            (pp-lst-is-a-part-of-radix8+-summation (cdr pp-lst))))))
 
 (define pp-is-a-part-of-radix8+-summation ((cur))
   :returns (res booleanp)
   (and (or (equal cur ''1)
-           (bit-of-p cur)
+           (logbit-p cur)
            (and (binary-and-p cur)
-                (or (bit-of-p (ex-from-rp-loose (cadr cur)))
+                (or (logbit-p (ex-from-rp-loose (cadr cur)))
                     (quotep (cadr cur)))
-                (or (bit-of-p (ex-from-rp-loose (caddr cur)))
+                (or (logbit-p (ex-from-rp-loose (caddr cur)))
                     (quotep (caddr cur))))
            (and (binary-not-p cur)
-                (bit-of-p (ex-from-rp-loose (cadr cur)))))))
+                (logbit-p (ex-from-rp-loose (cadr cur)))))))
 
 ;;;;;;;;
 
@@ -5083,7 +5083,7 @@
           t)
          (('binary-? & & &)
           t)
-         (('bit-of & &)
+         (('logbit$inline & &)
           t)
          (''1
           t)))))
@@ -5194,8 +5194,8 @@
          (search-for-1-lst (cdr lst))))))||#
 
 #|(rp::and-list-to-binary-and '(RP::AND-LIST '327716
-                                       (LIST (RP::BIT-OF OP1_LO '15)
-                                             (RP::BIT-OF OP2_LO '31))))||#
+                                       (LIST (RP::LOGBIT OP1_LO '15)
+                                             (RP::LOGBIT OP2_LO '31))))||#
 
 (define create-s-c-res-instance ((s-lst rp-term-listp)
                                  (pp-lst rp-term-listp)
@@ -5414,11 +5414,11 @@
 
 #|
 
-(s-spec-meta `(s-spec (cons (binary-and (bit-of a 0) (bit-of b 0))
-(cons (binary-or (binary-and (bit-of a 0) (bit-of b 0))
-(binary-and (bit-of a 0) (bit-of b 0)))
-(cons (binary-and (bit-of a 0) (bit-of b 0))
-(cons (binary-and (bit-of a 1) (bit-of
+(s-spec-meta `(s-spec (cons (binary-and (logbit a 0) (logbit b 0))
+(cons (binary-or (binary-and (logbit a 0) (logbit b 0))
+(binary-and (logbit a 0) (logbit b 0)))
+(cons (binary-and (logbit a 0) (logbit b 0))
+(cons (binary-and (logbit a 1) (logbit
 b 0))
 'nil
 ))))))
