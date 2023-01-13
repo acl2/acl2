@@ -10,6 +10,9 @@
 
 (in-package "ACL2")
 
+;; Note that most users should probably include only the individual tools they
+;; need, rather than this top.lisp book.
+
 (include-book "advise")
 ;(include-book "book-conflicts/bookdata-types")
 ;(include-book "book-conflicts/conflicts")
@@ -37,7 +40,7 @@
 ;(include-book "flag-tests")
 (include-book "include-an-arithmetic-book")
 (include-book "include-raw")
-;; (include-book "in-raw-mode") ; name conflict with manual (books/hacking/hacker.lisp)
+;; (include-book "in-raw-mode") ; name conflict on in-raw-mode with manual (books/hacking/hacker.lisp)
 (include-book "k-induction")
 (include-book "last-theory-change")
 (include-book "lint")
