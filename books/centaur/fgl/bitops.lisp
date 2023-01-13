@@ -530,6 +530,48 @@
            :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
                                               bitops::ihsext-recursive-redefs)))))
 
+
+  (local (defthm logapp-equal-0-implies
+           (implies (equal (logapp n x y) 0)
+                    (zip y))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))
+           :rule-classes :forward-chaining))
+
+  (local (defthm logapp-equal-neg1-implies
+           (implies (equal (logapp n x y) -1)
+                    (equal y -1))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))
+           :rule-classes :forward-chaining))
+
+
+  
+  (local (defthm loghead-when-gte-integer-length
+           (implies (and (not (acl2::negp x))
+                         (natp n)
+                         (<= (integer-length x) n))
+                    (equal (loghead n x) (ifix x)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
+
+  (local (defthm logapp-neg1-when-gte-integer-length
+           (implies (and (acl2::negp x)
+                         (natp n)
+                         (<= (integer-length x) n))
+                    (equal (logapp n x -1) (ifix x)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
+
+
+  (local (defthm int-revapp-0-gte-0
+           (<= 0 (int-revapp nbits x 0))
+           :rule-classes (:linear :type-prescription)))
+
+  (local (fty::deffixcong acl2::int-equiv equal (integer-length-bound ans x) x
+           :hints(("Goal" :in-theory (enable integer-length-bound)))))
+  
+
   (def-fgl-rewrite logapp-helper-impl
     (implies (and (syntaxp (and (fgl-object-case shift-rev '(:g-integer :g-concrete))
                                 (natp shift-width)))
@@ -545,11 +587,26 @@
                                       (check-equal! x-equal-y x y)))
                            x))
                       (if (intcar shift-rev)
-                          (b* ((width (ash 1 (1- shift-width))))
-                            (logapp width x
-                                    (logapp-helper (intcdr shift-rev) (1- shift-width)
+                          (b* ((width (ash 1 (1- shift-width)))
+                               (rest (logapp-helper (intcdr shift-rev) (1- shift-width)
                                                     (logtail (ash 1 (1- shift-width)) x)
-                                                    y)))
+                                                    y))
+                               ;; Special case: x has known sign, x's integer
+                               ;; length bound is less than width, and rest is
+                               ;; -1 or 0 matching that sign -- just return x.
+                               ;; Could consider just doing this in the logapp primitive instead.
+                               (special-case-validp
+                                (b* ((x-sign (check-int-sign! x-sign x))
+                                     ((unless x-sign) nil)
+                                     (x-width (integer-length-bound! x-width x))
+                                     ((unless (and x-width (<= x-width width))) nil)
+                                     (rest-endp (check-int-endp! rest-endp rest))
+                                     ((unless rest-endp) nil)
+                                     (rest-sign (check-int-sign! rest-sign rest))
+                                     ((unless (eql rest-sign x-sign)) nil))
+                                  t))
+                               ((when special-case-validp) x))
+                            (logapp width x rest))
                         (logapp-helper (intcdr shift-rev) (1- shift-width) x y)))))
     :hints(("Goal" :in-theory (enable* bitops::logapp**
                                        acl2::arith-equiv-forwarding
@@ -566,16 +623,6 @@
                                                              (logcdr shift-rev)
                                                              0)
                                                  1)))))))
-
-  
-
-  (local (defthm loghead-when-gte-integer-length
-           (implies (and (natp x)
-                         (natp n)
-                         (<= (integer-length x) n))
-                    (equal (loghead n x) x))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
 
   (def-fgl-rewrite logapp-to-logapp-helper
     (implies (syntaxp (not (fgl-object-case n :g-concrete)))

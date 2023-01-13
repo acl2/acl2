@@ -51,6 +51,7 @@
    check-bitp
    check-signed-byte-p
    check-unsigned-byte-p
+   check-int-sign
    check-non-integerp
    check-consp
    check-non-consp
@@ -313,6 +314,38 @@
                       (implies (not (car (last x)))
                                (not (car (last (gobj-bfr-list-eval x env)))))
                       :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))))))
+
+
+(local (defthm negp-of-fgl-object-alist-eval
+         (implies (fgl-object-alist-p x)
+                  (iff (acl2::negp (fgl-object-alist-eval x env logicman))
+                       (acl2::negp x)))
+         :hints(("Goal" :expand ((fgl-object-alist-eval x env logicman))
+                 :in-theory (enable acl2::negp)))))
+
+(def-fgl-binder-meta check-int-sign-binder
+  (b* ((ans
+        (fgl-object-case arg
+          :g-concrete (if (< (ifix arg.val) 0) -1 0)
+          :g-integer (b* ((lastbit (car (last arg.bits))))
+                       (cond ((eq lastbit nil) 0)
+                             ((eq lastbit t) -1)
+                             (t nil)))
+          :g-map (if (< (ifix arg.alist) 0) -1 0)
+          :g-boolean 0
+          :g-cons 0
+          :otherwise nil)))
+    (mv t (kwote ans) nil nil interp-st state))
+  :formula-check checks-formula-checks
+  :origfn check-int-sign :formals (arg)
+  :prepwork ((local (in-theory (enable check-int-sign)))
+             (local (defthm car-last-of-gobj-bfr-list-eval
+                      (and (implies (not (car (last x)))
+                                    (<= 0 (bools->int (gobj-bfr-list-eval x env))))
+                           (implies (equal (car (last x)) t)
+                                    (< (bools->int (gobj-bfr-list-eval x env)) 0)))
+                      :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))
+                      :rule-classes :linear))))
 
 
 (local (defthm not-integerp-of-fgl-object-alist-eval

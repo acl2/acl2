@@ -78,6 +78,10 @@
 (define -- (x)
   (- (ifix x)))
 
+;; for backwards compatibility.
+(defmacro bit-of (x pos)
+  `(logbit$inline ,pos ,x))
+
 (define sum-list (lst)
   (if (atom lst)
       0
