@@ -42,7 +42,11 @@
 (include-book "last-theory-change")
 (include-book "lint")
 (include-book "match-tree")
+
+;; This book memoizes some functions, so we undo that with unmemoize-lst:
 (include-book "memoize-prover-fns")
+(unmemoize-lst (f-get-global 'memoized-prover-fns state))
+
 (include-book "mv-nth")
 (include-book "nld")
 (include-book "open-trace-file-bang")
