@@ -2935,7 +2935,8 @@
 
        (new-svex-alist (svl::svex-alist-simplify-bitand/or/xor new-svex-alist
                                                                :env nil
-                                                               :context nil))
+                                                               :context nil
+                                                               :config nil))
 
        )
     (find-f/h-adders-in-svex-alist new-svex-alist (1- limit)))

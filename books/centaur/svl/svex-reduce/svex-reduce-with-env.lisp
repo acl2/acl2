@@ -211,7 +211,8 @@
                                                   (size natp)
                                                   &key
                                                   ((env) 'env)
-                                                  ((context rp::rp-term-listp) 'context))
+                                                  ((context rp::rp-term-listp) 'context)
+                                                  ((config svex-reduce-config-p) 'config))
       :measure (acl2::nat-list-measure (list (cons-count svex)
                                              (nfix size)))
       :returns (res svex-p :hyp (and (natp start)
@@ -236,7 +237,7 @@
                (cur-term
                 (if (acl2::or* (integerp term1)
                                (integerp term2))
-                    (bitand/or/xor-simple-constant-simplify fn term1 term2 t)
+                    (bitand/or/xor-simple-constant-simplify fn term1 term2 :1masked t)
                   (bitand/or/xor-cancel-repeated fn term1 term2)))
 
                ((when (equal size 1))
@@ -254,7 +255,8 @@
                                        (size natp)
                                        &key
                                        ((env) 'env)
-                                       ((context rp::rp-term-listp) 'context))
+                                       ((context rp::rp-term-listp) 'context)
+                                       ((config svex-reduce-config-p) 'config))
       :measure (acl2::nat-list-measure (list (cons-count svex)
                                              (1+ (nfix size))))
       :returns (res svex-p :hyp (and (natp start)
@@ -649,7 +651,8 @@ but did not resolve the branch ~%" first))))
     (define svex-reduce-w/-env ((svex svex-p)
                                 &key
                                 ((env) 'env)
-                                ((context rp::rp-term-listp) 'context))
+                                ((context rp::rp-term-listp) 'context)
+                                ((config svex-reduce-config-p) 'config))
       :measure (acl2::nat-list-measure (list (cons-count svex)
                                              0))
       :returns (res svex-p :hyp (svex-p svex))
@@ -705,7 +708,7 @@ but did not resolve the branch ~%" first))))
                          (term2 (svex-reduce-w/-env (second args)))
                          ((when (acl2::or* (integerp term1)
                                            (integerp term2)))
-                          (bitand/or/xor-simple-constant-simplify fn term1 term2 nil)))
+                          (bitand/or/xor-simple-constant-simplify fn term1 term2)))
                       (bitand/or/xor-cancel-repeated fn term1 term2)))
                    (t (b* ((args-evaluated (svex-reduce-w/-env-lst args)))
                         (svex-reduce-w/-env-apply fn args-evaluated)))))))))
@@ -713,7 +716,8 @@ but did not resolve the branch ~%" first))))
     (define svex-reduce-w/-env-lst ((svex-list svexlist-p)
                                     &key
                                     ((env) 'env)
-                                    ((context rp::rp-term-listp) 'context))
+                                    ((context rp::rp-term-listp) 'context)
+                                    ((config svex-reduce-config-p) 'config))
       :measure (acl2::nat-list-measure (list (cons-count svex-list)
                                              0))
       :returns (res-lst sv::svexlist-p :hyp (sv::svexlist-p svex-list))
@@ -773,7 +777,8 @@ but did not resolve the branch ~%" first))))
 (define svex-alist-reduce-w/-env ((svex-alist sv::svex-alist-p)
                                   &key
                                   ((env) 'env)
-                                  ((context rp::rp-term-listp) 'context))
+                                  ((context rp::rp-term-listp) 'context)
+                                  ((config svex-reduce-config-p) 'config))
   :returns (res-alist sv::svex-alist-p :hyp (sv::svex-alist-p svex-alist))
   (if (atom svex-alist)
       (progn$ (clear-memoize-table 'svex-reduce-w/-env)
@@ -1620,6 +1625,24 @@ SVEX-CALL->FN)
             :use ((:instance 4vec-concat-insert-4vec-part-select))
             :in-theory (e/d () ())))))
 
+(local
+ (defthm 4vec-rsh-of-4vec
+   (implies (and (natp size)
+                 (integerp x)
+                 (integerp y)
+                 )
+            (equal (4vec-rsh size (4vec x y))
+                   (4vec
+                    (4vec-rsh size (ifix x))
+                    (4vec-rsh size (ifix y)))))
+   :hints (("Goal"
+            :in-theory (e/d (4vec-rsh
+                             4vec
+                             SV::4VEC->LOWER
+                             SV::4VEC->UPPER
+                             4VEC-SHIFT-CORE)
+                            (floor ash))))))
+
 (progn
   (local
    (in-theory (disable (:DEFINITION ACL2::APPLY$-BADGEP)
@@ -1714,7 +1737,7 @@ SVEX-CALL->FN)
 
                        rp::falist-consistent-aux
                        rp::eval-and-all
-                       
+
                        (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX)
                        (:TYPE-PRESCRIPTION 4VECLIST-NTH-SAFE)
                        (:TYPE-PRESCRIPTION SV::4VEC-BIT?!)
@@ -1742,7 +1765,15 @@ SVEX-CALL->FN)
                        (rp::valid-sc env-term a)
                        (rp::eval-and-all context a)
                        (sub-alistp env big-env)
-                       (rp::falist-consistent-aux big-env env-term))
+                       (rp::falist-consistent-aux big-env env-term)
+                       (:@ :dollar-eval
+                           (width-of-svex-extn-correct<$>-lst
+                            (svex-reduce-config->width-extns config))
+                           (integerp-of-svex-extn-correct<$>-lst
+                            (svex-reduce-config->integerp-extns config)))
+                       (:@ :normal-eval
+                           (equal (svex-reduce-config->width-extns config) nil)
+                           (equal (svex-reduce-config->integerp-extns config) nil)))
                   (and (equal (svex-eval (svex-and/or/xor-reduce-w/-env-masked svex start size) (rp-evlt env-term a))
                               (4vec-part-select start size (svex-eval svex (rp-evlt env-term a))))
 
@@ -1752,7 +1783,7 @@ SVEX-CALL->FN)
                        (equal-len (cdr svex) 2)) ; ;
                        (acl2::and* (equal (car svex) 'sv::unfloat) ; ;
                        (equal-len (cdr svex) 1))) ; ;
-; ; ; ; ;
+; ; ; ; ; ; ; ; ;
                        (all-xor/and/or-nodes-are-masked-p res size (rp-evlt env-term a)))|#
                        ))
          :fn svex-and/or/xor-reduce-w/-env-masked)
@@ -1765,7 +1796,15 @@ SVEX-CALL->FN)
                        (rp::valid-sc env-term a)
                        (rp::eval-and-all context a)
                        (sub-alistp env big-env)
-                       (rp::falist-consistent-aux big-env env-term))
+                       (rp::falist-consistent-aux big-env env-term)
+                       (:@ :dollar-eval
+                           (width-of-svex-extn-correct<$>-lst
+                            (svex-reduce-config->width-extns config))
+                           (integerp-of-svex-extn-correct<$>-lst
+                            (svex-reduce-config->integerp-extns config)))
+                       (:@ :normal-eval
+                           (equal (svex-reduce-config->width-extns config) nil)
+                           (equal (svex-reduce-config->integerp-extns config) nil)))
                   (and (equal (svex-eval (svex-reduce-w/-env-masked svex start size) (rp-evlt env-term a))
                               (4vec-part-select start size (svex-eval svex (rp-evlt env-term a))))
 
@@ -1783,7 +1822,15 @@ SVEX-CALL->FN)
                        (rp::valid-sc env-term a)
                        (rp::eval-and-all context a)
                        (sub-alistp env big-env)
-                       (rp::falist-consistent-aux big-env env-term))
+                       (rp::falist-consistent-aux big-env env-term)
+                       (:@ :dollar-eval
+                           (width-of-svex-extn-correct<$>-lst
+                            (svex-reduce-config->width-extns config))
+                           (integerp-of-svex-extn-correct<$>-lst
+                            (svex-reduce-config->integerp-extns config)))
+                       (:@ :normal-eval
+                           (equal (svex-reduce-config->width-extns config) nil)
+                           (equal (svex-reduce-config->integerp-extns config) nil)))
                   (equal (svex-eval (svex-reduce-w/-env svex) (rp-evlt env-term a))
                          (svex-eval svex (rp-evlt env-term a))))
          :fn svex-reduce-w/-env)
@@ -1793,12 +1840,20 @@ SVEX-CALL->FN)
                        (rp::valid-sc env-term a)
                        (rp::eval-and-all context a)
                        (sub-alistp env big-env)
-                       (rp::falist-consistent-aux big-env env-term))
+                       (rp::falist-consistent-aux big-env env-term)
+                       (:@ :dollar-eval
+                           (width-of-svex-extn-correct<$>-lst
+                            (svex-reduce-config->width-extns config))
+                           (integerp-of-svex-extn-correct<$>-lst
+                            (svex-reduce-config->integerp-extns config)))
+                       (:@ :normal-eval
+                           (equal (svex-reduce-config->width-extns config) nil)
+                           (equal (svex-reduce-config->integerp-extns config) nil)))
                   (equal (svexlist-eval (svex-reduce-w/-env-lst svex-list) (rp-evlt env-term a))
                          (svexlist-eval svex-list (rp-evlt env-term a))))
          :fn svex-reduce-w/-env-lst)
        :mutual-recursion svex-reduce-w/-env
-       ;;:otf-flg t
+       :otf-flg t
        :hints (("Goal"
                 :do-not-induct t
 
@@ -1866,7 +1921,15 @@ SVEX-CALL->FN)
                  (rp::valid-sc env-term a)
                  (rp::eval-and-all context a)
                  (sub-alistp env big-env)
-                 (rp::falist-consistent-aux big-env env-term))
+                 (rp::falist-consistent-aux big-env env-term)
+                 (:@ :dollar-eval
+                     (width-of-svex-extn-correct<$>-lst
+                      (svex-reduce-config->width-extns config))
+                     (integerp-of-svex-extn-correct<$>-lst
+                      (svex-reduce-config->integerp-extns config)))
+                 (:@ :normal-eval
+                     (equal (svex-reduce-config->width-extns config) nil)
+                     (equal (svex-reduce-config->integerp-extns config) nil)))
             (equal (svex-alist-eval res-alist (rp-evlt env-term a))
                    (svex-alist-eval svex-alist (rp-evlt env-term a))))
    :fn svex-alist-reduce-w/-env

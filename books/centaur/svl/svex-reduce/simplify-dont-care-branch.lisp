@@ -367,7 +367,8 @@
 (define simplify-dont-care-branch ((x svex-p)
                                    &key
                                    ((env) 'env)
-                                   ((context rp::rp-term-listp) 'context))
+                                   ((context rp::rp-term-listp) 'context)
+                                   ((config svex-reduce-config-p) 'config))
 
   :returns (res svex-p :hyp (svex-p x))
   :prepwork ((local
@@ -474,8 +475,12 @@
                (rp::valid-sc env-term a)
                (rp::eval-and-all context a)
                (rp::falist-consistent-aux big-env env-term)
-
-               (svex-p x))
+               (svex-p x)
+               (:@ :dollar-eval
+                   (integerp-of-svex-extn-correct<$>-lst
+                    (svex-reduce-config->integerp-extns config)))
+               (:@ :normal-eval
+                   (equal (svex-reduce-config->integerp-extns config) nil)))
               (equal (svex-eval res (rp-evlt env-term a))
                      (svex-eval x   (rp-evlt env-term a))))
      :hints (("Goal"

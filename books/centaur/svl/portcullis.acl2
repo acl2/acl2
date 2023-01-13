@@ -40,6 +40,9 @@
 	    acl2::and*
 	    acl2::or*
 	    acl2::if*
+	    acl2::raise
+	    acl2::maybe-natp
+	    acl2::maybe-nat-listp
 
 	    sv::bitor
 	    sv::bitxor
@@ -84,6 +87,7 @@
 	    sv::svex-apply$
 	    sv::svex-var->name
 	    sv::svex-apply-cases
+	    SV::SVEX-APPLY$-CASES
 	    std::defret
 	    std::defret-mutual
 
