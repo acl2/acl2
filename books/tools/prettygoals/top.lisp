@@ -55,7 +55,7 @@
 
  <h3>Usage</h3>
 
- <p>Either manually or via your @(see acl2-customization) file, do:</p>
+ <p>Either manually or via your @(see acl2::acl2-customization) file, do:</p>
 
  @({
       (include-book \"tools/prettygoals/top\" :dir :system)
