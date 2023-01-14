@@ -43,6 +43,132 @@ This is a collection of utilities used in ACL2s, the ACL2 Sedan.
              ,@(append instrs
                        `((negate (when-not-proved fail))))))))
 
+(defxdoc acl2-pc::claim-simple
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "(atomic macro) add a new hypothesis, without promotion"
+  :long "<p>
+This command is exactly like @(tsee acl2-pc::claim) except that in the
+newly created goal, no promotion is performed.
+</p>
+<p>We found this useful when automatically generating proof builder
+instructions.
+</p>
+")
+
+;; This is the same as claim except that it doesn't do a pro at the end.
+(define-pc-atomic-macro claim-simple (expr &rest rest-args)
+  (acl2::when-goals-trip
+   (value
+    (let ((rest-args-1 (if (and rest-args
+                                (car rest-args)
+                                (not (keywordp (car rest-args))))
+                           (list* :hints :none (cdr rest-args))
+                         rest-args)))
+      (mv-let (pairs remaining-rest-args)
+        (acl2::pair-keywords '(:do-not-flatten) rest-args-1)
+        (let ((do-not-flatten-flag (cdr (assoc-eq :do-not-flatten pairs)))
+              (temp (cadr (member-eq :hints rest-args-1))))
+          (if (and temp (atom temp))
+              `(protect
+                (casesplit ,expr nil ,do-not-flatten-flag)
+                change-goal
+                drop-conc
+                ;; the original claim definition does a pro here
+                change-goal)
+            `(protect
+              (casesplit ,expr nil ,do-not-flatten-flag)
+              change-goal
+              drop-conc
+              (prove ,@remaining-rest-args)))))))))
+
+(defxdoc acl2-pc::pro-or-skip
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "(atomic macro) repeatedly apply promote, if possible"
+  :long "<p>
+This command is exactly like @(tsee acl2-pc::pro) except that it
+``succeeds'' even when no promotion is possible (e.g. if the current
+goal does not contain an implication).
+</p>
+")
+
+(define-pc-macro pro-or-skip ()
+  (value `(:orelse :pro :skip)))
+
+(defxdoc acl2-pc::drop-or-skip
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "(atomic macro) drop top-level hypotheses"
+  :long "<p>
+This command is exactly like @(tsee acl2-pc::drop) except that it
+``succeeds'' when there are no top-level hypotheses and it is invoked
+with no arguments.
+</p>
+")
+
+(define-pc-atomic-macro drop-or-skip (&rest args)
+  (acl2::when-goals-trip
+   (if (and (not args) (null (acl2::hyps)))
+       (value :skip)
+     (value (if (consp args) `(:drop ,@args) :drop)))))
+
+(defxdoc acl2-pc::retain-or-skip
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "(atomic macro) drop all but the indicated top-level hypotheses"
+  :long "<p>
+This command is exactly like @(tsee acl2-pc::retain) except that it
+``succeeds'' even when all hypotheses are retained.
+</p>
+")
+
+(define-pc-atomic-macro retain-or-skip (&rest args)
+  (acl2::when-goals-trip
+   (if (not (acl2::set-difference-equal (acl2::fromto 1 (length (acl2::hyps t))) args))
+       (value :skip)
+     (value `(:retain ,@args)))))
+
+(defxdoc acl2-pc::instantiate
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "Instantiate a theorem"
+  :long "<p>
+@({
+ Example:
+ (instantiate car-cons (x (append a b)) (y nil))
+ ;; This will add the following hypothesis:
+ ;; (let ((x (append a b))
+ ;;       (y nil))
+ ;;   (equal (car (cons x y)) x))
+
+ General Form:
+ (instantiate thm-name subst1 ... substk)
+ })
+</p>
+<p>where each @('substi') is an assignment of a variable used in the
+formula associated with @('thm-name') to a term.
+</p>
+<p>Note that the variables used in the formula associated with
+@('thm-name') may be in a different package than the one you are
+currently in. In this case, explicitly specify the package when writing
+variable names in substitutions.
+</p>
+")
+
+(define-pc-macro instantiate (lemma-name &rest substitutions)
+  (b* ((wrld (w state))
+       (formula (acl2::formula lemma-name t wrld))
+       ((when (not formula))
+        (pprogn
+         (acl2::print-no-change "Bad lemma-name argument to INSTANTIATE, ~x0. The ~
+                          lemma-name argument should be a name associated with ~
+                          a formula." (list (cons #\0 lemma-name)))
+         (value :fail))))
+    (value `(:claim
+             (let ,substitutions ,formula)
+             :hints (("Goal" :instructions
+                      (:pro-or-skip
+                       :drop-or-skip
+                       (:expand nil)
+                       (:prove :hints (("Goal" :by (:instance ,lemma-name ,@substitutions)))))))))))
+
+
 (defxdoc make-n-ary-macro
   :parents (acl2s-utilities)
   :short "A macro that
