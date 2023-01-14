@@ -35,6 +35,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "tools/templates" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
+(include-book "std/strings/cat-base" :dir :system)
 (include-book "clause-processors/meta-extract-user" :dir :system)
 
 (defun function-deps (fn wrld)
@@ -53,7 +54,7 @@
  ;; in skip, their  dependencies will not be  determined. For example,
  ;; if skip='(apply$), then  we don't want to attempt to  find all the
  ;; children functions of apply$, and we want to know which functions depend on
- ;; apply$. Thos that depend on apply$ will be returned as the 3rd value.
+ ;; apply$. Those that depend on apply$ will be returned as the 3rd value.
  (defun collect-toposort-function-deps (fn wrld skip seen toposort)
    (declare (xargs :mode :program))
    (b* (((when (or (member-eq fn seen)
@@ -357,6 +358,53 @@
             `(def-formula-check-definition-thm ,(car x) ,evl ,name ,switch-hyps))
           (def-formula-checks-definition-thm-list-fn (cdr x) evl name switch-hyps skip))))
 
+(defun def-formula-check-warrant-thm-fn (warranted-fn evl formula-check switch-hyps )
+  (declare (xargs :mode :program))
+  (b* (((list warrant-definition warrant-name witness-name)
+        (acl2::template-subst
+         '(apply$-warrant-<fn>-definition
+           apply$-warrant-<fn>
+           apply$-warrant-<fn>-witness)
+         :pkg-sym warranted-fn
+         :str-alist `(("<FN>" . ,(symbol-name warranted-fn))))))
+    (acl2::template-subst
+     `(defthm <evl>-of-<name>-when-<formula-check>
+        (implies (and (<evl> '(,warrant-name) env)
+                      (:@ :switch-hyps
+                          (<evl>-meta-extract-global-facts)
+                          (<formula-check> state))
+                      (:@ (not :switch-hyps)
+                          (<formula-check> state)
+                          (<evl>-meta-extract-global-facts)))
+                 (,warrant-name))
+        :hints(("Goal" :in-theory (e/d (<evl>-of-fncall-args
+                                        <evl>-of-apply$-call
+                                        <evl>-of-badge-userfn-call
+                                        <evl>-of-apply$-userfn-call
+                                        )
+                                       (<evl>-meta-extract-formula))
+                :use ((:instance ,warrant-definition)
+                      (:instance <evl>-meta-extract-formula
+                                 (acl2::name '<name>)
+                                 (acl2::a (list
+                                           (cons 'args
+                                                 (,witness-name))))
+                                 (acl2::st state))))))
+     :str-alist `(("<NAME>" . ,(symbol-name warrant-name))
+                  ("<EVL>" . ,(symbol-name evl))
+                  ("<FORMULA-CHECK>" . ,(symbol-name formula-check)))
+     :atom-alist `((<name> . ,warrant-name)
+                   (<evl> . ,evl)
+                   (<formula-check> . ,formula-check))
+     :features (and switch-hyps '(:switch-hyps))
+     :pkg-sym evl)))
+
+(defmacro def-formula-check-warrant-thm-list (warranted-fns evl formula-check switch-hyps)
+  `(make-event
+    `(progn ,@(loop$ for x in ',warranted-fns collect
+                     `(make-event
+                       (def-formula-check-warrant-thm-fn ',x ',',evl ',',formula-check ,,switch-hyps))))))
+
 (defmacro def-formula-checks-definition-thm-list (x evl name &optional switch-hyps skip)
   `(make-event
     (cons 'progn (def-formula-checks-definition-thm-list-fn ,x ',evl ',name ',switch-hyps ',skip))))
@@ -368,7 +416,19 @@
         (cons (car fns) (filter-defined-functions (cdr fns) wrld))
       (filter-defined-functions (cdr fns) wrld))))
 
-(defun def-formula-checks-fn (name fns evl evl-base-fns switch-hyps skip wrld)
+(defun formula-checks-get-warranted-fns-lemma-names (warranted-fns)
+  (declare (xargs :mode :program))
+  (if (atom warranted-fns)
+      nil
+    (list* (intern-in-package-of-symbol
+            (str::cat "APPLY$-" (symbol-name (car warranted-fns)))
+            (car warranted-fns))
+           (intern-in-package-of-symbol
+            (str::cat "APPLY$-WARRANT-" (symbol-name (car warranted-fns)))
+            (car warranted-fns))
+           (formula-checks-get-warranted-fns-lemma-names (cdr warranted-fns)))))
+
+(defun def-formula-checks-fn (name fns warranted-fns evl evl-base-fns switch-hyps skip wrld)
   (declare (xargs :mode :program))
   (b* ((evl-base-fns (if evl-base-fns evl-base-fns
                        (cdr (assoc-equal 'evl-base-fns
@@ -377,30 +437,38 @@
        (skip (loop$ for s in skip ;; avoid skippping a fn if it is in evl-base-fns
                     when (not (member-equal s evl-base-fns))
                     collect s))
+       (fns (append warranted-fns fns))
+       ;; skip will grow after collect-toposort-function-deps-list to have
+       ;; everything that depends on the original skip list.
        ((mv ?seen deps ?skip)
         (collect-toposort-function-deps-list fns wrld skip evl-base-fns nil))
        (deps (acl2::rev deps))
        ;; BOZO. Someday we could deal with constrained functions more
        ;; generally.  For now, we hope that any constrained functions that fns
        ;; depend on will end up being irrelevant.
-       (defined-deps (filter-defined-functions deps wrld)))
+       (defined-deps (filter-defined-functions deps wrld))
+
+       (warranted-fns-lemmas (formula-checks-get-warranted-fns-lemma-names warranted-fns)))
     `(encapsulate
        nil
        (local
         (in-theory (disable ,@defined-deps)))
        (local
         (in-theory (enable assoc-equal)))
-       (def-formula-checker ,name ,defined-deps)
-       (local (def-formula-checker-lemmas ,name ,defined-deps))
-       (def-formula-checks-definition-thm-list ',defined-deps ,evl ,name ,switch-hyps ,skip))))
+       (def-formula-checker ,name ,(append warranted-fns-lemmas defined-deps))
+       (local (def-formula-checker-lemmas ,name ,(append warranted-fns-lemmas defined-deps)))
+       (def-formula-checks-definition-thm-list ',defined-deps ,evl ,name ,switch-hyps ,skip)
+       (def-formula-check-warrant-thm-list ,warranted-fns ,evl ,name ,switch-hyps))))
 
 (defmacro def-formula-checks (name fns &key
+                                   (warranted-fns 'nil)
                                    (evl 'nil)
                                    (evl-base-fns 'nil)
                                    (switch-hyps 'nil)
                                    (skip ''(apply$ loop$)))
   `(make-event
-    (def-formula-checks-fn ',name ',fns ',evl ,evl-base-fns ,switch-hyps ,skip (w state))))
+    (def-formula-checks-fn ',name ',fns ',warranted-fns
+      ',evl ,evl-base-fns ,switch-hyps ,skip (w state))))
 
 (defmacro def-formula-checks-default-evl (evl evl-base-fns)
   `(progn
@@ -415,55 +483,55 @@
 
 ;; Let's define the base function set to create the evaluator.
 (defconst
-  *ex-evl-base-fns*
-  '(acl2-numberp binary-* binary-+
-                 unary-- unary-/ < char-code characterp
-                 code-char complex complex-rationalp
-                 coerce consp denominator imagpart
-                 integerp intern-in-package-of-symbol
-                 numerator rationalp realpart
-                 stringp symbol-name symbol-package-name
-                 symbolp
-                 equal not if iff
-                 return-last synp cons car cdr
-                 typespec-check implies))
+*ex-evl-base-fns*
+'(acl2-numberp binary-* binary-+
+unary-- unary-/ < char-code characterp
+code-char complex complex-rationalp
+coerce consp denominator imagpart
+integerp intern-in-package-of-symbol
+numerator rationalp realpart
+stringp symbol-name symbol-package-name
+symbolp
+equal not if iff
+return-last synp cons car cdr
+typespec-check implies))
 
 ;; Create the evaluator. It has to be created with :namedp t.
 (make-event
- `(defevaluator ex-evl ex-evl-list
-    ,(b* ((w (w state))) (loop$ for x in *ex-evl-base-fns*
-                                collect (cons x (acl2::formals x w))))
-    :namedp t))
+`(defevaluator ex-evl ex-evl-list
+,(b* ((w (w state))) (loop$ for x in *ex-evl-base-fns*
+collect (cons x (acl2::formals x w))))
+:namedp t))
 
 ;; Create meta-extract
 (acl2::def-meta-extract ex-evl ex-evl-list)
 
 ;; Option 1 to create def-formula-checks
 (def-formula-checks
-  example-formula-checks-1
-  (subsetp-equal
-   assoc-equal)
-  :evl ex-evl
-  :evl-base-fns *ex-evl-base-fns*)
+example-formula-checks-1
+(subsetp-equal
+assoc-equal)
+:evl ex-evl
+:evl-base-fns *ex-evl-base-fns*)
 
 ;; Option 2: You can set the evaluator to be the default to be used by def-formula-checks
 (def-formula-checks-default-evl
-  ex-evl ;;evaluator name
-  *ex-evl-base-fns*) ;;base functions of the evaluator.
+ex-evl ;;evaluator name
+*ex-evl-base-fns*) ;;base functions of the evaluator.
 
 (include-book "std/lists/rev" :dir :system)
 
 (encapsulate
-  nil
-  ;; Sometimes some rewrite rules may cause def-formula-checks to fail. So we disable them.
-  (local
-   (in-theory (disable
-               acl2::revappend-removal
-               acl2::rev-when-not-consp
-               acl2::rev-of-cons)))
-  (def-formula-checks
-    example-formula-checks-2
-    (acl2::rev)))
+nil
+;; Sometimes some rewrite rules may cause def-formula-checks to fail. So we disable them.
+(local
+(in-theory (disable
+acl2::revappend-removal
+acl2::rev-when-not-consp
+acl2::rev-of-cons)))
+(def-formula-checks
+example-formula-checks-2
+(acl2::rev)))
 
 ;; revappend is a function used by rev. Under these hypotheses, now ex-evl
 ;; recognize revappend.
@@ -471,11 +539,11 @@
 ;; in meta-rule/clause-processor functions.
 
 (defthm ex-evl-rev-test
-  (implies (and (ex-evl-meta-extract-global-facts)
-                (example-formula-checks-2 state))
-           (equal (ex-evl `(revappend ,x ,y) a)
-                  (revappend (ex-evl x a)
-                             (ex-evl y a)))))
+(implies (and (ex-evl-meta-extract-global-facts)
+(example-formula-checks-2 state))
+(equal (ex-evl `(revappend ,x ,y) a)
+(revappend (ex-evl x a)
+(ex-evl y a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 |#
