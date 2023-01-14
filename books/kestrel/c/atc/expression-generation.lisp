@@ -95,62 +95,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod bexpr-gin
-  :short "Inputs for C boolean expression generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This does not include the term, which is passed as a separate input."))
-  ((context atc-contextp)
-   (inscope atc-symbol-varinfo-alist-list)
-   (prec-tags atc-string-taginfo-alist)
-   (fn symbol)
-   (fn-guard symbol)
-   (fn-gthm symbol)
-   (compst-var symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
-  :pred bexpr-ginp
-  :prepwork ((local (in-theory (enable alistp)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod bexpr-gout
-  :short "Outputs for C boolean expression generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The generated expression is @('expr').")
-   (xdoc::p
-    "Unlike @(tsee pexpr-gout), there is no type,
-     because these are boolean expressions,
-     so in a way the type is known."))
-  ((expr expr)
-   (term pseudo-termp)
-   (events pseudo-event-form-list)
-   (thm-name symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
-  :pred bexpr-goutp
-  :prepwork ((local (in-theory (enable alistp)))))
-
-;;;;;;;;;;
-
-(defirrelevant irr-bexpr-gout
-  :short "An irrelevant output for C boolean expression generation."
-  :type bexpr-goutp
-  :body (make-bexpr-gout :expr (irr-expr)
-                         :term nil
-                         :events nil
-                         :thm-name nil
-                         :thm-index 1
-                         :names-to-avoid nil
-                         :proofs nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-expr-var ((var symbolp)
                           (gin pexpr-ginp)
                           state)
@@ -753,9 +697,9 @@
                                      (arg-type typep)
                                      (arg-events pseudo-event-form-listp)
                                      (arg-thm symbolp)
-                                     (gin bexpr-ginp)
+                                     (gin pexpr-ginp)
                                      state)
-  :returns (mv erp (gout bexpr-goutp))
+  :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents a conversion to ACL2 boolean."
   :long
@@ -783,9 +727,9 @@
      in order to prove that @('t') or @('nil') satisfies @(tsee booleanp),
      in case the term or its negation happens to be in context
      and thus gets rewritten to @('t') or @('nil')."))
-  (b* (((reterr) (irr-bexpr-gout))
+  (b* (((reterr) (irr-pexpr-gout))
        (wrld (w state))
-       ((bexpr-gin gin) gin)
+       ((pexpr-gin gin) gin)
        ((unless (equal arg-type in-type))
         (reterr
          (msg "The conversion from ~x0 to boolean is applied to ~
@@ -797,7 +741,8 @@
        (expr arg-expr)
        ((when (not gin.proofs))
         (retok
-         (make-bexpr-gout :expr expr
+         (make-pexpr-gout :expr expr
+                          :type arg-type
                           :term term
                           :events arg-events
                           :thm-name nil
@@ -839,7 +784,8 @@
                                                 :formula formula
                                                 :hints hints
                                                 :enable nil)))
-    (retok (make-bexpr-gout :expr expr
+    (retok (make-pexpr-gout :expr expr
+                            :type arg-type
                             :term term*
                             :events (append arg-events
                                             (list thm-event))
@@ -958,18 +904,19 @@
                           (arg2-expr exprp)
                           (arg1-events pseudo-event-form-listp)
                           (arg2-events pseudo-event-form-listp)
-                          (gin bexpr-ginp)
+                          (gin pexpr-ginp)
                           state)
   (declare (ignore state))
-  :returns (gout bexpr-goutp)
+  :returns (gout pexpr-goutp)
   :short "Generate a C expression from an ACL2 term
           that represents a logical conjunction."
-  (b* (((bexpr-gin gin) gin)
+  (b* (((pexpr-gin gin) gin)
        (term `(if ,arg1-term ,arg2-term ''nil)))
-    (make-bexpr-gout
+    (make-pexpr-gout
      :expr (make-expr-binary :op (binop-logand)
                              :arg1 arg1-expr
                              :arg2 arg2-expr)
+     :type (type-sint)
      :term term
      :events (append arg1-events arg2-events)
      :thm-name nil
@@ -1252,20 +1199,7 @@
                            (type-pointer (type-struct tag))))))))
          ((mv okp arg-term) (atc-check-sint-from-boolean term))
          ((when okp)
-          (b* (((erp (bexpr-gout arg))
-                (atc-gen-expr-bool arg-term
-                                   (make-bexpr-gin
-                                    :context gin.context
-                                    :inscope gin.inscope
-                                    :prec-tags gin.prec-tags
-                                    :fn gin.fn
-                                    :fn-guard gin.fn-guard
-                                    :fn-gthm gin.fn-gthm
-                                    :compst-var gin.compst-var
-                                    :thm-index gin.thm-index
-                                    :names-to-avoid gin.names-to-avoid
-                                    :proofs gin.proofs)
-                                   state)))
+          (b* (((erp (pexpr-gout arg)) (atc-gen-expr-bool arg-term gin state)))
             (retok (make-pexpr-gout :expr arg.expr
                                     :type (type-sint)
                                     :term term
@@ -1276,20 +1210,7 @@
                                     :proofs nil))))
          ((mv okp test-term then-term else-term) (atc-check-condexpr term))
          ((when okp)
-          (b* (((erp (bexpr-gout test))
-                (atc-gen-expr-bool test-term
-                                   (make-bexpr-gin
-                                    :context gin.context
-                                    :inscope gin.inscope
-                                    :prec-tags gin.prec-tags
-                                    :fn gin.fn
-                                    :fn-guard gin.fn-guard
-                                    :fn-gthm gin.fn-gthm
-                                    :compst-var gin.compst-var
-                                    :thm-index gin.thm-index
-                                    :names-to-avoid gin.names-to-avoid
-                                    :proofs gin.proofs)
-                                   state))
+          (b* (((erp (pexpr-gout test)) (atc-gen-expr-bool test-term gin state))
                ((erp (pexpr-gout then))
                 (b* ((then-cond (untranslate$ test.term t state))
                      (then-premise (atc-premise-test then-cond))
@@ -1337,9 +1258,9 @@
     :measure (pseudo-term-count term))
 
   (define atc-gen-expr-bool ((term pseudo-termp)
-                             (gin bexpr-ginp)
+                             (gin pexpr-ginp)
                              state)
-    :returns (mv erp (gout bexpr-goutp))
+    :returns (mv erp (gout pexpr-goutp))
     :parents (atc-event-and-code-generation atc-gen-expr-pure/bool)
     :short "Generate a C expression from an ACL2 term
             that must be an expression term returning a boolean."
@@ -1372,18 +1293,18 @@
       "As in @(tsee atc-gen-expr-pure),
        we perform C type checks on the ACL2 terms.
        See  @(tsee atc-gen-expr-pure) for an explanation."))
-    (b* (((reterr) (irr-bexpr-gout))
-         ((bexpr-gin gin) gin)
+    (b* (((reterr) (irr-pexpr-gout))
+         ((pexpr-gin gin) gin)
          ((mv okp arg1-term arg2-term) (fty-check-and-call term))
          ((when okp)
-          (b* (((erp (bexpr-gout arg1))
+          (b* (((erp (pexpr-gout arg1))
                 (atc-gen-expr-bool arg1-term gin state))
                (cond (untranslate$ arg1.term t state))
                (premise (atc-premise-test cond))
                (context (append gin.context (list premise)))
-               ((erp (bexpr-gout arg2))
+               ((erp (pexpr-gout arg2))
                 (atc-gen-expr-bool arg2-term
-                                   (change-bexpr-gin
+                                   (change-pexpr-gin
                                     gin
                                     :context context
                                     :thm-index arg1.thm-index
@@ -1396,7 +1317,7 @@
                                      arg2.expr
                                      arg1.events
                                      arg2.events
-                                     (change-bexpr-gin
+                                     (change-pexpr-gin
                                       gin
                                       :thm-index arg2.thm-index
                                       :names-to-avoid arg2.names-to-avoid
@@ -1404,20 +1325,21 @@
                                      state))))
          ((mv okp arg1-term arg2-term) (fty-check-or-call term))
          ((when okp)
-          (b* (((erp (bexpr-gout arg1))
+          (b* (((erp (pexpr-gout arg1))
                 (atc-gen-expr-bool arg1-term gin state))
-               ((erp (bexpr-gout arg2))
+               ((erp (pexpr-gout arg2))
                 (atc-gen-expr-bool arg2-term
-                                   (change-bexpr-gin
+                                   (change-pexpr-gin
                                     gin
                                     :thm-index arg1.thm-index
                                     :names-to-avoid arg1.names-to-avoid
                                     :proofs nil)
                                    state)))
-            (retok (make-bexpr-gout
+            (retok (make-pexpr-gout
                     :expr (make-expr-binary :op (binop-logor)
                                             :arg1 arg1.expr
                                             :arg2 arg2.expr)
+                    :type (type-sint)
                     :term term
                     :events (append arg1.events arg2.events)
                     :thm-name nil
@@ -1440,7 +1362,7 @@
                                     :names-to-avoid gin.names-to-avoid
                                     :proofs gin.proofs)
                                    state))
-               (gin (change-bexpr-gin gin
+               (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
                                       :names-to-avoid arg.names-to-avoid
                                       :proofs arg.proofs)))

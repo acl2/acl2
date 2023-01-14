@@ -1106,9 +1106,9 @@
              ((when mbt$p)
               (b* (((erp gout) (atc-gen-stmt then-term gin state)))
                 (retok (change-stmt-gout gout :proofs nil))))
-             ((erp (bexpr-gout test))
+             ((erp (pexpr-gout test))
               (atc-gen-expr-bool test-term
-                                 (make-bexpr-gin
+                                 (make-pexpr-gin
                                   :context gin.context
                                   :inscope gin.inscope
                                   :prec-tags gin.prec-tags
@@ -2455,9 +2455,9 @@
        ((when mbtp) (atc-gen-loop-stmt then-term gin state))
        ((mv mbt$p &) (check-mbt$-call test-term))
        ((when mbt$p) (atc-gen-loop-stmt then-term gin state))
-       ((erp (bexpr-gout test))
+       ((erp (pexpr-gout test))
         (atc-gen-expr-bool test-term
-                           (make-bexpr-gin
+                           (make-pexpr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
