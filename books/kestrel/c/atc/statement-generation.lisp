@@ -622,6 +622,7 @@
                                 (test-expr exprp)
                                 (then-items block-item-listp)
                                 (else-items block-item-listp)
+                                (test-type typep)
                                 (then-type typep)
                                 (else-type typep)
                                 (then-limit pseudo-termp)
@@ -823,6 +824,8 @@
                        (integerp ,gin.limit-var)
                        (>= ,gin.limit-var ,if-stmt-limit))
                   ,if-stmt-formula))
+       (test-type-pred (type-to-recognizer test-type wrld))
+       (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (if-stmt-hints
         (if (consp else-items)
             `(("Goal" :in-theory '(exec-stmt-when-ifelse
@@ -835,6 +838,7 @@
                                    ,then-stmt-thm
                                    (:e stmt-ifelse->else)
                                    ,else-stmt-thm
+                                   ,valuep-when-test-type-pred
                                    booleanp-compound-recognizer)))
           `(("Goal" :in-theory '(exec-stmt-when-if
                                  (:e stmt-kind)
@@ -844,6 +848,7 @@
                                  ,valuep-when-type-pred
                                  (:e stmt-if->then)
                                  ,then-stmt-thm
+                                 ,valuep-when-test-type-pred
                                  booleanp-compound-recognizer)))))
        (if-stmt-instructions
         `((casesplit ,test-term)
@@ -1205,7 +1210,7 @@
                  else-context))))
           (atc-gen-if/ifelse-stmt term test.term then.term else.term
                                   test.expr then.items else.items
-                                  then.type else.type
+                                  test.type then.type else.type
                                   then.limit else.limit
                                   test.thm-name then.thm-name else.thm-name
                                   then-context else-context

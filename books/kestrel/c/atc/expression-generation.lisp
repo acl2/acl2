@@ -763,7 +763,6 @@
        (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
                              ,arg-uterm)
                       (,arg-type-pred ,arg-uterm)
-                      (valuep ,arg-uterm)
                       (equal (test-value ,arg-uterm)
                              ,uterm*)
                       (booleanp ,uterm*)))
@@ -774,10 +773,8 @@
        (test-value-when-arg-type-pred (pack 'test-value-when- arg-type-pred))
        (booleanp-of-boolean-from-arg-fixtype
         (pack 'booleanp-of- boolean-from-arg-fixtype))
-       (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
        (hints `(("Goal" :in-theory '(,arg-thm
                                      ,test-value-when-arg-type-pred
-                                     ,valuep-when-arg-type-pred
                                      ,booleanp-of-boolean-from-arg-fixtype
                                      booleanp-compound-recognizer))))
        ((mv thm-event &) (evmac-generate-defthm thm-name
@@ -805,6 +802,7 @@
                            (test-expr exprp)
                            (then-expr exprp)
                            (else-expr exprp)
+                           (test-type typep)
                            (then-type typep)
                            (else-type typep)
                            (test-thm symbolp)
@@ -819,6 +817,7 @@
   :short "Generate a C expression from an ACL2 term
           that represents a ternary conditional expression."
   (b* (((reterr) (irr-pexpr-gout))
+       (wrld (w state))
        ((pexpr-gin gin) gin)
        ((unless (equal then-type else-type))
         (reterr
@@ -843,6 +842,8 @@
           :thm-index gin.thm-index
           :names-to-avoid gin.names-to-avoid
           :proofs nil)))
+       (test-type-pred (type-to-recognizer test-type wrld))
+       (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (term* `(condexpr (if* ,test-term ,then-term ,else-term)))
        (hints `(("Goal" :in-theory '(exec-expr-pure-when-cond
                                      (:e expr-kind)
@@ -852,7 +853,8 @@
                                      ,then-thm
                                      (:e expr-cond->else)
                                      ,else-thm
-                                     booleanp-compound-recognizer))))
+                                     booleanp-compound-recognizer
+                                     ,valuep-when-test-type-pred))))
        (instructions
         `((casesplit ,test-term)
           (claim (equal (condexpr (if* ,test-term ,then-term ,else-term))
@@ -1238,7 +1240,7 @@
                                      state))))
             (atc-gen-expr-cond term test.term then.term else.term
                                test.expr then.expr else.expr
-                               then.type else.type
+                               test.type then.type else.type
                                test.thm-name then.thm-name else.thm-name
                                test.events then.events else.events
                                (change-pexpr-gin
