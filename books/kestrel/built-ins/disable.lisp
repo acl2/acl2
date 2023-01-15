@@ -1,6 +1,6 @@
 ; Built-Ins Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,13 +18,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Macro to disable all the built-in logic-mode functions.
-; It turns out that not all of them actually correspond to rules,
-; and attempting to disable them causes an error.
+; List of all the built-in logic-mode functions that can be disabled.
+; It turns out that not all of the built-in logic-mode functions
+; can be disabled; attempting to disable them causes an error.
 ; The error tells us which functions cannot be disabled,
 ; so we remove them from the list,
-; defining a named constant for the functions that can be disabled,
-; and we use the latter in the macro.
+; defining a named constant for the functions that can be disabled.
 
 (defconst *builtin-logic-defun-names-that-can-be-disabled*
   (set-difference-eq *builtin-logic-defun-names*
@@ -49,7 +48,11 @@
                        mfc-ts-fn
                        mfc-ts-ttree)))
 
-(defmacro disable-builtin-logic-defuns ()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Macro to disable all the built-in logic-mode functions that can be disabled.
+
+(defmacro disable-all-builtin-logic-defuns ()
   `(in-theory (disable ,@*builtin-logic-defun-names-that-can-be-disabled*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
