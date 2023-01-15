@@ -29,8 +29,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule sparse-vectorp-of-rev
+(defrule r1cs::sparse-vectorp-of-rev
   (equal (r1cs::sparse-vectorp (rev x))
          (r1cs::sparse-vectorp (true-list-fix x)))
   :enable (r1cs::sparse-vectorp
            rev))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule r1cs::r1cs-constraint-listp-of-rev
+  (equal (r1cs::r1cs-constraint-listp (rev vector))
+         (r1cs::r1cs-constraint-listp (true-list-fix vector)))
+  :enable rev)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule r1cs::valuation-binds-allp-of-rev
+  (equal (r1cs::valuation-binds-allp valuation (rev vars))
+         (r1cs::valuation-binds-allp valuation vars))
+  :enable r1cs::valuation-binds-allp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule r1cs::r1cs-constraints-holdp-of-rev
+  (equal (r1cs::r1cs-constraints-holdp (rev vector) valuation prime)
+         (r1cs::r1cs-constraints-holdp vector valuation prime)))
