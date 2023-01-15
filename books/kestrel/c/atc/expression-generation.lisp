@@ -21,12 +21,12 @@
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
 (include-book "kestrel/std/basic/if-star" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-builtin-logic-defuns))
-
 (local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-all-builtin-logic-defuns))
 
 (local (in-theory (disable default-car default-cdr)))
 

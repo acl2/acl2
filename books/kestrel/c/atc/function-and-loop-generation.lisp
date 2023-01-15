@@ -28,9 +28,6 @@
 (include-book "std/typed-alists/keyword-symbol-alistp" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-builtin-logic-defuns))
-
 (local (include-book "kestrel/std/system/all-fnnames" :dir :system))
 (local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
@@ -45,6 +42,9 @@
 (local (in-theory (disable acl2::loop-book-theory)))
 
 (local (in-theory (disable pseudo-event-form-listp)))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-all-builtin-logic-defuns))
 
 (local (in-theory (disable default-car default-cdr)))
 
