@@ -904,26 +904,128 @@
                           (arg2-term pseudo-termp)
                           (arg1-expr exprp)
                           (arg2-expr exprp)
+                          (arg1-type typep)
+                          (arg2-type typep)
+                          (arg1-thm symbolp)
+                          (arg2-thm symbolp)
                           (arg1-events pseudo-event-form-listp)
                           (arg2-events pseudo-event-form-listp)
                           (gin pexpr-ginp)
                           state)
-  (declare (ignore state))
   :returns (gout pexpr-goutp)
   :short "Generate a C expression from an ACL2 term
           that represents a logical conjunction."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The term returns an ACL2 boolean,
+     which is equated, in the generated theorem, to @(tsee test-value).
+     However, we also need a term to equate to
+     the execution of the C expression:
+     we wrap the term with @(tsee sint-from-boolean) for this purpsoe,
+     obtaining a term that returns a C @('int') instead of an ACL2 boolean."))
   (b* (((pexpr-gin gin) gin)
-       (term `(if ,arg1-term ,arg2-term ''nil)))
+       (term `(if* ,arg1-term ,arg2-term 'nil))
+       (wrld (w state))
+       (expr (make-expr-binary :op (binop-logand)
+                               :arg1 arg1-expr
+                               :arg2 arg2-expr))
+       (type (type-sint))
+       ((when (not gin.proofs))
+        (make-pexpr-gout
+         :expr expr
+         :type type
+         :term term
+         :events (append arg1-events arg2-events)
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :proofs nil))
+       (thm-name (pack gin.fn '-correct- gin.thm-index))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil gin.names-to-avoid wrld))
+       (cterm `(sint-from-boolean ,term))
+       (uterm (untranslate$ term nil state))
+       (ucterm (untranslate$ cterm nil state))
+       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
+                             ,ucterm)
+                      (sintp ,ucterm)
+                      (equal (test-value ,ucterm)
+                             ,uterm)
+                      (booleanp ,uterm)))
+       (formula (atc-contextualize formula gin.context nil))
+       (formula `(implies (and (compustatep ,gin.compst-var)
+                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
+                          ,formula))
+       (arg1-type-pred (type-to-recognizer arg1-type wrld))
+       (arg2-type-pred (type-to-recognizer arg2-type wrld))
+       (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
+       (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
+       (hints-then
+        `(("Goal" :in-theory '(exec-expr-pure-when-binary-logand
+                               (:e expr-kind)
+                               (:e expr-binary->op)
+                               (:e binop-kind)
+                               (:e expr-binary->arg1)
+                               ,arg1-thm
+                               ,valuep-when-arg1-type-pred
+                               (:e expr-binary->arg2)
+                               ,arg2-thm
+                               not-errorp-when-valuep
+                               ,valuep-when-arg2-type-pred
+                               sint-from-boolean-with-error-when-booleanp
+                               sintp-of-sint-from-boolean
+                               test-value-when-sintp
+                               boolean-from-sint-of-sint-from-boolean
+                               sint-from-boolean-when-true
+                               sint-from-boolean-when-false))))
+       (hints-else
+        `(("Goal" :in-theory '(exec-expr-pure-when-binary-logand
+                               (:e expr-kind)
+                               (:e expr-binary->op)
+                               (:e binop-kind)
+                               (:e expr-binary->arg1)
+                               ,arg1-thm
+                               ,valuep-when-arg1-type-pred
+                               (:e expr-binary->arg2)
+                               ,arg2-thm
+                               not-errorp-when-valuep
+                               ,valuep-when-arg2-type-pred
+                               sint-from-boolean-with-error-when-booleanp
+                               test-value-when-sintp
+                               sint-from-boolean-when-false
+                               booleanp-compound-recognizer
+                               sintp-of-sint
+                               boolean-from-sint-of-0))))
+       (instructions
+        `((casesplit ,arg1-term)
+          (claim (equal ,term ,arg2-term)
+                 :hints (("Goal" :in-theory '(acl2::if*-when-true))))
+          (prove :hints ,hints-then)
+          (claim (equal ,term nil)
+                 :hints (("Goal" :in-theory '(acl2::if*-when-false))))
+          (prove :hints ,hints-else)))
+       ((mv thm-event &) (evmac-generate-defthm thm-name
+                                                :formula formula
+                                                :instructions instructions
+                                                :enable nil)))
     (make-pexpr-gout
-     :expr (make-expr-binary :op (binop-logand)
-                             :arg1 arg1-expr
-                             :arg2 arg2-expr)
-     :type (type-sint)
+     :expr expr
+     :type type
      :term term
-     :events (append arg1-events arg2-events)
-     :thm-name nil
-     :thm-index gin.thm-index
-     :names-to-avoid gin.names-to-avoid
+     :events (append arg1-events
+                     arg2-events
+                     (list thm-event))
+     :thm-name thm-name
+     :thm-index (1+ gin.thm-index)
+     :names-to-avoid names-to-avoid
+     ;; We temporarily stop modular proof generation here
+     ;; (by setting :PROOFS to NIL just below),
+     ;; due to the need for more elaborate downstream proof strategies,
+     ;; because ACL2, given a hyp (NOT <term>),
+     ;; replaces <term> with NIL,
+     ;; preventing previous modular theorems from applying,
+     ;; and causing failures in some existing uses of ATC.
      :proofs nil))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp
                                            pseudo-term-listp))))
@@ -1317,13 +1419,17 @@
                                      arg2.term
                                      arg1.expr
                                      arg2.expr
+                                     arg1.type
+                                     arg2.type
+                                     arg1.thm-name
+                                     arg2.thm-name
                                      arg1.events
                                      arg2.events
                                      (change-pexpr-gin
                                       gin
                                       :thm-index arg2.thm-index
                                       :names-to-avoid arg2.names-to-avoid
-                                      :proofs nil)
+                                      :proofs arg2.proofs)
                                      state))))
          ((mv okp arg1-term arg2-term) (fty-check-or-call term))
          ((when okp)
