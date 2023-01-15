@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -115,7 +115,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define r1cs-to-pfcs ((r1cs r1cs::r1csp) (name symbolp))
+(define r1cs-to-pfcs-def ((r1cs r1cs::r1csp) (name symbolp))
   :returns (def definitionp)
   :short "Translate an R1CS to a PFCS definition."
   :long
@@ -134,3 +134,16 @@
                    :para (r1cs::r1cs->vars r1cs)
                    :body (r1cs-constraints-to-pfcs
                           (r1cs::r1cs->constraints r1cs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define r1cs-to-pfcs-sys ((r1cs r1cs::r1csp) (name symbolp))
+  :returns (sys systemp)
+  :short "Translate an R1CS to a PFCS system."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This consists of a single definition for the whole R1CS.
+     The name of the definition is passed as parameter,
+     as in @(tsee r1cs-to-pfcs-def)."))
+  (list (r1cs-to-pfcs-def r1cs name)))
