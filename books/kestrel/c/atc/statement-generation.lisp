@@ -14,9 +14,6 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-builtin-logic-defuns))
-
 (local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
@@ -24,6 +21,9 @@
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 (local (in-theory (disable default-car default-cdr)))
 
