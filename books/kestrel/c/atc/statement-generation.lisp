@@ -23,7 +23,7 @@
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-all-builtin-logic-defuns))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 (local (in-theory (disable default-car default-cdr)))
 
