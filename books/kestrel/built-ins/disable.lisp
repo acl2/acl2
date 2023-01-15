@@ -57,4 +57,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Some built-in logic-mode functions are logical synonyms of others,
+; motivated by execution efficiency.
+; Those should be normally enabled,
+; so they are replaced by the ones that they are synonyms of.
+; Thus we define a macro to disable all the built-in logic-mode functions
+; except some that are synonyms in the sense above.
+; We use a whitelist approach to letting these functions enabled:
+; that is, we have an explicit list of such functions
+; that we remove from the constant defined above,
+; which lists all the built-in logic-mode functions that can be disabled.
+
+; We start with the following whitelisted functions:
+; - The specialized equality functions, synonyms of EQUAL;
+;   we also include /=, even though technically it is not a synonym,
+;   but an abbreviation of (NOT (EQUAL ...)),
+;   which we normally want to expose as such.
+;  We may add more in the future.
+
+(defmacro disable-most-builtin-logic-defuns ()
+  `(in-theory (disable ,@(set-difference-eq
+                          *builtin-logic-defun-names-that-can-be-disabled*
+                          '(=
+                            /=
+                            eq
+                            eql)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; We could provide additional disabling macros in the future.
