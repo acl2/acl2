@@ -369,13 +369,13 @@
          :str-alist `(("<FN>" . ,(symbol-name warranted-fn))))))
     (acl2::template-subst
      `(defthm <evl>-of-<name>-when-<formula-check>
-        (implies (and (<evl> '(,warrant-name) env)
-                      (:@ :switch-hyps
+        (implies (and (:@ :switch-hyps
                           (<evl>-meta-extract-global-facts)
                           (<formula-check> state))
                       (:@ (not :switch-hyps)
                           (<formula-check> state)
-                          (<evl>-meta-extract-global-facts)))
+                          (<evl>-meta-extract-global-facts))
+                      (force (<evl> '(,warrant-name) env)))
                  (,warrant-name))
         :hints(("Goal" :in-theory (e/d (<evl>-of-fncall-args
                                         <evl>-of-apply$-call

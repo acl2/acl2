@@ -56,6 +56,8 @@
 
 (include-book "centaur/svl/top-bare" :dir :system)
 
+(include-book "find-adders-in-svex")
+
 (include-book "doc")
 
 (local
@@ -562,7 +564,11 @@
   (implies (and (posp start)
                 (natp size))
            (equal (svl::bits (logbit pos x) start size)
-                  0)))
+                  0))
+  :hints (("Goal"
+           :in-theory (e/d (svl::bits
+                            SV::4VEC-PART-SELECT)
+                           (logbit)))))
 
 (def-rp-rule bits-of-logbit
   (equal (svl::bits (logbit pos x) 0 1)
@@ -1209,13 +1215,21 @@
     (implies (and (not (zp start))
                   (natp size))
              (equal (svl::bits (s hash-code pp c/d) start size)
-                    0)))
+                    0))
+    :hints (("Goal"
+             :in-theory (e/d (svl::bits
+                              SV::4VEC-PART-SELECT)
+                             ()))))
 
   (def-rp-rule bits-1-1-of-m2
     (implies (and (not (zp start))
                   (natp size))
              (equal (svl::bits (m2 x) start size)
-                    0))))
+                    0))
+    :hints (("Goal"
+             :in-theory (e/d (SVL::BITS
+                              SV::4VEC-PART-SELECT)
+                             ())))))
 
 (progn
   (rp::def-rp-rule
@@ -1225,7 +1239,10 @@
              (equal (svl::bits (rp::c hash-code x y z) start 1)
                     0))
     :hints (("goal"
-             :in-theory (e/d (bitp) ()))))
+             :in-theory (e/d (bitp
+                              svl::bits
+                              SV::4VEC-PART-SELECT)
+                             ()))))
 
   (rp::def-rp-rule
     bits-of-c-when-bit-when-start-0
@@ -1251,7 +1268,10 @@
              (equal (svl::bits (rp::s-c-res x y z) start 1)
                     0))
     :hints (("goal"
-             :in-theory (e/d (bitp) ()))))
+             :in-theory (e/d (bitp
+                              svl::bits
+                              SV::4VEC-PART-SELECT)
+                             ()))))
 
   (rp::def-rp-rule
     bits-of-s-c-res-when-bit-when-start=0
@@ -1637,7 +1657,8 @@
                             (carry carry-in)))
            :do-not-induct t
            ;;:induct (2VEC-ADDER X Y carry-in SIZE)
-           :in-theory (e/d (SVL::4VEC-CONCAT$-OF-TERM2=0
+           :in-theory (e/d (BITP
+                            SVL::4VEC-CONCAT$-OF-TERM2=0
 
                             4VEC-ADDER-IS-2VEC-ADDER
 
