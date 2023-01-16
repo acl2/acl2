@@ -29,7 +29,7 @@
 (include-book "defmacfun")
 (include-book "defsum")
 (include-book "defthmg")
-(include-book "defttag-muffled")
+;(include-book "defttag-muffled") ; suppresses ttag warnings
 (include-book "deftuple")
 (include-book "do-not")
 (include-book "easy-simplify")
@@ -63,7 +63,8 @@
 (include-book "plev-ccl")
 (include-book "plev")
 ;(include-book "prettygoals/portcullis")
-(include-book "prettygoals/top")
+;(include-book "prettygoals/top") ; redefines system function prettyify-clause
+(include-book "prettygoals/doc")
 (include-book "prove-dollar")
 ;(include-book "prove-dollar-tests")
 (include-book "removable-runes")
