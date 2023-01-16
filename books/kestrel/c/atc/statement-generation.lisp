@@ -14,9 +14,6 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-builtin-logic-defuns))
-
 (local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
@@ -24,6 +21,9 @@
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 (local (in-theory (disable default-car default-cdr)))
 
@@ -622,6 +622,7 @@
                                 (test-expr exprp)
                                 (then-items block-item-listp)
                                 (else-items block-item-listp)
+                                (test-type typep)
                                 (then-type typep)
                                 (else-type typep)
                                 (then-limit pseudo-termp)
@@ -823,6 +824,8 @@
                        (integerp ,gin.limit-var)
                        (>= ,gin.limit-var ,if-stmt-limit))
                   ,if-stmt-formula))
+       (test-type-pred (type-to-recognizer test-type wrld))
+       (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (if-stmt-hints
         (if (consp else-items)
             `(("Goal" :in-theory '(exec-stmt-when-ifelse
@@ -835,6 +838,7 @@
                                    ,then-stmt-thm
                                    (:e stmt-ifelse->else)
                                    ,else-stmt-thm
+                                   ,valuep-when-test-type-pred
                                    booleanp-compound-recognizer)))
           `(("Goal" :in-theory '(exec-stmt-when-if
                                  (:e stmt-kind)
@@ -844,6 +848,7 @@
                                  ,valuep-when-type-pred
                                  (:e stmt-if->then)
                                  ,then-stmt-thm
+                                 ,valuep-when-test-type-pred
                                  booleanp-compound-recognizer)))))
        (if-stmt-instructions
         `((casesplit ,test-term)
@@ -1106,9 +1111,9 @@
              ((when mbt$p)
               (b* (((erp gout) (atc-gen-stmt then-term gin state)))
                 (retok (change-stmt-gout gout :proofs nil))))
-             ((erp (bexpr-gout test))
+             ((erp (pexpr-gout test))
               (atc-gen-expr-bool test-term
-                                 (make-bexpr-gin
+                                 (make-pexpr-gin
                                   :context gin.context
                                   :inscope gin.inscope
                                   :prec-tags gin.prec-tags
@@ -1205,7 +1210,7 @@
                  else-context))))
           (atc-gen-if/ifelse-stmt term test.term then.term else.term
                                   test.expr then.items else.items
-                                  then.type else.type
+                                  test.type then.type else.type
                                   then.limit else.limit
                                   test.thm-name then.thm-name else.thm-name
                                   then-context else-context
@@ -2455,9 +2460,9 @@
        ((when mbtp) (atc-gen-loop-stmt then-term gin state))
        ((mv mbt$p &) (check-mbt$-call test-term))
        ((when mbt$p) (atc-gen-loop-stmt then-term gin state))
-       ((erp (bexpr-gout test))
+       ((erp (pexpr-gout test))
         (atc-gen-expr-bool test-term
-                           (make-bexpr-gin
+                           (make-pexpr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags

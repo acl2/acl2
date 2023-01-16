@@ -1,6 +1,6 @@
 ; Built-Ins Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,13 +18,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Macro to disable all the built-in logic-mode functions.
-; It turns out that not all of them actually correspond to rules,
-; and attempting to disable them causes an error.
+; List of all the built-in logic-mode functions that can be disabled.
+; It turns out that not all of the built-in logic-mode functions
+; can be disabled; attempting to disable them causes an error.
 ; The error tells us which functions cannot be disabled,
 ; so we remove them from the list,
-; defining a named constant for the functions that can be disabled,
-; and we use the latter in the macro.
+; defining a named constant for the functions that can be disabled.
 
 (defconst *builtin-logic-defun-names-that-can-be-disabled*
   (set-difference-eq *builtin-logic-defun-names*
@@ -49,8 +48,40 @@
                        mfc-ts-fn
                        mfc-ts-ttree)))
 
-(defmacro disable-builtin-logic-defuns ()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Macro to disable all the built-in logic-mode functions that can be disabled.
+
+(defmacro disable-all-builtin-logic-defuns ()
   `(in-theory (disable ,@*builtin-logic-defun-names-that-can-be-disabled*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Some built-in logic-mode functions are logical synonyms of others,
+; motivated by execution efficiency.
+; Those should be normally enabled,
+; so they are replaced by the ones that they are synonyms of.
+; Thus we define a macro to disable all the built-in logic-mode functions
+; except some that are synonyms in the sense above.
+; We use a whitelist approach to letting these functions enabled:
+; that is, we have an explicit list of such functions
+; that we remove from the constant defined above,
+; which lists all the built-in logic-mode functions that can be disabled.
+
+; We start with the following whitelisted functions:
+; - The specialized equality functions, synonyms of EQUAL;
+;   we also include /=, even though technically it is not a synonym,
+;   but an abbreviation of (NOT (EQUAL ...)),
+;   which we normally want to expose as such.
+;  We may add more in the future.
+
+(defmacro disable-most-builtin-logic-defuns ()
+  `(in-theory (disable ,@(set-difference-eq
+                          *builtin-logic-defun-names-that-can-be-disabled*
+                          '(=
+                            /=
+                            eq
+                            eql)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
