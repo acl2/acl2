@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -165,13 +165,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-system ((sys systemp) (prime symbolp))
+(define sesem-definition-list ((defs definition-listp) (prime symbolp))
   :returns (events pseudo-event-form-listp)
-  :short "Shallowly embedded semanics of a system of constraints."
+  :short "Shallowly embedded semanics of a list of definitions."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the list of events generated from the definitions."))
-  (cond ((endp sys) nil)
-        (t (cons (sesem-definition (car sys) prime)
-                 (sesem-system (cdr sys) prime)))))
+  (cond ((endp defs) nil)
+        (t (cons (sesem-definition (car defs) prime)
+                 (sesem-definition-list (cdr defs) prime)))))

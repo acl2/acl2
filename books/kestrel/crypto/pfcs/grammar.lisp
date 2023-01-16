@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -38,7 +38,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use our verified grammar parser and our abstractor
+    "We use our verified ABNF grammar parser and our ABNF grammar abstractor
      to turn the grammar in the @('grammar.abnf') file
      into an ACL2 representation.")
    (xdoc::p

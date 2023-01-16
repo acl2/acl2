@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -98,4 +98,20 @@
   (xdoc::topstring
    (xdoc::p
     "This lifts @(tsee r1cs-constraintp) to lists."))
-  (r1cs-constraintp x))
+  (r1cs-constraintp x)
+  ///
+  (fty::deffixequiv r1cs-constraint-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define r1cs-systemp ((sys systemp))
+  :returns (yes/no booleanp)
+  :short "Check if a PFCS is an R1CS."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There must be no definitions,
+     and all the constraints must be in R1CS form."))
+  (and (endp (system->definitions sys))
+       (r1cs-constraint-listp (system->constraints sys)))
+  :hooks (:fix))

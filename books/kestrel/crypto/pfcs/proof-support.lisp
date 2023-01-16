@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -84,7 +84,7 @@
      must coincide with the ones from the assertion.")
    (xdoc::p
     "This is used to prove @(tsee constraint-satp-of-equal)."))
-  (b* ((outcome (exec-proof-tree ptree sys p)))
+  (b* ((outcome (exec-proof-tree ptree defs p)))
     (implies
      (proof-outcome-case outcome :assertion)
      (b* ((asser (proof-outcome-assertion->get outcome))
@@ -102,7 +102,7 @@
                             (eval-expr asg (constraint-equal->right constr) p))
                      (eval-expr asg (constraint-equal->left constr)
                                 p))))))
-  :expand ((exec-proof-tree ptree sys p)))
+  :expand ((exec-proof-tree ptree defs p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -120,7 +120,7 @@
                 (constraint-case constr :equal))
            (b* ((left (constraint-equal->left constr))
                 (right (constraint-equal->right constr)))
-             (iff (constraint-satp asg constr sys p)
+             (iff (constraint-satp asg constr defs p)
                   (and (equal (eval-expr asg left p)
                               (eval-expr asg right p))
                        (eval-expr asg left p)))))
@@ -131,13 +131,13 @@
      (implies (constraint-case constr :equal)
               (b* ((left (constraint-equal->left constr))
                    (right (constraint-equal->right constr)))
-                (implies (constraint-satp asg constr sys p)
+                (implies (constraint-satp asg constr defs p)
                          (and (equal (eval-expr asg left p)
                                      (eval-expr asg right p))
                               (eval-expr asg left p)))))
      :enable constraint-satp
      :use (:instance exec-proof-tree-when-constraint-equal
-           (ptree (constraint-satp-witness asg constr sys p))))
+           (ptree (constraint-satp-witness asg constr defs p))))
 
    (defruled if-direction
      (implies (and (assignment-for-prime-p asg p)
@@ -147,7 +147,7 @@
                 (implies (and (equal (eval-expr asg left p)
                                      (eval-expr asg right p))
                               (eval-expr asg left p))
-                         (constraint-satp asg constr sys p))))
+                         (constraint-satp asg constr defs p))))
      :use (:instance constraint-satp-suff
            (ptree (make-proof-tree-equal
                    :asg asg

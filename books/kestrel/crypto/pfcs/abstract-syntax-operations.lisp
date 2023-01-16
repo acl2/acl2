@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -148,24 +148,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lookup-definition ((name symbolp) (sys systemp))
+(define lookup-definition ((name symbolp) (defs definition-listp))
   :returns (def? definition-optionp)
-  :short "Look up a definition in a system of constraints."
+  :short "Look up a definition in a list of definitions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the system has a definition for the given name,
+    "If the list has a definition for the given name,
      return that definition.
      Otherwise return @('nil').")
    (xdoc::p
     "We return the first definition found for that name.
-     In a well-formed system of constraints,
+     In a well-formed lists of definitions,
      there is at most a definition for each name,
      and thus the first one found (if any) is also the only one."))
-  (b* (((when (endp sys)) nil)
-       (def (car sys))
+  (b* (((when (endp defs)) nil)
+       (def (car defs))
        ((when (eq (definition->name def)
                   (symbol-fix name)))
         (definition-fix def)))
-    (lookup-definition name (cdr sys)))
+    (lookup-definition name (cdr defs)))
   :hooks (:fix))

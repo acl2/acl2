@@ -115,35 +115,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define r1cs-to-pfcs-def ((r1cs r1cs::r1csp) (name symbolp))
-  :returns (def definitionp)
-  :short "Translate an R1CS to a PFCS definition."
+(define r1cs-to-pfcs ((r1cs r1cs::r1csp))
+  :returns (sys systemp)
+  :short "Translate an R1CS to a PFCS."
   :long
   (xdoc::topstring
    (xdoc::p
     "An R!CS is formalized as consisting of
      a prime, a list of variables, and a list of constraints.
-     It seems natural to translate this to a PFCS definition,
-     whose parameters are the variables
-     and whose body are the constraints.
-     We ignore the prime,
-     because PFCSes do not include primes in their syntax.
-     In order to create a PFCS definition, we need a name for it;
-     we pass that as an additional parameter to this ACL2 function."))
-  (make-definition :name name
-                   :para (r1cs::r1cs->vars r1cs)
-                   :body (r1cs-constraints-to-pfcs
-                          (r1cs::r1cs->constraints r1cs))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define r1cs-to-pfcs-sys ((r1cs r1cs::r1csp) (name symbolp))
-  :returns (sys systemp)
-  :short "Translate an R1CS to a PFCS system."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This consists of a single definition for the whole R1CS.
-     The name of the definition is passed as parameter,
-     as in @(tsee r1cs-to-pfcs-def)."))
-  (list (r1cs-to-pfcs-def r1cs name)))
+     We translate this to a PFCS with no definitions
+     and whose constraints are the ones of the R1CS (translated).
+     We ignore the prime in the R1CS,
+     because PFCSes do not include primes, syntactically."))
+  (make-system :definitions nil
+               :constraints (r1cs-constraints-to-pfcs
+                             (r1cs::r1cs->constraints r1cs))))
