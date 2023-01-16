@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -64,7 +64,6 @@
   (:compustate ((var symbolp)
                 (term any)))
   (:test ((term any)))
-  (:other ())
   :pred atc-premisep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,5 +106,4 @@
                    `(let ((,premise.var ,premise.term))
                       ,(atc-contextualize term (cdr context) skip-cs)))
      :test `(implies ,premise.term
-                     ,(atc-contextualize term (cdr context) skip-cs))
-     :other (raise "Internal error: reached :OTHER case of ATC-PREMISE."))))
+                     ,(atc-contextualize term (cdr context) skip-cs)))))
