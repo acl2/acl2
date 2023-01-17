@@ -1045,14 +1045,7 @@
      :thm-name thm-name
      :thm-index (1+ gin.thm-index)
      :names-to-avoid names-to-avoid
-     ;; We temporarily stop modular proof generation here
-     ;; (by setting :PROOFS to NIL just below),
-     ;; due to the need for more elaborate downstream proof strategies,
-     ;; because ACL2, given a hyp (NOT <term>),
-     ;; replaces <term> with NIL,
-     ;; preventing previous modular theorems from applying,
-     ;; and causing failures in some existing uses of ATC.
-     :proofs nil))
+     :proofs t))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp
                                            pseudo-term-listp))))
 
