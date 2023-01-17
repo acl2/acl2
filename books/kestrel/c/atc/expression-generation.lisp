@@ -322,6 +322,7 @@
                  (okp-lemma-hints
                   `(("Goal"
                      :in-theory '(,gin.fn-guard if*)
+                     :expand (:free (x) (hide x))
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -469,6 +470,7 @@
                  (okp-lemma-hints
                   `(("Goal"
                      :in-theory '(,gin.fn-guard if*)
+                     :expand (:free (x) (hide x))
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -633,6 +635,7 @@
                  (okp-lemma-hints
                   `(("Goal"
                      :in-theory '(,gin.fn-guard if*)
+                     :expand (:free (x) (hide x))
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -845,30 +848,50 @@
        (test-type-pred (type-to-recognizer test-type wrld))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (term* `(condexpr (if* ,test-term ,then-term ,else-term)))
-       (hints `(("Goal" :in-theory '(exec-expr-pure-when-cond
-                                     (:e expr-kind)
-                                     (:e expr-cond->test)
-                                     ,test-thm
-                                     (:e expr-cond->then)
-                                     ,then-thm
-                                     (:e expr-cond->else)
-                                     ,else-thm
-                                     booleanp-compound-recognizer
-                                     ,valuep-when-test-type-pred))))
+       (hints-then `(("Goal" :in-theory '(exec-expr-pure-when-cond-and-true
+                                          (:e expr-kind)
+                                          (:e expr-cond->test)
+                                          ,test-thm
+                                          (:e expr-cond->then)
+                                          ,then-thm
+                                          (:e expr-cond->else)
+                                          ,else-thm
+                                          booleanp-compound-recognizer
+                                          ,valuep-when-test-type-pred))))
+       (hints-else `(("Goal" :in-theory '(exec-expr-pure-when-cond-and-false
+                                          (:e expr-kind)
+                                          (:e expr-cond->test)
+                                          ,test-thm
+                                          (:e expr-cond->then)
+                                          ,then-thm
+                                          (:e expr-cond->else)
+                                          ,else-thm
+                                          booleanp-compound-recognizer
+                                          ,valuep-when-test-type-pred))))
        (instructions
         `((casesplit ,test-term)
+          (claim (hide ,test-term)
+                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (drop 1)
           (claim (equal (condexpr (if* ,test-term ,then-term ,else-term))
                         ,then-term)
-                 :hints (("Goal" :in-theory '(acl2::if*-when-true
-                                              condexpr))))
+                 :hints (("Goal"
+                          :in-theory '(acl2::if*-when-true
+                                       condexpr)
+                          :expand (:free (x) (hide x)))))
           (expand (condexpr (if* ,test-term ,then-term ,else-term)))
-          (prove :hints ,hints)
+          (prove :hints ,hints-then)
+          (claim (hide (not ,test-term))
+                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (drop 1)
           (claim (equal (condexpr (if* ,test-term ,then-term ,else-term))
                         ,else-term)
-                 :hints (("Goal" :in-theory '(acl2::if*-when-false
-                                              condexpr))))
+                 :hints (("Goal"
+                          :in-theory '(acl2::if*-when-false
+                                       condexpr)
+                          :expand (:free (x) (hide x)))))
           (expand (condexpr (if* ,test-term ,then-term ,else-term)))
-          (prove :hints ,hints)))
+          (prove :hints ,hints-else)))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
                                        gin.fn-guard
@@ -962,48 +985,60 @@
        (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
        (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
        (hints-then
-        `(("Goal" :in-theory '(exec-expr-pure-when-binary-logand
-                               (:e expr-kind)
-                               (:e expr-binary->op)
-                               (:e binop-kind)
-                               (:e expr-binary->arg1)
-                               ,arg1-thm
-                               ,valuep-when-arg1-type-pred
-                               (:e expr-binary->arg2)
-                               ,arg2-thm
-                               not-errorp-when-valuep
-                               ,valuep-when-arg2-type-pred
-                               sint-from-boolean-with-error-when-booleanp
-                               sintp-of-sint-from-boolean
-                               test-value-when-sintp
-                               boolean-from-sint-of-sint-from-boolean
-                               sint-from-boolean-when-true
-                               sint-from-boolean-when-false))))
+        `(("Goal"
+           :in-theory '(exec-expr-pure-when-binary-logand-and-true
+                        (:e expr-kind)
+                        (:e expr-binary->op)
+                        (:e binop-kind)
+                        (:e expr-binary->arg1)
+                        ,arg1-thm
+                        ,valuep-when-arg1-type-pred
+                        (:e expr-binary->arg2)
+                        ,arg2-thm
+                        not-errorp-when-valuep
+                        ,valuep-when-arg2-type-pred
+                        sint-from-boolean-with-error-when-booleanp-and-true
+                        sintp-of-sint-from-boolean
+                        test-value-when-sintp
+                        boolean-from-sint-of-sint-from-boolean
+                        sint-from-boolean-when-true
+                        sint-from-boolean-when-false))))
        (hints-else
-        `(("Goal" :in-theory '(exec-expr-pure-when-binary-logand
-                               (:e expr-kind)
-                               (:e expr-binary->op)
-                               (:e binop-kind)
-                               (:e expr-binary->arg1)
-                               ,arg1-thm
-                               ,valuep-when-arg1-type-pred
-                               (:e expr-binary->arg2)
-                               ,arg2-thm
-                               not-errorp-when-valuep
-                               ,valuep-when-arg2-type-pred
-                               sint-from-boolean-with-error-when-booleanp
-                               test-value-when-sintp
-                               sint-from-boolean-when-false
-                               booleanp-compound-recognizer
-                               sintp-of-sint
-                               boolean-from-sint-of-0))))
+        `(("Goal"
+           :in-theory '(exec-expr-pure-when-binary-logand-and-false
+                        (:e expr-kind)
+                        (:e expr-binary->op)
+                        (:e binop-kind)
+                        (:e expr-binary->arg1)
+                        ,arg1-thm
+                        ,valuep-when-arg1-type-pred
+                        (:e expr-binary->arg2)
+                        ,arg2-thm
+                        not-errorp-when-valuep
+                        ,valuep-when-arg2-type-pred
+                        sint-from-boolean-with-error-when-booleanp-and-false
+                        test-value-when-sintp
+                        sint-from-boolean-when-false
+                        booleanp-compound-recognizer
+                        sintp-of-sint
+                        boolean-from-sint-of-0))))
        (instructions
         `((casesplit ,arg1-term)
+          (claim (hide ,arg1-term)
+                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (drop 1)
           (claim (equal ,term ,arg2-term)
-                 :hints (("Goal" :in-theory '(acl2::if*-when-true))))
+                 :hints (("Goal"
+                          :in-theory '(acl2::if*-when-true)
+                          :expand (:free (x) (hide x)))))
           (prove :hints ,hints-then)
+          (claim (hide (not ,arg1-term))
+                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (drop 1)
           (claim (equal ,term nil)
-                 :hints (("Goal" :in-theory '(acl2::if*-when-false))))
+                 :hints (("Goal"
+                          :in-theory '(acl2::if*-when-false)
+                          :expand (:free (x) (hide x)))))
           (prove :hints ,hints-else)))
        ((mv thm-event &) (evmac-generate-defthm thm-name
                                                 :formula formula

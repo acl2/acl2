@@ -828,7 +828,8 @@
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (if-stmt-hints
         (if (consp else-items)
-            `(("Goal" :in-theory '(exec-stmt-when-ifelse
+            `(("Goal" :in-theory '(exec-stmt-when-ifelse-and-true
+                                   exec-stmt-when-ifelse-and-false
                                    (:e stmt-kind)
                                    not-zp-of-limit-variable
                                    (:e stmt-ifelse->test)
@@ -840,7 +841,8 @@
                                    ,else-stmt-thm
                                    ,valuep-when-test-type-pred
                                    booleanp-compound-recognizer)))
-          `(("Goal" :in-theory '(exec-stmt-when-if
+          `(("Goal" :in-theory '(exec-stmt-when-ifelse-and-true
+                                 exec-stmt-when-ifelse-and-false
                                  (:e stmt-kind)
                                  not-zp-of-limit-variable
                                  (:e stmt-if->test)
@@ -852,13 +854,23 @@
                                  booleanp-compound-recognizer)))))
        (if-stmt-instructions
         `((casesplit ,test-term)
+          (claim (hide ,test-term)
+                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (drop 1)
           (claim (equal (if* ,test-term ,then-term ,else-term)
                         ,then-term)
-                 :hints (("Goal" :in-theory '(acl2::if*-when-true))))
+                 :hints (("Goal"
+                          :in-theory '(acl2::if*-when-true)
+                          :expand (:free (x) (hide x)))))
           (prove :hints ,if-stmt-hints)
+          (claim (hide (not ,test-term))
+                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (drop 1)
           (claim (equal (if* ,test-term ,then-term ,else-term)
                         ,else-term)
-                 :hints (("Goal" :in-theory '(acl2::if*-when-false))))
+                 :hints (("Goal"
+                          :in-theory '(acl2::if*-when-false)
+                          :expand (:free (x) (hide x)))))
           (prove :hints ,if-stmt-hints)))
        ((mv if-stmt-event &)
         (evmac-generate-defthm if-stmt-thm
