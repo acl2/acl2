@@ -995,14 +995,10 @@
                         ,valuep-when-arg1-type-pred
                         (:e expr-binary->arg2)
                         ,arg2-thm
-                        not-errorp-when-valuep
                         ,valuep-when-arg2-type-pred
-                        sint-from-boolean-with-error-when-booleanp-and-true
                         sintp-of-sint-from-boolean
                         test-value-when-sintp
-                        boolean-from-sint-of-sint-from-boolean
-                        sint-from-boolean-when-true
-                        sint-from-boolean-when-false))))
+                        boolean-from-sint-of-sint-from-boolean))))
        (hints-else
         `(("Goal"
            :in-theory '(exec-expr-pure-when-binary-logand-and-false
@@ -1012,11 +1008,6 @@
                         (:e expr-binary->arg1)
                         ,arg1-thm
                         ,valuep-when-arg1-type-pred
-                        (:e expr-binary->arg2)
-                        ,arg2-thm
-                        not-errorp-when-valuep
-                        ,valuep-when-arg2-type-pred
-                        sint-from-boolean-with-error-when-booleanp-and-false
                         test-value-when-sintp
                         sint-from-boolean-when-false
                         booleanp-compound-recognizer
