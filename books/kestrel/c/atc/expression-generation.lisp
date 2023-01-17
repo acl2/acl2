@@ -21,7 +21,6 @@
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
 (include-book "kestrel/std/basic/if-star" :dir :system)
 
-(local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 
@@ -1383,7 +1382,7 @@
                                       :proofs test.proofs)
                                      state)))
                ((erp (pexpr-gout else))
-                (b* ((not-test-term (dumb-negate-lit test.term))
+                (b* ((not-test-term `(not ,test.term))
                      (else-cond (untranslate$ not-test-term nil state))
                      (else-premise (atc-premise-test else-cond))
                      (else-context (append gin.context (list else-premise))))
@@ -1557,7 +1556,9 @@
 
   :verify-guards nil ; done below
   ///
-  (verify-guards atc-gen-expr-pure))
+  (verify-guards atc-gen-expr-pure
+    :hints (("Goal" :in-theory (enable pseudo-termp
+                                       pseudo-term-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
