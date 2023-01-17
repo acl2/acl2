@@ -78,7 +78,12 @@
   :elt-type atc-var-info-option
   :true-listp t
   :elementp-of-nil t
-  :pred atc-var-info-option-listp)
+  :pred atc-var-info-option-listp
+  ///
+
+  (defruled true-listp-when-atc-var-info-option-listp-rewrite
+    (implies (atc-var-info-option-listp x)
+             (true-listp x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -912,7 +912,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-stmt ((term pseudo-termp) (gin stmt-ginp) state)
-  :returns (mv erp (gout stmt-goutp))
+  :returns (mv erp
+               (gout stmt-goutp
+                     :hints ; for speed
+                     (("Goal"
+                       :expand (atc-gen-stmt term gin state)
+                       :in-theory (disable atc-gen-stmt)))))
   :short "Generate a C statement from an ACL2 term."
   :long
   (xdoc::topstring
@@ -2305,7 +2310,10 @@
 
   (verify-guards atc-gen-stmt
     :hints (("Goal"
-             :in-theory (disable atc-gen-stmt)))))
+             :do-not '(preprocess) ; for speed
+             :in-theory (e/d (true-listp-when-atc-var-info-option-listp-rewrite
+                              acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+                             (atc-gen-stmt))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
