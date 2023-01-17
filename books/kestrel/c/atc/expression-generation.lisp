@@ -1051,6 +1051,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-expr-or ((arg1-term pseudo-termp)
+                         (arg2-term pseudo-termp)
+                         (arg1-expr exprp)
+                         (arg2-expr exprp)
+                         (arg1-type typep)
+                         (arg2-type typep)
+                         (arg1-thm symbolp)
+                         (arg2-thm symbolp)
+                         (arg1-events pseudo-event-form-listp)
+                         (arg2-events pseudo-event-form-listp)
+                         (gin pexpr-ginp)
+                         state)
+  (declare (ignore arg1-type arg2-type arg1-thm arg2-thm state))
+  :returns (gout pexpr-goutp)
+  :short "Generate a C expressino from an ACL2 term
+          that represents a logical disjunction."
+  (b* (((pexpr-gin gin) gin)
+       (term `(if* ,arg1-term ,arg1-term ,arg2-term))
+       (expr (make-expr-binary :op (binop-logor)
+                               :arg1 arg1-expr
+                               :arg2 arg2-expr))
+       (type (type-sint)))
+    (make-pexpr-gout
+     :expr expr
+     :type type
+     :term term
+     :events (append arg1-events arg2-events)
+     :thm-name nil
+     :thm-index gin.thm-index
+     :names-to-avoid gin.names-to-avoid
+     :proofs nil))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp
+                                           pseudo-term-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atc-gen-expr-pure/bool
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -1462,17 +1498,22 @@
                                     :names-to-avoid arg1.names-to-avoid
                                     :proofs nil)
                                    state)))
-            (retok (make-pexpr-gout
-                    :expr (make-expr-binary :op (binop-logor)
-                                            :arg1 arg1.expr
-                                            :arg2 arg2.expr)
-                    :type (type-sint)
-                    :term term
-                    :events (append arg1.events arg2.events)
-                    :thm-name nil
-                    :thm-index arg2.thm-index
-                    :names-to-avoid arg2.names-to-avoid
-                    :proofs nil))))
+            (retok (atc-gen-expr-or arg1.term
+                                    arg2.term
+                                    arg1.expr
+                                    arg2.expr
+                                    arg1.type
+                                    arg2.type
+                                    arg1.thm-name
+                                    arg2.thm-name
+                                    arg1.events
+                                    arg2.events
+                                    (change-pexpr-gin
+                                     gin
+                                     :thm-index arg2.thm-index
+                                     :names-to-avoid arg2.names-to-avoid
+                                     :proofs nil)
+                                    state))))
          ((mv okp arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
