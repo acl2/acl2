@@ -32,6 +32,7 @@
 
 (include-book "acl2s/defunc-testing" :dir :system)
 (include-book "acl2s/match-testing" :dir :system)
+(include-book "acl2s/cgen-testing" :dir :system)
 
 (include-book "acl2s/distribution/acl2s-hooks/acl2s-book-support" :dir :system)
 (include-book "acl2s/distribution/acl2s-hooks/acl2s" :dir :system)
