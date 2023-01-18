@@ -249,9 +249,9 @@
        If the length of the array is known
        (specified by the @('<size?>')
        in the @('<typei>') that specifies the type of the member),
-       the checker only needs the integer.
+       the checker only needs the index.
        For the flexible array member (if present),
-       we also need the structure has an additional argument,
+       we also need the structure as an additional argument,
        from which the flexible array member size is obtained
        and used to check the index against it.")
      (xdoc::p
@@ -290,9 +290,9 @@
        If the length of the array is known
        (specified by the @('<size?>')
        in the @('<typei>') that specifies the type of the member),
-       the checker only needs the integer.
+       the checker only needs the index.
        For the flexible array member (if present),
-       we also need the structure has an additional argument,
+       we also need the structure as an additional argument,
        from which the flexible array member size is obtained
        and used to check the index against it.")
      (xdoc::p
