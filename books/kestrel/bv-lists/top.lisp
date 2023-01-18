@@ -13,6 +13,7 @@
 
 (include-book "unsigned-byte-listp-def")
 (include-book "unsigned-byte-listp")
+(include-book "signed-byte-listp-def")
 
 (include-book "byte-listp")
 

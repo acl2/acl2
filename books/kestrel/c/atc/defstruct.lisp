@@ -833,7 +833,7 @@
                        :elements (repeat ,size (sshort 0)))
              :ushort `(make-value-array
                        :elemtype (type-ushort)
-                       :elements repeat ,size (ushort 0))
+                       :elements (repeat ,size (ushort 0)))
              :sint `(make-value-array
                      :elemtype (type-sint)
                      :elements (repeat ,size (sint 0)))
