@@ -42,6 +42,12 @@
   use-equal-by-logbitp
   :disabled t))
 
+(local
+ (rp::fetch-new-events
+  (include-book "arithmetic-5/top" :dir :system)
+  use-arithmetic-5
+  :disabled t))
+
 (defsection svex-pattern-matching-lemmas
   (defthm cdr-of-x-is-svexlist-p-when-kind-is-svex-fn-call
     (implies (and (sv::svex-p x)
@@ -2451,6 +2457,278 @@
     (implies (force (pattern-alist-p x))
              (pattern-alist-p (fast-alist-clean x)))))
 
+;; (bitand/or/xor-cancel-repeated fn term1 term2)
+
+
+(defsection simplify-to-find-fa-c-patterns
+
+  ;; Goal is to attempting to simplify  svexes locally until they reveal a fa-c
+  ;; pattern. If it does, then simplification  is left and the found pattern is
+  ;; wrapped with "ID"  svex-op in order to prevent  other simplifications from
+  ;; messing with it.
+  
+  (defconst *simplify-to-find-fa-c-patterns-limit*
+    8)
+
+
+  (define simplify-to-find-fa-c-patterns-aux ((x sv::Svex-p)
+                                              (limit natp)
+                                              &key
+                                              (skip 'nil) 
+                                              ((env) 'env)
+                                              ((context rp-term-listp) 'context)
+                                              ((config svl::svex-reduce-config-p) 'config))
+    :returns (mv (res sv::svex-p :hyp (sv::svex-p x))
+                 there-is-more)
+    :guard (not (svl::svex-reduce-config->skip-bitor/and/xor-repeated config))
+    :measure (acl2::nat-list-measure (list limit (if skip 0 1)))
+    :verify-guards :after-returns
+    (if (zp limit)
+        (mv x t)
+      (sv::svex-case
+       x
+       :var (mv x nil)
+       :quote (mv x nil)
+       :call
+       (cond ((and (or (equal x.fn 'sv::bitor)
+                       (equal x.fn 'sv::bitand)
+                       (equal x.fn 'sv::bitxor))
+                   (svl::equal-len x.args 2))
+              (b* ((new-x
+                    (if skip
+                        x
+                      (svl::bitand/or/xor-cancel-repeated
+                       x.fn (first x.args) (second x.args) :config config)))
+                   ((unless (hons-equal new-x x))
+                    (simplify-to-find-fa-c-patterns-aux new-x limit :skip t))
+
+                   ((mv arg1 there-is-more1)
+                    (simplify-to-find-fa-c-patterns-aux (first x.args) (1- limit)))
+                   ((mv arg2 there-is-more2)
+                    (simplify-to-find-fa-c-patterns-aux (second x.args) (1- limit)))
+                   (new-x (svl::bitand/or/xor-simple-constant-simplify
+                           x.fn arg1 arg2 :config config)))
+                (mv new-x (or there-is-more1
+                              there-is-more2))))
+             (t (mv x nil)))))
+    ///
+    (defret <fn>-is-correct
+      (implies (and (sv::svex-p x)
+                    (rp::rp-term-listp context)
+                    (rp::valid-sc env-term a)
+                    (rp::eval-and-all context a)
+                    (svl::sub-alistp env big-env)
+                    (rp::falist-consistent-aux big-env env-term)
+                    (svl::width-of-svex-extn-correct$-lst
+                     (svl::svex-reduce-config->width-extns config))
+                    (svl::integerp-of-svex-extn-correct$-lst
+                     (svl::svex-reduce-config->integerp-extns config)))
+               (equal
+                (sv::svex-eval$ res (rp-evlt env-term a))
+                (sv::svex-eval$ x (rp-evlt env-term a))))
+      :hints (("Goal"
+               :in-theory (e/d (sv::svex-call->args
+                                SV::SVEX-CALL->fn)
+                               (eval-and-all
+                                rp::rp-term-listp
+                                falist-consistent-aux))))))
+                   
+      
+  (define simplify-to-find-fa-c-patterns-iter ((x sv::Svex-p)
+                                               (limit natp)
+                                               &key
+                                               ((env) 'env)
+                                               ((context rp-term-listp) 'context)
+                                               ((config svl::svex-reduce-config-p) 'config))
+    :guard (and (<= limit *simplify-to-find-fa-c-patterns-limit*)
+                (not (svl::svex-reduce-config->skip-bitor/and/xor-repeated config)))
+    :returns (mv (new-x sv::svex-p :hyp (sv::svex-p x))
+                 (found))
+    :prepwork ((local
+                (use-arithmetic-5 t)))
+    (if (zp limit)
+        (mv x nil)
+      (b* (((mv simplified there-is-more)
+            (simplify-to-find-fa-c-patterns-aux
+             x (+ *simplify-to-find-fa-c-patterns-limit* (- limit) 2)))
+           ((when (equal simplified x))
+            (simplify-to-find-fa-c-patterns-iter x (1- limit)))
+           (fa-c-patterns (look-for-fa-c-chain-pattern simplified))
+
+           #|(- (and (case-match x (('sv::bitor
+                                   ('sv::bitand
+                                    ('sv::bitxor 1 ('sv::?* . &))
+                                    ('sv::bitxor ('sv::bitxor . &) &))
+                                   &)
+                                  t))
+                   (cwe "x: ~p0, simplified: ~p1, fa-c-patterns: ~p2~%"
+                        x simplified fa-c-patterns)))|#
+           
+           ((when fa-c-patterns)
+            (mv simplified t))
+           ((unless there-is-more)
+            (mv x nil)))
+        (simplify-to-find-fa-c-patterns-iter x (1- limit))))
+    ///
+    (defret <fn>-is-correct
+      (implies (and (sv::svex-p x)
+                    (rp::rp-term-listp context)
+                    (rp::valid-sc env-term a)
+                    (rp::eval-and-all context a)
+                    (svl::sub-alistp env big-env)
+                    (rp::falist-consistent-aux big-env env-term)
+                    (svl::width-of-svex-extn-correct$-lst
+                     (svl::svex-reduce-config->width-extns config))
+                    (svl::integerp-of-svex-extn-correct$-lst
+                     (svl::svex-reduce-config->integerp-extns config)))
+               (equal
+                (sv::svex-eval$ new-x (rp-evlt env-term a))
+                (sv::svex-eval$ x (rp-evlt env-term a))))
+      :fn simplify-to-find-fa-c-patterns-iter
+      :hints (("Goal"
+               :expand ((simplify-to-find-fa-c-patterns-iter x limit))
+               :in-theory (e/d (simplify-to-find-fa-c-patterns-iter)
+                               (eval-and-all
+                                rp::rp-term-listp
+                                falist-consistent-aux))))))
+
+  
+
+  (defines simplify-to-find-fa-c-patterns
+    :verify-guards nil
+    (define simplify-to-find-fa-c-patterns ((x sv::Svex-p)
+                                            &key
+                                            ((env) 'env)
+                                            ((context rp-term-listp) 'context)
+                                            ((config svl::svex-reduce-config-p) 'config))
+      :measure (sv::svex-count x)
+      :guard (not (svl::svex-reduce-config->skip-bitor/and/xor-repeated config))
+      :returns (res sv::svex-p :hyp (sv::svex-p x))
+      (sv::svex-case
+       x
+       :var x
+       :quote x
+       :call
+       (b* ((x.args (simplify-to-find-fa-c-patterns-list x.args))
+            (x (sv::svex-call x.fn x.args))
+            ((unless (equal x.fn 'sv::bitor)) ;; no need to look for fa-c patterns if x is not bitor.
+             x)
+            ((mv new-x found)
+             (simplify-to-find-fa-c-patterns-iter x
+                                                  *simplify-to-find-fa-c-patterns-limit*)))
+         ;; wrapping with id so that other simplification attempts do not corrupt this found pattern.
+         (if found
+             (sv::svex-call 'sv::id (hons-list new-x))
+           x))))
+
+    (define simplify-to-find-fa-c-patterns-list ((lst sv::Svexlist-p)
+                                                 &key
+                                                 ((env) 'env)
+                                                 ((context rp-term-listp) 'context)
+                                                 ((config svl::svex-reduce-config-p) 'config))
+      :guard (not (svl::svex-reduce-config->skip-bitor/and/xor-repeated config))
+      :measure (sv::svexlist-count lst)
+      :returns (res sv::svexlist-p :hyp (sv::svexlist-p lst))
+      (if (atom lst)
+          nil
+        (hons (simplify-to-find-fa-c-patterns (car lst))
+              (simplify-to-find-fa-c-patterns-list (cdr lst)))))
+    ///
+    (verify-guards simplify-to-find-fa-c-patterns-fn)
+
+    (memoize 'simplify-to-find-fa-c-patterns-fn
+             :condition '(eq (sv::svex-kind x) :call))
+
+    (local
+     (defthm id-of-bitor-lemma
+       (equal (sv::svex-apply 'id (list (sv::svex-apply 'sv::bitor args)))
+              (sv::svex-apply 'sv::bitor args))
+       :hints (("Goal"
+                :in-theory (e/d (sv::svex-apply) ())))))
+
+    (defret-mutual svex-eval$-correctness
+      (defret <fn>-is-correct
+        (implies (and (sv::svex-p x)
+                      (rp::rp-term-listp context)
+                      (rp::valid-sc env-term a)
+                      (rp::eval-and-all context a)
+                      (svl::sub-alistp env big-env)
+                      (rp::falist-consistent-aux big-env env-term)
+                      (svl::width-of-svex-extn-correct$-lst
+                       (svl::svex-reduce-config->width-extns config))
+                      (svl::integerp-of-svex-extn-correct$-lst
+                       (svl::svex-reduce-config->integerp-extns config)))
+                 (equal
+                  (sv::svex-eval$ res (rp-evlt env-term a))
+                  (sv::svex-eval$ x (rp-evlt env-term a))))
+        :fn simplify-to-find-fa-c-patterns)
+      (defret <fn>-is-correct
+        (implies (and (sv::svexlist-p lst)
+                      (rp::rp-term-listp context)
+                      (rp::valid-sc env-term a)
+                      (rp::eval-and-all context a)
+                      (svl::sub-alistp env big-env)
+                      (rp::falist-consistent-aux big-env env-term)
+                      (svl::width-of-svex-extn-correct$-lst
+                       (svl::svex-reduce-config->width-extns config))
+                      (svl::integerp-of-svex-extn-correct$-lst
+                       (svl::svex-reduce-config->integerp-extns config)))
+                 (equal
+                  (sv::svexlist-eval$ res (rp-evlt env-term a))
+                  (sv::svexlist-eval$ lst (rp-evlt env-term a))))
+        :fn simplify-to-find-fa-c-patterns-list)
+      :mutual-recursion simplify-to-find-fa-c-patterns
+      :hints (("Goal"
+               :in-theory (e/d ()
+                               (eval-and-all
+                                rp::rp-term-listp
+                                falist-consistent-aux))))))
+
+  (define simplify-to-find-fa-c-patterns-alist ((alist sv::Svex-alist-p)
+                                                &key
+                                                ((env) 'env)
+                                                ((context rp-term-listp) 'context)
+                                                ((config svl::svex-reduce-config-p) 'config))
+    :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p alist))
+    :guard (not (svl::svex-reduce-config->skip-bitor/and/xor-repeated config))
+    (if (atom alist)
+        nil
+      (acons (caar alist)
+             (simplify-to-find-fa-c-patterns (cdar alist))
+             (simplify-to-find-fa-c-patterns-alist (cdr alist))))
+    ///
+    (defret <fn>-is-correct
+      (implies (and (sv::svex-alist-p alist)
+                    (rp::rp-term-listp context)
+                    (rp::valid-sc env-term a)
+                    (rp::eval-and-all context a)
+                    (svl::sub-alistp env big-env)
+                    (rp::falist-consistent-aux big-env env-term)
+                    (svl::width-of-svex-extn-correct$-lst
+                     (svl::svex-reduce-config->width-extns config))
+                    (svl::integerp-of-svex-extn-correct$-lst
+                     (svl::svex-reduce-config->integerp-extns config)))
+               (equal
+                (sv::svex-alist-eval$ res (rp-evlt env-term a))
+                (sv::svex-alist-eval$ alist (rp-evlt env-term a))))
+      :fn simplify-to-find-fa-c-patterns-alist
+      :hints (("Goal"
+               :in-theory (e/d (sv::svex-alist-eval$)
+                               (eval-and-all
+                                rp::rp-term-listp
+                                falist-consistent-aux)))))))
+
+;; (rp::simplify-to-find-fa-c-patterns #!SV'(bitxor other
+;;                                                  (bitor (bitor (bitand x y) (bitor (bitand x y) (bitand y z)))
+;;                                                         (bitand x z)))
+;;                                     :context nil
+;;                                     :env nil
+;;                                     :config nil)
+;; ;; returns:
+;; (BITXOR OTHER
+;;         (ID (BITOR (BITOR (BITAND X Y) (BITAND Y Z))
+;;                    (BITAND X Z))))
+
 (define pattern-alist-has-complete-full-adder-patterns-p ((pattern-alist alistp)
                                                           &key
                                                           ((adder-type symbolp) 'adder-type))
@@ -2474,7 +2752,7 @@
                                        ((config svl::svex-reduce-config-p) 'config))
   :prepwork
   ((defconst *find-f/h-adders-in-svex-alist-limit*
-     10)
+     12)
    (local
     (in-theory (disable fast-alist-clean))))
   :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p svex-alist))
@@ -2484,12 +2762,12 @@
 
        ((when (zp limit))
         (progn$
-         (cw "- Iteration limit of ~p0 is reached. Will not parse again for ~s1 patterns. ~%" *find-f/h-adders-in-svex-alist-limit* adder-str)
+         (cw "- Iteration limit of ~p0 is reached. Will not parse again for ~s1 patterns. Either there is an unexpected infinite loop, or the iteration limit may need to be increased. ~%" *find-f/h-adders-in-svex-alist-limit* adder-str)
          svex-alist))
 
        (- (and (equal limit *find-f/h-adders-in-svex-alist-limit*)
                (cw "- Searching for ~s0 patterns now. ~%" adder-str)))
-       (- (cw "- Pass #~p0:~%" (+ 1 (- limit) *find-f/h-adders-in-svex-alist-limit*)))
+       (- (cw "-- Pass #~p0:~%" (+ 1 (- limit) *find-f/h-adders-in-svex-alist-limit*)))
 
        ((mv pattern-alist &)
         (gather-adder-patterns-in-svex-alist svex-alist nil nil pass-num))
@@ -2498,8 +2776,10 @@
        (- (clear-memoize-table 'replace-adder-patterns-in-svex))
        (pattern-alist (fast-alist-clean pattern-alist))
        (replaced-pattern-cnt (pattern-alist-has-complete-full-adder-patterns-p pattern-alist))
-       (- (cw "- After the quick search, ~p0 ~s1 patterns are found and replaced. Seeing if more patterns are revealed...~%" replaced-pattern-cnt adder-str))
+       (- (cw "- After the quick search, ~p0 ~s1 patterns are found and replaced. Let's see if more patterns are revealed: ~%" replaced-pattern-cnt adder-str))
        (- (fast-alist-free pattern-alist))
+
+       (- (cw "- First another quick search.. ~%"))
 
        ;; TODO: to prevent  consing, can do some preliminary check  here for if
        ;; there exists xor chains OR maybe fa-* functions under or gates.
@@ -2517,14 +2797,9 @@
        ((when (> new-pattern-cnt 0))
         (progn$ (cw "- Replacement after the previous quick search revealed ~p0 more ~s1 patterns, which are all replaced. Let's make another pass.~%"
                     new-pattern-cnt adder-str)
-                (b* ((svex-alist (replace-adder-patterns-in-svex-alist svex-alist pattern-alist pass-num))
-
-                     (- (fast-alist-free pattern-alist))
-
-                     ;; For the first round, see if any simplification can take place.
-                     (svex-alist (if (equal limit *find-f/h-adders-in-svex-alist-limit*)
-                                     (svl::svex-alist-simplify-bitand/or/xor svex-alist :config config)
-                                   svex-alist)))
+                (b* ((svex-alist
+                      (replace-adder-patterns-in-svex-alist svex-alist pattern-alist pass-num))
+                     (- (fast-alist-free pattern-alist)))
                   (find-f/h-adders-in-svex-alist svex-alist (1- limit)))))
 
        ;; TODO:  HERE I  can look  for bitxors  with at  least 3  elements to
@@ -2533,9 +2808,12 @@
        (collected-args-alist (process-fa/ha-c-chain-pattern-args pattern-alist nil))
        (- (fast-alist-free pattern-alist))
 
-       (- (cw "Will now look more carefully if we have missed any ~s0-s pattern that has a counterpart ~s0-c pattern.~%" adder-str))
+       (- (cw "- Nothing after the  second quick search.  Now will look  more carefully if we ~
+have missed any ~s0-s pattern that  has a found counterpart ~s0-c pattern...~%"
+              adder-str))
 
-       (new-svex-alist (find-s-from-found-c-in-svex-alist-aux svex-alist collected-args-alist))
+       (new-svex-alist
+        (find-s-from-found-c-in-svex-alist-aux svex-alist collected-args-alist))
 
        ;; calling fix-order-of-fa/ha-s-args-alist might be unnecessary
        ;; here. not sure.
@@ -2545,20 +2823,29 @@
        (- (fast-alist-free collected-args-alist))
 
        ((when (hons-equal new-svex-alist svex-alist))
-        (progn$ (cw "- Could not find any missed ~s0-s. ~%" adder-str)
-                ;; For the first round, see if any simplification can take place.
-                svex-alist))
+        (b* ((- (cw "- Could not find any missed ~s0-s. ~%" adder-str))
+             ((unless (equal adder-type 'fa)) svex-alist)
+             (- (cw "- Let's see if bitxor/or/and simplification can reveal more fa-c patterns... "))
+             (config (svl::change-svex-reduce-config ;; make sure config is set right.
+                      config :skip-bitor/and/xor-repeated nil))
+             (new-svex-alist (simplify-to-find-fa-c-patterns-alist svex-alist))
+             ((when (hons-equal new-svex-alist svex-alist))
+              (progn$ (cw "Nothing. This did not reveal any fa-c pattern. Ending the search. ~%")
+                      ;; For the first round, see if any simplification can take place.
+                      svex-alist))
+             (- (cw "Success! some fa-c patterns are revealed. Let's make another pass.~%")))
+          (find-f/h-adders-in-svex-alist new-svex-alist (1- limit))))
 
        (- (cw "- Some missed ~s0-s patterns are found and their shape is ~
-       updated. This will reveal more fa patterns during quick search. So will ~
+       updated. This will reveal more ~s0 patterns during quick search. So will ~
        now do another pass. (There might be an overlap in statistics below) ~%"
               adder-str))
 
        ;; find-s-from-found-c-in-svex-alist-aux  may  cause  new  simplify-able
        ;; patterns to  occur. but not sure  if something less general  would be
        ;; useful here. TODO: investigate.
-       (new-svex-alist (svl::svex-alist-simplify-bitand/or/xor  new-svex-alist
-                                                                :config config))
+       #|(new-svex-alist (svl::svex-alist-simplify-bitand/or/xor  new-svex-alist
+       :config config))|#
 
        )
     (find-f/h-adders-in-svex-alist new-svex-alist (1- limit)))
@@ -2744,7 +3031,10 @@ was ~st seconds."))
           (- (time-tracker :rewrite-adders-in-svex :start!))
 
           ;; below simplification might be unnecessary but shouldn't harm (probably)
-          (svex-alist (svl::svex-alist-simplify-bitand/or/xor-outside-in svex-alist :config config))
+          (svex-alist (svl::svex-alist-simplify-bitand/or/xor svex-alist :config config))
+
+          ;;(- (bad-pattern
+          
           (svex-alist (find-f/h-adders-in-svex-alist svex-alist
                                                      *find-f/h-adders-in-svex-alist-limit*
                                                      :adder-type 'ha))

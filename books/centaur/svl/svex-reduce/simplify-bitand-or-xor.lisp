@@ -274,6 +274,18 @@ x
     (iff (member-hons-equal x lst)
          (member-equal x lst))))
 
+(define member-hons-equal-of-negated (x lst)
+  (if (atom lst)
+      nil
+    (or (b* ((cur (car lst)))
+          (case-match cur
+            (('sv::bitxor 1 n)
+             (hons-equal x n))
+            (('sv::bitxor n 1)
+             (hons-equal x n))))
+        (member-hons-equal-of-negated x (cdr lst))))
+  )
+
 (define bitand/bitor-cancel-repeated-aux ((svex sv::svex-p)
                                           (leaves svexlist-p)
                                           (new-val integerp)
@@ -309,6 +321,9 @@ x
          ((Unless width)
           (mv new-val t)))
       (mv (4vec-part-select 0 width new-val) t)))
+   #|((and* (member-hons-equal-of-negated svex leaves)
+          (equal (width-of-svex svex) 1)) 
+    (mv (4vec-part-select 0 1 (lognot new-val)) t))|#
    ((and (consp svex)
          (equal (car svex) 'sv::bitor)
          (equal-len (cdr svex) 2))
