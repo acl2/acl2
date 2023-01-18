@@ -226,12 +226,14 @@
   (define create-and-list-instance (lst)
     :returns (and-list-instance rp-termp
                                 :hyp (rp-term-listp lst))
-    (if (and (consp lst)
-             (atom (cdr lst))
-             (or (logbit-p (ex-from-rp (car lst)))
-                 (has-bitp-rp (car lst))))
-        (car lst)
-      `(and-list ',(and-list-hash lst) (list . ,lst)))))
+    (cond ((and (consp lst)
+                (atom (cdr lst))
+                (or (logbit-p (ex-from-rp (car lst)))
+                    (has-bitp-rp (car lst))
+                    (equal (car lst) ''1)))
+           (car lst))
+          (t 
+           `(and-list ',(and-list-hash lst) (list . ,lst))))))
 
 (acl2::defsection pp-order
 

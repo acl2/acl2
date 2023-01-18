@@ -4387,7 +4387,8 @@
                      (mv (list single-s/c2) nil nil t))
                     ((single-c-p (ex-from-rp$ single-s/c2))
                      (mv nil nil (list single-s/c2) t))
-                    (t (mv nil nil nil nil))))
+                    (t
+                     (cross-product-pp-aux-for-s/c-main single-s/c2 (list ''1)))))
              (& (mv nil nil nil nil))))
           ((unless valid)
            (mv nil nil nil nil)))
