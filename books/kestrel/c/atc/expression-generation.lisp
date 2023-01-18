@@ -1489,13 +1489,17 @@
          ((when okp)
           (b* (((erp (pexpr-gout arg1))
                 (atc-gen-expr-bool arg1-term gin state))
+               (cond (untranslate$ `(not ,arg1.term) t state))
+               (premise (atc-premise-test cond))
+               (context (append gin.context (list premise)))
                ((erp (pexpr-gout arg2))
                 (atc-gen-expr-bool arg2-term
                                    (change-pexpr-gin
                                     gin
+                                    :context context
                                     :thm-index arg1.thm-index
                                     :names-to-avoid arg1.names-to-avoid
-                                    :proofs nil)
+                                    :proofs arg1.proofs)
                                    state)))
             (retok (atc-gen-expr-or arg1.term
                                     arg2.term
@@ -1511,7 +1515,7 @@
                                      gin
                                      :thm-index arg2.thm-index
                                      :names-to-avoid arg2.names-to-avoid
-                                     :proofs nil)
+                                     :proofs arg2.proofs)
                                     state))))
          ((mv okp arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)
