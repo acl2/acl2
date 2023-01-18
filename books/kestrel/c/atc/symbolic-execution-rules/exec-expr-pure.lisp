@@ -224,7 +224,7 @@
                   (hide (not test1)))
              (equal (exec-expr-pure e compst)
                     (sint 0)))
-    :enable (exec-expr-pure binop-purep sint-from-boolean-with-error)
+    :enable (exec-expr-pure binop-purep)
     :expand (:free (x) (hide x)))
 
   (defruled exec-expr-pure-when-binary-logor
@@ -258,7 +258,7 @@
                   (hide test1))
              (equal (exec-expr-pure e compst)
                     (sint 1)))
-    :enable (exec-expr-pure binop-purep sint-from-boolean-with-error)
+    :enable (exec-expr-pure binop-purep)
     :expand (:free (x) (hide x)))
 
   (defruled exec-expr-pure-when-binary-logor-and-false
@@ -270,14 +270,14 @@
                   (valuep arg1)
                   (equal test1 (test-value arg1))
                   (booleanp test1)
-                  (hide (not test1)))
+                  (hide (not test1))
+                  (equal arg2 (exec-expr-pure (expr-binary->arg2 e) compst))
+                  (valuep arg2)
+                  (equal test2 (test-value arg2))
+                  (booleanp test2))
              (equal (exec-expr-pure e compst)
-                    (sint-from-boolean-with-error
-                     (b* ((arg2 (exec-expr-pure (expr-binary->arg2 e)
-                                                compst))
-                          ((when (errorp arg2)) arg2))
-                       (test-value arg2)))))
-    :enable (exec-expr-pure binop-purep sint-from-boolean-with-error)
+                    (sint-from-boolean test2)))
+    :enable (exec-expr-pure binop-purep)
     :expand (:free (x) (hide x)))
 
   (make-event
