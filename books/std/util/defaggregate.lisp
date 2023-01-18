@@ -1282,9 +1282,12 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                  doc-events
                '())
 
-           ,(if (eq mode :logic)
-                '(logic)
-              '(program))
+           ,@(if (eq mode current-defun-mode)
+                 nil ; already in the right mode
+               ;; In these cases, the defaggregate can't be local:
+               (if (eq mode :logic)
+                   '((logic))
+                 '((program))))
 
            ,@(if already-definedp
                  nil
