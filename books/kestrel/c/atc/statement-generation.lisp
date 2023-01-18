@@ -2322,9 +2322,10 @@
   (verify-guards atc-gen-stmt
     :hints (("Goal"
              :do-not '(preprocess) ; for speed
-             :in-theory (e/d (true-listp-when-atc-var-info-option-listp-rewrite
-                              acl2::true-listp-when-pseudo-event-form-listp-rewrite)
-                             (atc-gen-stmt))))))
+             :in-theory
+             (e/d (true-listp-when-atc-var-info-option-listp-rewrite
+                   acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+                  (atc-gen-stmt))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
