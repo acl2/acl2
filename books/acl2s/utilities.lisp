@@ -168,6 +168,35 @@ variable names in substitutions.
                        (:expand nil)
                        (:prove :hints (("Goal" :by (:instance ,lemma-name ,@substitutions)))))))))))
 
+(defxdoc acl2-pc::split-in-theory
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "Split using an optional theory"
+  :long "<p>
+@({
+ Examples:
+ (split-in-theory)
+ ;; Same as split, using the same theory split uses, namely
+ ;;acl2::minimal-theory
+
+ (split-in-theory thy)
+ ;; Same as split, but use thy instead of the default
+ ;; acl2::minimal-theory
+
+ General Form:
+ (split-in-theory thy)
+ })
+</p>
+<p>where @('thy') is an optional theory.
+</p>
+")
+
+(define-pc-atomic-macro split-in-theory (&optional thy)
+  (value `(:prove :hints
+                  (("Goal"
+                    :do-not-induct proof-builder
+                    :do-not '(generalize eliminate-destructors
+                                         fertilize eliminate-irrelevance)
+                    :in-theory (theory ',(or thy 'acl2::minimal-theory)))))))
 
 (defxdoc make-n-ary-macro
   :parents (acl2s-utilities)

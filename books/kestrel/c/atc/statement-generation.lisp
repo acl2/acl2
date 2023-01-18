@@ -14,7 +14,6 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
-(local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
@@ -1185,7 +1184,7 @@
                  then-context)))
              ((erp (stmt-gout else) else-context)
               (b* (((reterr) (irr-stmt-gout) nil)
-                   (not-test-term (dumb-negate-lit test.term))
+                   (not-test-term `(not ,test.term))
                    (else-cond (untranslate$ not-test-term t state))
                    (else-premise (atc-premise-test else-cond))
                    (else-context (append gin.context
@@ -2323,9 +2322,10 @@
   (verify-guards atc-gen-stmt
     :hints (("Goal"
              :do-not '(preprocess) ; for speed
-             :in-theory (e/d (true-listp-when-atc-var-info-option-listp-rewrite
-                              acl2::true-listp-when-pseudo-event-form-listp-rewrite)
-                             (atc-gen-stmt))))))
+             :in-theory
+             (e/d (true-listp-when-atc-var-info-option-listp-rewrite
+                   acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+                  (atc-gen-stmt))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
