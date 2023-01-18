@@ -198,6 +198,48 @@ variable names in substitutions.
                                          fertilize eliminate-irrelevance)
                     :in-theory (theory ',(or thy 'acl2::minimal-theory)))))))
 
+(defxdoc acl2-pc::by
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "(atomic macro) prove using an existing theorem"
+  :long "<p>
+@({
+ Example:
+ (by car-cons (x (append a b)) (y nil))
+ ;; This will attempt to prove the current goal by applying
+ ;; the theorem car-cons with the given substitution.
+
+ General Form:
+ (by thm-name subst1 ... substk)
+ })
+</p>
+<p>Under the hood, this command simply calls @(tsee acl2-pc::prove)
+with the appropriate @(':by') hint.
+</p>
+")
+
+(define-pc-atomic-macro by (lemma-name &rest substitutions)
+  (value `(:prove :hints
+                  (("Goal"
+                    :by ,@(if substitutions
+                              `((:instance ,lemma-name ,@substitutions))
+                            `(,lemma-name)))))))
+
+(defxdoc acl2-pc::cg-or-skip
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "(atomic macro) change goals when needed"
+  :long "<p>
+This command is exactly like @(tsee acl2-pc::cg) except that it
+``succeeds'' when the current goal is equal to the specified goal,
+where @('cg') would fail.
+</p>
+")
+
+(define-pc-atomic-macro cg-or-skip (&optional name)
+  (acl2::when-goals-trip
+   (if (and (acl2::goals t) (equal name (acl2::goal-name t)))
+       (value :skip)
+     (value `(:cg ,name)))))
+
 (defxdoc make-n-ary-macro
   :parents (acl2s-utilities)
   :short "A macro that
