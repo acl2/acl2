@@ -1,7 +1,7 @@
 ; The deftest utility for isolated tests with extensive guard checking.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,7 @@
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 ;; These include-books are not strictly needed but are convenient for users of
 ;; deftest:
-(include-book "../../std/testing/eval") ;brings in MUST-BE-REDUNDANT
+(include-book "../../std/testing/eval") ;brings in MUST-BE-REDUNDANT, etc.
 (include-book "../../std/testing/assert-equal")
 (include-book "../../std/testing/assert-bang")
 (include-book "../../std/testing/assert-bang-stobj")
@@ -49,8 +49,9 @@
       (cw-event ":test-passed~%"))))
 
 ;; Deftest puts all of the supplied FORMS inside an encapsulate and makes
-;; everything local to the deftest.  It is similar to must-succeed* but also
-;; turns on extensive guard checking (which can help catch bugs during
-;; testing).
+;; everything local to the deftest.  Thus, the deftest cannot cause problems,
+;; such as name clashes, with subsequent forms.  Deftest also turns on
+;; extensive guard checking, which can help catch bugs during testing.
+;; See also must-succeed*.
 (defmacro deftest (&rest forms)
   (deftest-fn forms))
