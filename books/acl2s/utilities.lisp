@@ -176,7 +176,7 @@ variable names in substitutions.
  Examples:
  (split-in-theory)
  ;; Same as split, using the same theory split uses, namely
- ;;acl2::minimal-theory
+ ;; acl2::minimal-theory
 
  (split-in-theory thy)
  ;; Same as split, but use thy instead of the default
@@ -203,14 +203,14 @@ variable names in substitutions.
   :short "(atomic macro) prove using an existing theorem"
   :long "<p>
 @({
- Example:
- (by car-cons (x (append a b)) (y nil))
- ;; This will attempt to prove the current goal by applying
- ;; the theorem car-cons with the given substitution.
+ Example:
+ (by car-cons (x (append a b)) (y nil))
+ ;; This will attempt to prove the current goal by applying
+ ;; the theorem car-cons with the given substitution.
 
- General Form:
- (by thm-name subst1 ... substk)
- })
+ General Form:
+ (by thm-name subst1 ... substk)
+ })
 </p>
 <p>Under the hood, this command simply calls @(tsee acl2-pc::prove)
 with the appropriate @(':by') hint.
