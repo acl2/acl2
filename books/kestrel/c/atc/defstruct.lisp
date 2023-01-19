@@ -952,7 +952,7 @@
                        (:e posp)
                        (:e member-value-listp)
                        (:e len)
-                       (:compound-recognizer true-listp-when-uchar-listp)
+                       true-listp-when-uchar-listp
                        member-value-listp-of-cons
                        member-valuep-of-member-value
                        schar-fix-when-scharp
@@ -1354,8 +1354,11 @@
        (arr-write (pack fixtype '-array-write))
        (elem-typep (pack fixtype 'p))
        (elem-type-listp (pack fixtype '-listp))
+       (elem-type-list-fix (pack fixtype '-list-fix))
        (type-of-value-when-arr-typep (pack 'type-of-value-when- arr-typep))
        (fixtype-array->elements (pack fixtype '-array->elements))
+       (fixtype-array->elements-of-fixtype-array
+        (pack fixtype '-array->elements-of- fixtype '-array))
        (elem-type-listp-of-fixtype-array->elements
         (pack elem-type-listp '-of- fixtype-array->elements))
        (length (packn-pos (list struct-tag
@@ -1385,12 +1388,50 @@
                                            writer)
                                      writer))
        (reader-all (packn-pos (list struct-tag
-                                    '-
+                                    '-read-
+                                    (ident->name name)
+                                    '-all)
+                              struct-tag))
+       (writer-all (packn-pos (list struct-tag
+                                    '-write-
                                     (ident->name name)
                                     '-all)
                               struct-tag))
        (len-of-reader-all (packn-pos (list 'len-of- reader-all) reader-all))
        (consp-of-reader-all (packn-pos (list 'consp-of- reader-all) reader-all))
+       (writer-all-extra-guard (if size?
+                                   `(equal (len values)
+                                           ,size?)
+                                 `(equal (len values)
+                                         (len (,reader-all struct)))))
+       (fixtype-array-length (pack fixtype '-array-length))
+       (fixtype-array-of (pack fixtype '-array-of))
+       (array-length-when-fixtype-array-length
+        (pack 'array-length-when- fixtype '-array-length))
+       (consp-of-elem-type-list-fix (pack 'consp-of- elem-type-list-fix))
+       (len-of-elem-type-list-fix (pack 'len-of- elem-type-list-fix))
+       (not-flexible-array-member-p-when-fixtype-arrayp
+        (pack 'not-flexible-array-member-p-when- fixtype '-arrayp))
+       (fixtype-arrayp-of-fixtype-array
+        (pack fixtype '-arrayp-of- fixtype '-array))
+       (fixtype-arrayp-of-fixtype-array-of
+        (pack fixtype '-arrayp-of- fixtype '-array-of))
+       (valuep-when-fixtype-arrayp (pack 'valuep-when- fixtype '-arrayp))
+       (true-listp-when-fixtype-listp (pack 'true-listp-when- elem-type-listp))
+       (fixtype-array-of-of-fixtype-list-fix-elements
+        (pack fixtype '-array-of-of- fixtype '-list-fix-elements))
+       (struct-tag-equiv-implies-equal-struct-tag-fix-1
+        (packn-pos (list struct-tag
+                         '-equiv-implies-equal-
+                         struct-tag
+                         '-fix-1)
+                   struct-tag))
+       (struct-tag-fix-under-struct-tag-equiv
+        (packn-pos (list struct-tag-fix
+                         '-under-
+                         struct-tag
+                         '-equiv)
+                   struct-tag))
        (events
         `(,@(and
              (not size?)
@@ -1580,7 +1621,145 @@
                                     '-equiv-implies-equal-
                                     struct-tag-fix
                                     '-1)
-                              struct-tag))))))))
+                              struct-tag))))))
+          (define ,writer-all ((values ,elem-type-listp) (struct ,struct-tag-p))
+            :guard ,writer-all-extra-guard
+            :returns (new-struct
+                      ,struct-tag-p
+                      :hyp ,writer-all-extra-guard
+                      :hints
+                      (("Goal"
+                        :in-theory
+                        '(,struct-tag-p
+                          ,struct-tag-fix
+                          ,writer-all
+                          value-struct-write
+                          ,fixtype-array-length
+                          ,fixtype-array-of
+                          ,array-length-when-fixtype-array-length
+                          ,consp-of-elem-type-list-fix
+                          ,len-of-elem-type-list-fix
+                          member-value-list->name-list-of-struct-write-aux
+                          member-value-list-fix-when-member-value-listp
+                          member-value-listp-of-value-struct-write-aux
+                          not-errorp-when-member-value-listp
+                          ,not-flexible-array-member-p-when-fixtype-arrayp
+                          remove-flexible-array-member-when-absent
+                          return-type-of-value-struct
+                          ,type-of-value-when-arr-typep
+                          ,fixtype-array->elements-of-fixtype-array
+                          ,fixtype-arrayp-of-fixtype-array
+                          value-fix-when-valuep
+                          value-struct->flexiblep-of-value-struct
+                          value-struct->members-of-value-struct
+                          value-struct->tag-of-value-struct
+                          value-struct-read-aux-of-value-struct-write-aux
+                          ,valuep-when-fixtype-arrayp
+                          (:e acl2::bool-fix)
+                          (:e ident)
+                          (:e ident-fix)
+                          (:e ident-equiv)
+                          (:e member-value)
+                          (:e member-value-list->name-list)
+                          (:e repeat)
+                          (:e type-array)
+                          (:e value-struct)
+                          (:e value-struct->tag)
+                          (:e value-struct->members)
+                          (:e value-struct->flexiblep)
+                          (:e value-array)
+                          (:e value-struct-read-aux)
+                          (:e type-schar)
+                          (:e type-uchar)
+                          (:e type-sshort)
+                          (:e type-ushort)
+                          (:e type-sint)
+                          (:e type-uint)
+                          (:e type-slong)
+                          (:e type-ulong)
+                          (:e type-sllong)
+                          (:e type-ullong)
+                          (:e schar)
+                          (:e uchar)
+                          (:e sshort)
+                          (:e ushort)
+                          (:e sint)
+                          (:e uint)
+                          (:e slong)
+                          (:e ulong)
+                          (:e sllong)
+                          (:e ullong)
+                          (:e scharp)
+                          (:e ucharp)
+                          (:e sshortp)
+                          (:e ushortp)
+                          (:e sintp)
+                          (:e uintp)
+                          (:e slongp)
+                          (:e ulongp)
+                          (:e sllongp)
+                          (:e ullongp)
+                          (:e schar-arrayp)
+                          (:e uchar-arrayp)
+                          (:e sshort-arrayp)
+                          (:e ushort-arrayp)
+                          (:e sint-arrayp)
+                          (:e uint-arrayp)
+                          (:e slong-arrayp)
+                          (:e ulong-arrayp)
+                          (:e sllong-arrayp)
+                          (:e ullong-arrayp)
+                          (:e schar-array-length)
+                          (:e uchar-array-length)
+                          (:e sshort-array-length)
+                          (:e ushort-array-length)
+                          (:e sint-array-length)
+                          (:e uint-array-length)
+                          (:e slong-array-length)
+                          (:e ulong-array-length)
+                          (:e sllong-array-length)
+                          (:e ullong-array-length)
+                          (:t value-struct-write-aux)
+                          ,@(if size?
+                                '(acl2::posp-compound-recognizer
+                                  (:e type-of-value)
+                                  defstruct-consp-len-lemma)
+                              `(,reader-all
+                                value-struct-read
+                                (:e ,fixtype-array->elements)
+                                (:e len)
+                                returns-lemma))))))
+            (value-struct-write (ident ,(ident->name name))
+                                (,fixtype-array-of values)
+                                (,struct-tag-fix struct))
+            :guard-hints
+            (("Goal" :in-theory '(,struct-tag-p
+                                  ,struct-tag-fix
+                                  ,valuep-when-fixtype-arrayp
+                                  ,true-listp-when-fixtype-listp
+                                  ,fixtype-arrayp-of-fixtype-array-of
+                                  ,@(if size?
+                                        '(defstruct-consp-len-lemma
+                                          (:e posp))
+                                      `((:e len)
+                                        defstruct-len-consp-lemma
+                                        (:t ,reader-all))))))
+            :prepwork
+            ((defrulel returns-lemma
+               (implies (equal (len values)
+                               (len (,fixtype-array->elements x)))
+                        (consp values))
+               :in-theory '(len
+                            defstruct-len-consp-lemma
+                            (:t ,fixtype-array->elements))))
+            ///
+            (fty::deffixequiv ,writer-all
+              :hints
+              (("Goal"
+                :in-theory '(,writer-all
+                             ,fixtype-array-of-of-fixtype-list-fix-elements
+                             ,struct-tag-equiv-implies-equal-struct-tag-fix-1
+                             ,struct-tag-fix-under-struct-tag-equiv)))))))
        ((mv more-events
             more-readers
             more-writers
@@ -1689,7 +1868,13 @@
            (cons writer-for-index more-writers)
            (cons index-okp-for-index more-checkers)
            (cons reader-return-thm more-reader-return-thms)
-           (cons writer-return-thm more-writer-return-thms))))))
+           (cons writer-return-thm more-writer-return-thms)))))
+
+  ///
+
+  (defruled defstruct-len-consp-lemma
+    (implies (consp x)
+             (not (equal (len x) 0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
