@@ -91,6 +91,13 @@
                      (:REWRITE NOT-INCLUDE-RP)
                      (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1))))
 
+(local
+   (defthm is-equals-of-others
+     (implies (not (equal (car term) 'equals))
+              (not (is-equals term )))
+     :hints (("Goal"
+              :in-theory (e/d (is-equals) ())))))
+
 (defthm get-max-min-val-correct-lemma1
   (implies (and (lte (ifix a) (ifix b))
                 (lte (ifix x) (ifix y))
@@ -451,8 +458,8 @@
                              (:REWRITE VALID-SC-SUBTERMS-CONS)
                              (:REWRITE GE-CHAIN-SMART)
                              (:DEFINITION RP-TRANS)
-                             (:TYPE-PRESCRIPTION INCLUDE-FNC)
-                             include-fnc
+                             (:TYPE-PRESCRIPTION include-fnc-fn)
+                             include-fnc-fn
                              valid-sc
                              rp-trans
                              rp-termp
@@ -475,7 +482,7 @@
                              (:REWRITE DEFAULT-CAR)
                              (:REWRITE DEFAULT-Cdr)
                              (:REWRITE IS-RP-PSEUDO-TERMP)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-FN)
                              (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT)
                              (:REWRITE LTE-AND-GTE-IMPLIES)
                              (:REWRITE VALID-SC-EX-FROM-RP-2)
@@ -661,9 +668,9 @@
                             (:DEFINITION EVAL-AND-ALL)
                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
                             (:REWRITE DEFAULT-CDR)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-FN)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                            (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                            (:DEFINITION INCLUDE-FNC-SUBTERMS-FN)
                             (:REWRITE DEFAULT-CAR)
 
                             rp-termp
@@ -770,16 +777,16 @@
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
                              (:DEFINITION VALID-SC-SUBTERMS)
                              (:REWRITE DEFAULT-CDR)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-FN)
                              (:REWRITE SUM-OF-NEGATED-ELEMENTS)
                              (:TYPE-PRESCRIPTION --)
                              (:TYPE-PRESCRIPTION BINARY-SUM)
                              (:TYPE-PRESCRIPTION VALID-SC-SUBTERMS)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-LST)
-                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS-FN)
                              (:TYPE-PRESCRIPTION VALID-SC)
-                             (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
-                             (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                             (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS-FN)
+                             (:TYPE-PRESCRIPTION INCLUDE-FNC-FN)
                              (:TYPE-PRESCRIPTION SUM-LIST-EVAL)
                              (:REWRITE EX-FROM-SYNP-LEMMA1)
                              (:REWRITE
@@ -1234,7 +1241,7 @@
                             (:DEFINITION EVAL-AND-ALL)
                             (:REWRITE DEFAULT-CDR)
                             ;;(:DEFINITION RP-TRANS)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-FN)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
                             (:REWRITE DEFAULT-CAR)
                             (:TYPE-PRESCRIPTION O<)
@@ -1482,7 +1489,7 @@
                             (:DEFINITION TRANS-LIST)
                             (:TYPE-PRESCRIPTION VALID-SC)
                             (:TYPE-PRESCRIPTION BINARY-SUM)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-FN)
                             (:REWRITE EX-FROM-SYNP-LEMMA1)
                             (:DEFINITION IS-SYNP$INLINE)
                             (:REWRITE
@@ -1914,7 +1921,7 @@
                             (:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
                             ;;(:REWRITE VALID-SC-CADDR)
                             ;;(:REWRITE VALID-SC-CADDDR)
-                            (:DEFINITION INCLUDE-FNC))))))
+                            (:DEFINITION INCLUDE-FNC-FN))))))
 
 (progn
   (defret pattern0-reduce-aux-pp-lst-cnt-implies-1
@@ -2209,7 +2216,7 @@
                              VALID-SC-SUBTERMS-CONS
                              valid-sc
                              eval-and-all
-                             include-fnc)))))
+                             include-fnc-fn)))))
 
 (defret c-pattern0-reduce-correct
   (implies (and (valid-sc-subterms s-lst a)
@@ -2319,7 +2326,7 @@
                             valid-sc-single-step
                             rp-trans-lst-of-consp
                             is-rp)
-                           (include-fnc)))))
+                           (include-fnc-fn)))))
 
 (defret create-s-instance-correct-corollary
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -2511,8 +2518,8 @@
                               REGULAR-RP-EVL-OF_S_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              )
                             (;;rp-evlt-of-ex-from-rp
-                             INCLUDE-FNC
-                             INCLUDE-FNC-SUBTERMS
+                             INCLUDE-FNC-FN
+                             INCLUDE-FNC-SUBTERMS-FN
                              IS-FALIST
                              RP-TRANS
                              RP-TRANS-LST
@@ -2829,9 +2836,9 @@
                              lte-implies-bitp
                              lte-implies-0)
                             (c-pattern1-reduce-correct
-                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS-FN)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-LST)
-                             (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                             (:TYPE-PRESCRIPTION INCLUDE-FNC-FN)
                              (:REWRITE LTE-IMPLIES-0)
                              (:REWRITE F2-OF-BIT)
                              (:REWRITE DUMMY-SUM-CANCEL-LEMMA1)
@@ -2858,7 +2865,7 @@
                              (:REWRITE RP-EVL-OF-VARIABLE)
                              (:REWRITE
                               REGULAR-RP-EVL-OF_s-C-RES_WHEN_MULT-FORMULA-CHECKS)
-                             INCLUDE-FNC
+                             INCLUDE-FNC-FN
                              RP-TRANS-LST
                              VALID-SC
 
@@ -2938,7 +2945,7 @@
                              (:REWRITE RP-EVL-OF-VARIABLE)
                              (:REWRITE
                               REGULAR-RP-EVL-OF_s-C-RES_WHEN_MULT-FORMULA-CHECKS)
-                             INCLUDE-FNC
+                             INCLUDE-FNC-FN
                              RP-TRANS-LST
                              VALID-SC
 
@@ -3418,7 +3425,7 @@
 
                             SUM-OF-NEGATED-ELEMENTS
                             light-s-of-s-fix-correct
-                            include-fnc
+                            include-fnc-fn
                             evenp)))))
 
 (define single-c-try-merge-params$for-proof  (s-lst other-s-lst c-hash-code s-arg pp-arg
@@ -3507,7 +3514,7 @@
                             single-c-try-merge-params$for-proof-lemma
                             SUM-OF-NEGATED-ELEMENTS
                             light-s-of-s-fix-correct
-                            include-fnc
+                            include-fnc-fn
                             evenp)))
           ("Subgoal *1/2"
            :use ((:instance single-c-try-merge-params-aux-correct
@@ -3734,7 +3741,7 @@
                            (get-c-args-correct
                             rp-trans
                             (:DEFINITION VALID-SC)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-FN)
                             (:REWRITE VALID-SC-CADDR)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
                             (:REWRITE ACL2::ACL2-NUMBERP-X)
@@ -4105,7 +4112,7 @@
                             (:REWRITE
                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
                             (:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-FN)
                             rp-term-listp-of-cons
                             rp-term-listp-of-consed
                             valid-sc-subterms-of-consed
@@ -4286,7 +4293,7 @@
                             (:REWRITE
                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
                             (:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-FN)
                             rp-term-listp-of-cons
                             rp-term-listp-of-consed
                             valid-sc-subterms-of-consed
@@ -4534,16 +4541,16 @@
                             (:REWRITE DEFAULT-CAR)
                             (:DEFINITION EVAL-AND-ALL)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-LST)
-                            (:DEFINITION INCLUDE-FNC-SUBTERMS)
-                            (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
-                            (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-SUBTERMS-FN)
+                            (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS-FN)
+                            (:TYPE-PRESCRIPTION INCLUDE-FNC-FN)
                             (:REWRITE ACL2::FN-CHECK-DEF-NOT-QUOTE)
                             ;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:TYPE-PRESCRIPTION MULT-FORMULA-CHECKS)
                             (:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
                             (:REWRITE DEFAULT-CDR)
                             (:DEFINITION IS-RP$INLINE)
-                            (:DEFINITION INCLUDE-FNC))))))
+                            (:DEFINITION INCLUDE-FNC-FN))))))
 
 (defret res-S-LST-of-CREATE-C-INSTANCE-is-always-nil
   (equal RES-S-LST nil)
@@ -4629,11 +4636,11 @@
                              (:TYPE-PRESCRIPTION BINARY-SUM)
                              (:TYPE-PRESCRIPTION --)
                              (:REWRITE VALID-SC-SUBTERMS-CDR)
-                             (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                             (:TYPE-PRESCRIPTION INCLUDE-FNC-FN)
                              (:TYPE-PRESCRIPTION VALID-SC)
                              (:TYPE-PRESCRIPTION VALID-SC-SUBTERMS)
-                             (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
-                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS-FN)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS-FN)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-LST)
                              (:REWRITE EX-FROM-SYNP-LEMMA1)
                              (:REWRITE RP-EVL-OF-VARIABLE)
@@ -4643,7 +4650,7 @@
                              (:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
                              (:REWRITE DEFAULT-CDR)
                              (:DEFINITION IS-RP$INLINE)
-                             (:DEFINITION INCLUDE-FNC))))))
+                             (:DEFINITION INCLUDE-FNC-FN))))))
 
 (defret c-of-s-fix-lst-correct-singled-out
   (implies (and ;;(c-of-s-fix-mode)
@@ -4839,14 +4846,14 @@
                             (:TYPE-PRESCRIPTION BINARY-M2-CHAIN)
                             ;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE DEFAULT-CAR)
-                            include-fnc
+                            include-fnc-fn
                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
                             (:REWRITE DEFAULT-CDR)
                             (:DEFINITION S-OF-S-FIX-LST-FN)
                             RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
                             not-include-rp-means-valid-sc
                             not-include-rp-means-valid-sc-lst
-                            include-fnc-subterms
+                            include-fnc-subterms-fn
                             ;;c-sum-merge-correct-for-s
                             c-sum-merge-correct
                             M2-OF-RP-EVLT-EX-FROM-RP/--)))))
@@ -5036,14 +5043,14 @@
                             (:TYPE-PRESCRIPTION BINARY-M2-CHAIN)
                             ;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:REWRITE DEFAULT-CAR)
-                            include-fnc
+                            include-fnc-fn
                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
                             (:REWRITE DEFAULT-CDR)
                             (:DEFINITION S-OF-S-FIX-LST-FN)
                             RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
                             not-include-rp-means-valid-sc
                             not-include-rp-means-valid-sc-lst
-                            include-fnc-subterms
+                            include-fnc-subterms-fn
                             ;;c-sum-merge-correct-for-s
                             c-sum-merge-correct
                             nfix natp
@@ -6884,7 +6891,7 @@
                             (:DEFINITION RP-TRANS)
                             ;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:DEFINITION TRANS-LIST)
-                            include-fnc
+                            include-fnc-fn
                             (:REWRITE DEFAULT-CDR)
                             (:REWRITE VALID-SC-SUBTERMS-OF-CDR))))))
 
@@ -6941,7 +6948,7 @@
                              (:TYPE-PRESCRIPTION BINARY-SUM)
                              (:DEFINITION ACL2::APPLY$-BADGEP)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-FN)
                              (:DEFINITION SUBSETP-EQUAL)
                              (:DEFINITION MEMBER-EQUAL)
                              valid-sc
@@ -6951,7 +6958,7 @@
                              ;;--of--equals
                              default-car
                              default-cdr
-                             include-fnc-subterms
+                             include-fnc-subterms-fn
                              rp-trans-lst-is-lst-when-list-is-absent
                              bitp
                              rp-trans-is-term-when-list-is-absent
@@ -7098,7 +7105,7 @@
                              (:TYPE-PRESCRIPTION EX-FROM-SYNP)
                              (:TYPE-PRESCRIPTION SINGLE-s-C-RES-P$INLINE)
                              (:TYPE-PRESCRIPTION O<)
-                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS-FN)
                              (:TYPE-PRESCRIPTION SUM-LIST-P$INLINE)
                              (:TYPE-PRESCRIPTION AND-LIST-P$INLINE)
                              (:REWRITE DEFAULT-CDR)
@@ -7633,11 +7640,12 @@
                             (:TYPE-PRESCRIPTION RP-TERM-LISTP)
                             (:TYPE-PRESCRIPTION O<)
                             (:DEFINITION EVAL-AND-ALL)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-FN)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-LST)
                             (:REWRITE DEFAULT-CAR)
                             (:DEFINITION
-                             INCLUDE-FNC-SUBTERMS)(:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
+                             INCLUDE-FNC-SUBTERMS-FN)
+                            (:TYPE-PRESCRIPTION include-fnc-subterms-fn)
                             (:TYPE-PRESCRIPTION VALID-SC)
                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
                             ;; (:REWRITE MINUS-OF-SUM)

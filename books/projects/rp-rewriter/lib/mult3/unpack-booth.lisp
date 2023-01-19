@@ -92,7 +92,6 @@
                                      (list (car pp-lst)))))
                       (unpack-booth-for-pp-lst (cdr pp-lst)))))
 
-
 (define include-binary-fnc-p (term)
   (or (include-fnc term 'binary-not)
       (include-fnc term 'binary-and)
@@ -782,7 +781,6 @@ t)
   (enable-unpack-booth-later-hons-copy nil))
 
 
-
 (local
  (defthm binary-fnc-p-implies
    (implies (BINARY-FNC-P x)
@@ -978,6 +976,20 @@ t)
             (cond
              ;;((quotep res) (mv res t changed))
              (changed (mv `(rp ,(cadr term) ,res) `(nil t ,dont-rw) t))
+             (t (mv term t nil)))))
+
+         ((when (equal (car term) 'equals))
+          (b* (((unless (is-equals term))
+                (progn$
+                 (acl2::raise "Term function is equals but does not satisfy is-equals: ~p0 ~%" term)
+                 (mv term t nil)))
+               ((mv res dont-rw changed)
+                (unpack-booth-general-meta (cadr term)))
+               ((mv res2 dont-rw2 changed2)
+                (unpack-booth-general-meta (cadr term))))
+            (cond
+             ;;((quotep res) (mv res t changed))
+             ((or changed changed2) (mv `(equals ,res ,res2) `(nil ,dont-rw ,dont-rw2) t))
              (t (mv term t nil)))))
 
          ((mv args args-dont-rw changed)

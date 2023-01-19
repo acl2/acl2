@@ -80,6 +80,13 @@
                      mod2-is-m2)))
 
 (local
+   (defthm is-equals-of-others
+     (implies (not (equal (car term) 'equals))
+              (not (is-equals term )))
+     :hints (("Goal"
+              :in-theory (e/d (is-equals) ())))))
+
+(local
  (encapsulate
    nil
 
@@ -374,7 +381,7 @@
   :hints (("Goal"
            :in-theory (e/d (pp-lists-to-term-pp-lst
                             CREATE-AND-LIST-INSTANCE
-                            is-if
+                            is-if is-equals
                             is-rp) ()))))
 
 (defret valid-sc-of-pp-remove-extraneous-sc
@@ -387,7 +394,7 @@
            :expand ((:free (x y) (is-rp (cons x y))))
            :in-theory (e/d (pp-remove-extraneous-sc)
                            ((:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-fn)
                             (:DEFINITION RP-TERMP)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
                             (:REWRITE RP-TERMP-OF-PP-REMOVE-EXTRANEOUS-SC)
@@ -403,7 +410,7 @@
            :expand ((:free (x y) (is-rp (cons x y))))
            :in-theory (e/d (pp-remove-extraneous-sc-lst)
                            ((:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-fn)
                             (:DEFINITION RP-TERMP)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
                             (:REWRITE RP-TERMP-OF-PP-REMOVE-EXTRANEOUS-SC)
@@ -426,7 +433,7 @@
   :hints (("Goal"
            :in-theory (e/d (list-to-lst
                             valid-sc
-                            is-rp
+                            is-rp is-equals
                             is-if)
                            ()))))
 
@@ -437,7 +444,7 @@
   :hints (("Goal"
            :in-theory (e/d (pp-flatten
                             create-and-list-instance
-                            is-if is-rp) ()))))
+                            is-if is-equals is-rp) ()))))
 
 (defthm valid-sc-subterms-of-cdr
   (implies (or (valid-sc-subterms lst a)
@@ -448,7 +455,7 @@
            (valid-sc-subterms (cdr lst) a))
   :hints (("Goal"
            :in-theory (e/d (is-rp
-                            is-if)
+                            is-if is-equals)
                            ()))))
 
 (local
@@ -459,10 +466,10 @@
    :fn SORT-SUM-META-AUX-AUX
    :hints (("Goal"
             :in-theory (e/d (SORT-SUM-META-AUX-AUX
-                             is-rp is-if)
+                             is-rp is-if is-equals)
                             ((:DEFINITION EVAL-AND-ALL)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-fn)
                              (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
 
                              (:DEFINITION RP-TERMP)
@@ -471,14 +478,14 @@
                              (:DEFINITION FALIST-CONSISTENT-AUX)
                              rp-trans
                              (:TYPE-PRESCRIPTION O<)
-                             (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                             (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
                              (:TYPE-PRESCRIPTION VALID-SC-SUBTERMS)
                              (:REWRITE DEFAULT-CAR)
-                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS-fn)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-LST)
                              (:TYPE-PRESCRIPTION VALID-SC)
                              (:TYPE-PRESCRIPTION O-P)
-                             (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
+                             (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS-fn)
                              (:REWRITE VALID-SC-OF-EX-FROM-RP)
                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                              (:definition rp-termp)))))))
@@ -495,7 +502,7 @@
                             ((:definition valid-sc)
                              (:DEFINITION EVAL-AND-ALL)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-fn)
                              (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
 
                              (:DEFINITION RP-TERMP)
@@ -507,7 +514,7 @@
                              (:rewrite car-of-ex-from-rp-is-not-rp)
                              (:definition rp-term-listp)
                              (:rewrite not-include-rp-means-valid-sc)
-                             (:definition include-fnc)
+                             (:definition include-fnc-fn)
                              (:rewrite rp-termp-implies-subterms)
                              (:definition quotep)))))))
 
@@ -529,7 +536,7 @@
                             ((:definition valid-sc)
                              (:DEFINITION EVAL-AND-ALL)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-fn)
                              (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
 
                              (:DEFINITION RP-TERMP)
@@ -541,7 +548,7 @@
                              (:rewrite car-of-ex-from-rp-is-not-rp)
                              (:definition rp-term-listp)
                              (:rewrite not-include-rp-means-valid-sc)
-                             (:definition include-fnc)
+                             (:definition include-fnc-fn)
                              (:rewrite rp-termp-implies-subterms)
                              (:definition quotep)))))))
 
@@ -552,7 +559,7 @@
            :in-theory (e/d (sort-sum-meta
                             CREATE-LIST-INSTANCE
                             is-rp
-                            is-if) ()))))
+                            is-if is-equals) ()))))
 
 ;;;;;;;;;;;;;;;;
 ;; EVAL LEMMAS
@@ -824,7 +831,7 @@
               :do-not-induct t
               :in-theory (e/d (has-bitp-rp
                                is-rp
-                               is-if
+                               is-if is-equals
                                eval-and-all
                                context-from-rp)
                               (bitp
@@ -845,7 +852,7 @@
              :in-theory (e/d (has-bitp-rp
                               has-bitp-rp-implies-lemma
                               is-rp
-                              is-if)
+                              is-if is-equals)
                              (bitp
                               rp-trans
                               ex-from-rp-lemma1
@@ -1984,15 +1991,15 @@
                               (:REWRITE BIT-FIX-OPENER)
                               (:REWRITE BIT-LISTP-LEMMA-2)
                               (:REWRITE NOT-INCLUDE-RP)
-                              (:DEFINITION INCLUDE-FNC)
+                              (:DEFINITION INCLUDE-FNC-fn)
                               (:REWRITE DEFAULT-CAR)
                               (:REWRITE DEFAULT-CDR)
                               (:DEFINITION RP-EQUAL)
                               (:META BINARY-OR**/AND**-GUARD-META-CORRECT)
                               (:DEFINITION QUOTEP)
                               (:DEFINITION RP-TRANS)
-                              (:TYPE-PRESCRIPTION INCLUDE-FNC)
-                              (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
+                              (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
+                              (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS-fn)
                               is-rp
                               and$)))))
 
@@ -2628,7 +2635,18 @@
                                pp-term-p
                                pp-term-to-pp-lists
                                bit-list-listp)
-                              ()))))))
+                              ((:DEFINITION EX-FROM-RP)
+
+                               (:REWRITE NOT-INCLUDE-RP)
+                               (:REWRITE VALID-SC-EX-FROM-RP-2)
+                               (:DEFINITION EVAL-AND-ALL)
+                               (:DEFINITION INCLUDE-FNC-FN)
+                               (:DEFINITION VALID-SC)
+                               (:DEFINITION RP-TERMP)
+                               (:REWRITE RP-EVL-OF-RP-EQUAL2)
+                               (:REWRITE RP-TERMP-OF-RP-TRANS)
+                               (:REWRITE IS-IF-RP-TERMP)
+                               (:DEFINITION RP-TERM-LISTP))))))))
 
 (progn
   (local
@@ -3338,7 +3356,7 @@
                              (:REWRITE PP-LISTS-P-AND$-PP-LISTS)
                              (:REWRITE +-IS-SUM)
                              (:REWRITE SUM-OF-NEGATED-ELEMENTS)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-fn)
                              (:DEFINITION EX-FROM-RP)
                              (:DEFINITION APPLY-SIGN-TO-PP-LISTS)
                              (:REWRITE ATOM-MERGE-SORTED-PP-LISTS)
@@ -3525,9 +3543,9 @@
                              rp-termp
                              rp-evlt-of-ex-from-rp
                              (:DEFINITION EX-FROM-RP)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-fn)
                              (:REWRITE NOT-INCLUDE-RP)
-                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS-fn)
                              (:DEFINITION RP-EQUAL)
                              (:REWRITE RP-EQUAL-IS-SYMMETRIC)
                              (:REWRITE RP-EVLT-OF-RP-EQUAL)
@@ -3599,7 +3617,7 @@
            :induct (NEGATE-LST-AUX LST)
            :in-theory (e/d (negate-lst
                             is-rp
-                            is-if
+                            is-if is-equals
                             NEGATE-LST-AUX)
                            ()))))
 
@@ -3737,7 +3755,7 @@
     :hints (("Goal"
              :in-theory (e/d (is-rp
                               valid-sc-single-step
-                              is-if)
+                              is-if is-equals)
                              (valid-sc)))))
 
   (defthm bitp-of-bits-of-term-with-ex-from-rp
@@ -3753,7 +3771,7 @@
                    (:instance rp-evl-of-ex-from-rp))
              :in-theory (e/d* (is-rp
                                regular-eval-lemmas
-                               is-if)
+                               is-if is-equals)
                               (valid-sc
                                rp-evl-of-ex-from-rp
                                EVL-OF-EXTRACT-FROM-RP
@@ -3821,7 +3839,7 @@
                                ;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                                (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                               (:DEFINITION INCLUDE-FNC)
+                               (:DEFINITION INCLUDE-FNC-fn)
                                (:TYPE-PRESCRIPTION O-P)
                                rp-trans))))))
 
@@ -3931,11 +3949,11 @@
                                (:TYPE-PRESCRIPTION O<)
                                EX-FROM-RP
                                (:REWRITE NOT-INCLUDE-RP)
-                               (:DEFINITION INCLUDE-FNC)
+                               (:DEFINITION INCLUDE-FNC-fn)
                                (:REWRITE DEFAULT-CDR)
                                (:REWRITE DEFAULT-CAR)
                                (:DEFINITION QUOTEP)
-                               (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                               (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
                                (:TYPE-PRESCRIPTION O-P)
                                (:TYPE-PRESCRIPTION IS-RP$INLINE)
                                ;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
@@ -3947,7 +3965,7 @@
                                ;;                               ACL2::|a <= b & ~(a = b)  =>  a < b|)
                                (:REWRITE
                                 REGULAR-RP-EVL-OF_IFIX_WHEN_MULT-FORMULA-CHECKS)
-                               (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
+                               (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS-fn)
                                ))))))
 
   (local
@@ -4040,7 +4058,7 @@
                                regular-eval-lemmas
                                rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
                                not-consp-SORT-SUM-META-AUX-AUX-means
-                               is-if is-rp context-from-rp eval-and-all
+                               is-if is-equals is-rp context-from-rp eval-and-all
                                true-listp
                                ifix-opener
                                PP-LISTS-TO-TERM-P+)
@@ -4062,7 +4080,7 @@
                                (:REWRITE EVAL-OF-LOGBIT)
                                (:REWRITE EVAL-OF-BINARY-XOR)
                                (:REWRITE EVAL-OF-BINARY-OR)
-                               (:DEFINITION INCLUDE-FNC)
+                               (:DEFINITION INCLUDE-FNC-fn)
                                (:DEFINITION RP-TERMP)
 ;VALID-SC-EX-FROM-RP-2
                                rp-evl-of-ex-from-rp-reverse
@@ -4089,7 +4107,7 @@
                                regular-eval-lemmas
                                rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
                                not-consp-SORT-SUM-META-AUX-AUX-means
-                               is-if is-rp context-from-rp eval-and-all
+                               is-if is-equals is-rp context-from-rp eval-and-all
                                true-listp
                                ifix-opener
                                PP-LISTS-TO-TERM-P+)
@@ -4111,7 +4129,7 @@
                                (:REWRITE EVAL-OF-LOGBIT)
                                (:REWRITE EVAL-OF-BINARY-XOR)
                                (:REWRITE EVAL-OF-BINARY-OR)
-                               (:DEFINITION INCLUDE-FNC)
+                               (:DEFINITION INCLUDE-FNC-fn)
                                (:DEFINITION RP-TERMP)
 ;VALID-SC-EX-FROM-RP-2
                                rp-evl-of-ex-from-rp-reverse

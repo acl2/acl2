@@ -735,6 +735,7 @@
 
   (defthm valid-sc-cons
     (implies (and (not (is-rp term))
+                  (not (is-equals term))
                   (rp-termp term)
                   (valid-sc-subterms (cdr term) a))
              (valid-sc term a))
@@ -745,8 +746,135 @@
              :cases ((is-if term))
              :in-theory (e/d (valid-sc) ()))))
 
+
+  (defthmd is-rp-with-same-lengths
+    (implies (and (true-listp lst1)
+                  (true-listp lst2)
+                  (equal (len lst1) (len lst2))
+                  (implies (or (quotep (car lst1))
+                               (quotep (car lst2)))
+                           (equal (car lst1) (car lst2))))
+             (equal (is-rp (cons fn lst1))
+                    (is-rp (cons fn lst2))))
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((LEN (CDDR LST1))
+                      (LEN (CDDR LST2))
+                      (LEN (CDR LST2))
+                      (LEN (CDR LST1))
+                      (LEN LST2)
+                      (LEN LST1))
+             :in-theory (e/d (is-rp) ()))))
+
+  (defthmd is-equals-with-same-lengths
+    (implies (and (true-listp lst1)
+                  (true-listp lst2)
+                  (equal (len lst1) (len lst2)))
+             (equal (is-equals (cons fn lst1))
+                    (is-equals (cons fn lst2))))
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((LEN (CDDR LST1))
+                      (LEN (CDDR LST2))
+                      (LEN (CDR LST2))
+                      (LEN (CDR LST1))
+                      (LEN LST2)
+                      (LEN LST1))
+             :in-theory (e/d (is-equals) ()))))
+
+  (defthmd is-if-with-same-lengths
+    (implies (and (true-listp lst1)
+                  (true-listp lst2)
+                  (equal (len lst1) (len lst2)))
+             (equal (is-if (cons fn lst1))
+                    (is-if (cons fn lst2))))
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((LEN (CDDDR LST2))
+                      (LEN (CDDDR LST1))
+                      (LEN (CDDR LST1))
+                      (LEN (CDDR LST2))
+                      (LEN (CDR LST2))
+                      (LEN (CDR LST1))
+                      (LEN LST2)
+                      (LEN LST1))
+             :in-theory (e/d (is-if) ()))))
+  
+  (defthm valid-sc-of-cons-of-fn-and-lst
+    (implies (and (not (equal fn 'rp))
+                  (not (is-equals (cons fn args)))
+                  (valid-sc-subterms lst a)
+                  (equal (len lst) (len args))
+                  (true-listp lst)
+                  (true-listp args))
+             (valid-sc (cons fn lst) a))
+    :hints (("goal"
+             :do-not-induct t
+             :use ((:instance is-rp-with-same-lengths
+                              (lst1 lst)
+                              (lst2 args))
+                   (:instance is-if-with-same-lengths
+                              (lst1 lst)
+                              (lst2 args))
+                   (:instance is-equals-with-same-lengths
+                              (lst1 lst)
+                              (lst2 args)))
+             :expand ((valid-sc-subterms lst a)
+                      (valid-sc-subterms (cdr lst) a)
+                      (valid-sc (cons fn lst) a)
+                      (len (cddr args))
+                      (len (cdr args))
+                      (len args))
+             :in-theory (e/d (valid-sc)
+                             ((:definition rp-termp)
+                              (:rewrite rp-term-listp-is-true-listp)
+                              (:rewrite rp-evl-of-rp-equal2)
+                              (:rewrite default-cdr)
+                              (:definition rp-term-listp)
+                              (:definition acl2::apply$-badgep)
+                              (:rewrite rp-termp-of-rp-trans)
+                              (:rewrite default-car)
+                              (:definition rp-trans)
+                              (:rewrite rp-termp-implies-subterms)
+                              (:rewrite is-if-rp-termp)
+                              (:definition eval-and-all)
+                              include-fnc
+                              (:rewrite not-include-rp)
+                              (:definition rp-equal)
+                              (:rewrite valid-sc-cadr)
+                              ex-from-rp
+                              (:rewrite acl2::equal-len-1))))))
+
+  (defthm rp-termp-implies-true-listp-cddr
+    (implies (rp-termp x)
+             (true-listp (cddr x)))
+    :rule-classes :forward-chaining
+    :hints (("Goal"
+             :expand ((rp-termp x))
+             :in-theory (e/d (is-rp
+                              FALIST-CONSISTENT)
+                             ()))))
+
+  (defthm rp-termp-implies-true-listp-cdr
+    (implies (rp-termp x)
+             (true-listp (cdr x)))
+    :rule-classes :forward-chaining
+    :hints (("Goal"
+             :expand ((rp-termp x))
+             :in-theory (e/d (is-rp
+                              FALIST-CONSISTENT)
+                             ()))))
+
+  (defthm true-listp-of-RP-APPLY-BINDINGS-SUBTERMS
+    (implies (true-listp lst)
+             (true-listp (RP-APPLY-BINDINGS-SUBTERMS lst bindings)))
+    :hints (("Goal"
+             :induct (true-listp lst)
+             :in-theory (e/d () ()))))
+
   (defthm valid-sc-cons-car-apply-bindings
-    (implies (and (not (is-rp term))
+    (implies (and (not (equal (car term) 'rp))
+                  (not (equal (car term) 'equals))
                   (rp-termp term)
                   (bindings-alistp bindings)
                   (valid-sc-subterms (rp-apply-bindings-subterms (cdr term) bindings) a))
@@ -755,32 +883,45 @@
                                                          bindings))
                        a))
     :hints (("goal"
+             :cases ((equal (car term) 'quote))
              :do-not-induct t
-             :expand ( (VALID-SC '(NIL) A)
-                       (valid-sc (cons (car term)
-                                       (rp-apply-bindings-subterms (cdr term)
-                                                                   bindings))
-                                 a))
-             :in-theory (e/d (
-                              is-rp
+             :expand ((IS-EQUALS (LIST (CAR TERM)))
+                      (RP-APPLY-BINDINGS-SUBTERMS NIL BINDINGS)
+                      (RP-APPLY-BINDINGS-SUBTERMS (CDR TERM)
+                                                  BINDINGS))
+             :use ((:instance valid-sc-of-cons-of-fn-and-lst
+                              (fn (car term))
+                              (args (cdr term))
+                              (lst (rp-apply-bindings-subterms (cdr term)
+                                                               bindings))))
+             :in-theory (e/d (IS-EQUALS
+                              true-listp)
+                             (quotep
+                              
+                              VALID-SC-SUBTERMS
                               rp-apply-bindings-subterms
-                              valid-sc-cons)
-                             (ex-from-rp
+                              ACL2::CONS-CAR-CDR
+                              rp-termp
+                              valid-sc-of-cons-of-fn-and-lst
+                              valid-sc
+                              VALID-SC-EX-FROM-RP-2
+                              ex-from-rp
                               CONSP-APPLY-BINDINGS-SUBTERMS-IS-SUBTERMS
                               valid-sc
                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                               (:DEFINITION ACL2::APPLY$-BADGEP)
                               ;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:DEFINITION FALIST-CONSISTENT-AUX)
-                              (:DEFINITION INCLUDE-FNC-SUBTERMS)
-                              (:DEFINITION INCLUDE-FNC)
+                              INCLUDE-FNC-SUBTERMS
+                              INCLUDE-FNC
                               (:DEFINITION FALIST-CONSISTENT)
-                              (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP))))))
+                              )))))
 
   (defthm-apply-bindings
     (defthmd valid-sc-apply-bindings-for-hyp-lemma
       (implies
        (and (not (include-fnc term 'rp))
+            (not (include-fnc term 'equals))
             (bindings-alistp bindings)
             (rp-termp term)
             (valid-sc-bindings bindings a))
@@ -789,6 +930,7 @@
     (defthmd valid-sc-apply-bindings-subterms-for-hyp-lemma
       (implies
        (and (not (include-fnc-subterms subterms 'rp))
+            (not (include-fnc-subterms subterms 'equals))
             (bindings-alistp bindings)
             (rp-term-listp subterms)
             (valid-sc-bindings bindings a))
@@ -945,7 +1087,7 @@
                                (:DEFINITION RP-TERMP)
                                (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                                (:DEFINITION ACL2::APPLY$-BADGEP)
-                               (:DEFINITION INCLUDE-FNC)
+                               INCLUDE-FNC
                                ;;                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:REWRITE DEFAULT-CDR)
                                (:REWRITE VALID-SC-CADR)
@@ -1003,10 +1145,30 @@
                    (not (INCLUDE-FNC (CADDDR TERM) 'LIST))))))
 
   (local
+   (defthm not-INCLUDE-FNC-implies-not-INCLUDE-FNC-SUBTERMS
+     (implies (and (NOT (INCLUDE-FNC TERM fn))
+                   (not (EQUAL (CAR TERM) 'QUOTE)))
+              (and (not (INCLUDE-FNC-SUBTERMS (CDR TERM) fn))
+                   (not (INCLUDE-FNC (CADDDR TERM) fn))
+                   (not (INCLUDE-FNC (CADdR TERM) fn))
+                   (not (INCLUDE-FNC (CADR TERM) fn))))
+     :hints (("Goal"
+              :expand ((INCLUDE-FNC TERM fn))
+              :in-theory (e/d () ())))))
+
+  (local
+   (defthm not-INCLUDE-FNC-of-equals
+     (implies (and (NOT (INCLUDE-FNC TERM 'equals)))
+              (not (IS-EQUALS (CONS (CAR TERM) args))))
+     :hints (("Goal"
+              :in-theory (e/d (IS-EQUALS) ())))))
+
+  (local
    (defthm-valid-sc-with-apply
      (defthm rp-apply-bindings-to-valid-sc-with-different-a
        (implies (and (rp-termp term)
                      ;;(not (include-fnc term 'list))
+                     (not (include-fnc term 'equals))
                      (alistp a)
                      (valid-sc-bindings bindings a)
                      (valid-sc term (bind-bindings (rp-trans-bindings bindings) a))
@@ -1017,7 +1179,7 @@
      (defthm rp-apply-bindings-to-valid-sc-with-different-a-subterms
        (implies (and (rp-term-listp subterms)
                      (alistp a)
-                     ;;(not (include-fnc-subterms subterms 'list))
+                     (not (include-fnc-subterms subterms 'equals))
                      (valid-sc-subterms subterms (bind-bindings (rp-trans-bindings bindings) a))
                      (valid-sc-bindings bindings a)
                      (bindings-alistp bindings))
@@ -1031,12 +1193,19 @@
               ;; :induct
               ;;  (FLAG-VALID-SC FLAG TERM SUBTERMS (bind-bindings (rp-trans-bindings bindings) a))
               :in-theory (e/d ()
-                              (EVL-OF-EXTRACT-FROM-RP
+                              ((:DEFINITION EVAL-AND-ALL)
+                               (:DEFINITION RP-TRANS)
+                               (:REWRITE DEFAULT-CAR)
+                               EVL-OF-EXTRACT-FROM-RP
+                               (:REWRITE DEFAULT-CDR)
+                               (:DEFINITION TRANS-LIST)
+                               (:TYPE-PRESCRIPTION RP-TRANS-LST)
+                               (:DEFINITION RP-EQUAL)
                                (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                                (:DEFINITION ACL2::APPLY$-BADGEP)
                                (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
                                (:DEFINITION TRUE-LISTP)
-                               (:DEFINITION INCLUDE-FNC)
+                               INCLUDE-FNC
                                ;;valid-sc
                                (:DEFINITION RP-TERMP)
                                VALID-SC-EX-FROM-RP-2))))))
@@ -1054,23 +1223,7 @@
      (valid-sc (rp-apply-bindings (rp-rhs rule) bindings) a))
     ;;:otf-flg t
     :hints (("Goal"
-             :use ( #|(:instance EVAL-AND-ALL-NT-EQUIV
-                   (lst1 (RP-HYP RULE)) ;
-                   (a1 (APPEND (BIND-BINDINGS-AUX (RP-TRANS-BINDINGS BINDINGS) ;
-                   A) ;
-                   A)) ;
-                   (lst2 (RP-HYP RULE)) ;
-                   (a2 (APPEND (BIND-BINDINGS-AUX BINDINGS A) ;
-                   A))) ;
-                   (:instance EVAL-AND-ALL-NT-equiv ;
-                   (lst1 (rp-apply-bindings-subterms (rp-hyp rule) ;
-                   (rp-trans-bindings bindings))) ;
-                   (a1 a) ;
-                   (lst2 (rp-hyp rule)) ;
-                   (a2 (append (bind-bindings-aux (rp-trans-bindings bindings) ;
-                   a) ;
-                   a)))|#
-                   (:instance rp-apply-bindings-subterms-to-evl-lst
+             :use ( (:instance rp-apply-bindings-subterms-to-evl-lst
                               (subterms (rp-hyp rule))
                               (bindings (rp-trans-bindings bindings)))
                    (:instance rp-apply-bindings-subterms-to-evl-lst
@@ -1119,6 +1272,7 @@
   (defthm valid-sc-rp-apply-bindings
     (implies (and (rp-termp term)
                   (alistp a)
+                  (not (include-fnc term 'equals))
                   (valid-sc-bindings bindings a)
                   (valid-sc term (bind-bindings (rp-trans-bindings bindings) a))
                   (bindings-alistp bindings))
@@ -1127,6 +1281,7 @@
   (defthm valid-sc-subterms-rp-apply-bindings-subterms
        (implies (and (rp-term-listp subterms)
                      (alistp a)
+                     (not (include-fnc-subterms subterms 'equals))
                      (valid-sc-subterms subterms (bind-bindings (rp-trans-bindings bindings) a))
                      (valid-sc-bindings bindings a)
                      (bindings-alistp bindings))

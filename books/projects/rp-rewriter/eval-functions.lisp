@@ -84,6 +84,7 @@
     (synp . 3)
     (return-last . 3)
     (rp . 2)
+    (equals . 2)
     (cdr . 1)
     (car . 1)
     (iff . 2)
@@ -171,96 +172,6 @@
 (acl2::add-untranslate-pattern (rp-evl (rp-trans ?x) ?y)  (rp-evlt ?x ?y))
 (acl2::add-untranslate-pattern (rp-evl-lst (rp-trans-lst ?x) ?y)  (rp-evlt-lst ?x ?y))
 
-;; ;; register the rp-evl name because it may change later when a new meta rule is
-;; ;; added.
-;; (table rp-rw 'evl 'rp-evl)
-
-;; ;; register the rp-evl-lst name
-;; (table rp-rw 'evl-lst 'rp-evl-lst)
-
-;; ;register the fuction list that  created the evaluator
-;; (table rp-rw 'evl-fncs *small-evl-fncs*)
-
-#|(encapsulate
-nil
-(with-output
-:off :all
-:gag-mode nil
-(defmacro generate-valid-sc (index)
-`(make-event
-(B* ((world (w state))
-(fnc-name (SA "VALID-SC"
-(if (= ,index 0) nil ,index)))
-(fnc-lst-name (SA "VALID-SC-SUBTERMS"
-(if (= ,index 0) nil ,index)))
-(eval (cdr
-(assoc-eq 'evl
-(table-alist 'rp-rw world))))
-(eval-and-all (SA "EVAL-AND-ALL"
-(if (= ,index 0) nil ,index)) ))
-
-`(encapsulate
-nil
-
-(defun ,eval-and-all (lst a)
-;; necessary for the context argument.
-;; Anding all the context should be in the hypothesis of the main theorem.
-(declare (xargs :guard (and (rp-term-listp lst)
-(alistp a))))
-(if (atom lst)
-t
-(and (,eval (car lst) a)
-;;(booleanp (car lst))
-(,eval-and-all (cdr lst) a))))
-
-(local
-(in-theory (enable CONS-COUNT-CAR-SUBTERMS
-CONS-COUNT-CDR-SUBTERMS
-IS-IF-CONS-COUNT
-M-MEASURE-LEMMA6
-IS-RP-CONS-COUNT
-O-P-CONS-COUNT
-measure-lemmas)))
-
-(mutual-recursion
-(defun ,fnc-name (term a)
-(declare (xargs :measure (acl2::nat-list-measure
-(list #|(count-lambdas term)||#
-(cons-count term)))))
-(cond
-((atom term)
-t)
-((eq (car term) 'quote)
-t)
-((is-if term)
-(and (,fnc-name (cadr term) a)
-(if (,eval (cadr term) a)
-(,fnc-name (caddr term) a)
-(,fnc-name (cadddr term) a))))
-((is-rp term)
-(and
-(,eval-and-all (context-from-rp term nil) a)
-(,fnc-name (ex-from-rp term) a)))
-#|((is-lambda-strict term)
-(,fnc-name (beta-reduce-lambda-expr term) a))||#
-(t (,fnc-lst-name (cdr term) a))))
-
-(defun ,fnc-lst-name (subterms a)
-(declare (xargs :measure (acl2::nat-list-measure
-(list #|(count-lambdas-lst subterms)||#
-(cons-count subterms)))))
-(cond
-((atom subterms) t)
-(t
-(and (,fnc-name (car subterms) a)
-(,fnc-lst-name (cdr subterms) a))))))
-
-(table rp-rw 'valid-sc-fnc ',fnc-name)
-(table rp-rw 'eval-and-all-fnc ',eval-and-all)
-)))))
-
-(generate-valid-sc 0))||#
-
 (encapsulate
   nil
   (defun eval-and-all (lst a)
@@ -275,8 +186,7 @@ t)
                             m-measure-lemma6 is-rp-cons-count
                             o-p-cons-count measure-lemmas)))
   (mutual-recursion
-   (defun
-       valid-sc (term a)
+   (defun valid-sc (term a)
      (declare
       (xargs :measure (acl2::nat-list-measure (list (cons-count term)))))
      (cond ((atom term) t)
@@ -292,9 +202,12 @@ t)
             (and (eval-and-all (context-from-rp term nil)
                                a)
                  (valid-sc (ex-from-rp term) a)))
-           (t (valid-sc-subterms (cdr term) a))))
-   (defun
-       valid-sc-subterms (subterms a)
+           (t
+            (and (implies (is-equals term)
+                          (equal (rp-evlt (cadr term) a)
+                                 (rp-evlt (caddr term) a)))
+                 (valid-sc-subterms (cdr term) a)))))
+   (defun valid-sc-subterms (subterms a)
      (declare
       (xargs :measure (acl2::nat-list-measure (list (cons-count subterms)))))
      (cond ((atom subterms) t)
@@ -436,8 +349,7 @@ t nil)))
          (eval-and-all-nt (cdr lst) a))))
 
 (mutual-recursion
- (defun
-     valid-sc-nt (term a)
+ (defun valid-sc-nt (term a)
    (declare
     (xargs :measure (acl2::nat-list-measure (list (cons-count term)))
            :hints (("Goal"
@@ -454,9 +366,12 @@ t nil)))
          ((is-rp term)
           (and (eval-and-all-nt (context-from-rp term nil) a)
                (valid-sc-nt (ex-from-rp term) a)))
-         (t (valid-sc-nt-subterms (cdr term) a))))
- (defun
-     valid-sc-nt-subterms (subterms a)
+         (t
+          (and (implies (is-equals term)
+                        (equal (rp-evl (cadr term) a)
+                               (rp-evl (caddr term) a)))
+               (valid-sc-nt-subterms (cdr term) a)))))
+ (defun valid-sc-nt-subterms (subterms a)
    (declare
     (xargs :measure (acl2::nat-list-measure (list (cons-count subterms)))))
    (cond ((atom subterms) t)
@@ -479,8 +394,7 @@ t nil)))
                          (rp-evl (rp-rhs rule) a))
                   (equal (rp-evl (rp-lhs rule) a)
                          (rp-evl (rp-rhs rule) a)))
-                (implies (include-fnc (rp-rhs rule) 'rp)
-                         (valid-sc-nt (rp-rhs rule) a)))))
+                (valid-sc-nt (rp-rhs rule) a))))
 
 (defun-sk valid-rulep-sk (rule)
   (forall a

@@ -276,9 +276,9 @@ lst))))||#
                      :rhs/meta-fnc rhs))
          (rest (formulas-to-rules rune rule-new-synp warning (cdr formulas))))
       (if (and (rule-syntaxp rule :warning warning)
-               (or (not (include-fnc rhs 'rp))
-                   (and warning
-                        (cw "(not (include-fnc rhs 'rp)) failed! ~p0 ~%.
+               (implies (include-fnc rhs 'rp)
+                        (and warning
+                             (cw "(not (include-fnc rhs 'rp)) failed! ~p0 ~%.
  Rhs of  a rule cannot have an 'rp' instance ~%" rhs))))
           (cons rule rest)
         rest))))
@@ -412,6 +412,7 @@ lst))))||#
     (b* ((sc-formula (meta-extract-formula (car sc-rule-names) state))
 ;(sc-formula (beta-search-reduce sc-formula 1000)) ;; for psuedo-termp2
          ((when (or (include-fnc sc-formula 'rp)
+                    (include-fnc sc-formula 'equals)
                     (not (rp-termp sc-formula))))
           (progn$
            (hard-error
@@ -496,7 +497,7 @@ lst))))||#
                             (:TYPE-PRESCRIPTION RP-TERMP)
                             (:TYPE-PRESCRIPTION TRUE-LIST-LISTP)
                             (:TYPE-PRESCRIPTION ALISTP)
-                            (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                            (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
                             (:TYPE-PRESCRIPTION SYMBOL-ALISTP)
                             (:DEFINITION QUOTEP)
                             (:REWRITE DEFAULT-CDR)

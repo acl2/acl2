@@ -110,7 +110,11 @@
                         (or (not (include-fnc car-cl 'rp))
                             (hard-error
                              'rp-clause-processor-aux
-                             "Conjectures given to RP-Rewriter cannot include an rp instance~%" nil)))))
+                             "Conjectures given to RP-Rewriter cannot include an rp instance~%" nil))
+                        (or (not (include-fnc car-cl 'equals))
+                            (hard-error
+                             'rp-clause-processor-aux
+                             "Conjectures given to RP-Rewriter cannot include an equals instance~%" nil)))))
         (mv nil (list cl) rp-state state))
 
        (rp-state (rp-state-new-run rp-state))

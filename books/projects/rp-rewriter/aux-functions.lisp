@@ -51,6 +51,10 @@
   (declare (ignorable prop))
   term)
 
+(defun equals (term1 term2)
+  (declare (ignorable term1 term2))
+  term1)
+
 (defun falist (fast-list term)
   (declare (ignorable fast-list))
   term)
@@ -135,6 +139,8 @@
        (cons (beta-search-reduce (car subterms) (1- limit))
              (beta-search-reduce-subterms (cdr subterms) (1- limit)))))))
 
+
+
 (define is-rp (term)
   :inline t
   (case-match term (('rp ('quote type) &)
@@ -155,6 +161,17 @@
                      (not (booleanp type))
                      (not (equal type 'quote))))
                (& nil)))))
+
+(define is-equals (term)
+  :inline t
+  (case-match term (('equals & &)
+                    t))
+  ///
+  (defthm is-equals-implies
+    (implies (is-equals term)
+             (case-match term (('equals & &) t)))
+    :rule-classes :forward-chaining))
+
 (define is-if (term)
   :inline t
   (case-match term (('if & & &) t)
@@ -539,29 +556,40 @@
          (not (quotep (car lst)))
          (cons-consp (cdr lst)))))
 
+
+
+(define maybe-natp (x)
+  :enabled t
+  (or (not x)
+      (natp x))) 
+
 (acl2::defines
  include-fnc
- (define include-fnc (term fnc)
+ (define include-fnc (term fnc &optional arg-size)
    :enabled t
-   :guard (symbolp fnc)
+   :guard (and (symbolp fnc)
+               (maybe-natp arg-size))
    :parents (rp-utilities)
    :short "Searches a term for an instance of fnc. Returns t or nil."
    (if (or (atom term)
            (quotep term))
        nil
-     (if (eq (car term) fnc)
+     (if (and (eq (car term) fnc)
+              (implies arg-size
+                       (equal (len (cdr term)) arg-size)))
          t
-       (include-fnc-subterms (cdr term) fnc))))
+       (include-fnc-subterms (cdr term) fnc arg-size))))
 
- (define include-fnc-subterms (subterms fnc)
-   :guard (symbolp fnc)
+ (define include-fnc-subterms (subterms fnc &optional arg-size)
+   :guard (and (symbolp fnc)
+               (maybe-natp arg-size))
    :enabled t
    :parents (include-fnc)
    :short "Searches a list of terms for an instance of fnc. Returns t or nil."
    (if (atom subterms)
        nil
-     (or (include-fnc (car subterms) fnc)
-         (include-fnc-subterms (cdr subterms) fnc)))))
+     (or (include-fnc (car subterms) fnc arg-size)
+         (include-fnc-subterms (cdr subterms) fnc arg-size)))))
 
 (defun is-honsed-assoc-eq-values (term)
   (declare (xargs :guard t))
@@ -1249,14 +1277,26 @@
             (and warning
                  (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'rp))
     failed! LHS cannot contain an instance of rp. ~%")))
+        (or (not (include-fnc (rp-lhs rule) 'equals))
+            (and warning
+                 (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'equals))
+    failed! LHS cannot contain an instance of equals. ~%")))
         (or (not (include-fnc-subterms (rp-hyp rule) 'rp))
             (and warning
                  (cw "ATTENTION! (not (include-fnc-subterms (rp-hyp rule) 'rp))
     failed! HYP cannot contain an instance of rp. ~%")))
+        (or (not (include-fnc-subterms (rp-hyp rule) 'equals))
+            (and warning
+                 (cw "ATTENTION! (not (include-fnc-subterms (rp-hyp rule) 'equals))
+    failed! HYP cannot contain an instance of equals ~%")))
         (or (not (include-fnc (rp-rhs rule) 'falist))
             (and warning
                  (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'falist))
     failed! RHS cannot contain an instance of falist ~%")))
+        (or (not (include-fnc (rp-rhs rule) 'equals))
+            (and warning
+                 (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'equals))
+    failed! RHS cannot contain an instance of equals ~%")))
         (or (not (include-fnc-subterms (rp-hyp rule) 'falist))
             (and warning
                  (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'falist))
@@ -1385,6 +1425,8 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
              (ex-from-rp-all2 (caddr term)))
             ((is-rp-loose term)
              (ex-from-rp-all2 (caddr term)))
+            ((is-equals term)
+             (ex-from-rp-all2 (cadr term)))
             (t
              (cons-with-hint (car term)
                              (ex-from-rp-all2-lst (cdr term))

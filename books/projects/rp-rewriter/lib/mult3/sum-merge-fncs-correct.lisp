@@ -185,10 +185,10 @@
         (case-match term1 (('-- a) (mv t a)) (& (mv nil term1))))
        ((mv neg2 term2)
         (case-match term2 (('-- a) (mv t a)) (& (mv nil term2))))
-       (equals
+       (equalsp
         (rp-equal term1 term2)))
     (and (not (equal neg1 neg2))
-         equals)))
+         equalsp)))
 
 (defthm sum-of-negated-terms
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -322,9 +322,9 @@
    ))
 
 (defret s-order-and-negated-termsp-redef-2
-  (implies equals
-         (rp-equal term1 term2))
-  :fn S-ORDER-AND-NEGATED-TERMSP
+  (implies equalsp
+           (rp-equal term1 term2))
+  :fn s-order-and-negated-termsp
   :hints (("Goal"
            :do-not-induct t
            :expand ((:free (x) (hide x))
@@ -349,13 +349,13 @@
                             
                             ;;RP-EQUAL-SUBTERMS
                             rp-equal-of-ex-from-rp
-                            NOT-INCLUDE-RP
-                            INCLUDE-FNC
+                            not-include-rp
+                            include-fnc
                             ex-from-rp
                             )))))
 
 (local
- (defthm PP-LIST-ORDER-aux-equals-redef
+ (defthm PP-LIST-ORDER-aux-equalsp-redef
    (equal (mv-nth 1 (PP-LIST-ORDER-aux x y))
           (equal x y))
    :hints (("Goal"
@@ -374,7 +374,7 @@
               (two-cdrs (cdr x) (cdr y)))))))
 
 (local
- (defthm pp-list-order-equals-redef-lemma-1
+ (defthm pp-list-order-equalsp-redef-lemma-1
    (implies (not (equal (len x) (len y)))
             (not (rp-equal-subterms x y)))
    :hints (("Goal"
@@ -382,7 +382,7 @@
             :in-theory (e/d (rp-equal-subterms) ())))))
 
 ;; (local
-;;  (defthm pp-list-order-equals-redef-lemma-1.1
+;;  (defthm pp-list-order-equalsp-redef-lemma-1.1
 ;;    (implies (NOT (EQUAL (LOGAPP (MV-NTH 1 (AND-LIST-HASH-AUX (CDR X)))
 ;;                                 (MV-NTH 0 (AND-LIST-HASH-AUX (CDR X)))
 ;;                                 (SUM 5 (CADR (CADDR (CAR X)))))
@@ -391,7 +391,7 @@
 ;;                                 0)))
 
 ;; (local
-;;  (defthm pp-list-order-equals-redef-lemma-1.5
+;;  (defthm pp-list-order-equalsp-redef-lemma-1.5
 ;;    (implies (not (equal (and-list-hash-aux x)
 ;;                         (and-list-hash-aux y)))
 ;;             (not (rp-equal-subterms x y)))
@@ -413,7 +413,7 @@
 
 ;; (skip-proofs
 ;;  (local
-;;  (defthm pp-list-order-equals-redef-lemma-2
+;;  (defthm pp-list-order-equalsp-redef-lemma-2
 ;;    (implies (not (equal (and-list-hash x)
 ;;                         (and-list-hash y)))
 ;;             (not (rp-equal-subterms x y)))
@@ -438,7 +438,7 @@
                            (+-is-SUM)))))
 
 (local
- (defthm PP-LIST-ORDER-equals-redef
+ (defthm PP-LIST-ORDER-equalsp-redef
    (equal (mv-nth 1 (PP-LIST-ORDER x y skip-hash))
           (equal x y))
    :hints (("Goal"
@@ -472,7 +472,7 @@
                              AND$) ())))))
 
 
-(defthmd pp-order-equals-implies
+(defthmd pp-order-equalsp-implies
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (mv-nth 1 (pp-order x y)))
@@ -535,10 +535,10 @@
                         (ifix z))))
    :hints (("goal"
             :do-not-induct t
-            :use ((:instance pp-order-equals-implies
+            :use ((:instance pp-order-equalsp-implies
                              (x (cadr x))
                              (y y))
-                  (:instance pp-order-equals-implies
+                  (:instance pp-order-equalsp-implies
                              (x x)
                              (y (cadr y)))
                   (:instance rp-evlt-of-rp-equal
@@ -662,7 +662,12 @@
                                          (sum-list ,term2))))))
 
 
-
+(local
+   (defthm is-equals-of-others
+     (implies (not (equal (car term) 'equals))
+              (not (is-equals term )))
+     :hints (("Goal"
+              :in-theory (e/d (is-equals) ())))))
 
 (defthm valid-sc-of-create-list-instance
   (equal (valid-sc (create-list-instance lst) a)
@@ -1605,7 +1610,7 @@
   :hints (("Goal"
            :do-not-induct t
            :induct (pp-sum-merge-lst-for-s pp1-lst pp2-lst)
-           :in-theory (e/d* (pp-order-equals-implies
+           :in-theory (e/d* (pp-order-equalsp-implies
                              pp-sum-merge-lst-for-s
                              dummy-m2-lemma2
                              EX-FROM---

@@ -3072,6 +3072,13 @@ was ~st seconds."))
               :in-theory (e/d (is-rp) ())))))
 
   (local
+   (defthm is-equals-of-others
+     (implies (not (equal (car term) 'equals))
+              (not (is-equals term )))
+     :hints (("Goal"
+              :in-theory (e/d (is-equals) ())))))
+
+  (local
    (defthm is-if-of-others
      (implies (not (equal (car term) 'if))
               (not (is-if term)))

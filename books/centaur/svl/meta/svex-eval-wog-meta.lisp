@@ -215,7 +215,6 @@
   (rp::rp-attach-sc light-4vec-fix-opener
                     light-4vec-fix-opener-side-cond))
 
-  
 
 (define svex-apply-insert-part-select (term dont-rw)
   :returns (mv res res-dont-rw)
@@ -1735,7 +1734,7 @@ was ~st seconds."))
    :fn svex-apply-insert-part-select
    :hints (("Goal"
             :in-theory (e/d (svex-apply-insert-part-select
-                             rp::is-rp
+                             rp::is-rp rp::is-equals
                              rp::is-if)
                             ())))))
 
@@ -1747,7 +1746,7 @@ was ~st seconds."))
                           A))
    :hints (("Goal"
             :in-theory (e/d (RP::VALID-SC
-                             rp::is-rp
+                             rp::is-rp rp::is-equals
                              rp::is-if
                              LIST-TO-CONSED-TERM) ())))))
 
@@ -1756,7 +1755,7 @@ was ~st seconds."))
    nil
 
    (local
-    (in-theory (enable rp::is-rp
+    (in-theory (enable rp::is-rp rp::is-equals
                        rp::is-if)))
 
    (svex-eval-lemma-tmpl
@@ -2044,7 +2043,7 @@ was ~st seconds."))
            :in-theory (e/d (svex-alist-eval-meta-aux
                             svexl-alist-eval-correct-reverse
                             rp::is-rp
-
+                            rp::is-equals
                             RP::RP-EVLT-OF-EX-FROM-RP-reverse
                             rp::is-if)
                            (rp::rp-evlt-of-ex-from-rp))))))
@@ -2060,7 +2059,7 @@ was ~st seconds."))
   :hints (("Goal"
            :in-theory (e/d (svex-alist-eval-meta-aux
                             svexl-alist-eval-correct-reverse
-
+                            rp::is-equals
                             rp::is-rp
                             rp::rp-evlt-of-ex-from-rp-reverse
                             rp::is-if)

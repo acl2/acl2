@@ -1247,8 +1247,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                                      rp-state state)))
            (mv (cons-with-hint (car term)
                                (cons-with-hint (cadr term)
-                                               (cons-with-hint subterm nil (cddr
-                                                                            term))
+                                               (cons-with-hint subterm nil (cddr term))
                                                (cdr term))
                                term)
                rp-state)))
@@ -1262,6 +1261,10 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                                         context
                                         (1- limit)
                                         rp-state state))
+        ((when (is-equals term))
+         (mv (cons-with-hint 'equals subterms term)
+             rp-state))
+                             
         (term (cons-with-hint (car term) subterms term))
         ((mv term &)
          (rp-check-context term t context :rw-context-flg nil))
@@ -1326,7 +1329,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                    :verify-guards nil
                    :mode :logic))
    (if (atom lst)
-       (mv lst rp-state)
+       (mv nil rp-state)
      (b* (((mv cur rp-state)
            (rw-only-with-context (car lst) (dont-rw-car dont-rw) context
                                  nil limit rp-state state))

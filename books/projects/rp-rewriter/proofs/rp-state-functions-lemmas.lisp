@@ -46,6 +46,9 @@
 (local
  (in-theory (enable rp-statep)))
 
+(local
+ (in-theory (disable equal-of-len-with-constant)))
+
 (defthm integerp-of-RW-STACK-SIZE
   (implies (rp-statep rp-state)
            (integerp (RW-STACK-SIZE rp-state)))
@@ -96,6 +99,13 @@
            :in-theory (e/d (RULES-ALIST-OUTSIDE-IN-GET
                             RULES-ALIST-inside-out-GET)
                            (valid-rp-statep)))))
+
+(Local
+ (in-theory (disable (:DEFINITION ACL2::APPLY$-BADGEP)
+                     (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 3)
+                     (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                     (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                     (:DEFINITION RP-TERMP))))
 
 (defthm valid-rp-state-syntaxp-of-update-nth
   (implies (and
@@ -211,6 +221,11 @@
                             valid-rp-state-syntaxp-aux
                             )))))
 
+
+(defthm true-list-of-update-nth
+  (implies (true-listp lst)
+           (true-listp (update-nth n x lst))))
+
 (defthm rp-statep-rp-state-push-to-result-to-rw-stack
   (implies (rp-statep rp-state)
            (rp-statep (rp-state-push-to-result-to-rw-stack rule
@@ -220,7 +235,18 @@
                                                            new-term
                                                            rp-state)))
   :hints (("goal"
-           :in-theory (e/d (rp-state-push-to-result-to-rw-stack) ()))))
+           :in-theory (e/d (rp-state-push-to-result-to-rw-stack)
+                           (UNSIGNED-BYTE-P
+                            UPDATE-NTH
+                            (:TYPE-PRESCRIPTION ALISTP)
+                            (:REWRITE DEFAULT-CDR)
+                            (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P)
+                            (:TYPE-PRESCRIPTION HONS-ASSOC-EQUAL)
+                            (:TYPE-PRESCRIPTION TRUE-LISTP-UPDATE-NTH)
+                            (:TYPE-PRESCRIPTION RP-TERM-LISTP)
+                            (:REWRITE NTH-ADD1)
+                            EQUAL-OF-LEN-WITH-CONSTANT
+                            (:DEFINITION HONS-ASSOC-EQUAL))))))
 
 
 (defret RULES-ALIST-OUTSIDE-IN-GET-of-RP-STATE-PUSH-TO-RESULT-TO-RW-STACK
