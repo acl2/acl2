@@ -1353,7 +1353,11 @@
        (arr-read (pack fixtype '-array-read))
        (arr-write (pack fixtype '-array-write))
        (elem-typep (pack fixtype 'p))
+       (elem-type-listp (pack fixtype '-listp))
        (type-of-value-when-arr-typep (pack 'type-of-value-when- arr-typep))
+       (fixtype-array->elements (pack fixtype '-array->elements))
+       (elem-type-listp-of-fixtype-array->elements
+        (pack elem-type-listp '-of- fixtype-array->elements))
        (length (packn-pos (list struct-tag
                                 '-
                                 (ident->name name)
@@ -1380,6 +1384,13 @@
                                            '-of-
                                            writer)
                                      writer))
+       (reader-all (packn-pos (list struct-tag
+                                    '-
+                                    (ident->name name)
+                                    '-all)
+                              struct-tag))
+       (len-of-reader-all (packn-pos (list 'len-of- reader-all) reader-all))
+       (consp-of-reader-all (packn-pos (list 'consp-of- reader-all) reader-all))
        (events
         `(,@(and
              (not size?)
@@ -1477,8 +1488,99 @@
              (new-struct ,struct-tag-p
                          :hints
                          (("Goal"
-                           :use (:instance return-lemma
-                                 (struct (,struct-tag-fix struct))))))))))
+                           :use (:instance
+                                 return-lemma
+                                 (struct (,struct-tag-fix struct))))))))
+          (define ,reader-all ((struct ,struct-tag-p))
+            :returns (values
+                      ,elem-type-listp
+                      :hints
+                      (("Goal"
+                        :in-theory
+                        '(,reader-all
+                          ,elem-type-listp-of-fixtype-array->elements))))
+            (,fixtype-array->elements
+             (value-struct-read (ident ,(ident->name name))
+                                (,struct-tag-fix struct)))
+            :guard-hints
+            (("Goal" :in-theory '(,struct-tag-p
+                                  ,struct-tag-fix
+                                  value-struct-read)))
+            ///
+            ,(if size?
+                 `(defret ,len-of-reader-all
+                    (equal (len values) ,size?)
+                    :hints
+                    (("Goal"
+                      :in-theory
+                      '(,struct-tag-p
+                        ,struct-tag-fix
+                        ,reader-all
+                        ,arr-length
+                        value-struct-read
+                        value-struct-read-aux
+                        (:e cons)
+                        (:e ident)
+                        (:e len)
+                        (:e member-value)
+                        (:e repeat)
+                        (:e type-schar)
+                        (:e type-uchar)
+                        (:e type-sshort)
+                        (:e type-ushort)
+                        (:e type-sint)
+                        (:e type-uint)
+                        (:e type-slong)
+                        (:e type-ulong)
+                        (:e type-sllong)
+                        (:e type-ullong)
+                        (:e schar)
+                        (:e uchar)
+                        (:e sshort)
+                        (:e ushort)
+                        (:e sint)
+                        (:e uint)
+                        (:e slong)
+                        (:e ulong)
+                        (:e sllong)
+                        (:e ullong)
+                        (:e schar-array->elements)
+                        (:e uchar-array->elements)
+                        (:e sshort-array->elements)
+                        (:e ushort-array->elements)
+                        (:e sint-array->elements)
+                        (:e uint-array->elements)
+                        (:e slong-array->elements)
+                        (:e ulong-array->elements)
+                        (:e sllong-array->elements)
+                        (:e ullong-array->elements)
+                        (:e value-array)
+                        (:e value-struct)
+                        (:e value-struct->members)
+                        (:e value-struct-read-aux)))))
+               `(defret ,consp-of-reader-all
+                  (consp values)
+                  :rule-classes :type-prescription
+                  :hints
+                  (("Goal"
+                    :in-theory
+                    '(,reader-all
+                      (:t ,fixtype-array->elements))))))
+            (fty::deffixequiv ,reader-all
+              :hints
+              (("Goal"
+                :in-theory
+                '(,reader-all
+                  ,(packn-pos (list struct-tag-fix
+                                    '-under-
+                                    struct-tag
+                                    '-equiv)
+                              struct-tag)
+                  ,(packn-pos (list struct-tag
+                                    '-equiv-implies-equal-
+                                    struct-tag-fix
+                                    '-1)
+                              struct-tag))))))))
        ((mv more-events
             more-readers
             more-writers
