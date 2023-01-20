@@ -11,6 +11,7 @@
 (in-package "PFCS")
 
 (include-book "abstract-syntax-operations")
+(include-book "pfield-lib-ext")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/prime-fields/fe-listp" :dir :system)
@@ -103,7 +104,15 @@
      (recall that fixtypes cannot be parameterized, currently)."))
   :key-type symbol
   :val-type nat
-  :pred assignmentp)
+  :pred assignmentp
+  ///
+
+  (defrule assignmentp-of-from-lists
+    (implies (and (symbol-listp keys)
+                  (nat-listp vals)
+                  (equal (len keys) (len vals)))
+             (assignmentp (omap::from-lists keys vals)))
+    :enable omap::from-lists))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,7 +171,15 @@
                 (assignment-for-prime-p (cons pair asg) p))
        :enable (omap::head
                 omap::tail)
-       :expand ((assignment-for-prime-p (cons pair asg) p))))))
+       :expand ((assignment-for-prime-p (cons pair asg) p)))))
+
+  (defrule assignment-for-prime-p-of-from-lists
+    (implies (and (symbol-listp keys)
+                  (fe-listp vals p)
+                  (equal (len keys) (len vals)))
+             (assignment-for-prime-p (omap::from-lists keys vals) p))
+    :enable (omap::from-lists
+             nat-listp-when-fe-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -605,3 +622,33 @@
                         (system->constraints sys)
                         (system->definitions sys)
                         p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define definition-satp ((vals (fe-listp vals p))
+                         (def definitionp)
+                         (defs definition-listp)
+                         (p primep))
+  :guard (equal (len vals)
+                (len (definition->para def)))
+  :returns (yes/no booleanp)
+  :short "Check if a sequence of prime field elements
+          satisfies a PFCS definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We form an assignment of the prime field elements to the parameters,
+     in order, and we check if this assignment satisfies
+     the constraint consisting of
+     a call of the definition on its parameters.")
+   (xdoc::p
+    "This is a convenient abbreviation
+     for expressing the satisfiability of a definition."))
+  (b* (((definition def) def)
+       (asg (omap::from-lists def.para vals))
+       (constr (make-constraint-relation
+                :name def.name
+                :args (expression-var-list def.para))))
+    (constraint-satp asg constr defs p))
+  :guard-hints (("Goal" :in-theory (enable true-listp-when-fe-listp
+                                           nat-listp-when-fe-listp))))

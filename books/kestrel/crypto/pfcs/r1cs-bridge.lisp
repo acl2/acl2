@@ -11,6 +11,7 @@
 (in-package "PFCS")
 
 (include-book "abstract-syntax")
+(include-book "r1cs-subset")
 
 (include-book "r1cs-lib-ext")
 
@@ -55,7 +56,12 @@
     (cond ((equal pvar 1) (expression-const coeff))
           ((equal coeff 1) (expression-var pvar))
           (t (make-expression-mul :arg1 (expression-const (first elem))
-                                  :arg2 (expression-var pvar))))))
+                                  :arg2 (expression-var pvar)))))
+  ///
+
+  (more-returns
+   (expr r1cs-monomialp
+         :hints (("Goal" :in-theory (enable r1cs-monomialp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -82,7 +88,16 @@
            ((endp (cdr rev-vec)) (r1cs-vec-elem-to-pfcs (car rev-vec)))
            (t (make-expression-add
                :arg1 (r1cs-vector-to-pfcs-aux (cdr rev-vec))
-               :arg2 (r1cs-vec-elem-to-pfcs (car rev-vec))))))))
+               :arg2 (r1cs-vec-elem-to-pfcs (car rev-vec)))))
+     ///
+     (more-returns
+      (expr r1cs-polynomialp
+            :hints (("Goal" :in-theory (enable r1cs-polynomialp)))))))
+
+  ///
+
+  (more-returns
+   (expr r1cs-polynomialp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,7 +114,12 @@
        (c-expr (r1cs-vector-to-pfcs (r1cs::r1cs-constraint->c rconstr))))
     (make-constraint-equal
      :left (make-expression-mul :arg1 a-expr :arg2 b-expr)
-     :right c-expr)))
+     :right c-expr))
+  ///
+
+  (more-returns
+   (pconstr r1cs-constraintp
+            :hints (("Goal" :in-theory (enable r1cs-constraintp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -111,7 +131,11 @@
   (xdoc::topstring
    (xdoc::p
     "These are translated element-wise."))
-  (r1cs-constraint-to-pfcs x))
+  (r1cs-constraint-to-pfcs x)
+  ///
+
+  (more-returns
+   (pconstrs r1cs-constraint-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -129,4 +153,9 @@
      because PFCSes do not include primes, syntactically."))
   (make-system :definitions nil
                :constraints (r1cs-constraints-to-pfcs
-                             (r1cs::r1cs->constraints r1cs))))
+                             (r1cs::r1cs->constraints r1cs)))
+  ///
+
+  (more-returns
+   (sys r1cs-systemp
+        :hints (("Goal" :in-theory (enable r1cs-systemp))))))

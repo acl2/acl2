@@ -24,8 +24,23 @@
      a subset of PFCSes corresponds to R1CSes.
      Here we characterize that subset.")
    (xdoc::p
-    "This is not the only possible characterization,
-     but it is the one we use for now."))
+    "We provide two related characterizations.
+     One is that of a PFCS that is an R1CS,
+     i.e. it has no definitions and all the constraints are in R1CS form.
+     Another is that of a PFCS that has definitions,
+     but all its equality constraints are in R1CS form.
+     The latter kind of PFCS can be regarded as a structured R1CS:
+     the constraints are all in R1CS form in the end,
+     but they may be organized hierarchically, via defined relations.
+     We use the prefix @('sr1cs') for predicates
+     that define these structured R1CSes.")
+   (xdoc::p
+    "Our characterization of
+     R1CS monomials, polynomials, and equality constraints
+     is a natural one, but not necessarily the only one possible.
+     In particular, PFCS expressions are trees,
+     and there are many tree shapes that represent linear polynomials,
+     besides the left-associated ones that we use here."))
   :order-subtopics t
   :default-parent t)
 
@@ -114,4 +129,66 @@
      and all the constraints must be in R1CS form."))
   (and (endp (system->definitions sys))
        (r1cs-constraint-listp (system->constraints sys)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sr1cs-constraintp ((constr constraintp))
+  :returns (yes/no booleanp)
+  :short "Check if a PFCS constraint is a structured R1CS constraint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the constraint is an equality, it must be in R1CS form.
+     But we also allow relation applications,
+     whose constraints are checked separately."))
+  (or (r1cs-constraintp constr)
+      (constraint-case constr :relation))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist sr1cs-constraint-listp (x)
+  :guard (constraint-listp x)
+  :short "Check if a list of PFCS constraints
+          consists of structured R1CS constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee sr1cs-constraintp) to lists."))
+  (sr1cs-constraintp x)
+  ///
+  (fty::deffixequiv sr1cs-constraint-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sr1cs-definitionp ((def definitionp))
+  :returns (yes/no booleanp)
+  :short "Check if a PFCS definition
+          consists of strcutred R1CS constraints."
+  (sr1cs-constraint-listp (definition->body def))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist sr1cs-definition-listp (x)
+  :guard (definition-listp x)
+  :short "Check if a list of PFCS definitions
+          consist of structured R1CS constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee sr1cs-definitionp) to lists."))
+  (sr1cs-definitionp x)
+  ///
+  (fty::deffixequiv sr1cs-definition-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sr1cs-systemp ((sys systemp))
+  :returns (yes/no booleanp)
+  :short "Check if a PFCS system consits of structured R1CS constraints."
+  (b* (((system sys) sys))
+    (and (sr1cs-definition-listp sys.definitions)
+         (sr1cs-constraint-listp sys.constraints)))
   :hooks (:fix))
