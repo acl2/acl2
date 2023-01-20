@@ -97,6 +97,85 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-expr-bool-correct-thm ((fn symbolp)
+                                       (fn-guard symbolp)
+                                       (context atc-contextp)
+                                       (expr exprp)
+                                       (type typep)
+                                       (aterm pseudo-termp)
+                                       (cterm pseudo-termp)
+                                       (compst-var symbolp)
+                                       (hints true-listp)
+                                       (instructions true-listp)
+                                       (thm-index posp)
+                                       (names-to-avoid symbol-listp)
+                                       state)
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (thm-index posp :hyp (posp thm-index))
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate a correctness theorem for a boolean expression execution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee atc-gen-expr-pure-correct-thm),
+     but with some important differences.")
+   (xdoc::p
+    "The ACL2 term from which the C expression is generated is boolean-valued,
+     so the execution of the expression cannot be equal to the term.
+     Instead, there must be another ACL2 term,
+     whose value is (the ACL2 model of) a C value,
+     that the expression execution is equated to in the theorem.
+     The two terms are
+     @('aterm') (for `ACL2 term') and @('cterm') (for `C term'),
+     both passed as parameters to this ACL2 function
+     (unlike a single @('term') in @(tsee atc-gen-expr-pure-correct-thm)).
+     The two terms and their relation are slightly different
+     for different kinds of boolean expression terms;
+     see the callers of this ACL2 function for details.")
+   (xdoc::p
+    "While @(tsee atc-gen-expr-pure-correct-thm) generates a theorem
+     whose conclusion consists of two conjuncts,
+     namely the equation with the expression execution
+     and the type predicate applied to the term,
+     here we generate four conjuncts.
+     The first two are similar to @(tsee atc-gen-expr-pure-correct-thm),
+     but we use @('cterm') for that purpose, as explained above.
+     The other two conjuncts refer to @('aterm') instead:
+     they say that @(tsee test-value) applied to @('cterm') yields @('aterm'),
+     and that @('aterm') is a boolean.")
+   (xdoc::p
+    "The reason for the form of this theorem is that
+     the symbolic execution rules have separate binding hypotheses
+     for executing the expression and for applying @(tsee test-value):
+     for example, see the @('exec-expr-pure-when-cond') rule
+     in @(see atc-exec-expr-pure-rules)."))
+  (b* ((wrld (w state))
+       (name (pack fn '-correct- thm-index))
+       ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                  name nil names-to-avoid wrld))
+       (type-pred (type-to-recognizer type wrld))
+       (uaterm (untranslate$ aterm nil state))
+       (ucterm (untranslate$ cterm nil state))
+       (formula `(and (equal (exec-expr-pure ',expr ,compst-var)
+                             ,ucterm)
+                      (,type-pred ,ucterm)
+                      (equal (test-value ,ucterm)
+                             ,uaterm)
+                      (booleanp ,uaterm)))
+       (formula (atc-contextualize formula context nil))
+       (formula `(implies (and (compustatep ,compst-var)
+                               (,fn-guard ,@(formals+ fn wrld)))
+                          ,formula))
+       ((mv event &) (evmac-generate-defthm name
+                                            :formula formula
+                                            :hints hints
+                                            :instructions instructions
+                                            :enable nil)))
+    (mv event name (1+ thm-index) names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-enter-inscope ((fn symbolp)
                                (fn-guard symbolp)
                                (inscope atc-symbol-varinfo-alist-listp)
