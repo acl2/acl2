@@ -1091,6 +1091,14 @@
          (apply$-warrant-ha-s-chain)
          (apply$-warrant-fa-s-chain)))
 
+  (defconst *adder-fncs*
+    '(ha-c-chain
+      fa-c-chain
+      ha+1-c-chain
+      ha+1-s-chain
+      ha-s-chain
+      fa-s-chain))
+
   (rp::add-rp-rule warrants-for-adder-pattern-match)
   (rp::disable-rules '((:e warrants-for-adder-pattern-match))))
 
@@ -1166,7 +1174,7 @@
     :gag-mode nil
     (rp::def-formula-checks
       find-adders-in-svex-formula-checks-small
-      ()
+      (binary-or binary-? binary-not binary-xor binary-and s-spec c-spec)
       :warranted-fns
       (ha-c-chain
        ha-s-chain
@@ -2459,22 +2467,20 @@
 
 ;; (bitand/or/xor-cancel-repeated fn term1 term2)
 
-
 (defsection simplify-to-find-fa-c-patterns
 
   ;; Goal is to attempting to simplify  svexes locally until they reveal a fa-c
   ;; pattern. If it does, then simplification  is left and the found pattern is
   ;; wrapped with "ID"  svex-op in order to prevent  other simplifications from
   ;; messing with it.
-  
+
   (defconst *simplify-to-find-fa-c-patterns-limit*
     8)
-
 
   (define simplify-to-find-fa-c-patterns-aux ((x sv::Svex-p)
                                               (limit natp)
                                               &key
-                                              (skip 'nil) 
+                                              (skip 'nil)
                                               ((env) 'env)
                                               ((context rp-term-listp) 'context)
                                               ((config svl::svex-reduce-config-p) 'config))
@@ -2532,8 +2538,7 @@
                                (eval-and-all
                                 rp::rp-term-listp
                                 falist-consistent-aux))))))
-                   
-      
+
   (define simplify-to-find-fa-c-patterns-iter ((x sv::Svex-p)
                                                (limit natp)
                                                &key
@@ -2556,14 +2561,14 @@
            (fa-c-patterns (look-for-fa-c-chain-pattern simplified))
 
            #|(- (and (case-match x (('sv::bitor
-                                   ('sv::bitand
-                                    ('sv::bitxor 1 ('sv::?* . &))
-                                    ('sv::bitxor ('sv::bitxor . &) &))
-                                   &)
-                                  t))
-                   (cwe "x: ~p0, simplified: ~p1, fa-c-patterns: ~p2~%"
-                        x simplified fa-c-patterns)))|#
-           
+           ('sv::bitand
+           ('sv::bitxor 1 ('sv::?* . &))
+           ('sv::bitxor ('sv::bitxor . &) &))
+           &)
+           t))
+           (cwe "x: ~p0, simplified: ~p1, fa-c-patterns: ~p2~%"
+           x simplified fa-c-patterns)))|#
+
            ((when fa-c-patterns)
             (mv simplified t))
            ((unless there-is-more)
@@ -2591,8 +2596,6 @@
                                (eval-and-all
                                 rp::rp-term-listp
                                 falist-consistent-aux))))))
-
-  
 
   (defines simplify-to-find-fa-c-patterns
     :verify-guards nil
@@ -2838,7 +2841,7 @@ have missed any ~s0-s pattern that  has a found counterpart ~s0-c pattern...~%"
 
        (- (cw "- Some missed ~s0-s patterns are found and their shape is ~
        updated. This will reveal more ~s0 patterns during quick search. So will ~
-       now do another pass. (There might be an overlap in statistics below) ~%"
+       now do another pass. There might be an overlap in the statistics below. ~%"
               adder-str))
 
        ;; find-s-from-found-c-in-svex-alist-aux  may  cause  new  simplify-able
@@ -3016,7 +3019,7 @@ was ~st seconds."))
                                                      *find-f/h-adders-in-svex-alist-limit*
                                                      :adder-type 'fa))
 
-          (- (cwe "resulting svex-alist after full-adders ~p0 ~%" svex-alist))
+          ;;(- (cwe "resulting svex-alist after full-adders ~p0 ~%" svex-alist))
 
           (- (time-tracker :rewrite-adders-in-svex :stop))
           (- (time-tracker :rewrite-adders-in-svex :print?
@@ -3034,7 +3037,7 @@ was ~st seconds."))
           (svex-alist (svl::svex-alist-simplify-bitand/or/xor svex-alist :config config))
 
           ;;(- (bad-pattern
-          
+
           (svex-alist (find-f/h-adders-in-svex-alist svex-alist
                                                      *find-f/h-adders-in-svex-alist-limit*
                                                      :adder-type 'ha))
@@ -3192,6 +3195,523 @@ was ~st seconds."))
           :in-theory (e/d ()
                           ()))))
 
+(defsection apply$-of-adder-fncs-meta
+  (define apply$-of-adder-fncs-meta-aux (args-term)
+    :returns (mv (res-args rp-term-listp :hyp (rp-termp args-term))
+                 all-bitp
+                 valid)
+    (case-match args-term
+      (('cons x rest)
+       (b* ((x-has-bitp (or (has-bitp-rp x)
+                            (binary-fnc-p x)
+                            (and (quotep x)
+                                 (consp (cdr x))
+                                 (bitp (unquote x)))))
+            ((mv rest bitp valid)
+             (apply$-of-adder-fncs-meta-aux rest)))
+         (mv (cons x rest)
+             (and x-has-bitp bitp)
+             valid)))
+      (('quote (x . rest))
+       (b* ((x-has-bitp (bitp x))
+            ((mv rest bitp valid)
+             (apply$-of-adder-fncs-meta-aux (list 'quote rest))))
+         (mv (cons `',x rest)
+             (and x-has-bitp bitp)
+             valid)))
+      (''nil
+       (mv nil t t))
+      (& (mv nil nil nil)))
+    ///
+    (defretd <fn>-is-correct
+      (implies valid
+               (equal (rp-evlt args-term a)
+                      (rp-evlt-lst res-args a))))
+    (defret <fn>-is-valid-sc
+      (implies (and valid
+                    (valid-sc args-term a))
+               (valid-sc-subterms res-args a))
+      :hints (("Goal"
+               :in-theory (e/d (is-rp is-if is-equals) ()))))
+
+    (defret true-listp-of-<fn>
+      (true-listp res-args))
+
+    (local
+     (include-book "projects/rp-rewriter/proofs/eval-functions-lemmas" :dir :system))
+
+    (local
+     (defthm has-bitp-rp-implies
+       (implies (and (has-bitp-rp term)
+                     (valid-sc term a))
+                (and (bitp (rp-evlt term a))))
+       :hints (("goal"
+
+                :in-theory (e/d (valid-sc-single-step
+                                 has-bitp-rp
+                                 is-rp)
+                                (bitp))))))
+    (local
+     (with-output
+       :off :all
+       :on (error)
+       (progn
+         (create-regular-eval-lemma binary-or 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma binary-and 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma binary-xor 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma binary-not 1 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma binary-? 3 find-adders-in-svex-formula-checks)
+         )))
+
+    (local
+     (defthm BINARY-FNC-P-implies
+       (implies (and (BINARY-FNC-P term)
+                     (rp-evl-meta-extract-global-facts)
+                     (find-adders-in-svex-formula-checks state))
+                (and (bitp (rp-evlt term a))))
+       :hints (("goal"
+
+                :in-theory (e/d* (REGULAR-EVAL-LEMMAS
+                                  BINARY-FNC-P)
+                                 (bitp))))))
+
+    (defret <fn>-is-all-bitp
+      (implies (and all-bitp
+                    valid
+                    (valid-sc args-term a)
+                    (rp-evl-meta-extract-global-facts)
+                    (find-adders-in-svex-formula-checks state))
+               (and (bit-listp (rp-evlt args-term a))
+                    (bit-listp (rp-evlt-lst res-args a))))
+      :rule-classes (:rewrite :forward-chaining)
+      :hints (("Goal"
+               :in-theory (e/d (bit-listp
+                                is-rp
+                                is-if
+                                is-equals)
+                               ())))))
+
+  ;; (apply$-of-adder-fncs-meta-aux `(cons (rp 'bitp x) (cons '1 (cons (rp 'bitp y) '(1)))))
+  ;; = (((RP 'BITP X) '1 (RP 'BITP Y) '1) T T)
+
+  (define apply$-of-adder-fncs-meta (term
+                                     (context true-listp))
+    :returns (mv (res rp-termp :hyp (rp-termp term)
+                      :hints (("Goal"
+                               :expand ((:free (rest) (is-rp (cons 'rp rest))))
+                               :use ((:instance rp-term-listp-of-apply$-of-adder-fncs-meta-aux.res-args
+                                                (args-term (CADR (CADDR TERM)))))
+                               :in-theory (e/d (RP-TERM-LISTP)
+                                               (rp-term-listp-of-apply$-of-adder-fncs-meta-aux.res-args)))))
+                 dont-rw)
+    (case-match term
+      (('apply$ ('quote fnc) ('svl::4veclist-fix-wog args))
+       (b* (((unless (member-equal fnc *adder-fncs*))
+             (mv term nil))
+            (warrant `(,(intern-in-package-of-symbol
+                         (str::cat "APPLY$-WARRANT-" (symbol-name fnc))
+                         fnc)))
+            ((unless (member-equal warrant context))
+             (mv term (raise "A necessary warrant is not found in the context: ~p0 ~%" warrant)))
+            ((mv args-lst all-bitp valid)
+             (apply$-of-adder-fncs-meta-aux args))
+            ((unless valid)
+             (mv term (raise "apply$-of-adder-fncs-meta-aux did not return valid. args: ~p0 ~%" args)))
+
+            ((when (and* all-bitp
+                         (or* (eq fnc 'ha-c-chain)
+                              (eq fnc 'ha-s-chain))
+                         (svl::equal-len args-lst 2)))
+             (case fnc
+               (ha-s-chain
+                (mv `(rp 'bitp (equals (s-spec (cons ,(car args-lst)
+                                                     (cons ,(cadr args-lst)
+                                                           'nil)))
+                                       (binary-xor ,(car args-lst)
+                                                   ,(cadr args-lst))))
+                    `(rp 'bitp (equals (s-spec (cons t (cons t 'nil)))
+                                       (binary-xor t t)))))
+               (ha-c-chain
+                (mv `(rp 'bitp (equals (c-spec (cons ,(car args-lst)
+                                                     (cons ,(cadr args-lst)
+                                                           'nil)))
+                                       (binary-and ,(car args-lst)
+                                                   ,(cadr args-lst))))
+                    `(rp 'bitp (equals (c-spec (cons t (cons t 'nil)))
+                                       (binary-and t t)))))
+               (t (mv term nil)))))
+         (cond
+          ((and* (eq fnc 'fa-c-chain)
+                 (svl::equal-len args-lst 4))
+           (mv `(,fnc (svl::4vec-fix-wog ,(first args-lst))
+                      ,(second args-lst)
+                      ,(third args-lst)
+                      ,(fourth args-lst))
+               `(nil (nil t) t t t)))
+          ((and* (eq fnc 'ha+1-s-chain)
+                 (svl::equal-len args-lst 3))
+           (mv `(,fnc (svl::4vec-fix-wog ,(first args-lst))
+                      ,(second args-lst)
+                      ,(third args-lst))
+               `(nil (nil t) t t)))
+          ((and* (eq fnc 'fa-s-chain)
+                 (svl::equal-len args-lst 3))
+           (mv `(,fnc ,(first args-lst)
+                      ,(second args-lst)
+                      ,(third args-lst))
+               `(nil t t t)))
+          ((and* (svl::equal-len args-lst 2)
+                 (or (eq fnc 'ha-c-chain)
+                     (eq fnc 'ha+1-c-chain)
+                     (eq fnc 'ha-s-chain)))
+           (mv `(,fnc ,(first args-lst)
+                      ,(second args-lst))
+               `(nil t t t)))
+          (t (mv term nil)))))
+      (& (mv term nil)))
+
+    ///
+
+    (local
+     (with-output
+       :off :all
+       :on (error)
+       (progn
+         (create-regular-eval-lemma rp 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma c-spec 1 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma bitp 1 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma equals 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma cons 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma s-spec 1 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma ha-s-chain 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma binary-xor 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma binary-and 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma ha+1-s-chain 3 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma fa-s-chain 3 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma ha+1-c-chain 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma fa-c-chain 4 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma ha-c-chain 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma apply$ 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma svl::4veclist-fix-wog 1 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma svl::4vec-fix-wog 1 find-adders-in-svex-formula-checks))))
+
+    (local
+     (defthm rp-evlt-of-quoted
+       (implies (and (equal (car x) 'quote))
+                (equal (rp-evlt x a)
+                       (cadr x)))))
+
+    (local
+     (defthm 4vec-bitxor-or-dont-care
+       (and (equal (sv::4vec-bitxor '(-1 . 0) x)
+                   '(-1 . 0))
+            (equal (sv::4vec-bitxor x '(-1 . 0))
+                   '(-1 . 0)))
+       :hints (("Goal"
+                :in-theory (e/d (sv::4vec-bitxor) ())))))
+
+    #|(local
+    (defthm 4vec-bitand-or-dont-care
+    (and (equal (sv::4vec-bitand '(-1 . 0) x)
+    '(-1 . 0))
+    (equal (sv::4vec-bitand x '(-1 . 0))
+    '(-1 . 0)))
+    :hints (("Goal"
+    :in-theory (e/d (sv::4vec-bitand) ())))))|#
+
+    ;; (local
+    ;;  (defthm rp-evlt-lst-of-cdr
+    ;;    (equal (rp-evlt-lst (cdr x) a)
+    ;;           (cdr (rp-evlt-lst x a)))))
+
+    (local
+     (defthm RP-EVLT-LST-when-atom-and-cddr
+       (implies (consp (cdr x))
+                (equal (car (rp-evlt-lst (cddr x) a))
+                       (rp-evlt (caddr x) a)))))
+
+    (local
+     (defthm RP-EVLT-LST-when-atom-and-cdr
+       (implies (consp x)
+                (equal (car (rp-evlt-lst (cdr x) a))
+                       (rp-evlt (cadr x) a)))))
+
+    (local
+     (defthm consp-of-rp-evlt-lst
+       (equal (consp (rp-evlt-lst lst a))
+              (consp lst))
+       :hints (("Goal"
+                :induct (len lst)
+                :in-theory (e/d (rp-trans-lst) ())))))
+
+    (local
+     (defthm HA+1-C-CHAIN-of-4vec-fix
+       (and (equal (HA+1-C-CHAIN (sv::4vec-fix x) y)
+                   (HA+1-C-CHAIN x y))
+            (equal (HA+1-C-CHAIN x (sv::4vec-fix y))
+                   (HA+1-C-CHAIN x y)))
+       :hints (("Goal"
+                :in-theory (e/d (HA+1-C-CHAIN) ())))))
+
+    (local
+     (defthm HA-C-CHAIN-of-4vec-fix
+       (and (equal (HA-C-CHAIN (sv::4vec-fix x) y)
+                   (HA-C-CHAIN x y))
+            (equal (HA-C-CHAIN x (sv::4vec-fix y))
+                   (HA-C-CHAIN x y)))
+       :hints (("Goal"
+                :in-theory (e/d (HA-C-CHAIN) ())))))
+
+    (local
+     (defthm FA-C-CHAIN-of-4vec-fix
+       (and (equal (fa-c-chain m (sv::4vec-fix x) y z)
+                   (fa-c-chain m x y z))
+            (equal (fa-c-chain m x (sv::4vec-fix y) z)
+                   (fa-c-chain m x y z))
+            (equal (fa-c-chain m x y (sv::4vec-fix z))
+                   (fa-c-chain m x y z)))
+       :hints (("Goal"
+                :in-theory (e/d (fa-c-chain) ())))))
+
+    (local
+     (defthm FA-s-CHAIN-of-4vec-fix
+       (and (equal (fa-s-chain (sv::4vec-fix x) y z)
+                   (fa-s-chain x y z))
+            (equal (fa-s-chain x (sv::4vec-fix y) z)
+                   (fa-s-chain x y z))
+            (equal (fa-s-chain x y (sv::4vec-fix z))
+                   (fa-s-chain x y z)))
+       :hints (("Goal"
+                :in-theory (e/d (fa-s-chain) ())))))
+
+    (local
+     (defthm ha+1-s-CHAIN-of-4vec-fix
+       (and (equal (ha+1-s-chain m (sv::4vec-fix x) y)
+                   (ha+1-s-chain m x y))
+            (equal (ha+1-s-chain m x (sv::4vec-fix y))
+                   (ha+1-s-chain m x y)))
+       :hints (("Goal"
+                :in-theory (e/d (ha+1-s-chain) ())))))
+
+    (local
+     (defthm ha-s-CHAIN-of-4vec-fix
+       (and (equal (ha-s-chain (sv::4vec-fix x) y)
+                   (ha-s-chain x y))
+            (equal (ha-s-chain x (sv::4vec-fix y))
+                   (ha-s-chain x y)))
+       :hints (("Goal"
+                :in-theory (e/d (ha-s-chain) ())))))
+
+    (local
+     (include-book "projects/rp-rewriter/proofs/eval-functions-lemmas" :dir :system))
+
+    (local
+     (defthm member-equal-and-eval-and-all
+       (implies (and (eval-and-all context a)
+                     (member-equal x context))
+                (and (rp-evlt x a)
+                     (implies (force (not (include-fnc x 'list)))
+                              (rp-evl x a))))
+       :rule-classes (:rewrite)))
+
+    (local
+     (defthm valid-sc-of-car-when-valid-sc-subterms
+       (implies (and (consp lst)
+                     (valid-sc-subterms lst a))
+                (valid-sc (car lst) a))))
+
+    (local
+     (defthm VALID-SC-SUBTERMS-of-cdr
+       (implies (VALID-SC-SUBTERMS lst a)
+                (VALID-SC-SUBTERMS (cdr lst) a))))
+
+    (local
+     (defthmd s-spec-when-bit-listp
+       (implies (and (svl::equal-len x 2)
+                     (bit-listp (rp-evlt-lst x a)))
+                (equal (s-spec (list (rp-evlt (car x) a)
+                                     (rp-evlt (cadr x) a)))
+                       (binary-xor (rp-evlt (car x) a)
+                                   (rp-evlt (cadr x) a))))
+       :hints (("Goal"
+                :do-not-induct t
+                :in-theory (e/d (BIT-LISTP bitp) ())))))
+
+    (local
+     (defthmd ha-c-chain-when-bit-listp
+       (implies (and (svl::equal-len x 2)
+                     (bit-listp (rp-evlt-lst x a)))
+                (equal (HA-C-CHAIN (rp-evlt (car x) a)
+                                   (rp-evlt (cadr x) a))
+                       (binary-and (rp-evlt (car x) a)
+                                   (rp-evlt (cadr x) a))))
+       :hints (("Goal"
+                :do-not-induct t
+                :in-theory (e/d (BIT-LISTP bitp) ())))))
+
+    (local
+     (defthmd ha-s-chain-when-bit-listp
+       (implies (and (svl::equal-len x 2)
+                     (bit-listp (rp-evlt-lst x a)))
+                (equal (HA-s-CHAIN (rp-evlt (car x) a)
+                                   (rp-evlt (cadr x) a))
+                       (binary-xor (rp-evlt (car x) a)
+                                   (rp-evlt (cadr x) a))))
+       :hints (("Goal"
+                :do-not-induct t
+                :in-theory (e/d (BIT-LISTP bitp) ())))))
+
+    (local
+     (defthmd c-spec-when-bit-listp
+       (implies (and (svl::equal-len x 2)
+                     (bit-listp (rp-evlt-lst x a)))
+                (equal (c-spec (list (rp-evlt (car x) a)
+                                     (rp-evlt (cadr x) a)))
+                       (binary-and (rp-evlt (car x) a)
+                                   (rp-evlt (cadr x) a))))
+       :hints (("Goal"
+                :do-not-induct t
+                :in-theory (e/d (BIT-LISTP bitp) ())))))
+
+    (defret <fn>-is-valid-sc
+      (and (implies (and (rp::rp-term-listp context)
+                         (rp-termp term)
+                         (valid-sc term a)
+                         (rp-evl-meta-extract-global-facts)
+                         (find-adders-in-svex-formula-checks state))
+                    (valid-sc res a)))
+      :fn apply$-of-adder-fncs-meta
+      :hints (("Goal"
+               :do-not-induct t
+               :expand ((:free (x y a)
+                               (eval-and-all (cons x y) a))
+                        (:free (x y a)
+                               (CONTEXT-FROM-RP (cons 'rp y) a))
+                        (:free (x y a)
+                               (ex-from-rp (cons 'rp y)))
+                        (:free (x y a)
+                               (ex-from-rp (cons 'equals y)))
+                        (:free (x y a)
+                               (CONTEXT-FROM-RP (cons 'equals y) a)))
+               :in-theory (e/d* (s-spec-when-bit-listp
+                                 c-spec-when-bit-listp
+                                 apply$-of-adder-fncs-meta-aux-is-all-bitp
+                                 ;;CONTEXT-FROM-RP
+                                 regular-eval-lemmas
+                                 regular-eval-lemmas-with-ex-from-rp
+                                 is-rp is-if is-equals)
+                                ((:REWRITE DEFAULT-CDR)
+                                 (:REWRITE
+                                  RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
+                                 (:REWRITE
+                                  ACL2::SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP)
+                                 (:REWRITE VALID-SC-CADR)
+                                 (:DEFINITION EX-FROM-RP)
+                                 (:DEFINITION MEMBER-EQUAL)
+                                 (:REWRITE NTH-0-CONS)
+                                 (:REWRITE NTH-ADD1)
+                                 len
+                                 RP-EVLT-LST-OF-CONS
+                                 bit-listp
+                                 (:rewrite str::coerce-to-list-removal)
+                                 (:rewrite str::coerce-to-string-removal)
+                                 (:DEFINITION STR::FAST-STRING-APPEND)
+                                 ;;(:DEFINITION RP-TRANS-LST)
+                                 (:DEFINITION STRING-APPEND)
+                                 ;;rp-trans-lst
+                                 rp-trans
+                                 rp-termp
+                                 eval-and-all
+                                 svl::4veclist-fix-wog-is-4veclist-fix
+                                 rp-trans)))
+              (and stable-under-simplificationp
+                   '(:use ((:instance apply$-of-adder-fncs-meta-aux-is-all-bitp
+                                      (args-term (cadr (caddr term)))
+                                      ))))
+              ))
+
+    (defret <fn>-is-correct
+      (and (implies (and (rp::rp-term-listp context)
+                         (rp-termp term)
+                         (valid-sc term ACL2::UNBOUND-FREE-ENV)
+                         (rp::eval-and-all context ACL2::UNBOUND-FREE-ENV)
+                         (rp-evl-meta-extract-global-facts)
+                         (find-adders-in-svex-formula-checks state))
+                    (and (equal (rp-evlt res ACL2::UNBOUND-FREE-ENV)
+                                (rp-evlt term ACL2::UNBOUND-FREE-ENV))
+                         #|(valid-sc res a)|#)))
+      :fn apply$-of-adder-fncs-meta
+      :hints (("Goal"
+               :expand ((:free (x y)
+                               (svl::4veclist-fix-wog (cons x y)))
+                        (:free (a)
+                               (svl::4veclist-fix-wog
+                                (rp-evlt-lst
+                                 (cddr (mv-nth 0
+                                               (apply$-of-adder-fncs-meta-aux (cadr (caddr term)))))
+                                 a)))
+                        (:free (a)(svl::4veclist-fix-wog
+                                   (rp-evlt-lst
+                                    (cdr (mv-nth 0
+                                                 (apply$-of-adder-fncs-meta-aux (cadr (caddr term)))))
+                                    a)))
+                        (:free (a)(svl::4veclist-fix-wog
+                                   (cdr
+                                    (rp-evlt-lst
+                                     (cddr (mv-nth 0
+                                                   (apply$-of-adder-fncs-meta-aux (cadr (caddr term)))))
+                                     a))))
+                        (:free (a)
+                               (svl::4veclist-fix-wog
+                                (rp-evlt-lst
+                                 (cdddr (mv-nth 0
+                                                (apply$-of-adder-fncs-meta-aux (cadr (caddr term)))))
+                                 a))))
+               :in-theory (e/d* (s-spec-when-bit-listp
+                                 c-spec-when-bit-listp
+                                 ha-s-chain-when-bit-listp
+                                 ha-c-chain-when-bit-listp
+                                 apply$-of-adder-fncs-meta-aux-is-correct
+                                 ;;FA-S-CHAIN
+                                 ;;HA+1-C-CHAIN
+                                 ;;fA-c-CHAIN
+                                 regular-eval-lemmas
+                                 regular-eval-lemmas-with-ex-from-rp)
+                                (rp-evlt-lst-of-cons
+                                 (:rewrite str::coerce-to-list-removal)
+                                 (:rewrite str::coerce-to-string-removal)
+                                 (:definition str::fast-string-append)
+                                 ;;(:definition rp-trans-lst)
+                                 (:definition string-append)
+                                 (:definition valid-sc)
+                                 (:definition valid-sc-subterms)
+                                 ;;rp-trans-lst
+
+                                 rp-termp
+                                 eval-and-all
+                                 svl::4veclist-fix-wog-is-4veclist-fix
+                                 rp-trans)))
+              (and stable-under-simplificationp
+                   '(:use ((:instance apply$-of-adder-fncs-meta-aux-is-all-bitp
+                                      (args-term (cadr (caddr term)))
+                                      (a acl2::unbound-free-env)))))))
+
+    (rp::disable-rules '(svl::4veclist-fix-wog
+                         sv::4veclist-fix
+                         svl::4veclist-fix-wog-is-4veclist-fix))
+
+    )
+
+  (rp::add-meta-rule
+   :meta-fnc apply$-of-adder-fncs-meta
+   :trig-fnc apply$
+   :formula-checks find-adders-in-svex-formula-checks
+   :valid-syntaxp t
+   :returns (mv term dont-rw)
+   :hints (("Goal"
+            :in-theory (e/d ()
+                            ())))))
+
 #|
 (define rewrite-adders-in-svex-alist ((svex-alist sv::Svex-alist-p))
 :Returns (res sv::Svex-alist-p :hyp (sv::Svex-alist-p svex-alist))
@@ -3319,13 +3839,7 @@ svex-alist)
                                  sv::svex-alist-eval))))
          (defthm-with-temporary-warrants
            ,@args
-           :fns (ha-c-chain
-                 fa-c-chain
-                 ha+1-c-chain
-                 ha+1-s-chain
-                 ;;ha+1-s
-                 ha-s-chain
-                 fa-s-chain)
+           :fns ,*adder-fncs*
            :defthm-macro ,(if then-fgl 'defthmrp-then-fgl 'defthmrp)
            )))))
 

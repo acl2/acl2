@@ -276,10 +276,11 @@ lst))))||#
                      :rhs/meta-fnc rhs))
          (rest (formulas-to-rules rune rule-new-synp warning (cdr formulas))))
       (if (and (rule-syntaxp rule :warning warning)
-               (implies (include-fnc rhs 'rp)
-                        (and warning
-                             (cw "(not (include-fnc rhs 'rp)) failed! ~p0 ~%.
- Rhs of  a rule cannot have an 'rp' instance ~%" rhs))))
+               (if (include-fnc rhs 'rp)
+                   (and warning
+                        (cw "(not (include-fnc rhs 'rp)) failed! ~p0 ~%.
+ Rhs of  a rule cannot have an 'rp' instance ~%" rhs))
+                 t))
           (cons rule rest)
         rest))))
 

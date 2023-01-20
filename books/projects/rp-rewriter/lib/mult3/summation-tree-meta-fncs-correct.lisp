@@ -7040,6 +7040,28 @@
                              valid-sc
                              )))))
 
+(create-regular-eval-lemma equals 2 mult-formula-checks)
+
+(create-regular-eval-lemma -- 1 mult-formula-checks)
+
+(defthm sum-of-5-equiv
+  (implies (equal (sum x1 x2 x3 x4 x5) y)
+           (equal (equal (sum x1 x2 x3 x4 x5 other) other2)
+                  (equal (sum y other) other2))))
+
+(defthm dummy-sum-of-5-and-2-shared-e-at-the-end
+  (equal (equal (sum x1 x2 x3 x4 x5 a)
+                (sum y1 a))
+         (equal (sum x1 x2 x3 x4 x5)
+                (sum y1))))
+
+(defthmd when-sum-equiv-to-negated
+  (equal (equal (sum a b) (-- x))
+         (equal (-- (sum a b)) (ifix x)))
+  :hints (("Goal"
+           :in-theory (e/d (-- sum)
+                           (+-IS-SUM)))))
+
 (defret new-sum-merge-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -7058,14 +7080,18 @@
   :fn new-sum-merge-aux
   :hints (("Goal"
            :do-not-induct t
-           :induct (new-sum-merge-aux sum-lst)
-           :expand ((NEW-SUM-MERGE-AUX SUM-LST))
+           :induct (new-sum-merge-aux sum-lst limit)
+           :expand ((NEW-SUM-MERGE-AUX SUM-LST limit))
            :in-theory (e/d* (new-sum-merge-aux
                              s-c-res
-
+                             when-sum-equiv-to-negated
                              c-fix-arg-aux-correct-lemma
                              ;;regular-eval-lemmas-with-ex-from-rp
 
+                             REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
+                             REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS
+                             regular-rp-evl-of_equals_when_mult-formula-checks
+                             regular-rp-evl-of_equals_when_mult-formula-checks_with-ex-from-rp
                              (:REWRITE
                               REGULAR-RP-EVL-OF_AND-LIST_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              (:REWRITE
@@ -7086,7 +7112,116 @@
                              sum-list-eval-of-cons
                              sum-list-eval-of-atom)
                             (;;(:REWRITE RP::SUM-ASSOC)
+                             (:DEFINITION IS-SYNP$INLINE)
+                             (:REWRITE VALID-SC-SUBTERMS-CDR)
                              sum-cancel-common
+                             (:e tau-system)
+                             (:DEFINITION EQ)
+                             (:TYPE-PRESCRIPTION PP-TERM-P-fn)
+                             (:DEFINITION PP-TERM-P-fn)
+                             (:TYPE-PRESCRIPTION QUOTE-P$INLINE)
+                             (:TYPE-PRESCRIPTION IS-RP$INLINE)
+                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
+                             (:DEFINITION SUM-LIST-EVAL)
+                             ;;(:REWRITE MINUS-OF-SUM)
+                             (:TYPE-PRESCRIPTION RP-TERMP)
+
+                             (:TYPE-PRESCRIPTION SUM-LIST-EVAL)
+                             (:TYPE-PRESCRIPTION SINGLE-C-P$INLINE)
+                             (:TYPE-PRESCRIPTION MULT-FORMULA-CHECKS)
+                             (:TYPE-PRESCRIPTION SINGLE-S-P$INLINE)
+                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-LST)
+                             (:TYPE-PRESCRIPTION EX-FROM-SYNP)
+                             (:TYPE-PRESCRIPTION SINGLE-s-C-RES-P$INLINE)
+                             (:TYPE-PRESCRIPTION O<)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS-FN)
+                             (:TYPE-PRESCRIPTION SUM-LIST-P$INLINE)
+                             (:TYPE-PRESCRIPTION AND-LIST-P$INLINE)
+                             (:REWRITE DEFAULT-CDR)
+                             (:TYPE-PRESCRIPTION VALID-SC-SUBTERMS)
+                             (:TYPE-PRESCRIPTION BINARY-SUM)
+                             (:REWRITE DEFAULT-CAR)
+
+                             (:REWRITE DUMMY-SUM-CANCEL-LEMMA1)
+                             (:TYPE-PRESCRIPTION VALID-SC)
+                             (:TYPE-PRESCRIPTION RP-TERM-LISTP)
+                             (:DEFINITION NEW-SUM-MERGE-AUX)
+                             ;;                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+
+                             rp-trans
+                             ;;rp-evlt-of-ex-from-rp
+                             eval-and-all
+                             rp-termp
+                             rp-term-listp
+                             valid-sc
+                             VALID-SC-SUBTERMS
+                             RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
+                             (:REWRITE RP-EVL-OF-VARIABLE)
+                             (:DEFINITION IS-FALIST))))))
+
+(defret extract-from-equals-lst-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc-subterms pp-lst a)
+                (rp-term-listp pp-lst)
+                changed)
+           (and (valid-sc s a)
+                (valid-sc-subterms res-pp-lst a)
+                (valid-sc-subterms c-lst a)
+                (valid-sc-subterms to-be-coughed-c-lst a)
+                (and (equal (sum (sum-list (rp-evlt s a))
+                                 (sum-list-eval res-pp-lst a)
+                                 (sum-list-eval c-lst a)
+                                 (sum-list-eval to-be-coughed-c-lst a)
+                                 (sum-list-eval to-be-coughed-c-lst a))
+                            (sum-list-eval pp-lst a))
+                     (equal (sum (sum-list (rp-evlt s a))
+                                 (sum-list-eval res-pp-lst a)
+                                 (sum-list-eval c-lst a)
+                                 (sum-list-eval to-be-coughed-c-lst a)
+                                 (sum-list-eval to-be-coughed-c-lst a)
+                                 a1)
+                            (sum (sum-list-eval pp-lst a)
+                                 a1)))))
+  :fn extract-from-equals-lst
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (extract-from-equals-lst pp-lst)
+           :expand ((extract-from-equals-lst pp-lst))
+           :in-theory (e/d* (extract-from-equals-lst
+                             s-c-res
+                             when-sum-equiv-to-negated
+                             c-fix-arg-aux-correct-lemma
+                             ;;regular-eval-lemmas-with-ex-from-rp
+
+                             REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
+                             REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS
+                             regular-rp-evl-of_equals_when_mult-formula-checks
+                             regular-rp-evl-of_equals_when_mult-formula-checks_with-ex-from-rp
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_AND-LIST_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_CONS_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_S-C-RES_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_SUM-LIST_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_S_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+
+                             ;;rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
+                             new-sum-merge-aux-dissect-term
+                             new-sum-merge-aux-add-negated-coughed
+                             (:induction NEW-SUM-MERGE-AUX)
+                             sum-list-eval-of-cons
+                             sum-list-eval-of-atom)
+                            (;;(:REWRITE RP::SUM-ASSOC)
+                             (:DEFINITION IS-SYNP$INLINE)
+                             (:REWRITE VALID-SC-SUBTERMS-CDR)
+                             sum-cancel-common
+                             (:e tau-system)
                              (:DEFINITION EQ)
                              (:TYPE-PRESCRIPTION PP-TERM-P-fn)
                              (:DEFINITION PP-TERM-P-fn)
