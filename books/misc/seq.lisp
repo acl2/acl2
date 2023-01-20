@@ -427,7 +427,7 @@ creation of warnings while processing the stream.</p>")
                                         (len !!!stream))))
                              (prog2$ (er hard? "SEQ count failed for (~x0 ~x1.)~%"
                                          ',(car x) ',action)
-                                     (mv "SEQ count failure." nil !!!stream)))
+                                     (mv "SEQ count failure." nil ,stream)))
                             (t
                              (check-vars-not-free (!!!error !!!val !!!stream)
                                                   ,rest)))))))
@@ -459,7 +459,7 @@ creation of warnings while processing the stream.</p>")
                                                (len !!!stream))))
                                     (prog2$ (er hard? "SEQ count failed for (~x0 ~x1 ~x2.)~%"
                                                 ',nametree ',type ',action)
-                                            (mv "SEQ count failure." nil !!!stream)))
+                                            (mv "SEQ count failure." nil ,stream)))
                                    (t
                                     (check-vars-not-free (!!!error !!!val !!!stream) ,rest)))))))
 
@@ -485,7 +485,7 @@ creation of warnings while processing the stream.</p>")
                                              (len !!!stream))))
                                   (prog2$ (er hard?  "SEQ count failed for (~x0 ~x1 ~x2.)~%"
                                               ',nametree ',type ',action)
-                                          (mv "SEQ count failure." nil !!!stream)))
+                                          (mv "SEQ count failure." nil ,stream)))
                                  (t
                                   (let ,(seq-nametree-to-let-bindings nametree '!!!val)
                                     (check-vars-not-free (!!!error !!!val !!!stream) ,rest)))))))))))))
