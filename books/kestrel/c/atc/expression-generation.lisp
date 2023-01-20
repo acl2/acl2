@@ -98,7 +98,8 @@
                           (gin pexpr-ginp)
                           state)
   :returns (gout pexpr-goutp)
-  :short "Generate a C expression from an ACL2 variable.":long
+  :short "Generate a C expression from an ACL2 variable."
+  :long
   (xdoc::topstring
    (xdoc::p
     "An ACL2 variable is translated to a C variable.
@@ -1165,6 +1166,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-expr-sint-from-bool ((arg-term pseudo-termp)
+                                     (arg-expr exprp)
+                                     (arg-type typep)
+                                     (arg-events pseudo-event-form-listp)
+                                     (arg-thm symbolp)
+                                     (gin pexpr-ginp)
+                                     state)
+  (declare (ignore arg-thm state))
+  :returns (mv erp (gout pexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents a conversion from ACL2 boolean."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expression is the same as the argument expression:
+     the conversion from ACL2 boolean
+     only serves a purpose in the ACL2 representation
+     but it has no counterpart in the C code.")
+   (xdoc::p
+    "The argument term @('arg-term') is an ACL2 boolean,
+     but its corresponding expression @('arg-expr') is a C integer.
+     Applying @(tsee sint-from-boolean) to a boolean is fine in ACL2,
+     but in order to generate statically correct C code,
+     since @(tsee sint-from-boolean) has C type @('int'),
+     we must ensure that @('arg-expr') has type @('int') as well.
+     Without this check, we could have a valid ACL2 term like
+     @('(sint-from-boolean (boolean-from-uint x))'),
+     with @('x') an @('unsigned int'),
+     which in C is just the expression @('x'),
+     but it is used in a context where @('int') is expected
+     while @('x') actually has type @('unsigned int')."))
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       ((unless (equal arg-type (type-sint)))
+        (reterr
+         (msg "The conversion from boolean to C (signed) int ~
+               is applied to a boolean expression term ~x0 ~
+               that represents a C expression ~x1 of type ~x2, ~
+               which does not match int."
+              arg-term arg-expr arg-type)))
+       (term `(sint-from-boolean ,arg-term)))
+    (retok (make-pexpr-gout :expr arg-expr
+                            :type (type-sint)
+                            :term term
+                            :events arg-events
+                            :thm-name nil
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
+                            :proofs nil)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp
+                                           pseudo-term-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atc-gen-expr-pure/bool
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -1437,14 +1492,13 @@
          ((mv okp arg-term) (atc-check-sint-from-boolean term))
          ((when okp)
           (b* (((erp (pexpr-gout arg)) (atc-gen-expr-bool arg-term gin state)))
-            (retok (make-pexpr-gout :expr arg.expr
-                                    :type (type-sint)
-                                    :term term
-                                    :events arg.events
-                                    :thm-name nil
-                                    :thm-index arg.thm-index
-                                    :names-to-avoid arg.names-to-avoid
-                                    :proofs nil))))
+            (atc-gen-expr-sint-from-bool arg.term
+                                         arg.expr
+                                         arg.type
+                                         arg.events
+                                         arg.thm-name
+                                         gin
+                                         state)))
          ((mv okp test-term then-term else-term) (atc-check-condexpr term))
          ((when okp)
           (b* (((erp (pexpr-gout test)) (atc-gen-expr-bool test-term gin state))
