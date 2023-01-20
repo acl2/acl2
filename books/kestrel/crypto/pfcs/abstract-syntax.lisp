@@ -11,6 +11,7 @@
 (in-package "PFCS")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -73,6 +74,16 @@
   :true-listp t
   :elementp-of-nil nil
   :pred expression-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection expression-var-list (x)
+  :guard (symbol-listp x)
+  :returns (exprs expression-listp)
+  :short "Lift @(tsee expression-var) to lists."
+  (expression-var x)
+  ///
+  (fty::deffixequiv expression-var-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
