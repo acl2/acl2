@@ -936,7 +936,7 @@
      We use an auxiliary recursive function to go through the members
      and collect the parameters and their types,
      the @(tsee len) conjuncts in the extra guard (if any),
-     the @(tse consp) conjuncts in the extra guard (if any; always one or none),
+     the @(tsee consp) conjuncts in the extra guard (if any; always one or none),
      and terms use to make the members of the structure value.
      The body of the function just calls the structure value constructor
      from the C language formalization, with suitable inputs.
