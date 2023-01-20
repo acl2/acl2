@@ -712,17 +712,12 @@
      only serves a purpose in the ACL2 representation
      but it has no counterpart in the C code.")
    (xdoc::p
-    "The theorem's formula is the same as the one
-     that relates the expression to the argument term,
-     with the addition of two conjuncts:
-     one says that applying @(tsee test-value) to the argument term
-     yields the whole term (i.e. the one with @('boolean-from-<type>');
-     the other one says that the whole term satisfies @(tsee booleanp).
-     The reason for this form is that the symbolic execution rules
-     have separate binding hypotheses
-     for executing the expression and for applying @(tsee test-value):
-     for example, see the @('exec-expr-pure-when-cond') rule
-     in @(see atc-exec-expr-pure-rules).")
+    "The argument term is the @('cterm')
+     passed to @(tsee atc-gen-expr-bool-correct-thm);
+     see the documentation of that function for the distinction
+     between @('cterm') and @('aterm').
+     For the @('aterm'), we use the ACL2 term from which
+     the expression is generated, i.e. @('(boolean-from-<type> <arg-term>)').")
    (xdoc::p
     "The hints include
      the compound recognizer @('booleanp-compound-recognizer')
@@ -741,6 +736,7 @@
                given that the code is guard-verified."
               in-type arg-term arg-type)))
        (expr arg-expr)
+       (type arg-type)
        ((when (not gin.proofs))
         (retok
          (make-pexpr-gout :expr expr
@@ -751,45 +747,41 @@
                           :thm-index gin.thm-index
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
-       (thm-name (pack gin.fn '-correct- gin.thm-index))
-       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
-                                      thm-name nil gin.names-to-avoid wrld))
-       (arg-type-pred (type-to-recognizer arg-type wrld))
-       (arg-uterm (untranslate$ arg-term nil state))
-       ((unless (type-nonchar-integerp arg-type))
-        (reterr (raise "Internal error: non-integer type ~x0." arg-type)))
-       (arg-fixtype (integer-type-to-fixtype arg-type))
-       (boolean-from-arg-fixtype (pack 'boolean-from- arg-fixtype))
-       (term* `(,boolean-from-arg-fixtype ,arg-term))
-       (uterm* (untranslate$ term* nil state))
-       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
-                             ,arg-uterm)
-                      (,arg-type-pred ,arg-uterm)
-                      (equal (test-value ,arg-uterm)
-                             ,uterm*)
-                      (booleanp ,uterm*)))
-       (formula (atc-contextualize formula gin.context nil))
-       (formula `(implies (and (compustatep ,gin.compst-var)
-                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
-                          ,formula))
-       (test-value-when-arg-type-pred (pack 'test-value-when- arg-type-pred))
-       (booleanp-of-boolean-from-arg-fixtype
-        (pack 'booleanp-of- boolean-from-arg-fixtype))
+       (cterm arg-term)
+       ((unless (type-nonchar-integerp type))
+        (reterr (raise "Internal error: non-integer type ~x0." type)))
+       (fixtype (integer-type-to-fixtype type))
+       (type-pred (type-to-recognizer type wrld))
+       (boolean-from-fixtype (pack 'boolean-from- fixtype))
+       (aterm `(,boolean-from-fixtype ,arg-term))
+       (test-value-when-type-pred (pack 'test-value-when- type-pred))
+       (booleanp-of-boolean-from-fixtype
+        (pack 'booleanp-of- boolean-from-fixtype))
        (hints `(("Goal" :in-theory '(,arg-thm
-                                     ,test-value-when-arg-type-pred
-                                     ,booleanp-of-boolean-from-arg-fixtype
+                                     ,test-value-when-type-pred
+                                     ,booleanp-of-boolean-from-fixtype
                                      booleanp-compound-recognizer))))
-       ((mv thm-event &) (evmac-generate-defthm thm-name
-                                                :formula formula
-                                                :hints hints
-                                                :enable nil)))
+       ((mv thm-event thm-name thm-index names-to-avoid)
+        (atc-gen-expr-bool-correct-thm gin.fn
+                                       gin.fn-guard
+                                       gin.context
+                                       expr
+                                       type
+                                       aterm
+                                       cterm
+                                       gin.compst-var
+                                       hints
+                                       nil
+                                       gin.thm-index
+                                       gin.names-to-avoid
+                                       state)))
     (retok (make-pexpr-gout :expr expr
-                            :type arg-type
-                            :term term*
+                            :type type
+                            :term aterm
                             :events (append arg-events
                                             (list thm-event))
                             :thm-name thm-name
-                            :thm-index (1+ gin.thm-index)
+                            :thm-index thm-index
                             :names-to-avoid names-to-avoid
                             :proofs t)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp
