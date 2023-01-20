@@ -1128,7 +1128,8 @@
                         if*-of-t-and-t
                         sint-from-boolean-when-true-hide
                         equal-to-t-when-holds-and-boolean
-                        booleanp-compound-recognizer))))
+                        booleanp-compound-recognizer
+                        hide-of-lambda))))
        (hints-else
         `(("Goal"
            :in-theory '(exec-expr-pure-when-binary-logor-and-false
@@ -1611,11 +1612,7 @@
                                      gin
                                      :thm-index arg2.thm-index
                                      :names-to-avoid arg2.names-to-avoid
-                                     ;; We temporarily turn off
-                                     ;; modular proofs here
-                                     ;; until some issues are resolved.
-                                     ;; :proofs arg2.proofs
-                                     :proofs nil)
+                                     :proofs arg2.proofs)
                                     state))))
          ((mv okp arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)

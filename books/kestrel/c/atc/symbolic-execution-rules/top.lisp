@@ -49,6 +49,7 @@
 (include-book "flexible-array-member")
 (include-book "if-star")
 (include-book "boolean-equality")
+(include-book "hide")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
