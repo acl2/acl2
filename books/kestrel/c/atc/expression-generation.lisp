@@ -1078,22 +1078,7 @@
          :thm-index gin.thm-index
          :names-to-avoid gin.names-to-avoid
          :proofs nil))
-       (thm-name (pack gin.fn '-correct- gin.thm-index))
-       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
-                                      thm-name nil gin.names-to-avoid wrld))
        (cterm `(sint-from-boolean ,term))
-       (uterm (untranslate$ term nil state))
-       (ucterm (untranslate$ cterm nil state))
-       (formula `(and (equal (exec-expr-pure ',expr ,gin.compst-var)
-                             ,ucterm)
-                      (sintp ,ucterm)
-                      (equal (test-value ,ucterm)
-                             ,uterm)
-                      (booleanp ,uterm)))
-       (formula (atc-contextualize formula gin.context nil))
-       (formula `(implies (and (compustatep ,gin.compst-var)
-                               (,gin.fn-guard ,@(formals+ gin.fn wrld)))
-                          ,formula))
        (arg1-type-pred (type-to-recognizer arg1-type wrld))
        (arg2-type-pred (type-to-recognizer arg2-type wrld))
        (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
@@ -1150,10 +1135,20 @@
                           :in-theory '(acl2::if*-when-false)
                           :expand (:free (x) (hide x)))))
           (prove :hints ,hints-else)))
-       ((mv thm-event &) (evmac-generate-defthm thm-name
-                                                :formula formula
-                                                :instructions instructions
-                                                :enable nil)))
+       ((mv thm-event thm-name thm-index names-to-avoid)
+        (atc-gen-expr-bool-correct-thm gin.fn
+                                       gin.fn-guard
+                                       gin.context
+                                       expr
+                                       type
+                                       term
+                                       cterm
+                                       gin.compst-var
+                                       nil
+                                       instructions
+                                       gin.thm-index
+                                       gin.names-to-avoid
+                                       state)))
     (make-pexpr-gout
      :expr expr
      :type type
@@ -1162,7 +1157,7 @@
                      arg2-events
                      (list thm-event))
      :thm-name thm-name
-     :thm-index (1+ gin.thm-index)
+     :thm-index thm-index
      :names-to-avoid names-to-avoid
      :proofs t))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp
