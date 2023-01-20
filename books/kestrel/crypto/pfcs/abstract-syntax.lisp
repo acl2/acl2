@@ -75,16 +75,6 @@
   :elementp-of-nil nil
   :pred expression-listp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection expression-var-list (x)
-  :guard (symbol-listp x)
-  :returns (exprs expression-listp)
-  :short "Lift @(tsee expression-var) to lists."
-  (expression-var x)
-  ///
-  (fty::deffixequiv expression-var-list))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum constraint
