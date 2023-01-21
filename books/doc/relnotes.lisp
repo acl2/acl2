@@ -138,6 +138,12 @@
     "The parsing generation tools
      have been significantly extended and improved.")
 
+   (xdoc::p
+    "New tools have been added to read grammars from files
+     into formal ACL2 representations,
+     to prove properties of the grammars,
+     and to generate functions and theorems about the grammars.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "acl2pl::acl2-programming-language"
