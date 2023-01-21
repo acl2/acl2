@@ -263,3 +263,29 @@ Skipping for now.
           (c . non-neg-rational)))
 
 (defdata d7 (map d6 d6))
+
+; If a recognizer is already defined, but the guard is not t, then
+; throw an error.
+(must-fail
+  (defdata zero 0))
+
+; An example where the recognizer is already defined.
+(defun zeerop (x)
+  (declare (xargs :guard t))
+  (equal x 0))
+
+(defdata zeero 0)
+
+; If we then try to define zerop using the alias route, still fail,
+; but due to constraining a symbol in the main Lisp package.
+(must-fail
+  (defdata zero 0))
+
+(defun zeeerop (x)
+  (declare (xargs :guard (acl2-numberp x)))
+  (equal x 0))
+
+; If we then try to define zeerop using the alias route, still fail
+; because we try to define zeeerop as a macro 
+(must-fail
+  (defdata zeeero 0))
