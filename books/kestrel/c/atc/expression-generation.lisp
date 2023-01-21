@@ -1172,7 +1172,6 @@
                                      (arg-thm symbolp)
                                      (gin pexpr-ginp)
                                      state)
-  (declare (ignore arg-thm state))
   :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents a conversion from ACL2 boolean."
@@ -1187,7 +1186,13 @@
     "To check that the argument term is an @(tsee and) or @(tsee or),
      as described in the user documentation,
      is carried out on transformed terms.
-     So we check that the argument term is a call of @(tsee if*)."))
+     So we check that the argument term is a call of @(tsee if*).")
+   (xdoc::p
+    "The proof of the correctness theorem is very simple.
+     Since the argument term must be a call of @(tsee and) or @(tsee or),
+     the correctness theorem already states that
+     @(tsee sint-from-boolean) applied to the argument term
+     is equal to executing the expression and has the appropriate C type."))
   (b* (((reterr) (irr-pexpr-gout))
        ((pexpr-gin gin) gin)
        ((unless (and (consp arg-term)
@@ -1197,15 +1202,41 @@
                is applied to a boolean expression term ~x0 ~
                that is not a (transformed) call of AND or OR."
               arg-term)))
-       (term `(sint-from-boolean ,arg-term)))
-    (retok (make-pexpr-gout :expr arg-expr
-                            :type (type-sint)
+       (term `(sint-from-boolean ,arg-term))
+       (expr arg-expr)
+       (type (type-sint))
+       ((when (not gin.proofs))
+        (retok (make-pexpr-gout :expr expr
+                                :type type
+                                :term term
+                                :events arg-events
+                                :thm-name nil
+                                :thm-index gin.thm-index
+                                :names-to-avoid gin.names-to-avoid
+                                :proofs nil)))
+       (hints `(("Goal" :by ,arg-thm)))
+       ((mv thm-event thm-name thm-index names-to-avoid)
+        (atc-gen-expr-pure-correct-thm gin.fn
+                                       gin.fn-guard
+                                       gin.context
+                                       expr
+                                       type
+                                       term
+                                       gin.compst-var
+                                       hints
+                                       nil
+                                       gin.thm-index
+                                       gin.names-to-avoid
+                                       state)))
+    (retok (make-pexpr-gout :expr expr
+                            :type type
                             :term term
-                            :events arg-events
-                            :thm-name nil
-                            :thm-index gin.thm-index
-                            :names-to-avoid gin.names-to-avoid
-                            :proofs nil)))
+                            :events (append arg-events
+                                            (list thm-event))
+                            :thm-name thm-name
+                            :thm-index thm-index
+                            :names-to-avoid names-to-avoid
+                            :proofs t)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp
                                            pseudo-term-listp))))
 
@@ -1487,7 +1518,11 @@
                                          arg.expr
                                          arg.events
                                          arg.thm-name
-                                         gin
+                                         (change-pexpr-gin
+                                          gin
+                                          :thm-index arg.thm-index
+                                          :names-to-avoid arg.names-to-avoid
+                                          :proofs arg.proofs)
                                          state)))
          ((mv okp test-term then-term else-term) (atc-check-condexpr term))
          ((when okp)
