@@ -1168,7 +1168,6 @@
 
 (define atc-gen-expr-sint-from-bool ((arg-term pseudo-termp)
                                      (arg-expr exprp)
-                                     (arg-type typep)
                                      (arg-events pseudo-event-form-listp)
                                      (arg-thm symbolp)
                                      (gin pexpr-ginp)
@@ -1185,27 +1184,19 @@
      only serves a purpose in the ACL2 representation
      but it has no counterpart in the C code.")
    (xdoc::p
-    "The argument term @('arg-term') is an ACL2 boolean,
-     but its corresponding expression @('arg-expr') is a C integer.
-     Applying @(tsee sint-from-boolean) to a boolean is fine in ACL2,
-     but in order to generate statically correct C code,
-     since @(tsee sint-from-boolean) has C type @('int'),
-     we must ensure that @('arg-expr') has type @('int') as well.
-     Without this check, we could have a valid ACL2 term like
-     @('(sint-from-boolean (boolean-from-uint x))'),
-     with @('x') an @('unsigned int'),
-     which in C is just the expression @('x'),
-     but it is used in a context where @('int') is expected
-     while @('x') actually has type @('unsigned int')."))
+    "To check that the argument term is an @(tsee and) or @(tsee or),
+     as described in the user documentation,
+     is carried out on transformed terms.
+     So we check that the argument term is a call of @(tsee if*)."))
   (b* (((reterr) (irr-pexpr-gout))
        ((pexpr-gin gin) gin)
-       ((unless (equal arg-type (type-sint)))
+       ((unless (and (consp arg-term)
+                     (eq (car arg-term) 'if*)))
         (reterr
          (msg "The conversion from boolean to C (signed) int ~
                is applied to a boolean expression term ~x0 ~
-               that represents a C expression ~x1 of type ~x2, ~
-               which does not match int."
-              arg-term arg-expr arg-type)))
+               that is not a (transformed) call of AND or OR."
+              arg-term)))
        (term `(sint-from-boolean ,arg-term)))
     (retok (make-pexpr-gout :expr arg-expr
                             :type (type-sint)
@@ -1494,7 +1485,6 @@
           (b* (((erp (pexpr-gout arg)) (atc-gen-expr-bool arg-term gin state)))
             (atc-gen-expr-sint-from-bool arg.term
                                          arg.expr
-                                         arg.type
                                          arg.events
                                          arg.thm-name
                                          gin
