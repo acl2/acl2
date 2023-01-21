@@ -208,7 +208,9 @@
 
    (xdoc::p
     "The event macro @(tsee c::defstruct) has been extended
-     to support flexible array members.")
+     to support flexible array members.
+     This macro has also been extended to generate
+     struct constructors as well as whole-array-member readers and writers.")
 
    (xdoc::p
     "Support has been added to represent and generate
