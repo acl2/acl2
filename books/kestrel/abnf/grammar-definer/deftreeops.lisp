@@ -577,12 +577,16 @@
              nth
              (:e zp)
              len)))
+       ((mv rep-events rep-infos)
+        (deftreeops-gen-rep-fns+thms+info-list conc))
        (info (make-deftreeops-alt-info
               :discriminant-term nil
               :get-tree-list-list-fn nil
               :match-thm match-thm
-              :rep-infos nil)))
-    (mv (list match-thm-event) info)))
+              :rep-infos rep-infos)))
+    (mv (append (list match-thm-event)
+                rep-events)
+        info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
