@@ -501,8 +501,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-gen-rep-fns+thms+info ((rep repetitionp))
-  (declare (ignore rep))
+(define deftreeops-gen-rep-fns+thms+info ((rep repetitionp)
+                                          (i posp)
+                                          (rulename-upstring acl2::stringp)
+                                          (prefix acl2::symbolp))
   :returns (mv (events pseudo-event-form-listp)
                (info deftreeops-rep-infop))
   :short "Generate the functions and theorems and information for
@@ -510,24 +512,64 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a placeholder for now, which we will fill later."))
-  (b* ((info (make-deftreeops-rep-info
+    "For now we only generate some of these,
+     namely the matching theorem.
+     For now, we generate it only if the repetition
+     consists of exactly one element."))
+  (b* (((unless (equal (repetition->range rep)
+                       (make-repeat-range :min 1 :max (nati-finite 1))))
+        (mv nil
+            (make-deftreeops-rep-info
+             :get-tree-list-fn nil
+             :get-tree-fn nil
+             :match-thm nil)))
+       (match-thm (packn-pos
+                   (list prefix '-match-alt i '-rep1- rulename-upstring)
+                   prefix))
+       (rep-match (deftreeops-rep-match-pred prefix))
+       (match (deftreeops-match-pred prefix))
+       (elem (repetition->element rep))
+       (match-thm-event
+        `(defrule ,match-thm
+           (implies (,rep-match csts
+                                ,(pretty-print-repetition rep))
+                    (and (equal (len csts) 1)
+                         (,match (nth 0 csts)
+                                 ,(pretty-print-element elem))))
+           :in-theory
+           '(,rep-match
+             ,match
+             tree-list-match-repetition-p-of-1-repetition
+             tree-terminatedp-of-car-when-tree-list-terminatedp
+             (:e nati-finite)
+             (:e repeat-range)
+             (:e repetition->element)
+             (:e repetition->range)
+             nth
+             (:e zp)
+             len)))
+       (info (make-deftreeops-rep-info
               :get-tree-list-fn nil
               :get-tree-fn nil
-              :match-thm nil)))
-    (mv nil info)))
+              :match-thm match-thm)))
+    (mv (list match-thm-event) info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-gen-rep-fns+thms+info-list ((conc concatenationp))
+(define deftreeops-gen-rep-fns+thms+info-list ((conc concatenationp)
+                                               (i posp)
+                                               (rulename-upstring acl2::stringp)
+                                               (prefix acl2::symbolp))
   :returns (mv (events pseudo-event-form-listp)
                (infos deftreeops-rep-info-listp))
   :short "Lift @(tsee deftreeops-gen-rep-fns+thms+info) to lists."
   (b* (((when (endp conc)) (mv nil nil))
        ((mv events info)
-        (deftreeops-gen-rep-fns+thms+info (car conc)))
+        (deftreeops-gen-rep-fns+thms+info
+          (car conc) i rulename-upstring prefix))
        ((mv more-events more-info)
-        (deftreeops-gen-rep-fns+thms+info-list (cdr conc))))
+        (deftreeops-gen-rep-fns+thms+info-list
+          (cdr conc) i rulename-upstring prefix)))
     (mv (append events more-events)
         (cons info more-info))))
 
@@ -578,7 +620,7 @@
              (:e zp)
              len)))
        ((mv rep-events rep-infos)
-        (deftreeops-gen-rep-fns+thms+info-list conc))
+        (deftreeops-gen-rep-fns+thms+info-list conc i rulename-upstring prefix))
        (info (make-deftreeops-alt-info
               :discriminant-term nil
               :get-tree-list-list-fn nil
