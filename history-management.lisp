@@ -10902,6 +10902,10 @@
 )
 
 (defun unknown-constraints-p (prop)
+
+; We recognize when prop could be the 'constraint-lst property for a function
+; symbol with unknown-constraints (typically, from a partial-encapsulate).
+
   (declare (xargs :guard t))
   (and (consp prop)
        (eq (car prop) *unknown-constraints*)))
