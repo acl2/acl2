@@ -616,8 +616,8 @@
                             (term (cadr term)))
                  (:instance pp-has-bitp-rp-implies
                             (term (cadr (cadr term)))))
-           :expand ((sum-list-eval (list (cadr term)) a)
-
+           :expand ((:free (x) (sum-list-eval (list x) a))
+                    (SUM-LIST-EVAL NIL A)
                     (sum-list-eval (list (cadr (cadr term)))
                                    a))
            :in-theory (e/d* (or*
@@ -634,7 +634,12 @@
                              regular-rp-evl-of_logbit$inline_when_mult-formula-checks
                              (:rewrite regular-rp-evl-of_--_when_mult-formula-checks)
                              )
-                            (rp-termp
+                            (;;(:REWRITE ACL2::EQUAL-LEN-1)
+                             (:REWRITE BINARY-FNC-P-RELIEVE)
+                             (:TYPE-PRESCRIPTION SINGLE-C-P$INLINE)
+                             (:TYPE-PRESCRIPTION ACL2::BINARY-OR*)
+                             (:DEFINITION LOGBIT$INLINE)
+                             rp-termp
                              (:REWRITE DUMMY-SUM-CANCEL-LEMMA1)
                              (:REWRITE PP-TERM-P-IS-BITP)
                              PP-TERM-P

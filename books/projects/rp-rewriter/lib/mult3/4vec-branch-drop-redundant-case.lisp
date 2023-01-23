@@ -324,7 +324,8 @@
    :hints (("Goal"
             :use ((:instance pp-flatten-correct
                              (sign nil)
-                             (disabled nil)))
+                             (disabled nil)
+                             (term-size-limit nil)))
             :in-theory (e/d ()
                             (pp-flatten-correct))))))
 

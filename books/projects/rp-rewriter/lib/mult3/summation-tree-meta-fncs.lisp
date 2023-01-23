@@ -5183,9 +5183,13 @@ t)||#
        
        ((mv s2 pp-lst2 c-lst2 to-be-coughed-c-lst2 changed2)
         (extract-from-equals-lst pp-lst))
+
+       
+       
        ((unless changed2) ;; should not be logically necessary but mabe will
         ;; have some runtime performance benfits 
-        (mv s pp-lst c-lst to-be-coughed-c-lst)))
+        (mv s pp-lst c-lst to-be-coughed-c-lst))
+       )
     (mv (s-sum-merge s s2)
         (if (pp-lst-orderedp pp-lst2) pp-lst2 (pp-sum-sort-lst pp-lst2))
         (s-sum-merge-aux c-lst c-lst2)

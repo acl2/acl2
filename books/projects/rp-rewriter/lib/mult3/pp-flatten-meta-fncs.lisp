@@ -1004,6 +1004,7 @@
 (define pp-flatten ((term pp-term-p)
                     (sign booleanp)
                     &key
+                    ((term-size-limit) 'nil)
                     (disabled 'nil))
   :returns pp-lst
   (b* ((term (pp-remove-extraneous-sc term)))
@@ -1021,7 +1022,7 @@
                        `(-- ,(create-and-list-instance (list (caddr term) (cadr term))))
                      (create-and-list-instance (list (caddr term) (cadr term)))))))
              (list cur-single)))
-          (t (b* ((term-size-limit (pp-lists-limit))
+          (t (b* ((term-size-limit (if (natp term-size-limit) term-size-limit (pp-lists-limit)))
                   ((mv pp-lists too-large) (pp-term-to-pp-lists term sign))
                   ((when too-large)
                    (progn$ (cwe "Warning: pp-flatten got a term that grows too large: ~p0 ~%"

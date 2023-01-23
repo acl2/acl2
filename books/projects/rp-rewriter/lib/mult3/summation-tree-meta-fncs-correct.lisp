@@ -1639,16 +1639,17 @@
              :in-theory (e/d (and-list-instance-to-binary-and)
                              (rp-trans))))))
 
-(defthm pp-flatten-correct-with-sum-list-eval
+(defret pp-flatten-correct-with-sum-list-eval
   (implies (and (mult-formula-checks state)
                 (force (pp-term-p term))
                 (booleanp sign)
                 (force (valid-sc term a))
                 (rp-evl-meta-extract-global-facts))
-           (equal (sum-list-eval (pp-flatten term sign :disabled disabled) a)
+           (equal (sum-list-eval pp-lst a)
                   (if sign
                       (-- (rp-evlt term a))
                     (rp-evlt term a))))
+  :fn pp-flatten
   :hints (("Goal"
            :use ((:instance pp-flatten-correct))
            :in-theory (e/d () ()))))
@@ -2243,7 +2244,8 @@
                                         (mv-nth 1
                                                 (pattern0-reduce-aux s-lst pp-lst c-lst 10))))
                             (sign nil)
-                            (disabled nil)))
+                            (disabled nil)
+                            (term-size-limit nil)))
            ;;:use ((:instance c-pattern0-reduce-correct-lemma
            :in-theory (e/d (c-pattern0-reduce
                             is-rp)
@@ -2275,7 +2277,8 @@
                                            (PATTERN0-REDUCE-AUX nil
                                                                 (list-to-lst pp) (list-to-lst c) 10))))
                             (sign nil)
-                            (disabled nil)))
+                            (disabled nil)
+                            (term-size-limit nil)))
            ;;:use ((:instance c-pattern0-reduce-correct-lemma
            :in-theory (e/d (s-pattern0-reduce
                             is-rp)
