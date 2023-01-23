@@ -5151,17 +5151,17 @@
 
 (defun update-memo-entries-for-attachments (fns wrld state)
 
-; See the Essay on Memoization with Attachments.  Here is a brief, high-level ;
-; summary of what is going on. ;
+; See the Essay on Memoization with Attachments.  Here is a brief, high-level
+; summary of what is going on.
 
-; This function is called by update-wrld-structures, which is called when the ;
-; world is updated.  When a defattach event is added or removed from the world, ;
-; variable *defattach-fns* collects the name of the function with an attachment ;
-; (either being added or removed).  Ultimately, *defattach-fns* is passed as ;
-; the fns parameter to the present function, and functions' entries in ;
-; *memoize-info-ht* are correspondingly updated as necessary, in particular ;
-; clearing tables whose values may have depended on attachments that are no ;
-; longer present. ;
+; This function is called by update-wrld-structures, which is called when the
+; world is updated.  When a defattach event is added or removed from the world,
+; variable *defattach-fns* collects the name of the function with an attachment
+; (either being added or removed).  Ultimately, *defattach-fns* is passed as
+; the fns parameter to the present function, and functions' entries in
+; *memoize-info-ht* are correspondingly updated as necessary, in particular
+; clearing tables whose values may have depended on attachments that are no
+; longer present.
 
   (let ((ctx 'top-level)
         (fns (if (eq fns :clear)
@@ -5205,4 +5205,8 @@
         *memoize-info-ht*))))
   (clear-memoize-table 'canonical-ancestors-rec)
   (clear-memoize-table 'immediate-canonical-ancestors)
+  (clear-memoize-table 'canonical-ancestors-tr-rec)
+  (clear-memoize-table 'immediate-canonical-ancestors-tr)
+  (clear-memoize-table 'canonical-ancestors-path)
+  (clear-memoize-table 'canonical-ancestors-tr-path)
   )

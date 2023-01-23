@@ -512,6 +512,10 @@
   (memoize 'fchecksum-obj :stats nil :forget t)
   (memoize 'immediate-canonical-ancestors :stats nil)
   (memoize 'canonical-ancestors-rec :stats nil)
+  (memoize 'immediate-canonical-ancestors-tr :stats nil)
+  (memoize 'canonical-ancestors-tr-rec :stats nil)
+  (memoize 'canonical-ancestors-path :stats nil)
+  (memoize 'canonical-ancestors-tr-path :stats nil)
 
 ; We no longer define pkg-names-memoize (other than to cause an error); see the
 ; comment there.
