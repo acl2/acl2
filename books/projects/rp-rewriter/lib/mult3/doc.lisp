@@ -192,8 +192,8 @@ cases  that emerge  especially in  merged  multipliers. This  usually does  not
 affect the proof-time performance, but in some cases (e.g., constant propagated
 designs), it can have a negative  impact. We have never observed this heuristic
 to cause a proof to fail, therefore it is enabled by default. To disable it
-(rp::enable-c-pattern1-reduce         nil),         or        to         enable
-it (rp::enable-c-pattern1-reduce t).
+(rp::enable-s-pattern1-reduce         nil),         or        to         enable
+it (rp::enable-s-pattern1-reduce t).
 </p>
 
 <code> @('(rp::enable-s-pattern1-reduce <t-or-nil>)') </code>
@@ -230,7 +230,7 @@ and
 merged using the lemma: (+ (c (s x) y) (c x)) = (c x y). The program searches
 for this pattern. When enabled, the program applies this lemma: (c (s x) y) =
 (+ (c x y) (- (c x))). By default, c-of-s-fix-mode is enabled because it is
-easier to manage in the program, and changes are made more easiler. We have
+easier to manage in the program, and changes and improvements can be made more easily. We have
 seen   that  the   performance  between   two  methods   is  very   similar  in
 general. However, if c-of-s-fix-mode and stingy-pp-clean are both disabled, you
 may  observe  a  significant  reduction in  proof-time  performance  for  large
@@ -262,11 +262,37 @@ by default.
 performs the second pass when unpack-booth-later is enabled. This can help
 prevent some repeated work for some memoized functions but we have seen so far
 that cost of hons-copy mostly overwhelms the benefits it brings. So  we leave
-this heuristic disabled. It might be worth a short if you see that a certain
+this heuristic disabled. It might be worth a shot if you think that a
 proof is too slow. This setting has no effect if unpack-booth-later is
 disabled.</p>
 
 <code> @('(rp::enable-unpack-booth-later-hons-copy <t-or-nil>)') </code>
+
+<p>CROSS-PRODUCT-TWO-LARGES</p>
+<p>Another experimental feature that may or may not ever find its
+usefulness. When enabled, ANDed two s/c/s-c-res terms will be dissolved into a
+large list of terms. This will likely slow down in some corner cases (e.g.,
+saturated multipliers) but won't affect much else. </p>
+<code> @('(rp::enable-cross-product-two-larges <t-or-nil>)') </code>
+
+<p>PP-LISTS-LIMIT</p>
+<p>We don't want terms to blow up when doing algebraic rewriting of logical
+gates. We call this function in this library pp-flatten, as we use it to
+flatten out partial product logic. Since there could be other terms
+representing logical gates in given conjectures, and they may cause blow-up if
+this rewriting is performed on them, we set a limit to how large a term can
+grow during the pp-flatten stage. This limit can be changed by the user byt
+defining a funciton that returns a certain number, and calling defattach. For
+example:
+</p>
+
+<code> @('(define return-16000 () 16000)')</code>
+<code> @('(defattach pp-lists-limit return-16000)')</code>
+
+<p> It may be necessary to increase this number in case of Booth multipliers
+with large radices, such as, radix 16. On the other hand, if you have a proof
+that is stalling, then it may be a good idea to decrease this number to see
+what is going on -- there might be too many logical gates causing a blow-up.</p>
 
 ")
 

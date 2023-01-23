@@ -1330,3 +1330,10 @@
                              (valid-rp-statep
                               RP-STATE-PRESERVEDP-SK
                               rp-statep)))))
+
+(defthm rp-statep-of-update-orig-conjecture
+  (implies (and (rp-statep rp-state)
+                (rp-termp x))
+           (rp-statep (update-orig-conjecture x rp-state)))
+  :hints (("Goal"
+           :in-theory (e/d (rp-statep) ()))))

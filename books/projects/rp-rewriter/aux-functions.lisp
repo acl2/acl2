@@ -1847,6 +1847,8 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
   (casesplitter-cases :type (satisfies rp-term-listp) :initially nil)
 
+  (orig-conjecture :type (satisfies rp-termp) :initially ''nil)
+
   :inline t)
 
 

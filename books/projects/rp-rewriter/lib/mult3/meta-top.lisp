@@ -271,7 +271,7 @@
  :disabledp t
  :formula-checks make-sc-fgl-ready-meta-formula-checks
  :hints (("Goal"
-          :in-theory (e/d (make-sc-fgl-ready-meta-main) ()))))
+          :in-theory (e/d () ()))))
 
 (add-postprocessor
  :processor-fnc medw-compress-any

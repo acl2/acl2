@@ -71,6 +71,7 @@
     (b* ((e (cdar table-entry)))
       (append (true-list-fix e) (get-meta-rules (cdr table-entry))))))
 
+
 (defun rp-clause-processor-aux (cl cl-args rp-state state)
   (declare
    (xargs
@@ -82,6 +83,7 @@
                    :in-theory (e/d ()
                                    (acl2::disjoin
                                     preprocess-then-rp-rw
+                                    update-orig-conjecture
                                     update-casesplitter-cases
                                     get-rules
                                     beta-search-reduce))))
@@ -117,6 +119,8 @@
                              "Conjectures given to RP-Rewriter cannot include an equals instance~%" nil)))))
         (mv nil (list cl) rp-state state))
 
+       (rp-state (update-orig-conjecture car-cl rp-state))
+       
        (rp-state (rp-state-new-run rp-state))
        (cases (access rp-cl-args cl-args :cases))
        (rp-state (if (rp-term-listp cases)
@@ -161,7 +165,8 @@
             :in-theory (e/d (rp-evl-of-fncall-args
                              rp-evl-of-beta-search-reduce
                              preprocess-then-rp-rw-is-correct)
-                            (get-rules
+                            (update-orig-conjecture
+                             get-rules
                              update-casesplitter-cases
                              ex-from-synp-lemma1
                              valid-rules-alistp

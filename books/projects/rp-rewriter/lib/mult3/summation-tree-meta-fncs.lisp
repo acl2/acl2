@@ -4136,7 +4136,8 @@ t)||#
                                "Unexpected pp-lst element: ~p0 ~%"
                                (list (cons #\0 cur)))))))
        ((or (logbit-p cur)
-            (equal cur ''1))
+            (equal cur ''1)
+            (has-bitp-rp cur))
         (b* ((res-e-lst (merge-sorted-and$-lists (list cur) e-lst))
              (cur-pp (create-and-list-instance res-e-lst))
              (cur-pp (if cur-is-signed `(-- ,cur-pp) cur-pp))
@@ -4881,6 +4882,100 @@ t)||#
 
 ;;(include-book "pp-flatten-wrapper")
 
+(defsection extract-equals-from-pp-lst
+
+  (define extract-equals-from-pp-lst-precheck (e-lst)
+    (if (atom e-lst)
+        nil
+      (or (is-equals (ex-from-rp-loose (car e-lst)))
+          (extract-equals-from-pp-lst-precheck (cdr e-lst)))))
+
+  (define extract-equals-from-pp-lst-aux ((e-lst rp-term-listp))
+    :returns (mv (res-e-lst rp-term-listp :hyp (rp-term-listp e-lst))
+                 (res-pp-lst rp-term-listp :hyp (rp-term-listp e-lst)))
+    (if (atom e-lst)
+        (mv nil nil)
+      (b* ((cur (ex-from-rp$ (car e-lst)))
+           ((when (and (is-equals cur)
+                       (pp-term-p (caddr cur))))
+            (mv (cdr e-lst)
+                (pp-flatten (caddr cur) nil)))
+           ((mv rest1 rest2)
+            (extract-equals-from-pp-lst-aux (cdr e-lst))))
+        (mv (cons-with-hint (car e-lst) rest1 e-lst)
+            rest2))))
+
+  (define extract-equals-from-pp-lst ((pp-lst rp-term-listp)
+                                      (limit natp))
+    :measure (acl2::nat-list-measure (list limit (len pp-lst)))
+    :returns (res-lst rp-term-listp :hyp (rp-term-listp pp-lst))
+    :verify-guards :after-returns
+    (b* (((when (zp limit)) pp-lst)
+         ((when (atom pp-lst)) nil)
+         ;; skip repeateds because they'll either be coughed or removed.
+         ((when (and (consp (cdr pp-lst))
+                     (rp-equal-cnt (first pp-lst)
+                                   (second pp-lst)
+                                   1)))
+          (cons-with-hint (first pp-lst)
+                          (cons-with-hint (second pp-lst)
+                                          (extract-equals-from-pp-lst (cddr pp-lst) limit)
+                                          (cdr pp-lst))
+                          pp-lst))
+            
+         (rest (extract-equals-from-pp-lst (cdr pp-lst) limit))
+         (cur (car pp-lst))
+         ((mv cur signed)
+          (case-match cur (('-- x) (mv x t))
+            (& (mv cur nil))))
+         (cur (ex-from-rp$ cur))
+         ((when (is-equals cur))
+          (cons (if signed `(-- ,(cadr cur)) (cadr cur)) rest))
+         
+         ((mv e-lst valid)
+          (case-match cur (('and-list & ('list . lst)) (mv lst t))
+            (& (mv nil nil))))
+         ((unless (and valid
+                       (extract-equals-from-pp-lst-precheck e-lst)))
+          (cons-with-hint (car pp-lst) rest pp-lst))
+
+         ((mv res-e-lst res-pp-lst)
+          (extract-equals-from-pp-lst-aux e-lst))
+
+         ((unless res-pp-lst)
+          (cons-with-hint (car pp-lst) rest pp-lst))
+          
+         ((mv res-pp-lst2 valid)
+          (cross-product-pp-aux-for-pp-lst res-pp-lst res-e-lst))
+         ((unless valid)
+          (cons-with-hint (car pp-lst) rest pp-lst))
+         (res-pp-lst3 (extract-equals-from-pp-lst (negate-lst res-pp-lst2 signed)
+                                                  (1- limit))))
+      (pp-sum-merge-aux res-pp-lst3
+                        rest)))
+
+  ;; just for debugging...
+  (define check-if-clearable-equals-in-pp-lst (pp-lst)
+    (b* (((when (atom pp-lst)) nil)
+         ((when (and (consp (cdr pp-lst))
+                     (rp-equal-cnt (first pp-lst)
+                                   (second pp-lst)
+                                   1)))
+          (check-if-clearable-equals-in-pp-lst (cddr pp-lst)))
+         (cur (ex-from-rp-loose (car pp-lst)))
+         (cur (case-match cur (('-- x) x) (& cur)))
+         ((when (is-equals cur)) t)
+         ((mv e-lst valid)
+          (case-match cur (('and-list & ('list . lst)) (mv lst t))
+            (& (mv nil nil)))))
+      (or (and valid
+               (extract-equals-from-pp-lst-precheck e-lst))
+           (check-if-clearable-equals-in-pp-lst (cdr pp-lst))))))
+         
+
+(defconst *large-number*
+  (expt 2 32))
+
 (define new-sum-merge-aux ((sum-lst rp-term-listp)
                            (limit natp))
   :verify-guards nil
@@ -4971,10 +5066,14 @@ t)||#
                      abs-term-w/-sc negated
                      :disabled (and (unpack-booth-later-enabled)
                                     (not
-                                     (pp-is-a-part-of-radix8+-summation ABS-TERM-W/-SC)))))
+                                     (pp-is-a-part-of-radix8+-summation abs-term-w/-sc)))))
 
-           (?pp-lst-orig pp-lst2)
+           (?orig-pp-lst2 pp-lst2)
+           (pp-lst2 (extract-equals-from-pp-lst pp-lst2 *large-number*))
 
+           #|(- (or (check-if-clearable-equals-in-pp-lst pp-lst2)
+                  (raise "?orig-pp-lst2: ~p0, pp-lst2: ~p1 ~%" orig-pp-lst2 pp-lst2)))|#
+           
            ((mv s-lst2 pp-lst2 c-lst2) (ex-from-pp-lst pp-lst2))
            (s (s-sum-merge s (create-list-instance s-lst2)))
            (c-lst (s-sum-merge-aux c-lst c-lst2))
@@ -5019,9 +5118,6 @@ t)||#
                               (:rewrite rp-termp-implies-subterms))))))
   (verify-guards new-sum-merge-aux))
 
-(defconst *large-number*
-  (expt 2 32))
-
 (define extract-from-equals-lst ((pp-lst rp-term-listp))
   :returns (mv (s) (res-pp-lst) (c-lst) (to-be-coughed-c-lst) changed)
   :verify-guards nil
@@ -5035,13 +5131,22 @@ t)||#
           (case-match cur-orig
             (('-- cur) (mv (ex-from-rp$ cur) t))
             (& (mv (ex-from-rp$ cur-orig) nil))))
+         
          ((mv s2 pp-lst2 c-lst2 to-be-coughed-c-lst2 changed2)
           (case-match cur
             (('equals & &)
              (b* (((mv s pp-lst c-lst to-be-coughed-c-lst)
                    (new-sum-merge-aux (list (cadr cur)) *large-number*)))
                (mv s pp-lst c-lst to-be-coughed-c-lst t)))
-            (& (mv cur nil nil nil nil))))
+            (&
+             (if (and (consp cur)
+                      (or (equal (first cur) 's)
+                          (equal (first cur) 'c)
+                          (equal (first cur) 's-c-res)))
+                 (b* (((mv s pp-lst c-lst to-be-coughed-c-lst)
+                       (new-sum-merge-aux (list cur) *large-number*)))
+                   (mv s pp-lst c-lst to-be-coughed-c-lst t))
+               (mv cur nil nil nil nil)))))
          ((mv s2 pp-lst2 c-lst2 to-be-coughed-c-lst2)
           (if changed2
               (mv (negate-list-instance s2 negated)
@@ -5088,9 +5193,21 @@ t)||#
   (b* ((sum-lst (extract-new-sum-consed term))
        ((mv s pp-lst c-lst to-be-coughed-c-lst)
         (new-sum-merge-aux sum-lst *large-number*))
+
+       (pp-lst (if (check-if-clearable-equals-in-pp-lst pp-lst)
+                   (b* ((- (cw "check-if-clearable-equals-in-pp-lst returned t ~%"))
+                        (pp-lst (extract-equals-from-pp-lst pp-lst *large-number*))
+                        (- (cw "extract-equals-from-pp-lst finished. ~%"))
+                        (- (and (check-if-clearable-equals-in-pp-lst pp-lst)
+                             (raise "pp-lst : ~p0 ~%" pp-lst)))
+                        )
+                     pp-lst)
+                 pp-lst))
+       
        ((mv s2 pp-lst2 c-lst2 to-be-coughed-c-lst2 changed2)
         (extract-from-equals-lst pp-lst))
-       ((unless changed2)
+       ((unless changed2) ;; should not be logically necessary but mabe will
+        ;; have some runtime performance benfits 
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
     (mv (s-sum-merge s s2)
         (if (pp-lst-orderedp pp-lst2) pp-lst2 (pp-sum-sort-lst pp-lst2))

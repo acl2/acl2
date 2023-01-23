@@ -72,7 +72,7 @@
        acl2::logcar$inline
        acl2::logcdr$inline
        acl2::logbit$inline
-
+       return-last
        --
        sum-list
        binary-and
@@ -233,10 +233,13 @@
   ///
   (verify-guards make-sc-fgl-ready-meta-lst))
 
-(define make-sc-fgl-ready-meta-main ((term rp-termp))
-  :returns (mv (res rp-termp :hyp (rp-termp term))
-               (dont-rw))
-  (mv (make-sc-fgl-ready-meta term) t))
+#|(define make-sc-fgl-ready-meta-main ((term rp-termp)
+                                     (rp-state))
+  :returns (res rp-termp :hyp (and (rp-termp term)
+                                   (rp-statep rp-state)))
+  `(return-last 'progn
+                ,(orig-conjecture rp-state)
+                ,(make-sc-fgl-ready-meta term)))|#
 
 
 
@@ -555,4 +558,4 @@
 (memoize 'make-sc-fgl-ready-meta)
 
 
-
+  
