@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -200,7 +200,10 @@
               '-list-from-
               <type>
               '-integer-list))
-       (<type>-mod (pack <type> '-mod)))
+       (<type>-mod (pack <type> '-mod))
+       (true-listp-when-<type>-listp-rewrite (pack 'true-listp-when-
+                                                   <type>-listp
+                                                   '-rewrite)))
 
     `(progn
 
@@ -325,7 +328,11 @@
          :elt-type ,<type>
          :true-listp t
          :elementp-of-nil nil
-         :pred ,<type>-listp)
+         :pred ,<type>-listp
+         ///
+         (defruled ,true-listp-when-<type>-listp-rewrite
+           (implies (,<type>-listp x)
+                    (true-listp x))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

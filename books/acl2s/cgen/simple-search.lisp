@@ -637,6 +637,7 @@ where
                              ))
              ,(make-next-sigma_mv-let v-cs%-alst '() N i use-fixers-p vl wrld
 ; sigma will be output as a let-bindings i.e symbol-doublet-listp
+; we want the elim bindings at the end here, consider the (equal x (+ z y)) example in cgen-testing.lisp
                                       `(B* ,(append partial-A fixer-bindings elim-bindings)
                                           (mv ,(make-var-value-list-bindings
                                                 (remove-duplicates-eq
@@ -865,10 +866,13 @@ Use :simple search strategy to find counterexamples and witnesses.
        (- (cw? (system-debug-flag vl) ".10~%"))
        ;;[2016-04-25 Mon] record these for later printing in vacuous-stats
        (fxr-elim-bindings (append fixer-bindings elim-bindings))
+       (- (cw? (system-debug-flag vl) "Test-outcomes: ~x0~%" test-outcomes%))
        (- (cw? (system-debug-flag vl) ".11~%"))
        (test-outcomes% (change test-outcomes% disp-enum-alist disp-enum-alist))
+       (- (cw? (system-debug-flag vl) "Test-outcomes: ~x0~%" test-outcomes%))
        (- (cw? (system-debug-flag vl) ".12~%"))
        (test-outcomes% (change test-outcomes% elim-bindings fxr-elim-bindings))
+       (- (cw? (system-debug-flag vl) "Test-outcomes: ~x0~%" test-outcomes%))
        
        (- (cw? (system-debug-flag vl) 
                "~|Cgen/Sysdebug: next-sigma : ~| ~x0~|" next-sigma-defuns))

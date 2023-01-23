@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,6 +19,16 @@
 
 (defsection atc-exec-stmt-rules
   :short "Rules for @(tsee exec-stmt)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Besides the rules for the large symbolic execution,
+     whose names we put into the constant defined at the end,
+     we also prove rules used in the new modular proofs.
+     The latter rules avoid @(tsee if) in the right side,
+     to avoid unwanted case splits;
+     furthermore, they wrap the @(tsee if) tests into @(tsee hide)
+     to prevent unwanted rewrites (see @(tsee atc-contextualize))."))
 
   (defruled exec-stmt-when-compound
     (implies (and (syntaxp (quotep s))
@@ -65,6 +75,36 @@
                       (mv nil compst))))
     :enable exec-stmt)
 
+  (defruled exec-stmt-when-if-and-true
+    (implies (and (syntaxp (quotep s))
+                  (equal (stmt-kind s) :if)
+                  (not (zp limit))
+                  (compustatep compst)
+                  (equal arg1 (exec-expr-pure (stmt-if->test s) compst))
+                  (valuep arg1)
+                  (equal test (test-value arg1))
+                  (booleanp test)
+                  (hide test))
+             (equal (exec-stmt s compst fenv limit)
+                    (exec-stmt (stmt-if->then s) compst fenv (1- limit))))
+    :enable exec-stmt
+    :expand (:free (x) (hide x)))
+
+  (defruled exec-stmt-when-if-and-false
+    (implies (and (syntaxp (quotep s))
+                  (equal (stmt-kind s) :if)
+                  (not (zp limit))
+                  (compustatep compst)
+                  (equal arg1 (exec-expr-pure (stmt-if->test s) compst))
+                  (valuep arg1)
+                  (equal test (test-value arg1))
+                  (booleanp test)
+                  (hide (not test)))
+             (equal (exec-stmt s compst fenv limit)
+                    (mv nil compst)))
+    :enable exec-stmt
+    :expand (:free (x) (hide x)))
+
   (defruled exec-stmt-when-ifelse
     (implies (and (syntaxp (quotep s))
                   (equal (stmt-kind s) :ifelse)
@@ -78,6 +118,34 @@
                         (exec-stmt (stmt-ifelse->then s) compst fenv (1- limit))
                       (exec-stmt (stmt-ifelse->else s) compst fenv (1- limit)))))
     :enable exec-stmt)
+
+  (defruled exec-stmt-when-ifelse-and-true
+    (implies (and (syntaxp (quotep s))
+                  (equal (stmt-kind s) :ifelse)
+                  (not (zp limit))
+                  (equal arg1 (exec-expr-pure (stmt-ifelse->test s) compst))
+                  (valuep arg1)
+                  (equal test (test-value arg1))
+                  (booleanp test)
+                  (hide test))
+             (equal (exec-stmt s compst fenv limit)
+                    (exec-stmt (stmt-ifelse->then s) compst fenv (1- limit))))
+    :enable exec-stmt
+    :expand (:free (x) (hide x)))
+
+  (defruled exec-stmt-when-ifelse-and-false
+    (implies (and (syntaxp (quotep s))
+                  (equal (stmt-kind s) :ifelse)
+                  (not (zp limit))
+                  (equal arg1 (exec-expr-pure (stmt-ifelse->test s) compst))
+                  (valuep arg1)
+                  (equal test (test-value arg1))
+                  (booleanp test)
+                  (hide (not test)))
+             (equal (exec-stmt s compst fenv limit)
+                    (exec-stmt (stmt-ifelse->else s) compst fenv (1- limit))))
+    :enable exec-stmt
+    :expand (:free (x) (hide x)))
 
   (defruled exec-stmt-when-while
     (implies (and (syntaxp (quotep s))

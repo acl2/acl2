@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; Copyright (C) 2023, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -3131,7 +3131,7 @@
 (defconst *signature-keywords*
   '(:GUARD
     #+:non-standard-analysis :CLASSICALP
-    :STOBJS :FORMALS :GLOBAL-STOBJS))
+    :STOBJS :FORMALS :GLOBAL-STOBJS :TRANSPARENT))
 
 (defun duplicate-key-in-keyword-value-listp (l)
   (declare (xargs :guard (keyword-value-listp l)))
@@ -3377,16 +3377,26 @@
                     signature."
                    x)
               nil nil nil nil nil))
-         #+:non-standard-analysis
-         ((not (booleanp (cadr (assoc-keyword :CLASSICALP
+         ((or #+:non-standard-analysis
+              (not (booleanp (cadr (assoc-keyword :CLASSICALP
+                                                  kwd-value-list))))
+              (not (booleanp (cadr (assoc-keyword :TRANSPARENT
+                                                  kwd-value-list)))))
 
-; If :CLASSICALP is not bound in kwd-value-list, then the above test reduces to
-; (not (booleanp nil)), which is false, which is appropropriate.
+; If :CLASSICALP or :TRANSPARENT is not bound in kwd-value-list, then the
+; corresponding assoc-keyword call above reduces to (not (booleanp nil)), which
+; is false, which is appropropriate.
 
-                                              kwd-value-list))))
           (mv (msg "The object ~x0 is not a legal signature.  The value of ~
-                    :CLASSICALP keyword must be Boolean; see :DOC signature."
-                   x)
+                    the ~x1 keyword must be Boolean; see :DOC signature."
+                   x
+                   #-:non-standard-analysis
+                   :TRANSPARENT
+                   #+:non-standard-analysis
+                   (if (not (booleanp (cadr (assoc-keyword :CLASSICALP
+                                                           kwd-value-list))))
+                       :CLASSICALP
+                     :TRANSPARENT))
               nil nil nil nil nil))
          (t
           (let* ((formals-tail (assoc-keyword :FORMALS kwd-value-list))
@@ -3438,15 +3448,26 @@
                     see :DOC signature."
                    x)
               nil nil nil nil nil))
-         #+:non-standard-analysis
-         ((not (booleanp (cadr (assoc-keyword :CLASSICALP
+         ((or #+:non-standard-analysis
+              (not (booleanp (cadr (assoc-keyword :CLASSICALP
+                                                  kwd-value-list))))
+              (not (booleanp (cadr (assoc-keyword :TRANSPARENT
+                                                  kwd-value-list)))))
 
-; See comment above about :CLASSICALP.
+; If :CLASSICALP or :TRANSPARENT is not bound in kwd-value-list, then the
+; corresponding assoc-keyword call above reduces to (not (booleanp nil)), which
+; is false, which is appropropriate.
 
-                                              kwd-value-list))))
           (mv (msg "The object ~x0 is not a legal signature.  The value of ~
-                    :CLASSICALP keyword must be Boolean; see :DOC signature."
-                   x)
+                    the ~x1 keyword must be Boolean; see :DOC signature."
+                   x
+                   #-:non-standard-analysis
+                   :TRANSPARENT
+                   #+:non-standard-analysis
+                   (if (not (booleanp (cadr (assoc-keyword :CLASSICALP
+                                                           kwd-value-list))))
+                       :CLASSICALP
+                     :TRANSPARENT))
               nil nil nil nil nil))
          (t
           (let* ((stobjs-tail (assoc-keyword :STOBJS kwd-value-list))
@@ -3548,7 +3569,7 @@
                                      kwd-value-list
                                      wrld1))))))))))))
 
-(defun chk-signatures (signatures ctx wrld state)
+(defun chk-signatures-rec (signatures ctx wrld state)
 
 ; We return a triple (sigs kwd-value-list-lst . wrld) containing the list of
 ; internal signatures, their corresponding keyword-value-lists, and the final
@@ -3582,8 +3603,8 @@
              (list signatures)))
         (t (er-let* ((trip1 (chk-signature (car signatures)
                                            ctx wrld state))
-                     (trip2 (chk-signatures (cdr signatures)
-                                            ctx (cddr trip1) state)))
+                     (trip2 (chk-signatures-rec (cdr signatures)
+                                                ctx (cddr trip1) state)))
                     (let ((insig (car trip1))
                           (kwd-value-list (cadr trip1))
                           (insig-lst (car trip2))
@@ -3599,6 +3620,36 @@
                                              (cons kwd-value-list
                                                    kwd-value-list-lst)
                                              wrld1)))))))))
+(defun chk-transparent (name val insig-lst kwd-value-list-lst ctx state)
+  (cond ((endp kwd-value-list-lst)
+         (value nil))
+        ((eq val (cadr (assoc-keyword :transparent (car kwd-value-list-lst))))
+         (chk-transparent name val
+                          (cdr insig-lst) (cdr kwd-value-list-lst)
+                          ctx state))
+        (t (er soft ctx
+               "The signature for ~x0 specifies :transparent t, but the ~
+                signature for ~x1 does not.  This is illegal because if any ~
+                signature in an encapsulate event specifies :transparent t, ~
+                then all must do so.  See :DOC encapsulate."
+               (if val name (caar insig-lst))
+               (if val (caar insig-lst) name)))))
+
+(defun chk-signatures (signatures ctx wrld state)
+  (er-let* ((trip (chk-signatures-rec signatures ctx wrld state))
+            (insig-lst (value (car trip)))
+            (kwd-value-list-lst (value (cadr trip))))
+    (er-progn
+     (cond ((or (null kwd-value-list-lst)
+                (null (cdr kwd-value-list-lst)))
+            (value nil))
+           (t (chk-transparent (caar insig-lst)
+                               (cadr (assoc-keyword :transparent
+                                                    (car kwd-value-list-lst)))
+                               (cdr insig-lst)
+                               (cdr kwd-value-list-lst)
+                               ctx state)))
+     (value trip))))
 
 (defun chk-acceptable-encapsulate1 (signatures form-lst ctx wrld state)
 
@@ -4935,10 +4986,6 @@
   (list "" "~@*" "~@*" "~@*"
         (tilde-*-bad-insigs-phrase1 alist)))
 
-(defun union-eq-cars (alist)
-  (cond ((null alist) nil)
-        (t (union-eq (caar alist) (union-eq-cars (cdr alist))))))
-
 (defun chk-acceptable-encapsulate2 (insigs kwd-value-list-lst wrld ctx state)
 
 ; Wrld is a world alist created by the execution of an event list.  Insigs is a
@@ -5928,6 +5975,23 @@
     ((:return-value &) t)
     (& nil)))
 
+(defun transparent-mismatch (transparent infectious-fns wrld)
+  (cond ((endp infectious-fns) nil)
+
+; We skip functions introduced by defun in subsidiary encapsulates, as we can
+; only require :transparent to match for functions introduced in encapsulate
+; signatures.
+
+        ((or (not (getpropc (car infectious-fns) 'constrainedp nil wrld))
+             (iff transparent
+                  (transparent-fn-p (canonical-sibling (car infectious-fns)
+                                                       wrld)
+                                    wrld)))
+         (transparent-mismatch transparent (cdr infectious-fns) wrld))
+        (t
+         (cons (car infectious-fns)
+               (transparent-mismatch transparent (cdr infectious-fns) wrld)))))
+
 (defun encapsulate-pass-2 (insigs kwd-value-list-lst ev-lst
                                   saved-acl2-defaults-table only-pass-p ctx
                                   state)
@@ -5945,7 +6009,7 @@
 ; case of normal return and only-pass-p = nil, the value is a list containing
 
 ; * constrained-fns - the functions for which a new constraint-lst will
-;   be stored
+;   be stored, each with a 'siblings property equal to constrained-fns
 
 ; * retval - the value returned
 
@@ -6046,10 +6110,12 @@
                    (unknown-constraints-p
                     (and insigs ; unknown-constraints are for this encapsulate
                          (not (equal unknown-constraints-table
-                                     saved-unknown-constraints-table)))))
+                                     saved-unknown-constraints-table))))
+                   (transparent
+                    (cadr (assoc-keyword :transparent
+                                         (car kwd-value-list-lst)))))
               (cond
-               ((and unknown-constraints-p
-                     exported-names)
+               ((and unknown-constraints-p exported-names)
                 (er soft ctx
                     "A partial-encapsulate must introduce only the functions ~
                      listed in its signature.  However, the signature's list ~
@@ -6058,6 +6124,20 @@
                      partial-encapsulate."
                     (strip-cars insigs)
                     exported-names))
+               ((and unknown-constraints-p transparent)
+
+; It's not allowed to attach to a function with unknown-constraints, so there
+; is no point in making such a function transparent, since it can't receive an
+; attachment (well, at least without a trust tag).  This restriction simplifies
+; the implementation at least a little, for example by not being concerned
+; about overwriting an unknown-constraints value for the 'attachment property
+; by a transparent-rec value (with (make transparent-rec ...) below).
+
+                (er soft ctx
+                    "A partial-encapsulate must not specify :transparent t in ~
+                     its signature.  However, the signature with list of ~
+                     names ~x0 does just that.  See :DOC signature."
+                    (strip-cars insigs)))
 
 ; At one time we added a case here to cause an error here when expansion-alist
 ; is non-nil and only-pass-p is nil (with an exception made for when
@@ -6158,64 +6238,119 @@
                                  exports-with-sig-ancestors)
                     (encapsulate-constraint sig-fns exported-names new-trips
                                             wrld)
-                    (let* ((wrld2
-                            (putprop-constraints
-                             (car sig-fns)
-                             (remove1-eq (car sig-fns) constrained-fns)
-                             (if unknown-constraints-p
-                                 (cons *unknown-constraints*
-                                       (all-fnnames1
-                                        t
-                                        constraints
+                    (let ((transparent-mismatch
+
+; We look for every member of infectious-fns that was introduced in a signature
+; with :transparent value in disagreement with that of sig-fns.  Note that
+; constrained-fns is the disjoint union of the signature functions (sig-fns),
+; subversive-fns (all with 'justification property, hence not constrained), and
+; infectious-fns.
+
+                           (transparent-mismatch transparent infectious-fns
+                                                 wrld)))
+                      (cond
+                       (transparent-mismatch
+                        (if transparent
+                            (er soft ctx
+                                "The signature~#0~[~/s~] of the proposed ~
+                                 encapsulate event ~#0~[specifies~/specify~] ~
+                                 :transparent t (for ~&0).  But function ~
+                                 symbol~#1~[~/s~] ~&1 ~#1~[is~/are~] not ~
+                                 marked as transparent in ~#1~[its subsidiary ~
+                                 encapsulate signature~/their subsidiary ~
+                                 encapsulate signatures~].  This is illegal; ~
+                                 see :DOC evaluator-restrictions."
+                                sig-fns transparent-mismatch)
+                          (er soft ctx
+                              "The signature~#0~[~/s~] of the proposed ~
+                               encapsulate event ~#0~[does~/do~] not specify ~
+                               :transparent t (for ~&0).  But function ~
+                               symbol~#1~[~/s~] ~&1 ~#1~[is~/are~] marked ~
+                               with :transparent t in ~#1~[its subsidiary ~
+                               encapsulate signature~/their subsidiary ~
+                               encapsulate signatures~].  This is illegal; ~
+                               see :DOC evaluator-restrictions."
+                              sig-fns transparent-mismatch)))
+                       (t
+                        (let* ((wrld2
+                                (putprop-constraints
+                                 (car sig-fns)
+                                 (remove1-eq (car sig-fns) constrained-fns)
+                                 (if unknown-constraints-p
+                                     (cons *unknown-constraints*
+                                           (all-fnnames1
+                                            t
+                                            constraints
 
 ; The following contains sig-fns.  That is arranged by
 ; set-unknown-constraints-supporters, and is enforced (in case the table is set
 ; directly rather than with set-unknown-constraints-supporters) aby
 ; unknown-constraints-table-guard.
 
-                                        (cdr (assoc-eq
-                                              :supporters
-                                              unknown-constraints-table))))
-                               constraints)
-                             unknown-constraints-p
-                             (if constrained-fns
-                                 (assert$
-                                  (subsetp-eq subversive-fns
-                                              constrained-fns)
-                                  (assert$
-                                   (subsetp-eq infectious-fns
-                                               constrained-fns)
-                                   (putprop-x-lst1 constrained-fns
-                                                   'siblings
-                                                   constrained-fns
-                                                   wrld)))
-                               wrld)))
-                           (state (set-w 'extension wrld2 state))
+                                            (cdr (assoc-eq
+                                                  :supporters
+                                                  unknown-constraints-table))))
+                                   constraints)
+                                 unknown-constraints-p
+                                 (if constrained-fns
+                                     (assert$
+                                      (subsetp-eq subversive-fns
+                                                  constrained-fns)
+                                      (assert$
+                                       (subsetp-eq infectious-fns
+                                                   constrained-fns)
+                                       (putprop-x-lst1
+                                        constrained-fns
+                                        'siblings
+
+; Normally we don't care which of the siblings is first, i.e., is the
+; canonical-sibling.  But in the case that we are introducing transparent
+; functions, we want it to be a function with a non-nil 'constrained property,
+; so that we can store information about transparent functions there.
+
+                                        (if (and transparent
+                                                 (not (member-eq
+                                                       (car constrained-fns)
+                                                       sig-fns)))
+                                            (cons (car sig-fns)
+                                                  (remove1 (car sig-fns)
+                                                           constrained-fns))
+                                          constrained-fns)
+                                        (if transparent ; see comment above
+                                            (putprop (car sig-fns)
+                                                     'constrainedp
+                                                     (make transparent-rec
+                                                           :names nil)
+                                                     wrld)
+                                          wrld))))
+                                   wrld)))
+                               (state (set-w 'extension wrld2 state))
+                               (bogus-exported-compliants
+                                (bogus-exported-compliants
+                                 exported-names exports-with-sig-ancestors sig-fns
+                                 wrld2)))
+                          (cond
                            (bogus-exported-compliants
-                            (bogus-exported-compliants
-                             exported-names exports-with-sig-ancestors sig-fns
-                             wrld2)))
-                      (cond
-                       (bogus-exported-compliants
-                        (er soft ctx
-                            "For the following function~#0~[~/s~] introduced ~
-                            by this encapsulate event, guard verification may ~
-                            depend on local properties that are not exported ~
-                            from the encapsulate event: ~&0.  Consider ~
-                            delaying guard verification until after the ~
-                            encapsulate event, for example by using ~
-                            :verify-guards nil."
-                            bogus-exported-compliants))
-                       (t (value (if only-pass-p
-                                     (cons expansion-alist retval)
-                                   (list constrained-fns
-                                         retval
-                                         (if unknown-constraints-p
-                                             *unknown-constraints*
-                                           constraints)
-                                         exported-names
-                                         subversive-fns
-                                         infectious-fns)))))))))))))))))
+                            (er soft ctx
+                                "For the following function~#0~[~/s~] ~
+                                 introduced by this encapsulate event, guard ~
+                                 verification may depend on local properties ~
+                                 that are not exported from the encapsulate ~
+                                 event: ~&0.  Consider delaying guard ~
+                                 verification until after the encapsulate ~
+                                 event, for example by using :verify-guards ~
+                                 nil."
+                                bogus-exported-compliants))
+                           (t (value (if only-pass-p
+                                         (cons expansion-alist retval)
+                                       (list constrained-fns
+                                             retval
+                                             (if unknown-constraints-p
+                                                 *unknown-constraints*
+                                               constraints)
+                                             exported-names
+                                             subversive-fns
+                                             infectious-fns))))))))))))))))))))
 
 ; Here I have collected a sequence of encapsulates to test the implementation.
 ; After each is an undo.  They are not meant to co-exist.  Just eval each
@@ -24468,7 +24603,7 @@
    ((flambdap (ffn-symb term))
 
 ; We know the fnn-symb is a well-formed lambda expression, (LAMBDA vars body),
-; where vars is a true-list of symbols (with cons-count (len vars)). 
+; where vars is a true-list of symbols (with cons-count (len vars)).
 
     (mv-let (bq-lst1 i1)
       (explore-giant-term
@@ -24521,7 +24656,7 @@
   (er-let*
       ((quoted-lambda-obj (read-hons-copy-lambda-object-culprit state))
        (lambda-obj (assign giant-lambda-object (unquote quoted-lambda-obj)))
-       (body (value (lambda-object-body lambda-obj)))) 
+       (body (value (lambda-object-body lambda-obj))))
     (let* ((max (lambda-object-count-max-val))
            (qmin (floor max 1000))
            (qmax (floor max 2)))
@@ -27904,9 +28039,9 @@
 ; a binary relation on function symbols if whenever <f,g> is in the relation,
 ; the axiomatic event for f is introduced before the axiomatic event for g.
 
-;   Theorem (Evaluation History).  Let h1 be a history, and fix legal
-;   attachments for h1, that is: the extended ancestors relation is acyclic,
-;   and no attached function is ancestral in any defaxiom.  Then there is a
+;   Evaluation History Theorem.  Let h1 be a history, and fix legal attachments
+;   for h1, that is: the extended ancestors relation is acyclic, and no
+;   attached function is ancestral in any defaxiom.  Then there is a
 ;   permutation h2 of h1 that respects the extended dependency relation for h1.
 ;   Let h3 be obtained from any such h2 by replacing each attached encapsulate
 ;   using the attachment equations of an admissible defattach event.  Then h3
@@ -27999,8 +28134,8 @@
 ; to defattach; see :DOC defproxy.
 
 ; There are circumstances where we prohibit attachments to a constrained
-; function, by associating a value (:ATTACHMENT-DISALLOWED . msg) with the
-; 'attachment property of the function, where msg may be used in error
+; function, by associating a value (:ATTACHMENT-DISALLOWED . alist) with the
+; 'attachment property of the function, where alist may be used in error
 ; messages.  This association enforces some restrictions on receiving
 ; attachments in the cases of meta functions and clause-processor functions;
 ; see the Essay on Correctness of Meta Reasoning.  (A different mechanism
@@ -28254,12 +28389,42 @@
 ; Perhaps we should allow this case if skip-checks is true.  But let's wait and
 ; see if there is a reason to consider doing so.
 
-                     (er soft ctx
-                         "It is illegal to attach to the function symbol ~x0 ~
-                          because ~@1.~@2"
-                         f
-                         (cdr at-alist)
-                         see-doc))
+                     (let* ((at-alist
+
+; We store the actual alist on the 'attachment property of the canonical
+; sibling of f.  See Appendix 2 of the Essay on Correctness of Meta Reasoning.
+
+                             (if (symbolp (cdr at-alist))
+                                 (attachment-alist (cdr at-alist)
+                                                   wrld)
+                               at-alist))
+                            (pair (assert$ ; check case f is not canonical
+                                   (eq (car at-alist) :attachment-disallowed)
+                                   (assert$
+                                    (consp (cdr at-alist))
+                                    (cadr at-alist))))
+                            (rule-name (assert$ (consp pair)
+                                                (car pair)))
+                            (rule-class (cdr pair))
+                            (meta-fn (assert$ (member-eq rule-class
+                                                         '(:meta
+                                                           :clause-processor))
+                                              (if (eq rule-class :meta)
+                                                  "meta"
+                                                "clause-processor"))))
+
+; It would be polite to print ancestor paths here as we do when the error comes
+; from the rule instead (after a successful defattach).  But we don't have the
+; evaluator or meta functions handy here.  We could presumably make them handy
+; by storing them with the 'attachment property instead of just the at-alist
+; mapping rule-names to their rule-classes.
+
+                       (er soft ctx
+                           "It is illegal to attach to the function symbol ~
+                            ~x0 because it is a common ancestor of the ~
+                            evaluator and ~@1 functions of the ~x2 rule, ~x3. ~
+                            ~ See :DOC evaluator-restrictions."
+                           f meta-fn rule-class rule-name)))
                     (t ; at-alist is a legitimate attachment alist
                      (let* ((erasures (cond ((consp at-alist)
                                              (append at-alist erasures))
@@ -29857,6 +30022,53 @@
                                f)
                           path st upd wrld)))))))))
 
+(defun find-transparent (lst wrld)
+  (cond ((endp lst) nil)
+        ((transparent-fn-p (canonical-sibling (car lst) wrld)
+                           wrld)
+         (car lst))
+        (t (find-transparent (cdr lst) wrld))))
+
+(defun chk-defattach-transparent (attachment-alist-sorted explicit-erasures
+                                                          ctx wrld state)
+  (let* ((attached-fns (strip-cars attachment-alist-sorted))
+         (tr (or (find-transparent attached-fns wrld)
+                 (find-transparent explicit-erasures wrld))))
+    (cond
+     ((null tr) (value nil))
+     ((and attached-fns explicit-erasures)
+      (er soft ctx
+          "When a defattach event specifies a transparent function symbol to ~
+           be attached or unattached, then it is illegal for that same event ~
+           to specify both an attachment and an erasure.  The proposed ~
+           defattach event for transparent function symbol ~x0 is thus ~
+           illegal.  See :DOC defattach."
+          tr))
+     (t (let ((siblings (siblings tr wrld))
+              (fns (or attached-fns explicit-erasures)))
+          (cond ((equal fns siblings) (value nil))
+                ((first-non-member-eq fns siblings)
+                 (er soft ctx
+                     "The function symbol ~x0 was introduced as transparent, ~
+                      but both ~x0 and ~x1 are specified for ~
+                      ~#2~[un~/~]attachment in a proposed defattach event ~
+                      even though ~x1 was not introduced in the same ~
+                      encapsulate event as ~x0.  This is illegal; see :DOC ~
+                      defattach."
+                     tr
+                     (first-non-member-eq fns siblings)
+                     (if explicit-erasures 0 1)))
+                ((first-non-member-eq siblings fns)
+                 (er soft ctx
+                     "A proposed defattach event ~#0~[un~/~]attaches to ~x1 ~
+                      but not to ~x2, even though ~x1 and ~x2 are transparent ~
+                      function symbols that were introduced in the same ~
+                      encapsulate event.  This is illegal; see :DOC defattach."
+                     (if explicit-erasures 0 1)
+                     tr
+                     (first-non-member-eq siblings fns)))
+                (t (value nil))))))))
+
 (defun chk-acceptable-defattach (args proved-fnl-insts-alist ctx wrld state)
 
 ; Given the arguments to defattach, args, we either return an error (mv t nil
@@ -29883,32 +30095,23 @@
 ; will not be included in the erasures or attachment-alist-sorted that we
 ; return.
 
-  (cond
-   ((eq (context-for-encapsulate-pass-2 wrld
-                                        (f-get-global 'in-local-flg state))
-        'illegal)
-    (er soft ctx
-        "Defattach events are illegal inside encapsulate events with ~
-         non-empty signatures unless they are local.  In this case such a ~
-         signature introduces the function symbol ~x0."
-        (caar (cadar (non-trivial-encapsulate-ee-entries
-                      (global-val 'embedded-event-lst wrld))))))
-   (t
-    (er-let* ((tuple (process-defattach-args args ctx state)))
-      (let* ((constraint-helper-alist (nth 0 tuple))
-             (erasures                (nth 1 tuple))
-             (explicit-erasures       (nth 2 tuple))
-             (attachment-alist-sorted (nth 3 tuple))
-             (attachment-alist-exec   (nth 4 tuple))
-             (guard-helpers-lst       (nth 5 tuple))
-             (skip-checks             (nth 6 tuple))
-             (attach-nil-lst          (nth 7 tuple))
-             (skip-checks-t           (eq (nth 6 tuple) t))
-             (ens (ens state))
-             (ld-skip-proofsp (ld-skip-proofsp state))
-             (defaxiom-supporter-msg-list
-               (and (not skip-checks-t)
-                    (defaxiom-supporter-msg-list
+  (er-let* ((tuple (er-progn (chk-non-local-in-non-trivial-encapsulate
+                              "Defattach events" nil ctx wrld state)
+                             (process-defattach-args args ctx state))))
+    (let* ((constraint-helper-alist (nth 0 tuple))
+           (erasures                (nth 1 tuple))
+           (explicit-erasures       (nth 2 tuple))
+           (attachment-alist-sorted (nth 3 tuple))
+           (attachment-alist-exec   (nth 4 tuple))
+           (guard-helpers-lst       (nth 5 tuple))
+           (skip-checks             (nth 6 tuple))
+           (attach-nil-lst          (nth 7 tuple))
+           (skip-checks-t           (eq (nth 6 tuple) t))
+           (ens (ens state))
+           (ld-skip-proofsp (ld-skip-proofsp state))
+           (defaxiom-supporter-msg-list
+             (and (not skip-checks-t)
+                  (defaxiom-supporter-msg-list
 
 ; With some thought we might be able to replace attachment-alist-sorted just
 ; below by attachment-alist-exec.  But as we write this comment, we prefer to
@@ -29916,73 +30119,76 @@
 ; order to support what we think is an optimization that is unlikely ever to
 ; matter.
 
-                      (strip-cars attachment-alist-sorted)
-                      wrld)))
-             (defattach-global-stobjs-msg
-               (and (not (member-eq (ld-skip-proofsp state)
-                                    '(include-book include-book-with-locals)))
-                    (defattach-global-stobjs-msg attachment-alist-exec wrld
-                      state))))
-        (cond
-         (defaxiom-supporter-msg-list
-           (er soft ctx
-               "It is illegal for supporters of DEFAXIOM events to receive ~
-                attachments, but ~*0.  See :DOC defattach."
-               `("impossible" ; This case shouldn't occur.
-                 "~@*"
-                 "~@*, and "
-                 "~@*, "
-                 ,defaxiom-supporter-msg-list)))
-         (defattach-global-stobjs-msg
-           (er soft ctx "~@0~@1"
-               defattach-global-stobjs-msg
-               *see-doc-with-global-stobj*))
-         (t
-          (er-let*
-              ((records (cond (skip-checks (value :skipped)) ; not used
-                              (t (chk-defattach-loop attachment-alist-sorted
-                                                     erasures wrld ctx
-                                                     state))))
-               (goal/event-names/new-entries
+                    (strip-cars attachment-alist-sorted)
+                    wrld)))
+           (defattach-global-stobjs-msg
+             (and (not (member-eq (ld-skip-proofsp state)
+                                  '(include-book include-book-with-locals)))
+                  (defattach-global-stobjs-msg attachment-alist-exec wrld
+                    state))))
+      (cond
+       (defaxiom-supporter-msg-list
+         (er soft ctx
+             "It is illegal for supporters of DEFAXIOM events to receive ~
+              attachments, but ~*0.  See :DOC defattach."
+             `("impossible" ; This case shouldn't occur.
+               "~@*"
+               "~@*, and "
+               "~@*, "
+               ,defaxiom-supporter-msg-list)))
+       (defattach-global-stobjs-msg
+         (er soft ctx "~@0~@1"
+             defattach-global-stobjs-msg
+             *see-doc-with-global-stobj*))
+       (t
+        (er-progn
+         (chk-defattach-transparent attachment-alist-sorted explicit-erasures
+                                    ctx wrld state)
+         (er-let*
+             ((records (cond (skip-checks (value :skipped)) ; not used
+                             (t (chk-defattach-loop attachment-alist-sorted
+                                                    erasures wrld ctx
+                                                    state))))
+              (goal/event-names/new-entries
+               (cond ((and (not skip-checks-t)
+                           attachment-alist-sorted)
+                      (defattach-constraint
+                        attachment-alist-sorted proved-fnl-insts-alist wrld
+                        ctx state))
+                     (t (value nil))))
+              (goal (value (car goal/event-names/new-entries)))
+              (event-names (value (cadr goal/event-names/new-entries)))
+              (new-entries (value (cddr goal/event-names/new-entries)))
+              (ttree1 (cond ((or skip-checks-t
+                                 ld-skip-proofsp
+                                 (null attachment-alist-exec))
+                             (value nil))
+                            (t (prove-defattach-guards
+                                attachment-alist-exec
+                                guard-helpers-lst
+                                ctx ens wrld state))))
+              (ttree2
+               (er-progn
+                (chk-assumption-free-ttree ttree1 ctx state)
                 (cond ((and (not skip-checks-t)
+                            (not ld-skip-proofsp)
                             attachment-alist-sorted)
-                       (defattach-constraint
-                         attachment-alist-sorted proved-fnl-insts-alist wrld
-                         ctx state))
-                      (t (value nil))))
-               (goal (value (car goal/event-names/new-entries)))
-               (event-names (value (cadr goal/event-names/new-entries)))
-               (new-entries (value (cddr goal/event-names/new-entries)))
-               (ttree1 (cond ((or skip-checks-t
-                                  ld-skip-proofsp
-                                  (null attachment-alist-exec))
-                              (value nil))
-                             (t (prove-defattach-guards
-                                 attachment-alist-exec
-                                 guard-helpers-lst
-                                 ctx ens wrld state))))
-               (ttree2
-                (er-progn
-                 (chk-assumption-free-ttree ttree1 ctx state)
-                 (cond ((and (not skip-checks-t)
-                             (not ld-skip-proofsp)
-                             attachment-alist-sorted)
-                        (prove-defattach-constraint goal event-names
-                                                    attachment-alist-sorted
-                                                    constraint-helper-alist
-                                                    ctx ens wrld state))
-                       (t (value nil))))))
-            (er-progn
-             (chk-assumption-free-ttree ttree2 ctx state)
-             (value (list erasures
-                          explicit-erasures
-                          attachment-alist-sorted
-                          attachment-alist-exec
-                          new-entries
-                          (cons-tag-trees ttree1 ttree2)
-                          records
-                          skip-checks
-                          attach-nil-lst)))))))))))
+                       (prove-defattach-constraint goal event-names
+                                                   attachment-alist-sorted
+                                                   constraint-helper-alist
+                                                   ctx ens wrld state))
+                      (t (value nil))))))
+           (er-progn
+            (chk-assumption-free-ttree ttree2 ctx state)
+            (value (list erasures
+                         explicit-erasures
+                         attachment-alist-sorted
+                         attachment-alist-exec
+                         new-entries
+                         (cons-tag-trees ttree1 ttree2)
+                         records
+                         skip-checks
+                         attach-nil-lst))))))))))
 
 (defun attachment-cltl-cmd (erasures alist)
 
@@ -29997,6 +30203,208 @@
 
   (cons 'attachment
         (append erasures alist)))
+
+(defun chk-meta-fn-attachments-lst (name lst-lst ctx wrld state)
+
+; Lst-lst is the cddr of the 'evaluator-check-inputs property of name.  See
+; Appendix 2 of the Essay on Correctness of Meta Reasoning.
+
+  (let* ((lst (car lst-lst))
+         (rule-class  (car lst))
+         (meta-fn-lst (cadr lst))
+         (ev-anc      (caddr lst))
+         (extra-anc   (cadddr lst))
+         (ev-fns      (cadddr (cdr lst))))
+    (er-let* ((val1 (chk-meta-fn-attachments name rule-class meta-fn-lst
+                                             ev-anc extra-anc ev-fns
+                                             nil ctx wrld state)))
+      (cond ((null (cdr lst-lst)) (value val1))
+            (t (er-let* ((val2 (chk-meta-fn-attachments-lst name (cdr lst-lst)
+                                                            ctx wrld state)))
+                 (value
+                  (cond ((null val1) val2)
+                        ((null val2) val1)
+                        (t (cons (union-eq (car val1) (car val2))
+                                 (union-eq (cdr val1) (cdr val2))))))))))))
+
+(defun put-defattach-props-tr-meta-anc-removals (fns name wrld wrld0)
+  (cond ((endp fns) wrld)
+        (t (let* ((fn (car fns))
+                  (constrainedp (getpropc fn 'constrainedp nil wrld0))
+                  (names (assert$
+
+; Every function in fns comes from a set tr-meta-anc of transparent canonical
+; functions.  Each thus has a transparent-rec value for its 'constrainedp
+; property.
+
+                          (weak-transparent-rec-p constrainedp)
+                          (access transparent-rec constrainedp
+                                  :names)))
+                  (new-names (assert$
+
+; Fns comes from the tr-meta-anc field of the 'evaluator-check-inputs property
+; of name.  So by the Tr-meta-anc Invariant of Appendix 2 of the Essay on
+; Correctness of Meta Reasoning, name is one of the names in the 'constrainedp
+; property of fn.
+
+                              (member-eq name names)
+                              (remove1 name names))))
+             (put-defattach-props-tr-meta-anc-removals
+              (cdr fns)
+              name
+              (putprop fn
+                       'constrainedp
+                       (change transparent-rec constrainedp
+                               :names new-names)
+                       wrld)
+              wrld0)))))
+
+(defun put-defattach-props-tr-meta-anc-additions (fns name wrld wrld0)
+
+; The comments in put-defattach-props-tr-meta-anc-removals explain the assert$
+; calls here as well.
+
+  (cond ((endp fns) wrld)
+        (t (let* ((fn (car fns))
+                  (constrainedp (getpropc fn 'constrainedp nil wrld0))
+                  (names (assert$ (weak-transparent-rec-p constrainedp)
+                                  (access transparent-rec constrainedp
+                                          :names)))
+                  (new-names (assert$ (not (member-eq name names))
+                                      (cons name names))))
+             (put-defattach-props-tr-meta-anc-additions
+              (cdr fns)
+              name
+              (putprop fn
+                       'constrainedp
+                       (change transparent-rec constrainedp
+                               :names new-names)
+                       wrld)
+              wrld0)))))
+
+(defun put-defattach-props-tr-meta-anc (name tr-meta-anc-old tr-meta-anc-new
+                                             wrld wrld0)
+  (let* ((wrld1 (put-defattach-props-tr-meta-anc-removals
+                 (set-difference-eq tr-meta-anc-old tr-meta-anc-new)
+                 name wrld wrld0)))
+    (put-defattach-props-tr-meta-anc-additions
+     (set-difference-eq tr-meta-anc-new tr-meta-anc-old)
+     name wrld1 wrld0)))
+
+(defun put-defattach-props-common-anc-removals (fns name wrld wrld0)
+  (cond ((endp fns) wrld)
+        (t (let* ((fn (car fns))
+                  (prop (getpropc fn 'attachment nil wrld0))
+                  (new-alist (assert$
+
+; By Common-anc Invariant 1 of Appendix 2 of the Essay on Correctness of Meta
+; Reasoning, since fn is a common-anc of name, then the 'attachment property of
+; fn specifies name as one of the reasons given in that property that the
+; attachment is disallowed.
+
+                              (and (consp prop)
+                                   (eq (car prop)
+                                       :attachment-disallowed)
+                                   (assoc-eq name (cdr prop)))
+                              (remove1-assoc-eq name (cdr prop)))))
+             (put-defattach-props-common-anc-removals
+              (cdr fns)
+              name
+              (putprop fn
+                       'attachment
+                       (and new-alist
+                            (cons :attachment-disallowed new-alist))
+                       wrld)
+              wrld0)))))
+
+(defun put-defattach-props-common-anc-additions (fns new-pair wrld wrld0)
+  (cond ((endp fns) wrld)
+        (t (let* ((fn (car fns))
+                  (prop (getpropc fn 'attachment nil wrld0))
+                  (alist (if (null prop)
+                             nil
+                           (assert$
+
+; We have already checked in put-defattach-props-names, via
+; chk-meta-fn-attachments-lst, that no function in fns has an attachment.
+; Therefore prop is not an attachment-alist; so since at this point prop is
+; non-nil, it must be of the form (:attachment-disallowed . &).
+
+                            (and (consp prop)
+                                 (eq (car prop)
+                                     :attachment-disallowed))
+                            (cdr prop)))))
+             (put-defattach-props-common-anc-additions
+              (cdr fns)
+              new-pair
+              (putprop fn
+                       'attachment
+                       (list* :attachment-disallowed
+                              new-pair
+                              alist)
+                       wrld)
+              wrld0)))))
+
+(defun put-defattach-props-common-anc (name common-anc-old common-anc-new
+                                            rule-class wrld wrld0)
+  (let* ((wrld1 (put-defattach-props-common-anc-removals
+                 (set-difference-eq common-anc-old common-anc-new)
+                 name wrld wrld0))
+         (only-new (set-difference-eq common-anc-new common-anc-old)))
+    (cond (only-new (put-defattach-props-common-anc-additions
+                     only-new
+                     (cons name rule-class)
+                     wrld1
+                     wrld0))
+          (t wrld1))))
+
+(defun put-defattach-props-names (names ctx wrld wrld0 state)
+
+; Wrld0 is the currently installed world of state; so, getpropc is fast on that
+; world.  We use it in various places in this algorithm, because on inspection,
+; none of those uses depend on additions already made to wrld.
+
+  (cond
+   ((endp names) (value wrld))
+   (t (let* ((name (car names))
+             (prop (getpropc name 'evaluator-check-inputs nil wrld0))
+             (tr-meta-anc-old (car prop))
+             (common-anc-old (cadr prop)))
+        (er-let* ((pair (chk-meta-fn-attachments-lst name (cddr prop) ctx wrld0
+                                                     state)))
+          (let* ((tr-meta-anc-new (car pair))
+                 (common-anc-new (cdr pair))
+                 (wrld1 (put-defattach-props-tr-meta-anc
+                         name tr-meta-anc-old tr-meta-anc-new wrld wrld0))
+                 (rule-class (if (cdr (cddr prop)) ; two or more rules
+                                 t
+                               (car (car (cddr prop)))))
+                 (wrld2 (put-defattach-props-common-anc
+                         name common-anc-old common-anc-new rule-class wrld1
+                         wrld0))
+                 (wrld3 (assert$ tr-meta-anc-new
+                                 (putprop name
+                                          'evaluator-check-inputs
+                                          (list* tr-meta-anc-new
+                                                 common-anc-new
+                                                 (cddr prop))
+                                          wrld2))))
+            (put-defattach-props-names (cdr names) ctx wrld3 wrld0 state)))))))
+
+(defun put-defattach-props (fn ctx wrld state)
+
+; Fn is a canonical transparent function.  So by the Transparent Function
+; Invariant of Appendix 2 of the Essay on Correctness of Meta Reasoning, its
+; 'constrainedp property is a transparent-rec record.
+
+  (revert-world-on-error
+   (pprogn
+    (set-w 'extension wrld state) ; for a little more efficiency
+    (let* ((prop (getpropc fn 'constrainedp nil wrld))
+           (names (assert$
+                   (weak-transparent-rec-p prop)
+                   (access transparent-rec prop :names))))
+      (put-defattach-props-names names ctx wrld wrld state)))))
 
 (defun defattach-fn (args state event-form)
   (with-ctx-summarized
@@ -30022,44 +30430,56 @@
            (global-val 'proved-functional-instances-alist wrld)))
      (er-let* ((tuple (chk-acceptable-defattach args proved-fnl-insts-alist ctx
                                                 wrld state)))
-       (let ((erasures                (strip-cars (nth 0 tuple)))
-             (explicit-erasures       (nth 1 tuple))
-             (attachment-alist-sorted (nth 2 tuple))
-             (attachment-alist-exec   (nth 3 tuple))
-             (new-entries             (nth 4 tuple))
-             (ttree                   (nth 5 tuple))
-             (records                 (nth 6 tuple))
-             (skip-checks             (nth 7 tuple))
-             (attach-nil-lst          (nth 8 tuple)))
-         (let* ((attachment-fns (strip-cars attachment-alist-sorted))
-                (wrld0 (global-set? 'attach-nil-lst
-                                    attach-nil-lst
-                                    wrld
-                                    (global-val 'attach-nil-lst
-                                                wrld)))
-                (wrld1 (putprop-x-lst1 erasures 'attachment nil wrld0))
-                (wrld2 (cond (attachment-fns
-                              (putprop-x-lst1 (cdr attachment-fns)
-                                              'attachment
-                                              (car attachment-fns)
-                                              (putprop (car attachment-fns)
-                                                       'attachment
-                                                       attachment-alist-sorted
-                                                       wrld1)))
-                             (t wrld1)))
-                (wrld3 (cond (new-entries
-                              (global-set
-                               'proved-functional-instances-alist
-                               (append new-entries proved-fnl-insts-alist)
-                               wrld2))
-                             (t wrld2)))
-                (wrld4 (cond (skip-checks wrld3) ; for skip-checks t or :cycles
-                             (t (global-set 'attachment-records records
-                                            wrld3))))
-                (cltl-cmd (attachment-cltl-cmd
-                           (set-difference-assoc-eq erasures
-                                                    attachment-alist-exec)
-                           attachment-alist-exec)))
+       (let* ((erasures                (strip-cars (nth 0 tuple)))
+              (explicit-erasures       (nth 1 tuple))
+              (attachment-alist-sorted (nth 2 tuple))
+              (attachment-alist-exec   (nth 3 tuple))
+              (new-entries             (nth 4 tuple))
+              (ttree                   (nth 5 tuple))
+              (records                 (nth 6 tuple))
+              (skip-checks             (nth 7 tuple))
+              (attach-nil-lst          (nth 8 tuple))
+              (attachment-fns (strip-cars attachment-alist-sorted))
+              (wrld0 (global-set? 'attach-nil-lst
+                                  attach-nil-lst
+                                  wrld
+                                  (global-val 'attach-nil-lst
+                                              wrld)))
+              (wrld1 (putprop-x-lst1 erasures 'attachment nil wrld0))
+              (wrld2 (cond (attachment-fns
+                            (putprop-x-lst1 (cdr attachment-fns)
+                                            'attachment
+                                            (car attachment-fns)
+                                            (putprop (car attachment-fns)
+                                                     'attachment
+                                                     attachment-alist-sorted
+                                                     wrld1)))
+                           (t wrld1)))
+              (wrld3 (cond (new-entries
+                            (global-set
+                             'proved-functional-instances-alist
+                             (append new-entries proved-fnl-insts-alist)
+                             wrld2))
+                           (t wrld2)))
+              (wrld4 (cond (skip-checks wrld3) ; for skip-checks t or :cycles
+                           (t (global-set 'attachment-records records
+                                          wrld3))))
+              (cltl-cmd (attachment-cltl-cmd
+                         (set-difference-assoc-eq erasures
+                                                  attachment-alist-exec)
+                         attachment-alist-exec))
+              (fn-tr (assert$
+                      (or (consp attachment-alist-sorted)
+                          (consp explicit-erasures))
+                      (let ((fn-canon (canonical-sibling
+                                       (or (caar attachment-alist-sorted)
+                                           (car explicit-erasures))
+                                       wrld)))
+                        (and (transparent-fn-p fn-canon wrld)
+                             fn-canon)))))
+         (er-let* ((wrld5 (if fn-tr
+                              (put-defattach-props fn-tr ctx wrld4 state)
+                            (value wrld4))))
            (pprogn (let ((implicit-erasures
                           (set-difference-eq erasures explicit-erasures)))
                      (cond (implicit-erasures
@@ -30083,7 +30503,7 @@
                                                (t ""))))
                            (t state)))
                    (install-event :attachments-recorded event-form 'defattach 0
-                                  ttree cltl-cmd nil ctx wrld4 state))))))))
+                                  ttree cltl-cmd nil ctx wrld5 state))))))))
 
 (defmacro defattach-system (&whole form &rest args)
   (cond ((and (symbolp (car args)) ; (defattach-system f g)

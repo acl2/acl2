@@ -993,7 +993,7 @@
 
 (define pprint-struct-declon-list ((members struct-declon-listp) (level natp))
   :returns (lines msg-listp)
-  :short "Pretty-print a list of stucture declarations."
+  :short "Pretty-print a list of structure declarations."
   (cond ((endp members) nil)
         (t (cons (pprint-struct-declon (car members) level)
                  (pprint-struct-declon-list (cdr members) level))))

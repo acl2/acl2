@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; Copyright (C) 2023, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -10902,6 +10902,10 @@
 )
 
 (defun unknown-constraints-p (prop)
+
+; We recognize when prop could be the 'constraint-lst property for a function
+; symbol with unknown-constraints (typically, from a partial-encapsulate).
+
   (declare (xargs :guard t))
   (and (consp prop)
        (eq (car prop) *unknown-constraints*)))

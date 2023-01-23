@@ -28,7 +28,7 @@
 (acl2::gen-xdoc-for-file
  "r1cs.lisp"
  ((pseudo-varp "Recognize a pseudo-variable (a symbol or 1).")
-  (pseudo-var-listp "Recognize a true-list of pseudo-variables.")
+  (pseudo-var-listp "Recognize a true list of pseudo-variables.")
   (sparse-vectorp "Recognize a sparse vector in an R1CS constraint.")
   ;; r1cs-constraintp documented above
   (r1cs-constraint-listp "Recognize a true list of R1CS constraints.")

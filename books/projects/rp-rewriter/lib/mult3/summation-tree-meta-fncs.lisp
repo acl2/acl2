@@ -245,18 +245,11 @@
 
   (define pp-lst-hash ((pp-lst rp-term-listp))
     ;;:inline t
-    :returns (hash-code)
-    (ifix (loop$ for x in pp-lst sum (pp-instance-hash x)))
-    #|(if (atom pp-lst)
-    0 ; ;
-    (+ (pp-instance-hash (car pp-lst)) ; ;
-    (ash (pp-lst-hash (cdr pp-lst)) 1)))|#
-    ///
-
-    (defwarrant pp-lst-hash)
-
-    (defret integerp-of-<fn>
-      (integerp hash-code)))
+    :returns (hash-code integerp)
+    (if (atom pp-lst)
+        0                             
+      (+ (pp-instance-hash (car pp-lst))
+         (pp-lst-hash (cdr pp-lst)))))
 
   (define calculate-pp-hash ((pp rp-termp))
     :returns (hash-code integerp)
@@ -289,32 +282,17 @@
   (defwarrant get-hash-code-of-single-s$inline)
   (defwarrant acl2::logcar$inline)
 
-  (define get-hash-code-of-s-lst ((s-lst true-listp))
-; Matt K mod: Added :hints to avoid forcing warrant after warrant-related bug
-; fix.
-    :returns (mv (hash-code1
-                  integerp
-                  :hints
-                  (("Goal"
-                    :in-theory
-                    (disable apply$-get-hash-code-of-single-s$inline))))
-                 (hash-code2
-                  integerp
-                  :hints
-                  (("Goal"
-                    :in-theory
-                    (disable apply$-get-hash-code-of-single-s$inline)))))
-    :inline t
-    (mv (ifix (loop$ for x in s-lst sum (get-hash-code-of-single-s x)))
-        ;;(ifix (loop$ for x in s-lst sum (get-hash-code-of-single-s x)))
-        (ifix (loop$ for x in s-lst sum (logcar (get-hash-code-of-single-s x))))
-        )
-    #| (if (atom s-lst)
-    0 ;
-    (+ (get-hash-code-of-single-s (car s-lst)) ;
-    (get-hash-code-of-s-lst (cdr s-lst))))||#)
+  (define get-hash-code-of-s-lst ((lst true-listp))
+    :returns (mv (hash-code1 integerp)
+                 (hash-code2 integerp))
+    ;;:inline t ;; or should it be inline?
+    (b* (((when (atom lst)) (mv 0 0))
+         ((mv r1 r2)
+          (get-hash-code-of-s-lst (cdr lst)))
+         (h (get-hash-code-of-single-s (car lst))))
+      (mv (+ r1 h) (ifix (+ r2 (logcar h))))))
 
-  (defwarrant get-hash-code-of-s-lst$inline)
+  ;; (defwarrant get-hash-code-of-s-lst$inline)
 
   (define get-hash-code-of-s ((s rp-termp))
     :returns (mv (hash-code1 integerp)
@@ -351,12 +329,11 @@
                                   ;;((cnt natp) '0)
                                   )
     :returns (hash-code integerp)
-    :inline t
-    (ifix (loop$ for x in c-lst sum (ash (get-hash-code-of-single-c x) -1)))
-    #|(if (atom c-lst)
-    0 ;
-    (+ (* 1 (floor (get-hash-code-of-single-c (car c-lst)) 2)) ;
-    (ash (get-hash-code-of-c-lst (cdr c-lst) (1+ cnt)) 1)))|#)
+    ;;:inline t
+    (if (atom c-lst)
+        0 ;
+      (+ (ifix (ash (get-hash-code-of-single-c (car c-lst)) -1))
+         (get-hash-code-of-c-lst (cdr c-lst)))))
 
   (define get-hash-code-of-c ((c rp-termp))
     :returns (hash-code integerp)

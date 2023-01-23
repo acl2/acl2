@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function floor.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -160,18 +160,18 @@
 
 ;; The distance that the floor is below the quotient is less than 1.
 (defthm my-floor-lower-bound-linear
-  (implies (and (rationalp i)
-                (rationalp j)
-                (not (equal 0 j)))
+  (implies (and (not (equal 0 j))
+                (rationalp i)
+                (rationalp j))
            (< (+ -1 (/ i j)) (floor i j)))
   :rule-classes ((:linear :trigger-terms ((floor i j))))
   :hints (("Goal" :by my-floor-lower-bound)))
 
 ;; In this version, we have multiplied through by j.
 (defthm my-floor-lower-bound-alt
-  (implies (and (rationalp i)
-                (rationalp j)
-                (< 0 j))
+  (implies (and (< 0 j)
+                (rationalp i)
+                (rationalp j))
            (< i (+ j (* j (floor i j)))))
   :hints (("Goal"
            :use ((:instance my-floor-lower-bound)
@@ -183,9 +183,9 @@
                                <-of-*-and-*-cancel))))
 
 (defthm my-floor-lower-bound-alt-linear
-  (implies (and (rationalp i)
-                (rationalp j)
-                (< 0 j))
+  (implies (and (< 0 j)
+                (rationalp i)
+                (rationalp j))
            (< i (+ j (* j (floor i j)))))
   :rule-classes ((:linear :trigger-terms ((* j (floor i j)))))
   :hints (("Goal" :by my-floor-lower-bound-alt)))

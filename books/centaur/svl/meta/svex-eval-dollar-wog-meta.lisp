@@ -437,7 +437,9 @@ svex-alist to svexl-alist conversion. ~%"))
 
 (rp::def-formula-checks-default-evl
   rp::rp-evl
-  (strip-cars rp::*small-evl-fncs*))
+  (remove-assoc-equal 'apply$ rp::*small-evl-fncs*)
+; (strip-cars rp::*small-evl-fncs*)
+  )
 
 (local
  (encapsulate

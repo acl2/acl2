@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,9 +14,17 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
-(local (include-book "kestrel/std/system/dumb-negate-lit" :dir :system))
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/alists/assoc" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
+(local (in-theory (disable default-car default-cdr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,7 +102,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-make-mv-nth-terms ((indices nat-listp) (term pseudo-termp))
-  :returns (terms pseudo-term-listp)
+  :returns (terms pseudo-term-listp
+                  :hints (("Goal" :in-theory (enable pseudo-termp))))
   :short "Create a list of @(tsee mv-nth)s applied to a term
           for a list of indices."
   (cond ((endp indices) nil)
@@ -191,6 +200,7 @@
    (affect symbol-list)
    (fn symbolp)
    (fn-guard symbol)
+   (fn-gthm symbol)
    (compst-var symbol)
    (fenv-var symbol)
    (limit-var symbol)
@@ -200,7 +210,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred stmt-ginp)
+  :pred stmt-ginp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -228,7 +239,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred stmt-goutp)
+  :pred stmt-goutp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;
 
@@ -472,6 +484,7 @@
                                      :inscope gin.inscope
                                      :fn gin.fn
                                      :fn-guard gin.fn-guard
+                                     :fn-gthm gin.fn-gthm
                                      :compst-var gin.compst-var
                                      :fenv-var gin.fenv-var
                                      :limit-var gin.limit-var
@@ -535,7 +548,7 @@
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
          stmt-thm-name nil names-to-avoid wrld))
-       (uterm (untranslate$ term nil state))
+       (uterm (untranslate$ expr.term nil state))
        (stmt-formula `(and (equal (exec-stmt ',stmt
                                              ,gin.compst-var
                                              ,gin.fenv-var
@@ -569,7 +582,7 @@
             names-to-avoid)
         (atc-gen-block-item-stmt gin.fn gin.fn-guard gin.context
                                  stmt stmt-limit stmt-thm-name
-                                 expr.type term
+                                 expr.type expr.term
                                  gin.compst-var gin.fenv-var gin.limit-var
                                  gin.compst-var
                                  thm-index names-to-avoid state))
@@ -581,7 +594,7 @@
             names-to-avoid)
         (atc-gen-block-item-list-one gin.fn gin.fn-guard gin.context
                                      item item-limit item-thm-name
-                                     expr.type term
+                                     expr.type expr.term
                                      gin.compst-var gin.fenv-var gin.limit-var
                                      gin.compst-var
                                      thm-index names-to-avoid state)))
@@ -596,7 +609,8 @@
                            :thm-name items-thm-name
                            :thm-index thm-index
                            :names-to-avoid names-to-avoid
-                           :proofs t))))
+                           :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -607,6 +621,7 @@
                                 (test-expr exprp)
                                 (then-items block-item-listp)
                                 (else-items block-item-listp)
+                                (test-type typep)
                                 (then-type typep)
                                 (else-type typep)
                                 (then-limit pseudo-termp)
@@ -808,9 +823,12 @@
                        (integerp ,gin.limit-var)
                        (>= ,gin.limit-var ,if-stmt-limit))
                   ,if-stmt-formula))
+       (test-type-pred (type-to-recognizer test-type wrld))
+       (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (if-stmt-hints
         (if (consp else-items)
-            `(("Goal" :in-theory '(exec-stmt-when-ifelse
+            `(("Goal" :in-theory '(exec-stmt-when-ifelse-and-true
+                                   exec-stmt-when-ifelse-and-false
                                    (:e stmt-kind)
                                    not-zp-of-limit-variable
                                    (:e stmt-ifelse->test)
@@ -820,8 +838,10 @@
                                    ,then-stmt-thm
                                    (:e stmt-ifelse->else)
                                    ,else-stmt-thm
+                                   ,valuep-when-test-type-pred
                                    booleanp-compound-recognizer)))
-          `(("Goal" :in-theory '(exec-stmt-when-if
+          `(("Goal" :in-theory '(exec-stmt-when-ifelse-and-true
+                                 exec-stmt-when-ifelse-and-false
                                  (:e stmt-kind)
                                  not-zp-of-limit-variable
                                  (:e stmt-if->test)
@@ -829,16 +849,27 @@
                                  ,valuep-when-type-pred
                                  (:e stmt-if->then)
                                  ,then-stmt-thm
+                                 ,valuep-when-test-type-pred
                                  booleanp-compound-recognizer)))))
        (if-stmt-instructions
         `((casesplit ,test-term)
+          (claim (hide ,test-term)
+                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (drop 1)
           (claim (equal (if* ,test-term ,then-term ,else-term)
                         ,then-term)
-                 :hints (("Goal" :in-theory '(acl2::if*-when-true))))
+                 :hints (("Goal"
+                          :in-theory '(acl2::if*-when-true)
+                          :expand (:free (x) (hide x)))))
           (prove :hints ,if-stmt-hints)
+          (claim (hide (not ,test-term))
+                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (drop 1)
           (claim (equal (if* ,test-term ,then-term ,else-term)
                         ,else-term)
-                 :hints (("Goal" :in-theory '(acl2::if*-when-false))))
+                 :hints (("Goal"
+                          :in-theory '(acl2::if*-when-false)
+                          :expand (:free (x) (hide x)))))
           (prove :hints ,if-stmt-hints)))
        ((mv if-stmt-event &)
         (evmac-generate-defthm if-stmt-thm
@@ -886,12 +917,18 @@
       :thm-name items-thm-name
       :thm-index thm-index
       :names-to-avoid names-to-avoid
-      :proofs t))))
+      :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-stmt ((term pseudo-termp) (gin stmt-ginp) state)
-  :returns (mv erp (gout stmt-goutp))
+  :returns (mv erp
+               (gout stmt-goutp
+                     :hints ; for speed
+                     (("Goal"
+                       :expand (atc-gen-stmt term gin state)
+                       :in-theory (disable atc-gen-stmt)))))
   :short "Generate a C statement from an ACL2 term."
   :long
   (xdoc::topstring
@@ -1090,14 +1127,15 @@
              ((when mbt$p)
               (b* (((erp gout) (atc-gen-stmt then-term gin state)))
                 (retok (change-stmt-gout gout :proofs nil))))
-             ((erp (bexpr-gout test))
+             ((erp (pexpr-gout test))
               (atc-gen-expr-bool test-term
-                                 (make-bexpr-gin
+                                 (make-pexpr-gin
                                   :context gin.context
                                   :inscope gin.inscope
                                   :prec-tags gin.prec-tags
                                   :fn gin.fn
                                   :fn-guard gin.fn-guard
+                                  :fn-gthm gin.fn-gthm
                                   :compst-var gin.compst-var
                                   :thm-index gin.thm-index
                                   :names-to-avoid gin.names-to-avoid
@@ -1105,7 +1143,7 @@
                                  state))
              ((erp (stmt-gout then) then-context)
               (b* (((reterr) (irr-stmt-gout) nil)
-                   (then-cond (untranslate$ test-term t state))
+                   (then-cond (untranslate$ test.term t state))
                    (then-premise (atc-premise-test then-cond))
                    (then-context (append gin.context
                                          (list then-premise)))
@@ -1146,7 +1184,7 @@
                  then-context)))
              ((erp (stmt-gout else) else-context)
               (b* (((reterr) (irr-stmt-gout) nil)
-                   (not-test-term (dumb-negate-lit test-term))
+                   (not-test-term `(not ,test.term))
                    (else-cond (untranslate$ not-test-term t state))
                    (else-premise (atc-premise-test else-cond))
                    (else-context (append gin.context
@@ -1188,7 +1226,7 @@
                  else-context))))
           (atc-gen-if/ifelse-stmt term test.term then.term else.term
                                   test.expr then.items else.items
-                                  then.type else.type
+                                  test.type then.type else.type
                                   then.limit else.limit
                                   test.thm-name then.thm-name else.thm-name
                                   then-context else-context
@@ -1256,6 +1294,7 @@
                                    :inscope gin.inscope
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
+                                   :fn-gthm gin.fn-gthm
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
                                    :limit-var gin.limit-var
@@ -1346,6 +1385,7 @@
                                    :inscope gin.inscope
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
+                                   :fn-gthm gin.fn-gthm
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
                                    :limit-var gin.limit-var
@@ -1511,6 +1551,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
@@ -1524,6 +1565,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index arr.thm-index
                                         :names-to-avoid arr.names-to-avoid
@@ -1537,6 +1579,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index sub.thm-index
                                         :names-to-avoid sub.names-to-avoid
@@ -1619,6 +1662,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
@@ -1656,6 +1700,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index struct.thm-index
                                         :names-to-avoid struct.names-to-avoid
@@ -1722,6 +1767,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
@@ -1759,6 +1805,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index struct.thm-index
                                         :names-to-avoid struct.names-to-avoid
@@ -1782,6 +1829,7 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
+                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index index.thm-index
                                         :names-to-avoid index.names-to-avoid
@@ -1865,6 +1913,7 @@
                                    :inscope gin.inscope
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
+                                   :fn-gthm gin.fn-gthm
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
                                    :limit-var gin.limit-var
@@ -1945,6 +1994,7 @@
                                    :inscope gin.inscope
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
+                                   :fn-gthm gin.fn-gthm
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
                                    :limit-var gin.limit-var
@@ -2219,6 +2269,7 @@
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn
                                        :fn-guard gin.fn-guard
+                                       :fn-gthm gin.fn-gthm
                                        :compst-var gin.compst-var
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
@@ -2252,7 +2303,12 @@
               gin.fn term))))
     (atc-gen-return-stmt term gin gin.affect state))
 
+  :prepwork ((local (in-theory (disable equal-of-type-pointer
+                                        equal-of-type-struct))))
+
   :measure (pseudo-term-count term)
+
+  :hints (("Goal" :in-theory (enable o< o-finp)))
 
   :verify-guards nil ; done below
 
@@ -2265,11 +2321,11 @@
 
   (verify-guards atc-gen-stmt
     :hints (("Goal"
-             :in-theory (disable atc-gen-stmt
-                                 append
-                                 member-equal
-                                 equal-of-type-pointer
-                                 equal-of-type-struct)))))
+             :do-not '(preprocess) ; for speed
+             :in-theory
+             (e/d (true-listp-when-atc-var-info-option-listp-rewrite
+                   acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+                  (atc-gen-stmt))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2288,6 +2344,7 @@
    (inscope atc-symbol-varinfo-alist-list)
    (fn symbol)
    (fn-guard symbol)
+   (fn-gthm symbol)
    (compst-var symbol)
    (fenv-var symbol)
    (limit-var symbol)
@@ -2299,7 +2356,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred lstmt-ginp)
+  :pred lstmt-ginp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2327,7 +2385,8 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred lstmt-goutp)
+  :pred lstmt-goutp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;
 
@@ -2421,14 +2480,15 @@
        ((when mbtp) (atc-gen-loop-stmt then-term gin state))
        ((mv mbt$p &) (check-mbt$-call test-term))
        ((when mbt$p) (atc-gen-loop-stmt then-term gin state))
-       ((erp (bexpr-gout test))
+       ((erp (pexpr-gout test))
         (atc-gen-expr-bool test-term
-                           (make-bexpr-gin
+                           (make-pexpr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-gthm gin.fn-gthm
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
@@ -2460,6 +2520,7 @@
                        :affect affect
                        :fn gin.fn
                        :fn-guard gin.fn-guard
+                       :fn-gthm gin.fn-gthm
                        :compst-var gin.compst-var
                        :prec-fns gin.prec-fns
                        :prec-tags gin.prec-tags
@@ -2492,6 +2553,7 @@
                             :names-to-avoid body.names-to-avoid
                             :proofs nil)))
   :measure (pseudo-term-count term)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))
   ///
 

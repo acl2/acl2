@@ -37,7 +37,7 @@
          (if (and (eq fn target-fn)
                   (= (len (fargs term))
                      (len target-fn-formals)))
-             (let* ((bindings (non-trivial-bindings target-fn-formals new-args)) ; don't need to bind any var whose correspondong arg is itself
+             (let* ((bindings (non-trivial-bindings target-fn-formals new-args)) ; don't need to bind any var whose corresponding arg is itself
                     (lambda-formals (strip-cars bindings))
                     (new-args (strip-cdrs bindings)))
                `((lambda ,lambda-formals (,fn ,@target-fn-formals)) ,@new-args))

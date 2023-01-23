@@ -126,7 +126,9 @@
     (rp-equal-subterms . 2)
     (rp-equal-cnt . 3)
     (rp-equal-cnt-subterms . 3)
-    ;;(apply$ . 2)
+    (apply$ . 2)
+    (apply$-userfn . 2)
+    (badge-userfn . 1)
     ))
 
 (with-output

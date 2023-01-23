@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -164,6 +164,40 @@
       "Fixtype of the values of the structure type."))
 
     (xdoc::desc
+     "@('struct-<tag>')"
+     (xdoc::p
+      "Constructor of the values of the structure type.")
+     (xdoc::p
+      "This has the same name as the fixtype (see above),
+       but it belongs to a different name space (functions vs. fixtypes).")
+     (xdoc::p
+      "The constructor has the form")
+     (xdoc::codeblock
+      "(define struct-<tag> ((<name1> <pred1>) (<name2> <pred2>) ...)"
+      "  :guard (and ... (equal (len <namei>) <sizei>) ...)"
+      "  :returns (struct struct-<tag>-p"
+      "                   :hyp (and ... (equal (len <namei>) <sizei>) ...))"
+      "  ...)")
+     (xdoc::p
+      "where there is exactly a parameter for each member,
+       with the same and in the same order,
+       whose type @('<pred1>'), @('<pred2>'), etc.
+       is (i) the recognizer of the integer type if the member has integer type
+       or (ii) the recognizer of lists of the element integer type
+       if the member has array type.
+       Furthermore, the additional guard in @(':guard') consists of
+       a length constraint for each array member of array type:
+       for an array with a size,
+       the length constraint is an equality between
+       the @(tsee len) of the parameter and the positive integer length;
+       for an array without a size (i.e. a flexible array member),
+       the length constraint is just @(tsee consp) of the parameter.
+       The return theorem of the constructor has
+       exactly all the length equality constraints as hypotheses
+       (it does not have the @(tsee consp) constraint
+       for the flexible array member, if any."))
+
+    (xdoc::desc
      "@('struct-<tag>-read-<member>')"
      (xdoc::p
       "Reader for an integer member of the structure type.")
@@ -249,9 +283,9 @@
        If the length of the array is known
        (specified by the @('<size?>')
        in the @('<typei>') that specifies the type of the member),
-       the checker only needs the integer.
+       the checker only needs the index.
        For the flexible array member (if present),
-       we also need the structure has an additional argument,
+       we also need the structure as an additional argument,
        from which the flexible array member size is obtained
        and used to check the index against it.")
      (xdoc::p
@@ -290,9 +324,9 @@
        If the length of the array is known
        (specified by the @('<size?>')
        in the @('<typei>') that specifies the type of the member),
-       the checker only needs the integer.
+       the checker only needs the index.
        For the flexible array member (if present),
-       we also need the structure has an additional argument,
+       we also need the structure as an additional argument,
        from which the flexible array member size is obtained
        and used to check the index against it.")
      (xdoc::p
@@ -320,7 +354,7 @@
       "where @('<elemtype>p') is the recognizer of
        the integer element type of
        the @('typei') that specifies the type of the member,
-       and where @('...') is
+       and where the @('...') in the @(':guard') is
        either @('struct') if the member is a flexible array member
        or nothing otherwise.
        The reader reads an element of the array member,
@@ -351,7 +385,7 @@
       "where @('<elemtype>p') is the recognizer of
        the integer element type of
        the @('typei') that specifies the type of the member,
-       and where @('...') is
+       and where the @('...') in the @(':guard') is
        either @('struct') if the member is a flexible array member
        or nothing otherwise.
        The reader reads an element of the array member,
@@ -382,7 +416,7 @@
       "where @('<elemtype>p') is the recognizer of
        the integer element type of
        the @('typei') that specifies the type of the member,
-       and where @('...') is
+       and where the @('...') in the @(':guard') is
        either @('struct') if the member is a flexible array member
        or nothing otherwise.
        The writer writes an element of the array member,
@@ -414,11 +448,56 @@
       "where @('<elemtype>p') is the recognizer of
        the integer element type of
        the @('typei') that specifies the type of the member,
-       and where @('...') is
+       and where the @('...') in the @(':guard') is
        either @('struct') if the member is a flexible array member
        or nothing otherwise.
        The writer writes an element of the array member,
        not the whole array member.")
      (xdoc::p
       "This writer converts the C integer index to an ACL2 integer index
-       and calls the writer @('struct-<tag>-write-<member>') above.")))))
+       and calls the writer @('struct-<tag>-write-<member>') above."))
+
+    (xdoc::desc
+     "@('struct-<tag>-read-<member>-all')"
+     (xdoc::p
+      "Reader for all the elements of an array member of the structure type.")
+     (xdoc::p
+      "There is one such reader for every member
+       whose name is @('<member>')
+       and whose type is an array type.")
+     (xdoc::p
+      "The reader has the form")
+     (xdoc::codeblock
+      "(define struct-<tag>-read-<member>-all ((struct struct-<tag>-p))"
+      "  :returns (values <elemtype>-listp)"
+      "  ...)")
+     (xdoc::p
+      "where @('<elemtype>-listp') is the recognizer of
+       lists of the integer element type of
+       the @('typei') that specifies the type of the member."))
+
+    (xdoc::desc
+     "@('struct-<tag>-write-<member>-all')"
+     (xdoc::p
+      "Writer for all the elements of an array member of the structure type.")
+     (xdoc::p
+      "There is one such writer for every member
+       whose name is @('<member>')
+       and whose type is an array type.")
+     (xdoc::p
+      "The writer has the form")
+     (xdoc::codeblock
+      "(define struct-<tag>-write-<member>-all ((value <elemtype>-listp)"
+      "                                         (struct struct-<tag>-p))"
+      "  :guard (equal (len values) ...)"
+      "  :returns (new-struct struct-<tag>-p)"
+      "  ...)")
+     (xdoc::p
+      "where @('<elemtype>-listp') is the recognizer of
+       lists of the integer element type of
+       the @('typei') that specifies the type of the member,
+       and the @('...') in the @(':guard') is
+       either the positive integer size of the array
+       if the array member has a known size,
+       or the term @('(len (struct-<tag>-read-<member>-all struct))')
+       if the array member is a flexible one.")))))

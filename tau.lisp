@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; Copyright (C) 2023, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -805,17 +805,18 @@
            (elim-sequence
 ; Shape: ((rune rhs lhs alist restricted-vars var-to-runes-alist ttree) ...)
             (all-runes-in-elim-sequence-lst lst ans))
-           ((literal          ;;; Shape: term
-             hyp-phrase       ;;;        tilde-@ phrase
-             equiv            ;;;        equiv relation
-             bullet           ;;;        term
-             target           ;;;        term
-             cross-fert-flg   ;;;        boolean flg
-             delete-lit-flg   ;;;        boolean flg
-             clause-id        ;;;        clause-id
-             binding-lst      ;;;        alist binding vars to terms
-             terms            ;;;        list of terms
-             restricted-vars) ;;;        list of vars
+           ((literal            ;;; Shape: term
+             hyp-phrase         ;;;        tilde-@ phrase
+             equiv              ;;;        equiv relation
+             bullet             ;;;        term
+             target             ;;;        term
+             cross-fert-flg     ;;;        boolean flg
+             delete-lit-flg     ;;;        boolean flg
+             clause-id          ;;;        clause-id
+             binding-lst        ;;;        alist binding vars to terms
+             terms              ;;;        list of terms
+             restricted-vars    ;;;        list of vars
+             evaluator-check-for-rule) ;;; returned by chk-meta-fn-attachments
             ans)
            ((rw-cache-nil-tag
              rw-cache-any-tag)

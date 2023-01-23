@@ -118,13 +118,13 @@ inaccessible.</p>
 write:</p>
 
 <ul>
-<li>@(':w=') &mdash; weak count decrease</li>
-<li>@(':s=') &mdash; strong count decrease</li>
+<li>@(':w=') &mdash; weak length decrease</li>
+<li>@(':s=') &mdash; strong length decrease</li>
 </ul>
 
 <p>These act the same as @(':='), except that they add some @('(mbe :logic
 ...)')-only checks that ensure that the returned stream has a weakly lower or
-strongly lower @(see acl2-count) than the stream going into the action.  This
+strongly lower @(tsee len) than the stream going into the action.  This
 is sometimes needed when using Seq in mutually-recursive functions.</p>
 
 
@@ -427,7 +427,7 @@ creation of warnings while processing the stream.</p>")
                                         (len !!!stream))))
                              (prog2$ (er hard? "SEQ count failed for (~x0 ~x1.)~%"
                                          ',(car x) ',action)
-                                     (mv "SEQ count failure." nil !!!stream)))
+                                     (mv "SEQ count failure." nil ,stream)))
                             (t
                              (check-vars-not-free (!!!error !!!val !!!stream)
                                                   ,rest)))))))
@@ -459,7 +459,7 @@ creation of warnings while processing the stream.</p>")
                                                (len !!!stream))))
                                     (prog2$ (er hard? "SEQ count failed for (~x0 ~x1 ~x2.)~%"
                                                 ',nametree ',type ',action)
-                                            (mv "SEQ count failure." nil !!!stream)))
+                                            (mv "SEQ count failure." nil ,stream)))
                                    (t
                                     (check-vars-not-free (!!!error !!!val !!!stream) ,rest)))))))
 
@@ -485,7 +485,7 @@ creation of warnings while processing the stream.</p>")
                                              (len !!!stream))))
                                   (prog2$ (er hard?  "SEQ count failed for (~x0 ~x1 ~x2.)~%"
                                               ',nametree ',type ',action)
-                                          (mv "SEQ count failure." nil !!!stream)))
+                                          (mv "SEQ count failure." nil ,stream)))
                                  (t
                                   (let ,(seq-nametree-to-let-bindings nametree '!!!val)
                                     (check-vars-not-free (!!!error !!!val !!!stream) ,rest)))))))))))))
@@ -684,4 +684,3 @@ creation of warnings while processing the stream.</p>")
 
 (defmacro seq-backtrack (stream &rest blocks)
   (seq-backtrack-fn stream blocks))
-

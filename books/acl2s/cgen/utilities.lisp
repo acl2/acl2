@@ -1120,9 +1120,25 @@ Mainly to be used for evaluating enum lists "
         (t (append (cgen-dumb-negate-lit-lst hyps)
                    (list concl)))))
 
+(defun equiv-sym? (sym)
+  (declare (xargs :guard t))
+  (member-equal sym '(EQUAL EQ EQL = INT= STRING-EQUAL ACL2::HONS-EQUAL acl2s::==)))
+
+(defun equiv-term? (term)
+  (declare (xargs :guard t))
+  (and (true-listp term)
+       (= 3 (len term))
+       (equiv-sym? (car term))))
+
 (defun is-var-equality-hyp (term)
-  (and (equal (len term) 3)
-       (member-equal (car term) '(EQUAL EQ EQL = INT= STRING-EQUAL ACL2::HONS-EQUAL acl2s::==))
+  (declare (xargs :guard t))
+  (and (equiv-term? term)
        (and (or (proper-symbolp (second term))
                 (proper-symbolp (third term)))
             (not (equal (second term) (third term))))))
+
+(defun equiv-hyp? (hyp)
+  (declare (xargs :guard t))
+  (and (equiv-term? hyp)
+       (proper-symbolp (second hyp))
+       (proper-symbolp (third hyp))))
