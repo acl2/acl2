@@ -7656,7 +7656,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :mode :program
                   :guard (and (true-listp args)
                               (or (symbol-listp off)
-                                  (eq off :all))
+                                  (eq off :all)
+                                  (eq off :all!))
                               (or (symbol-listp on)
                                   (eq on :all))
                               (or (symbol-listp summary-off)
@@ -7703,6 +7704,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           illegal-value-string
                           (list (cons #\0 (cadr args))
                                 (cons #\1 :gag-mode))))))
+         ((and (eq (car args) :off)
+               (eq (cadr args) :all!))
+          (with-output-fn ctx0
+                          (list* :off :all :gag-mode nil (cddr args))
+                          off on gag-mode stack summary-on summary-off
+                          evisc ctx kwds))
          ((member-eq (car args) '(:on :off))
           (let ((val (with-output-on-off-arg (cadr args) *valid-output-names*)))
             (cond
