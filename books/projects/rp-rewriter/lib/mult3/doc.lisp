@@ -289,10 +289,17 @@ example:
 <code> @('(define return-16000 () 16000)')</code>
 <code> @('(defattach pp-lists-limit return-16000)')</code>
 
-<p> It may be necessary to increase this number in case of Booth multipliers
-with large radices, such as, radix 16. On the other hand, if you have a proof
-that is stalling, then it may be a good idea to decrease this number to see
-what is going on -- there might be too many logical gates causing a blow-up.</p>
+<p> If this limit is set too low, then some proofs may fail - likely Booth encoded multipliers
+with large radices, such as, radix-16. On the other hand, if this limit is set
+ too high, the program may try to flatten parts of the design that is not
+needed (parts that would be simplified away on through other means), or in case
+something goes wrong in adder identification and you end up with a large tree
+of logical gates. In such a case,
+you'd likely not want to flatten those gates, which might eventually help prove
+the conjecture but it can also cause a blow up. If  you are tring to prove
+something and it
+ is stalling, then it may be a good idea to decrease this number to see
+what is going on. </p>
 
 ")
 

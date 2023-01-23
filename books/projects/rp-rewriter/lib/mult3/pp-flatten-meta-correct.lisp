@@ -2650,7 +2650,7 @@
 
 (progn
   (local
-   (defthm and$-pp-lists-aux-extract-acc
+   (defthmd and$-pp-lists-aux-extract-acc
      (implies (and (syntaxp (not (equal acc ''nil))))
               (equal (and$-pp-lists-aux cur lst2 acc sign)
                      (append (and$-pp-lists-aux cur lst2 nil sign)
@@ -2665,6 +2665,28 @@
                                ifix))))))
 
   (local
+   (defthmd and$-pp-lists-aux-extract-acc-reverse
+     (implies t
+              (equal (append (and$-pp-lists-aux cur lst2 nil sign)
+                             acc)
+                     (and$-pp-lists-aux cur lst2 acc sign)))
+     :hints (("goal"
+              
+              :in-theory (e/d (and$-pp-lists-aux-extract-acc)
+                              ())))))
+
+  #|(local
+   (defun and$-pp-lists-extract-acc-induct (lst1 lst2 acc1 acc2 sign)
+     (if (atom lst1)
+         (mv acc1 acc2)
+       (b* (((mv & acc2) (and$-pp-lists-extract-acc-induct (cdr lst1) lst2 acc1 acc2 sign))
+            (acc1 (and$-pp-lists-aux (cdar lst1) lst2 nil (xor sign (caar lst1))))
+            
+            (acc2- (and$-pp-lists-aux (cdar lst1) lst2 nil (xor sign (caar lst1))))
+            (acc2 (append acc2- acc2)))
+         (and$-pp-lists-extract-acc-induct (cdr lst1) lst2 acc1 acc2 sign)))))|#
+
+  (local
    (defthm and$-pp-lists-extract-acc
      (implies (and (syntaxp (not (equal acc ''nil)))
                    (mult-formula-checks state)
@@ -2674,10 +2696,13 @@
                              acc)))
      :hints (("goal"
               :do-not-induct t
+              ;;:induct (and$-pp-lists-extract-acc-induct lst1 lst2 acc acc sign)
               :induct (and$-pp-lists lst1 lst2 acc sign)
-              :in-theory (e/d (pp-lists-to-term-p+
+              :in-theory (e/d (and$-pp-lists-aux-extract-acc 
+                               pp-lists-to-term-p+
                                and$-pp-lists)
                               (sum
+                               xor
                                --
                                ifix))))))
 
