@@ -5046,7 +5046,7 @@ t)||#
                                      (pp-is-a-part-of-radix8+-summation abs-term-w/-sc)))))
 
            (?orig-pp-lst2 pp-lst2)
-           (pp-lst2 (extract-equals-from-pp-lst pp-lst2 *large-number*))
+           ;;(pp-lst2 (extract-equals-from-pp-lst pp-lst2 *large-number*))
 
            #|(- (or (check-if-clearable-equals-in-pp-lst pp-lst2)
                   (raise "?orig-pp-lst2: ~p0, pp-lst2: ~p1 ~%" orig-pp-lst2 pp-lst2)))|#
@@ -5175,8 +5175,8 @@ t)||#
                    (b* ((- (cw "check-if-clearable-equals-in-pp-lst returned t ~%"))
                         (pp-lst (extract-equals-from-pp-lst pp-lst *large-number*))
                         (- (cw "extract-equals-from-pp-lst finished. ~%"))
-                        (- (and (check-if-clearable-equals-in-pp-lst pp-lst)
-                             (raise "pp-lst : ~p0 ~%" pp-lst)))
+                        #|(- (and (check-if-clearable-equals-in-pp-lst pp-lst)
+                             (raise "pp-lst : ~p0 ~%" pp-lst)))|#
                         )
                      pp-lst)
                  pp-lst))
