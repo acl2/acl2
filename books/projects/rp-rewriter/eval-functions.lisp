@@ -126,6 +126,7 @@
     (rp-equal-subterms . 2)
     (rp-equal-cnt . 3)
     (rp-equal-cnt-subterms . 3)
+    
     (apply$ . 2)
     (apply$-userfn . 2)
     (badge-userfn . 1)
@@ -138,7 +139,7 @@
                rp-evl
                :namedp t))
 
-(progn
+#|(progn
   ;; TEMPORARY. NEED TO REMOVE WHEN ABLE TO ADD APPLY$ and OTHERS TO EVALUATOR. 
   (skip-proofs
    (defthm rp-evl-of-apply$-call
@@ -161,7 +162,7 @@
                    (equal (car x) 'apply$-userfn))
               (equal (rp-evl x a)
                      (apply$-userfn (rp-evl (cadr x) a)
-                                    (rp-evl (caddr x) a)))))))
+                                    (rp-evl (caddr x) a)))))))|#
 
 (acl2::def-meta-extract rp-evl rp-evl-lst)
 
