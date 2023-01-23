@@ -877,3 +877,11 @@ Properties are just tested with a short timeout.
 (modeling-admit-defs)
 (modeling-admit-all)
 |#
+
+(defmacro propertyd (name &rest args)
+  `(with-output
+    :off :all :on (error) :stack :push
+    (encapsulate
+     ()
+     (property ,name ,@args)
+     (in-theory (disable ,name)))))

@@ -5608,12 +5608,17 @@
 
 (defun make-record-recognizer (name field-layout cheap recog-name)
   `(defun ,recog-name (x)
-     (declare (xargs :mode :logic :guard t))
-     ,(cond (cheap (make-record-recognizer-body field-layout))
-            (t `(and (consp x)
-                     (eq (car x) ',name)
-                     (let ((x (cdr x)))
-                       ,(make-record-recognizer-body field-layout)))))))
+     (declare (xargs :mode :logic :guard t)
+              ,@(and cheap
+                     (symbolp field-layout)
+                     `((ignore x))))
+     ,(cond
+       (cheap (make-record-recognizer-body field-layout))
+       (t `(and (consp x)
+                (eq (car x) ',name)
+                ,@(and (consp field-layout)
+                       `((let ((x (cdr x)))
+                           ,(make-record-recognizer-body field-layout)))))))))
 
 (defun record-macros (name field-layout cheap recog-name)
   (declare (xargs :guard (or recog-name (symbolp name))))

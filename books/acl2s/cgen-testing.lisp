@@ -30,3 +30,10 @@
   (test? (implies (and (== x y) (== y x) (== z y))
                   (== x y))))
 
+(must-succeed
+  (test? (implies (and (== x y) (== y x) (== z y))
+                  (== x z))))
+
+(must-succeed
+  (test? (implies (and (== x y) (== y x) (== z y) (== a b) (== c d) (== b x) (== d y))
+                  (== x a))))

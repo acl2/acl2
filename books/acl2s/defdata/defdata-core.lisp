@@ -208,12 +208,14 @@ Does not seem to be used.
        (xvar (if (member-eq d avoid-lst)
                  d
                (acl2::generate-variable d avoid-lst nil nil wrld)))
-       (pred-body (make-pred-I ndef xvar kwd-alist A M C B wrld)))
-    `((defthm ,(s+ name "P-TESTTHM" :pkg curr-pkg)
-        (equal (,pred-name ,xvar)
-               ,pred-body)
+       (pred-body (make-pred-I ndef xvar kwd-alist A M C B wrld))
+       (defthm-body `(equal (,pred-name ,xvar) ,pred-body))
+       (defthm-name (s+ name "P-TESTTHM" :pkg curr-pkg)))
+    `((defthm ,defthm-name
+        ,defthm-body
         :rule-classes nil
-        :hints ,(get1 :hints kwd-alist)))))
+        :hints ,(get1 :hints kwd-alist))
+      (verify-guards ,defthm-name))))
 
 (defloop already-defined-pred-defthm-events (ps kwd-alist wrld)
   (for ((p in ps)) (append (already-defined-pred-defthm-event p kwd-alist wrld))))
