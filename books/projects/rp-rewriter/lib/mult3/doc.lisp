@@ -292,7 +292,7 @@ example:
 <p> If this limit is set too low, then some proofs may fail - likely Booth encoded multipliers
 with large radices, such as, radix-16. On the other hand, if this limit is set
  too high, the program may try to flatten parts of the design that is not
-needed (parts that would be simplified away on through other means), or in case
+needed (parts that would be simplified away through other means), or in case
 something goes wrong in adder identification and you end up with a large tree
 of logical gates. In such a case,
 you'd likely not want to flatten those gates, which might eventually help prove

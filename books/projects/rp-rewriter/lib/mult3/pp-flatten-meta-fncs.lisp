@@ -692,10 +692,10 @@
   (defthm integerp-of-pp-lists-limit
     (natp (pp-lists-limit))))
 
-(define return-2500 ()
-  2500)
+(define return-10000 ()
+  10000)
 
-(defattach pp-lists-limit return-2500)
+(defattach pp-lists-limit return-10000)
 
 (define pp-term-to-pp-lists ((term pp-term-p)
                              (sign booleanp)

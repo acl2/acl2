@@ -253,6 +253,7 @@
  :meta-fnc unpack-booth-general-meta$
  :trig-fnc unpack-booth
  :valid-syntaxp t
+ :disabled t
  :formula-checks mult-formula-checks
  :returns (mv term dont-rw)
  :hints (("Goal"
