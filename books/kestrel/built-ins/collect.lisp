@@ -100,54 +100,54 @@
                    (event-type (access-event-tuple-type event-tuple)))
               (cond
                ((eq event-type 'defun)
-                (update-event-names 0
-                                    (cons (access-event-tuple-namex event-tuple)
-                                          defun-names)))
+                (update-event-names
+                 0 (cons (access-event-tuple-namex event-tuple)
+                         defun-names)))
                ((eq event-type 'defuns)
-                (update-event-names 0
-                                    (revappend (access-event-tuple-namex event-tuple)
-                                               defun-names)))
+                (update-event-names
+                 0 (revappend (access-event-tuple-namex event-tuple)
+                              defun-names)))
                ((eq event-type 'defaxiom)
-                (update-event-names 1
-                                    (cons (access-event-tuple-namex event-tuple)
-                                          defaxiom-names)))
+                (update-event-names
+                 1 (cons (access-event-tuple-namex event-tuple)
+                         defaxiom-names)))
                ((eq event-type 'defthm)
-                (update-event-names 2
-                                    (cons (access-event-tuple-namex event-tuple)
-                                          defthm-names)))
+                (update-event-names
+                 2 (cons (access-event-tuple-namex event-tuple)
+                         defthm-names)))
                ((eq event-type 'defconst)
-                (update-event-names 3
-                                    (cons (access-event-tuple-namex event-tuple)
-                                          defconst-names)))
+                (update-event-names
+                 3 (cons (access-event-tuple-namex event-tuple)
+                         defconst-names)))
                ((eq event-type 'defstobj)
-                (update-event-names 4
-                                    (cons (car (access-event-tuple-namex event-tuple))
-                                          defstobj-names)))
+                (update-event-names
+                 4 (cons (car (access-event-tuple-namex event-tuple))
+                         defstobj-names)))
                ((eq event-type 'defmacro)
-                (update-event-names 5
-                                    (cons (access-event-tuple-namex event-tuple)
-                                          defmacro-names)))
+                (update-event-names
+                 5 (cons (access-event-tuple-namex event-tuple)
+                         defmacro-names)))
                ((eq event-type 'defpkg)
-                (update-event-names 6
-                                    (cons (access-event-tuple-namex event-tuple)
-                                          defpkg-names)))
+                (update-event-names
+                 6 (cons (access-event-tuple-namex event-tuple)
+                         defpkg-names)))
                ((eq event-type 'deflabel)
-                (update-event-names 7
-                                    (cons (access-event-tuple-namex event-tuple)
-                                          deflabel-names)))
+                (update-event-names
+                 7 (cons (access-event-tuple-namex event-tuple)
+                         deflabel-names)))
                ((eq event-type 'deftheory)
-                (update-event-names 8
-                                    (cons (access-event-tuple-namex event-tuple)
-                                          deftheory-names)))
+                (update-event-names
+                 8 (cons (access-event-tuple-namex event-tuple)
+                         deftheory-names)))
                ((eq event-type 'encapsulate)
-                (update-event-names 9
-                                    (revappend (let ((names
-                                                      (access-event-tuple-namex
-                                                       event-tuple)))
-                                                 (if (eql names 0)
-                                                     nil
-                                                   names))
-                                               encapsulate-names)))
+                (update-event-names
+                 9 (revappend (let ((names
+                                     (access-event-tuple-namex
+                                      event-tuple)))
+                                (if (eql names 0)
+                                    nil
+                                  names))
+                              encapsulate-names)))
                ((eq event-type 'include-book)
                 (update-event-names 10
                                     (cons (access-event-tuple-namex event-tuple)
