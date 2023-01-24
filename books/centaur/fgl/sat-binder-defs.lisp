@@ -30,7 +30,7 @@
 
 (in-package "FGL")
 
-(include-book "arith-base")
+(include-book "config")
 (include-book "syntax-bind")
 (include-book "def-fgl-rewrite")
 
@@ -113,3 +113,6 @@
               (status (sat-check-raw! status config xbool)))
            (if (equal status :unsat) nil xbool)))
   :hints(("Goal" :in-theory (enable sat-check-raw fgl-sat-check))))
+
+(disable-execution fgl-sat-check)
+(disable-definition fgl-sat-check)
