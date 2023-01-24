@@ -79,16 +79,16 @@
     (macrolet ((update-event-names
                 (pos val)
                 (let ((lst '(defun-names
-                              defaxiom-names
-                              defthm-names
-                              defconst-names
-                              defstobj-names
-                              defmacro-names
-                              defpkg-names
-                              deflabel-names
-                              deftheory-names
-                              encapsulate-names
-                              includebook-names)))
+                             defaxiom-names
+                             defthm-names
+                             defconst-names
+                             defstobj-names
+                             defmacro-names
+                             defpkg-names
+                             deflabel-names
+                             deftheory-names
+                             encapsulate-names
+                             includebook-names)))
                   (list* 'builtin-event-names-rec
                          '(cdr wrld)
                          (if pos
@@ -162,8 +162,9 @@
 
 ; We introduce a named constants for each list of collected names.
 ; We reverse the lists, so they are in chronological order.
-; Since the function above that collects the names is itself collected,
-; we remove it just before defining the named constant for function names.
+; Since the two functions above that collect the names are themselves collected,
+; we remove them just before defining the named constant for function names.
+; the SET-COMPILE-FNS form does not cause any events, it just modifies a table.
 
 (make-event
  (mv-let (defun-names
@@ -179,7 +180,7 @@
           includebook-names)
      (builtin-event-names (w state))
    `(progn
-      (defconst *builtin-defun-names* ',(reverse (cdr defun-names)))
+      (defconst *builtin-defun-names* ',(reverse (cddr defun-names)))
       (defconst *builtin-defaxiom-names* ',(reverse defaxiom-names))
       (defconst *builtin-defthm-names* ',(reverse defthm-names))
       (defconst *builtin-defconst-names* ',(reverse defconst-names))
