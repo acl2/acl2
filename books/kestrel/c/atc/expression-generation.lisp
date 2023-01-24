@@ -1962,18 +1962,23 @@
                                       thm-name nil pure.names-to-avoid wrld))
        (type-pred (type-to-recognizer pure.type wrld))
        (uterm* (untranslate$ pure.term nil state))
-       (formula `(and (equal (exec-expr-call-or-pure ',pure.expr
-                                                     ,gin.compst-var
-                                                     ,gin.fenv-var
-                                                     ,gin.limit-var)
-                             (mv ,uterm* ,gin.compst-var))
-                      (,type-pred ,uterm*)))
-       (formula (atc-contextualize formula gin.context nil))
-       (formula `(implies (and (compustatep ,gin.compst-var)
-                               (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                               (integerp ,gin.limit-var)
-                               (>= ,gin.limit-var 1))
-                          ,formula))
+       (formula1 `(equal (exec-expr-call-or-pure ',pure.expr
+                                                 ,gin.compst-var
+                                                 ,gin.fenv-var
+                                                 ,gin.limit-var)
+                         (mv ,uterm* ,gin.compst-var)))
+       (formula2 `(,type-pred ,uterm*))
+       (formula1 (atc-contextualize formula1 gin.context nil))
+       (formula2 (atc-contextualize formula2 gin.context t))
+       (formula1 `(implies (and (compustatep ,gin.compst-var)
+                                (,gin.fn-guard ,@(formals+ gin.fn wrld))
+                                (integerp ,gin.limit-var)
+                                (>= ,gin.limit-var 1))
+                           ,formula1))
+       (formula2 `(implies (and (compustatep ,gin.compst-var)
+                                (,gin.fn-guard ,@(formals+ gin.fn wrld)))
+                           ,formula2))
+       (formula `(and ,formula1 ,formula2))
        (hints `(("Goal" :in-theory '(compustatep-of-add-frame
                                      compustatep-of-add-var
                                      compustatep-of-enter-scope
