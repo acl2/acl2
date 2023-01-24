@@ -787,9 +787,11 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
              (b (medw-compress-any b)))
         (if (rp-equal a b) ''t  `(equal ,a ,b))))
        ((fnc . args)
-        (cons-with-hint fnc
-                        (medw-compress-any-lst args)
-                        term))
+        (if (is-equals term)
+            (medw-compress-any (cadr term))
+          (cons-with-hint fnc
+                          (medw-compress-any-lst args)
+                          term)))
 
        (& term))))
  (define medw-compress-any-lst ((lst rp-term-listp))

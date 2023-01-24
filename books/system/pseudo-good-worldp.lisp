@@ -1346,6 +1346,12 @@
                 (pseudo-rewrite-quoted-constant-rulesp (cdr x))))))
 
 ;-----------------------------------------------------------------
+; EVALUATOR-CHECK-INPUTS [GLOBAL-VALUE]
+
+(defun pseudo-evaluator-check-inputs-p (val)
+  (true-listp val))
+
+;-----------------------------------------------------------------
 ; ABSOLUTE-EVENT-NUMBER
 
 (defun absolute-event-numberp (sym val)
@@ -1396,9 +1402,8 @@
   (or (pseudo-function-symbolp val nil)
       (and (consp val)
            (eq (car val) :attachment-disallowed)
-           (or (stringp (cdr val))
-               (and (true-listp (cdr val)) ; msg
-                    (stringp (cadr val)))))
+           (or (symbolp (cdr val))
+               (symbol-alistp (cdr val))))
 
 ; We really should check in the next case val associates
 ; pseudo-function-symbolps with pseudo-function-symbolp.
@@ -1620,14 +1625,14 @@
 ;-----------------------------------------------------------------
 ; CONSTRAINEDP
 
-; The value of this property is t, nil, or the name of the clause processor
-; whose trustworthiness depends on the constrained function sym.  Clause
+; The value of this property is t, nil, or a transparent-rec record.  Clause
 ; processors may have any non-0 number of arguments.
 
 (defun pseudo-constrainedpp (sym val)
   (declare (ignore sym))
   (or (booleanp val)
-      (pseudo-function-symbolp val nil)))
+      (eq val *unknown-constraints*)
+      (weak-transparent-rec-p val)))
 
 ;-----------------------------------------------------------------
 ; CONSTRAINT-LST
@@ -1873,6 +1878,7 @@
                             (keyword-listp (strip-cars val))
                             (string-listp (strip-cdrs val))))
     (PROJECTS/APPLY/BASE-INCLUDEDP (booleanp val))
+    (EVALUATOR-CHECK-INPUTS (pseudo-evaluator-check-inputs-p val))
     (otherwise nil)))
 
 ;-----------------------------------------------------------------

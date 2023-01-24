@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,7 +21,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A named relation of a system of constraints denotes
+    "A named relation denotes
      a predicate over the cartesian product of the prime field;
      the number of factors of the cartesian product
      is the arity of the relation.
@@ -35,7 +35,7 @@
      that result from evaluating its argument expressions.
      There must be no recursion in the relation definitions
      for this to be well-defined.
-     However, the body of a relation definition may include variables
+     The body of a relation definition may include variables
      that are not among the formal parameters:
      these are regarded as existentially quantified,
      i.e. the predicate denoted by the relation holds on a tuple

@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,7 @@
 (in-package "PFCS")
 
 (include-book "abstract-syntax-operations")
+(include-book "pfield-lib-ext")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/prime-fields/fe-listp" :dir :system)
@@ -36,36 +37,36 @@
      This mathematical semantic function takes the following inputs:")
    (xdoc::ol
     (xdoc::li
-     "A system of constraints, of type @(tsee system).")
+     "A list of definitions, of type @(tsee definition-list).")
     (xdoc::li
      "A constraint, of type @(tsee constraint).")
     (xdoc::li
      "An assignment,
-      i.e. a finite map from variables to prime field elements"))
+      i.e. a finite map from variables to prime field elements."))
    (xdoc::p
     "The mathematical semantic function
      returns one of the following possible outputs:")
    (xdoc::ul
     (xdoc::li
      "The boolean `true', indicating that,
-      given the input system of constraints,
+      given the input list of definitions,
       the input constraint is satisfied by the input assignment.")
     (xdoc::li
      "The boolean `false', indicating that,
-      given the input system of constraints,
+      given the input list of definitions,
       the input constraint is not satisfied by the input assignment.")
     (xdoc::li
      "An error, indicating that,
-      given the input system of constraints,
+      given the input list of definitions,
       the input constraint cannot be evaluated as satisfied or not."))
    (xdoc::p
     "The third output happens when, for instance,
      the constraint references
      a variable that is not in the assignment,
-     or a relation that is not in the system.
-     This should never happen when the system and constraint are "
+     or a relation that is not in the list of definitions.
+     This should never happen when the list of definitions is "
     (xdoc::seetopic "well-formedness" "well-formed")
-    ", which we plan to prove formally.")
+    ", as we plan to prove formally.")
    (xdoc::p
     "Attempting to define this mathematical semantic function in ACL2
      runs into an issue.
@@ -76,7 +77,7 @@
      This is an existential quantification,
      which is expressed via @(tsee defun-sk) in ACL2,
      but the mathematical semantic function we are describing is recursive,
-     and a mutual recursion cannot involve a @(tsee defun-sk).")
+     and a mutual recursion cannot involve a @(tsee defun-sk) in ACL2.")
    (xdoc::p
     "To overcome this issue,
      we formalize a logical proof system
@@ -103,7 +104,15 @@
      (recall that fixtypes cannot be parameterized, currently)."))
   :key-type symbol
   :val-type nat
-  :pred assignmentp)
+  :pred assignmentp
+  ///
+
+  (defrule assignmentp-of-from-lists
+    (implies (and (symbol-listp keys)
+                  (nat-listp vals)
+                  (equal (len keys) (len vals)))
+             (assignmentp (omap::from-lists keys vals)))
+    :enable omap::from-lists))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,7 +171,15 @@
                 (assignment-for-prime-p (cons pair asg) p))
        :enable (omap::head
                 omap::tail)
-       :expand ((assignment-for-prime-p (cons pair asg) p))))))
+       :expand ((assignment-for-prime-p (cons pair asg) p)))))
+
+  (defrule assignment-for-prime-p-of-from-lists
+    (implies (and (symbol-listp keys)
+                  (fe-listp vals p)
+                  (equal (len keys) (len vals)))
+             (assignment-for-prime-p (omap::from-lists keys vals) p))
+    :enable (omap::from-lists
+             nat-listp-when-fe-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -273,12 +290,11 @@
     "The components of the assertions defined here
      correspond to the inputs of the mathematical semantic function
      sketched in @(see semantics-deeply-embedded),
-     with the exception of the constraint system.
+     with the exception of the list of definitions.
      This is left implicit in the assertions,
      because it would be the same in all of them,
      and so it is provided externally;
-     see the ACL2 definition of the function
-     in terms of the proof system."))
+     see @(tsee constraint-satp)."))
   ((asg assignment)
    (constr constraint))
   :pred assertionp)
@@ -336,7 +352,7 @@
        These are structures that, when properly formed,
        provide proofs of assertions.
        Here we only define the structure of the proof trees;
-       how they prove assertions is defined later.")
+       how they prove assertions is defined in @(tsee exec-proof-tree).")
      (xdoc::p
       "A proof tree must have enough information that
        it is easy to check whether it proves an assertion or not.
@@ -423,17 +439,15 @@
      e.g. a variable is not found in an assignment,
      an error indication is returned;
      this should never happen under suitable well-formedness conditions,
-     which we plan to formalize and formally prove.
+     which we plan to formally specify and prove.
      Note the difference between a failure outcome,
      where no error occurs but the proof tree is invalid,
      and an error outcome,
      where some error occurs that prevents the establishment of
      whether the proof tree is valid or not.")
    (xdoc::p
-    "Besides a proof tree, we need a system of constraints,
-     which provides a context in which the constraints are checked.
-     In more detail, the system provides
-     the definitions of the named relations.")
+    "Besides a proof tree, we need a list of definitions,
+     which provides a context in which the constraints are checked.")
    (xdoc::p
     "We also need a prime, which defines the prime field
      with respect to which the constraints are checked.")
@@ -443,7 +457,8 @@
    (xdoc::p
     "To execute a proof tree for a relation application,
      we first evaluate the argument expressions, propagating any errors.
-     Then we look up the relation in the system, returning an error if absent.
+     Then we look up the relation in the list of definitions,
+     returning an error if absent.
      Then we execute the proof subtrees, propagating errors and failures.
      If the proof subtrees all succeed, they yield a list of assertions.
      We ensure that they all have the same assignment,
@@ -456,14 +471,16 @@
      in a way that all the constraints of the relation are satisfied.
      This corresponds to the existential quantification
      discussed in @(see semantics-deeply-embedded),
-     in some sense.
+     in some suitable sense.
      We allow relations with an empty body (i.e. no constraints)
      to be proved by an empty list of subtrees;
      note that in this case there is no assignment
      in the assertions proved by the subtrees,
      because they do not prove any assertions in fact."))
 
-  (define exec-proof-tree ((ptree proof-treep) (sys systemp) (p primep))
+  (define exec-proof-tree ((ptree proof-treep)
+                           (defs definition-listp)
+                           (p primep))
     :returns (outcome proof-outcomep)
     (proof-tree-case
      ptree
@@ -483,12 +500,12 @@
      (b* (((unless (assignment-for-prime-p ptree.asg p)) (proof-outcome-error))
           ((mv okp vals) (eval-expr-list ptree.asg ptree.args p))
           ((unless okp) (proof-outcome-error))
-          (def (lookup-definition ptree.name sys))
+          (def (lookup-definition ptree.name defs))
           ((unless def) (proof-outcome-error))
           ((definition def) def)
           ((unless (= (len def.para) (len vals))) (proof-outcome-error))
           (asg-para-vals (omap::from-lists def.para vals))
-          (outcome (exec-proof-tree-list ptree.sub sys p)))
+          (outcome (exec-proof-tree-list ptree.sub defs p)))
        (proof-list-outcome-case
         outcome
         :error (proof-outcome-error)
@@ -509,17 +526,17 @@
     :measure (proof-tree-count ptree))
 
   (define exec-proof-tree-list ((ptrees proof-tree-listp)
-                                (sys systemp)
+                                (defs definition-listp)
                                 (p primep))
     :returns (outcome proof-list-outcomep)
     (b* (((when (endp ptrees)) (proof-list-outcome-assertions nil))
-         (outcome (exec-proof-tree (car ptrees) sys p)))
+         (outcome (exec-proof-tree (car ptrees) defs p)))
       (proof-outcome-case
        outcome
        :error (proof-list-outcome-error)
        :fail (proof-list-outcome-fail)
        :assertion
-       (b* ((outcome1 (exec-proof-tree-list (cdr ptrees) sys p)))
+       (b* ((outcome1 (exec-proof-tree-list (cdr ptrees) defs p)))
          (proof-list-outcome-case
           outcome1
           :error (proof-list-outcome-error)
@@ -544,12 +561,12 @@
 
 (define-sk constraint-satp ((asg assignmentp)
                             (constr constraintp)
-                            (sys systemp)
+                            (defs definition-listp)
                             (p primep))
   :guard (assignment-for-prime-p asg p)
   :returns (yes/no booleanp)
   :short "Semantic function saying if an assignment satisfies a constraint,
-          given a system of constraints and a prime field."
+          given a list of definitions and a prime field."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -563,7 +580,7 @@
      corresponding to the assignment and constraint."))
   (exists (ptree)
           (and (proof-treep ptree)
-               (equal (exec-proof-tree ptree sys p)
+               (equal (exec-proof-tree ptree defs p)
                       (proof-outcome-assertion
                        (make-assertion :asg asg :constr constr))))))
 
@@ -571,13 +588,13 @@
 
 (define-sk constraint-list-satp ((asg assignmentp)
                                  (constrs constraint-listp)
-                                 (sys systemp)
+                                 (defs definition-listp)
                                  (p primep))
   :guard (assignment-for-prime-p asg p)
   :returns (yes/no booleanp)
   :short "Semantic function saying if an assignment
           satisfies a list of constraints,
-          given a system of constraints and a prime field."
+          given a list of definitions and a prime field."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -585,7 +602,53 @@
      but for lists of constraints."))
   (exists (ptrees)
           (and (proof-tree-listp ptrees)
-               (equal (exec-proof-tree-list ptrees sys p)
+               (equal (exec-proof-tree-list ptrees defs p)
                       (proof-list-outcome-assertions
                        (assertion-list-from (repeat (len constrs) asg)
                                             constrs))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define system-satp ((asg assignmentp) (sys systemp) (p primep))
+  :guard (assignment-for-prime-p asg p)
+  :returns (yes/no booleanp)
+  :short "Check if an assignment satisfies a system."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "All the constraints in the system must be satisfied,
+     in the context of the definitions in the system."))
+  (constraint-list-satp asg
+                        (system->constraints sys)
+                        (system->definitions sys)
+                        p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define definition-satp ((vals (fe-listp vals p))
+                         (def definitionp)
+                         (defs definition-listp)
+                         (p primep))
+  :guard (equal (len vals)
+                (len (definition->para def)))
+  :returns (yes/no booleanp)
+  :short "Check if a sequence of prime field elements
+          satisfies a PFCS definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We form an assignment of the prime field elements to the parameters,
+     in order, and we check if this assignment satisfies
+     the constraint consisting of
+     a call of the definition on its parameters.")
+   (xdoc::p
+    "This is a convenient abbreviation
+     for expressing the satisfiability of a definition."))
+  (b* (((definition def) def)
+       (asg (omap::from-lists def.para vals))
+       (constr (make-constraint-relation
+                :name def.name
+                :args (expression-var-list def.para))))
+    (constraint-satp asg constr defs p))
+  :guard-hints (("Goal" :in-theory (enable true-listp-when-fe-listp
+                                           nat-listp-when-fe-listp))))

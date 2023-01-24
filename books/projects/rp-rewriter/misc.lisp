@@ -1281,7 +1281,7 @@ RP-Rewriter will throw an eligible error.</p>"
                   ,term
                   :rule-classes ,rule-classes
                   ,@hints)))
-            `(defsection ,name
+            `(encapsulate nil ;;defsection ,name
                ;;,sigs ;; no need to have the sigs here as we don't want to export the functions.
                (local
                 (progn

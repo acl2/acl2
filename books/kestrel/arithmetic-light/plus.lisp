@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation +.
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -168,6 +168,11 @@
   (equal (< x (+ y x))
          (< 0 y))
   :hints (("Goal" :cases ((< 0 y)))))
+
+(defthm <-of-+-cancel-1+-2+
+  (equal (< (+ x w) (+ y x z))
+         (< w (+ y z)))
+  :hints (("Goal" :cases ((< w (+ y z))))))
 
 (defthm <-of-+-cancel-1+-2
   (equal (< (+ x y) (+ z x))

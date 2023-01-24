@@ -78,9 +78,16 @@
                      (:DEFINITION SUBSETP-EQUAL)
                      (:DEFINITION MEMBER-EQUAL)
                      (:REWRITE DEFAULT-CDR)
-;;                     (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+                     ;;                     (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
                      (:REWRITE
                       ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1))))
+
+(local
+ (defthm is-equals-of-others
+   (implies (not (equal (car term) 'equals))
+            (not (is-equals term )))
+   :hints (("Goal"
+            :in-theory (e/d (is-equals) ())))))
 
 (defret create-c-instance-medwc-filtered-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -104,7 +111,7 @@
                              )
                             (NOT-INCLUDE-RP-MEANS-VALID-SC
                              NOT-INCLUDE-RP-MEANS-VALID-SC-LST
-                             INCLUDE-FNC-SUBTERMS
+                             INCLUDE-FNC-SUBTERMS-FN
                              SUM-LIST-EVAL
                              valid-sc-subterms
                              )))))
@@ -150,10 +157,10 @@
                              (:REWRITE NOT-INCLUDE-RP)
                              (:REWRITE VALID-SC-EX-FROM-RP)
                              (:REWRITE MINUS-OF-SUM)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-FN)
                              (:REWRITE VALID-SC-CADR)
                              NOT-INCLUDE-RP-MEANS-VALID-SC-LST
-                             INCLUDE-FNC-SUBTERMS
+                             INCLUDE-FNC-SUBTERMS-FN
                              SUM-LIST-EVAL
                              VALID-SC-SUBTERMS-CONS
                              valid-sc-subterms
@@ -206,7 +213,6 @@
      (equal (-- (sum x y))
             (sum (-- x) (-- y))))
 
-   
 
    (defthm equal-of-m2-dummy1
      (equal (equal (m2 (sum x a))
@@ -335,7 +341,7 @@
                              (:REWRITE IFIX-OPENER)
                              (:REWRITE LIGHT-PP-TERM-P-INTEGERP)
                              (:DEFINITION VALID-SC)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-FN)
                              (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
                              (:DEFINITION RP-TERMP)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
@@ -421,7 +427,7 @@
                              (:REWRITE IFIX-OPENER)
                              (:REWRITE LIGHT-PP-TERM-P-INTEGERP)
                              (:DEFINITION VALID-SC)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-FN)
                              (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
                              (:DEFINITION RP-TERMP)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
@@ -473,7 +479,7 @@
                             (:REWRITE IFIX-OPENER)
                             (:REWRITE LIGHT-PP-TERM-P-INTEGERP)
                             (:DEFINITION VALID-SC)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-FN)
                             (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
                             (:DEFINITION RP-TERMP)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
@@ -503,7 +509,7 @@
   :hints (("Goal"
            :do-not-induct t
            :induct ( medw-compress-pp-arg-lst-aux pp-lst c-pp-arg-lst
-                                                  c-is-signed sign-matters)
+                     c-is-signed sign-matters)
            :in-theory (e/d ( medw-compress-pp-arg-lst-aux
                              (:REWRITE
                               REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
@@ -526,7 +532,7 @@
                             (:REWRITE IFIX-OPENER)
                             (:REWRITE LIGHT-PP-TERM-P-INTEGERP)
                             (:DEFINITION VALID-SC)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-FN)
                             (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
                             (:DEFINITION RP-TERMP)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
@@ -763,15 +769,17 @@
   :hints (("Goal"
            :do-not-induct t
            :induct ( medw-compress-pp-arg-lst-aux pp-lst c-pp-arg-lst
-                                                  c-is-signed sign-matters)
+                     c-is-signed sign-matters)
            :in-theory (e/d ( medw-compress-pp-arg-lst-aux
 
                              (:REWRITE
                               REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              (:REWRITE RP-EVL-OF----WHEN-MULT-FORMULA-CHECKS)
                              rp-evlt-of-ex-from-rp-reverse
-                             pp-order-equals-implies)
-                           (RP-EVL-OF-EX-FROM-RP
+                             ;;pp-order-equals-implies
+                             )
+                           ((:e tau-system)
+                            RP-EVL-OF-EX-FROM-RP
                             (:REWRITE RP-EVL-OF-VARIABLE)
                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                             (:REWRITE RP-EVL-OF-ZP-CALL)
@@ -783,9 +791,9 @@
                             (:REWRITE VALID-SC-SUBTERMS-CDR)
                             (:REWRITE
                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
-                            (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                            (:TYPE-PRESCRIPTION INCLUDE-FNC-FN)
                             (:REWRITE WHEN-EX-FROM-RP-IS-1)
-                            (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                            (:DEFINITION INCLUDE-FNC-SUBTERMS-FN)
                             (:REWRITE VALID-SC-SUBTERMS-CONS)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-LST)
                             (:REWRITE
@@ -804,7 +812,7 @@
                             (:REWRITE IFIX-OPENER)
                             (:REWRITE LIGHT-PP-TERM-P-INTEGERP)
                             (:DEFINITION VALID-SC)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-FN)
                             (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
                             (:DEFINITION RP-TERMP)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
@@ -932,7 +940,8 @@
                               REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              (:REWRITE RP-EVL-OF----WHEN-MULT-FORMULA-CHECKS)
                              rp-evlt-of-ex-from-rp-reverse
-                             pp-order-equals-implies)
+                             ;;pp-order-equals-implies
+                             )
                            (RP-EVL-OF-EX-FROM-RP
 
                             (:REWRITE RP-EVL-OF-VARIABLE)
@@ -946,9 +955,9 @@
                             (:REWRITE VALID-SC-SUBTERMS-CDR)
                             (:REWRITE
                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
-                            (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                            (:TYPE-PRESCRIPTION INCLUDE-FNC-FN)
                             (:REWRITE WHEN-EX-FROM-RP-IS-1)
-                            (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                            (:DEFINITION INCLUDE-FNC-SUBTERMS-FN)
                             (:REWRITE VALID-SC-SUBTERMS-CONS)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-LST)
 
@@ -966,7 +975,7 @@
                             (:REWRITE IFIX-OPENER)
                             (:REWRITE LIGHT-PP-TERM-P-INTEGERP)
                             (:DEFINITION VALID-SC)
-                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-FN)
                             (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
                             (:DEFINITION RP-TERMP)
                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
@@ -1023,10 +1032,11 @@
                              (:REWRITE
                               REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              rp-evlt-of-ex-from-rp-reverse
-                             pp-order-equals-implies)
+                             ;;pp-order-equals-implies
+                             )
                             (RP-EVLT-OF-EX-FROM-RP
                              EX-FROM-RP
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-FN)
                              valid-sc
                              (:DEFINITION EVAL-AND-ALL)
                              (:REWRITE NOT-INCLUDE-RP)
@@ -1057,10 +1067,11 @@
                              regular-eval-lemmas
 
                              rp-evlt-of-ex-from-rp-reverse-atom
-                             pp-order-equals-implies)
+                             ;;pp-order-equals-implies
+                             )
                             (RP-EVLT-OF-EX-FROM-RP
                              EX-FROM-RP
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-FN)
                              valid-sc
                              (:DEFINITION EVAL-AND-ALL)
                              (:REWRITE NOT-INCLUDE-RP)
@@ -1091,10 +1102,11 @@
                              regular-eval-lemmas
                              S-C-RES
                              rp-evlt-of-ex-from-rp-reverse-atom
-                             pp-order-equals-implies)
+                             ;;pp-order-equals-implies
+                             )
                             (RP-EVLT-OF-EX-FROM-RP
                              EX-FROM-RP
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-FN)
                              valid-sc
                              (:DEFINITION EVAL-AND-ALL)
                              (:REWRITE NOT-INCLUDE-RP)
@@ -1176,7 +1188,6 @@
                             ;;context-from-rp
                             )))))
 
-
 (DEFTHMd
   RP-EVLT-OF-EX-FROM-RP-with-syntaxp
   (IMPLIES (SYNTAXP (consp term))
@@ -1205,11 +1216,11 @@
 (defthm open-valid-sc-when-is-if
   (implies (is-if term)
            (equal (valid-sc term a)
-                  (and 
-                       (VALID-SC (CADR TERM) A)
-                       (IF (RP-EVLT (CADR TERM) A)
-                           (VALID-SC (CADDR TERM) A)
-                           (VALID-SC (CADDDR TERM) A)))))
+                  (and
+                   (VALID-SC (CADR TERM) A)
+                   (IF (RP-EVLT (CADR TERM) A)
+                       (VALID-SC (CADDR TERM) A)
+                       (VALID-SC (CADDDR TERM) A)))))
   :hints (("Goal"
            :expand (valid-sc term a)
            :in-theory (e/d () (valid-sc)))))
@@ -1241,7 +1252,6 @@
            (equal (rp-evlt term a)
                   (RP-EVLT-LST (CDR term) A))))
 
-
 (defthm valid-sc-single-step-lemma
   (implies (and (rp-termp term)
                 (equal (car term) 'rp)
@@ -1249,6 +1259,49 @@
            (valid-sc (caddr term) a))
   :hints (("Goal"
            :in-theory (e/d (valid-sc-single-step) ()))))
+
+(local
+ (defthm equal-of-list-and-rp-evlt-lst
+   (implies (consp x)
+            (equal (equal (cons y1 y2)
+                          (rp-evlt-lst x a))
+                   (and (equal (rp-evlt (car x) a)
+                               y1)
+                        (equal y2
+                               (rp-evlt-lst (cdr x) a)))))))
+
+(local
+ (defthm consp-of-medw-compress-any-lst-implies-consp-term
+   (implies (consp (MEDW-COMPRESS-ANY-LST lst))
+            (consp lst))
+   :rule-classes :forward-chaining
+   :hints (("Goal"
+            :in-theory (e/d (medw-compress-any-lst) ())))))
+
+(local
+ (defthm is-equals-of-same-car-and-length
+   (implies (and (not (is-equals term))
+                 (true-listp term)
+                 (equal (len (cdr term))
+                        (len args)))
+            (not (is-equals (cons (car term)
+                                  args))))
+   :hints (("Goal"
+            :expand ((len (cdddr term))
+                     (len (cddr term))
+                     (len (cdr term))
+                     (len term))
+            :in-theory (e/d (is-equals)
+                            (+-is-sum))))))
+
+(local
+ (defthm len-of-medw-compress-any-lst
+   (equal (len (medw-compress-any-lst lst))
+          (len lst))
+   :hints (("Goal"
+            :induct (len lst)
+            :in-theory (e/d (medw-compress-any-lst) ())))))
+
 
 (defret-mutual
   medw-compress-any-correct
@@ -1278,9 +1331,10 @@
            :expand (;;(rp-trans (ex-from-rp term))
                     ;;(VALID-SC (EX-FROM-RP TERM) A)
                     (:free (x y) (valid-sc (cons x y) a))
-                    
+
                     )
-           :in-theory (e/d* (medw-compress-any
+           :in-theory (e/d* (
+                             medw-compress-any
                              ;;valid-sc-of-ex-from-rp-reverse
                              medw-compress-any-lst
                              regular-eval-lemmas
@@ -1303,11 +1357,11 @@
                              ;;rp-evlt-of-ex-from-rp
                              rp-termp
                              rp-term-listp
-                             cons-equal
+                             ;;cons-equal
                              (:REWRITE NOT-INCLUDE-RP)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-FN)
                              (:REWRITE DEFAULT-CDR)
-                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS-FN)
                              (:REWRITE RP-EVL-OF-RP-EQUAL2)
                              rp-trans-is-term-when-list-is-absent
                              rp-trans
@@ -1331,7 +1385,7 @@
            :expand ((:free (x)
                            (valid-sc (cons 'equal x) a)))
            :in-theory (e/d (medw-compress-meta
-                            
+
                             )
                            (valid-sc
                             rp-termp

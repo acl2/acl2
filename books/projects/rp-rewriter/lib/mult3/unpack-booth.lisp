@@ -92,7 +92,6 @@
                                      (list (car pp-lst)))))
                       (unpack-booth-for-pp-lst (cdr pp-lst)))))
 
-
 (define include-binary-fnc-p (term)
   (or (include-fnc term 'binary-not)
       (include-fnc term 'binary-and)
@@ -782,7 +781,6 @@ t)
   (enable-unpack-booth-later-hons-copy nil))
 
 
-
 (local
  (defthm binary-fnc-p-implies
    (implies (BINARY-FNC-P x)
@@ -871,7 +869,20 @@ t)
                (c-res-lst (s-sum-merge-aux c-res-lst0 (s-sum-merge-aux c-res-lst1 c-res-lst2))))
             (mv s-res-lst pp-res-lst c-res-lst)))
          ((binary-fnc-p subterm)
-          (unpack-booth-process-pp-arg* `(list ,subterm)))
+          (b* (;; THIS CASE LIKELY HAPPENS FOR FLAGS OR SATURATION CASES. it's
+               ;; possible that the user might set the term-size-limit to a
+               ;; large number. We don't want a large number to be applied to
+               ;; the pp-flatten that will take place here. So calling
+               ;; pp-flatten ahead of time to see if the term can be simplified
+               ;; with a small limit. If so, all is good. Otherwise, it's
+               ;; probably best to rely on the SAT solver to deal with this
+               ;; case. 
+               (flatten-res (and (pp-term-p subterm)
+                                 (pp-flatten subterm nil :term-size-limit 800)))
+               ;; try with a small limit before going crazy over it. 
+               ((when (equal (len flatten-res) 1))
+                (mv nil (list subterm) nil)))
+            (unpack-booth-process-pp-arg* `(list ,subterm))))
          (t
           (progn$ (hard-error 'unpack-booth-meta
                               "Unrecognized term ~p0 ~%"
@@ -980,6 +991,20 @@ t)
              (changed (mv `(rp ,(cadr term) ,res) `(nil t ,dont-rw) t))
              (t (mv term t nil)))))
 
+         ((when (equal (car term) 'equals))
+          (b* (((unless (is-equals term))
+                (progn$
+                 (acl2::raise "Term function is equals but does not satisfy is-equals: ~p0 ~%" term)
+                 (mv term t nil)))
+               ((mv res dont-rw changed)
+                (unpack-booth-general-meta (cadr term)))
+               ((mv res2 dont-rw2 changed2)
+                (unpack-booth-general-meta (cadr term))))
+            (cond
+             ;;((quotep res) (mv res t changed))
+             ((or changed changed2) (mv `(equals ,res ,res2) `(nil ,dont-rw ,dont-rw2) t))
+             (t (mv term t nil)))))
+
          ((mv args args-dont-rw changed)
           (unpack-booth-general-meta-lst (cdr term)))
          ((unless changed)
@@ -1032,7 +1057,8 @@ t)
 
 (define unpack-booth-general-meta$ ((term rp-termp))
   ;;:enabled t
-  (b* (((mv term dont-rw &)
+  (b* ((- (cw "Starting unpack-booth-general-meta$ ~%"))
+       ((mv term dont-rw &)
         (unpack-booth-general-meta term)))
     (mv term dont-rw)))
 
@@ -1051,7 +1077,8 @@ t)
                                    (valid-rp-state-syntaxp rp-state)))
                (res-rp-state (valid-rp-state-syntaxp res-rp-state)
                              :hyp (valid-rp-state-syntaxp rp-state)))
-  (b* (((mv term dont-rw changed)
+  (b* ((- (cw "Starting unpack-booth-general-postprocessor~%"))
+       ((mv term dont-rw changed)
         (unpack-booth-general-meta term)))
     (if (and changed
              (or (rp-meta-fnc-formula-checks state) ;; expected to return t

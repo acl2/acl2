@@ -89,6 +89,31 @@
                      (:REWRITE
                       ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1))))
 
+(local
+ (defthm is-equals-of-same-car-and-length
+   (implies (and (not (is-equals term))
+                 (true-listp term)
+                 (equal (len (cdr term))
+                        (len args)))
+            (not (is-equals (cons (car term)
+                                  args))))
+   :hints (("Goal"
+            :expand ((len (cdddr term))
+                     (len (cddr term))
+                     (len (cdr term))
+                     (len term))
+            :in-theory (e/d (is-equals)
+                            (+-is-sum))))))
+
+(local
+   (defthm is-equals-of-others
+     (implies (not (equal (car term) 'equals))
+              (not (is-equals term )))
+     :hints (("Goal"
+              :in-theory (e/d (is-equals) ())))))
+
+
+
 (defret unpack-booth-for-pp-lst-correct
   (implies (and
             (rp-evl-meta-extract-global-facts :state state)
@@ -591,8 +616,8 @@
                             (term (cadr term)))
                  (:instance pp-has-bitp-rp-implies
                             (term (cadr (cadr term)))))
-           :expand ((sum-list-eval (list (cadr term)) a)
-
+           :expand ((:free (x) (sum-list-eval (list x) a))
+                    (SUM-LIST-EVAL NIL A)
                     (sum-list-eval (list (cadr (cadr term)))
                                    a))
            :in-theory (e/d* (or*
@@ -609,7 +634,12 @@
                              regular-rp-evl-of_logbit$inline_when_mult-formula-checks
                              (:rewrite regular-rp-evl-of_--_when_mult-formula-checks)
                              )
-                            (rp-termp
+                            (;;(:REWRITE ACL2::EQUAL-LEN-1)
+                             (:REWRITE BINARY-FNC-P-RELIEVE)
+                             (:TYPE-PRESCRIPTION SINGLE-C-P$INLINE)
+                             (:TYPE-PRESCRIPTION ACL2::BINARY-OR*)
+                             (:DEFINITION LOGBIT$INLINE)
+                             rp-termp
                              (:REWRITE DUMMY-SUM-CANCEL-LEMMA1)
                              (:REWRITE PP-TERM-P-IS-BITP)
                              PP-TERM-P
@@ -643,6 +673,7 @@
  (defthm valid-sc-of-cons
    (implies (and (NOT (EQUAL x 'IF))
                  (NOT (EQUAL x 'RP))
+                 (NOT (EQUAL x 'equals))
                  (NOT (EQUAL x 'QUOTE)))
             (equal (valid-sc (cons x other) a)
                    (valid-sc-subterms other a)))
@@ -769,6 +800,14 @@
 
 (local
  (create-regular-eval-lemma if 3 MULT-FORMULA-CHECKS))
+
+#|(local
+ (defthm len-of-unpack-booth-general-meta-lst
+   (equal (len (unpack-booth-general-meta-lst lst))
+          (len lst))
+   :hints (("Goal"
+            :induct (len lst)
+            :in-theory (e/d (unpack-booth-general-meta-lst) ())))))|#
 
 (defret-mutual unpack-booth-general-meta-correct
 

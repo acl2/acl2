@@ -35,7 +35,7 @@
  (include-book "projects/rp-rewriter/proofs/rp-equal-lemmas" :dir :system))
 
 #|(local
- (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system))|#
+(include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system))|#
 
 (local
  (fetch-new-events
@@ -62,19 +62,26 @@
 
 #|
 (BINARY-* (ACL2::RP 'INTEGERP
-                    (SVL::4VEC-CONCAT$ '23
-                                       (SVL::BITS (ACL2::RP 'INTEGERP SRC1)
-                                                  '0
-                                                  '23)
-                                       '1))
-          (ACL2::RP 'INTEGERP
-                    (SVL::4VEC-CONCAT$ '23
-                                       (SVL::BITS (ACL2::RP 'INTEGERP SRC2)
-                                                  '0
-                                                  '23)
+(SVL::4VEC-CONCAT$ '23
+(SVL::BITS (ACL2::RP 'INTEGERP SRC1)
+'0
+'23)
+'1))
+(ACL2::RP 'INTEGERP
+(SVL::4VEC-CONCAT$ '23
+(SVL::BITS (ACL2::RP 'INTEGERP SRC2)
+'0
+'23)
 '1)))
 
 |#
+
+(local
+ (defthm is-equals-of-others
+   (implies (not (equal (car term) 'equals))
+            (not (is-equals term )))
+   :hints (("Goal"
+            :in-theory (e/d (is-equals) ())))))
 
 (define check-context-for-integerp (term context)
   (if (atom context)
@@ -147,13 +154,12 @@
               (mv -1 nil)))))))
 
 #|(calculate-vec-size '(ACL2::RP 'INTEGERP
-                               (SVL::4VEC-CONCAT$ '23
-                                                  (SVL::BITS (ACL2::RP 'INTEGERP SRC1)
-                                                             '0
-                                                             '23)
-                                                  '1))
-                    '((integerp src1)))|#
-
+(SVL::4VEC-CONCAT$ '23
+(SVL::BITS (ACL2::RP 'INTEGERP SRC1)
+'0
+'23)
+'1))
+'((integerp src1)))|#
 
 (define binary-*-p (term)
   (case-match term
@@ -190,7 +196,6 @@
                (('binary-+ & ('unary-- &))
                 t)))
     :rule-classes :forward-chaining))
-
 
 (define */+-to-mult-spec-meta ((term rp-termp)
                                (context rp-term-listp))
@@ -259,23 +264,23 @@
           (mv term nil)))
       (mv `(2vec-adder ,x ,y '0 ',(1+ (max size-x size-y)))
           `(nil t t t t))))
-    
+
    (t (mv term nil))))
 
 #|(*-to-mult-spec-meta  '(BINARY-* (ACL2::RP 'INTEGERP
-                                           (SVL::4VEC-CONCAT$ '23
-                                                              (SVL::BITS (ACL2::RP 'INTEGERP SRC1)
-                                                                         '0
-                                                                         '23)
-                                                              '1))
-                                 (ACL2::RP 'INTEGERP
-                                           (SVL::4VEC-CONCAT$ '23
-                                                              (SVL::BITS (ACL2::RP 'INTEGERP SRC2)
-                                                                         '0
-                                                                         '23)
-                                                              '1)))
-                      '((integerp src1)
-                        (integerp src2)))|#
+(SVL::4VEC-CONCAT$ '23
+(SVL::BITS (ACL2::RP 'INTEGERP SRC1)
+'0
+'23)
+'1))
+(ACL2::RP 'INTEGERP
+(SVL::4VEC-CONCAT$ '23
+(SVL::BITS (ACL2::RP 'INTEGERP SRC2)
+'0
+'23)
+'1)))
+'((integerp src1)
+(integerp src2)))|#
 
 (encapsulate
   nil
@@ -294,7 +299,7 @@
     :gag-mode nil
     (rp::def-formula-checks */+-to-mult/adder-spec-meta-fchecks
       (svl::bits svl::4vec-concat$ *
-                 2vec-adder 
+                 2vec-adder
                  2VEC-SUBTRACT
                  unary--
                  SVL-MULT-FINAL-SPEC
@@ -313,7 +318,7 @@
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma 2VEC-SUBTRACT 4
                                     */+-to-mult/adder-spec-meta-fchecks)
-     (rp::create-regular-eval-lemma unary-- 1 
+     (rp::create-regular-eval-lemma unary-- 1
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma 2vec-adder 4  */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma svl::Bits 3  */+-to-mult/adder-spec-meta-fchecks)

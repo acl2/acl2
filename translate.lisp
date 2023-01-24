@@ -7438,7 +7438,7 @@
 ; constrained functions.
 
                  (cond
-                  ((eq (car (getpropc fn 'constrainedp nil w))
+                  ((eq (getpropc fn 'constrainedp nil w)
                        *unknown-constraints*)
                    (ev-fncall-rec-logical-unknown-constraints
                     fn arg-values w user-stobj-alist

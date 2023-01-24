@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; Copyright (C) 2023, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -512,6 +512,10 @@
   (memoize 'fchecksum-obj :stats nil :forget t)
   (memoize 'immediate-canonical-ancestors :stats nil)
   (memoize 'canonical-ancestors-rec :stats nil)
+  (memoize 'immediate-canonical-ancestors-tr :stats nil)
+  (memoize 'canonical-ancestors-tr-rec :stats nil)
+  (memoize 'canonical-ancestors-path :stats nil)
+  (memoize 'canonical-ancestors-tr-path :stats nil)
 
 ; We no longer define pkg-names-memoize (other than to cause an error); see the
 ; comment there.

@@ -253,6 +253,7 @@
  :meta-fnc unpack-booth-general-meta$
  :trig-fnc unpack-booth
  :valid-syntaxp t
+ :disabled t
  :formula-checks mult-formula-checks
  :returns (mv term dont-rw)
  :hints (("Goal"
@@ -271,7 +272,7 @@
  :disabledp t
  :formula-checks make-sc-fgl-ready-meta-formula-checks
  :hints (("Goal"
-          :in-theory (e/d (make-sc-fgl-ready-meta-main) ()))))
+          :in-theory (e/d () ()))))
 
 (add-postprocessor
  :processor-fnc medw-compress-any

@@ -138,6 +138,12 @@
     "The parsing generation tools
      have been significantly extended and improved.")
 
+   (xdoc::p
+    "New tools have been added to read grammars from files
+     into formal ACL2 representations,
+     to prove properties of the grammars,
+     and to generate functions and theorems about the grammars.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "acl2pl::acl2-programming-language"
@@ -202,7 +208,9 @@
 
    (xdoc::p
     "The event macro @(tsee c::defstruct) has been extended
-     to support flexible array members.")
+     to support flexible array members.
+     This macro has also been extended to generate
+     struct constructors as well as whole-array-member readers and writers.")
 
    (xdoc::p
     "Support has been added to represent and generate
@@ -276,6 +284,19 @@
      of the built-in @('termination-theorem').
      See the documentation for details,
      including functional differences with @('termination-theorem').")
+
+   (xdoc::p
+    "A new utility @(tsee guard-theorem-no-simplify) has been added,
+     which is based on the built-in @(tsee guard-theorem)
+     but does no simplification and does not take a state argument.
+     See the documentation for details, and for why it may be useful.")
+
+   (xdoc::p
+    "A new utility @(tsee guard-theorem-no-simplify$) has been added,
+     which is a logic-mode guard-verified version
+     of the built-in @(tsee guard-theorem-no-simplify).
+     See the documentation for details,
+     including functional differences with @(tsee guard-theorem-no-simplify).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

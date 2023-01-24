@@ -102,7 +102,7 @@
                    (y rp-termp))
     :measure (+ (cons-count x)
                 (cons-count y))
-    :returns (mv order equals)
+    :returns (mv order equalsp)
     (b* ((x (ex-from-rp$ x))
          (y (ex-from-rp$ y)))
       (cond ((equal x y)
@@ -121,7 +121,7 @@
                        (lst2 rp-term-listp))
     :measure (+ (cons-count lst1)
                 (cons-count lst2))
-    :returns (mv order equals)
+    :returns (mv order equalsp)
     (cond ((or (atom lst1)
                (atom lst2))
            (if (equal lst1 lst2)
@@ -226,19 +226,21 @@
   (define create-and-list-instance (lst)
     :returns (and-list-instance rp-termp
                                 :hyp (rp-term-listp lst))
-    (if (and (consp lst)
-             (atom (cdr lst))
-             (or (logbit-p (ex-from-rp (car lst)))
-                 (has-bitp-rp (car lst))))
-        (car lst)
-      `(and-list ',(and-list-hash lst) (list . ,lst)))))
+    (cond ((and (consp lst)
+                (atom (cdr lst))
+                (or (logbit-p (ex-from-rp (car lst)))
+                    (has-bitp-rp (car lst))
+                    (equal (car lst) ''1)))
+           (car lst))
+          (t 
+           `(and-list ',(and-list-hash lst) (list . ,lst))))))
 
 (acl2::defsection pp-order
 
   (define pp-list-order-aux ((x)
                              (y))
     :returns (mv (order)
-                 (equals booleanp))
+                 (equalsp booleanp))
     (cond ((or (atom x)
                (atom y))
            (mv (not (atom x)) (equal x y)))
@@ -257,7 +259,7 @@
 
   (define pp-list-order (x y skip-hash)
     :returns (mv (order)
-                 (equals booleanp))
+                 (equalsp booleanp))
     (b* (((when (equal y '('1)))
           (mv nil (equal x y)))
          ((when (equal x '('1)))
@@ -317,7 +319,7 @@
                     (y rp-termp))
     ;;:inline t
     :returns (mv (order)
-                 (equals booleanp))
+                 (equalsp booleanp))
     (b* ((x (ex-from-rp$ x))
          (y (ex-from-rp$ y))
          ((when (or (quotep x)
@@ -343,11 +345,11 @@
             (&
              (mv (list y) 0 nil)))))
       (if (= x-hash y-hash)
-          (b* (((mv order equals)
+          (b* (((mv order equalsp)
                 (pp-list-order x-lst y-lst
                                (and* x-good-format y-good-format))))
             (if (and* x-good-format y-good-format)
-                (mv order equals)
+                (mv order equalsp)
               (mv order (equal x y))))
         (mv (> x-hash y-hash) nil))))
 
@@ -370,14 +372,14 @@
           (case-match term1 (('-- a) (mv t a)) (& (mv nil term1))))
          ((mv neg2 term2)
           (case-match term2 (('-- a) (mv t a)) (& (mv nil term2))))
-         ((mv order equals)
+         ((mv order equalsp)
           (pp-order term1 term2))
-         (equals (or equals
+         (equalsp (or equalsp
                      (rp-equal-cnt term1 term2 0))))
       (mv  order
            (and (not (equal neg1 neg2))
-                equals)
-           equals)))
+                equalsp)
+           equalsp)))
 
   
   (define pp-lst-orderedp ((lst rp-term-listp))
@@ -498,9 +500,9 @@
                  (pp-sum-merge-lst-for-s (cdr pp1-lst) pp2-lst ))
                 ((when (equal cur2 ''0))
                  (pp-sum-merge-lst-for-s pp1-lst (cdr pp2-lst) ))
-                ((mv order equals)
+                ((mv order equalsp)
                  (pp-order cur1 cur2)))
-             (cond ((or equals (rp-equal-cnt cur1 cur2 0))
+             (cond ((or equalsp (rp-equal-cnt cur1 cur2 0))
                     (pp-sum-merge-lst-for-s (cdr pp1-lst) (cdr pp2-lst) ))
                    (order
                     (b* ((rest (pp-sum-merge-lst-for-s (cdr pp1-lst) pp2-lst )))
@@ -539,7 +541,7 @@
 
   (define s-order-and-negated-termsp ((term1 rp-termp)
                                       (term2 rp-termp))
-    :Returns (mv (order) (negated-termsp) (equals))
+    :Returns (mv (order) (negated-termsp) (equalsp))
     (b* (((mv neg1 term1)
           (case-match term1 (('-- a) (mv t a)) (& (mv nil term1))))
          ((mv neg2 term2)
@@ -960,11 +962,11 @@
                                      pp-lst-array))
           ((mv first rest coughed-lst pp-lst-array)
            (pp-lst-sum-merge-per-pp pp-lst-array size for-s for-c))
-          ((mv & negated-termsp equals)
+          ((mv & negated-termsp equalsp)
            (pp-order-and-negated-termsp first min)))
        (cond (negated-termsp
               (mv nil rest coughed-lst pp-lst-array))
-             ((and (or for-s for-c) equals)
+             ((and (or for-s for-c) equalsp)
               (if for-c
                   (mv nil rest (safe-cons-to-coughed-lst first coughed-lst) pp-lst-array)
                 (mv nil rest coughed-lst pp-lst-array)))

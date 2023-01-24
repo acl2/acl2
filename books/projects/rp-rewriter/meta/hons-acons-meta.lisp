@@ -283,7 +283,11 @@
      (implies (valid-sc term a)
               (valid-sc (mv-nth 0 (HONS-ACONS-META term)) a))
      :hints (("Goal"
-              :in-theory (e/d (is-rp is-if hons-acons-meta) ()))))))
+              :in-theory (e/d (is-equals
+                               is-rp
+                               is-if
+                               hons-acons-meta)
+                              ()))))))
 
 #|(local
  (encapsulate

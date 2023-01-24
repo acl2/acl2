@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; Copyright (C) 2023, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -4687,7 +4687,181 @@
   (canonical-ancestors-rec (collect-canonical-siblings fns wrld nil nil)
                            wrld t))
 
-(defun chk-evaluator-use-in-rule (name meta-fn hyp-fn extra-fns rule-type ev
+(defrec transparent-rec
+  names
+
+; WARNING: Do not change the following "cheap" flag to t!  It is important that
+; (make transparent-rec) return a non-nil value, since we set the 'constrainedp
+; property of a transparent constrained function to that value, and we need
+; 'constrainedp to be non-nil in that case.
+
+  nil)
+
+(defun transparent-fn-p (name wrld)
+
+; Warning: Name must be canonical!  That is because we store a transparent-rec
+; record as the 'constrained property only for a canonical function symbol.
+
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld)
+                              (eq (canonical-sibling name wrld)
+                                  name))))
+  (weak-transparent-rec-p (getpropc name 'constrainedp nil wrld)))
+
+(defun immediate-canonical-ancestors-tr (fn trp wrld)
+
+; This function is analogous to immediate-instantiable-ancestors, except:
+; - trp is t when fn is transparent, in which case attachment is returned;
+; - it traffics entirely in canonical functions;
+; - it is not concerned with the notion of instantiablep; and
+; - the rlp argument of immediate-canonical-ancestors is implicitly t here.
+
+  (cond
+   ((and trp
+
+; A transparent function with no attachment gets ancestors as as through it's
+; not transparent.
+
+         (let ((pair (attachment-pair fn wrld)))
+           (and pair
+                (list (canonical-sibling (cdr pair) wrld))))))
+   (t
+    (let ((guard-anc
+           (canonical-ffn-symbs (guard fn nil wrld) wrld nil fn t)))
+      (mv-let (name x) ; name could be t
+        (constraint-info+ fn wrld)
+        (cond
+         ((unknown-constraints-p x)
+          (collect-canonical-siblings (unknown-constraints-supporters x)
+                                      wrld guard-anc fn))
+         (name (canonical-ffn-symbs-lst x wrld guard-anc fn t))
+         (t (canonical-ffn-symbs x wrld guard-anc fn t))))))))
+
+(defun canonical-ancestors-tr-rec (fns wrld)
+
+; See canonical-ancestors-rec.  Unlike that function, this one includes fns in
+; the result, and it assumes that all functions in fns are canonical.  Also,
+; that function's rlp parameter is implicitly t here.
+
+  (cond
+   ((null fns) (mv nil nil))
+   (t (let* ((fn (car fns))
+             (trp (transparent-fn-p fn wrld))
+             (imm (immediate-canonical-ancestors-tr fn trp wrld)))
+        (mv-let (tr-lst1 ans1)
+          (canonical-ancestors-tr-rec imm wrld)
+          (mv-let (tr-lst2 ans2)
+            (canonical-ancestors-tr-rec (cdr fns) wrld)
+            (mv (if trp ; even if (car fns) has no attachment
+                    (add-to-set-eq fn (union-eq tr-lst1 tr-lst2))
+                  (union-eq tr-lst1 tr-lst2))
+                (add-to-set-eq fn (union-eq ans1 ans2)))))))))
+
+(defun canonical-ancestors-tr-lst (fns wrld)
+
+; Fns is a set of function symbols, not necessarily canonical.  Like
+; canonical-ancestors-lst, we return all canonical ancestors of fns -- except,
+; unlike that function, we pass through transparent functions that have
+; attachments.  We actually return (mv tr-lst anc), where anc is as described
+; above and tr-lst lists the transparent functions with attachments that are
+; passed through when collecting anc.
+
+  (canonical-ancestors-tr-rec (collect-canonical-siblings fns wrld nil nil)
+                              wrld))
+
+(mutual-recursion
+
+(defun some-canonical-ancestors-tr-path (lst btm wrld)
+  (declare (xargs :mode :program))
+  (cond ((endp lst) nil)
+        (t (or (canonical-ancestors-tr-path (car lst) btm wrld)
+               (some-canonical-ancestors-tr-path (cdr lst) btm wrld)))))
+
+(defun canonical-ancestors-tr-path (top btm wrld)
+; Top and btm are canonical.
+  (cond
+   ((eq top btm) (list top))
+   (t (let* ((trp (transparent-fn-p top wrld))
+             (imm (immediate-canonical-ancestors-tr top trp wrld))
+             (path (some-canonical-ancestors-tr-path imm btm wrld)))
+        (and path (cons top path))))))
+)
+
+(mutual-recursion
+
+(defun some-canonical-ancestors-path (lst btm wrld)
+  (declare (xargs :mode :program))
+  (cond ((endp lst) nil)
+        (t (or (canonical-ancestors-path (car lst) btm wrld)
+               (some-canonical-ancestors-path (cdr lst) btm wrld)))))
+
+(defun canonical-ancestors-path (top btm wrld)
+; Top and btm are canonical.
+  (cond
+   ((eq top btm) (list top))
+   (t (let* ((imm (immediate-canonical-ancestors top wrld t))
+             (path (some-canonical-ancestors-path imm btm wrld)))
+        (and path (cons top path))))))
+)
+
+(defun chk-meta-fn-attachments (name rule-class meta-fn-lst
+                                     ev-anc extra-anc ev-fns
+                                     newp ctx wrld state)
+
+; Newp is t when we are checking a rule.  It is nil when we are rechecking a
+; rule because an attachment has changed.
+
+  (mv-let (tr-fns meta-anc)
+    (canonical-ancestors-tr-lst meta-fn-lst wrld)
+    (let* ((common-anc-1 (intersection-eq ev-anc meta-anc))
+           (bad-attached-fns-1 (attached-fns common-anc-1 wrld))
+           (common-anc-2 (intersection-eq extra-anc meta-anc))
+           (bad-attached-fns-2 (attached-fns common-anc-2 wrld)))
+      (cond
+       ((or bad-attached-fns-1 bad-attached-fns-2)
+        (let* ((msg "because of the attached function~#0~[~/s~] ~&0 being ~
+                     ancestral in both the ~@1 and ~@2 functions")
+               (type-string
+                (if (eq rule-class :meta) "meta" "clause-processor"))
+               (btm (canonical-sibling (car (or bad-attached-fns-1
+                                                bad-attached-fns-2))
+                                       wrld))
+               (m-path (some-canonical-ancestors-tr-path
+                        (collect-canonical-siblings meta-fn-lst wrld nil nil)
+                        btm
+                        wrld))
+               (e-path (some-canonical-ancestors-path ev-fns btm wrld)))
+          (er soft ctx ; see comment in defaxiom-supporters
+              "The ~#0~[proposed~/existing~] ~x1 rule, ~x2, ~#0~[is ~
+               illegal~/would become illegal after the proposed defattach ~
+               event changes one or more attachments made to transparent ~
+               functions,~] ~@3~@4.  See :DOC ~
+               evaluator-restrictions.~@5~@6"
+              (if newp 0 1)
+              rule-class
+              name
+              (msg msg
+                   (or bad-attached-fns-1 bad-attached-fns-2)
+                   (if bad-attached-fns-1 "evaluator" "meta-extract")
+                   type-string)
+              (cond ((and bad-attached-fns-1 bad-attached-fns-2)
+                     (msg ", and ~@0"
+                          (msg msg
+                               bad-attached-fns-2
+                               "meta-extract"
+                               type-string)))
+                    (t ""))
+              (msg "~|~%The revised attachments would create the following ~
+                    ancestor path from ~x0 to ~x1:~|~%~X23"
+                   (car m-path) btm m-path nil)
+              (msg "~|~%The revised attachments would also create the ~
+                    following ancestor path from ~x0 to ~x1:~|~%~X23"
+                   (car e-path) btm e-path nil))))
+       (t (value (and (or tr-fns common-anc-2 common-anc-1)
+                      (cons tr-fns
+                            (union-eq common-anc-2 common-anc-1)))))))))
+
+(defun chk-evaluator-use-in-rule (name meta-fn hyp-fn extra-fns rule-class ev
                                        ctx wrld state)
   (er-progn
    (let ((temp (context-for-encapsulate-pass-2 (decode-logical-name ev wrld)
@@ -4703,7 +4877,7 @@
              cases, a solution is to make the current ~x0 rule LOCAL, though ~
              the alleged evaluator will probably not be available for future ~
              :META or :CLAUSE-PROCESSOR rules."
-            rule-type
+            rule-class
             name
             ev))
        (maybe
@@ -4716,101 +4890,89 @@
                     alleged evaluator will probably not be available for ~
                     future :META or :CLAUSE-PROCESSOR rules. See :DOC ~
                     evaluator-restrictions."
-                   rule-type
+                   rule-class
                    name
                    ev)
          (value nil)))
        (otherwise (value nil))))
    (mv-let
-    (fn constraint)
-    (constraint-info ev wrld)
-    (declare (ignore fn))
-    (cond
-     ((unknown-constraints-p constraint)
-      (er soft ctx ; see comment in defaxiom-supporters
-          "The proposed ~x0 rule, ~x1, is illegal because its evaluator ~
-           function symbol, ~x2, has unknown-constraints.  See :DOC ~
-           partial-encapsulate."
-          rule-type
-          name
-          ev))
-     (t
-      (let* ((ev-lst (ev-lst-from-ev ev wrld))
-             (ev-prop (getpropc ev 'defaxiom-supporter nil wrld))
-             (ev-lst-prop (getpropc ev-lst 'defaxiom-supporter nil wrld))
-             (meta-fn-lst (if hyp-fn
-                              (list meta-fn hyp-fn)
-                            (list meta-fn)))
-             (meta-anc (canonical-ancestors-lst meta-fn-lst wrld))
-             (extra-anc (canonical-ancestors-lst extra-fns wrld))
-             (ev-anc (canonical-ancestors-lst (list ev) wrld)))
-        (cond
-         ((and extra-fns
-               (or (getpropc ev 'predefined nil wrld)
-                   (getpropc ev-lst 'predefined nil wrld)))
+     (fn constraint)
+     (constraint-info ev wrld)
+     (declare (ignore fn))
+     (cond
+      ((unknown-constraints-p constraint)
+       (er soft ctx ; see comment in defaxiom-supporters
+           "The proposed ~x0 rule, ~x1, is illegal because its evaluator ~
+            function symbol, ~x2, has unknown-constraints.  See :DOC ~
+            partial-encapsulate."
+           rule-class
+           name
+           ev))
+      (t
+       (let* ((ev-lst (ev-lst-from-ev ev wrld))
+              (ev-prop (getpropc ev 'defaxiom-supporter nil wrld))
+              (ev-lst-prop (getpropc ev-lst 'defaxiom-supporter nil wrld))
+              (meta-fn-lst (if hyp-fn
+                               (list meta-fn hyp-fn)
+                             (list meta-fn)))
+              (extra-anc
+
+; We could store ancestors of meta-extract-contextual-fact and
+; meta-extract-global-fact+, so that we can just retrieve them here.  But this
+; computation is probably cheap, so we opt for simplicity.
+
+               (canonical-ancestors-lst extra-fns wrld))
+              (ev-anc (canonical-ancestors-lst (list ev) wrld)))
+         (cond
+          ((and extra-fns
+                (or (getpropc ev 'predefined nil wrld)
+                    (getpropc ev-lst 'predefined nil wrld)))
 
 ; Note that since extra-fns are defined in the boot-strap world, this check
 ; guarantees that ev is not ancestral in extra-fns.
 
-          (er soft ctx
-              "The proposed evaluator function, ~x0, was defined in the ~
-               boot-strap world.  This is illegal when meta-extract hypotheses ~
-               are present, because for logical reasons our implementation ~
-               assumes that the evaluator is not ancestral in ~v1."
-              (if (getpropc ev 'predefined nil wrld)
-                  ev
-                ev-lst)
-              '(meta-extract-contextual-fact meta-extract-global-fact+)))
-         ((or ev-prop ev-lst-prop)
-          (er soft ctx ; see comment in defaxiom-supporters
-              "The proposed ~x0 rule, ~x1, is illegal because its evaluator ~
-               function symbol, ~x2, supports the formula of the defaxiom ~
-               event named ~x3.  See :DOC evaluator-restrictions."
-              rule-type
-              name
-              (if ev-prop ev ev-lst)
-              (or ev-prop ev-lst-prop)))
-         (t
+           (er soft ctx
+               "The proposed evaluator function, ~x0, was defined in the ~
+                boot-strap world.  This is illegal when meta-extract ~
+                hypotheses are present, because for logical reasons our ~
+                implementation assumes that the evaluator is not ancestral in ~
+                ~v1."
+               (if (getpropc ev 'predefined nil wrld)
+                   ev
+                 ev-lst)
+               '(meta-extract-contextual-fact meta-extract-global-fact+)))
+          ((or ev-prop ev-lst-prop)
+           (er soft ctx ; see comment in defaxiom-supporters
+               "The proposed ~x0 rule, ~x1, is illegal because its evaluator ~
+                function symbol, ~x2, supports the formula of the defaxiom ~
+                event named ~x3.  See :DOC evaluator-restrictions."
+               rule-class
+               name
+               (if ev-prop ev ev-lst)
+               (or ev-prop ev-lst-prop)))
+          (t
 
 ; We would like to be able to use attachments where possible.  However, the
 ; example at the end of :doc evaluator-restrictions shows that this is unsound
 ; in general and is followed by other relevant remarks.
 
-          (let ((bad-attached-fns-1
-                 (attached-fns (intersection-eq ev-anc meta-anc) wrld))
-                (bad-attached-fns-2
-
-; Although we need bad-attached-fns-2 to be empty (see the Essay on Correctness
-; of Meta Reasoning), we could at the very least store extra-anc in the world,
-; based on both meta-extract-contextual-fact and meta-extract-global-fact+, so
-; that we don't have to compute extra-anc every time.  But that check is
-; probably cheap, so we opt for simplicity.
-
-                 (attached-fns (intersection-eq extra-anc meta-anc) wrld)))
-              (cond
-               ((or bad-attached-fns-1 bad-attached-fns-2)
-                (let ((msg "because the attached function~#0~[~/s~] ~&0 ~
-                            ~#0~[is~/are~] ancestral in both the ~@1 and ~@2 ~
-                            functions")
-                      (type-string
-                       (if (eq rule-type :meta) "meta" "clause-processor")))
-                  (er soft ctx ; see comment in defaxiom-supporters
-                      "The proposed ~x0 rule, ~x1, is illegal ~@2~@3.  See ~
-                       :DOC evaluator-restrictions."
-                      rule-type
-                      name
-                      (msg msg
-                           (or bad-attached-fns-1 bad-attached-fns-2)
-                           (if bad-attached-fns-1 "evaluator" "meta-extract")
-                           type-string)
-                      (cond ((and bad-attached-fns-1 bad-attached-fns-2)
-                             (msg ", and because ~@0"
-                                  (msg msg
-                                       bad-attached-fns-2
-                                       "meta-extract"
-                                       type-string)))
-                            (t "")))))
-               (t (value nil))))))))))))
+           (er-let* ((ev-fns (value (collect-canonical-siblings
+                                     (cons ev extra-fns)
+                                     wrld nil nil)))
+                     (tr-fns/common-anc
+                      (chk-meta-fn-attachments name rule-class meta-fn-lst
+                                               ev-anc extra-anc
+                                               ev-fns
+                                               t ctx wrld state)))
+             (value (cond (tr-fns/common-anc
+                           (add-to-tag-tree
+                            'evaluator-check-for-rule
+                            (list (car tr-fns/common-anc)
+                                  (cdr tr-fns/common-anc)
+                                  rule-class meta-fn-lst ev-anc extra-anc
+                                  ev-fns)
+                            nil))
+                          (t nil))))))))))))
 
 (defun chk-rule-fn-guard (function-string rule-type fn ctx wrld state)
 
@@ -4960,68 +5122,92 @@
      (mv *t* eqv ev x a fn mfc-symbol))
     (& (mv *t* nil nil nil nil nil nil))))
 
+(defun chk-non-local-in-non-trivial-encapsulate (msg1 msg2p ctx wrld state)
+  (cond ((eq (context-for-encapsulate-pass-2 wrld
+                                             (f-get-global 'in-local-flg state))
+             'illegal)
+         (er soft ctx
+             "~@0 are illegal inside encapsulate events with non-empty ~
+              signatures unless the rules are local.  In this case such a ~
+              signature introduces the function symbol ~x1.~#2~[~/  You can ~
+              probably avoid this error easily by stating the theorem with a ~
+              different name, N, using :rule-classes nil, and then -- back at ~
+              the top level after the encapsulate event -- including your ~
+              original theorem with the hint, :by N.~]"
+             msg1
+             (caar (cadar (non-trivial-encapsulate-ee-entries
+                           (global-val 'embedded-event-lst wrld))))
+             (if msg2p 1 0)))
+        (t (value nil))))
+
 (defun chk-acceptable-meta-rule (name trigger-fns term ctx ens wrld state)
-  (if (member-eq 'IF trigger-fns)
-      (er soft ctx
-          "The function symbol IF is not an acceptable member of ~
-           :trigger-fns, because the ACL2 simplifier is not set up to apply ~
-           :meta rules to calls of IF.")
-    (let ((str "No :META rule can be generated from ~x0 because ~p1 does not ~
-                have the form of a metatheorem.  See :DOC meta."))
-      (mv-let
-       (hyp eqv ev x a fn mfc-symbol)
-       (interpret-term-as-meta-rule term)
-       (cond ((null eqv)
-              (er soft ctx str name (untranslate term t wrld)))
-             ((eq fn 'return-last)
+  (er-progn
+   (chk-non-local-in-non-trivial-encapsulate
+    "Rules of class :META"
+    t ctx wrld state)
+   (cond
+    ((member-eq 'IF trigger-fns)
+     (er soft ctx
+         "The function symbol IF is not an acceptable member of :trigger-fns, ~
+          because the ACL2 simplifier is not set up to apply :meta rules to ~
+          calls of IF."))
+    (t
+     (let ((str "No :META rule can be generated from ~x0 because ~p1 does not ~
+                 have the form of a metatheorem.  See :DOC meta."))
+       (mv-let
+         (hyp eqv ev x a fn mfc-symbol)
+         (interpret-term-as-meta-rule term)
+         (cond ((null eqv)
+                (er soft ctx str name (untranslate term t wrld)))
+               ((eq fn 'return-last)
 
 ; Ev-fncall-meta calls ev-fncall!.  We could make an exception for return-last,
 ; calling ev-fncall instead, but for now we avoid that runtime overhead by
 ; excluding return-last.  It's a bit difficult to imagine that anyone would
 ; use return-last as a metafunction anyhow.
 
-              (er soft ctx
-                  "It is illegal to use ~x0 as a metafunction, as specified ~
-                   by ~x1.  See :DOC meta."
-                  'return-last name))
-             ((not (and (not (flambdap eqv))
-                        (equivalence-relationp eqv wrld)
-                        (variablep x)
-                        (variablep a)
-                        (not (eq x a))
-                        (not (eq fn 'quote))
-                        (not (flambdap fn))
-                        (or (null mfc-symbol)
-                            (and (variablep mfc-symbol)
-                                 (no-duplicatesp (list x a mfc-symbol 'STATE))))))
+                (er soft ctx
+                    "It is illegal to use ~x0 as a metafunction, as specified ~
+                     by ~x1.  See :DOC meta."
+                    'return-last name))
+               ((not (and (not (flambdap eqv))
+                          (equivalence-relationp eqv wrld)
+                          (variablep x)
+                          (variablep a)
+                          (not (eq x a))
+                          (not (eq fn 'quote))
+                          (not (flambdap fn))
+                          (or (null mfc-symbol)
+                              (and (variablep mfc-symbol)
+                                   (no-duplicatesp (list x a mfc-symbol 'STATE))))))
 
 ; Note:  Fn must be a symbol, not a lambda expression.  That is because
 ; in rewrite-with-lemma, when we apply the metafunction, we use ev-fncall-meta.
 
-              (er soft ctx str name (untranslate term t wrld)))
-             ((not (member-equal (stobjs-in fn wrld)
-                                 '((nil)
-                                   (nil nil state))))
-              (er soft ctx
-                  "Metafunctions cannot take single-threaded object names ~
-                   other than STATE as formal parameters. The function ~x0 ~
-                   may therefore not be used as a metafunction."
-                  fn))
-             (t (er-progn
-                 (chk-rule-fn-guard "metafunction" :meta fn ctx wrld state)
-                 (mv-let
-                  (hyp-fn extra-fns)
-                  (meta-rule-hypothesis-functions hyp ev x a mfc-symbol)
-                  (let ((term-list
-                         (cdar (table-alist 'term-table (w state)))))
-                    (er-progn
-                     (cond
-                      ((null hyp-fn)
-                       (er soft ctx str name (untranslate term t wrld)))
-                      ((and (not (eq hyp-fn t))
-                            (not (member-equal (stobjs-in hyp-fn wrld)
-                                               '((nil)
-                                                 (nil nil state)))))
+                (er soft ctx str name (untranslate term t wrld)))
+               ((not (member-equal (stobjs-in fn wrld)
+                                   '((nil)
+                                     (nil nil state))))
+                (er soft ctx
+                    "Metafunctions cannot take single-threaded object names ~
+                     other than STATE as formal parameters. The function ~x0 ~
+                     may therefore not be used as a metafunction."
+                    fn))
+               (t (er-progn
+                   (chk-rule-fn-guard "metafunction" :meta fn ctx wrld state)
+                   (mv-let
+                     (hyp-fn extra-fns)
+                     (meta-rule-hypothesis-functions hyp ev x a mfc-symbol)
+                     (let ((term-list
+                            (cdar (table-alist 'term-table (w state)))))
+                       (er-progn
+                        (cond
+                         ((null hyp-fn)
+                          (er soft ctx str name (untranslate term t wrld)))
+                         ((and (not (eq hyp-fn t))
+                               (not (member-equal (stobjs-in hyp-fn wrld)
+                                                  '((nil)
+                                                    (nil nil state)))))
 
 ; It is tempting to avoid the check here that hyp-fn does not take
 ; stobjs in.  After all, we have already checked this for fn, and fn
@@ -5029,33 +5215,33 @@
 ; functions to traffic in stobjs even though they do not use STATE (or
 ; another stobj name) as a formal.  So, we play it safe and check.
 
-                       (er soft ctx
-                           "Hypothesis metafunctions cannot take single ~
-                           threaded object names as formal parameters.  The ~
-                           function ~x0 may therefore not be used as a ~
-                           hypothesis metafunction."
-                           hyp-fn))
-                      ((not (eq hyp-fn t))
-                       (er-progn
-                        (chk-evaluator-use-in-rule name
-                                                   fn hyp-fn extra-fns
-                                                   :meta ev ctx wrld state)
-                        (chk-rule-fn-guard "hypothesis function" :meta fn ctx
-                                           wrld state)))
-                      (t (chk-evaluator-use-in-rule name
-                                                    fn nil extra-fns
-                                                    :meta ev ctx wrld state)))
-                     (chk-evaluator ev wrld ctx state)
+                          (er soft ctx
+                              "Hypothesis metafunctions cannot take single ~
+                               threaded object names as formal parameters.  ~
+                               The function ~x0 may therefore not be used as ~
+                               a hypothesis metafunction."
+                              hyp-fn))
+                         ((not (eq hyp-fn t))
+                          (chk-rule-fn-guard "hypothesis function" :meta fn ctx
+                                             wrld state))
+                         (t (value nil)))
+                        (chk-evaluator ev wrld ctx state)
 
 ; In the code below, mfc-symbol is used merely as a Boolean indicating
 ; that this is an extended metafunction.
 
-                     (chk-meta-function fn name trigger-fns mfc-symbol
-                                        term-list ctx ens state)
-                     (if (eq hyp-fn t)
-                         (value nil)
-                       (chk-meta-function hyp-fn name trigger-fns mfc-symbol
-                                          term-list ctx ens state))))))))))))
+                        (chk-meta-function fn name trigger-fns mfc-symbol
+                                           term-list ctx ens state)
+                        (if (eq hyp-fn t)
+                            (value nil)
+                          (chk-meta-function hyp-fn name trigger-fns mfc-symbol
+                                             term-list ctx ens state))
+                        (chk-evaluator-use-in-rule name fn
+                                                   (if (eq hyp-fn t)
+                                                       nil
+                                                     hyp-fn)
+                                                   extra-fns :meta ev ctx wrld
+                                                   state)))))))))))))
 
 ; And to add a :META rule:
 
@@ -5082,49 +5268,102 @@
                      wrld)
                     (t (putprop symb key val wrld))))))))
 
-(defun mark-attachment-disallowed2 (fns msg wrld)
+(defun update-transparent-rec (tr-meta-anc name wrld)
+  (cond ((endp tr-meta-anc) wrld)
+        (t (let* ((fn (car tr-meta-anc))
+                  (old-prop (getpropc fn 'constrainedp nil wrld)))
+             (assert$
+              (weak-transparent-rec-p old-prop)
+              (update-transparent-rec
+               (cdr tr-meta-anc)
+               name
+               (putprop fn
+                        'constrainedp
+                        (change transparent-rec old-prop
+                                :names
+                                (cons name
+                                      (access transparent-rec old-prop :names)))
+                        wrld)))))))
 
-; It might be that we only need to disallow attachments to constrained
-; functions.  However, our theory (Essay on Correctness of Meta Reasoning, as
-; referenced in chk-evaluator-use-in-rule) doesn't address this possibility, so
-; until someone complains we'll keep this simple and disallow attachments for
-; each member of fns, whether or not its attachment is used in evaluation.
+(defun union-eq-cars (alist)
+  (cond ((null alist) nil)
+        (t (union-eq (caar alist) (union-eq-cars (cdr alist))))))
 
-  (cond ((endp fns) wrld)
-        (t (mark-attachment-disallowed2
-            (cdr fns)
-            msg
-            (let ((old-prop (getpropc (car fns) 'attachment nil wrld)))
-              (cond ((and (consp old-prop)
-                          (eq (car old-prop)
-                              :attachment-disallowed))
-                     wrld)
-                    (t (putprop (car fns)
-                                'attachment
-                                (cons :attachment-disallowed msg)
-                                wrld))))))))
+(defun mark-attachment-disallowed (common-anc name rule-class wrld installed-w)
 
-(defun mark-attachment-disallowed1 (canonical-fns msg wrld)
-  (cond ((endp canonical-fns) wrld)
-        (t (mark-attachment-disallowed1
-            (cdr canonical-fns)
-            msg
-            (mark-attachment-disallowed2 (siblings (car canonical-fns) wrld)
-                                         msg
-                                         wrld)))))
+; Common-anc lists the common ancestors of the evaluator and meta functions of
+; the :meta and :clause-processor rules stored under name.  Rule-class is t if
+; there is more than one such rule; otherwise it is the rule's rule-class.  We
+; add (name . rule-class) to the lst of reasons that each function in
+; common-anc is not allowed to have an attachment.
 
-(defun mark-attachment-disallowed (meta-fns ev msg wrld)
+; See also Appendix 2 of the Essay on Correctness of Meta Reasoning.
 
-; We mark as unattachable all functions ancestral in both meta-fns and ev.  We
-; obtain that set of common ancestors by restricting first to canonical
+  (cond
+   ((endp common-anc) wrld)
+   (t (let* ((fn (car common-anc))
+             (old-prop (getpropc fn 'attachment nil installed-w))
+             (pair (cons name rule-class))
+             (new-prop
+              (cond
+               (old-prop (assert$ ; checked in chk-meta-fn-attachments
+                          (and (consp old-prop)
+                               (eq (car old-prop) :attachment-disallowed))
+                          (list* :attachment-disallowed
+                                 pair
+                                 (cdr old-prop))))
+               (t (list :attachment-disallowed pair))))
+             (other-siblings
+              (if old-prop
+                  nil
+                (let ((siblings (siblings fn wrld)))
+                  (assert$ (eq (car siblings) fn) ; see canonical-sibling
+                           (cdr siblings)))))
+             (wrld1 (if other-siblings
+                        (putprop-x-lst1 other-siblings
+                                        'attachment
+                                        (cons :attachment-disallowed fn)
+                                        wrld)
+                      wrld)))
+        (mark-attachment-disallowed (cdr common-anc)
+                                    name
+                                    rule-class
+                                    (putprop fn 'attachment new-prop wrld1)
+                                    installed-w)))))
+
+(defun update-meta-props (name ttree wrld state)
+
+; See the Essay on Correctness of Meta Reasoning, in particular Appendix 2.
+
+; We mark as unattachable all non-transparent functions ancestral in the meta
+; function and evaluator functions.
+
+; We obtain that set of common ancestors by restricting first to canonical
 ; functions, and then taking all siblings (in mark-attachment-disallowed1)
 ; before marking (in mark-attachment-disallowed2).
 
-  (mark-attachment-disallowed1
-   (intersection-eq (canonical-ancestors-lst meta-fns wrld)
-                    (canonical-ancestors-lst (list ev) wrld))
-   msg
-   wrld))
+  (let ((lst (tagged-objects 'evaluator-check-for-rule ttree)))
+    (cond ((null lst) wrld)
+
+; Lst has members of the form (transparent-meta-anc common-anc rule-class
+; meta-fn-lst ev-anc extra-anc), as returned by chk-evaluator-use-in-rule.
+
+          (t (let* ((rule-class (if (null (cdr lst))
+                                    (caddr (car lst))
+                                  t))
+                    (tr-meta-anc (union-eq-cars lst))
+                    (lst-cdrs (strip-cdrs lst))
+                    (common-anc (union-eq-cars lst-cdrs))
+                    (entries (strip-cdrs lst-cdrs))
+                    (wrld1 (update-transparent-rec tr-meta-anc name wrld))
+                    (wrld2 (if tr-meta-anc
+                               (putprop name
+                                        'evaluator-check-inputs
+                                        (list* tr-meta-anc common-anc entries)
+                                        wrld1)
+                             wrld1)))
+               (mark-attachment-disallowed common-anc name rule-class wrld2
+                                           (w state)))))))
 
 (defun add-meta-rule (rune nume trigger-fns well-formedness-guarantee
                            term backchain-limit wrld)
@@ -5169,15 +5408,7 @@
                                      nil ; hyps (ignored for :meta)
                                      wrld
                                      :meta))
-                              (mark-attachment-disallowed
-                               (if (eq hyp-fn t)
-                                   (list fn)
-                                   (list hyp-fn fn))
-                               ev
-                               (msg "it supports both evaluator and meta functions ~
-                             used in :META rule ~x0"
-                                    (base-symbol rune))
-                               wrld)))
+                              wrld))
              (wrld2 (global-set 'never-untouchable-fns
                                 (add-new-never-untouchable-fns
                                  (strip-cars arity-alist)
@@ -7243,108 +7474,114 @@
 ; Note that term has been translated (as it comes from a translated rule
 ; class), but not for execution.
 
-  (let ((str "No :CLAUSE-PROCESSOR rule can be generated from ~x0 ~
-              because~|~%~p1~|~%does not have the necessary form:  ~@2.  See ~
-              :DOC clause-processor."))
-    (mv-let
-     (clauses-result-call-p cl-proc clause alist rest-args ev cl-proc-call
-                            meta-extract-flg)
-     (destructure-clause-processor-rule term)
-     (cond
-      ((eq clauses-result-call-p :error)
-       (er soft ctx str name (untranslate term t wrld)
-           "it fails to satisfy basic syntactic criteria"))
-      ((not (and (symbolp cl-proc)
-                 (function-symbolp cl-proc wrld)))
-       (er soft ctx str name (untranslate term t wrld)
+  (er-progn
+   (chk-non-local-in-non-trivial-encapsulate "Rules of class :CLAUSE-PROCESSOR"
+                                             t ctx wrld state)
+   (let ((str "No :CLAUSE-PROCESSOR rule can be generated from ~x0 ~
+               because~|~%~p1~|~%does not have the necessary form:  ~@2.  See ~
+               :DOC clause-processor."))
+     (mv-let
+       (clauses-result-call-p cl-proc clause alist rest-args ev cl-proc-call
+                              meta-extract-flg)
+       (destructure-clause-processor-rule term)
+       (cond
+        ((eq clauses-result-call-p :error)
+         (er soft ctx str name (untranslate term t wrld)
+             "it fails to satisfy basic syntactic criteria"))
+        ((not (and (symbolp cl-proc)
+                   (function-symbolp cl-proc wrld)))
+         (er soft ctx str name (untranslate term t wrld)
 
 ; We may never see the following message, but it seems harmless to do this
 ; check.
 
-           (msg "the symbol ~x0 is not a function symbol in the current world"
-                cl-proc)))
-      (t
-       (mv-let
-        (erp t-cl-proc-call bindings state)
+             (msg "the symbol ~x0 is not a function symbol in the current world"
+                  cl-proc)))
+        (t
+         (mv-let
+           (erp t-cl-proc-call bindings state)
 
 ; Here we catch the use of the wrong stobjs.  Other checking is done below.
 
-        (translate1 cl-proc-call
-                    :stobjs-out ; clause-processor call must be executable
-                    '((:stobjs-out . :stobjs-out))
-                    t ctx wrld state)
-        (declare (ignore bindings))
-        (cond
-         (erp (er soft ctx str name (untranslate term t wrld)
-                  (msg "the clause-processor call is not in a form suitable ~
-                        for evaluation (as may be indicated by an error ~
-                        message above)")))
-         (t
-          (assert$ ; If translation changes cl-proc-call, we want to know!
-           (equal cl-proc-call t-cl-proc-call)
-           (let* ((stobjs-in (stobjs-in cl-proc wrld))
-                  (stobjs-out (stobjs-out cl-proc wrld)))
-             (er-progn
-              (cond ((if clauses-result-call-p ; expected: iff at least 2 args
-                         (equal stobjs-out '(nil))
-                       (not (equal stobjs-out '(nil))))
-                     (er soft ctx str name (untranslate term t wrld)
-                         (msg "~x0 returns ~#1~[only~/more than~] one value ~
-                               and hence there should be ~#1~[no~/a~] call of ~
-                               ~x2"
-                              cl-proc
-                              (if clauses-result-call-p 0 1)
-                              'clauses-result)))
-                    (t
-                     (let ((msg (tilde-@-illegal-clause-processor-sig-msg
-                                 cl-proc stobjs-in stobjs-out)))
-                       (cond (msg (er soft ctx str name
-                                      (untranslate term t wrld)
-                                      msg))
-                             (t (value nil))))))
-              (let* ((user-hints-p (cdr stobjs-in))
-                     (user-hints (cond (user-hints-p (car rest-args))
-                                       (t nil)))
-                     (stobjs-called (cond (user-hints-p (cdr rest-args))
-                                          (t rest-args)))
-                     (non-alist-vars
-                      (if user-hints
-                          (list* clause user-hints stobjs-called)
-                        (list* clause stobjs-called)))
-                     (vars (cons alist non-alist-vars))
-                     (bad-vars (collect-non-legal-variableps vars)))
-                (cond (bad-vars
-                       (er soft ctx str name (untranslate term t wrld)
-                           (msg "the clause-processor function must be ~
-                                 applied to a list of distinct variable and ~
-                                 stobj names, but ~&0 ~#0~[is~/are~] not"
-                                (untranslate-lst bad-vars nil wrld))))
-                      ((not (no-duplicatesp vars))
-                       (cond ((no-duplicatesp non-alist-vars)
-                              (er soft ctx str name (untranslate term t wrld)
-                                  (msg "the proposed :clause-processor rule ~
-                                        uses ~x0 as its alist variable, but ~
-                                        this variable also occurs in the ~
-                                        argument list of the clause-processor ~
-                                        function, ~x1"
-                                       alist
-                                       cl-proc)))
-                             (t
-                              (er soft ctx str name (untranslate term t wrld)
-                                  (msg "the clause-processor function must be ~
-                                        applied to a list of distinct ~
-                                        variable and stobj names, but the ~
-                                        list ~x0 contains duplicates"
-                                       non-alist-vars)))))
-                      (t (value nil))))
-              (chk-evaluator-use-in-rule name cl-proc nil
-                                         (and meta-extract-flg
-                                              '(meta-extract-global-fact+))
-                                         :clause-processor
-                                         ev ctx wrld state)
-              (chk-rule-fn-guard "clause-processor" :clause-processor cl-proc
-                                 ctx wrld state)
-              (chk-evaluator ev wrld ctx state))))))))))))
+           (translate1 cl-proc-call
+                       :stobjs-out ; clause-processor call must be executable
+                       '((:stobjs-out . :stobjs-out))
+                       t ctx wrld state)
+           (declare (ignore bindings))
+           (cond
+            (erp (er soft ctx str name (untranslate term t wrld)
+                     (msg "the clause-processor call is not in a form ~
+                           suitable for evaluation (as may be indicated by an ~
+                           error message above)")))
+            (t
+             (assert$ ; If translation changes cl-proc-call, we want to know!
+              (equal cl-proc-call t-cl-proc-call)
+              (let* ((stobjs-in (stobjs-in cl-proc wrld))
+                     (stobjs-out (stobjs-out cl-proc wrld)))
+                (er-progn
+                 (cond ((if clauses-result-call-p ; expected: iff at least 2 args
+                            (equal stobjs-out '(nil))
+                          (not (equal stobjs-out '(nil))))
+                        (er soft ctx str name (untranslate term t wrld)
+                            (msg "~x0 returns ~#1~[only~/more than~] one ~
+                                  value and hence there should be ~
+                                  ~#1~[no~/a~] call of ~x2"
+                                 cl-proc
+                                 (if clauses-result-call-p 0 1)
+                                 'clauses-result)))
+                       (t
+                        (let ((msg (tilde-@-illegal-clause-processor-sig-msg
+                                    cl-proc stobjs-in stobjs-out)))
+                          (cond (msg (er soft ctx str name
+                                         (untranslate term t wrld)
+                                         msg))
+                                (t (value nil))))))
+                 (let* ((user-hints-p (cdr stobjs-in))
+                        (user-hints (cond (user-hints-p (car rest-args))
+                                          (t nil)))
+                        (stobjs-called (cond (user-hints-p (cdr rest-args))
+                                             (t rest-args)))
+                        (non-alist-vars
+                         (if user-hints
+                             (list* clause user-hints stobjs-called)
+                           (list* clause stobjs-called)))
+                        (vars (cons alist non-alist-vars))
+                        (bad-vars (collect-non-legal-variableps vars)))
+                   (cond (bad-vars
+                          (er soft ctx str name (untranslate term t wrld)
+                              (msg "the clause-processor function must be ~
+                                    applied to a list of distinct variable ~
+                                    and stobj names, but ~&0 ~#0~[is~/are~] ~
+                                    not"
+                                   (untranslate-lst bad-vars nil wrld))))
+                         ((not (no-duplicatesp vars))
+                          (cond ((no-duplicatesp non-alist-vars)
+                                 (er soft ctx str name (untranslate term t wrld)
+                                     (msg "the proposed :clause-processor ~
+                                           rule uses ~x0 as its alist ~
+                                           variable, but this variable also ~
+                                           occurs in the argument list of the ~
+                                           clause-processor function, ~x1"
+                                          alist
+                                          cl-proc)))
+                                (t
+                                 (er soft ctx str name (untranslate term t wrld)
+                                     (msg "the clause-processor function must ~
+                                           be applied to a list of distinct ~
+                                           variable and stobj names, but the ~
+                                           list ~x0 contains duplicates"
+                                          non-alist-vars)))))
+                         (t (value nil))))
+                 (er-let* ((ttree (chk-evaluator-use-in-rule
+                                   name cl-proc nil
+                                   (and meta-extract-flg
+                                        '(meta-extract-global-fact+))
+                                   :clause-processor ev ctx wrld state)))
+                   (er-progn
+                    (chk-rule-fn-guard "clause-processor" :clause-processor
+                                       cl-proc ctx wrld state)
+                    (chk-evaluator ev wrld ctx state)
+                    (value ttree)))))))))))))))
 
 (defun add-clause-processor-rule (name well-formedness-guarantee term wrld)
 
@@ -7358,35 +7595,29 @@
 ; automatically.
 
   (mv-let
-   (clauses-result-call-p cl-proc clause alist rest-args ev cl-proc-call
-                          meta-extract-flg)
-   (destructure-clause-processor-rule term)
-   (declare (ignore clause alist rest-args cl-proc-call meta-extract-flg))
-   (assert$
-    (and (not (eq clauses-result-call-p :error))
-         (symbolp cl-proc)
-         (function-symbolp cl-proc wrld))
-    (putprop
-     cl-proc 'clause-processor
-     (or well-formedness-guarantee
-         t)
+    (clauses-result-call-p cl-proc clause alist rest-args ev cl-proc-call
+                           meta-extract-flg)
+    (destructure-clause-processor-rule term)
+    (declare (ignore clause alist rest-args ev cl-proc-call meta-extract-flg))
+    (assert$
+     (and (not (eq clauses-result-call-p :error))
+          (symbolp cl-proc)
+          (function-symbolp cl-proc wrld))
+     (putprop
+      cl-proc 'clause-processor
+      (or well-formedness-guarantee
+          t)
 
 ; We keep a global list of clause-processor-rules, simply in order to be
 ; able to print them.  But someone may find other uses for this list, in
 ; particular in order to code computed hints that look for applicable
 ; clause-processor rules.
 
-     (global-set 'clause-processor-rules
-                 (acons name
-                        term
-                        (global-val 'clause-processor-rules wrld))
-                 (mark-attachment-disallowed
-                  (list cl-proc)
-                  ev
-                  (msg "it supports both the evaluator and clause-processor ~
-                        function used in :CLAUSE-PROCESSOR rule ~x0"
-                       name)
-                  wrld))))))
+      (global-set 'clause-processor-rules
+                  (acons name
+                         term
+                         (global-val 'clause-processor-rules wrld))
+                  wrld)))))
 
 ; Finally, we develop code for trusted clause-processors.  This has nothing to
 ; do with defthm, but it seems reasonable to place it immediately below code
@@ -11105,6 +11336,28 @@
 (defmacro monitored-runes ()
   `(monitored-runes-fn state))
 
+(defun unconditional-monitor-tuples (x-lst ctx state)
+
+; This function takes a list of base symbols and/or runes, converts it into a
+; list of monitorable runes, and then creates a doublet for the
+; brr-monitored-runes in which each rune is given the break condition *t*.
+; The resulting list of doublets can be appended to brr-monitored-runes to
+; monitor all of the runes derived from x-lst.  This function causes an error,
+; for example, no monitorable runes are found among the x-lst runes.
+
+; This function is only used when the brr commands :eval$, :go$, and :ok$ are
+; executed.  Those commands are defined in *brkpt1-aliases* to call
+; proceed-from-brkpt1 with a list of runes (or base symbols) that are to be
+; added to the list of monitored runes.  (Other brr commands call
+; proceed-from-brkpt1, but those commands supply t or nil as the ``list of
+; runes'' and those values are treated differently.)
+
+  (cond
+   ((endp x-lst) (value nil))
+   (t (er-let* ((runes (runes-to-monitor (car x-lst) ctx state))
+                (rest (unconditional-monitor-tuples (cdr x-lst) ctx state)))
+        (value (append (pairlis-x2 runes (list *t*)) rest))))))
+
 (defun proceed-from-brkpt1 (action runes ctx state)
 
 ; Action may be
@@ -11121,29 +11374,43 @@
 ; design for that yet.
 
   (er-let*
-   ((lst (cond ((eq runes t)
-                (value nil))
-               ((eq runes nil)
+      ((tuples (cond ((eq runes t)
+                      (value nil))
+                     ((eq runes nil)
 
 ; This special case avoids getting an error when calling runes-to-monitor.
 
-                (value nil))
-               (t (runes-to-monitor runes ctx state)))))
-   (pprogn
-    (put-brr-local 'saved-standard-oi
-                   (f-get-global 'standard-oi state)
-                   state)
-    (put-brr-local 'saved-brr-monitored-runes
-                   (get-brr-global 'brr-monitored-runes state)
-                   state)
-    (put-brr-local 'saved-brr-evisc-tuple
-                   (get-brr-global 'brr-evisc-tuple state)
-                   state)
-    (if (eq runes t)
-        state
-        (f-put-global 'brr-monitored-runes lst state))
-    (put-brr-local 'action action state)
-    (exit-brr-wormhole state))))
+                      (value nil))
+                     (t (unconditional-monitor-tuples
+                         (if (or (symbolp runes)
+                                 (and (consp runes)
+                                      (keywordp (car runes))))
+; If runes is a symbol or starts with a keyword, it is coerced into a
+; singleton list.
+                             (list runes)
+                             runes)
+                         ctx state)))))
+    (pprogn
+     (put-brr-local 'saved-standard-oi
+                    (f-get-global 'standard-oi state)
+                    state)
+     (put-brr-local 'saved-brr-monitored-runes
+                    (get-brr-global 'brr-monitored-runes state)
+                    state)
+     (put-brr-local 'saved-brr-evisc-tuple
+                    (get-brr-global 'brr-evisc-tuple state)
+                    state)
+     (if (eq runes t)
+         state
+         (f-put-global 'brr-monitored-runes
+                       (append tuples
+                               (remove1-assoc-equal?-lst
+                                (strip-cars tuples)
+                                (get-brr-global 'brr-monitored-runes
+                                                state)))
+                       state))
+     (put-brr-local 'action action state)
+     (exit-brr-wormhole state))))
 
 (defun exit-brr (state)
 
@@ -11282,6 +11549,13 @@
                   (classes (translate-rule-classes name rule-classes tterm ctx
                                                    ens wrld state)))
           (cond
+           ((or (assoc-eq :META classes)
+                (assoc-eq :CLAUSE-PROCESSOR classes))
+            (er soft ctx
+                "It is illegal for a defaxiom event to specify :RULE-CLASSES ~
+                 of type :META or :CLAUSE-PROCESSOR.  See :DOC defaxiom.  A ~
+                 reasonable alternative might be to use defthm with ~
+                 skip-proofs."))
            ((redundant-theoremp name tterm classes event-form wrld)
             (stop-redundant-event ctx state))
            (t
@@ -11303,8 +11577,8 @@
                (attached-fns
                 (er soft ctx
                     "The following function~#0~[ has an attachment, but is~/s ~
-                    have attachments, but are~] ancestral in the proposed ~
-                    axiom: ~&0. ~ See :DOC defattach."
+                     have attachments, but are~] ancestral in the proposed ~
+                     axiom: ~&0. ~ See :DOC defattach."
                     attached-fns))
                (t
                 (enforce-redundancy
@@ -11594,8 +11868,9 @@
                                   (er-progn
                                    (cond (hints (er soft ctx
                                                     "It is not permitted to ~
-                                                 supply both :INSTRUCTIONS ~
-                                                 and :HINTS to DEFTHM."))
+                                                     supply both ~
+                                                     :INSTRUCTIONS and :HINTS ~
+                                                     to DEFTHM."))
                                          (t (value nil)))
                                    #+:non-standard-analysis
                                    (if std-p
@@ -11605,8 +11880,8 @@
 ; car, defthm, of that form.
 
                                        (er soft ctx
-                                           ":INSTRUCTIONS are not supported for ~
-                                        defthm-std events.")
+                                           ":INSTRUCTIONS are not supported ~
+                                            for defthm-std events.")
                                      (value nil))
                                    (proof-builder name term
                                                   tterm classes instructions
@@ -11631,6 +11906,7 @@
                                    :fns (all-fnnames tterm0)
                                    :vars (state-globals-set-by tterm0 nil))
                                 wrld2))
+                       (wrld4 (update-meta-props name ttree1 wrld3 state))
                        (ttree4 (cons-tag-trees ttree1
                                                (cons-tag-trees ttree2
                                                                ttree3))))
@@ -11642,7 +11918,7 @@
                                   'defthm
                                   name
                                   ttree4
-                                  nil :protect ctx wrld3
+                                  nil :protect ctx wrld4
                                   state)))))))))))))))
 
 (defun defthm-fn (name term state

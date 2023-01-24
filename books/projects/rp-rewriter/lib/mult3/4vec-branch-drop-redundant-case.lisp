@@ -58,6 +58,13 @@
 (local
  (include-book "lemmas-2"))
 
+(local
+   (defthm is-equals-of-others
+     (implies (not (equal (car term) 'equals))
+              (not (is-equals term )))
+     :hints (("Goal"
+              :in-theory (e/d (is-equals) ())))))
+
 (define 4vec-branch-drop-r-case-pattern-check ((term rp-termp))
   :Returns (pass booleanp)
   :measure (cons-count term)
@@ -317,7 +324,8 @@
    :hints (("Goal"
             :use ((:instance pp-flatten-correct
                              (sign nil)
-                             (disabled nil)))
+                             (disabled nil)
+                             (term-size-limit nil)))
             :in-theory (e/d ()
                             (pp-flatten-correct))))))
 

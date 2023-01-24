@@ -79,3 +79,21 @@
   (defval *atc-lognot-sint-rules*
     '(lognot-sint-of-0
       lognot-sint-of-1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-boolean-fron/to-sint-rules
+  :short "Rules about the interaction of
+          @(tsee boolean-from-sint) and @(tsee sint-from-boolean)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are actually not used in the old-style big symbolic execution,
+     but rather in the new-style modular compositional proofs."))
+
+  (defruled boolean-from-sint-of-sint-from-boolean
+    (implies (booleanp x)
+             (equal (boolean-from-sint (sint-from-boolean x))
+                    x))
+    :enable (sint-from-boolean
+             boolean-from-sint)))

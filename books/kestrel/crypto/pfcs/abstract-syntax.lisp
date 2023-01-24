@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,7 @@
 (in-package "PFCS")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -23,12 +24,13 @@
    (xdoc::p
     "Expressions are built out of
      constants, variables, and field operations.
-     A constraint is an equality between expressions.
+     A basic constraint is an equality between expressions.
      Constraints may be (conjunctively) grouped into named relations
      (see @(tsee definition)),
      which may be conjoined with equality constraints.
      A system of constraints is a collection of named relations,
-     which are hierarchically organized."))
+     which are hierarchically organized,
+     and constraints that may reference the relations."))
   :order-subtopics t
   :default-parent t)
 
@@ -131,19 +133,29 @@
   :short "Fixtype of optional definitions of relations."
   :pred definition-optionp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist definition-list
+  :short "Fixtype of lists of definitions of relations."
+  :elt-type definition
+  :true-listp t
+  :elementp-of-nil nil
+  :pred definition-listp
+  ///
+
+  (defruled rev-of-definition-list-fix
+    (equal (rev (definition-list-fix defs))
+           (definition-list-fix (rev defs)))
+    :enable definition-list-fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist system
+(fty::defprod system
   :short "Fixtype of systems of constraints."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A system consists of a list of definitions.")
-   (xdoc::p
-    "For now we define it as a plain list,
-     but in the future we may use a product fixtype
-     that includes the list of definitions as well as some other information."))
-  :elt-type definition
-  :true-listp t
-  :elementp-of-nil nil
+    "A system consists of a list of definitions and a list of constraints."))
+  ((definitions definition-list)
+   (constraints constraint-list))
   :pred systemp)
