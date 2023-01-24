@@ -322,12 +322,14 @@
                       `(and ,formula
                             (,type-pred ,result-uterm)))
                   formula))
-       (formula (atc-contextualize formula context nil))
-       (formula `(implies (and (compustatep ,compst-var)
-                               (,fn-guard ,@(formals+ fn wrld))
-                               (integerp ,limit-var)
-                               (>= ,limit-var ,item-limit))
-                          ,formula))
+       (formula (atc-contextualize formula
+                                   context
+                                   fn
+                                   fn-guard
+                                   compst-var
+                                   limit-var
+                                   item-limit
+                                   wrld))
        (hints `(("Goal" :in-theory '(exec-block-item-when-stmt
                                      (:e block-item-kind)
                                      not-zp-of-limit-variable
@@ -432,12 +434,14 @@
                     `(and ,formula
                           (,type-pred ,result-uterm))
                   formula))
-       (formula (atc-contextualize formula context nil))
-       (formula `(implies (and (compustatep ,compst-var)
-                               (,fn-guard ,@(formals+ fn wrld))
-                               (integerp ,limit-var)
-                               (>= ,limit-var ,items-limit))
-                          ,formula))
+       (formula (atc-contextualize formula
+                                   context
+                                   fn
+                                   fn-guard
+                                   compst-var
+                                   limit-var
+                                   items-limit
+                                   wrld))
        (valuep-when-type-pred (and result-term
                                    (pack 'valuep-when- type-pred)))
        (hints
@@ -583,12 +587,14 @@
                                              ,gin.limit-var)
                                   (mv ,uterm ,gin.compst-var))
                            (,type-pred ,uterm)))
-       (stmt-formula (atc-contextualize stmt-formula gin.context nil))
-       (stmt-formula `(implies (and (compustatep ,gin.compst-var)
-                                    (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                                    (integerp ,gin.limit-var)
-                                    (>= ,gin.limit-var ,stmt-limit))
-                               ,stmt-formula))
+       (stmt-formula (atc-contextualize stmt-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        stmt-limit
+                                        wrld))
        (stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-return
                                (:e stmt-kind)
@@ -765,13 +771,14 @@
                                        (mv ,then-uterm ,gin.compst-var))
                                 (,type-pred ,then-uterm)))
        (then-stmt-formula
-        (atc-contextualize then-stmt-formula then-context nil))
-       (then-stmt-formula
-        `(implies (and (compustatep ,gin.compst-var)
-                       (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                       (integerp ,gin.limit-var)
-                       (>= ,gin.limit-var ,then-stmt-limit))
-                  ,then-stmt-formula))
+        (atc-contextualize then-stmt-formula
+                           then-context
+                           gin.fn
+                           gin.fn-guard
+                           gin.compst-var
+                           gin.limit-var
+                           then-stmt-limit
+                           wrld))
        (else-stmt-formula `(and (equal (exec-stmt ',else-stmt
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
@@ -779,13 +786,14 @@
                                        (mv ,else-uterm ,gin.compst-var))
                                 (,type-pred ,else-uterm)))
        (else-stmt-formula
-        (atc-contextualize else-stmt-formula else-context nil))
-       (else-stmt-formula
-        `(implies (and (compustatep ,gin.compst-var)
-                       (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                       (integerp ,gin.limit-var)
-                       (>= ,gin.limit-var ,else-stmt-limit))
-                  ,else-stmt-formula))
+        (atc-contextualize else-stmt-formula
+                           else-context
+                           gin.fn
+                           gin.fn-guard
+                           gin.compst-var
+                           gin.limit-var
+                           else-stmt-limit
+                           wrld))
        (then-stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-compound
                                (:e stmt-kind)
@@ -844,13 +852,14 @@
                                                 ,gin.limit-var)
                                      (mv ,uterm* ,gin.compst-var))
                               (,type-pred ,uterm*)))
-       (if-stmt-formula (atc-contextualize if-stmt-formula gin.context nil))
-       (if-stmt-formula
-        `(implies (and (compustatep ,gin.compst-var)
-                       (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                       (integerp ,gin.limit-var)
-                       (>= ,gin.limit-var ,if-stmt-limit))
-                  ,if-stmt-formula))
+       (if-stmt-formula (atc-contextualize if-stmt-formula
+                                           gin.context
+                                           gin.fn
+                                           gin.fn-guard
+                                           gin.compst-var
+                                           gin.limit-var
+                                           if-stmt-limit
+                                           wrld))
        (test-type-pred (type-to-recognizer test-type wrld))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (if-stmt-hints

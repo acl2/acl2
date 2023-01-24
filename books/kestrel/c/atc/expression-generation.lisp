@@ -291,7 +291,6 @@
                           :thm-index gin.thm-index
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
-       (fn-formals (formals+ gin.fn wrld))
        (op-name (pack (unop-kind op)))
        ((unless (type-nonchar-integerp arg-type))
         (reterr (raise "Internal error: non-integer type ~x0." arg-type)))
@@ -316,9 +315,14 @@
                  (arg-uterm (untranslate$ arg-term nil state))
                  (okp-lemma-formula `(,op-arg-type-okp ,arg-uterm))
                  (okp-lemma-formula
-                  (atc-contextualize okp-lemma-formula gin.context t))
-                 (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
-                                              ,okp-lemma-formula))
+                  (atc-contextualize okp-lemma-formula
+                                     gin.context
+                                     gin.fn
+                                     gin.fn-guard
+                                     nil
+                                     nil
+                                     nil
+                                     wrld))
                  (okp-lemma-hints
                   `(("Goal"
                      :in-theory '(,gin.fn-guard if*)
@@ -433,7 +437,6 @@
                           :thm-index gin.thm-index
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
-       (fn-formals (formals+ gin.fn wrld))
        (op-name (pack (binop-kind op)))
        ((unless (type-nonchar-integerp arg1-type))
         (reterr (raise "Internal error: non-integer type ~x0." arg1-type)))
@@ -464,9 +467,14 @@
                  (okp-lemma-formula `(,op-arg1-type-arg2-type-okp ,arg1-uterm
                                                                   ,arg2-uterm))
                  (okp-lemma-formula
-                  (atc-contextualize okp-lemma-formula gin.context t))
-                 (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
-                                              ,okp-lemma-formula))
+                  (atc-contextualize okp-lemma-formula
+                                     gin.context
+                                     gin.fn
+                                     gin.fn-guard
+                                     nil
+                                     nil
+                                     nil
+                                     wrld))
                  (okp-lemma-hints
                   `(("Goal"
                      :in-theory '(,gin.fn-guard if*)
@@ -591,7 +599,6 @@
                 :thm-index gin.thm-index
                 :names-to-avoid gin.names-to-avoid
                 :proofs nil)))
-       (fn-formals (formals+ gin.fn wrld))
        ((unless (type-nonchar-integerp in-type))
         (reterr (raise "Internal error: non-integer type ~x0." in-type)))
        (in-fixtype (integer-type-to-fixtype in-type))
@@ -629,9 +636,14 @@
                  (arg-uterm (untranslate$ arg-term nil state))
                  (okp-lemma-formula `(,op-name-okp ,arg-uterm))
                  (okp-lemma-formula
-                  (atc-contextualize okp-lemma-formula gin.context t))
-                 (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
-                                              ,okp-lemma-formula))
+                  (atc-contextualize okp-lemma-formula
+                                     gin.context
+                                     gin.fn
+                                     gin.fn-guard
+                                     nil
+                                     nil
+                                     nil
+                                     wrld))
                  (okp-lemma-hints
                   `(("Goal"
                      :in-theory '(,gin.fn-guard if*)
@@ -1968,16 +1980,22 @@
                                                  ,gin.limit-var)
                          (mv ,uterm* ,gin.compst-var)))
        (formula2 `(,type-pred ,uterm*))
-       (formula1 (atc-contextualize formula1 gin.context nil))
-       (formula2 (atc-contextualize formula2 gin.context t))
-       (formula1 `(implies (and (compustatep ,gin.compst-var)
-                                (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                                (integerp ,gin.limit-var)
-                                (>= ,gin.limit-var 1))
-                           ,formula1))
-       (formula2 `(implies (and (compustatep ,gin.compst-var)
-                                (,gin.fn-guard ,@(formals+ gin.fn wrld)))
-                           ,formula2))
+       (formula1 (atc-contextualize formula1
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    gin.compst-var
+                                    gin.limit-var
+                                    ''1
+                                    wrld))
+       (formula2 (atc-contextualize formula2
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    gin.compst-var
+                                    nil
+                                    nil
+                                    wrld))
        (formula `(and ,formula1 ,formula2))
        (hints `(("Goal" :in-theory '(compustatep-of-add-frame
                                      compustatep-of-add-var

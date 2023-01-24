@@ -2284,10 +2284,14 @@
                                           ,compst-var)
                                 ,var)
                          (,type-pred ,var)))
-          (formula (atc-contextualize formula context nil))
-          (formula `(implies (and (compustatep ,compst-var)
-                                  (,fn-guard ,@fn-formals))
-                             ,formula))
+          (formula (atc-contextualize formula
+                                      context
+                                      fn
+                                      fn-guard
+                                      compst-var
+                                      nil
+                                      nil
+                                      wrld))
           (not-flexible-array-member-p-when-type-pred
            (pack 'not-flexible-array-member-p-when- type-pred))
           (valuep-when-type-pred (pack 'valuep-when- type-pred))
@@ -2350,11 +2354,15 @@
                                   name nil names-to-avoid wrld))
        (formula `(equal (pop-frame ,compst-var)
                         ,compst0-var))
-       (formula (atc-contextualize formula context nil))
-       (formula `(implies (and (compustatep ,compst-var)
-                               (,fn-guard ,@(formals+ fn wrld)))
-                          (let ((,compst0-var ,compst-var))
-                            ,formula)))
+       (formula (atc-contextualize formula
+                                   context
+                                   fn
+                                   fn-guard
+                                   compst-var
+                                   nil
+                                   nil
+                                   wrld))
+       (formula `(let ((,compst0-var ,compst-var)) ,formula))
        (hints `(("Goal" :in-theory '(pop-frame-of-add-var
                                      pop-frame-of-add-frame))))
        ((mv event &) (evmac-generate-defthm name

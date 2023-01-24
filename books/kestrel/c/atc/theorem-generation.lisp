@@ -84,10 +84,8 @@
        (formula `(and (equal (exec-expr-pure ',expr ,compst-var)
                              ,uterm)
                       (,type-pred ,uterm)))
-       (formula (atc-contextualize formula context nil))
-       (formula `(implies (and (compustatep ,compst-var)
-                               (,fn-guard ,@(formals+ fn wrld)))
-                          ,formula))
+       (formula
+        (atc-contextualize formula context fn fn-guard compst-var nil nil wrld))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -163,10 +161,8 @@
                       (equal (test-value ,ucterm)
                              ,uaterm)
                       (booleanp ,uaterm)))
-       (formula (atc-contextualize formula context nil))
-       (formula `(implies (and (compustatep ,compst-var)
-                               (,fn-guard ,@(formals+ fn wrld)))
-                          ,formula))
+       (formula
+        (atc-contextualize formula context fn fn-guard compst-var nil nil wrld))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -293,10 +289,8 @@
                                              ,compst-var)
                                    ,var)
                             (,type-pred ,var)))
-             (formula (atc-contextualize formula new-context nil))
-             (formula `(implies (and (compustatep ,compst-var)
-                                     (,fn-guard ,@(formals+ fn wrld)))
-                                ,formula))
+             (formula (atc-contextualize
+                       formula new-context fn fn-guard compst-var nil nil wrld))
              (hints `(("Goal" :in-theory '(,thm ,@rules))))
              ((mv event &) (evmac-generate-defthm new-thm
                                                   :formula formula

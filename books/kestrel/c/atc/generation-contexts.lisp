@@ -13,6 +13,7 @@
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
+(include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
@@ -81,9 +82,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-contextualize (term (context atc-contextp) (skip-cs booleanp))
-  :returns term1
-  :short "Put a term into a context."
+(define atc-contextualize ((formula "An untranslated term.")
+                           (context atc-contextp)
+                           (fn symbolp)
+                           (fn-guard symbolp)
+                           (compst-var symbolp)
+                           (limit-var symbolp)
+                           (limit-bound pseudo-termp)
+                           (wrld plist-worldp))
+  :returns (formula1 "An untranslated term.")
+  :short "Put a formula into a context."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -91,14 +99,33 @@
      generating code for them
      and ending with the term given as input.")
    (xdoc::p
-    "The @('skip-cs') flag controls whether
-     we skip over the computation state bindings or not.
-     For certain generated lemmas that apply just to ACL2 terms,
-     and not to relations between ACL2 terms and C constructs,
-     we skip over the bindings of computation states,
-     because there are no computation states mentioned in the lemmas.")
+    "We also add, around the resulting term from the process described above,
+     with additional premises:")
+   (xdoc::ul
+    (xdoc::li
+     "The fact that the guard of the target function @('fn')
+      holds on the formals of the function.")
+    (xdoc::li
+     "The fact that the computation state variable is a computation state.")
+    (xdoc::li
+     "The fact that the limit variable is an integer.")
+    (xdoc::li
+     "The fact that the limit variable is greater than or equal to
+      a given bound (expressed as a term)."))
    (xdoc::p
-    "We wrap tests with @(tsee hide),
+    "If @('compst-var') is @('nil'),
+     we avoid all the premises and hypotheses that concern computation states.
+     Some of the theorems we generate do not involve computation states:
+     they apply just to ACL2 terms that represent shallowly embedded C code;
+     they do not apply to relations between ACL2 and deeply embedded C code.")
+   (xdoc::p
+    "If @('limit-var') is @('nil'),
+     we avoid the hypotheses that concern limits.
+     Some of the theorems we generate (e.g. for pure expressions)
+     do not involve execution recursion limits.
+     In this case, @('limit-bound') must be @('nil') too.")
+   (xdoc::p
+    "We wrap tests from the context premises with @(tsee hide),
      to prevent ACL2 from making use of them,
      in the generated modular theorems,
      to simplify things in ways that interfere with the compositional proofs.
@@ -107,13 +134,35 @@
      this is generally good for interactive proofs,
      but not if that prevents a previously proved theorem from applying,
      about a subterm that is supposed not to be simplified"))
-  (b* (((when (endp context)) term)
-       (premise (car context)))
-    (atc-premise-case
-     premise
-     :compustate (if skip-cs
-                     (atc-contextualize term (cdr context) skip-cs)
-                   `(let ((,premise.var ,premise.term))
-                      ,(atc-contextualize term (cdr context) skip-cs)))
-     :test `(implies (hide ,premise.term)
-                     ,(atc-contextualize term (cdr context) skip-cs)))))
+  (b* ((skip-cs (not compst-var))
+       (formula (atc-contextualize-aux formula context skip-cs))
+       (hyps (append `((,fn-guard ,@(formals+ fn wrld)))
+                     (and compst-var
+                          `((compustatep ,compst-var)))
+                     (and limit-var
+                          `((integerp ,limit-var)
+                            (>= ,limit-var ,limit-bound)))))
+       ((when (and (not limit-var) limit-bound))
+        (raise "Internal error: LIMIT-VAR is NIL but LIMIT-BOUND is ~x0."
+               limit-bound))
+       (formula `(implies (and ,@hyps) ,formula)))
+    formula)
+
+  :prepwork
+  ((define atc-contextualize-aux ((formula "An untranslated term.")
+                                  (context atc-contextp)
+                                  (skip-cs booleanp))
+     :returns (formula1 "An untranslated term.")
+     :parents nil
+     (b* (((when (endp context)) formula)
+          (premise (car context)))
+       (atc-premise-case
+        premise
+        :compustate
+        (if skip-cs
+            (atc-contextualize-aux formula (cdr context) skip-cs)
+          `(let ((,premise.var ,premise.term))
+             ,(atc-contextualize-aux formula (cdr context) skip-cs)))
+        :test `(implies
+                (hide ,premise.term)
+                ,(atc-contextualize-aux formula (cdr context) skip-cs)))))))
