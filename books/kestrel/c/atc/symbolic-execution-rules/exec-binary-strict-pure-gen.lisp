@@ -46,7 +46,8 @@
     (equal (sint->get (sint-from-uchar x))
            (uchar->get x))
     :enable (sint-from-uchar
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   (defruled sint->get-of-sint-from-sshort
     (equal (sint->get (sint-from-sshort x))
@@ -58,7 +59,8 @@
     (equal (sint->get (sint-from-ushort x))
            (ushort->get x))
     :enable (sint-from-ushort
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   (defval *atc-sint-get-rules*
     '(sint->get-of-sint-from-schar
@@ -203,7 +205,8 @@
                     value-unsigned-integerp-alt-def
                     integer-type-rangep
                     integer-type-min
-                    integer-type-max))
+                    integer-type-max
+                    bit-width-value-choices))
          (event `(defruled ,name
                    ,formula
                    :enable ,enables
