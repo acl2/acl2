@@ -65,17 +65,17 @@
   (declare (xargs :guard (plist-worldp wrld)
                   :mode :program))
   (if (endp wrld)
-      (mv (reverse defun-names)
-          (reverse defaxiom-names)
-          (reverse defthm-names)
-          (reverse defconst-names)
-          (reverse defstobj-names)
-          (reverse defmacro-names)
-          (reverse defpkg-names)
-          (reverse deflabel-names)
-          (reverse deftheory-names)
-          (reverse encapsulate-names)
-          (reverse includebook-names))
+      (mv defun-names
+          defaxiom-names
+          defthm-names
+          defconst-names
+          defstobj-names
+          defmacro-names
+          defpkg-names
+          deflabel-names
+          deftheory-names
+          encapsulate-names
+          includebook-names)
     (macrolet ((update-event-names
                 (pos val)
                 (let ((lst '(defun-names
