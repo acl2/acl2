@@ -41,16 +41,16 @@
   :hints (("Goal" :in-theory (enable all-equal$))))
 
 (defthm all-equal$-of-cons
-  (equal (all-equal$ val (cons a b))
-         (and (equal val a)
-              (all-equal$ val b)))
+  (equal (all-equal$ x (cons a lst))
+         (and (equal x a)
+              (all-equal$ x lst)))
   :hints (("Goal" :in-theory (enable all-equal$))))
 
 ;use a defforall?
 (defthm all-equal$-of-append
-  (equal (all-equal$ val (binary-append x y))
-         (and (all-equal$ val x)
-              (all-equal$ val y)))
+  (equal (all-equal$ x (binary-append lst1 lst2))
+         (and (all-equal$ x lst1)
+              (all-equal$ x lst2)))
   :hints (("Goal" :in-theory (enable all-equal$))))
 
 (defthm all-equal$-of-cdr
@@ -64,11 +64,11 @@
   :hints (("Goal" :in-theory (enable all-equal$))))
 
 (defthm all-equal$-of-nthcdr-when-all-equal$-of-nthcdr
-  (implies (and (all-equal$ k (nthcdr n x))
+  (implies (and (all-equal$ x (nthcdr n lst))
                 (<= n n+)
                 (natp n)
                 (natp n+))
-           (all-equal$ k (nthcdr n+ x)))
+           (all-equal$ x (nthcdr n+ lst)))
   :hints (("Goal" :in-theory (enable nthcdr all-equal$))))
 
 ;only needed for axe?
@@ -76,36 +76,34 @@
   (booleanp (all-equal$ x lst)))
 
 (defthmd nth-when-all-equal$-helper
-  (implies (and (all-equal$ val data)
-                (syntaxp (not (equal val `(nth ,index ,data)))) ;helps prevent loops
-                (natp index)
-                (< index (len data))
-                )
-           (equal (nth index data)
-                  val))
+  (implies (and (all-equal$ x lst)
+                (syntaxp (not (equal x `(nth ,n ,lst)))) ;helps prevent loops
+                (natp n)
+                (< n (len lst)))
+           (equal (nth n lst)
+                  x))
   :hints (("Goal" :in-theory (enable all-equal$ nth))))
 
 ;Disable?
+;Is the other rule better?
 (defthm nth-when-all-equal$
-  (implies (and (all-equal$ val data)
-                (syntaxp (not (equal val `(nth ,index ,data)))) ;helps prevent loops
-;                (natp index)
-                (< index (len data))
-                )
-           (equal (nth index data)
-                  (if (equal 0 (len data))
+  (implies (and (all-equal$ x lst)
+                (syntaxp (not (equal x `(nth ,n ,lst)))) ;helps prevent loops
+                ;; (natp n)
+                (< n (len lst)))
+           (equal (nth n lst)
+                  (if (equal 0 (len lst))
                       nil
-                    val)))
-  :hints (("Goal" :use (:instance nth-when-all-equal$-helper (index (nfix index)))
+                    x)))
+  :hints (("Goal" :use (:instance nth-when-all-equal$-helper (n (nfix n)))
            :in-theory (disable nth-when-all-equal$-helper))))
 
-;todo: make more similar to the above rule
 (defthmd nth-when-all-equal$-of-take
-  (implies (and (all-equal$ k (take n2 x))
-                (syntaxp (not (equal k `(nth ,n ,x)))) ;helps prevent loops
+  (implies (and (all-equal$ x (take n2 lst))
+                (syntaxp (not (equal x `(nth ,n ,lst)))) ;helps prevent loops
                 (< n n2)
                 (natp n)
                 (natp n2))
-           (equal (nth n x)
-                  k))
+           (equal (nth n lst)
+                  x))
   :hints (("Goal" :in-theory (enable all-equal$ take nth))))
