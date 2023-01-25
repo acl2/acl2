@@ -1,7 +1,8 @@
 ; A utility to check all elements of a list for equality with a given value
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -52,6 +53,24 @@
               (all-equal$ val y)))
   :hints (("Goal" :in-theory (enable all-equal$))))
 
+(defthm all-equal$-of-cdr
+  (implies (all-equal$ x lst)
+           (all-equal$ x (cdr lst)))
+  :hints (("Goal" :in-theory (enable all-equal$))))
+
+(defthm all-equal$-of-nthcdr
+  (implies (all-equal$ x lst)
+           (all-equal$ x (nthcdr n lst)))
+  :hints (("Goal" :in-theory (enable all-equal$))))
+
+(defthm all-equal$-of-nthcdr-when-all-equal$-of-nthcdr
+  (implies (and (all-equal$ k (nthcdr n x))
+                (<= n n+)
+                (natp n)
+                (natp n+))
+           (all-equal$ k (nthcdr n+ x)))
+  :hints (("Goal" :in-theory (enable nthcdr all-equal$))))
+
 ;only needed for axe?
 (defthm booleanp-of-all-equal$
   (booleanp (all-equal$ x lst)))
@@ -79,3 +98,14 @@
                     val)))
   :hints (("Goal" :use (:instance nth-when-all-equal$-helper (index (nfix index)))
            :in-theory (disable nth-when-all-equal$-helper))))
+
+;todo: make more similar to the above rule
+(defthmd nth-when-all-equal$-of-take
+  (implies (and (all-equal$ k (take n2 x))
+                (syntaxp (not (equal k `(nth ,n ,x)))) ;helps prevent loops
+                (< n n2)
+                (natp n)
+                (natp n2))
+           (equal (nth n x)
+                  k))
+  :hints (("Goal" :in-theory (enable all-equal$ take nth))))
