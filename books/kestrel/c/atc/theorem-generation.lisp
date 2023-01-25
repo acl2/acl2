@@ -190,7 +190,6 @@
   :returns (mv (new-inscope atc-symbol-varinfo-alist-listp
                             :hyp (atc-symbol-varinfo-alist-listp inscope))
                (events pseudo-event-form-listp)
-               (thm-index posp :hyp (posp thm-index))
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate an updated symbol table according to given criteria."
   :long
@@ -236,7 +235,7 @@
   (b* (((mv new-inscope events names-to-avoid)
         (atc-gen-new-inscope-aux fn fn-guard inscope new-context compst-var
                                  rules thm-index names-to-avoid wrld)))
-    (mv new-inscope events (1+ thm-index) names-to-avoid))
+    (mv new-inscope events names-to-avoid))
 
   :prepwork
   ((define atc-gen-new-inscope-aux ((fn symbolp)
@@ -362,11 +361,11 @@
                 compustate-frames-number-of-add-frame-not-zero
                 compustate-frames-number-of-enter-scope-not-zero
                 compustate-frames-number-of-add-var-not-zero))
-       ((mv new-inscope events thm-index names-to-avoid)
+       ((mv new-inscope events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard inscope new-context compst-var
                              rules thm-index names-to-avoid wrld)))
     (mv (cons nil new-inscope)
         new-context
         events
-        thm-index
+        (1+ thm-index)
         names-to-avoid)))

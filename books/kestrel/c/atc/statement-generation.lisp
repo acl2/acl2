@@ -492,7 +492,7 @@
                 identp-of-ident
                 equal-of-ident-and-ident
                 (:e str-fix)))
-       ((mv new-inscope new-inscope-events & names-to-avoid)
+       ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard inscope new-context compst-var rules
                              thm-index names-to-avoid wrld))
        (var-in-scope-thm (pack fn '- var '-in-scope- thm-index))
