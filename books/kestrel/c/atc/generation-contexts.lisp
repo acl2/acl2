@@ -11,6 +11,8 @@
 
 (in-package "C")
 
+(include-book "test-star")
+
 (include-book "centaur/fty/top" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
@@ -123,17 +125,7 @@
      we avoid the hypotheses that concern limits.
      Some of the theorems we generate (e.g. for pure expressions)
      do not involve execution recursion limits.
-     In this case, @('limit-bound') must be @('nil') too.")
-   (xdoc::p
-    "We wrap tests from the context premises with @(tsee hide),
-     to prevent ACL2 from making use of them,
-     in the generated modular theorems,
-     to simplify things in ways that interfere with the compositional proofs.
-     For instance, when ACL2 has a hypothesis @('(not <term>)') in context,
-     it rewrites occurrences of @('<term>') with @('nil'):
-     this is generally good for interactive proofs,
-     but not if that prevents a previously proved theorem from applying,
-     about a subterm that is supposed not to be simplified"))
+     In this case, @('limit-bound') must be @('nil') too."))
   (b* ((skip-cs (not compst-var))
        (formula (atc-contextualize-aux formula context skip-cs))
        (hyps (append `((,fn-guard ,@(formals+ fn wrld)))
@@ -164,5 +156,5 @@
           `(let ((,premise.var ,premise.term))
              ,(atc-contextualize-aux formula (cdr context) skip-cs)))
         :test `(implies
-                (hide ,premise.term)
+                (test* ,premise.term)
                 ,(atc-contextualize-aux formula (cdr context) skip-cs)))))))

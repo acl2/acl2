@@ -325,8 +325,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if*)
-                     :expand (:free (x) (hide x))
+                     :in-theory '(,gin.fn-guard if* test*)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -477,8 +476,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if*)
-                     :expand (:free (x) (hide x))
+                     :in-theory '(,gin.fn-guard if* test*)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -646,8 +644,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if*)
-                     :expand (:free (x) (hide x))
+                     :in-theory '(,gin.fn-guard if* test*)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -874,26 +871,26 @@
                                           ,valuep-when-test-type-pred))))
        (instructions
         `((casesplit ,test-term)
-          (claim (hide ,test-term)
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* ,test-term)
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal (condexpr (if* ,test-term ,then-term ,else-term))
                         ,then-term)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true
-                                       condexpr)
-                          :expand (:free (x) (hide x)))))
+                                       condexpr
+                                       test*))))
           (expand (condexpr (if* ,test-term ,then-term ,else-term)))
           (prove :hints ,hints-then)
-          (claim (hide (not ,test-term))
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* (not ,test-term))
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal (condexpr (if* ,test-term ,then-term ,else-term))
                         ,else-term)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false
-                                       condexpr)
-                          :expand (:free (x) (hide x)))))
+                                       condexpr
+                                       test*))))
           (expand (condexpr (if* ,test-term ,then-term ,else-term)))
           (prove :hints ,hints-else)))
        ((mv thm-event thm-name thm-index names-to-avoid)
@@ -1004,21 +1001,19 @@
                         boolean-from-sint-of-0))))
        (instructions
         `((casesplit ,arg1-term)
-          (claim (hide ,arg1-term)
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* ,arg1-term)
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal ,term ,arg2-term)
                  :hints (("Goal"
-                          :in-theory '(acl2::if*-when-true)
-                          :expand (:free (x) (hide x)))))
+                          :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,hints-then)
-          (claim (hide (not ,arg1-term))
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* (not ,arg1-term))
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal ,term nil)
                  :hints (("Goal"
-                          :in-theory '(acl2::if*-when-false)
-                          :expand (:free (x) (hide x)))))
+                          :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,hints-else)))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-bool-correct-thm gin.fn
@@ -1111,10 +1106,10 @@
                         sintp-of-sint
                         boolean-from-sint-of-1
                         if*-of-t-and-t
-                        sint-from-boolean-when-true-hide
+                        sint-from-boolean-when-true-test*
                         equal-to-t-when-holds-and-boolean
                         booleanp-compound-recognizer
-                        hide-of-lambda))))
+                        test*-of-t))))
        (hints-else
         `(("Goal"
            :in-theory '(exec-expr-pure-when-binary-logor-and-false
@@ -1132,21 +1127,19 @@
                         boolean-from-sint-of-sint-from-boolean))))
        (instructions
         `((casesplit ,arg1-term)
-          (claim (hide ,arg1-term)
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* ,arg1-term)
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal ,term ,arg1-term)
                  :hints (("Goal"
-                          :in-theory '(acl2::if*-when-true)
-                          :expand (:free (x) (hide x)))))
+                          :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,hints-then)
-          (claim (hide (not ,arg1-term))
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* (not ,arg1-term))
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal ,term ,arg2-term)
                  :hints (("Goal"
-                          :in-theory '(acl2::if*-when-false)
-                          :expand (:free (x) (hide x)))))
+                          :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,hints-else)))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-bool-correct-thm gin.fn

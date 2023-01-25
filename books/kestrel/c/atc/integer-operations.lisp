@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,6 +10,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "C")
+
+(include-book "test-star")
 
 (include-book "../representation/integer-conversions")
 
@@ -142,22 +144,22 @@
              (equal (sint-from-boolean x)
                     (sint 1))))
 
-  (defruled sint-from-boolean-when-true-hide
-    (implies (hide x)
+  (defruled sint-from-boolean-when-true-test*
+    (implies (test* x)
              (equal (sint-from-boolean x)
                     (sint 1)))
-    :expand (:free (x) (hide x)))
+    :enable test*)
 
   (defruled sint-from-boolean-when-false
     (implies (not x)
              (equal (sint-from-boolean x)
                     (sint 0))))
 
-  (defruled sint-from-boolean-when-false-hide
-    (implies (hide (not x))
+  (defruled sint-from-boolean-when-false-test*
+    (implies (test* (not x))
              (equal (sint-from-boolean x)
                     (sint 0)))
-    :expand (:free (x) (hide x))))
+    :enable test*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
