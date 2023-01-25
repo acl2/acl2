@@ -361,6 +361,7 @@
                (thm-events pseudo-event-form-listp)
                (new-inscope atc-symbol-varinfo-alist-listp
                             :hyp (atc-symbol-varinfo-alist-listp inscope))
+               (new-context atc-contextp :hyp (atc-contextp context))
                (thm-index posp :hyp (posp thm-index))
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate a C block item that consists of an object declaration."
@@ -389,6 +390,7 @@
         (mv item
             nil
             (atc-add-var var varinfo inscope)
+            context
             thm-index
             names-to-avoid))
        (initer-thm-name (pack fn '-correct- thm-index))
@@ -479,61 +481,17 @@
                                                      :formula item-formula
                                                      :hints item-hints
                                                      :enable nil))
-       (var-premise (make-atc-premise-cvalue
-                     :var var
-                     :term (untranslate$ expr-term nil state)))
-       (cs-premise-term `(add-var (ident ,(symbol-name var)) ,var ,compst-var))
-       (cs-premise (make-atc-premise-compustate
-                    :var compst-var
-                    :term cs-premise-term))
-       (new-context (append context (list var-premise cs-premise)))
-       (rules '(read-var-of-add-var
-                ident-fix-when-identp
-                identp-of-ident
-                equal-of-ident-and-ident
-                (:e str-fix)))
-       ((mv new-inscope new-inscope-events names-to-avoid)
-        (atc-gen-new-inscope fn fn-guard inscope new-context compst-var rules
-                             thm-index names-to-avoid wrld))
-       (var-in-scope-thm (pack fn '- var '-in-scope- thm-index))
-       (thm-index (1+ thm-index))
-       ((mv var-in-scope-thm names-to-avoid)
-        (fresh-logical-name-with-$s-suffix var-in-scope-thm
-                                           nil
-                                           names-to-avoid
-                                           wrld))
-       (var-in-scope-formula
-        `(equal (read-var (ident ,(symbol-name var)) ,compst-var)
-                ,var))
-       (var-in-scope-formula
-        (atc-contextualize var-in-scope-formula new-context fn fn-guard
-                           compst-var nil nil wrld))
-       (not-flexible-array-member-p-when-type-pred
-        (pack 'not-flexible-array-member-p-when- type-pred))
-       (var-in-scope-hints
-        `(("Goal" :in-theory '(read-var-of-add-var
-                               ident-fix-when-identp
-                               identp-of-ident
-                               equal-of-ident-and-ident
-                               (:e str-fix)
-                               remove-flexible-array-member-when-absent
-                               ,not-flexible-array-member-p-when-type-pred
-                               value-fix-when-valuep
-                               ,valuep-when-type-pred
-                               ,expr-thm))))
-       ((mv var-in-scope-event &) (evmac-generate-defthm
-                                   var-in-scope-thm
-                                   :formula var-in-scope-formula
-                                   :hints var-in-scope-hints
-                                   :enable nil))
-       (varinfo (make-atc-var-info :type type :thm var-in-scope-thm))
-       (new-inscope (atc-add-var var varinfo new-inscope)))
+       ((mv new-inscope new-context new-inscope-events thm-index names-to-avoid)
+        (atc-gen-vardecl-inscope fn fn-guard inscope context
+                                 var type (untranslate$ expr-term nil state)
+                                 expr-thm compst-var
+                                 thm-index names-to-avoid wrld)))
     (mv item
-        (append (list initer-thm-event
-                      item-thm-event)
-                new-inscope-events
-                (list var-in-scope-event))
+        (list* initer-thm-event
+               item-thm-event
+               new-inscope-events)
         new-inscope
+        new-context
         thm-index
         names-to-avoid)))
 
@@ -2174,6 +2132,7 @@
                    ((mv item
                         item-events
                         inscope-body
+                        & ; context-body
                         thm-index
                         names-to-avoid)
                     (atc-gen-block-item-declon gin.fn

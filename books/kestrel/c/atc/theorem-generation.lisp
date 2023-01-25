@@ -369,3 +369,87 @@
         events
         (1+ thm-index)
         names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-vardecl-inscope ((fn symbolp)
+                                 (fn-guard symbolp)
+                                 (inscope atc-symbol-varinfo-alist-listp)
+                                 (context atc-contextp)
+                                 (var symbolp)
+                                 (type typep)
+                                 (term "An untranslated term.")
+                                 (term-thm symbolp)
+                                 (compst-var symbolp)
+                                 (thm-index posp)
+                                 (names-to-avoid symbol-listp)
+                                 (wrld plist-worldp))
+  :returns (mv (new-inscope atc-symbol-varinfo-alist-listp
+                            :hyp (atc-symbol-varinfo-alist-listp inscope))
+               (new-context atc-contextp :hyp (atc-contextp context))
+               (events pseudo-event-form-listp)
+               (thm-index posp :hyp (posp thm-index))
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate an updated symbol table according to
+          declaring a new local variable."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The context is updated with a @(tsee let) binding for the variable
+     followed by a @(tsee let) binding for the computation state.
+     We use @(tsee atc-gen-new-inscope) to generate most of the new symbol table
+     and then we add the new variable (to the innermost scope),
+     along with a theorem for the new variable."))
+  (b* ((var-premise (make-atc-premise-cvalue :var var :term term))
+       (cs-premise-term `(add-var (ident ,(symbol-name var)) ,var ,compst-var))
+       (cs-premise (make-atc-premise-compustate :var compst-var
+                                                :term cs-premise-term))
+       (new-context (append context (list var-premise cs-premise)))
+       (rules '(read-var-of-add-var
+                ident-fix-when-identp
+                identp-of-ident
+                equal-of-ident-and-ident
+                (:e str-fix)))
+       ((mv new-inscope new-inscope-events names-to-avoid)
+        (atc-gen-new-inscope fn fn-guard inscope new-context compst-var rules
+                             thm-index names-to-avoid wrld))
+       (var-in-scope-thm (pack fn '- var '-in-scope- thm-index))
+       (thm-index (1+ thm-index))
+       ((mv var-in-scope-thm names-to-avoid)
+        (fresh-logical-name-with-$s-suffix var-in-scope-thm
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (var-in-scope-formula
+        `(equal (read-var (ident ,(symbol-name var)) ,compst-var)
+                ,var))
+       (var-in-scope-formula
+        (atc-contextualize var-in-scope-formula new-context fn fn-guard
+                           compst-var nil nil wrld))
+       (type-pred (type-to-recognizer type wrld))
+       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (not-flexible-array-member-p-when-type-pred
+        (pack 'not-flexible-array-member-p-when- type-pred))
+       (var-in-scope-hints
+        `(("Goal" :in-theory '(read-var-of-add-var
+                               ident-fix-when-identp
+                               identp-of-ident
+                               equal-of-ident-and-ident
+                               (:e str-fix)
+                               remove-flexible-array-member-when-absent
+                               ,not-flexible-array-member-p-when-type-pred
+                               value-fix-when-valuep
+                               ,valuep-when-type-pred
+                               ,term-thm))))
+       ((mv var-in-scope-event &) (evmac-generate-defthm
+                                   var-in-scope-thm
+                                   :formula var-in-scope-formula
+                                   :hints var-in-scope-hints
+                                   :enable nil))
+       (varinfo (make-atc-var-info :type type :thm var-in-scope-thm))
+       (new-inscope (atc-add-var var varinfo new-inscope)))
+    (mv new-inscope
+        new-context
+        (append new-inscope-events (list var-in-scope-event))
+        thm-index
+        names-to-avoid)))
