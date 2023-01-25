@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax")
 
+(include-book "std/util/deflist" :dir :system)
+
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -32,6 +34,23 @@
   (expression-var x)
   ///
   (fty::deffixequiv expression-var-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expression-var-listp (x)
+  :guard (expression-listp x)
+  :short "Check if all the expressions in a list are variables."
+  (expression-case x :var)
+  :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expression-const/var-listp (x)
+  :guard (expression-listp x)
+  :short "Check if all the expressions in a list are constants or variables."
+  (or (expression-case x :const)
+      (expression-case x :var))
+  :elementp-of-nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

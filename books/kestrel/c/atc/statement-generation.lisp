@@ -341,6 +341,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-block-item-declon ((var symbolp)
+                                   (type typep)
+                                   (expr exprp)
+                                   (inscope atc-symbol-varinfo-alist-listp))
+  :returns (mv (item block-itemp)
+               (new-inscope atc-symbol-varinfo-alist-listp
+                            :hyp (atc-symbol-varinfo-alist-listp inscope)))
+  :short "Generate a C block item that consists of an object declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We get the (ACL2) variable, the type, and the expressions as inputs.
+     We return not only the block item,
+     but also a symbol table updated with the variable."))
+  (b* (((mv tyspec declor) (ident+type-to-tyspec+declor
+                            (make-ident :name (symbol-name var))
+                            type))
+       (declon (make-obj-declon :scspec (scspecseq-none)
+                                :tyspec tyspec
+                                :declor declor
+                                :init? (initer-single expr)))
+       (item (block-item-declon declon))
+       (varinfo (make-atc-var-info :type type :thm nil))
+       (new-inscope (atc-add-var var varinfo inscope)))
+    (mv item new-inscope)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-block-item-list-one ((fn symbolp)
                                      (fn-guard symbolp)
                                      (context atc-contextp)
@@ -1937,16 +1965,9 @@
                            must not affect any variables, ~
                            but it affects ~x2 instead."
                           val-term var init.affect)))
-                   ((mv tyspec declor) (ident+type-to-tyspec+declor
-                                        (make-ident :name (symbol-name var))
-                                        init.type))
-                   (declon (make-obj-declon :scspec (scspecseq-none)
-                                            :tyspec tyspec
-                                            :declor declor
-                                            :init? (initer-single init.expr)))
-                   (item (block-item-declon declon))
-                   (varinfo (make-atc-var-info :type init.type :thm nil))
-                   (inscope-body (atc-add-var var varinfo gin.inscope))
+                   ((mv item inscope-body)
+                    (atc-gen-block-item-declon
+                     var init.type init.expr gin.inscope))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin

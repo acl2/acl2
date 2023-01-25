@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Matt Kaufmann (kaufmann@cs.utexas.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,215 +44,127 @@
 ; the lists are in reverse chronological order, like the triples in the world.
 ; We put DEFUN and DEFUNS names together, since they are all defined functions.
 
-(defun builtin-event-names (wrld)
+; Note that we use tail recursion to avoid a stack overflow in Allegro CL and
+; perhaps other Lisps that, unlike CCL and SBCL, run interpreted code.  That
+; also explains the following set-compile-fns call, which is also necessary for
+; Allegro CL and perhaps other Lisps.
+
+(set-compile-fns t)
+
+(defun builtin-event-names-rec (wrld defun-names
+                                     defaxiom-names
+                                     defthm-names
+                                     defconst-names
+                                     defstobj-names
+                                     defmacro-names
+                                     defpkg-names
+                                     deflabel-names
+                                     deftheory-names
+                                     encapsulate-names
+                                     includebook-names)
   (declare (xargs :guard (plist-worldp wrld)
                   :mode :program))
   (if (endp wrld)
-      (mv nil nil nil nil nil nil nil nil nil nil nil)
-    (mv-let (defun-names
-             defaxiom-names
-             defthm-names
-             defconst-names
-             defstobj-names
-             defmacro-names
-             defpkg-names
-             deflabel-names
-             deftheory-names
-             encapsulate-names
-             includebook-names)
-        (builtin-event-names (cdr wrld))
+      (mv defun-names
+          defaxiom-names
+          defthm-names
+          defconst-names
+          defstobj-names
+          defmacro-names
+          defpkg-names
+          deflabel-names
+          deftheory-names
+          encapsulate-names
+          includebook-names)
+    (macrolet ((update-event-names
+                (pos val)
+                (let ((lst '(defun-names
+                             defaxiom-names
+                             defthm-names
+                             defconst-names
+                             defstobj-names
+                             defmacro-names
+                             defpkg-names
+                             deflabel-names
+                             deftheory-names
+                             encapsulate-names
+                             includebook-names)))
+                  (list* 'builtin-event-names-rec
+                         '(cdr wrld)
+                         (if pos
+                             (update-nth pos val lst)
+                           lst)))))
       (let ((triple (car wrld)))
         (if (eq (car triple) 'event-landmark)
             (let* ((event-tuple (cddr triple))
                    (event-type (access-event-tuple-type event-tuple)))
               (cond
                ((eq event-type 'defun)
-                (mv (cons (access-event-tuple-namex event-tuple)
-                          defun-names)
-                    defaxiom-names
-                    defthm-names
-                    defconst-names
-                    defstobj-names
-                    defmacro-names
-                    defpkg-names
-                    deflabel-names
-                    deftheory-names
-                    encapsulate-names
-                    includebook-names))
+                (update-event-names
+                 0 (cons (access-event-tuple-namex event-tuple)
+                         defun-names)))
                ((eq event-type 'defuns)
-                (mv (append (access-event-tuple-namex event-tuple)
-                            defun-names)
-                    defaxiom-names
-                    defthm-names
-                    defconst-names
-                    defstobj-names
-                    defmacro-names
-                    defpkg-names
-                    deflabel-names
-                    deftheory-names
-                    encapsulate-names
-                    includebook-names))
+                (update-event-names
+                 0 (revappend (access-event-tuple-namex event-tuple)
+                              defun-names)))
                ((eq event-type 'defaxiom)
-                (mv defun-names
-                    (cons (access-event-tuple-namex event-tuple)
-                          defaxiom-names)
-                    defthm-names
-                    defconst-names
-                    defstobj-names
-                    defmacro-names
-                    defpkg-names
-                    deflabel-names
-                    deftheory-names
-                    encapsulate-names
-                    includebook-names))
+                (update-event-names
+                 1 (cons (access-event-tuple-namex event-tuple)
+                         defaxiom-names)))
                ((eq event-type 'defthm)
-                (mv defun-names
-                    defaxiom-names
-                    (cons (access-event-tuple-namex event-tuple)
-                          defthm-names)
-                    defconst-names
-                    defstobj-names
-                    defmacro-names
-                    defpkg-names
-                    deflabel-names
-                    deftheory-names
-                    encapsulate-names
-                    includebook-names))
+                (update-event-names
+                 2 (cons (access-event-tuple-namex event-tuple)
+                         defthm-names)))
                ((eq event-type 'defconst)
-                (mv defun-names
-                    defaxiom-names
-                    defthm-names
-                    (cons (access-event-tuple-namex event-tuple)
-                          defconst-names)
-                    defstobj-names
-                    defmacro-names
-                    defpkg-names
-                    deflabel-names
-                    deftheory-names
-                    encapsulate-names
-                    includebook-names))
+                (update-event-names
+                 3 (cons (access-event-tuple-namex event-tuple)
+                         defconst-names)))
                ((eq event-type 'defstobj)
-                (mv defun-names
-                    defaxiom-names
-                    defthm-names
-                    defconst-names
-                    (cons (car (access-event-tuple-namex event-tuple))
-                          defstobj-names)
-                    defmacro-names
-                    defpkg-names
-                    deflabel-names
-                    deftheory-names
-                    encapsulate-names
-                    includebook-names))
+                (update-event-names
+                 4 (cons (car (access-event-tuple-namex event-tuple))
+                         defstobj-names)))
                ((eq event-type 'defmacro)
-                (mv defun-names
-                    defaxiom-names
-                    defthm-names
-                    defconst-names
-                    defstobj-names
-                    (cons (access-event-tuple-namex event-tuple)
-                          defmacro-names)
-                    defpkg-names
-                    deflabel-names
-                    deftheory-names
-                    encapsulate-names
-                    includebook-names))
+                (update-event-names
+                 5 (cons (access-event-tuple-namex event-tuple)
+                         defmacro-names)))
                ((eq event-type 'defpkg)
-                (mv defun-names
-                    defaxiom-names
-                    defthm-names
-                    defconst-names
-                    defstobj-names
-                    defmacro-names
-                    (cons (access-event-tuple-namex event-tuple)
-                          defpkg-names)
-                    deflabel-names
-                    deftheory-names
-                    encapsulate-names
-                    includebook-names))
+                (update-event-names
+                 6 (cons (access-event-tuple-namex event-tuple)
+                         defpkg-names)))
                ((eq event-type 'deflabel)
-                (mv defun-names
-                    defaxiom-names
-                    defthm-names
-                    defconst-names
-                    defstobj-names
-                    defmacro-names
-                    defpkg-names
-                    (cons (access-event-tuple-namex event-tuple)
-                          deflabel-names)
-                    deftheory-names
-                    encapsulate-names
-                    includebook-names))
+                (update-event-names
+                 7 (cons (access-event-tuple-namex event-tuple)
+                         deflabel-names)))
                ((eq event-type 'deftheory)
-                (mv defun-names
-                    defaxiom-names
-                    defthm-names
-                    defconst-names
-                    defstobj-names
-                    defmacro-names
-                    defpkg-names
-                    deflabel-names
-                    (cons (access-event-tuple-namex event-tuple)
-                          deftheory-names)
-                    encapsulate-names
-                    includebook-names))
+                (update-event-names
+                 8 (cons (access-event-tuple-namex event-tuple)
+                         deftheory-names)))
                ((eq event-type 'encapsulate)
-                (mv defun-names
-                    defaxiom-names
-                    defthm-names
-                    defconst-names
-                    defstobj-names
-                    defmacro-names
-                    defpkg-names
-                    deflabel-names
-                    deftheory-names
-                    (append (let ((names
-                                   (access-event-tuple-namex event-tuple)))
-                              (if (eql names 0)
-                                  nil
-                                names))
-                            encapsulate-names)
-                    includebook-names))
+                (update-event-names
+                 9 (revappend (let ((names
+                                     (access-event-tuple-namex
+                                      event-tuple)))
+                                (if (eql names 0)
+                                    nil
+                                  names))
+                              encapsulate-names)))
                ((eq event-type 'include-book)
-                (mv defun-names
-                    defaxiom-names
-                    defthm-names
-                    defconst-names
-                    defstobj-names
-                    defmacro-names
-                    defpkg-names
-                    deflabel-names
-                    deftheory-names
-                    encapsulate-names
-                    (cons (access-event-tuple-namex event-tuple)
-                          includebook-names)))
-               (t (mv defun-names
-                      defaxiom-names
-                      defthm-names
-                      defconst-names
-                      defstobj-names
-                      defmacro-names
-                      defpkg-names
-                      deflabel-names
-                      deftheory-names
-                      encapsulate-names
-                      includebook-names))))
-          (mv defun-names
-              defaxiom-names
-              defthm-names
-              defconst-names
-              defstobj-names
-              defmacro-names
-              defpkg-names
-              deflabel-names
-              deftheory-names
-              encapsulate-names
-              includebook-names))))))
+                (update-event-names 10
+                                    (cons (access-event-tuple-namex event-tuple)
+                                          includebook-names)))
+               (t (update-event-names nil nil))))
+          (update-event-names nil nil))))))
+
+(defun builtin-event-names (wrld)
+  (declare (xargs :guard (plist-worldp wrld)
+                  :mode :program))
+  (builtin-event-names-rec wrld nil nil nil nil nil nil nil nil nil nil nil))
 
 ; We introduce a named constants for each list of collected names.
 ; We reverse the lists, so they are in chronological order.
-; Since the function above that collects the names is itself collected,
-; we remove it just before defining the named constant for function names.
+; Since the two functions above that collect the names are themselves collected,
+; we remove them just before defining the named constant for function names.
+; the SET-COMPILE-FNS form does not cause any events, it just modifies a table.
 
 (make-event
  (mv-let (defun-names
@@ -267,7 +180,7 @@
           includebook-names)
      (builtin-event-names (w state))
    `(progn
-      (defconst *builtin-defun-names* ',(reverse (cdr defun-names)))
+      (defconst *builtin-defun-names* ',(reverse (cddr defun-names)))
       (defconst *builtin-defaxiom-names* ',(reverse defaxiom-names))
       (defconst *builtin-defthm-names* ',(reverse defthm-names))
       (defconst *builtin-defconst-names* ',(reverse defconst-names))
