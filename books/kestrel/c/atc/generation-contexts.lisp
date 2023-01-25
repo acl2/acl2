@@ -61,11 +61,21 @@
      and a term that must represent a computation state.
      The meaning is that the variable is bound to the term.")
    (xdoc::p
+    "We also include bindings of variables that hold (ACL2 models of) C values.
+     (Note that a computation state is not, and does not model, a C value.
+     These also consist of a variable and a term,
+     like the computation state bindings.
+     However, it is useful to differentiate them in this fixtype,
+     so we can support different processing of the different kind of bindings
+     (as in @(tsee atc-contextualize)).")
+   (xdoc::p
     "We also include terms that are tests of @(tsee if)s.")
    (xdoc::p
     "We may add more kinds later."))
   (:compustate ((var symbolp)
                 (term any)))
+  (:cvalue ((var symbolp)
+            (term any)))
   (:test ((term any)))
   :pred atc-premisep)
 
@@ -155,6 +165,8 @@
             (atc-contextualize-aux formula (cdr context) skip-cs)
           `(let ((,premise.var ,premise.term))
              ,(atc-contextualize-aux formula (cdr context) skip-cs)))
+        :cvalue `(let ((,premise.var ,premise.term))
+                   ,(atc-contextualize-aux formula (cdr context) skip-cs))
         :test `(implies
                 (test* ,premise.term)
                 ,(atc-contextualize-aux formula (cdr context) skip-cs)))))))
