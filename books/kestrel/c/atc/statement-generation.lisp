@@ -340,31 +340,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-block-item-declon ((var symbolp)
+(define atc-gen-block-item-declon ((fn symbolp)
+                                   (fn-guard symbolp)
+                                   (context atc-contextp)
+                                   (var symbolp)
                                    (type typep)
                                    (expr exprp)
-                                   (inscope atc-symbol-varinfo-alist-listp))
+                                   (expr-term pseudo-termp)
+                                   (expr-limit pseudo-termp)
+                                   (expr-thm symbolp)
+                                   (inscope atc-symbol-varinfo-alist-listp)
+                                   (compst-var symbolp)
+                                   (fenv-var symbolp)
+                                   (limit-var symbolp)
+                                   (thm-index posp)
+                                   (names-to-avoid symbol-listp)
+                                   (proofs booleanp)
+                                   state)
   :returns (mv (item block-itemp)
+               (thm-events pseudo-event-form-listp)
                (new-inscope atc-symbol-varinfo-alist-listp
-                            :hyp (atc-symbol-varinfo-alist-listp inscope)))
+                            :hyp (atc-symbol-varinfo-alist-listp inscope))
+               (thm-index posp :hyp (posp thm-index))
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate a C block item that consists of an object declaration."
   :long
   (xdoc::topstring
    (xdoc::p
     "We get the (ACL2) variable, the type, and the expressions as inputs.
      We return not only the block item,
-     but also a symbol table updated with the variable."))
-  (b* (((mv tyspec declor) (ident+type-to-tyspec+declor
+     and also a symbol table updated with the variable.")
+   (xdoc::p
+    "We generate a theorem about executing the initializer.
+     We will soon generate an additional theorem,
+     about executing the block item."))
+  (b* ((wrld (w state))
+       ((mv tyspec declor) (ident+type-to-tyspec+declor
                             (make-ident :name (symbol-name var))
                             type))
+       (initer (initer-single expr))
        (declon (make-obj-declon :scspec (scspecseq-none)
                                 :tyspec tyspec
                                 :declor declor
-                                :init? (initer-single expr)))
+                                :init? initer))
        (item (block-item-declon declon))
        (varinfo (make-atc-var-info :type type :thm nil))
-       (new-inscope (atc-add-var var varinfo inscope)))
-    (mv item new-inscope)))
+       (new-inscope (atc-add-var var varinfo inscope))
+       ((when (not proofs))
+        (mv item
+            nil
+            new-inscope
+            thm-index
+            names-to-avoid))
+       (initer-thm-name (pack fn '-correct- thm-index))
+       (thm-index (1+ thm-index))
+       ((mv initer-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix initer-thm-name
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (formula `(equal (exec-initer ',initer
+                                     ,compst-var
+                                     ,fenv-var
+                                     ,limit-var)
+                        (mv (init-value-single ,expr-term) ,compst-var)))
+       (initer-limit `(binary-+ '1 ,expr-limit))
+       (formula (atc-contextualize formula context fn fn-guard
+                                   compst-var limit-var initer-limit wrld))
+       (type-pred (type-to-recognizer type wrld))
+       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (initer-hints `(("Goal" :in-theory '(exec-initer-when-single
+                                            (:e initer-kind)
+                                            not-zp-of-limit-variable
+                                            (:e initer-single->get)
+                                            ,expr-thm
+                                            ,valuep-when-type-pred
+                                            mv-nth-of-cons
+                                            (:e zp)))))
+       ((mv initer-thm-event &) (evmac-generate-defthm initer-thm-name
+                                                       :formula formula
+                                                       :hints initer-hints
+                                                       :enable nil)))
+    (mv item
+        (list initer-thm-event)
+        new-inscope
+        thm-index
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2000,17 +2061,36 @@
                            must not affect any variables, ~
                            but it affects ~x2 instead."
                           val-term var init.affect)))
-                   ((mv item inscope-body)
-                    (atc-gen-block-item-declon
-                     var init.type init.expr gin.inscope))
+                   ((mv item
+                        item-events
+                        inscope-body
+                        thm-index
+                        names-to-avoid)
+                    (atc-gen-block-item-declon gin.fn
+                                               gin.fn-guard
+                                               gin.context
+                                               var
+                                               init.type
+                                               init.expr
+                                               init.term
+                                               init.limit
+                                               init.thm-name
+                                               gin.inscope
+                                               gin.compst-var
+                                               gin.fenv-var
+                                               gin.limit-var
+                                               init.thm-index
+                                               init.names-to-avoid
+                                               init.proofs
+                                               state))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body
                                    :inscope inscope-body
-                                   :thm-index init.thm-index
-                                   :names-to-avoid init.names-to-avoid
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
                                    :proofs nil)
                                   state))
                    (type body.type)
@@ -2025,7 +2105,9 @@
                         :type type
                         :term term
                         :limit limit
-                        :events (append init.events body.events)
+                        :events (append init.events
+                                        item-events
+                                        body.events)
                         :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
