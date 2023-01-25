@@ -401,6 +401,14 @@
              (valuep (convert-integer-value val (type-sllong))))
     :enable (integer-type-rangep
              integer-type-min
+             integer-type-max))
+
+  (defruled valuep-of-convert-integer-value-from-ulong-to-sllong
+    (implies (and (value-case val :ulong)
+                  (<= (ulong-max) (sllong-max)))
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
              integer-type-max)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -572,7 +580,8 @@
               valuep-of-convert-integer-value-from-ushort-to-slong
               valuep-of-convert-integer-value-from-ushort-to-sllong
               valuep-of-convert-integer-value-from-uint-to-slong
-              valuep-of-convert-integer-value-from-uint-to-sllong)
+              valuep-of-convert-integer-value-from-uint-to-sllong
+              valuep-of-convert-integer-value-from-ulong-to-sllong)
      :disable ((:e type-sint)
                (:e type-slong)
                (:e type-sllong))))
