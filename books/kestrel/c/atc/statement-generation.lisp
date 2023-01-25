@@ -399,14 +399,15 @@
                                            nil
                                            names-to-avoid
                                            wrld))
-       (formula `(equal (exec-initer ',initer
-                                     ,compst-var
-                                     ,fenv-var
-                                     ,limit-var)
-                        (mv (init-value-single ,expr-term) ,compst-var)))
+       (initer-formula `(equal (exec-initer ',initer
+                                            ,compst-var
+                                            ,fenv-var
+                                            ,limit-var)
+                               (mv (init-value-single ,expr-term) ,compst-var)))
        (initer-limit `(binary-+ '1 ,expr-limit))
-       (formula (atc-contextualize formula context fn fn-guard
-                                   compst-var limit-var initer-limit wrld))
+       (initer-formula
+        (atc-contextualize initer-formula context fn fn-guard
+                           compst-var limit-var initer-limit wrld))
        (type-pred (type-to-recognizer type wrld))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (initer-hints `(("Goal" :in-theory '(exec-initer-when-single
@@ -418,11 +419,70 @@
                                             mv-nth-of-cons
                                             (:e zp)))))
        ((mv initer-thm-event &) (evmac-generate-defthm initer-thm-name
-                                                       :formula formula
+                                                       :formula initer-formula
                                                        :hints initer-hints
-                                                       :enable nil)))
+                                                       :enable nil))
+       (new-compst `(add-var (ident ,(symbol-name var))
+                             ,(untranslate$ expr-term nil state)
+                             ,compst-var))
+       (item-thm-name (pack fn '-correct- thm-index))
+       (thm-index (1+ thm-index))
+       ((mv item-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix item-thm-name
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (item-formula `(equal (exec-block-item ',item
+                                              ,compst-var
+                                              ,fenv-var
+                                              ,limit-var)
+                             (mv nil ,new-compst)))
+       (item-limit `(binary-+ '1 ,initer-limit))
+       (item-formula (atc-contextualize item-formula context fn fn-guard
+                                        compst-var limit-var item-limit wrld))
+       (type-of-value-when-type-pred (pack 'type-of-value-when- type-pred))
+       (e-type `(:e ,(car (type-to-maker type))))
+       (item-hints
+        `(("Goal"
+           :in-theory '(exec-block-item-when-declon
+                        (:e block-item-kind)
+                        not-zp-of-limit-variable
+                        (:e block-item-declon->get)
+                        (:e obj-declon-to-ident+scspec+tyname+init)
+                        mv-nth-of-cons
+                        (:e zp)
+                        (:e scspecseq-kind)
+                        (:e tyname-to-type)
+                        (:e type-kind)
+                        ,initer-thm-name
+                        return-type-of-init-value-single
+                        init-value-to-value-when-single
+                        ,expr-thm
+                        ,valuep-when-type-pred
+                        ,type-of-value-when-type-pred
+                        ,e-type
+                        create-var-of-const-identifier
+                        (:e identp)
+                        (:e ident->name)
+                        create-var-to-add-var
+                        create-var-okp-of-add-var
+                        create-var-okp-of-enter-scope
+                        ident-fix-when-identp
+                        equal-of-ident-and-ident
+                        (:e str-fix)
+                        identp-of-ident
+                        compustate-frames-number-of-add-var-not-zero
+                        compustate-frames-number-of-enter-scope-not-zero
+                        compustate-frames-number-of-add-frame-not-zero
+                        create-var-okp-of-add-frame
+                        compustatep-of-add-var))))
+       ((mv item-thm-event &) (evmac-generate-defthm item-thm-name
+                                                     :formula item-formula
+                                                     :hints item-hints
+                                                     :enable nil)))
     (mv item
-        (list initer-thm-event)
+        (list initer-thm-event
+              item-thm-event)
         new-inscope
         thm-index
         names-to-avoid)))
