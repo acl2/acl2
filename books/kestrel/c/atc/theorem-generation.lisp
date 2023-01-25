@@ -81,11 +81,14 @@
                                   name nil names-to-avoid wrld))
        (type-pred (type-to-recognizer type wrld))
        (uterm (untranslate$ term nil state))
-       (formula `(and (equal (exec-expr-pure ',expr ,compst-var)
-                             ,uterm)
-                      (,type-pred ,uterm)))
-       (formula
-        (atc-contextualize formula context fn fn-guard compst-var nil nil wrld))
+       (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
+                         ,uterm))
+       (formula1 (atc-contextualize formula1 context fn fn-guard
+                                    compst-var nil nil wrld))
+       (formula2 `(,type-pred ,uterm))
+       (formula2 (atc-contextualize formula2 context fn fn-guard
+                                    nil nil nil wrld))
+       (formula `(and ,formula1 ,formula2))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -155,14 +158,17 @@
        (type-pred (type-to-recognizer type wrld))
        (uaterm (untranslate$ aterm nil state))
        (ucterm (untranslate$ cterm nil state))
-       (formula `(and (equal (exec-expr-pure ',expr ,compst-var)
-                             ,ucterm)
-                      (,type-pred ,ucterm)
-                      (equal (test-value ,ucterm)
-                             ,uaterm)
-                      (booleanp ,uaterm)))
-       (formula
-        (atc-contextualize formula context fn fn-guard compst-var nil nil wrld))
+       (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
+                         ,ucterm))
+       (formula1 (atc-contextualize formula1 context fn fn-guard
+                                    compst-var nil nil wrld))
+       (formula2 `(and (,type-pred ,ucterm)
+                       (equal (test-value ,ucterm)
+                              ,uaterm)
+                       (booleanp ,uaterm)))
+       (formula2 (atc-contextualize formula2 context fn fn-guard
+                                    nil nil nil wrld))
+       (formula `(and ,formula1 ,formula2))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -285,12 +291,15 @@
              (new-thm (pack fn '- var '-in-scope- thm-index))
              ((mv new-thm names-to-avoid)
               (fresh-logical-name-with-$s-suffix new-thm nil names-to-avoid wrld))
-             (formula `(and (equal (read-var (ident ,(symbol-name var))
+             (formula1 `(equal (read-var (ident ,(symbol-name var))
                                              ,compst-var)
-                                   ,var)
-                            (,type-pred ,var)))
-             (formula (atc-contextualize
-                       formula new-context fn fn-guard compst-var nil nil wrld))
+                               ,var))
+             (formula1 (atc-contextualize formula1 new-context fn fn-guard
+                                          compst-var nil nil wrld))
+             (formula2 `(,type-pred ,var))
+             (formula2 (atc-contextualize formula2 new-context fn fn-guard
+                                          nil nil nil wrld))
+             (formula `(and ,formula1 ,formula2))
              (hints `(("Goal" :in-theory '(,thm ,@rules))))
              ((mv event &) (evmac-generate-defthm new-thm
                                                   :formula formula

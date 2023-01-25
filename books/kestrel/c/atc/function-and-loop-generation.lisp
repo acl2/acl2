@@ -2280,18 +2280,27 @@
           (name (pack fn '- var '-in-scope-0))
           ((mv name names-to-avoid)
            (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-          (formula `(and (equal (read-var (ident ,(symbol-name var))
-                                          ,compst-var)
-                                ,var)
-                         (,type-pred ,var)))
-          (formula (atc-contextualize formula
-                                      context
-                                      fn
-                                      fn-guard
-                                      compst-var
-                                      nil
-                                      nil
-                                      wrld))
+          (formula1 `(equal (read-var (ident ,(symbol-name var))
+                                      ,compst-var)
+                            ,var))
+          (formula1 (atc-contextualize formula1
+                                       context
+                                       fn
+                                       fn-guard
+                                       compst-var
+                                       nil
+                                       nil
+                                       wrld))
+          (formula2 `(,type-pred ,var))
+          (formula2 (atc-contextualize formula2
+                                       context
+                                       fn
+                                       fn-guard
+                                       nil
+                                       nil
+                                       nil
+                                       wrld))
+          (formula `(and ,formula1 ,formula2))
           (not-flexible-array-member-p-when-type-pred
            (pack 'not-flexible-array-member-p-when- type-pred))
           (valuep-when-type-pred (pack 'valuep-when- type-pred))

@@ -880,7 +880,6 @@
                           :in-theory '(acl2::if*-when-true
                                        condexpr
                                        test*))))
-          (expand (condexpr (if* ,test-term ,then-term ,else-term)))
           (prove :hints ,hints-then)
           (claim (test* (not ,test-term))
                  :hints (("Goal" :in-theory '(test*))))
@@ -891,7 +890,6 @@
                           :in-theory '(acl2::if*-when-false
                                        condexpr
                                        test*))))
-          (expand (condexpr (if* ,test-term ,then-term ,else-term)))
           (prove :hints ,hints-else)))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
@@ -1985,7 +1983,7 @@
                                     gin.context
                                     gin.fn
                                     gin.fn-guard
-                                    gin.compst-var
+                                    nil
                                     nil
                                     nil
                                     wrld))

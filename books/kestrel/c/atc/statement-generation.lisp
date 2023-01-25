@@ -312,24 +312,21 @@
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (result-uterm (untranslate$ result-term nil state))
        (compst-uterm (untranslate$ compst-term nil state))
-       (formula `(equal (exec-block-item ',item
-                                         ,compst-var
-                                         ,fenv-var
-                                         ,limit-var)
-                        (mv ,result-uterm ,compst-uterm)))
+       (formula1 `(equal (exec-block-item ',item
+                                          ,compst-var
+                                          ,fenv-var
+                                          ,limit-var)
+                         (mv ,result-uterm ,compst-uterm)))
+       (formula1 (atc-contextualize formula1 context fn fn-guard
+                                    compst-var limit-var item-limit wrld))
        (formula (if result-term
-                    (b* ((type-pred (type-to-recognizer result-type wrld)))
-                      `(and ,formula
-                            (,type-pred ,result-uterm)))
-                  formula))
-       (formula (atc-contextualize formula
-                                   context
-                                   fn
-                                   fn-guard
-                                   compst-var
-                                   limit-var
-                                   item-limit
-                                   wrld))
+                    (b* ((type-pred (type-to-recognizer result-type wrld))
+                         (formula2 `(,type-pred ,result-uterm))
+                         (formula2 (atc-contextualize formula2 context
+                                                      fn fn-guard
+                                                      nil nil nil wrld)))
+                      `(and ,formula1 ,formula2))
+                  formula1))
        (hints `(("Goal" :in-theory '(exec-block-item-when-stmt
                                      (:e block-item-kind)
                                      not-zp-of-limit-variable
@@ -423,25 +420,22 @@
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (result-uterm (untranslate$ result-term nil state))
        (compst-uterm (untranslate$ compst-term nil state))
-       (formula `(equal (exec-block-item-list ',items
-                                              ,compst-var
-                                              ,fenv-var
-                                              ,limit-var)
-                        (mv ,result-uterm ,compst-uterm)))
+       (formula1 `(equal (exec-block-item-list ',items
+                                               ,compst-var
+                                               ,fenv-var
+                                               ,limit-var)
+                         (mv ,result-uterm ,compst-uterm)))
+       (formula1 (atc-contextualize formula1 context fn fn-guard
+                                    compst-var limit-var items-limit wrld))
        (type-pred (and result-term
                        (type-to-recognizer result-type wrld)))
        (formula (if result-term
-                    `(and ,formula
-                          (,type-pred ,result-uterm))
-                  formula))
-       (formula (atc-contextualize formula
-                                   context
-                                   fn
-                                   fn-guard
-                                   compst-var
-                                   limit-var
-                                   items-limit
-                                   wrld))
+                    (b* ((formula2 `(,type-pred ,result-uterm))
+                         (formula2 (atc-contextualize formula2 context
+                                                      fn fn-guard
+                                                      nil nil nil wrld)))
+                      `(and ,formula1 ,formula2))
+                  formula1))
        (valuep-when-type-pred (and result-term
                                    (pack 'valuep-when- type-pred)))
        (hints
@@ -581,20 +575,29 @@
         (fresh-logical-name-with-$s-suffix
          stmt-thm-name nil names-to-avoid wrld))
        (uterm (untranslate$ expr.term nil state))
-       (stmt-formula `(and (equal (exec-stmt ',stmt
-                                             ,gin.compst-var
-                                             ,gin.fenv-var
-                                             ,gin.limit-var)
-                                  (mv ,uterm ,gin.compst-var))
-                           (,type-pred ,uterm)))
-       (stmt-formula (atc-contextualize stmt-formula
-                                        gin.context
-                                        gin.fn
-                                        gin.fn-guard
-                                        gin.compst-var
-                                        gin.limit-var
-                                        stmt-limit
-                                        wrld))
+       (stmt-formula1 `(equal (exec-stmt ',stmt
+                                         ,gin.compst-var
+                                         ,gin.fenv-var
+                                         ,gin.limit-var)
+                              (mv ,uterm ,gin.compst-var)))
+       (stmt-formula1 (atc-contextualize stmt-formula1
+                                         gin.context
+                                         gin.fn
+                                         gin.fn-guard
+                                         gin.compst-var
+                                         gin.limit-var
+                                         stmt-limit
+                                         wrld))
+       (stmt-formula2 `(,type-pred ,uterm))
+       (stmt-formula2 (atc-contextualize stmt-formula2
+                                         gin.context
+                                         gin.fn
+                                         gin.fn-guard
+                                         nil
+                                         nil
+                                         nil
+                                         wrld))
+       (stmt-formula `(and ,stmt-formula1 ,stmt-formula2))
        (stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-return
                                (:e stmt-kind)
@@ -764,36 +767,52 @@
        (else-stmt-limit `(binary-+ '1 ,else-limit))
        (then-uterm (untranslate$ then-term nil state))
        (else-uterm (untranslate$ else-term nil state))
-       (then-stmt-formula `(and (equal (exec-stmt ',then-stmt
-                                                  ,gin.compst-var
-                                                  ,gin.fenv-var
-                                                  ,gin.limit-var)
-                                       (mv ,then-uterm ,gin.compst-var))
-                                (,type-pred ,then-uterm)))
-       (then-stmt-formula
-        (atc-contextualize then-stmt-formula
-                           then-context
-                           gin.fn
-                           gin.fn-guard
-                           gin.compst-var
-                           gin.limit-var
-                           then-stmt-limit
-                           wrld))
-       (else-stmt-formula `(and (equal (exec-stmt ',else-stmt
-                                                  ,gin.compst-var
-                                                  ,gin.fenv-var
-                                                  ,gin.limit-var)
-                                       (mv ,else-uterm ,gin.compst-var))
-                                (,type-pred ,else-uterm)))
-       (else-stmt-formula
-        (atc-contextualize else-stmt-formula
-                           else-context
-                           gin.fn
-                           gin.fn-guard
-                           gin.compst-var
-                           gin.limit-var
-                           else-stmt-limit
-                           wrld))
+       (then-stmt-formula1 `(equal (exec-stmt ',then-stmt
+                                              ,gin.compst-var
+                                              ,gin.fenv-var
+                                              ,gin.limit-var)
+                                   (mv ,then-uterm ,gin.compst-var)))
+       (then-stmt-formula1 (atc-contextualize then-stmt-formula1
+                                              then-context
+                                              gin.fn
+                                              gin.fn-guard
+                                              gin.compst-var
+                                              gin.limit-var
+                                              then-stmt-limit
+                                              wrld))
+       (then-stmt-formula2 `(,type-pred ,then-uterm))
+       (then-stmt-formula2 (atc-contextualize then-stmt-formula2
+                                              then-context
+                                              gin.fn
+                                              gin.fn-guard
+                                              nil
+                                              nil
+                                              nil
+                                              wrld))
+       (then-stmt-formula `(and ,then-stmt-formula1 ,then-stmt-formula2))
+       (else-stmt-formula1 `(equal (exec-stmt ',else-stmt
+                                              ,gin.compst-var
+                                              ,gin.fenv-var
+                                              ,gin.limit-var)
+                                   (mv ,else-uterm ,gin.compst-var)))
+       (else-stmt-formula1 (atc-contextualize else-stmt-formula1
+                                              else-context
+                                              gin.fn
+                                              gin.fn-guard
+                                              gin.compst-var
+                                              gin.limit-var
+                                              else-stmt-limit
+                                              wrld))
+       (else-stmt-formula2 `(,type-pred ,else-uterm))
+       (else-stmt-formula2 (atc-contextualize else-stmt-formula2
+                                              else-context
+                                              gin.fn
+                                              gin.fn-guard
+                                              nil
+                                              nil
+                                              nil
+                                              wrld))
+       (else-stmt-formula `(and ,else-stmt-formula1 ,else-stmt-formula2))
        (then-stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-compound
                                (:e stmt-kind)
@@ -846,20 +865,29 @@
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
        (term* `(if* ,test-term ,then-term ,else-term))
        (uterm* (untranslate$ term* nil state))
-       (if-stmt-formula `(and (equal (exec-stmt ',stmt
-                                                ,gin.compst-var
-                                                ,gin.fenv-var
-                                                ,gin.limit-var)
-                                     (mv ,uterm* ,gin.compst-var))
-                              (,type-pred ,uterm*)))
-       (if-stmt-formula (atc-contextualize if-stmt-formula
-                                           gin.context
-                                           gin.fn
-                                           gin.fn-guard
-                                           gin.compst-var
-                                           gin.limit-var
-                                           if-stmt-limit
-                                           wrld))
+       (if-stmt-formula1 `(equal (exec-stmt ',stmt
+                                            ,gin.compst-var
+                                            ,gin.fenv-var
+                                            ,gin.limit-var)
+                                 (mv ,uterm* ,gin.compst-var)))
+       (if-stmt-formula1 (atc-contextualize if-stmt-formula1
+                                            gin.context
+                                            gin.fn
+                                            gin.fn-guard
+                                            gin.compst-var
+                                            gin.limit-var
+                                            if-stmt-limit
+                                            wrld))
+       (if-stmt-formula2 `(,type-pred ,uterm*))
+       (if-stmt-formula2 (atc-contextualize if-stmt-formula2
+                                            gin.context
+                                            gin.fn
+                                            gin.fn-guard
+                                            nil
+                                            nil
+                                            nil
+                                            wrld))
+       (if-stmt-formula `(and ,if-stmt-formula1 ,if-stmt-formula2))
        (test-type-pred (type-to-recognizer test-type wrld))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (if-stmt-hints
