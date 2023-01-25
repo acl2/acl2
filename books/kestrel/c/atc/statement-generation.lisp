@@ -385,11 +385,10 @@
                                 :init? initer))
        (item (block-item-declon declon))
        (varinfo (make-atc-var-info :type type :thm nil))
-       (new-inscope (atc-add-var var varinfo inscope))
        ((when (not proofs))
         (mv item
             nil
-            new-inscope
+            (atc-add-var var varinfo inscope)
             thm-index
             names-to-avoid))
        (initer-thm-name (pack fn '-correct- thm-index))
@@ -479,7 +478,8 @@
        ((mv item-thm-event &) (evmac-generate-defthm item-thm-name
                                                      :formula item-formula
                                                      :hints item-hints
-                                                     :enable nil)))
+                                                     :enable nil))
+       (new-inscope (atc-add-var var varinfo inscope)))
     (mv item
         (list initer-thm-event
               item-thm-event)
