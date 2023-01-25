@@ -26,7 +26,8 @@
                                  :in-theory
                                  (enable c::sint-from-uchar-okp
                                          c::sint-integerp-alt-def
-                                         c::uchar-integerp-alt-def)))))
+                                         c::uchar-integerp-alt-def
+                                         c::bit-width-value-choices)))))
   (c::bitxor-sint-sint (c::sint-from-uchar |x|)
                        (c::sint-from-uchar |y|)))
 

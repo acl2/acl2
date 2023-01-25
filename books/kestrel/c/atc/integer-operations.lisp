@@ -544,22 +544,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event
- ;; It is critical to generate the operations for SINT and UINT
- ;; before the ones for SCHAR and UCHAR and SSHORT and USHORT,
- ;; because the latter are defined in terms of the former.
- ;; See :DOC ATC-DEF-INTEGER-OPERATIONS-1.
- (b* ((types (list (type-sint)
-                   (type-uint)
-                   (type-slong)
-                   (type-ulong)
-                   (type-sllong)
-                   (type-ullong)
-                   (type-schar)
-                   (type-uchar)
-                   (type-sshort)
-                   (type-ushort))))
-   `(progn ,@(atc-def-integer-operations-1-loop types))))
+(encapsulate ()
+  (local (in-theory (enable bit-width-value-choices)))
+  (make-event
+   ;; It is critical to generate the operations for SINT and UINT
+   ;; before the ones for SCHAR and UCHAR and SSHORT and USHORT,
+   ;; because the latter are defined in terms of the former.
+   ;; See :DOC ATC-DEF-INTEGER-OPERATIONS-1.
+   (b* ((types (list (type-sint)
+                     (type-uint)
+                     (type-slong)
+                     (type-ulong)
+                     (type-sllong)
+                     (type-ullong)
+                     (type-schar)
+                     (type-uchar)
+                     (type-sshort)
+                     (type-ushort))))
+     `(progn ,@(atc-def-integer-operations-1-loop types)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1229,20 +1231,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event
- ;; It is critical to generate the operations for equal operand types
- ;; before the ones for different operand types,
- ;; because the latter are defined in terms of the former.
- ;; See :DOC ATC-DEF-INTEGER-OPERATIONS-2.
- (b* ((types (list (type-sint)
-                   (type-uint)
-                   (type-slong)
-                   (type-ulong)
-                   (type-sllong)
-                   (type-ullong)
-                   (type-schar)
-                   (type-uchar)
-                   (type-sshort)
-                   (type-ushort))))
-   `(progn ,@(atc-def-integer-operations-2-loop-same types)
-           ,@(atc-def-integer-operations-2-loop-outer types types))))
+(encapsulate ()
+  (local (in-theory (enable bit-width-value-choices)))
+  (make-event
+   ;; It is critical to generate the operations for equal operand types
+   ;; before the ones for different operand types,
+   ;; because the latter are defined in terms of the former.
+   ;; See :DOC ATC-DEF-INTEGER-OPERATIONS-2.
+   (b* ((types (list (type-sint)
+                     (type-uint)
+                     (type-slong)
+                     (type-ulong)
+                     (type-sllong)
+                     (type-ullong)
+                     (type-schar)
+                     (type-uchar)
+                     (type-sshort)
+                     (type-ushort))))
+     `(progn ,@(atc-def-integer-operations-2-loop-same types)
+             ,@(atc-def-integer-operations-2-loop-outer types types)))))
