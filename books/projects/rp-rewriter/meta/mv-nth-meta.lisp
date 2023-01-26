@@ -102,6 +102,7 @@
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (rp::is-if
+                            is-equals
                             rp::is-rp) ()))))
 
 (defthm dont-rw-syntaxp-mv-nth-meta

@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1075,10 +1075,18 @@
        (i.e. using @('->')).")
      (xdoc::li
       "A call of @(tsee sint-from-boolean) on
-       an expression term for @('fn') returning boolean,
+       an expression term for @('fn') returning boolean
+       that is a call of @(tsee and) or @(tsee or)
+       (not a call of any @('boolean-from-<type>')),
        when @('T') is @('int').
        This converts an expression term returning boolean
-       to a pure expression term returning @('int').")
+       to a pure expression term returning @('int').
+       The restriction of the argument term of @(tsee sint-from-boolean)
+       to be a call of @(tsee and) and @(tsee or) is so that
+       such a call always represents the C @('int') 0 or 1,
+       which is what @(tsee sint-from-boolean) returns;
+       the conversion from boolean to @('int') is only in ACL2,
+       not present in the C code, which just has the represented expression.")
      (xdoc::li
       "A call of @(tsee condexpr) on
        a call of @(tsee if) on

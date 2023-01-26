@@ -47,6 +47,8 @@
 (include-book "ex-counterpart-lemmas")
 (include-book "rp-state-functions-lemmas")
 
+
+
 (local
  (in-theory
   (disable
@@ -285,7 +287,7 @@
            :expand ((VALID-SC (LIST 'NOT TERM) A))
            :in-theory (e/d (valid-sc
                             is-rp
-
+                            is-equals
                             is-if
                             dumb-negate-lit2)
                            ()))))
@@ -397,7 +399,7 @@
                             (:DEFINITION BIND-BINDINGS-AUX)
                             (:REWRITE VALID-RULEP-IMPLIES-VALID-SC)
                             (:TYPE-PRESCRIPTION EX-FROM-SYNP)
-                            (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
+                            (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS-fn)
                             valid-rulep-sk-necc
                             ;;rp-equal-of-two-2
                             rp-equal-is-symmetric
@@ -449,7 +451,7 @@
                             (:DEFINITION BIND-BINDINGS-AUX)
                             (:REWRITE VALID-RULEP-IMPLIES-VALID-SC)
                             (:TYPE-PRESCRIPTION EX-FROM-SYNP)
-                            (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
+                            (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS-fn)
                             (:DEFINITION EVAL-AND-ALL)
                             (:REWRITE VALID-SC-CONS)
                             (:DEFINITION SUBSETP-EQUAL)
@@ -462,7 +464,7 @@
                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                             (:TYPE-PRESCRIPTION BIND-BINDINGS-AUX)
                             (:TYPE-PRESCRIPTION RP-TERMP)
-                            (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                            (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
                             (:TYPE-PRESCRIPTION RP-TERM-LISTP)
                             valid-rulep-sk-necc
                             ;;rp-equal-of-two-2
@@ -818,7 +820,7 @@
    (:rewrite rp-equal2-bindings-1to1-consp)
    (:definition get-vars)
    (:definition true-listp)
-   (:definition include-fnc)
+   (:definition include-fnc-fn)
    (:definition subsetp-equal)
    (:rewrite
     rp-termp-should-term-be-in-cons-lhs)
@@ -1583,7 +1585,7 @@
 
                      ;;(:TYPE-PRESCRIPTION ACL2::BINARY-AND*)
 
-                     ;;(:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
+                     ;;(:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS-fn)
 
                      (:REWRITE ACL2::LEN-MEMBER-EQUAL-LOOP$-AS)
                      ;;(:REWRITE ACL2::REV-WHEN-NOT-CONSP)
@@ -2315,7 +2317,8 @@ a)
               (VALID-SC (LIST 'RP CADR-TERM RP-RW-CADDR-TERM)
                         A))
      :hints (("Goal"
-              :expand ((VALID-SC (LIST 'RP CADR-TERM RP-RW-CADDR-TERM)
+              :expand ((:free (x) (IS-EQUALS (cons 'rp x)))
+                       (VALID-SC (LIST 'RP CADR-TERM RP-RW-CADDR-TERM)
                                  A)
                        (VALID-SC (LIST 'RP CADR-TERM CADDR-TERM)
                                  A))
@@ -2413,9 +2416,12 @@ a)
     :hints (("goal"
              :do-not-induct t
              :expand ((valid-sc term a)
+                      (:free (y) (is-equals (cons 'if y)))
                       (:free (x y) (RP-TRANS-LST (cons x y)))
                       (:free (x y) (valid-sc (cons x y) a))
                       (:free (x y) (EX-FROM-RP (list 'rp x y)))
+                      (rp-trans-lst (CDDR TERM))
+                      (rp-trans-lst (CDdDR TERM))
                       (RP-RW-SUBTERMS (CDDR TERM)
                                       NIL CONTEXT  BACKCHAIN-LIMIT (+ -1 LIMIT)
                                       (MV-NTH 1
@@ -2436,7 +2442,7 @@ a)
                       (rp-rw-subterms (cdr term)
                                       dont-rw context  backchain-limit limit
                                       rp-state state))
-             :in-theory (e/d (is-rp
+             :in-theory (e/d (is-rp is-equals
                               is-if
                               is-falist
                               ;;dont-rw-CaR dont-rw-cdr
@@ -2454,7 +2460,7 @@ a)
                               (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
                               (:REWRITE RP-TERMP-IS-IF-LEMMA)
                               (:REWRITE VALID-SC-CADR)
-                              (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                              (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
                               (:REWRITE EVAL-AND-ALL-CONTEXT-FROM-RP)
                               (:TYPE-PRESCRIPTION VALID-SC)
                               (:REWRITE LEMMA0)
@@ -2516,8 +2522,8 @@ a)
 
    (:rewrite rp-termp-implies-cdr-listp)
 
-   (:type-prescription include-fnc-subterms)
-   (:type-prescription include-fnc)
+   (:type-prescription include-fnc-subterms-fn)
+   (:type-prescription include-fnc-fn)
    (:rewrite rp-evl-of-rp-equal)
    )))
 
@@ -2769,13 +2775,14 @@ a)
 
 (defthm valid-sc-when-cdr-is-valid-sc-subterms
   (implies (and (case-split (not (equal fn 'rp)))
+                (case-split (not (is-equals (cons fn lst))))
                 (valid-sc-subterms lst a))
            (valid-sc (cons fn lst) a))
   :hints (("Goal"
            :cases ((is-rp (cons fn lst)))
-           :expand (VALID-SC (CONS FN LST) A)
+           :expand (valid-sc (cons fn lst) a)
            :in-theory (e/d (valid-sc-single-step
-                            is-rp)
+                            is-if is-rp is-equals)
                            ()))))
 
 (defthm rw-only-with-context-subterms-is-rp-lemma
@@ -2892,7 +2899,7 @@ a)
     (eval-and-all context a)
     iff-flg
     (is-rp (mv-nth 0 (rp-check-context term dont-rw context
-                                       :RW-CONTEXT-FLG RW-CONTEXT-FLG :attach-sc attach-sc))))
+                                       :rw-context-flg rw-context-flg :attach-sc attach-sc))))
    (iff (rp-evlt (caddr (mv-nth 0 (rp-check-context term dont-rw context
                                                     :RW-CONTEXT-FLG RW-CONTEXT-FLG
                                                     :attach-sc attach-sc)))
@@ -2907,6 +2914,109 @@ a)
                             (:REWRITE RP-EQUAL2-BINDINGS-1TO1-CONSP)
                             falist-consistent
                             RP-TERMP-IMPLIES-SUBTERMS)))))
+
+
+(defthm is-equals-with-same-fn-same-arg-len
+  (implies (and (equal (len args)
+                       (len (cdr term)))
+                (force (true-listp args))
+                (rp-termp term))
+           (equal (is-equals (cons (car term) args))
+                  (is-equals term)))
+  :hints (("Goal"
+           :do-not-induct t
+           :expand ((LEN TERM)
+                    (LEN (CDR TERM))
+                    (LEN (CDDR TERM))
+                    (LEN (CDDDR TERM))
+                    (LEN ARGS)
+                    (LEN (CDR ARGS))
+                    (LEN (CDDR ARGS)))
+           :in-theory (e/d (is-equals)
+                           (DUMMY-LEN-EQUIV)))))
+
+(Local
+ (defun len-of-RW-ONLY-WITH-CONTEXT-SUBTERMS-induct (lst dont-rw context limit rp-state state)
+   (declare (xargs :stobjs (state rp-state)
+                   :verify-guards nil))
+   (if (atom lst)
+       (mv lst rp-state)
+     (b* (((mv cur rp-state)
+           (rw-only-with-context (car lst) (dont-rw-car dont-rw) context
+                                 nil limit rp-state state))
+          ((mv rest rp-state)
+           (len-of-rw-only-with-context-subterms-induct (cdr lst) (dont-rw-cdr dont-rw) context
+                                                        limit rp-state state)))
+       (mv (cons-with-hint cur rest lst) rp-state)))))
+
+(defthm len-of-rw-only-with-context-subterms
+  (equal (len (mv-nth 0 (rw-only-with-context-subterms lst dont-rw context
+                                                       limit rp-state state)))
+         (len lst))
+  :hints (("goal"
+           :do-not-induct t
+           :induct (len-of-rw-only-with-context-subterms-induct lst dont-rw context limit rp-state state)
+           :expand ((rw-only-with-context-subterms lst
+                                                   dont-rw context limit rp-state state))
+           :in-theory (e/d (rw-only-with-context-subterms len) ()))))
+
+(defthm expand-valid-sc-of-equals
+  (implies (and (consp lst)
+                (consp (cdr lst))
+                (not (cddr lst)))
+           (equal (valid-sc (cons 'equals lst) a)
+                  (and (equal (rp-evlt (car lst) a)
+                              (rp-evlt (cadr lst) a))
+                       (valid-sc (car lst) a)
+                       (valid-sc (cadr lst) a))))
+  :hints (("Goal"
+           :in-theory (e/d (is-equals valid-sc is-rp is-if) ()))))
+
+
+(defthm valid-sc-and-is-equals-implies
+  (implies (and (valid-sc term a)
+                (is-equals term))
+           (equal (equal (rp-evlt (cadr term) a)
+                         (rp-evlt (caddr term) a))
+                  t))
+  :hints (("Goal"
+           :in-theory (e/d (valid-sc is-equals is-rp is-if) ()))))
+
+(defthm when-rp-evlt-lst-is-equal-to-a-cons
+  (equal (equal (rp-evlt-lst lst a)
+                (cons x y))
+         (and (consp lst)
+              (equal (rp-evlt (car lst) a) x)
+              (equal (rp-evlt-lst (cdr lst) a)
+                     y))))     
+
+
+
+(defthmd rp-evlt-of-equals-call
+  (implies (and (consp term)
+                (equal (car term) 'equals)
+                (equal (len (cdr term)) 2)
+                (true-listp term))
+           (equal (rp-evlt term a)
+                  (rp-evlt (cadr term) a)))
+  :hints (("Goal"
+           :in-theory (e/d (rp-trans
+                            RP-TRANS-LST
+                            is-equals) ()))))
+
+
+
+(Local
+ (defthmd rp-evlt-of-cadr-when-term-is-equals
+   (implies (and (Is-equals term)
+                 (equal (rp-evlt term a)
+                        (rp-evlt other a)))
+            (equal (equal (rp-evlt (cadr term) a)
+                          (rp-evlt other a))
+                   t))
+   :hints (("Goal"
+            :in-theory (e/d (is-equals rp-trans rp-trans-lst) ())))))
+           
 
 (defthm-rw-only-with-context
   (defthm valid-sc-and-eval-rw-only-with-context
@@ -2954,6 +3064,7 @@ a)
                (and (valid-sc-subterms res a)
                     (equal (rp-evlt-lst res a) (rp-evlt-lst lst a)))))
     :flag rw-only-with-context-subterms)
+  ;;:otf-flg t
   :hints (("Subgoal *1/8"
            :use ((:instance is-if-rp-evlt-lemma
                             (term (MV-NTH 0
@@ -2967,8 +3078,13 @@ a)
                  ))
           ("Goal"
            :do-not-induct t
-           :expand ((IS-IF TERM))
-           :in-theory (e/d (rw-only-with-context
+           :expand ((is-if term)
+                    (:free (args) (is-equals (cons 'equals args))))
+           :in-theory (e/d (equal-of-len-with-constant
+                            rp-evlt-of-cadr-when-term-is-equals
+                            rp-evlt-of-equals-call
+                            rp-term-listp-is-true-listp
+                            rw-only-with-context
                             IS-RP-IMPLIES-FC
                             valid-sc-single-step
                             CONTEXT-SYNTAXP
@@ -2976,7 +3092,12 @@ a)
                             is-falist
                             rp-evlt-equiv-when-one-is-rp
                             )
-                           (VALID-RP-STATEP
+                           (RP-EVLT-CONS-WITHOUT-CASESPLIT
+
+                            ;;rp-check-context-is-correct
+                            
+                            ;;IS-EQUALS-IMPLIES
+                            VALID-RP-STATEP
                             NONNIL-P-IS-CORRECT
                             NOT-INCLUDE-RP
                             eval-and-all
@@ -2986,7 +3107,21 @@ a)
                             rp-termp
                             IS-IF$INLINE
                             is-rp-lemma-2
-                            is-if-implies)))))
+                            dummy-len-equiv
+                            is-if-implies)))
+          (and stable-under-simplificationp
+               '(:use ((:instance rp-check-context-is-correct
+                                  (IFF-FLG nil)
+                                  (attach-sc nil)
+                                  (rw-context-flg nil)
+                                  )
+                       (:instance rp-check-context-is-correct-iff
+                                  ;;(iff-flg t)
+                                  (attach-sc nil)
+                                  (rw-context-flg nil)
+                                  ))))))
+
+
 
 (defthm valid-sc-subterms-and-eval-of-rw-only-with-context-lst$iff-flg=t
   (implies (and (valid-sc-subterms context a)

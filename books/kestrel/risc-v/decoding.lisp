@@ -1,6 +1,6 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,6 @@
 
 (in-package "RISCV")
 
-(include-book "bytes")
 (include-book "library-extensions")
 
 (include-book "instructions")
@@ -175,7 +174,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define decode ((enc ubyte32p))
-  :returns (instr? maybe-instrp)
+  :returns (instr? instr-optionp)
   (case (get-opcode enc)
     (#b0000011 (b* (((mv funct3 rd rs1 imm) (decode-itype enc))
                     (funct? (case funct3

@@ -183,7 +183,7 @@
                    ((Unless (mbt (width-of-svex-extn-p obj)))
                     nil) ;; for proofs without this hyp.
                    (widths (widths-of-svexlist x.args))
-                   (res (width-of-svex-extn-formula-eval obj.formula widths)))
+                   (res (width-of-svex-extn-formula-eval obj.formula x.args widths)))
                 (and (natp res)
                      res)))
 
@@ -191,7 +191,7 @@
            (equal-len x.args 4)) ; ; ;
            ;; I don't expect to get partinst here for my use case. So I am not ; ; ;
            going to try to prove this here. ; ; ;
-; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
+; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
            ;; TODO: there  could be made  a slight improvement here  by checking ; ; ;
            ;; new-val's acutal size as well. (+ start new-val-size) can be added ; ; ;
            ;; into  the  final  calculation.  If  (+  start  size)  is  >=  than ; ; ;
@@ -336,13 +336,12 @@
                               4vec-concat)
                              (BITOPS::LOGHEAD-OF-LOGAND))))))
 
-
 (defthm 4vec-correct-width-p-of-4vec-bitxor
   (implies (and ;;(natp w1)
-                ;;(natp w2)
-                (4vec-correct-width-p w1 a1)
-                (4vec-correct-width-p w2 a2)
-                (equal w (safe-max w1 w2)))
+            ;;(natp w2)
+            (4vec-correct-width-p w1 a1)
+            (4vec-correct-width-p w2 a2)
+            (equal w (safe-max w1 w2)))
            (4vec-correct-width-p w (sv::4vec-bitxor a1 a2)))
   :hints (("goal"
            :in-theory (e/d (natp
@@ -353,10 +352,10 @@
 
 (defthm 4vec-correct-width-p-of-4vec-bitor
   (implies (and ;;(natp w1)
-                ;;(natp w2)
-                (4vec-correct-width-p w1 a1)
-                (4vec-correct-width-p w2 a2)
-                (equal w (safe-max w1 w2)))
+            ;;(natp w2)
+            (4vec-correct-width-p w1 a1)
+            (4vec-correct-width-p w2 a2)
+            (equal w (safe-max w1 w2)))
            (4vec-correct-width-p w (sv::4vec-bitor a1 a2)))
   :hints (("goal"
            :in-theory (e/d (4vec-correct-width-p
@@ -366,10 +365,10 @@
 
 (defthm 4vec-correct-width-p-of-4vec-bitand
   (implies (and ;;(natp w1)
-                ;;(natp w2)
-                (4vec-correct-width-p w1 a1)
-                (4vec-correct-width-p w2 a2)
-                (equal w (safe-min w1 w2)))
+            ;;(natp w2)
+            (4vec-correct-width-p w1 a1)
+            (4vec-correct-width-p w2 a2)
+            (equal w (safe-min w1 w2)))
            (4vec-correct-width-p w (sv::4vec-bitand a1 a2)))
   :hints (("goal"
            :in-theory (e/d (4vec-correct-width-p
@@ -506,7 +505,6 @@
 
 
 
-
 (local
  (defthm 4vec-correct-width-p-expand
    (implies (syntaxp (and (consp term)
@@ -565,6 +563,7 @@
             (4vec-correct-width-p
              (width-of-svex-extn-formula-eval
               (width-of-svex-extn->formula extn)
+              args
               arg-widths)
              (svex-apply$ fn (svexlist-eval$ args env))))
    :hints (("goal"
@@ -726,7 +725,6 @@
             :use ((:instance svex-eval-width-of-svex-is-correct-1))
             :in-theory (e/d (4vec-correct-width-p) ())))))
 
-
 ;; (width-of-svex '(ha-s (partsel 0 2 a) (partsel 0 3 a))
 ;;                :config (make-svex-reduce-config
 ;;                         :width-extns (list
@@ -736,5 +734,58 @@
 ;;                                        :formula '(safe-max (nth '0 widths)
 ;;                                                            (nth '1 widths))))))
 ;; returns
-;; 3. 
-                                      
+;; 3.
+
+
+(progn
+  (defthmd 4vec-correct-width-p-of-not-natp
+    (implies (not (natp width))
+             (4vec-correct-width-p width x))
+    :hints (("goal"
+             :in-theory (e/d (4vec-correct-width-p) ()))))
+
+  (defmacro create-width-of-svex-extn (&key
+                                       formula
+                                       fn
+                                       prepwork)
+    `(make-event
+      (b* ((arg-len (len (acl2::formals ',fn (w state))))
+           (- (or (width-of-svex-extn-formula-p ',formula)
+                  (hard-error 'create-width-of-svex-extn
+                              "Given formula does not satisfy ~
+  svl::width-of-svex-extn-formula-p: ~p0~%"
+                              (list (cons #\0 ',formula))))))
+        (acl2::template-subst
+         '(defsection width-of-svex-extn-correct-of-<fn>
+            ,@prepwork
+            
+            (defthm width-of-svex-extn-correct-of-<fn>
+              (b* ((obj (svl::make-width-of-svex-extn
+                         :fn '<fn>
+                         :arg-len <arg-len>
+                         :formula ',formula)))
+                (implies (apply$-warrant-<fn>)
+                         (svl::width-of-svex-extn-correct$ obj)))
+              :hints (("Goal"
+                       :expand ((:free (args)
+                                       (sv::svex-apply$ '<fn> args)))
+                       :in-theory (e/d (FTY::EQUAL-OF-PLUS-ONE
+                                        FTY::EQUAL-OF-LEN
+                                        4VEC-CORRECT-WIDTHS-P
+                                        safe-min
+                                        safe-max
+                                        sv::svex-eval$-when-fncall
+                                        svl::width-of-svex-extn-formula-eval
+                                        svl::4vec-correct-width-p-of-not-natp
+                                        <fn>)
+                                       ()))))
+
+            (table width-of-svex-extns (svl::make-width-of-svex-extn
+                                        :fn '<fn>
+                                        :arg-len <arg-len>
+                                        :formula ',formula)
+                   'width-of-svex-extn-correct-of-<fn>))
+         :atom-alist `((<arg-len> . ,arg-len)
+                       (<fn> . ,',fn))
+         :str-alist '(("<FN>" . ,(symbol-name fn)))
+         :pkg-sym ',fn)))))

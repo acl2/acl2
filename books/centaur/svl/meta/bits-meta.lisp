@@ -631,8 +631,8 @@
             :induct (concat$-meta-aux size term1 term2 limit)
             :do-not-induct t
             :in-theory (e/d (concat$-meta-aux
-                             rp::is-rp rp::is-if
-                             
+                             rp::is-rp rp::is-if rp::is-equals
+                             rp::is-equals
                              natp) ())))))
 
 (local
@@ -647,7 +647,7 @@
             :in-theory (e/d (bits-meta-fn-aux
                              is-bits-0-pos-size-of-a-bitp
                              is-bits-pos-start-of-a-bitp
-                             rp::is-rp rp::is-if 
+                             rp::is-rp rp::is-equals rp::is-if rp::is-equals
                              natp)
                             (rp::falist-consistent
                              ifix
@@ -661,7 +661,7 @@
             (rp::valid-sc (mv-nth 0 (bits-of-meta-fn term)) a))
    :hints (("Goal"
             :in-theory (e/d (bits-of-meta-fn
-                             rp::is-rp
+                             rp::is-rp rp::is-equals
                              rp::is-if
                              )
                             ())))))
@@ -673,7 +673,7 @@
    :hints (("Goal"
             :in-theory (e/d (concat-meta
                              rp::is-if
-                             rp::is-rp
+                             rp::is-rp rp::is-equals
                              )
                             ())))))
 
@@ -761,7 +761,7 @@
             :in-theory (e/d* (concat$-meta-aux
                               (:REWRITE
                                RP::REGULAR-RP-EVL-OF_4VEC-CONCAT$_WHEN_BITS-OF-FORMULA-CHECKS_WITH-EX-FROM-RP)
-                              rp::is-rp rp::is-if
+                              rp::is-rp rp::is-if rp::is-equals
                               rp-evlt-of-ex-from-rp-reverse
                               natp)
                              (RP::RP-EVLT-OF-EX-FROM-RP
@@ -781,7 +781,7 @@
             :in-theory (e/d (HAS-BITP-SIDE-COND
                              rp::is-if
                              RP::VALID-SC-SINGLE-STEP
-                             rp::is-rp
+                             rp::is-rp rp::is-equals
                              RP::VALID-SC
                              )
                             (bitp))))))
@@ -878,7 +878,7 @@
                      (:free (x) (nth 0 x)))
             :in-theory (e/d* (bits-meta-fn-aux
                               IS-BITAND/OR/XOR
-                              rp::is-rp rp::is-if
+                              rp::is-rp rp::is-if rp::is-equals 
                               rp::regular-eval-lemmas
                               rp::regular-eval-lemmas-with-ex-from-rp
                               rp-evlt-of-ex-from-rp-reverse

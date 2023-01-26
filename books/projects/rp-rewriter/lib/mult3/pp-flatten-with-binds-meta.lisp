@@ -578,7 +578,9 @@
     :hints (("goal"
              :in-theory (e/d (pp-term-bind
                               len)
-                             ((:rewrite default-+-2)
+                             (rp-termp
+                              ;;rp-term-listp
+                              (:rewrite default-+-2)
                               (:rewrite acl2::and*-rem-first)
                               (:rewrite
                                acl2::default-intern-in-package-of-symbol)
@@ -899,6 +901,13 @@
                       A))))
 
 (local
+   (defthm is-equals-of-others
+     (implies (not (equal (car term) 'equals))
+              (not (is-equals term )))
+     :hints (("Goal"
+              :in-theory (e/d (is-equals) ())))))
+
+(local
  (defret valid-sc-subterms-of-PP-APPLY-BINDINGS-AND-ARG-LST
    (implies (and valid
                  (valid-sc-bindings PP-BINDS a))
@@ -1117,8 +1126,23 @@
                  (pp-binds-p pp-binds)
                  (rp-termp term)
                  (pp-term-p term)
-                 (EQUAL (LEN PP-BINDS) INDEX))
+                 (equal (len pp-binds) index))
             (not (include-fnc res 'rp)))
+   :fn pp-term-bind
+   :hints (("Goal"
+            :in-theory (e/d (include-fnc-of-symbol
+                             INCLUDE-FNC
+                             pp-term-bind)
+                            ())))))
+
+(local
+ (defret not-include-fnc-of-pp-term-bind-2
+   (implies (and valid
+                 (pp-binds-p pp-binds)
+                 (rp-termp term)
+                 (pp-term-p term)
+                 (equal (len pp-binds) index))
+            (not (include-fnc res 'equals)))
    :fn pp-term-bind
    :hints (("Goal"
             :in-theory (e/d (include-fnc-of-symbol
@@ -1132,11 +1156,11 @@
                  (pp-binds-p pp-binds)
                  (rp-termp term)
                  (pp-term-p term)
-                 (EQUAL (LEN PP-BINDS) INDEX))
+                 (equal (len pp-binds) index))
             (valid-sc res a))
    :fn pp-term-bind
    :hints (("Goal"
-            :in-theory (e/d (NOT-INCLUDE-RP-MEANS-VALID-SC
+            :in-theory (e/d (not-include-rp-means-valid-sc
                              pp-term-bind)
                             ())))))
 

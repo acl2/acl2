@@ -388,10 +388,11 @@ I don't need this?
 ;       ((when (and hyps? (not body?)))
 ;         (er soft ctx
 ;             "~|**ERROR: If :hyps is provided, then :body must also be provided."))
-       (body (if body?
-                 (or (defdata::get1 :body kwd-alist)
-                     (defdata::get1 :b kwd-alist))
-               (extract-body (car prop-rest))))
+       (body (cond (body?
+                    (or (defdata::get1 :body kwd-alist)
+                        (defdata::get1 :b kwd-alist)))
+                   (hyps? (car prop-rest))
+                   (t (extract-body (car prop-rest)))))
        (hyps-list (cond (hyps? (hyps-list-from-hyps
                                 (or (defdata::get1 :hyps kwd-alist)
                                     (defdata::get1 :h kwd-alist))))
@@ -845,9 +846,42 @@ Properties are just tested with a short timeout.
      (set-acl2s-property-table-testing? t)
      (modeling-set-parms ,cgen ,cgen-local ,defunc ,proof ,testing)))
 
+; some tests to make sure we pick up :hyps when :body is/is not specified
+(property (i :int)
+  :hyps (natp i)
+  (=> (< 0 i) (posp i)))
+
+(property (i :rational)
+  :hyps (intp i)
+  (=> (< 0 i) (posp i)))
+
+(property (i :rational)
+  :hyps (< 0 i)
+  (=> (intp i) (posp i)))
+
+(property (i :int)
+  :hyps (natp i)
+  :body (=> (< 0 i) (posp i)))
+
+(property (i :rational)
+  :hyps (intp i)
+  :body (=> (< 0 i) (posp i)))
+
+(property (i :rational)
+  :hyps (< 0 i)
+  :body (=> (intp i) (posp i)))
+
 #|
 (modeling-start)
 (modeling-validate-defs)
 (modeling-admit-defs)
 (modeling-admit-all)
 |#
+
+(defmacro propertyd (name &rest args)
+  `(with-output
+    :off :all :on (error) :stack :push
+    (encapsulate
+     ()
+     (property ,name ,@args)
+     (in-theory (disable ,name)))))

@@ -56,12 +56,20 @@
        :atom-alist '((svex-eval . svex-eval$)
                      (svex-apply . svex-apply$)
                      (svexlist-eval . svexlist-eval$)
-                     (svex-alist-eval . svex-alist-eval$))
+                     (svex-alist-eval . svex-alist-eval$)
+                     (svexl-alist-eval . svexl-alist-eval$)
+                     (svexl-node-eval . svexl-node-eval$)
+                     (svexl-eval . svexl-eval$)
+                     (svexl-nodelist-eval . svexl-nodelist-eval$))
        :str-alist '(("<$>" . "$")
                     ("SVEX-EVAL" . "SVEX-EVAL$")
                     ("SVEX-APPLY" . "SVEX-APPLY$")
                     ("SVEXLIST-EVAL" . "SVEXLIST-EVAL$")
-                    ("SVEX-ALIST-EVAL" . "SVEX-ALIST-EVAL$"))
+                    ("SVEX-ALIST-EVAL" . "SVEX-ALIST-EVAL$")
+                    ("SVEXL-ALIST-EVAL" . "SVEXL-ALIST-EVAL$")
+                    ("SVEXL-NODE-EVAL" . "SVEXL-NODE-EVAL$")
+                    ("SVEXL-EVAL" . "SVEXL-EVAL$")
+                    ("SVEXL-NODELIST-EVAL" . "SVEXL-NODELIST-EVAL$"))
        :pkg-sym 'pkg
        )
      ))
@@ -146,6 +154,9 @@
   ;;                             svex-apply$)
   ;;                            (RP::DUMMY-LEN-EQUIV
   ;;                             len)))))
+
+  (in-theory (disable (:e SVL::INTEGERP-OF-SVEX-EXTN-CORRECT$-LST)
+                      (:e SVL::INTEGERP-OF-SVEX-EXTN-CORRECT$)))
   )
 
 (defsection width-of-svex-extn
@@ -189,10 +200,10 @@
     (and (pseudo-termp x)
          (subsetp-equal
           (acl2::all-fnnames x)
-          '(safe-max safe-min nth))
+          '(if equal safe-max safe-min nth))
          (subsetp-equal
           (acl2::all-vars x)
-          '(widths)))
+          '(widths args)))
     ///
     (define width-of-svex-extn-formula-fix ((x width-of-svex-extn-formula-p))
       :enabled t
@@ -241,28 +252,40 @@
            (4vec-correct-widths-p (cdr widths)
                                   (cdr vals)))))
 
-
   (define width-of-svex-extn-formula-eval ((formula)
+                                           (args true-listp)
                                            (widths true-listp))
     :guard-hints (("Goal"
                    :in-theory (e/d (width-of-svex-extn-formula-p) ())))
-    (cond ((atom widths)
+    (cond ((equal formula 'args)
+           (list 'quote args))
+          ((equal formula 'widths)
            (list 'quote widths))
           ((and (quotep formula)
                 (consp (cdr formula)))
            (unquote formula))
           (t (case-match formula
                (('safe-max a b)
-                (b* ((a (width-of-svex-extn-formula-eval a widths))
-                     (b (width-of-svex-extn-formula-eval b widths)))
+                (b* ((a (width-of-svex-extn-formula-eval a args widths))
+                     (b (width-of-svex-extn-formula-eval b args widths)))
                   (safe-max a b)))
                (('safe-min a b)
-                (b* ((a (width-of-svex-extn-formula-eval a widths))
-                     (b (width-of-svex-extn-formula-eval b widths)))
+                (b* ((a (width-of-svex-extn-formula-eval a args widths))
+                     (b (width-of-svex-extn-formula-eval b args widths)))
                   (safe-min a b)))
                (('nth a 'widths)
-                (b* ((a (nfix (width-of-svex-extn-formula-eval a widths))))
+                (b* ((a (nfix (width-of-svex-extn-formula-eval a args widths))))
                   (nth a widths)))
+               (('nth a 'args)
+                (b* ((a (nfix (width-of-svex-extn-formula-eval a args widths))))
+                  (nth a args)))
+               (('if x y z)
+                (if (width-of-svex-extn-formula-eval x args widths)
+                    (width-of-svex-extn-formula-eval y args widths)
+                  (width-of-svex-extn-formula-eval z args widths)))
+               (('equal x y)
+                (equal (width-of-svex-extn-formula-eval x args widths)
+                       (width-of-svex-extn-formula-eval y args widths)))
                (&
                 (acl2::raise
                  "Formula is in unsupported format: ~p0" formula))
@@ -279,6 +302,7 @@
                                             (svexlist-eval$ args env)))
                 (4vec-correct-width-p
                  (width-of-svex-extn-formula-eval obj.formula
+                                                  args
                                                   widths)
                  (svex-eval$ (sv::svex-call obj.fn args)
                              env))))))
@@ -288,6 +312,9 @@
         (equal lst nil)
       (and (width-of-svex-extn-correct$ (car lst))
            (width-of-svex-extn-correct$-lst (cdr lst)))))
+
+  (in-theory (disable (:e SVL::WIDTH-OF-SVEX-EXTN-CORRECT$-LST)
+                      (:e SVL::WIDTH-OF-SVEX-EXTN-CORRECT$)))
 
   )
 
@@ -358,14 +385,13 @@
 ;;                            (;;nth
 ;;                             natp)))))
 
-
-
 ;;;;
-
-
 
 (fty::defprod svex-reduce-config
   ((width-extns width-of-svex-extn-list)
-   (integerp-extns integerp-of-svex-extn-list) )
+   (integerp-extns integerp-of-svex-extn-list)
+   (skip-bitor/and/xor-repeated :default nil)
+
+   )
   :layout :tree
   )

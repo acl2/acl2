@@ -591,21 +591,23 @@
                                (rest (logapp-helper (intcdr shift-rev) (1- shift-width)
                                                     (logtail (ash 1 (1- shift-width)) x)
                                                     y))
-                               ;; Special case: x has known sign, x's integer
-                               ;; length bound is less than width, and rest is
-                               ;; -1 or 0 matching that sign -- just return x.
-                               ;; Could consider just doing this in the logapp primitive instead.
-                               (special-case-validp
-                                (b* ((x-sign (check-int-sign! x-sign x))
-                                     ((unless x-sign) nil)
-                                     (x-width (integer-length-bound! x-width x))
-                                     ((unless (and x-width (<= x-width width))) nil)
-                                     (rest-endp (check-int-endp! rest-endp rest))
-                                     ((unless rest-endp) nil)
-                                     (rest-sign (check-int-sign! rest-sign rest))
-                                     ((unless (eql rest-sign x-sign)) nil))
-                                  t))
-                               ((when special-case-validp) x))
+                               ;; Note: Special case is now taken care of by fgl-logapp-primitive
+                               ;; ;; Special case: x has known sign, x's integer
+                               ;; ;; length bound is less than width, and rest is
+                               ;; ;; -1 or 0 matching that sign -- just return x.
+                               ;; ;; Could consider just doing this in the logapp primitive instead.
+                               ;; (special-case-validp
+                               ;;  (b* ((x-sign (check-int-sign! x-sign x))
+                               ;;       ((unless x-sign) nil)
+                               ;;       (x-width (integer-length-bound! x-width x))
+                               ;;       ((unless (and x-width (<= x-width width))) nil)
+                               ;;       (rest-endp (check-int-endp! rest-endp rest))
+                               ;;       ((unless rest-endp) nil)
+                               ;;       (rest-sign (check-int-sign! rest-sign rest))
+                               ;;       ((unless (eql rest-sign x-sign)) nil))
+                               ;;    t))
+                               ;; ((when special-case-validp) x)
+                               )
                             (logapp width x rest))
                         (logapp-helper (intcdr shift-rev) (1- shift-width) x y)))))
     :hints(("Goal" :in-theory (enable* bitops::logapp**

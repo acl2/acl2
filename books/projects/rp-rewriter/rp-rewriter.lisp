@@ -666,8 +666,10 @@
                                   (natp limit)
                                   (rp-term-listp context)
                                   (valid-rp-state-syntaxp rp-state))
-                      :stobjs (state rp-state))
-     (rp-meta-fnc-formula-checks (state) t :stobjs (state)))
+                      :stobjs (state rp-state)
+                      :transparent t)
+     (rp-meta-fnc-formula-checks (state) t :stobjs (state)
+                                 :transparent t))
     (local
      (defun rp-rw-meta-rule (term meta-fnc-name dont-rw context limit rp-state state)
        (declare (ignorable term meta-fnc-name dont-rw context limit rp-state state)
@@ -731,13 +733,16 @@
                          (mv t rp-state)
                          :guard (and (rp-termp term)
                                      (valid-rp-state-syntaxp rp-state))
-                         :stobjs (state rp-state))
+                         :stobjs (state rp-state)
+                         :transparent t)
      (rp-rw-postprocessor (term context rp-state state)
                           (mv t rp-state)
                           :guard (and (rp-termp term)
                                       (valid-rp-state-syntaxp rp-state))
-                          :stobjs (state rp-state))
-     (rp-proc-formula-checks (state) t :stobjs (state)))
+                          :stobjs (state rp-state)
+                          :transparent t)
+     (rp-proc-formula-checks (state) t :stobjs (state)
+                             :transparent t))
 
     (local
      (defun rp-rw-preprocessor (term  context rp-state state)
@@ -850,6 +855,55 @@
                                                        rp-state)          ;
                      rp-state)))
       (mv term-changed res-term dont-rw rp-state))))
+
+; Start initial attachments for transparent functions, for clause-processor
+; rule support.
+
+(defun rp-rw-meta-rule-init (term meta-fnc-name dont-rw context limit rp-state
+                                  state)
+  (declare (ignorable term meta-fnc-name dont-rw context limit rp-state state)
+           (xargs :guard (and (rp-termp term)
+                              (rp-term-listp context)
+                              (valid-rp-state-syntaxp rp-state)
+                              (symbolp meta-fnc-name)
+                              (natp limit)))
+           (xargs :stobjs (state rp-state)))
+  (mv term nil rp-state))
+
+(defun rp-meta-fnc-formula-checks-init (state)
+  (declare (xargs :stobjs (state))
+           (ignorable state))
+  t)
+
+(defattach
+  (rp-rw-meta-rule rp-rw-meta-rule-init)
+  (rp-meta-fnc-formula-checks rp-meta-fnc-formula-checks-init))
+
+(defun rp-rw-preprocessor-init (term  context rp-state state)
+  (declare (ignorable term  context rp-state state)
+           (xargs :guard (and (rp-termp term)
+                              (valid-rp-state-syntaxp rp-state)))
+           (xargs :stobjs (state rp-state)))
+  (mv term rp-state))
+
+(defun rp-rw-postprocessor-init (term  context rp-state state)
+  (declare (ignorable term  context rp-state state)
+           (xargs :guard (and (rp-termp term)
+                              (valid-rp-state-syntaxp rp-state)))
+           (xargs :stobjs (state rp-state)))
+  (mv term rp-state))
+
+(defun rp-proc-formula-checks-init (state)
+  (declare (xargs :stobjs (state))
+           (ignorable state))
+  t)
+
+(defattach
+  (rp-rw-preprocessor rp-rw-preprocessor-init)
+  (rp-rw-postprocessor rp-rw-postprocessor-init)
+  (rp-proc-formula-checks rp-proc-formula-checks-init))
+
+; End initial attachments for transparent functions.
 
 (defun rp-rw-rule-aux (term rules-for-term context iff-flg state)
   (declare (xargs :mode :logic
@@ -1247,8 +1301,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                                      rp-state state)))
            (mv (cons-with-hint (car term)
                                (cons-with-hint (cadr term)
-                                               (cons-with-hint subterm nil (cddr
-                                                                            term))
+                                               (cons-with-hint subterm nil (cddr term))
                                                (cdr term))
                                term)
                rp-state)))
@@ -1262,6 +1315,10 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                                         context
                                         (1- limit)
                                         rp-state state))
+        ((when (is-equals term))
+         (mv (cons-with-hint 'equals subterms term)
+             rp-state))
+                             
         (term (cons-with-hint (car term) subterms term))
         ((mv term &)
          (rp-check-context term t context :rw-context-flg nil))
@@ -1326,7 +1383,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                    :verify-guards nil
                    :mode :logic))
    (if (atom lst)
-       (mv lst rp-state)
+       (mv nil rp-state)
      (b* (((mv cur rp-state)
            (rw-only-with-context (car lst) (dont-rw-car dont-rw) context
                                  nil limit rp-state state))

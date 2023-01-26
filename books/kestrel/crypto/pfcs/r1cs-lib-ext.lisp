@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -29,14 +29,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule sparse-vectorp-of-append
-  (equal (r1cs::sparse-vectorp (append x y))
-         (and (r1cs::sparse-vectorp (true-list-fix x))
-              (r1cs::sparse-vectorp y)))
-  :enable r1cs::sparse-vectorp)
-
-(defrule sparse-vectorp-of-rev
+(defrule r1cs::sparse-vectorp-of-rev
   (equal (r1cs::sparse-vectorp (rev x))
          (r1cs::sparse-vectorp (true-list-fix x)))
   :enable (r1cs::sparse-vectorp
            rev))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule r1cs::r1cs-constraint-listp-of-rev
+  (equal (r1cs::r1cs-constraint-listp (rev vector))
+         (r1cs::r1cs-constraint-listp (true-list-fix vector)))
+  :enable rev)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule r1cs::valuation-binds-allp-of-rev
+  (equal (r1cs::valuation-binds-allp valuation (rev vars))
+         (r1cs::valuation-binds-allp valuation vars))
+  :enable r1cs::valuation-binds-allp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule r1cs::r1cs-constraints-holdp-of-rev
+  (equal (r1cs::r1cs-constraints-holdp (rev vector) valuation prime)
+         (r1cs::r1cs-constraints-holdp vector valuation prime)))

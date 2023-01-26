@@ -1,6 +1,6 @@
 ; Kestrel Books
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -20,11 +20,11 @@
 (include-book "apt/top")
 (include-book "axe/top")
 (include-book "arithmetic-light/top")
+(include-book "built-ins/top")
 (include-book "bv/top")
 (in-theory (disable collect-constants-<-/ collect-constants-<-/-two)) ; avoid theory-invariant errors in books that include this book
 (include-book "auto-termination/top") ; omits some books (see file for why)
 (include-book "bitcoin/top")
-;; (include-book "built-in-theorems-doc")
 (include-book "c/top")
 (merge-io-pairs
  dm::primep
@@ -37,6 +37,7 @@
 (include-book "ethereum/top")
 (include-book "file-io-light/top")
 (include-book "fty/top")
+(include-book "hints/top")
 (include-book "isar/top")
 (include-book "java/top")
 ;; (include-book "jvm/top")  ;; TODO: Uncomment when stable

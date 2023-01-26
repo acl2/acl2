@@ -372,7 +372,7 @@
               (valid-sc (mv-nth 0 (resolve-adder-and-order-rec x y)) a))
      :hints (("Goal"
               :in-theory (e/d (resolve-adder-and-order-rec
-                               is-if
+                               is-if is-equals
                                is-rp) ()))))))
 
 (local
@@ -390,7 +390,7 @@
               (valid-sc (mv-nth 0 (resolve-adder-sum-order-rec x y)) a))
      :hints (("Goal"
               :in-theory (e/d (resolve-adder-sum-order-rec
-                               is-if
+                               is-if is-equals
                                is-rp) ()))))))
 
 (local
@@ -407,7 +407,7 @@
               (valid-sc (mv-nth 0 (resolve-adder-and-order x)) a))
      :hints (("Goal"
               :in-theory (e/d (resolve-adder-and-order
-                               is-if
+                               is-if is-equals
                                is-rp) ()))))))
 
 (local
@@ -424,7 +424,7 @@
               (valid-sc (mv-nth 0 (resolve-adder-sum-order x)) a))
      :hints (("Goal"
               :in-theory (e/d (resolve-adder-sum-order
-                               is-if
+                               is-if is-equals
                                is-rp) ()))))))
 
 (encapsulate
@@ -693,6 +693,8 @@
                  (eq (car i1) 'falist)
                  (is-if i0) ;; just to make the proofs easy
                  (is-if i1)
+                 (is-equals i0) ;; just to make the proofs easy
+                 (is-equals i1)
                  )
              (if (equal i0 i1)
                  (mv i0 t t)
@@ -876,13 +878,31 @@
   :hints (("goal"
            :do-not-induct t
            :in-theory (e/d* (insert-select-from-adder-mux
-                             is-if
+                             is-if is-equals
                              bitp-of-f2-with-merge-adder-sum
                              regular-eval-lemmas
                              regular-eval-lemmas-with-ex-from-rp
                              context-from-rp
                              is-rp)
-                            (bitp)))))
+                            (bitp
+                             (:rewrite default-car)
+                             (:rewrite not-include-rp)
+                             (:definition include-fnc-fn)
+                             (:definition rp-equal)
+                             (:meta binary-or**/and**-guard-meta-correct)
+                             (:linear acl2::apply$-badgep-properties . 1)
+                             (:rewrite evl-of-extract-from-rp-2)
+                             (:rewrite valid-sc-subterms-of-cdr)
+                             (:rewrite rp-evl-of-rp-equal)
+                             (:definition include-fnc-subterms-fn)
+                             (:rewrite valid-sc-cadr)
+                             (:definition rp-termp)
+                             (:rewrite rp-evl-of-rp-equal2)
+                             (:rewrite rp-termp-of-rp-trans)
+                             (:rewrite is-if-rp-termp)
+                             (:definition rp-term-listp)
+                             (:rewrite default-cdr)
+                             (:definition falist-consistent))))))
 
 (local
  (defthm adder-mux-meta-aux-returns-valid-sc-lemma1
@@ -895,7 +915,6 @@
             :in-theory (e/d (rp-termp is-rp) ())))))
 
 (local
-
  (defthm is-rp-of-cons-ex-from-rp
    (implies (and (rp-termp i0))
             (not (is-rp (cons (car (ex-from-rp i0)) other))))
@@ -903,6 +922,35 @@
             :in-theory (e/d (rp-termp
                              is-rp)
                             ())))))
+
+(local
+ (defthm is-equals-of-same-car-and-length
+   (implies (and (not (is-equals term))
+                 (true-listp term)
+                 (equal (len (cdr term))
+                        (len args)))
+            (not (is-equals (cons (car term)
+                                  args))))
+   :hints (("Goal"
+            :expand ((len (cdddr term))
+                     (len (cddr term))
+                     (len (cdr term))
+                     (len term))
+            :in-theory (e/d (is-equals) ())))))
+
+(local
+ (include-book "std/basic/inductions" :dir :system))
+
+(Local
+ (defthm len-of-ADDER-MUX-META-AUX-LST
+   (implies (MV-NTH 2 (ADDER-MUX-META-AUX-LST S l0 l1))
+            (equal (len (MV-NTH 0 (ADDER-MUX-META-AUX-LST S l0 l1)))
+                   (len l0)))
+   :hints (("Goal"
+            :induct (acl2::cdr-cdr-induct l0 l1)
+            :do-not-induct t
+            :expand ((ADDER-MUX-META-AUX-LST S L0 L1))
+            :in-theory (e/d (ADDER-MUX-META-AUX-LST) ())))))
 
 (defret-mutual
   adder-mux-meta-aux-returns-valid-sc
@@ -947,8 +995,13 @@
                              regular-eval-lemmas-with-ex-from-rp
                              ;;is-rp
                              ;;is-if
+                             
                              )
-                            (bitp
+                            ((:REWRITE NOT-INCLUDE-RP)
+                             (:DEFINITION EX-FROM-RP)
+                             (:DEFINITION INCLUDE-FNC-FN)
+                             (:DEFINITION EVAL-AND-ALL)
+                             bitp
                              ;;rp-term-listp
                              rp-termp)))))
 

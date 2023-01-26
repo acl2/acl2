@@ -318,7 +318,7 @@
               :do-not-induct t
               :induct (4vec-rsh-of-meta term)
               :in-theory (e/d (4vec-rsh-of-meta
-                               rp::is-rp
+                               rp::is-rp rp::is-equals
                                rp::is-if
                                rp-evlt-of-ex-from-rp-reverse-caddr)
                               (natp
@@ -335,7 +335,7 @@
             (rp::valid-sc (mv-nth 0 (4vec-rsh-of-meta term)) a))
    :hints (("Goal"
             :in-theory (e/d (4vec-rsh-of-meta
-                             rp::is-if
+                             rp::is-if rp::is-equals
                              rp::is-rp) ())))))
 
 #|(defthm valid-rp-meta-rulep-4vec-rsh-of-formula-checks

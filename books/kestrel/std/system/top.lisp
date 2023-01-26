@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -23,6 +23,7 @@
 (include-book "function-queries")
 (include-book "genvar-dollar")
 (include-book "getprops")
+(include-book "good-atom-listp")
 (include-book "included-books")
 (include-book "install-not-normalized-dollar")
 (include-book "install-not-normalized-event")

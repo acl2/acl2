@@ -1940,4 +1940,30 @@ SVEX-CALL->FN)
                              sv::svex-alist-eval)
                             ())))))
 
+(svex-eval-lemma-tmpl
+ (defret svex-alist-eval-of-svex-alist-reduce-w/-env-correct-2
+   (implies (and (sv::svex-alist-p svex-alist)
+                 (rp::rp-term-listp context)
+                 (rp::valid-sc env-term a)
+                 (rp::eval-and-all context a)
+                 (force (rp::falist-consistent-aux env env-term))
+                 (:@ :dollar-eval
+                     (width-of-svex-extn-correct<$>-lst
+                      (svex-reduce-config->width-extns config))
+                     (integerp-of-svex-extn-correct<$>-lst
+                      (svex-reduce-config->integerp-extns config)))
+                 (:@ :normal-eval
+                     (equal (svex-reduce-config->width-extns config) nil)
+                     (equal (svex-reduce-config->integerp-extns config) nil)))
+            (equal (svex-alist-eval res-alist (rp-evlt env-term a))
+                   (svex-alist-eval svex-alist (rp-evlt env-term a))))
+   :fn svex-alist-reduce-w/-env
+   :hints (("Goal"
+            :do-not-induct t
+            :use ((:instance
+                   svex-alist-eval-of-svex-alist-reduce-w/-env-correct
+                   (big-env env)))
+            :in-theory (e/d ()
+                            ())))))
+
 ;;;;;;

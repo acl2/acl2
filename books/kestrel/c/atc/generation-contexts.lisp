@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -64,7 +64,6 @@
   (:compustate ((var symbolp)
                 (term any)))
   (:test ((term any)))
-  (:other ())
   :pred atc-premisep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -97,7 +96,17 @@
      For certain generated lemmas that apply just to ACL2 terms,
      and not to relations between ACL2 terms and C constructs,
      we skip over the bindings of computation states,
-     because there are no computation states mentioned in the lemmas."))
+     because there are no computation states mentioned in the lemmas.")
+   (xdoc::p
+    "We wrap tests with @(tsee hide),
+     to prevent ACL2 from making use of them,
+     in the generated modular theorems,
+     to simplify things in ways that interfere with the compositional proofs.
+     For instance, when ACL2 has a hypothesis @('(not <term>)') in context,
+     it rewrites occurrences of @('<term>') with @('nil'):
+     this is generally good for interactive proofs,
+     but not if that prevents a previously proved theorem from applying,
+     about a subterm that is supposed not to be simplified"))
   (b* (((when (endp context)) term)
        (premise (car context)))
     (atc-premise-case
@@ -106,6 +115,5 @@
                      (atc-contextualize term (cdr context) skip-cs)
                    `(let ((,premise.var ,premise.term))
                       ,(atc-contextualize term (cdr context) skip-cs)))
-     :test `(implies ,premise.term
-                     ,(atc-contextualize term (cdr context) skip-cs))
-     :other (raise "Internal error: reached :OTHER case of ATC-PREMISE."))))
+     :test `(implies (hide ,premise.term)
+                     ,(atc-contextualize term (cdr context) skip-cs)))))

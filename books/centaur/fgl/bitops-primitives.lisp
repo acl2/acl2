@@ -259,11 +259,57 @@
        ((mv ok msbs) (gobj-syntactic-integer-fix msbs))
        ((unless ok) (mv nil nil interp-st))
        (lsb-bits (gobj-syntactic-integer->bits lsbs))
-       (msb-bits (gobj-syntactic-integer->bits msbs)))
-    (mv t (mk-g-integer (s-append (extend-bits (nfix (g-concrete->val width))
+       (msb-bits (gobj-syntactic-integer->bits msbs))
+       (widthval (nfix (g-concrete->val width)))
+       ;; If the length of LSB-BITS is <= width and all MSB-BITS are
+       ;; syntactically equal to the last LSB-BIT, then as a special case we
+       ;; can just return LSB-BITS.
+       ((when (and (<= (len lsb-bits) widthval)
+                   (b* ((last-lsb (car (last lsb-bits))))
+                     (and (equal (car msb-bits) last-lsb)
+                          (not (remove-equal last-lsb msb-bits))))))
+        (mv t (mk-g-integer lsb-bits) interp-st)))
+    (mv t (mk-g-integer (s-append (extend-bits widthval
                                                lsb-bits)
                                   (if (atom msb-bits) '(nil) msb-bits)))
         interp-st))
+  :prepwork ((local (in-theory (disable fgl-object-eval-of-gobj-syntactic-integer-fix
+                                        acl2::logapp** acl2::loghead**)))
+             (local (defthm fgl-object-eval-when-gobj-syntactic-integer-fix
+                      (b* (((mv ok fix) (gobj-syntactic-integer-fix x)))
+                        (implies ok
+                                 (acl2::int-equiv (fgl-object-eval x env)
+                                                  (bools->int (gobj-bfr-list-eval (gobj-syntactic-integer->bits fix)
+                                                                                  env)))))
+                      :hints (("goal" :use ((:instance fgl-object-eval-of-gobj-syntactic-integer-fix))))))
+             (local (defthm logcons-bit-when-neg-bit
+                      (implies (equal (ifix cdr) (- (bfix car)))
+                               (equal (logcons car cdr)
+                                      (- (bfix car))))
+                      :hints(("Goal" :in-theory (enable bfix)))))
+             (local (in-theory (disable unsigned-byte-p
+                                        acl2::loghead-upper-bound)))
+             (local (defthm bools->int-of-eval-when-not-remove-equal
+                      (implies (and (not (remove-equal bit x))
+                                    (equal (car x) bit))
+                               (equal (bools->int (gobj-bfr-list-eval x env))
+                                      (- (bool->bit (gobj-bfr-eval bit env)))))
+                      :hints(("Goal" :in-theory (e/d (gobj-bfr-list-eval bools->int remove-equal)
+                                                     (bools->int-redef))))))
+             (local (defthm logapp-neg-bits
+                      (implies (bitp b)
+                               (equal (logapp w (- b) (- b))
+                                      (- b)))
+                      :hints(("Goal" :in-theory (enable bitp)))))
+             (local (defthm logapp-special-case
+                      (implies (and (<= (len lsbs) (nfix w)))
+                               (equal (logapp w
+                                              (bools->int (gobj-bfr-list-eval lsbs env))
+                                              (- (bool->bit (gobj-bfr-eval (car (last lsbs)) env))))
+                                      (bools->int (gobj-bfr-list-eval lsbs env))))
+                      :hints(("Goal" :in-theory (e/d (gobj-bfr-list-eval bools->int bitops::logapp**)
+                                                     (bools->int-redef))
+                              :induct (nthcdr w lsbs))))))
   :formula-check bitops-formula-checks)
 
 

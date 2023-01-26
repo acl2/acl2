@@ -72,7 +72,7 @@
        acl2::logcar$inline
        acl2::logcdr$inline
        acl2::logbit$inline
-
+       return-last
        --
        sum-list
        binary-and
@@ -218,7 +218,9 @@
               ,(make-sc-fgl-ready-meta b)
             ,(make-sc-fgl-ready-meta c)))
         ((fnc . args)
-         `(,fnc . ,(make-sc-fgl-ready-meta-lst args)))
+         (if (is-equals term)
+             (make-sc-fgl-ready-meta (cadr term))    
+           `(,fnc . ,(make-sc-fgl-ready-meta-lst args))))
         (& term))))
   (define make-sc-fgl-ready-meta-lst ((lst rp-term-listp))
     :returns (res-lst rp-term-listp :hyp (rp-term-listp lst))
@@ -231,10 +233,13 @@
   ///
   (verify-guards make-sc-fgl-ready-meta-lst))
 
-(define make-sc-fgl-ready-meta-main ((term rp-termp))
-  :returns (mv (res rp-termp :hyp (rp-termp term))
-               (dont-rw))
-  (mv (make-sc-fgl-ready-meta term) t))
+#|(define make-sc-fgl-ready-meta-main ((term rp-termp)
+                                     (rp-state))
+  :returns (res rp-termp :hyp (and (rp-termp term)
+                                   (rp-statep rp-state)))
+  `(return-last 'progn
+                ,(orig-conjecture rp-state)
+                ,(make-sc-fgl-ready-meta term)))|#
 
 
 
@@ -434,13 +439,13 @@
                              rp-evlt-of-ex-from-rp-reverse
                              regular-eval-lemmas
                              regular-eval-lemmas-with-ex-from-rp
-                             )
+                             is-equals)
                             (rp-evlt-of-ex-from-rp
                              (:DEFINITION EX-FROM-RP)
                              (:REWRITE NOT-INCLUDE-RP)
-                             (:DEFINITION INCLUDE-FNC)
+                             (:DEFINITION INCLUDE-FNC-fn)
                              (:REWRITE DEFAULT-CDR)
-                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS-fn)
                              (:REWRITE RP-EVL-OF-RP-EQUAL2)
                              (:REWRITE RP-TERMP-OF-RP-TRANS)
                              (:REWRITE
@@ -449,6 +454,35 @@
                              (:REWRITE IS-IF-RP-TERMP)
                              (:DEFINITION RP-TERMP)
                              rp-trans-is-term-when-list-is-absent)))))
+
+(local
+ (defthm is-equals-of-same-car-and-length
+   (implies (and (not (is-equals term))
+                 (true-listp term)
+                 (equal (len (cdr term))
+                        (len args)))
+            (not (is-equals (cons (car term)
+                                  args))))
+   :hints (("Goal"
+            :expand ((len (cdddr term))
+                     (len (cddr term))
+                     (len (cdr term))
+                     (len term))
+            :in-theory (e/d (is-equals)
+                            (+-IS-SUM))))))
+
+
+
+(Local
+ (defthm len-of-adder-mux-meta-aux-lst
+   (implies t
+            (equal (len (make-sc-fgl-ready-meta-lst lst))
+                   (len lst)))
+   :hints (("Goal"
+            :induct (len lst)
+            :do-not-induct t
+            :in-theory (e/d (MAKE-SC-FGL-READY-META-LST len)
+                            (+-IS-SUM))))))
 
 (defret-mutual make-sc-fgl-ready-meta-valid-sc
   (defret make-sc-fgl-ready-meta-valid-sc
@@ -475,6 +509,14 @@
                     ;;(MAKE-SC-FGL-READY-META-LST (CDDR (EX-FROM-RP TERM)))
                     ;;(MAKE-SC-FGL-READY-META-LST (CDR (EX-FROM-RP TERM)))
                     ;;(MAKE-SC-FGL-READY-META TERM)
+                    (:free (args) (is-equals (cons 'if args)))
+                    (:free (args) (is-equals (cons 'logbit$inline args)))
+                    (:free (args) (is-equals (cons 'c args)))
+                    (:free (args) (is-equals (cons 's args)))
+                    (:free (args) (is-equals (cons 'acl2::logcdr$inline args)))
+                    (:free (args) (is-equals (cons 'binary-sum args)))
+                    (:free (args) (is-equals (cons 'sum-list args)))
+                    (:free (args) (is-equals (cons 'acl2::logcar$inline args)))
                     (VALID-SC (EX-FROM-RP TERM) A))
            :in-theory (e/d* (make-sc-fgl-ready-meta
                              make-sc-fgl-ready-meta-lst
@@ -483,11 +525,12 @@
                              rp-evlt-of-ex-from-rp-reverse
                              regular-eval-lemmas
                              is-if
-                             is-rp
+                             is-rp ;;is-equals
                              regular-eval-lemmas-with-ex-from-rp
                              valid-sc-of-ex-from-rp-reverse
                              )
-                            (rp-evlt-of-ex-from-rp
+                            ((:rewrite make-sc-fgl-ready-metawhen-quoted)
+                             rp-evlt-of-ex-from-rp
                              VALID-SC-OF-EX-FROM-RP
                              VALID-SC-EX-FROM-RP-2
                              (:DEFINITION EVAL-AND-ALL)
@@ -497,9 +540,9 @@
                              (:DEFINITION RP-TRANS)
                              (:DEFINITION EX-FROM-RP)
                              (:REWRITE NOT-INCLUDE-RP)
-                             (:DEFINITION INCLUDE-FNC)
+                             
                              (:REWRITE DEFAULT-CDR)
-                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS-fn)
                              (:REWRITE RP-EVL-OF-RP-EQUAL2)
                              (:REWRITE RP-TERMP-OF-RP-TRANS)
                              (:REWRITE DEFAULT-CAR)
@@ -515,4 +558,4 @@
 (memoize 'make-sc-fgl-ready-meta)
 
 
-
+  

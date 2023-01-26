@@ -8520,8 +8520,8 @@
 (skip-proofs (verify-guards check-connection-on-tuples))
 
 ;walks down the trace
-;each element of args-trace1 is a tuple of values correspondong to formals1
-;each element of args-trace2 is a tuple of values correspondong to formals2
+;each element of args-trace1 is a tuple of values corresponding to formals1
+;each element of args-trace2 is a tuple of values corresponding to formals2
 (defun check-connection-on-trace (connection args-trace1 args-trace2 formals1 formals2 interpreted-function-alist bindings-for-old-vars)
   (if (endp args-trace1)
       t
@@ -8585,7 +8585,7 @@
 (skip-proofs (verify-guards check-invar-on-tuple))
 
 ;walks down the trace
-;each element of args-trace is a tuple of values correspondong to formals
+;each element of args-trace is a tuple of values corresponding to formals
 (defun check-invar-on-trace (invar args-trace formals interpreted-function-alist bindings-for-old-vars)
   (if (endp args-trace)
       t

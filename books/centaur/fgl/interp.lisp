@@ -2483,23 +2483,6 @@
       (equal (list . <values>)
              <call>))))
 
-(defines fgl-minor-frame-subterm-count
-  :ruler-extenders :all
-  (define fgl-minor-frame-subterm-count ((x pseudo-termp))
-    :measure (pseudo-term-count x)
-    (+ 1
-       (pseudo-term-case x
-         :const 0
-         :var 0
-         :lambda 0
-         :fncall
-         (fgl-minor-frame-subtermlist-count x.args))))
-  (define fgl-minor-frame-subtermlist-count ((x pseudo-term-listp))
-    :measure (pseudo-term-list-count x)
-    (if (atom x)
-        0
-      (+ (fgl-minor-frame-subterm-count (car x))
-         (fgl-minor-frame-subtermlist-count (cdr x))))))
 
 (define interp-st-term-index (interp-st)
   :enabled t :hooks nil :inline t

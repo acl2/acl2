@@ -1126,3 +1126,45 @@ sv::svexlist-eval)
 rp::falist-consistent-aux
 rp::eval-and-all
 svex-eval))))))|#
+
+
+(defmacro create-integerp-of-svex-extn (&key fn
+                                             prepwork)
+  `(make-event
+    (b* ((arg-len (len (acl2::formals ',fn (w state)))))
+      (acl2::template-subst
+       '(defsection integerp-of-svex-extn-correct-of-<fn>
+          ,@prepwork
+          (defthm integerp-of-svex-extn-correct-of-<fn>
+            (b* ((obj (make-integerp-of-svex-extn
+                       :fn '<fn>
+                       :arg-len <arg-len>)))
+              (implies (apply$-warrant-<fn>)
+                       (svl::integerp-of-svex-extn-correct$ obj)))
+            :hints (("Goal"
+                     ;;:do-not '(preprocess fertilize generalize)
+                     :expand ((:free (args)
+                                     (sv::svex-apply$ '<fn> args))
+                              (:free (y)
+                                     (sv::svex-call->fn (cons '<fn> y)))
+                              (:free (y)
+                                     (sv::svex-call->args (cons '<fn> y)))
+                              (:free (y env)
+                                     (sv::svex-eval$ (cons '<fn> y) env))
+                              (:free (y)
+                                     (sv::svex-kind (cons '<fn> y))))
+                     :in-theory (e/d (fty::equal-of-plus-one
+                                      fty::equal-of-len
+                                      sv::svex-eval$-when-fncall
+                                      <fn>)
+                                     (sv::svexlist-eval$
+                                      sv::svex-eval$
+                                      sv::svex-kind)))))
+          (table integerp-of-svex-extns (make-integerp-of-svex-extn
+                                         :fn '<fn>
+                                         :arg-len <arg-len>)
+                 'integerp-of-svex-extn-correct-of-<fn>))
+       :atom-alist `((<arg-len> . ,arg-len)
+                     (<fn> . ,',fn))
+       :str-alist '(("<FN>" . ,(symbol-name fn)))
+       :pkg-sym ',fn))))
