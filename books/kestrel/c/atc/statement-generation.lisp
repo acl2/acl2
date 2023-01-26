@@ -2118,7 +2118,7 @@
                    ((mv item
                         item-events
                         inscope-body
-                        & ; context-body
+                        context-body
                         thm-index
                         names-to-avoid)
                     (atc-gen-block-item-declon gin.fn
@@ -2142,6 +2142,7 @@
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
+                                   :context context-body
                                    :var-term-alist var-term-alist-body
                                    :inscope inscope-body
                                    :thm-index thm-index
