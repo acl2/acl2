@@ -2930,8 +2930,7 @@
   :verify-guards nil ; done below
   ///
   (verify-guards atc-gen-loop-tthm-formula
-    :hints (("Goal" :in-theory (enable pseudo-termp
-                                       pseudo-term-listp))))
+    :hints (("Goal" :in-theory (enable pseudo-termp))))
 
   (defret-mutual len-of-atc-gen-loop-tthm-formula/lst
     (defret len-of-atc-gen-loop-tthm-formula
