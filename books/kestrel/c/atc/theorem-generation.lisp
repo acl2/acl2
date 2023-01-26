@@ -20,6 +20,12 @@
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/untranslate-dollar" :dir :system)
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "kestrel/std/system/w" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-theorem-generation
@@ -277,7 +283,8 @@
                                            (names-to-avoid symbol-listp)
                                            (wrld plist-worldp))
         :returns (mv (new-scope atc-symbol-varinfo-alistp
-                                :hyp (atc-symbol-varinfo-alistp scope))
+                                :hyp (atc-symbol-varinfo-alistp scope)
+                                :hints (("Goal" :in-theory (enable acons))))
                      (events pseudo-event-form-listp)
                      (names-to-avoid symbol-listp
                                      :hyp (symbol-listp names-to-avoid)))
