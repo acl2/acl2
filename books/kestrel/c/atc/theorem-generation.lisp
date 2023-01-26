@@ -427,13 +427,19 @@
                                            nil
                                            names-to-avoid
                                            wrld))
-       (var-in-scope-formula
+       (type-pred (type-to-recognizer type wrld))
+       (var-in-scope-formula1
         `(equal (read-var (ident ,(symbol-name var)) ,compst-var)
                 ,var))
-       (var-in-scope-formula
-        (atc-contextualize var-in-scope-formula new-context fn fn-guard
+       (var-in-scope-formula1
+        (atc-contextualize var-in-scope-formula1 new-context fn fn-guard
                            compst-var nil nil wrld))
-       (type-pred (type-to-recognizer type wrld))
+       (var-in-scope-formula2 `(,type-pred ,var))
+       (var-in-scope-formula2
+        (atc-contextualize var-in-scope-formula2 new-context fn fn-guard
+                           nil nil nil wrld))
+       (var-in-scope-formula `(and ,var-in-scope-formula1
+                                   ,var-in-scope-formula2))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (not-flexible-array-member-p-when-type-pred
         (pack 'not-flexible-array-member-p-when- type-pred))
