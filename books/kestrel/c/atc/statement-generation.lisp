@@ -481,8 +481,9 @@
                                                      :hints item-hints
                                                      :enable nil))
        ((mv new-inscope new-context new-inscope-events thm-index names-to-avoid)
-        (atc-gen-vardecl-inscope fn fn-guard inscope context
-                                 var type (untranslate$ expr-term nil state)
+        (atc-gen-vardecl-inscope fn fn-guard inscope
+                                 context var type
+                                 (untranslate$ expr-term nil state)
                                  expr-thm compst-var
                                  thm-index names-to-avoid wrld)))
     (mv item
