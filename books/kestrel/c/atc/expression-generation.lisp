@@ -23,6 +23,7 @@
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -379,8 +380,7 @@
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
                       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -548,8 +548,7 @@
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
                       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -697,8 +696,7 @@
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
                       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -794,8 +792,7 @@
                             :thm-index thm-index
                             :names-to-avoid names-to-avoid
                             :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -917,8 +914,7 @@
       :thm-index thm-index
       :names-to-avoid names-to-avoid
       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1038,8 +1034,7 @@
      :thm-index thm-index
      :names-to-avoid names-to-avoid
      :proofs t))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1164,8 +1159,7 @@
      :thm-index thm-index
      :names-to-avoid names-to-avoid
      :proofs t))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1240,8 +1234,7 @@
                             :thm-index thm-index
                             :names-to-avoid names-to-avoid
                             :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1722,8 +1715,7 @@
   :verify-guards nil ; done below
   ///
   (verify-guards atc-gen-expr-pure
-    :hints (("Goal" :in-theory (enable pseudo-termp
-                                       pseudo-term-listp)))))
+    :hints (("Goal" :in-theory (enable pseudo-termp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1838,8 +1830,7 @@
             :proofs rest.proofs)))
   :verify-guards nil ; done below
   ///
-  (verify-guards atc-gen-expr-pure-list
-    :hints (("Goal" :in-theory (enable pseudo-term-listp)))))
+  (verify-guards atc-gen-expr-pure-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2099,5 +2090,4 @@
             :names-to-avoid args.names-to-avoid
             :proofs nil)))))
     (atc-gen-expr-noncall term gin state))
-  :prepwork ((local (in-theory (enable pseudo-termp
-                                       pseudo-term-listp)))))
+  :prepwork ((local (in-theory (enable pseudo-termp)))))
