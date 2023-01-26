@@ -61,7 +61,7 @@
   (declare (xargs :mode :program))
   (cdr (assoc-eq 'default-parents (table-alist 'xdoc world))))
 
-(defun check-defxdoc-args (name parents short long pkg)
+(defun check-defxdoc-args (name parents short long pkg code-source)
   (declare (xargs :guard t))
   (or (and (not (symbolp name))
            "name is not a symbol!")
@@ -72,11 +72,13 @@
       (and long (not (stringp long))
            ":long is not a string (or nil)")
       (and pkg (or (not (stringp pkg)) (equal pkg "") (not (pkg-witness pkg)))
-           ":pkg is not a string that is a known package (or nil)")))
+           ":pkg is not a string that is a known package (or nil)")
+      (and code-source (not (stringp code-source))
+           ":code-source is not a string (or nil)")))
 
-(defun guard-for-defxdoc (name parents short long pkg)
+(defun guard-for-defxdoc (name parents short long pkg code-source)
   (declare (xargs :guard t))
-  (let* ((err (check-defxdoc-args name parents short long pkg)))
+  (let* ((err (check-defxdoc-args name parents short long pkg code-source)))
     (or (not err)
         (cw "~s0~%" err))))
 
@@ -99,9 +101,9 @@
 ;; CERTIFY-BOOK-INFO record, because the ACCESS call below macroexpands to some
 ;; cars/cdrs that depend on the shape of the record.
 ;; (depends-on "build/defrec-certdeps/CERTIFY-BOOK-INFO.certdep" :dir :system)
-(defun defxdoc-fn (name parents short long pkg no-override state)
+(defun defxdoc-fn (name parents short long pkg code-source no-override state)
   (declare (xargs :mode :program :stobjs state))
-  (let* ((err (check-defxdoc-args name parents short long pkg)))
+  (let* ((err (check-defxdoc-args name parents short long pkg code-source)))
     (if err
         (er hard? 'defxdoc
             "Bad defxdoc arguments: ~s0" err)
@@ -118,7 +120,18 @@
                           (cons :parents parents)
                           (cons :short short)
                           (cons :long long)
-                          (cons :from bookname)))
+                          ;; :from is the book where the doc is defined,
+                          ;; (usually relativized to acl2/books and with
+                          ;; :DIR :SYSTEM added)
+                          (cons :from bookname)
+                          ;; :code-from is specified by the xdoc writer,
+                          ;; and is not currently not modified/normalized
+                          ;; so when specified, the writer should self-normalize
+                          ;; it to a form similar to the :from (for now at
+                          ;; least)
+                          ; [Pending change]
+                          ; (cons :code-from code-source)
+                          ))
              (table-event
               `(table xdoc 'doc
                       ,(if no-override
@@ -134,28 +147,28 @@
            ,@(and post-event (list post-event))
            (value-triple '(defxdoc ,name)))))))
 
-(defmacro defxdoc (name &key parents short long pkg no-override)
+(defmacro defxdoc (name &key parents short long pkg code-source no-override)
   `(with-output :off (event summary)
      (make-event
-      (defxdoc-fn ',name ',parents ,short ,long ,pkg ,no-override state))))
+      (defxdoc-fn ',name ',parents ,short ,long ,pkg ,code-source ,no-override state))))
 
-(defun defxdoc-raw-fn (name parents short long pkg)
+(defun defxdoc-raw-fn (name parents short long pkg code-source)
   (declare (xargs :guard t)
-           (ignore name parents short long pkg))
+           (ignore name parents short long pkg code-source))
   (er hard? 'defxdoc-raw-fn
       "Under-the-hood definition of defxdoc-raw-fn not installed.  You ~
        probably need to load the defxdoc-raw book."))
 
-(defun defxdoc-raw-after-check (name parents short long pkg)
+(defun defxdoc-raw-after-check (name parents short long pkg code-source)
   (declare (xargs :guard t))
-  (let* ((err (check-defxdoc-args name parents short long pkg)))
+  (let* ((err (check-defxdoc-args name parents short long pkg code-source)))
     (if err
         (er hard? 'defxdoc-raw
             "Bad defxdoc-raw arguments: ~s0~%" err)
-      (defxdoc-raw-fn name parents short long pkg))))
+      (defxdoc-raw-fn name parents short long pkg code-source))))
 
-(defmacro defxdoc-raw (name &key parents short long pkg)
-  `(defxdoc-raw-after-check ',name ',parents ,short ,long ,pkg))
+(defmacro defxdoc-raw (name &key parents short long pkg code-source)
+  `(defxdoc-raw-after-check ',name ',parents ,short ,long ,pkg ,code-source))
 
 (defun find-topic (name x)
   (declare (xargs :mode :program))

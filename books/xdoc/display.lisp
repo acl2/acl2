@@ -742,6 +742,13 @@
                      (ans (cons #\Newline ans)))
                   ans)
               ans))
+       (source-from (cdr (assoc :source-from x)))
+       (ans (if source-from
+                (b* ((ans (str::revappend-chars " -- " ans))
+                     (ans (str::revappend-chars source-from ans))
+                     (ans (cons #\Newline ans)))
+                  ans)
+              ans))
        (parents (cdr (assoc :parents x)))
        (ans (if parents
                 (b* ((ans (str::revappend-chars "Parents: " ans))

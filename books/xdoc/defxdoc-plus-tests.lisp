@@ -32,6 +32,7 @@
                 xdoc::short
                 xdoc::long
                 xdoc::pkg
+                xdoc::code-source
                 xdoc::no-override))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -43,6 +44,7 @@
               :short "short"
               :long "long"
               :pkg "ACL2"
+              :code-source "source-file"
               :no-override t))
    (declare (ignore erp))
    (value (equal form
@@ -52,6 +54,7 @@
                       :short "short"
                       :long "long"
                       :pkg "ACL2"
+                      :code-source "source-file"
                       :no-override t))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -63,6 +66,7 @@
               :short "short"
               :long "long"
               :pkg "ACL2"
+              :code-source "source-file"
               :no-override t
               :order-subtopics t))
    (declare (ignore erp))
@@ -73,6 +77,7 @@
                       :short "short"
                       :long "long"
                       :pkg "ACL2"
+                      :code-source "source-file"
                       :no-override t)
                     (xdoc::order-subtopics topic nil t))))))
 
@@ -85,6 +90,7 @@
               :short "short"
               :long "long"
               :pkg "ACL2"
+              :code-source "source-file"
               :no-override t
               :default-parent t))
    (declare (ignore erp))
@@ -95,6 +101,7 @@
                       :short "short"
                       :long "long"
                       :pkg "ACL2"
+                      :code-source "source-file"
                       :no-override t)
                     (local (set-default-parents topic)))))))
 
@@ -107,6 +114,7 @@
               :short "short"
               :long "long"
               :pkg "ACL2"
+              :code-source "source-file"
               :no-override t
               :order-subtopics t
               :default-parent t))
@@ -118,6 +126,7 @@
                       :short "short"
                       :long "long"
                       :pkg "ACL2"
+                      :code-source "source-file"
                       :no-override t)
                     (xdoc::order-subtopics topic nil t)
                     (local (set-default-parents topic)))))))
@@ -127,7 +136,7 @@
 (must-fail ; malformed keyed options
  (defxdoc+ topic 88))
 
-(must-fail ; malforemed keyed options
+(must-fail ; malformed keyed options
  (defxdoc+ topic :malformed))
 
 (must-fail ; malformed keyed options

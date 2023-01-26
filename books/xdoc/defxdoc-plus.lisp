@@ -56,6 +56,7 @@
                                            :short
                                            :long
                                            :pkg
+                                           :code-source
                                            :no-override
                                            :order-subtopics
                                            :default-parent)))
@@ -68,6 +69,7 @@
          (short (cadr (assoc-keyword :short keyargs)))
          (long (cadr (assoc-keyword :long keyargs)))
          (pkg (cadr (assoc-keyword :pkg keyargs)))
+         (code-source (cadr (assoc-keyword :code-source keyargs)))
          (no-override (cadr (assoc-keyword :no-override keyargs)))
          (order-subtopics (cadr (assoc-keyword :order-subtopics keyargs)))
          (default-parent (cadr (assoc-keyword :default-parent keyargs)))
@@ -84,6 +86,7 @@
            :short ,short
            :long ,long
            :pkg ,pkg
+           :code-source ,code-source
            :no-override ,no-override)
          ,@(cond ((eq order-subtopics t)
                   `((xdoc::order-subtopics ,name nil t)))

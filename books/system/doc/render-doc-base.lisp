@@ -203,6 +203,7 @@
   (b* ((name (cdr (assoc :name x)))
        (parents (cdr (assoc :parents x)))
        (from (cdr (assoc :from x)))
+       (?code-from (cdr (assoc :code-from x)))
        ((mv text state) (preprocess-topic
                          (acons :parents nil x) ;; horrible hack
                          all-topics topics-fal
@@ -236,16 +237,23 @@
 ; we decide to associate additional information with name, then we may have a
 ; more convincing reason to make this change.
 
-    (mv (list* (rendered-symbol name)
+    (mv (list ;list*
+               (rendered-symbol name)
                (rendered-symbol-lst parents)
                terminal
+               from
+               #|| EM: review later
                (if (equal from "ACL2 Sources")
 
 ; We avoid storing the from field in this case, simply to avoid a bit of
 ; bloating in generated ACL2 source file doc.lisp.
 
                    nil
-                 (list from)))
+                 (list from))
+               ||#
+               ; [pending; when filled in, also take out ? from ?code-from above]
+               ;code-from
+               )
         state)))
 
 (defun render-topics1 (x all-topics topics-fal state)
