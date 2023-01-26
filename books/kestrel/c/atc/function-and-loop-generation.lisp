@@ -550,120 +550,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fn-gthm* ((fn symbolp)
-                          (names-to-avoid symbol-listp)
-                          (wrld plist-worldp))
-  :returns (mv (event pseudo-event-formp)
-               (name symbolp)
-               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
-  :short "Generate a local theorem that is like the guard theorem of @('fn')
-          but with all the @(tsee if)s replaced with @(tsee if*)s."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Ideally, here we would use @(tsee guard-theorem)
-     to retrieve the guard theorem,
-     and then we would apply @(tsee fty-if-to-if*) to it,
-     to obtain the formula of the theorem.
-     However, @(tsee guard-theorem) is in program mode,
-     and takes @(tsee state) as an argument,
-     so it cannot be called in logic mode via @(tsee magic-ev-fncall).
-     To avoid putting this ATC code, and any ATC code that calls it,
-     in program mode, thus losing all static type checking,
-     here we generate a @(tsee make-event)
-     that defers the call of @(tsee guard-theorem)
-     to the time in which the theorem is submitted.")
-   (xdoc::p
-    "Even though proving this theorem is conceptually very easy,
-     straightforwar hints like @(':use') of the guard theorem
-     in the theory consisting solely of @(tsee if*)
-     fails to scale, on moderately large guard theorems,
-     due to ACL2 splitting on @(tsee if)s.
-     To prevent case splitting,
-     first we prove that the guard theorem formula with @(tsee if*)
-     is equivalent to the original one with @(tsee if),
-     via the theory consisting solely of @(tsee if*),
-     which appears to work without @(tsee if) splitting.
-     Then we use proof builder instructions
-     to apply that lemma as a rewrite rule
-     to the guard theorem formula with @(tsee if),
-     thus obtaining the original guard formula,
-     which we prove via a @(':by') hints.
-     There is a complication due to the fact that,
-     if the guard theorem contains @(tsee let)s,
-     the left side of the lemma has those expanded,
-     which would prevent the rewrite rule from applying.
-     Thus, prior to the rewriting proof builder command,
-     we expand @(tsee let)s, via the @('bash') command in the empty theory,
-     which appears to achieve what is needed here
-     (there seems to be no proof builder command
-     to explicitly expand @(tsee let)s).
-     But note that, if there is no @(tsee let), and thus no change,
-     the @('bash') command is regarded as failing by the proof builder;
-     so we wrap that into an @('orelse') that essentially makes it
-     optionally applicable.
-     The resulting somewhat complicated proof strategy
-     works on all our current examples (at the time of this writing),
-     but it is not clear that it is a universal strategy;
-     we may need to refine it in the future.
-     A last complication to handle is the fact that
-     some guard theorems are just @('t'),
-     making it impossible to create a rewrite rule
-     that rewrites @('t') to anything (including itself, in this case).
-     So we single out that case by just generating
-     a theorem whose formula is @('t').
-     It is possible that other guard theorems (besides @('t'))
-     are not terms allowed as left sides of rewrite rules:
-     in that case, we will refine the approach here.."))
-  (b* ((name (pack fn '-gthm*))
-       ((mv name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-       (event
-        `(make-event
-          (let* ((if-formula (guard-theorem ',fn :limited nil (w state) state))
-                 (if*-formula (fty-if-to-if* if-formula)))
-            (if (equal if*-formula acl2::*t*)
-                (list 'defthm
-                      ',name
-                      t
-                      :rule-classes
-                      nil
-                      :hints
-                      (list (list "Goal"
-                                  :in-theory
-                                  nil)))
-              (let* ((lemma (list 'defthmd
-                                  'lemma
-                                  (list 'equal
-                                        if*-formula
-                                        if-formula)
-                                  :hints
-                                  (list (list "Goal"
-                                              :in-theory
-                                              ''(if*)))))
-                     (instructions (list '(orelse
-                                           (bash ("Goal" :in-theory nil))
-                                           succeed)
-                                         '(rewrite lemma)
-                                         (list 'prove
-                                               :hints
-                                               (list (list "Goal"
-                                                           :by
-                                                           (list :guard-theorem
-                                                                 ',fn)))))))
-                (list 'defrule
-                      ',name
-                      if*-formula
-                      :rule-classes
-                      nil
-                      :instructions
-                      instructions
-                      :prep-lemmas
-                      (list lemma))))))))
-    (mv event name names-to-avoid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-cfun-fun-env-thm-name ((fn symbolp)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
@@ -2553,10 +2439,6 @@
             fn-def*
             names-to-avoid)
         (atc-gen-fn-def* fn names-to-avoid wrld))
-       ((mv fn-gthm*-event
-            fn-gthm*
-            names-to-avoid)
-        (atc-gen-fn-gthm* fn names-to-avoid wrld))
        ((erp typed-formals formals-events modular-proofs names-to-avoid)
         (atc-typed-formals
          fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
@@ -2619,7 +2501,6 @@
                        :affect affect
                        :fn fn
                        :fn-guard fn-guard
-                       :fn-gthm fn-gthm*
                        :compst-var compst-var
                        :fenv-var fenv-var
                        :limit-var limit-var
@@ -2736,7 +2617,6 @@
                                        (list fn-fun-env-event)
                                        (list fn-guard-event)
                                        fn-def*-events
-                                       (list fn-gthm*-event)
                                        formals-events
                                        (and modular-proofs
                                             (list init-scope-expand-event
@@ -3926,7 +3806,6 @@
                                            :inscope (list typed-formals)
                                            :fn fn
                                            :fn-guard nil
-                                           :fn-gthm nil
                                            :compst-var nil
                                            :fenv-var nil
                                            :limit-var nil
