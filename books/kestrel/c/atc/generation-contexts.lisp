@@ -96,7 +96,7 @@
 
 (define atc-contextualize ((formula "An untranslated term.")
                            (context atc-contextp)
-                           (fn symbolp)
+                           (fn? symbolp)
                            (fn-guard? symbolp)
                            (compst-var? symbolp)
                            (limit-var? symbolp)
@@ -127,7 +127,8 @@
    (xdoc::p
     "If @('fn-guard?') is @('nil'),
      we omit the the guard hypothesis.
-     This is used to generate some claims within the ACL2 proof builder.")
+     This is used to generate some claims within the ACL2 proof builder.
+     In this case, @('fn?') must be @('nil') too.")
    (xdoc::p
     "If @('compst-var?') is @('nil'),
      we avoid all the premises and hypotheses that concern computation states.
@@ -143,14 +144,17 @@
   (b* ((skip-cs (not compst-var?))
        (formula (atc-contextualize-aux formula context skip-cs))
        (hyps (append (and fn-guard?
-                          `((,fn-guard? ,@(formals+ fn wrld))))
+                          `((,fn-guard? ,@(formals+ fn? wrld))))
                      (and compst-var?
                           `((compustatep ,compst-var?)))
                      (and limit-var?
                           `((integerp ,limit-var?)
                             (>= ,limit-var? ,limit-bound?)))))
+       ((when (and (not fn-guard?) fn?))
+        (raise "Internal error: FN-GUARD? is NIL but FN? is ~x0."
+               fn?))
        ((when (and (not limit-var?) limit-bound?))
-        (raise "Internal error: LIMIT-VAR is NIL but LIMIT-BOUND is ~x0."
+        (raise "Internal error: LIMIT-VAR? is NIL but LIMIT-BOUND? is ~x0."
                limit-bound?))
        (formula `(implies (and ,@hyps) ,formula)))
     formula)
