@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -30,14 +30,17 @@
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/basic/member-symbol-name" :dir :system))
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 (local (include-book "projects/apply/loop" :dir :system))
 (local (in-theory (disable acl2::loop-book-theory)))
 
-(local (in-theory (disable state-p)))
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,6 +133,7 @@
        ((mv appconds fn-appconds) (atc-gen-appconds (cdr targets) wrld)))
     (mv (cons appcond appconds)
         (acons target name fn-appconds)))
+  :prepwork ((local (in-theory (enable packn-pos keywordp pseudo-termp acons))))
   :verify-guards nil ; done below
   ///
   (verify-guards atc-gen-appconds
@@ -188,6 +192,7 @@
                          info
                          (atc-string-objinfo-alist-fix prec-objs))))
     (mv declon-h declon-c prec-objs))
+  :prepwork ((local (in-theory (enable acons))))
   ///
 
   (defret atc-gen-obj-declon-h-iff-header
@@ -701,6 +706,7 @@
                         `(cw-event "~%File ~s0 generated.~%"
                                    ,path.c))))
             (list event)))
+  :guard-hints (("Goal" :in-theory (enable length)))
   :prepwork
   ((define atc-gen-print-result-aux ((events pseudo-event-form-listp))
      :returns (events pseudo-event-form-listp)
@@ -713,7 +719,8 @@
 (define atc-gen-thm-assert-events ((wf-thm symbolp)
                                    (fn-thms symbol-symbol-alistp)
                                    (proofs booleanp))
-  :returns (events pseudo-event-form-listp)
+  :returns (events pseudo-event-form-listp
+                   :hints (("Goal" :in-theory (enable collect$))))
   :short "Generate assertion events to double-check that
           all the correctness theorems were generated."
   :long
