@@ -1045,20 +1045,27 @@
                                  ,valuep-when-test-type-pred
                                  booleanp-compound-recognizer)))))
        (if-stmt-instructions
-        `((casesplit ,test-term)
-          (claim (test* ,test-term)
+        `((casesplit ,(atc-contextualize test-term
+                                         gin.context nil nil nil nil nil wrld))
+          (claim ,(atc-contextualize `(test* ,test-term)
+                                     gin.context nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
-          (claim (equal (if* ,test-term ,then-term ,else-term)
-                        ,then-term)
+          (claim ,(atc-contextualize
+                   `(equal (if* ,test-term ,then-term ,else-term)
+                           ,then-term)
+                   gin.context nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,if-stmt-hints)
-          (claim (test* (not ,test-term))
+          (claim ,(atc-contextualize `(test* (not ,test-term))
+                                     gin.context nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
-          (claim (equal (if* ,test-term ,then-term ,else-term)
-                        ,else-term)
+          (claim ,(atc-contextualize
+                   `(equal (if* ,test-term ,then-term ,else-term)
+                           ,else-term)
+                   gin.context nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,if-stmt-hints)))
