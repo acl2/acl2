@@ -2155,7 +2155,7 @@
                                    :inscope inscope-body
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs nil)
+                                   :proofs init.proofs)
                                   state))
                    (type body.type)
                    (limit (pseudo-term-fncall
