@@ -57,6 +57,7 @@
                             value-integerp
                             value-unsigned-integerp-alt-def
                             value-signed-integerp-alt-def
+                            bit-width-value-choices
                             ,@*atc-convert-integer-value-rules*))))
       (mv name event))
     :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp))))

@@ -21,12 +21,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
-
-
-
-
 (defsection atc-exec-expr-pure-rules
   :short "Rules for @(tsee exec-expr-pure)."
   :long
@@ -48,7 +42,7 @@
      we also prove rules used in the new modular proofs.
      The latter rules avoid @(tsee if) in the right side,
      to avoid unwanted case splits;
-     furthermore, they wrap the @(tsee if) tests into @(tsee hide)
+     furthermore, they wrap the @(tsee if) tests into @(tsee test*)
      to prevent unwanted rewrites (see @(tsee atc-contextualize))."))
 
   (defruled exec-expr-pure-when-ident
@@ -201,7 +195,7 @@
                   (valuep arg1)
                   (equal test1 (test-value arg1))
                   (booleanp test1)
-                  (hide test1)
+                  (test* test1)
                   (equal arg2 (exec-expr-pure (expr-binary->arg2 e) compst))
                   (valuep arg2)
                   (equal test2 (test-value arg2))
@@ -209,8 +203,7 @@
              (equal (exec-expr-pure e compst)
                     (sint-from-boolean test2)))
     :do-not-induct t
-    :enable (exec-expr-pure binop-purep)
-    :expand (:free (x) (hide x)))
+    :enable (exec-expr-pure binop-purep test*))
 
   (defruled exec-expr-pure-when-binary-logand-and-false
     (implies (and (syntaxp (quotep e))
@@ -221,11 +214,10 @@
                   (valuep arg1)
                   (equal test1 (test-value arg1))
                   (booleanp test1)
-                  (hide (not test1)))
+                  (test* (not test1)))
              (equal (exec-expr-pure e compst)
                     (sint 0)))
-    :enable (exec-expr-pure binop-purep)
-    :expand (:free (x) (hide x)))
+    :enable (exec-expr-pure binop-purep test*))
 
   (defruled exec-expr-pure-when-binary-logor
     (implies (and (syntaxp (quotep e))
@@ -255,11 +247,10 @@
                   (valuep arg1)
                   (equal test1 (test-value arg1))
                   (booleanp test1)
-                  (hide test1))
+                  (test* test1))
              (equal (exec-expr-pure e compst)
                     (sint 1)))
-    :enable (exec-expr-pure binop-purep)
-    :expand (:free (x) (hide x)))
+    :enable (exec-expr-pure binop-purep test*))
 
   (defruled exec-expr-pure-when-binary-logor-and-false
     (implies (and (syntaxp (quotep e))
@@ -270,15 +261,14 @@
                   (valuep arg1)
                   (equal test1 (test-value arg1))
                   (booleanp test1)
-                  (hide (not test1))
+                  (test* (not test1))
                   (equal arg2 (exec-expr-pure (expr-binary->arg2 e) compst))
                   (valuep arg2)
                   (equal test2 (test-value arg2))
                   (booleanp test2))
              (equal (exec-expr-pure e compst)
                     (sint-from-boolean test2)))
-    :enable (exec-expr-pure binop-purep)
-    :expand (:free (x) (hide x)))
+    :enable (exec-expr-pure binop-purep test*))
 
   (make-event
    `(defruled sint-from-boolean-with-error-when-booleanp
@@ -294,21 +284,19 @@
    `(defruled sint-from-boolean-with-error-when-booleanp-and-true
       (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'test)
                     (booleanp test)
-                    (hide test))
+                    (test* test))
                (equal (sint-from-boolean-with-error test)
                       (sint 1)))
-      :enable sint-from-boolean-with-error
-      :expand (:free (x) (hide x))))
+      :enable (sint-from-boolean-with-error test*)))
 
   (make-event
    `(defruled sint-from-boolean-with-error-when-booleanp-and-false
       (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'test)
                     (booleanp test)
-                    (hide (not test)))
+                    (test* (not test)))
                (equal (sint-from-boolean-with-error test)
                       (sint 0)))
-      :enable sint-from-boolean-with-error
-      :expand (:free (x) (hide x))))
+      :enable (sint-from-boolean-with-error test*)))
 
   (defruled exec-expr-pure-when-cond
     (implies (and (syntaxp (quotep e))
@@ -330,11 +318,10 @@
                   (valuep arg1)
                   (equal test (test-value arg1))
                   (booleanp test)
-                  (hide test))
+                  (test* test))
              (equal (exec-expr-pure e compst)
                     (exec-expr-pure (expr-cond->then e) compst)))
-    :enable exec-expr-pure
-    :expand (:free (x) (hide x)))
+    :enable (exec-expr-pure test*))
 
   (defruled exec-expr-pure-when-cond-and-false
     (implies (and (syntaxp (quotep e))
@@ -343,11 +330,10 @@
                   (valuep arg1)
                   (equal test (test-value arg1))
                   (booleanp test)
-                  (hide (not test)))
+                  (test* (not test)))
              (equal (exec-expr-pure e compst)
                     (exec-expr-pure (expr-cond->else e) compst)))
-    :enable exec-expr-pure
-    :expand (:free (x) (hide x)))
+    :enable (exec-expr-pure test*))
 
   (defval *atc-exec-expr-pure-rules*
     '(exec-expr-pure-when-ident

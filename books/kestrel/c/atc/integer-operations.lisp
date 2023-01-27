@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,6 +10,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "C")
+
+(include-book "test-star")
 
 (include-book "../representation/integer-conversions")
 
@@ -142,22 +144,22 @@
              (equal (sint-from-boolean x)
                     (sint 1))))
 
-  (defruled sint-from-boolean-when-true-hide
-    (implies (hide x)
+  (defruled sint-from-boolean-when-true-test*
+    (implies (test* x)
              (equal (sint-from-boolean x)
                     (sint 1)))
-    :expand (:free (x) (hide x)))
+    :enable test*)
 
   (defruled sint-from-boolean-when-false
     (implies (not x)
              (equal (sint-from-boolean x)
                     (sint 0))))
 
-  (defruled sint-from-boolean-when-false-hide
-    (implies (hide (not x))
+  (defruled sint-from-boolean-when-false-test*
+    (implies (test* (not x))
              (equal (sint-from-boolean x)
                     (sint 0)))
-    :expand (:free (x) (hide x))))
+    :enable test*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -542,22 +544,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event
- ;; It is critical to generate the operations for SINT and UINT
- ;; before the ones for SCHAR and UCHAR and SSHORT and USHORT,
- ;; because the latter are defined in terms of the former.
- ;; See :DOC ATC-DEF-INTEGER-OPERATIONS-1.
- (b* ((types (list (type-sint)
-                   (type-uint)
-                   (type-slong)
-                   (type-ulong)
-                   (type-sllong)
-                   (type-ullong)
-                   (type-schar)
-                   (type-uchar)
-                   (type-sshort)
-                   (type-ushort))))
-   `(progn ,@(atc-def-integer-operations-1-loop types))))
+(encapsulate ()
+  (local (in-theory (enable bit-width-value-choices)))
+  (make-event
+   ;; It is critical to generate the operations for SINT and UINT
+   ;; before the ones for SCHAR and UCHAR and SSHORT and USHORT,
+   ;; because the latter are defined in terms of the former.
+   ;; See :DOC ATC-DEF-INTEGER-OPERATIONS-1.
+   (b* ((types (list (type-sint)
+                     (type-uint)
+                     (type-slong)
+                     (type-ulong)
+                     (type-sllong)
+                     (type-ullong)
+                     (type-schar)
+                     (type-uchar)
+                     (type-sshort)
+                     (type-ushort))))
+     `(progn ,@(atc-def-integer-operations-1-loop types)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1227,20 +1231,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event
- ;; It is critical to generate the operations for equal operand types
- ;; before the ones for different operand types,
- ;; because the latter are defined in terms of the former.
- ;; See :DOC ATC-DEF-INTEGER-OPERATIONS-2.
- (b* ((types (list (type-sint)
-                   (type-uint)
-                   (type-slong)
-                   (type-ulong)
-                   (type-sllong)
-                   (type-ullong)
-                   (type-schar)
-                   (type-uchar)
-                   (type-sshort)
-                   (type-ushort))))
-   `(progn ,@(atc-def-integer-operations-2-loop-same types)
-           ,@(atc-def-integer-operations-2-loop-outer types types))))
+(encapsulate ()
+  (local (in-theory (enable bit-width-value-choices)))
+  (make-event
+   ;; It is critical to generate the operations for equal operand types
+   ;; before the ones for different operand types,
+   ;; because the latter are defined in terms of the former.
+   ;; See :DOC ATC-DEF-INTEGER-OPERATIONS-2.
+   (b* ((types (list (type-sint)
+                     (type-uint)
+                     (type-slong)
+                     (type-ulong)
+                     (type-sllong)
+                     (type-ullong)
+                     (type-schar)
+                     (type-uchar)
+                     (type-sshort)
+                     (type-ushort))))
+     `(progn ,@(atc-def-integer-operations-2-loop-same types)
+             ,@(atc-def-integer-operations-2-loop-outer types types)))))

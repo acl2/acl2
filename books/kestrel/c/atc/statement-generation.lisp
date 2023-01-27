@@ -200,7 +200,6 @@
    (affect symbol-list)
    (fn symbolp)
    (fn-guard symbol)
-   (fn-gthm symbol)
    (compst-var symbol)
    (fenv-var symbol)
    (limit-var symbol)
@@ -312,22 +311,21 @@
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (result-uterm (untranslate$ result-term nil state))
        (compst-uterm (untranslate$ compst-term nil state))
-       (formula `(equal (exec-block-item ',item
-                                         ,compst-var
-                                         ,fenv-var
-                                         ,limit-var)
-                        (mv ,result-uterm ,compst-uterm)))
+       (formula1 `(equal (exec-block-item ',item
+                                          ,compst-var
+                                          ,fenv-var
+                                          ,limit-var)
+                         (mv ,result-uterm ,compst-uterm)))
+       (formula1 (atc-contextualize formula1 context fn fn-guard
+                                    compst-var limit-var item-limit wrld))
        (formula (if result-term
-                    (b* ((type-pred (type-to-recognizer result-type wrld)))
-                      `(and ,formula
-                            (,type-pred ,result-uterm)))
-                  formula))
-       (formula (atc-contextualize formula context nil))
-       (formula `(implies (and (compustatep ,compst-var)
-                               (,fn-guard ,@(formals+ fn wrld))
-                               (integerp ,limit-var)
-                               (>= ,limit-var ,item-limit))
-                          ,formula))
+                    (b* ((type-pred (type-to-recognizer result-type wrld))
+                         (formula2 `(,type-pred ,result-uterm))
+                         (formula2 (atc-contextualize formula2 context
+                                                      fn fn-guard
+                                                      nil nil nil wrld)))
+                      `(and ,formula1 ,formula2))
+                  formula1))
        (hints `(("Goal" :in-theory '(exec-block-item-when-stmt
                                      (:e block-item-kind)
                                      not-zp-of-limit-variable
@@ -341,31 +339,160 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-block-item-declon ((var symbolp)
+(define atc-gen-block-item-declon ((fn symbolp)
+                                   (fn-guard symbolp)
+                                   (context atc-contextp)
+                                   (var symbolp)
                                    (type typep)
                                    (expr exprp)
-                                   (inscope atc-symbol-varinfo-alist-listp))
+                                   (expr-term pseudo-termp)
+                                   (expr-limit pseudo-termp)
+                                   (expr-thm symbolp)
+                                   (inscope atc-symbol-varinfo-alist-listp)
+                                   (compst-var symbolp)
+                                   (fenv-var symbolp)
+                                   (limit-var symbolp)
+                                   (thm-index posp)
+                                   (names-to-avoid symbol-listp)
+                                   (proofs booleanp)
+                                   state)
   :returns (mv (item block-itemp)
+               (thm-events pseudo-event-form-listp)
                (new-inscope atc-symbol-varinfo-alist-listp
-                            :hyp (atc-symbol-varinfo-alist-listp inscope)))
+                            :hyp (atc-symbol-varinfo-alist-listp inscope))
+               (new-context atc-contextp :hyp (atc-contextp context))
+               (thm-index posp :hyp (posp thm-index))
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate a C block item that consists of an object declaration."
   :long
   (xdoc::topstring
    (xdoc::p
     "We get the (ACL2) variable, the type, and the expressions as inputs.
      We return not only the block item,
-     but also a symbol table updated with the variable."))
-  (b* (((mv tyspec declor) (ident+type-to-tyspec+declor
+     and also a symbol table updated with the variable.")
+   (xdoc::p
+    "We generate a theorem about executing the initializer.
+     We will soon generate an additional theorem,
+     about executing the block item."))
+  (b* ((wrld (w state))
+       ((mv tyspec declor) (ident+type-to-tyspec+declor
                             (make-ident :name (symbol-name var))
                             type))
+       (initer (initer-single expr))
        (declon (make-obj-declon :scspec (scspecseq-none)
                                 :tyspec tyspec
                                 :declor declor
-                                :init? (initer-single expr)))
+                                :init? initer))
        (item (block-item-declon declon))
        (varinfo (make-atc-var-info :type type :thm nil))
-       (new-inscope (atc-add-var var varinfo inscope)))
-    (mv item new-inscope)))
+       ((when (not proofs))
+        (mv item
+            nil
+            (atc-add-var var varinfo inscope)
+            context
+            thm-index
+            names-to-avoid))
+       (initer-thm-name (pack fn '-correct- thm-index))
+       (thm-index (1+ thm-index))
+       ((mv initer-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix initer-thm-name
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (initer-formula `(equal (exec-initer ',initer
+                                            ,compst-var
+                                            ,fenv-var
+                                            ,limit-var)
+                               (mv (init-value-single ,expr-term) ,compst-var)))
+       (initer-limit `(binary-+ '1 ,expr-limit))
+       (initer-formula
+        (atc-contextualize initer-formula context fn fn-guard
+                           compst-var limit-var initer-limit wrld))
+       (type-pred (type-to-recognizer type wrld))
+       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (initer-hints `(("Goal" :in-theory '(exec-initer-when-single
+                                            (:e initer-kind)
+                                            not-zp-of-limit-variable
+                                            (:e initer-single->get)
+                                            ,expr-thm
+                                            ,valuep-when-type-pred
+                                            mv-nth-of-cons
+                                            (:e zp)))))
+       ((mv initer-thm-event &) (evmac-generate-defthm initer-thm-name
+                                                       :formula initer-formula
+                                                       :hints initer-hints
+                                                       :enable nil))
+       (new-compst `(add-var (ident ,(symbol-name var))
+                             ,(untranslate$ expr-term nil state)
+                             ,compst-var))
+       (item-thm-name (pack fn '-correct- thm-index))
+       (thm-index (1+ thm-index))
+       ((mv item-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix item-thm-name
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (item-formula `(equal (exec-block-item ',item
+                                              ,compst-var
+                                              ,fenv-var
+                                              ,limit-var)
+                             (mv nil ,new-compst)))
+       (item-limit `(binary-+ '1 ,initer-limit))
+       (item-formula (atc-contextualize item-formula context fn fn-guard
+                                        compst-var limit-var item-limit wrld))
+       (type-of-value-when-type-pred (pack 'type-of-value-when- type-pred))
+       (e-type `(:e ,(car (type-to-maker type))))
+       (item-hints
+        `(("Goal"
+           :in-theory '(exec-block-item-when-declon
+                        (:e block-item-kind)
+                        not-zp-of-limit-variable
+                        (:e block-item-declon->get)
+                        (:e obj-declon-to-ident+scspec+tyname+init)
+                        mv-nth-of-cons
+                        (:e zp)
+                        (:e scspecseq-kind)
+                        (:e tyname-to-type)
+                        (:e type-kind)
+                        ,initer-thm-name
+                        return-type-of-init-value-single
+                        init-value-to-value-when-single
+                        ,expr-thm
+                        ,valuep-when-type-pred
+                        ,type-of-value-when-type-pred
+                        ,e-type
+                        create-var-of-const-identifier
+                        (:e identp)
+                        (:e ident->name)
+                        create-var-to-add-var
+                        create-var-okp-of-add-var
+                        create-var-okp-of-enter-scope
+                        ident-fix-when-identp
+                        equal-of-ident-and-ident
+                        (:e str-fix)
+                        identp-of-ident
+                        compustate-frames-number-of-add-var-not-zero
+                        compustate-frames-number-of-enter-scope-not-zero
+                        compustate-frames-number-of-add-frame-not-zero
+                        create-var-okp-of-add-frame
+                        compustatep-of-add-var))))
+       ((mv item-thm-event &) (evmac-generate-defthm item-thm-name
+                                                     :formula item-formula
+                                                     :hints item-hints
+                                                     :enable nil))
+       ((mv new-inscope new-context new-inscope-events thm-index names-to-avoid)
+        (atc-gen-vardecl-inscope fn fn-guard inscope context
+                                 var type (untranslate$ expr-term nil state)
+                                 expr-thm compst-var
+                                 thm-index names-to-avoid wrld)))
+    (mv item
+        (list* initer-thm-event
+               item-thm-event
+               new-inscope-events)
+        new-inscope
+        new-context
+        thm-index
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -421,23 +548,22 @@
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (result-uterm (untranslate$ result-term nil state))
        (compst-uterm (untranslate$ compst-term nil state))
-       (formula `(equal (exec-block-item-list ',items
-                                              ,compst-var
-                                              ,fenv-var
-                                              ,limit-var)
-                        (mv ,result-uterm ,compst-uterm)))
+       (formula1 `(equal (exec-block-item-list ',items
+                                               ,compst-var
+                                               ,fenv-var
+                                               ,limit-var)
+                         (mv ,result-uterm ,compst-uterm)))
+       (formula1 (atc-contextualize formula1 context fn fn-guard
+                                    compst-var limit-var items-limit wrld))
        (type-pred (and result-term
                        (type-to-recognizer result-type wrld)))
        (formula (if result-term
-                    `(and ,formula
-                          (,type-pred ,result-uterm))
-                  formula))
-       (formula (atc-contextualize formula context nil))
-       (formula `(implies (and (compustatep ,compst-var)
-                               (,fn-guard ,@(formals+ fn wrld))
-                               (integerp ,limit-var)
-                               (>= ,limit-var ,items-limit))
-                          ,formula))
+                    (b* ((formula2 `(,type-pred ,result-uterm))
+                         (formula2 (atc-contextualize formula2 context
+                                                      fn fn-guard
+                                                      nil nil nil wrld)))
+                      `(and ,formula1 ,formula2))
+                  formula1))
        (valuep-when-type-pred (and result-term
                                    (pack 'valuep-when- type-pred)))
        (hints
@@ -512,7 +638,6 @@
                                      :inscope gin.inscope
                                      :fn gin.fn
                                      :fn-guard gin.fn-guard
-                                     :fn-gthm gin.fn-gthm
                                      :compst-var gin.compst-var
                                      :fenv-var gin.fenv-var
                                      :limit-var gin.limit-var
@@ -577,18 +702,29 @@
         (fresh-logical-name-with-$s-suffix
          stmt-thm-name nil names-to-avoid wrld))
        (uterm (untranslate$ expr.term nil state))
-       (stmt-formula `(and (equal (exec-stmt ',stmt
-                                             ,gin.compst-var
-                                             ,gin.fenv-var
-                                             ,gin.limit-var)
-                                  (mv ,uterm ,gin.compst-var))
-                           (,type-pred ,uterm)))
-       (stmt-formula (atc-contextualize stmt-formula gin.context nil))
-       (stmt-formula `(implies (and (compustatep ,gin.compst-var)
-                                    (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                                    (integerp ,gin.limit-var)
-                                    (>= ,gin.limit-var ,stmt-limit))
-                               ,stmt-formula))
+       (stmt-formula1 `(equal (exec-stmt ',stmt
+                                         ,gin.compst-var
+                                         ,gin.fenv-var
+                                         ,gin.limit-var)
+                              (mv ,uterm ,gin.compst-var)))
+       (stmt-formula1 (atc-contextualize stmt-formula1
+                                         gin.context
+                                         gin.fn
+                                         gin.fn-guard
+                                         gin.compst-var
+                                         gin.limit-var
+                                         stmt-limit
+                                         wrld))
+       (stmt-formula2 `(,type-pred ,uterm))
+       (stmt-formula2 (atc-contextualize stmt-formula2
+                                         gin.context
+                                         gin.fn
+                                         gin.fn-guard
+                                         nil
+                                         nil
+                                         nil
+                                         wrld))
+       (stmt-formula `(and ,stmt-formula1 ,stmt-formula2))
        (stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-return
                                (:e stmt-kind)
@@ -758,34 +894,52 @@
        (else-stmt-limit `(binary-+ '1 ,else-limit))
        (then-uterm (untranslate$ then-term nil state))
        (else-uterm (untranslate$ else-term nil state))
-       (then-stmt-formula `(and (equal (exec-stmt ',then-stmt
-                                                  ,gin.compst-var
-                                                  ,gin.fenv-var
-                                                  ,gin.limit-var)
-                                       (mv ,then-uterm ,gin.compst-var))
-                                (,type-pred ,then-uterm)))
-       (then-stmt-formula
-        (atc-contextualize then-stmt-formula then-context nil))
-       (then-stmt-formula
-        `(implies (and (compustatep ,gin.compst-var)
-                       (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                       (integerp ,gin.limit-var)
-                       (>= ,gin.limit-var ,then-stmt-limit))
-                  ,then-stmt-formula))
-       (else-stmt-formula `(and (equal (exec-stmt ',else-stmt
-                                                  ,gin.compst-var
-                                                  ,gin.fenv-var
-                                                  ,gin.limit-var)
-                                       (mv ,else-uterm ,gin.compst-var))
-                                (,type-pred ,else-uterm)))
-       (else-stmt-formula
-        (atc-contextualize else-stmt-formula else-context nil))
-       (else-stmt-formula
-        `(implies (and (compustatep ,gin.compst-var)
-                       (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                       (integerp ,gin.limit-var)
-                       (>= ,gin.limit-var ,else-stmt-limit))
-                  ,else-stmt-formula))
+       (then-stmt-formula1 `(equal (exec-stmt ',then-stmt
+                                              ,gin.compst-var
+                                              ,gin.fenv-var
+                                              ,gin.limit-var)
+                                   (mv ,then-uterm ,gin.compst-var)))
+       (then-stmt-formula1 (atc-contextualize then-stmt-formula1
+                                              then-context
+                                              gin.fn
+                                              gin.fn-guard
+                                              gin.compst-var
+                                              gin.limit-var
+                                              then-stmt-limit
+                                              wrld))
+       (then-stmt-formula2 `(,type-pred ,then-uterm))
+       (then-stmt-formula2 (atc-contextualize then-stmt-formula2
+                                              then-context
+                                              gin.fn
+                                              gin.fn-guard
+                                              nil
+                                              nil
+                                              nil
+                                              wrld))
+       (then-stmt-formula `(and ,then-stmt-formula1 ,then-stmt-formula2))
+       (else-stmt-formula1 `(equal (exec-stmt ',else-stmt
+                                              ,gin.compst-var
+                                              ,gin.fenv-var
+                                              ,gin.limit-var)
+                                   (mv ,else-uterm ,gin.compst-var)))
+       (else-stmt-formula1 (atc-contextualize else-stmt-formula1
+                                              else-context
+                                              gin.fn
+                                              gin.fn-guard
+                                              gin.compst-var
+                                              gin.limit-var
+                                              else-stmt-limit
+                                              wrld))
+       (else-stmt-formula2 `(,type-pred ,else-uterm))
+       (else-stmt-formula2 (atc-contextualize else-stmt-formula2
+                                              else-context
+                                              gin.fn
+                                              gin.fn-guard
+                                              nil
+                                              nil
+                                              nil
+                                              wrld))
+       (else-stmt-formula `(and ,else-stmt-formula1 ,else-stmt-formula2))
        (then-stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-compound
                                (:e stmt-kind)
@@ -838,19 +992,29 @@
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
        (term* `(if* ,test-term ,then-term ,else-term))
        (uterm* (untranslate$ term* nil state))
-       (if-stmt-formula `(and (equal (exec-stmt ',stmt
-                                                ,gin.compst-var
-                                                ,gin.fenv-var
-                                                ,gin.limit-var)
-                                     (mv ,uterm* ,gin.compst-var))
-                              (,type-pred ,uterm*)))
-       (if-stmt-formula (atc-contextualize if-stmt-formula gin.context nil))
-       (if-stmt-formula
-        `(implies (and (compustatep ,gin.compst-var)
-                       (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                       (integerp ,gin.limit-var)
-                       (>= ,gin.limit-var ,if-stmt-limit))
-                  ,if-stmt-formula))
+       (if-stmt-formula1 `(equal (exec-stmt ',stmt
+                                            ,gin.compst-var
+                                            ,gin.fenv-var
+                                            ,gin.limit-var)
+                                 (mv ,uterm* ,gin.compst-var)))
+       (if-stmt-formula1 (atc-contextualize if-stmt-formula1
+                                            gin.context
+                                            gin.fn
+                                            gin.fn-guard
+                                            gin.compst-var
+                                            gin.limit-var
+                                            if-stmt-limit
+                                            wrld))
+       (if-stmt-formula2 `(,type-pred ,uterm*))
+       (if-stmt-formula2 (atc-contextualize if-stmt-formula2
+                                            gin.context
+                                            gin.fn
+                                            gin.fn-guard
+                                            nil
+                                            nil
+                                            nil
+                                            wrld))
+       (if-stmt-formula `(and ,if-stmt-formula1 ,if-stmt-formula2))
        (test-type-pred (type-to-recognizer test-type wrld))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (if-stmt-hints
@@ -881,23 +1045,21 @@
                                  booleanp-compound-recognizer)))))
        (if-stmt-instructions
         `((casesplit ,test-term)
-          (claim (hide ,test-term)
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* ,test-term)
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal (if* ,test-term ,then-term ,else-term)
                         ,then-term)
                  :hints (("Goal"
-                          :in-theory '(acl2::if*-when-true)
-                          :expand (:free (x) (hide x)))))
+                          :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,if-stmt-hints)
-          (claim (hide (not ,test-term))
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* (not ,test-term))
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal (if* ,test-term ,then-term ,else-term)
                         ,else-term)
                  :hints (("Goal"
-                          :in-theory '(acl2::if*-when-false)
-                          :expand (:free (x) (hide x)))))
+                          :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,if-stmt-hints)))
        ((mv if-stmt-event &)
         (evmac-generate-defthm if-stmt-thm
@@ -1163,7 +1325,6 @@
                                   :prec-tags gin.prec-tags
                                   :fn gin.fn
                                   :fn-guard gin.fn-guard
-                                  :fn-gthm gin.fn-gthm
                                   :compst-var gin.compst-var
                                   :thm-index gin.thm-index
                                   :names-to-avoid gin.names-to-avoid
@@ -1322,7 +1483,6 @@
                                    :inscope gin.inscope
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
-                                   :fn-gthm gin.fn-gthm
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
                                    :limit-var gin.limit-var
@@ -1413,7 +1573,6 @@
                                    :inscope gin.inscope
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
-                                   :fn-gthm gin.fn-gthm
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
                                    :limit-var gin.limit-var
@@ -1579,7 +1738,6 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
-                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
@@ -1593,7 +1751,6 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
-                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index arr.thm-index
                                         :names-to-avoid arr.names-to-avoid
@@ -1607,7 +1764,6 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
-                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index sub.thm-index
                                         :names-to-avoid sub.names-to-avoid
@@ -1690,7 +1846,6 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
-                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
@@ -1728,7 +1883,6 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
-                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index struct.thm-index
                                         :names-to-avoid struct.names-to-avoid
@@ -1795,7 +1949,6 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
-                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
@@ -1833,7 +1986,6 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
-                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index struct.thm-index
                                         :names-to-avoid struct.names-to-avoid
@@ -1857,7 +2009,6 @@
                                         :prec-tags gin.prec-tags
                                         :fn gin.fn
                                         :fn-guard gin.fn-guard
-                                        :fn-gthm gin.fn-gthm
                                         :compst-var gin.compst-var
                                         :thm-index index.thm-index
                                         :names-to-avoid index.names-to-avoid
@@ -1941,7 +2092,6 @@
                                    :inscope gin.inscope
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
-                                   :fn-gthm gin.fn-gthm
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
                                    :limit-var gin.limit-var
@@ -1965,17 +2115,38 @@
                            must not affect any variables, ~
                            but it affects ~x2 instead."
                           val-term var init.affect)))
-                   ((mv item inscope-body)
-                    (atc-gen-block-item-declon
-                     var init.type init.expr gin.inscope))
+                   ((mv item
+                        item-events
+                        inscope-body
+                        context-body
+                        thm-index
+                        names-to-avoid)
+                    (atc-gen-block-item-declon gin.fn
+                                               gin.fn-guard
+                                               gin.context
+                                               var
+                                               init.type
+                                               init.expr
+                                               init.term
+                                               init.limit
+                                               init.thm-name
+                                               gin.inscope
+                                               gin.compst-var
+                                               gin.fenv-var
+                                               gin.limit-var
+                                               init.thm-index
+                                               init.names-to-avoid
+                                               init.proofs
+                                               state))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
+                                   :context context-body
                                    :var-term-alist var-term-alist-body
                                    :inscope inscope-body
-                                   :thm-index init.thm-index
-                                   :names-to-avoid init.names-to-avoid
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
                                    :proofs nil)
                                   state))
                    (type body.type)
@@ -1990,7 +2161,9 @@
                         :type type
                         :term term
                         :limit limit
-                        :events (append init.events body.events)
+                        :events (append init.events
+                                        item-events
+                                        body.events)
                         :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
@@ -2015,7 +2188,6 @@
                                    :inscope gin.inscope
                                    :fn gin.fn
                                    :fn-guard gin.fn-guard
-                                   :fn-gthm gin.fn-gthm
                                    :compst-var gin.compst-var
                                    :fenv-var gin.fenv-var
                                    :limit-var gin.limit-var
@@ -2290,7 +2462,6 @@
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn
                                        :fn-guard gin.fn-guard
-                                       :fn-gthm gin.fn-gthm
                                        :compst-var gin.compst-var
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
@@ -2365,7 +2536,6 @@
    (inscope atc-symbol-varinfo-alist-list)
    (fn symbol)
    (fn-guard symbol)
-   (fn-gthm symbol)
    (compst-var symbol)
    (fenv-var symbol)
    (limit-var symbol)
@@ -2509,7 +2679,6 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
-                            :fn-gthm gin.fn-gthm
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
@@ -2541,7 +2710,6 @@
                        :affect affect
                        :fn gin.fn
                        :fn-guard gin.fn-guard
-                       :fn-gthm gin.fn-gthm
                        :compst-var gin.compst-var
                        :prec-fns gin.prec-fns
                        :prec-tags gin.prec-tags

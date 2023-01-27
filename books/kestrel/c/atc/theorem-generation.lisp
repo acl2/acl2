@@ -20,6 +20,12 @@
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/untranslate-dollar" :dir :system)
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "kestrel/std/system/w" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-theorem-generation
@@ -81,13 +87,14 @@
                                   name nil names-to-avoid wrld))
        (type-pred (type-to-recognizer type wrld))
        (uterm (untranslate$ term nil state))
-       (formula `(and (equal (exec-expr-pure ',expr ,compst-var)
-                             ,uterm)
-                      (,type-pred ,uterm)))
-       (formula (atc-contextualize formula context nil))
-       (formula `(implies (and (compustatep ,compst-var)
-                               (,fn-guard ,@(formals+ fn wrld)))
-                          ,formula))
+       (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
+                         ,uterm))
+       (formula1 (atc-contextualize formula1 context fn fn-guard
+                                    compst-var nil nil wrld))
+       (formula2 `(,type-pred ,uterm))
+       (formula2 (atc-contextualize formula2 context fn fn-guard
+                                    nil nil nil wrld))
+       (formula `(and ,formula1 ,formula2))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -157,16 +164,17 @@
        (type-pred (type-to-recognizer type wrld))
        (uaterm (untranslate$ aterm nil state))
        (ucterm (untranslate$ cterm nil state))
-       (formula `(and (equal (exec-expr-pure ',expr ,compst-var)
-                             ,ucterm)
-                      (,type-pred ,ucterm)
-                      (equal (test-value ,ucterm)
-                             ,uaterm)
-                      (booleanp ,uaterm)))
-       (formula (atc-contextualize formula context nil))
-       (formula `(implies (and (compustatep ,compst-var)
-                               (,fn-guard ,@(formals+ fn wrld)))
-                          ,formula))
+       (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
+                         ,ucterm))
+       (formula1 (atc-contextualize formula1 context fn fn-guard
+                                    compst-var nil nil wrld))
+       (formula2 `(and (,type-pred ,ucterm)
+                       (equal (test-value ,ucterm)
+                              ,uaterm)
+                       (booleanp ,uaterm)))
+       (formula2 (atc-contextualize formula2 context fn fn-guard
+                                    nil nil nil wrld))
+       (formula `(and ,formula1 ,formula2))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -188,7 +196,6 @@
   :returns (mv (new-inscope atc-symbol-varinfo-alist-listp
                             :hyp (atc-symbol-varinfo-alist-listp inscope))
                (events pseudo-event-form-listp)
-               (thm-index posp :hyp (posp thm-index))
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate an updated symbol table according to given criteria."
   :long
@@ -234,7 +241,7 @@
   (b* (((mv new-inscope events names-to-avoid)
         (atc-gen-new-inscope-aux fn fn-guard inscope new-context compst-var
                                  rules thm-index names-to-avoid wrld)))
-    (mv new-inscope events (1+ thm-index) names-to-avoid))
+    (mv new-inscope events names-to-avoid))
 
   :prepwork
   ((define atc-gen-new-inscope-aux ((fn symbolp)
@@ -276,7 +283,8 @@
                                            (names-to-avoid symbol-listp)
                                            (wrld plist-worldp))
         :returns (mv (new-scope atc-symbol-varinfo-alistp
-                                :hyp (atc-symbol-varinfo-alistp scope))
+                                :hyp (atc-symbol-varinfo-alistp scope)
+                                :hints (("Goal" :in-theory (enable acons))))
                      (events pseudo-event-form-listp)
                      (names-to-avoid symbol-listp
                                      :hyp (symbol-listp names-to-avoid)))
@@ -289,14 +297,15 @@
              (new-thm (pack fn '- var '-in-scope- thm-index))
              ((mv new-thm names-to-avoid)
               (fresh-logical-name-with-$s-suffix new-thm nil names-to-avoid wrld))
-             (formula `(and (equal (read-var (ident ,(symbol-name var))
+             (formula1 `(equal (read-var (ident ,(symbol-name var))
                                              ,compst-var)
-                                   ,var)
-                            (,type-pred ,var)))
-             (formula (atc-contextualize formula new-context nil))
-             (formula `(implies (and (compustatep ,compst-var)
-                                     (,fn-guard ,@(formals+ fn wrld)))
-                                ,formula))
+                               ,var))
+             (formula1 (atc-contextualize formula1 new-context fn fn-guard
+                                          compst-var nil nil wrld))
+             (formula2 `(,type-pred ,var))
+             (formula2 (atc-contextualize formula2 new-context fn fn-guard
+                                          nil nil nil wrld))
+             (formula `(and ,formula1 ,formula2))
              (hints `(("Goal" :in-theory '(,thm ,@rules))))
              ((mv event &) (evmac-generate-defthm new-thm
                                                   :formula formula
@@ -359,11 +368,101 @@
                 compustate-frames-number-of-add-frame-not-zero
                 compustate-frames-number-of-enter-scope-not-zero
                 compustate-frames-number-of-add-var-not-zero))
-       ((mv new-inscope events thm-index names-to-avoid)
+       ((mv new-inscope events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard inscope new-context compst-var
                              rules thm-index names-to-avoid wrld)))
     (mv (cons nil new-inscope)
         new-context
         events
+        (1+ thm-index)
+        names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-vardecl-inscope ((fn symbolp)
+                                 (fn-guard symbolp)
+                                 (inscope atc-symbol-varinfo-alist-listp)
+                                 (context atc-contextp)
+                                 (var symbolp)
+                                 (type typep)
+                                 (term "An untranslated term.")
+                                 (term-thm symbolp)
+                                 (compst-var symbolp)
+                                 (thm-index posp)
+                                 (names-to-avoid symbol-listp)
+                                 (wrld plist-worldp))
+  :returns (mv (new-inscope atc-symbol-varinfo-alist-listp
+                            :hyp (atc-symbol-varinfo-alist-listp inscope))
+               (new-context atc-contextp :hyp (atc-contextp context))
+               (events pseudo-event-form-listp)
+               (thm-index posp :hyp (posp thm-index))
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate an updated symbol table according to
+          declaring a new local variable."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The context is updated with a @(tsee let) binding for the variable
+     followed by a @(tsee let) binding for the computation state.
+     We use @(tsee atc-gen-new-inscope) to generate most of the new symbol table
+     and then we add the new variable (to the innermost scope),
+     along with a theorem for the new variable."))
+  (b* ((var-premise (make-atc-premise-cvalue :var var :term term))
+       (cs-premise-term `(add-var (ident ,(symbol-name var)) ,var ,compst-var))
+       (cs-premise (make-atc-premise-compustate :var compst-var
+                                                :term cs-premise-term))
+       (new-context (append context (list var-premise cs-premise)))
+       (rules '(read-var-of-add-var
+                ident-fix-when-identp
+                identp-of-ident
+                equal-of-ident-and-ident
+                (:e str-fix)))
+       ((mv new-inscope new-inscope-events names-to-avoid)
+        (atc-gen-new-inscope fn fn-guard inscope new-context compst-var rules
+                             thm-index names-to-avoid wrld))
+       (var-in-scope-thm (pack fn '- var '-in-scope- thm-index))
+       (thm-index (1+ thm-index))
+       ((mv var-in-scope-thm names-to-avoid)
+        (fresh-logical-name-with-$s-suffix var-in-scope-thm
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (type-pred (type-to-recognizer type wrld))
+       (var-in-scope-formula1
+        `(equal (read-var (ident ,(symbol-name var)) ,compst-var)
+                ,var))
+       (var-in-scope-formula1
+        (atc-contextualize var-in-scope-formula1 new-context fn fn-guard
+                           compst-var nil nil wrld))
+       (var-in-scope-formula2 `(,type-pred ,var))
+       (var-in-scope-formula2
+        (atc-contextualize var-in-scope-formula2 new-context fn fn-guard
+                           nil nil nil wrld))
+       (var-in-scope-formula `(and ,var-in-scope-formula1
+                                   ,var-in-scope-formula2))
+       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (not-flexible-array-member-p-when-type-pred
+        (pack 'not-flexible-array-member-p-when- type-pred))
+       (var-in-scope-hints
+        `(("Goal" :in-theory '(read-var-of-add-var
+                               ident-fix-when-identp
+                               identp-of-ident
+                               equal-of-ident-and-ident
+                               (:e str-fix)
+                               remove-flexible-array-member-when-absent
+                               ,not-flexible-array-member-p-when-type-pred
+                               value-fix-when-valuep
+                               ,valuep-when-type-pred
+                               ,term-thm))))
+       ((mv var-in-scope-event &) (evmac-generate-defthm
+                                   var-in-scope-thm
+                                   :formula var-in-scope-formula
+                                   :hints var-in-scope-hints
+                                   :enable nil))
+       (varinfo (make-atc-var-info :type type :thm var-in-scope-thm))
+       (new-inscope (atc-add-var var varinfo new-inscope)))
+    (mv new-inscope
+        new-context
+        (append new-inscope-events (list var-in-scope-event))
         thm-index
         names-to-avoid)))

@@ -11,6 +11,8 @@
 
 (in-package "C")
 
+(include-book "../test-star")
+
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
@@ -40,6 +42,6 @@
 
   (defruled equal-to-t-when-holds-and-boolean
     (implies (and (booleanp b)
-                  (hide b))
+                  (test* b))
              (equal (equal t b) t))
-    :expand (:free (x) (hide x))))
+    :enable test*))

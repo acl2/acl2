@@ -103,6 +103,7 @@
                     integer-type-rangep
                     integer-type-min
                     integer-type-max
+                    bit-width-value-choices
                     ,@(and (unop-case op :bitnot)
                            `((:e sint-min)
                              (:e sint-max)

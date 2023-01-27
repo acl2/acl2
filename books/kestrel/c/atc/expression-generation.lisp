@@ -23,6 +23,7 @@
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -50,7 +51,6 @@
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
    (fn-guard symbol)
-   (fn-gthm symbol)
    (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
@@ -291,7 +291,6 @@
                           :thm-index gin.thm-index
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
-       (fn-formals (formals+ gin.fn wrld))
        (op-name (pack (unop-kind op)))
        ((unless (type-nonchar-integerp arg-type))
         (reterr (raise "Internal error: non-integer type ~x0." arg-type)))
@@ -316,13 +315,17 @@
                  (arg-uterm (untranslate$ arg-term nil state))
                  (okp-lemma-formula `(,op-arg-type-okp ,arg-uterm))
                  (okp-lemma-formula
-                  (atc-contextualize okp-lemma-formula gin.context t))
-                 (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
-                                              ,okp-lemma-formula))
+                  (atc-contextualize okp-lemma-formula
+                                     gin.context
+                                     gin.fn
+                                     gin.fn-guard
+                                     nil
+                                     nil
+                                     nil
+                                     wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if*)
-                     :expand (:free (x) (hide x))
+                     :in-theory '(,gin.fn-guard if* test*)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -376,8 +379,7 @@
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
                       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -433,7 +435,6 @@
                           :thm-index gin.thm-index
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
-       (fn-formals (formals+ gin.fn wrld))
        (op-name (pack (binop-kind op)))
        ((unless (type-nonchar-integerp arg1-type))
         (reterr (raise "Internal error: non-integer type ~x0." arg1-type)))
@@ -464,13 +465,17 @@
                  (okp-lemma-formula `(,op-arg1-type-arg2-type-okp ,arg1-uterm
                                                                   ,arg2-uterm))
                  (okp-lemma-formula
-                  (atc-contextualize okp-lemma-formula gin.context t))
-                 (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
-                                              ,okp-lemma-formula))
+                  (atc-contextualize okp-lemma-formula
+                                     gin.context
+                                     gin.fn
+                                     gin.fn-guard
+                                     nil
+                                     nil
+                                     nil
+                                     wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if*)
-                     :expand (:free (x) (hide x))
+                     :in-theory '(,gin.fn-guard if* test*)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -542,8 +547,7 @@
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
                       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -591,7 +595,6 @@
                 :thm-index gin.thm-index
                 :names-to-avoid gin.names-to-avoid
                 :proofs nil)))
-       (fn-formals (formals+ gin.fn wrld))
        ((unless (type-nonchar-integerp in-type))
         (reterr (raise "Internal error: non-integer type ~x0." in-type)))
        (in-fixtype (integer-type-to-fixtype in-type))
@@ -629,13 +632,17 @@
                  (arg-uterm (untranslate$ arg-term nil state))
                  (okp-lemma-formula `(,op-name-okp ,arg-uterm))
                  (okp-lemma-formula
-                  (atc-contextualize okp-lemma-formula gin.context t))
-                 (okp-lemma-formula `(implies (,gin.fn-guard ,@fn-formals)
-                                              ,okp-lemma-formula))
+                  (atc-contextualize okp-lemma-formula
+                                     gin.context
+                                     gin.fn
+                                     gin.fn-guard
+                                     nil
+                                     nil
+                                     nil
+                                     wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if*)
-                     :expand (:free (x) (hide x))
+                     :in-theory '(,gin.fn-guard if* test*)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -688,8 +695,7 @@
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
                       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -785,8 +791,7 @@
                             :thm-index thm-index
                             :names-to-avoid names-to-avoid
                             :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -862,27 +867,25 @@
                                           ,valuep-when-test-type-pred))))
        (instructions
         `((casesplit ,test-term)
-          (claim (hide ,test-term)
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* ,test-term)
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal (condexpr (if* ,test-term ,then-term ,else-term))
                         ,then-term)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true
-                                       condexpr)
-                          :expand (:free (x) (hide x)))))
-          (expand (condexpr (if* ,test-term ,then-term ,else-term)))
+                                       condexpr
+                                       test*))))
           (prove :hints ,hints-then)
-          (claim (hide (not ,test-term))
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* (not ,test-term))
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal (condexpr (if* ,test-term ,then-term ,else-term))
                         ,else-term)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false
-                                       condexpr)
-                          :expand (:free (x) (hide x)))))
-          (expand (condexpr (if* ,test-term ,then-term ,else-term)))
+                                       condexpr
+                                       test*))))
           (prove :hints ,hints-else)))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
@@ -910,8 +913,7 @@
       :thm-index thm-index
       :names-to-avoid names-to-avoid
       :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -992,21 +994,19 @@
                         boolean-from-sint-of-0))))
        (instructions
         `((casesplit ,arg1-term)
-          (claim (hide ,arg1-term)
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* ,arg1-term)
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal ,term ,arg2-term)
                  :hints (("Goal"
-                          :in-theory '(acl2::if*-when-true)
-                          :expand (:free (x) (hide x)))))
+                          :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,hints-then)
-          (claim (hide (not ,arg1-term))
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* (not ,arg1-term))
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal ,term nil)
                  :hints (("Goal"
-                          :in-theory '(acl2::if*-when-false)
-                          :expand (:free (x) (hide x)))))
+                          :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,hints-else)))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-bool-correct-thm gin.fn
@@ -1033,8 +1033,7 @@
      :thm-index thm-index
      :names-to-avoid names-to-avoid
      :proofs t))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1099,10 +1098,10 @@
                         sintp-of-sint
                         boolean-from-sint-of-1
                         if*-of-t-and-t
-                        sint-from-boolean-when-true-hide
+                        sint-from-boolean-when-true-test*
                         equal-to-t-when-holds-and-boolean
                         booleanp-compound-recognizer
-                        hide-of-lambda))))
+                        test*-of-t))))
        (hints-else
         `(("Goal"
            :in-theory '(exec-expr-pure-when-binary-logor-and-false
@@ -1120,21 +1119,19 @@
                         boolean-from-sint-of-sint-from-boolean))))
        (instructions
         `((casesplit ,arg1-term)
-          (claim (hide ,arg1-term)
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* ,arg1-term)
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal ,term ,arg1-term)
                  :hints (("Goal"
-                          :in-theory '(acl2::if*-when-true)
-                          :expand (:free (x) (hide x)))))
+                          :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,hints-then)
-          (claim (hide (not ,arg1-term))
-                 :hints (("Goal" :expand (:free (x) (hide x)))))
+          (claim (test* (not ,arg1-term))
+                 :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim (equal ,term ,arg2-term)
                  :hints (("Goal"
-                          :in-theory '(acl2::if*-when-false)
-                          :expand (:free (x) (hide x)))))
+                          :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,hints-else)))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-bool-correct-thm gin.fn
@@ -1161,8 +1158,7 @@
      :thm-index thm-index
      :names-to-avoid names-to-avoid
      :proofs t))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1237,8 +1233,7 @@
                             :thm-index thm-index
                             :names-to-avoid names-to-avoid
                             :proofs t)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp
-                                           pseudo-term-listp))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1685,7 +1680,6 @@
                                     :prec-tags gin.prec-tags
                                     :fn gin.fn
                                     :fn-guard gin.fn-guard
-                                    :fn-gthm gin.fn-gthm
                                     :compst-var gin.compst-var
                                     :thm-index gin.thm-index
                                     :names-to-avoid gin.names-to-avoid
@@ -1719,8 +1713,7 @@
   :verify-guards nil ; done below
   ///
   (verify-guards atc-gen-expr-pure
-    :hints (("Goal" :in-theory (enable pseudo-termp
-                                       pseudo-term-listp)))))
+    :hints (("Goal" :in-theory (enable pseudo-termp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1735,7 +1728,6 @@
    (prec-tags atc-string-taginfo-alist)
    (fn symbol)
    (fn-guard symbol)
-   (fn-gthm symbol)
    (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
@@ -1810,7 +1802,6 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
-                            :fn-gthm gin.fn-gthm
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
@@ -1835,8 +1826,7 @@
             :proofs rest.proofs)))
   :verify-guards nil ; done below
   ///
-  (verify-guards atc-gen-expr-pure-list
-    :hints (("Goal" :in-theory (enable pseudo-term-listp)))))
+  (verify-guards atc-gen-expr-pure-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1851,7 +1841,6 @@
    (inscope atc-symbol-varinfo-alist-list)
    (fn symbol)
    (fn-guard symbol)
-   (fn-gthm symbol)
    (compst-var symbol)
    (fenv-var symbol)
    (limit-var symbol)
@@ -1939,7 +1928,6 @@
                                            :prec-tags gin.prec-tags
                                            :fn gin.fn
                                            :fn-guard gin.fn-guard
-                                           :fn-gthm gin.fn-gthm
                                            :compst-var gin.compst-var
                                            :thm-index gin.thm-index
                                            :names-to-avoid gin.names-to-avoid
@@ -1968,16 +1956,22 @@
                                                  ,gin.limit-var)
                          (mv ,uterm* ,gin.compst-var)))
        (formula2 `(,type-pred ,uterm*))
-       (formula1 (atc-contextualize formula1 gin.context nil))
-       (formula2 (atc-contextualize formula2 gin.context t))
-       (formula1 `(implies (and (compustatep ,gin.compst-var)
-                                (,gin.fn-guard ,@(formals+ gin.fn wrld))
-                                (integerp ,gin.limit-var)
-                                (>= ,gin.limit-var 1))
-                           ,formula1))
-       (formula2 `(implies (and (compustatep ,gin.compst-var)
-                                (,gin.fn-guard ,@(formals+ gin.fn wrld)))
-                           ,formula2))
+       (formula1 (atc-contextualize formula1
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    gin.compst-var
+                                    gin.limit-var
+                                    ''1
+                                    wrld))
+       (formula2 (atc-contextualize formula2
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    nil
+                                    nil
+                                    nil
+                                    wrld))
        (formula `(and ,formula1 ,formula2))
        (hints `(("Goal" :in-theory '(compustatep-of-add-frame
                                      compustatep-of-add-var
@@ -2090,5 +2084,4 @@
             :names-to-avoid args.names-to-avoid
             :proofs nil)))))
     (atc-gen-expr-noncall term gin state))
-  :prepwork ((local (in-theory (enable pseudo-termp
-                                       pseudo-term-listp)))))
+  :prepwork ((local (in-theory (enable pseudo-termp)))))

@@ -863,6 +863,8 @@
     "These are the same as the linear rules,
      but they are rewrite rules."))
 
+  (local (in-theory (enable bit-width-value-choices)))
+
   (make-event
    `(defruled uchar-max-vs-sint-max-rewrite
       ,(if (<= (uchar-max) (sint-max))
