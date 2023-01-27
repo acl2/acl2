@@ -232,6 +232,7 @@
   ((items block-item-list)
    (type type)
    (term pseudo-termp)
+   (compst-term pseudo-term)
    (limit pseudo-term)
    (events pseudo-event-form-list)
    (thm-name symbol)
@@ -249,6 +250,7 @@
   :body (make-stmt-gout :items nil
                         :type (irr-type)
                         :term nil
+                        :compst-term nil
                         :limit nil
                         :events nil
                         :thm-name nil
@@ -360,6 +362,10 @@
                (thm-events pseudo-event-form-listp)
                (new-inscope atc-symbol-varinfo-alist-listp
                             :hyp (atc-symbol-varinfo-alist-listp inscope))
+               (new-compst pseudo-termp
+                           :hyp (and (symbolp compst-var)
+                                     (pseudo-termp expr-term))
+                           :hints (("Goal" :in-theory (enable pseudo-termp))))
                (new-context atc-contextp :hyp (atc-contextp context))
                (thm-index posp :hyp (posp thm-index))
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
@@ -389,6 +395,7 @@
         (mv item
             nil
             (atc-add-var var varinfo inscope)
+            nil
             context
             thm-index
             names-to-avoid))
@@ -422,9 +429,8 @@
                                                        :formula initer-formula
                                                        :hints initer-hints
                                                        :enable nil))
-       (new-compst `(add-var (ident ,(symbol-name var))
-                             ,(untranslate$ expr-term nil state)
-                             ,compst-var))
+       (new-compst
+        `(add-var (ident ',(symbol-name var)) ,expr-term ,compst-var))
        (item-thm-name (pack fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv item-thm-name names-to-avoid)
@@ -436,7 +442,7 @@
                                               ,compst-var
                                               ,fenv-var
                                               ,limit-var)
-                             (mv nil ,new-compst)))
+                             (mv nil ,(untranslate$ new-compst nil state))))
        (item-limit `(binary-+ '1 ,initer-limit))
        (item-formula (atc-contextualize item-formula context fn fn-guard
                                         compst-var limit-var item-limit wrld))
@@ -491,9 +497,11 @@
                item-thm-event
                new-inscope-events)
         new-inscope
+        new-compst
         new-context
         thm-index
-        names-to-avoid)))
+        names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -681,6 +689,7 @@
                 :items (list (block-item-stmt stmt))
                 :type expr.type
                 :term expr.term
+                :compst-term nil
                 :limit (pseudo-term-fncall
                         'binary-+
                         (list (pseudo-term-quote 3)
@@ -766,6 +775,7 @@
     (retok (make-stmt-gout :items items
                            :type expr.type
                            :term expr.term
+                           :compst-term gin.compst-var
                            :limit items-limit
                            :events (append expr.events
                                            (list stmt-event)
@@ -865,6 +875,7 @@
           :items (list (block-item-stmt stmt))
           :type type
           :term term
+          :compst-term nil
           :limit (pseudo-term-fncall
                   'binary-+
                   (list
@@ -1103,6 +1114,7 @@
       :items items
       :type type
       :term term*
+      :compst-term gin.compst-var
       :limit items-limit
       :events (append test-events
                       then-events
@@ -1551,6 +1563,7 @@
                         :items (cons item body.items)
                         :type type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append init.events body.events)
                         :thm-name nil
@@ -1644,6 +1657,7 @@
                         :items (cons item body.items)
                         :type type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -1711,6 +1725,7 @@
                   :items items
                   :type type
                   :term term
+                  :compst-term nil
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -1828,6 +1843,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append arr.events
                                         sub.events
@@ -1933,6 +1949,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append struct.events
                                         member.events)
@@ -2060,6 +2077,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append struct.events
                                         index.events
@@ -2126,6 +2144,7 @@
                    ((mv item
                         item-events
                         inscope-body
+                        & ; compst-body
                         context-body
                         thm-index
                         names-to-avoid)
@@ -2168,6 +2187,7 @@
                         :items (cons item body.items)
                         :type type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append init.events
                                         item-events
@@ -2254,6 +2274,7 @@
                         :items (cons item body.items)
                         :type type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -2310,6 +2331,7 @@
                   :items items
                   :type type
                   :term term
+                  :compst-term nil
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -2329,6 +2351,7 @@
                   :items nil
                   :type (type-void)
                   :term term
+                  :compst-term nil
                   :limit (pseudo-term-quote 1)
                   :events nil
                   :thm-name nil
@@ -2351,6 +2374,7 @@
             (retok (make-stmt-gout :items nil
                                    :type (type-void)
                                    :term term
+                                   :compst-term nil
                                    :limit (pseudo-term-quote 1)
                                    :events nil
                                    :thm-name nil
@@ -2414,6 +2438,7 @@
                   :items (list (block-item-stmt loop-stmt))
                   :type (type-void)
                   :term term
+                  :compst-term nil
                   :limit limit
                   :events nil
                   :thm-name nil
@@ -2426,6 +2451,7 @@
                     :items nil
                     :type (type-void)
                     :term term
+                    :compst-term nil
                     :limit (pseudo-term-quote 1)
                     :events nil
                     :thm-name nil
@@ -2489,6 +2515,7 @@
                   :items (list (block-item-stmt (stmt-expr call-expr)))
                   :type (type-void)
                   :term term
+                  :compst-term nil
                   :limit `(binary-+ '5 ,limit)
                   :events args.events
                   :thm-name nil
