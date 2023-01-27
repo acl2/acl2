@@ -530,7 +530,7 @@
        (match (deftreeops-match-pred prefix))
        (elem (repetition->element rep))
        (match-thm-event
-        `(defrule ,match-thm
+        `(defruled ,match-thm
            (implies (,rep-match csts
                                 ,(pretty-print-repetition rep))
                     (and (equal (len csts) 1)
@@ -605,7 +605,7 @@
        (rep-match (deftreeops-rep-match-pred prefix))
        (rep (car conc))
        (match-thm-event
-        `(defrule ,match-thm
+        `(defruled ,match-thm
            (implies (,conc-match cstss
                                  ,(pretty-print-concatenation conc))
                     (and (equal (len cstss) 1)
