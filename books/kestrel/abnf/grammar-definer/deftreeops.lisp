@@ -530,7 +530,7 @@
        (match (deftreeops-match-pred prefix))
        (elem (repetition->element rep))
        (match-thm-event
-        `(defrule ,match-thm
+        `(defruled ,match-thm
            (implies (,rep-match csts
                                 ,(pretty-print-repetition rep))
                     (and (equal (len csts) 1)
@@ -577,6 +577,7 @@
 
 (define deftreeops-gen-alt-fns+thms+info ((conc concatenationp)
                                           (i posp)
+                                          (discriminant-term "A term.")
                                           (rulename-upstring acl2::stringp)
                                           (prefix acl2::symbolp))
   :returns (mv (events pseudo-event-form-listp)
@@ -604,7 +605,7 @@
        (rep-match (deftreeops-rep-match-pred prefix))
        (rep (car conc))
        (match-thm-event
-        `(defrule ,match-thm
+        `(defruled ,match-thm
            (implies (,conc-match cstss
                                  ,(pretty-print-concatenation conc))
                     (and (equal (len cstss) 1)
@@ -622,7 +623,7 @@
        ((mv rep-events rep-infos)
         (deftreeops-gen-rep-fns+thms+info-list conc i rulename-upstring prefix))
        (info (make-deftreeops-alt-info
-              :discriminant-term nil
+              :discriminant-term discriminant-term
               :get-tree-list-list-fn nil
               :match-thm match-thm
               :rep-infos rep-infos)))
@@ -632,32 +633,111 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-gen-alt-fns+thms+info-list ((alt alternationp)
-                                               (rulename-upstring acl2::stringp)
-                                               (prefix acl2::symbolp))
+(define deftreeops-gen-alt-fns+thms+info-list
+  ((alt alternationp)
+   (discriminant-terms "A list of terms.")
+   (rulename-upstring acl2::stringp)
+   (prefix acl2::symbolp))
+  :guard (equal (len discriminant-terms) (len alt))
   :returns (mv (events pseudo-event-form-listp)
                (infos deftreeops-alt-info-listp))
   :short "Lift @(tsee deftreeops-gen-alt-fns+thms+info) to lists."
-  (deftreeops-gen-alt-fns+thms+info-list-aux alt 1 rulename-upstring prefix)
+  (deftreeops-gen-alt-fns+thms+info-list-aux
+    alt 1 discriminant-terms rulename-upstring prefix)
 
   :prepwork
   ((define deftreeops-gen-alt-fns+thms+info-list-aux
      ((alt alternationp)
       (i posp)
+      (discriminant-terms "A list of terms.")
       (rulename-upstring acl2::stringp)
       (prefix acl2::symbolp))
+     :guard (equal (len discriminant-terms) (len alt))
      :returns (mv (events pseudo-event-form-listp)
                   (infos deftreeops-alt-info-listp))
      :parents nil
      (b* (((when (endp alt)) (mv nil nil))
           ((mv events info)
            (deftreeops-gen-alt-fns+thms+info
-             (car alt) i rulename-upstring prefix))
+             (car alt)
+             i
+             (car discriminant-terms)
+             rulename-upstring
+             prefix))
           ((mv more-events more-info)
            (deftreeops-gen-alt-fns+thms+info-list-aux
-             (cdr alt) (1+ i) rulename-upstring prefix)))
+             (cdr alt)
+             (1+ i)
+             (cdr discriminant-terms)
+             rulename-upstring
+             prefix)))
        (mv (append events more-events)
            (cons info more-info))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-gen-discriminant-terms ((alt alternationp))
+  :returns (mv (okp booleanp) (terms pseudo-term-listp))
+  :short "Generate the terms to discriminate among
+          two or more alternatives defining a rule name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support alternations of certain forms.
+     The first result of this function returns
+     @('t') if terms are generated, @('nil') otherwise.
+     The second result is the list of terms,
+     of the same length as the alternation.
+     If the alternation consists of just one alternative,
+     we return a single term @('t'),
+     which makes sense since the alternative must be always that only one.")
+   (xdoc::p
+    "For now we only support alternations
+     each of whose alternatives are singleton concatenations
+     where each such concatenation consists of
+     a repetition with range 1,
+     whose element is a rule name."))
+  (b* (((when (and (consp alt)
+                   (endp (cdr alt))))
+        (mv t (list acl2::*t*))))
+    (deftreeops-gen-discriminant-terms-aux alt))
+
+  :prepwork
+  ((define deftreeops-gen-discriminant-terms-aux ((alt alternationp))
+     :returns (mv (okp booleanp) (terms pseudo-term-listp))
+     :parents nil
+     (b* (((when (endp alt)) (mv t nil))
+          (conc (car alt))
+          ((unless (and (consp conc)
+                        (endp (cdr conc))))
+           (mv nil nil))
+          (rep (car conc))
+          ((unless (equal (repetition->range rep)
+                          (make-repeat-range :min 1
+                                             :max (nati-finite 1))))
+           (mv nil nil))
+          (elem (repetition->element rep))
+          ((unless (element-case elem :rulename))
+           (mv nil nil))
+          (rulename (element-rulename->get elem))
+          (term `(equal (tree-nonleaf->rulename
+                         (nth '0 (nth '0 (tree-nonleaf->branches cst))))
+                        ',rulename))
+          ((mv okp terms) (deftreeops-gen-discriminant-terms-aux (cdr alt)))
+          ((unless okp) (mv nil nil)))
+       (mv t (cons term terms)))
+     ///
+     (defret len-of-deftreeops-gen-discriminant-terms-aux
+       (implies okp
+                (equal (len terms)
+                       (len alt))))))
+
+  ///
+
+  (defret len-of-deftreeops-gen-discriminant-terms
+    (implies okp
+             (equal (len terms)
+                    (len alt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -737,8 +817,11 @@
               ,conc-matchp
               tree-list-list-match-alternation-p-when-atom-alternation
               tree-list-list-match-alternation-p-of-cons-alternation))))
+       ((mv okp terms) (deftreeops-gen-discriminant-terms alt))
+       (terms (if okp terms (repeat (len alt) nil)))
        ((mv more-events alt-infos)
-        (deftreeops-gen-alt-fns+thms+info-list alt rulename-upstring prefix))
+        (deftreeops-gen-alt-fns+thms+info-list
+          alt terms rulename-upstring prefix))
        (info (make-deftreeops-rulename-info
               :nonleaf-thm nonleaf-thm
               :rulename-thm rulename-thm
