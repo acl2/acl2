@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -755,14 +755,24 @@
 (define atc-process-print ((options symbol-alistp))
   :returns (mv erp (print evmac-input-print-p))
   :short "Process the @(':print') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the @(tsee evmac-input-print-p) type,
+     but we exclude the @('nil') case; see the ATC user doc.
+     We should probably define a new type for
+     the printing levels supported by ATC,
+     or perhaps change @(tsee evmac-input-print-p) to be that,
+     as it may be more appropriate."))
   (b* (((reterr) nil)
        (print-option (assoc-eq :print options))
        (print (if print-option
                   (cdr print-option)
                 :result))
-       ((unless (evmac-input-print-p print))
+       ((unless (and (evmac-input-print-p print)
+                     print))
         (reterr (msg "The :PRINT input must be ~
-                      NIL, :ERROR, :RESULT, :INFO, or :ALL; ~
+                      :ERROR, :RESULT, :INFO, or :ALL; ~
                       but it is ~x0 instead."
                      print))))
     (retok print)))
