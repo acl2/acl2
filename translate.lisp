@@ -6860,6 +6860,9 @@
     ('T . T)))
 
 (defun type-spec-fix-unify-subst (alist)
+
+; See remove-fake-unquotes.
+
   (cond ((endp alist) nil)
         (t (let ((rest (type-spec-fix-unify-subst (cdr alist))))
              (cond ((eq rest :fail) :fail)
@@ -6867,9 +6870,44 @@
                     (cons (car alist) rest))
                    ((quotep (cdar alist))
                     (acons (caar alist)
-                           (unquote (cdar alist))
+                           (list :fake-unquote (cdar alist))
                            rest))
                    (t :fail))))))
+
+(mutual-recursion
+
+(defun remove-fake-unquotes (term)
+
+; Term was created by applying a substitution whose values were modified using
+; type-spec-fix-unify-subst, replacing each quoted value (quote x) by
+; (:fake-quote x).  Term is thus not a term, since it has calls of the bogus
+; function symbol, :fake-quote.  But term is a pseudo-term.  We return the form
+; obtained by removing each :fake-quote; thus, the return value is generally
+; not a pseudo-term.
+
+  (declare (xargs :guard (pseudo-termp term)))
+  (cond ((or (variablep term)
+             (fquotep term))
+         term)
+        ((eq (ffn-symb term) :fake-unquote)
+         (let ((args (fargs term)))
+           (cond ((and (consp args)
+                       (null (cdr args))
+                       (quotep (car args)))
+                  (unquote (car args)))
+                 (t (er hard? 'remove-fake-unquotes
+                        "Implementation error: Unexpected pseudo-term, ~x0. ~
+                         Please contact the ACL2 implementors."
+                        term)))))
+        (t (cons (ffn-symb term)
+                 (remove-fake-unquotes-lst (cdr term))))))
+
+(defun remove-fake-unquotes-lst (term)
+  (declare (xargs :guard (pseudo-term-listp term)))
+  (cond ((endp term) nil)
+        (t (cons (remove-fake-unquotes (car term))
+                 (remove-fake-unquotes-lst (cdr term))))))
+)
 
 (defun type-spec-and-var-from-type-expression-1 (x alist)
 
@@ -6892,7 +6930,8 @@
            (flg (let ((unify-subst (type-spec-fix-unify-subst unify-subst)))
                   (cond ((eq unify-subst :fail)
                          nil)
-                        (t (cons (sublis-var unify-subst type)
+                        (t (cons (remove-fake-unquotes
+                                  (sublis-var unify-subst type))
                                  (cdr (assoc-eq 'var unify-subst)))))))
            (t (type-spec-and-var-from-type-expression-1 x (cdr alist)))))))))
 
@@ -21643,7 +21682,7 @@
       (cond
        (erp
         (trans-er+? cform x ctx "~@0" val))
-       (t 
+       (t
         (translate11-var-or-quote-exit
          x
          val
