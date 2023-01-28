@@ -362,6 +362,7 @@
                (item-limit pseudo-termp
                            :hyp (pseudo-termp expr-limit))
                (thm-events pseudo-event-form-listp)
+               (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp
                             :hyp (atc-symbol-varinfo-alist-listp inscope))
                (new-compst pseudo-termp
@@ -398,6 +399,7 @@
        ((when (not proofs))
         (mv item
             item-limit
+            nil
             nil
             (atc-add-var var varinfo inscope)
             nil
@@ -500,6 +502,7 @@
         (list* initer-thm-event
                item-thm-event
                new-inscope-events)
+        item-thm-name
         new-inscope
         new-compst
         new-context
@@ -2195,6 +2198,7 @@
                    ((mv item
                         item-limit
                         item-events
+                        item-thm
                         inscope-body
                         compst-body
                         context-body
@@ -2234,7 +2238,7 @@
                   item
                   item-limit
                   (append init.events item-events)
-                  nil
+                  item-thm
                   nil
                   body.items
                   body.limit
