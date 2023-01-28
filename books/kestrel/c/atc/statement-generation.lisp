@@ -359,6 +359,8 @@
                                    (proofs booleanp)
                                    state)
   :returns (mv (item block-itemp)
+               (item-limit pseudo-termp
+                           :hyp (pseudo-termp expr-limit))
                (thm-events pseudo-event-form-listp)
                (new-inscope atc-symbol-varinfo-alist-listp
                             :hyp (atc-symbol-varinfo-alist-listp inscope))
@@ -385,14 +387,17 @@
                             (make-ident :name (symbol-name var))
                             type))
        (initer (initer-single expr))
+       (initer-limit `(binary-+ '1 ,expr-limit))
        (declon (make-obj-declon :scspec (scspecseq-none)
                                 :tyspec tyspec
                                 :declor declor
                                 :init? initer))
        (item (block-item-declon declon))
+       (item-limit `(binary-+ '1 ,initer-limit))
        (varinfo (make-atc-var-info :type type :thm nil))
        ((when (not proofs))
         (mv item
+            item-limit
             nil
             (atc-add-var var varinfo inscope)
             nil
@@ -411,7 +416,6 @@
                                             ,fenv-var
                                             ,limit-var)
                                (mv (init-value-single ,expr-term) ,compst-var)))
-       (initer-limit `(binary-+ '1 ,expr-limit))
        (initer-formula
         (atc-contextualize initer-formula context fn fn-guard
                            compst-var limit-var initer-limit wrld))
@@ -443,7 +447,6 @@
                                               ,fenv-var
                                               ,limit-var)
                              (mv nil ,(untranslate$ new-compst nil state))))
-       (item-limit `(binary-+ '1 ,initer-limit))
        (item-formula (atc-contextualize item-formula context fn fn-guard
                                         compst-var limit-var item-limit wrld))
        (type-of-value-when-type-pred (pack 'type-of-value-when- type-pred))
@@ -493,6 +496,7 @@
                                  expr-thm compst-var
                                  thm-index names-to-avoid wrld)))
     (mv item
+        item-limit
         (list* initer-thm-event
                item-thm-event
                new-inscope-events)
@@ -619,16 +623,14 @@
      We take their sum (instead of the maximum), so the term remains linear.
      We also need to add 1, because it takes 1 to go
      from the execution of @('(cons item items)')
-     to the execution of @('item') and @('items').
-     The previous code had 3 though, so for now we add 3,
-     and we will try to reduce it later.")
+     to the execution of @('item') and @('items').")
    (xdoc::p
     "We are not generating modular proofs for this yet,
      so we return @('nil') as
      the computation state term, theorem name, and proofs flag."))
   (b* (((stmt-gin gin) gin)
        (all-items (cons item items))
-       (all-items-limit `(binary-+ '3 (binary-+ ,item-limit ,items-limit))))
+       (all-items-limit `(binary-+ '1 (binary-+ ,item-limit ,items-limit))))
     (make-stmt-gout
      :items all-items
      :type items-type
@@ -2191,6 +2193,7 @@
                            but it affects ~x2 instead."
                           val-term var init.affect)))
                    ((mv item
+                        item-limit
                         item-events
                         inscope-body
                         compst-body
@@ -2229,7 +2232,7 @@
                  (atc-gen-block-item-list-cons
                   term
                   item
-                  init.limit
+                  item-limit
                   (append init.events item-events)
                   nil
                   nil
