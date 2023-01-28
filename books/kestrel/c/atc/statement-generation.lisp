@@ -594,6 +594,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-block-item-list-cons ((term pseudo-termp)
+                                      (item block-itemp)
+                                      (item-limit pseudo-termp)
+                                      (item-events pseudo-event-form-listp)
+                                      (item-thm symbolp)
+                                      (item-compst pseudo-termp)
+                                      (items block-item-listp)
+                                      (items-limit pseudo-termp)
+                                      (items-events pseudo-event-form-listp)
+                                      (items-thm symbolp)
+                                      (items-type typep)
+                                      (items-compst pseudo-termp)
+                                      (gin stmt-ginp)
+                                      state)
+  (declare (ignore item-thm item-compst items-thm items-compst state))
+  :returns (gout stmt-goutp)
+  :short "Generate a list of block items by @(tsee cons)ing
+          a block item to a list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We need a limit that suffices for both @('item') and @('items').
+     We take their sum (instead of the maximum), so the term remains linear.
+     We also need to add 1, because it takes 1 to go
+     from the execution of @('(cons item items)')
+     to the execution of @('item') and @('items').
+     The previous code had 3 though, so for now we add 3,
+     and we will try to reduce it later.")
+   (xdoc::p
+    "We are not generating modular proofs for this yet,
+     so we return @('nil') as
+     the computation state term, theorem name, and proofs flag."))
+  (b* (((stmt-gin gin) gin)
+       (all-items (cons item items))
+       (all-items-limit `(binary-+ '3 (binary-+ ,item-limit ,items-limit))))
+    (make-stmt-gout
+     :items all-items
+     :type items-type
+     :term term
+     :compst-term nil
+     :limit all-items-limit
+     :events (append item-events items-events)
+     :thm-name nil
+     :thm-index gin.thm-index
+     :names-to-avoid gin.names-to-avoid
+     :proofs nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-return-stmt ((term pseudo-termp)
                              (gin stmt-ginp)
                              (must-affect symbol-listp)
@@ -2144,7 +2193,7 @@
                    ((mv item
                         item-events
                         inscope-body
-                        & ; compst-body
+                        compst-body
                         context-body
                         thm-index
                         names-to-avoid)
@@ -2175,27 +2224,27 @@
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
                                    :proofs init.proofs)
-                                  state))
-                   (type body.type)
-                   (limit (pseudo-term-fncall
-                           'binary-+
-                           (list (pseudo-term-quote 3)
-                                 (pseudo-term-fncall
-                                  'binary-+
-                                  (list init.limit body.limit))))))
-                (retok (make-stmt-gout
-                        :items (cons item body.items)
-                        :type type
-                        :term term
-                        :compst-term nil
-                        :limit limit
-                        :events (append init.events
-                                        item-events
-                                        body.events)
-                        :thm-name nil
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
+                                  state)))
+                (retok
+                 (atc-gen-block-item-list-cons
+                  term
+                  item
+                  init.limit
+                  (append init.events item-events)
+                  nil
+                  nil
+                  body.items
+                  body.limit
+                  body.events
+                  body.thm-name
+                  body.type
+                  compst-body
+                  (change-stmt-gin
+                   gin
+                   :thm-index body.thm-index
+                   :names-to-avoid body.names-to-avoid
+                   :proofs body.proofs)
+                  state))))
              ((unless (atc-var-assignablep var innermostp gin.affect))
               (reterr
                (msg "When generating C code for the function ~x0, ~
