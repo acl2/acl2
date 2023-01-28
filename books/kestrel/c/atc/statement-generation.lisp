@@ -14,6 +14,8 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
+(include-book "kestrel/std/system/close-lambdas" :dir :system)
+
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
@@ -615,7 +617,6 @@
                                       (items-compst pseudo-termp)
                                       (gin stmt-ginp)
                                       state)
-  (declare (ignore item-thm item-compst items-thm items-compst state))
   :returns (gout stmt-goutp)
   :short "Generate a list of block items by @(tsee cons)ing
           a block item to a list of block items."
@@ -631,20 +632,84 @@
     "We are not generating modular proofs for this yet,
      so we return @('nil') as
      the computation state term, theorem name, and proofs flag."))
-  (b* (((stmt-gin gin) gin)
+  (b* ((wrld (w state))
+       ((stmt-gin gin) gin)
        (all-items (cons item items))
-       (all-items-limit `(binary-+ '1 (binary-+ ,item-limit ,items-limit))))
-    (make-stmt-gout
-     :items all-items
-     :type items-type
-     :term term
-     :compst-term nil
-     :limit all-items-limit
-     :events (append item-events items-events)
-     :thm-name nil
-     :thm-index gin.thm-index
-     :names-to-avoid gin.names-to-avoid
-     :proofs nil)))
+       (all-items-limit `(binary-+ '1 (binary-+ ,item-limit ,items-limit)))
+       ((when (not gin.proofs))
+        (make-stmt-gout
+         :items all-items
+         :type items-type
+         :term term
+         :compst-term nil
+         :limit all-items-limit
+         :events (append item-events items-events)
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :proofs nil))
+       (compst-term (acl2::fsublis-var (list (cons gin.compst-var
+                                                   item-compst))
+                                       items-compst))
+       (compst-uterm (untranslate$ compst-term nil state))
+       (uterm (untranslate$ term nil state))
+       (formula1 `(equal (exec-block-item-list ',all-items
+                                               ,gin.compst-var
+                                               ,gin.fenv-var
+                                               ,gin.limit-var)
+                         (mv ,uterm ,compst-uterm)))
+       (formula1 (atc-contextualize formula1
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    gin.compst-var
+                                    gin.limit-var
+                                    all-items-limit
+                                    wrld))
+       (type-pred (type-to-recognizer items-type wrld))
+       (formula2 `(,type-pred ,uterm))
+       (formula2 (atc-contextualize formula2
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    nil
+                                    nil
+                                    nil
+                                    wrld))
+       (formula `(and ,formula1 ,formula2))
+       (hints `(("Goal" :in-theory '(exec-block-item-list-when-consp
+                                     not-zp-of-limit-variable
+                                     ,item-thm
+                                     mv-nth-of-cons
+                                     (:e zp)
+                                     (:e value-optionp)
+                                     not-zp-of-limit-minus-const
+                                     (:e valuep)
+                                     ,items-thm))))
+       (thm-name (pack gin.fn '-correct- gin.thm-index))
+       (thm-index (1+ gin.thm-index))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil gin.names-to-avoid wrld))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (make-stmt-gout :items all-items
+                    :type items-type
+                    :term term
+                    :compst-term compst-term
+                    :limit all-items-limit
+                    :events (append item-events
+                                    items-events
+                                    (list event))
+                    :thm-name thm-name
+                    :thm-index thm-index
+                    :names-to-avoid names-to-avoid
+                    ;; We temporarily turn off proofs here,
+                    ;; because we need to make further extensions first.
+                    ;; :proofs t
+                    :proofs nil))
+  :guard-hints (("Goal" :in-theory (enable symbol-alistp strip-cdrs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2231,21 +2296,23 @@
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
                                    :proofs init.proofs)
-                                  state)))
+                                  state))
+                   (term* (acl2::close-lambdas
+                           `((lambda (,var) ,body.term) ,init.term))))
                 (retok
                  (atc-gen-block-item-list-cons
-                  term
+                  term*
                   item
                   item-limit
                   (append init.events item-events)
                   item-thm
-                  nil
+                  compst-body
                   body.items
                   body.limit
                   body.events
                   body.thm-name
                   body.type
-                  compst-body
+                  body.compst-term
                   (change-stmt-gin
                    gin
                    :thm-index body.thm-index
@@ -2606,7 +2673,9 @@
     :hints (("Goal"
              :do-not '(preprocess) ; for speed
              :in-theory
-             (e/d (true-listp-when-atc-var-info-option-listp-rewrite
+             (e/d (pseudo-termp
+                   length
+                   true-listp-when-atc-var-info-option-listp-rewrite
                    acl2::true-listp-when-pseudo-event-form-listp-rewrite)
                   (atc-gen-stmt))))))
 
