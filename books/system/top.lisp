@@ -32,6 +32,7 @@
 (include-book "merge-sort-term-order")
 (include-book "termp")
 (include-book "kestrel")
+; This includes "remove-guard-holders1" and "remove-guard-holders-weak":
 (include-book "remove-guard-holders")
 (include-book "merge-sort-symbol-lt")
 (include-book "pseudo-good-worldp")
@@ -41,7 +42,6 @@
 (include-book "all-fnnames")
 (include-book "observation1-cw")
 (include-book "defstobj")
-(include-book "remove-guard-holders-strong-1")
 
 
 ; Below are the books not included by including all of the above (at least, as
@@ -103,15 +103,8 @@
 ; Tool for generating a list of random numbers in [0, limit)
 ; random.lisp
 
-; Locally included in remove-guard-holders.lisp
-; remove-guard-holders-lemmas.lisp
-
 ; Contains invalid skip-proofs (see comment in that file)
-; remove-guard-holders-strong-2.lisp
-
-; Contains verify-termination events without guard verification, which may slow
-; down ACL2 significantly
-; remove-guard-holders-strong-ideal-mode.lisp
+; remove-guard-holders-future.lisp
 
 ; Termination and guard proofs now included in sources, saved
 ; in this book for historical reasons:

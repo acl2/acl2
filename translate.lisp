@@ -4409,6 +4409,92 @@
 ; define executable versions of badge and tamep that look at data structures
 ; maintained by defwarrant.
 
+(defun weak-badge-userfn-structure-alistp (x)
+
+; This function checks that x is a true-list of elements (weakly) of the form
+; made by make-badge-userfn-structure-tuple and that the warrantp and badge
+; slots are occupied by a boolean and a (weakly formed) apply$-badge.  This
+; function must be in :logic mode and guard verified for use in
+; remove-guard-holders.  We do the verify-termination in
+; books/system/remove-guard-holders.lisp.
+
+  (declare (xargs :guard t))
+  (cond ((atom x) (null x))
+        (t (and (weak-badge-userfn-structure-tuplep (car x))
+                (symbolp (car (car x)))
+                (booleanp (access-badge-userfn-structure-tuple-warrantp (car x)))
+                (weak-apply$-badge-p
+                 (access-badge-userfn-structure-tuple-badge (car x)))
+                (weak-badge-userfn-structure-alistp (cdr x))))))
+
+(defun apply$-badge-p (x)
+  (declare (xargs :guard t))
+  (and (weak-apply$-badge-p x)
+       (natp (access apply$-badge x :arity))
+       (natp (access apply$-badge x :out-arity))
+       (let ((ilks (access apply$-badge x :ilks)))
+         (or (eq ilks t)
+             (symbol-listp ilks)))))
+
+(defun badge-userfn-structure-alistp (x)
+
+; This definition is based on that of ACL2 source function
+; weak-badge-userfn-structure-alistp, but it also insists that the apply$-badge
+; fields :arity and :out-arity are natps and the :ilks field is either t or a
+; symbol-listp.
+
+  (declare (xargs :guard t))
+  (cond
+   ((atom x) (null x))
+   (t
+    (and (weak-badge-userfn-structure-tuplep (car x)) ; (fn warrant badge . &)
+         (symbolp (car (car x)))
+         (booleanp (access-badge-userfn-structure-tuple-warrantp (car x)))
+         (apply$-badge-p
+          (access-badge-userfn-structure-tuple-badge (car x)))
+         (badge-userfn-structure-alistp (cdr x))))))
+
+(defun apply$-badge-alistp-ilks-t (alist)
+  (declare (xargs :guard t))
+  (cond ((atom alist) (null alist))
+        (t (let ((x (car alist)))
+             (and (consp x)
+
+; The next four conjuncts correspond to a call of apply$-badge-p, except that
+; the :ilks is required to be t below, while apply$-badge-p also permits it to
+; be a symbol-listp.
+
+                  (weak-apply$-badge-p (cdr x))
+                  (natp (access apply$-badge (cdr x) :arity))
+                  (natp (access apply$-badge (cdr x) :out-arity))
+                  (eq (access apply$-badge (cdr x) :ilks)
+                      t)
+                  (apply$-badge-alistp-ilks-t (cdr alist)))))))
+
+(defun ilks-plist-worldp (wrld)
+
+; This function strengthens system function PLIST-WORLDP by
+; additionally requiring that the badge-table and *badge-prim-falist* are
+; well-formed.  We expect this function to hold on (w state).
+
+  (declare (xargs :guard t))
+  #-acl2-loop-only
+  (cond ((eq wrld (w *the-live-state*))
+         (return-from ilks-plist-worldp t)))
+  (and (plist-worldp wrld)
+       (let ((tbl (fgetprop 'badge-table 'table-alist nil wrld)))
+         (and (alistp tbl)
+              (badge-userfn-structure-alistp
+               (cdr (assoc-equal :badge-userfn-structure tbl)))))
+       (let ((temp
+; Early in the boot-strap, *badge-prim-falist* is not yet defined, so we use
+; the following getprop instead.
+              (getpropc '*badge-prim-falist* 'const nil wrld)))
+         (or (null temp)
+             (and (consp temp)
+                  (consp (cdr temp))
+                  (apply$-badge-alistp-ilks-t (unquote temp)))))))
+
 (defun executable-badge (fn wrld)
 
 ; Find the badge, if any, for any fn in wrld; else return nil.  Aside from
@@ -4439,21 +4525,23 @@
 ; logical reasoning; so the results computed by this function are used in
 ; proofs.
 
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program
+                  :guard (ilks-plist-worldp wrld)))
   (cond
    ((and (global-val 'boot-strap-flg wrld)
          (or (not (getpropc '*badge-prim-falist* 'const nil wrld))
              (not (getpropc 'badge-table 'table-guard nil wrld))))
-    (er hard 'executable-badge
+    (er hard? 'executable-badge
         "It is illegal to call this function during boot strapping because ~
-         primitives have not yet been identified and badges not yet computed!"))
+         primitives have not yet been identified and badges not yet ~
+         computed!"))
    ((symbolp fn)
-    (let ((temp
-           (hons-get fn ; *badge-prim-falist* is not yet defined!
-                     (unquote
-                      (getpropc '*badge-prim-falist* 'const nil wrld)))))
+    (let* ((badge-prim-falist ; *badge-prim-falist* is not yet defined!
+            (getpropc '*badge-prim-falist* 'const nil wrld))
+           (temp (hons-get fn
+                           (unquote badge-prim-falist))))
       (cond
-       (temp (cdr temp))
+       ((consp temp) (cdr temp))
        ((eq fn 'BADGE) *generic-tame-badge-1*)
        ((eq fn 'TAMEP) *generic-tame-badge-1*)
        ((eq fn 'TAMEP-FUNCTIONP) *generic-tame-badge-1*)
@@ -4470,12 +4558,13 @@
 ; etc., return t.  Else, return nil.  See executable-badge for further
 ; discussion.
 
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program
+                  :guard (ilks-plist-worldp wrld)))
   (cond
    ((and (global-val 'boot-strap-flg wrld)
          (or (not (getpropc '*badge-prim-falist* 'const nil wrld))
              (not (getpropc 'badge-table 'table-guard nil wrld))))
-    (er hard 'find-warrant-function-name
+    (er hard? 'find-warrant-function-name
         "It is illegal to call this function during boot strapping because ~
          primitives have not yet been identified and warrants not yet ~
          computed!"))
@@ -4571,7 +4660,9 @@
 (mutual-recursion
 
 (defun executable-tamep (x wrld)
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program
+                  :measure (acl2-count x)
+                  :guard (ilks-plist-worldp wrld)))
   (cond ((atom x) (symbolp x))
         ((eq (car x) 'quote)
          (and (consp (cdr x))
@@ -4581,28 +4672,28 @@
            (cond
             ((null bdg) nil)
             ((eq (access apply$-badge bdg :ilks) t)
-             (executable-suitably-tamep-listp
-              (access apply$-badge bdg :arity)
-              nil
-              (cdr x)
-              wrld))
-            (t (executable-suitably-tamep-listp
-                (access apply$-badge bdg :arity)
-                (access apply$-badge bdg :ilks)
-                (cdr x)
-                wrld)))))
+             (and (= (access apply$-badge bdg :arity) (len (cdr x)))
+                  (executable-suitably-tamep-listp
+                   nil
+                   (cdr x)
+                   wrld)))
+            (t (and (= (access apply$-badge bdg :arity) (len (cdr x)))
+                    (executable-suitably-tamep-listp
+                     (access apply$-badge bdg :ilks)
+                     (cdr x)
+                     wrld))))))
         ((consp (car x))
          (let ((fn (car x)))
            (and (executable-tamep-lambdap fn wrld)
-                (executable-suitably-tamep-listp (length (cadr fn))
 ; Given (tamep-lambdap fn), (cadr fn) = (lambda-object-formals fn).
-                                                 nil
-                                                 (cdr x)
-                                                 wrld))))
+                (= (length (cadr fn)) (len (cdr x)))
+                (executable-suitably-tamep-listp nil (cdr x) wrld))))
         (t nil)))
 
 (defun executable-tamep-functionp (fn wrld)
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program
+                  :measure (acl2-count fn)
+                  :guard (ilks-plist-worldp wrld)))
   (if (symbolp fn)
       (let ((bdg (executable-badge fn wrld)))
         (and bdg
@@ -4611,11 +4702,13 @@
     (and (consp fn)
          (executable-tamep-lambdap fn wrld))))
 
-(defun executable-suitably-tamep-listp (n flags args wrld)
-  (declare (xargs :mode :program))
+(defun executable-suitably-tamep-listp (flags args wrld)
+  (declare (xargs :mode :program
+                  :measure (acl2-count args)
+                  :guard (and (true-listp flags)
+                              (ilks-plist-worldp wrld))))
   (cond
-   ((zp n) (null args))
-   ((atom args) nil)
+   ((atom args) (null args))
    (t (and
        (let ((arg (car args)))
          (case (car flags)
@@ -4633,8 +4726,14 @@
                  (executable-tamep (cadr arg) wrld)))
            (otherwise
             (executable-tamep arg wrld))))
-       (executable-suitably-tamep-listp (- n 1) (cdr flags) (cdr args) wrld)))))
+       (executable-suitably-tamep-listp (cdr flags) (cdr args) wrld)))))
 )
+
+(defun weak-splo-extracts-tuple-listp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (null x))
+        (t (and (weak-splo-extracts-tuple-p (car x))
+                (weak-splo-extracts-tuple-listp (cdr x))))))
 
 (defun well-formed-lambda-objectp1 (extracts wrld)
 
@@ -4642,6 +4741,9 @@
 ; syntactically-plausible-lambda-objectp.  We check that each tuple contains
 ; truly well-formed components wrt wrld.
 
+  (declare (xargs :guard (and (weak-splo-extracts-tuple-listp extracts)
+                              (plist-worldp-with-formals wrld)
+                              (ilks-plist-worldp wrld))))
   (cond
    ((endp extracts) t)
    (t (let ((gflg (access splo-extracts-tuple (car extracts) :gflg))
@@ -4671,6 +4773,8 @@
 ; We do not check that the :guard and/or body are composed of guard verified
 ; functions, nor do we prove the guard conjectures for x.
 
+  (declare (xargs :guard (and (plist-worldp-with-formals wrld)
+                              (ilks-plist-worldp wrld))))
   (let ((extracts (syntactically-plausible-lambda-objectp nil x)))
 
 ; Extracts is either nil, indicating that the object x is not syntactically
@@ -5675,7 +5779,12 @@
 (defun warrants-for-tamep (x wrld warrants unwarranteds)
 ; We assume (executable-tamep x wrld).  See the discussion above about the
 ; ``warrants-for-tamep'' family of functions.
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program
+                  :measure (acl2-count x)
+                  :guard (and (ilks-plist-worldp wrld)
+                              (executable-tamep x wrld)
+                              (true-listp warrants)
+                              (symbol-listp unwarranteds))))
   (cond ((atom x) (mv warrants unwarranteds))
         ((eq (car x) 'quote) (mv warrants unwarranteds))
         ((symbolp (car x))
@@ -5718,7 +5827,12 @@
 (defun warrants-for-tamep-functionp (fn wrld warrants unwarranteds)
 ; We assume (executable-tamep-functionp x wrld).  See the discussion above
 ; about the ``warrants-for-tamep'' family of functions.
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program
+                  :measure (acl2-count fn)
+                  :guard (and (ilks-plist-worldp wrld)
+                              (executable-tamep-functionp fn wrld)
+                              (true-listp warrants)
+                              (symbol-listp unwarranteds))))
   (if (flambdap fn)
       (warrants-for-tamep-lambdap fn wrld warrants unwarranteds)
     (let ((warrant-name (find-warrant-function-name fn wrld)))
@@ -5731,9 +5845,15 @@
             unwarranteds)))))
 
 (defun warrants-for-suitably-tamep-listp (flags args wrld warrants unwarranteds)
-; We assume (executable-suitably-tamep-listp n flags args wrld).  See the
+; We assume (executable-suitably-tamep-listp flags args wrld).  See the
 ; discussion above about the ``warrants-for-tamep'' family of functions.
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program
+                  :measure (acl2-count args)
+                  :guard (and (ilks-plist-worldp wrld)
+                              (true-listp flags)
+                              (executable-suitably-tamep-listp flags args wrld)
+                              (true-listp warrants)
+                              (symbol-listp unwarranteds))))
   (cond
    ((endp args) (mv warrants unwarranteds))
    (t (mv-let (warrants1 unwarranteds1)
@@ -6357,7 +6477,7 @@
 
 (defun get-defun-event (fn wrld)
 
-; Returns the defun form for fn that was submitted to ACL2,, if there is one;
+; Returns the defun form for fn that was submitted to ACL2, if there is one;
 ; else nil.
 
   (let ((ev (get-event fn wrld)))
@@ -16905,7 +17025,7 @@
 
 (defun absstobj-field-fn-of-stobj-type-p (fn tuples)
 
-; Fn is an exported function for some abstract stobj st, and at the top level,,
+; Fn is an exported function for some abstract stobj st, and at the top level,
 ; exports is the list of exported functions for st (including fn) and tuples is
 ; the cddr of the :absstobj-tuples field of the absstobj-info property of st.
 ; Hence tuples is a list of elements (name logic exec . updater) corresponding
@@ -17985,34 +18105,6 @@
                             term
                             nil))
                   bindings)))))
-
-(defun weak-badge-userfn-structure-alistp (x)
-
-; This function checks that x is a true-list of elements (weakly) of the form
-; made by make-badge-userfn-structure-tuple and that the warrantp and badge
-; slots are occupied by a boolean and a (weakly formed) apply$-badge.  This
-; function must be in :logic mode and guard verified for use in
-; remove-guard-holders.  We do the verify-termination in
-; books/system/remove-guard-holders.lisp.
-
-  (declare (xargs :guard t))
-  (cond ((atom x) (null x))
-        (t (and (weak-badge-userfn-structure-tuplep (car x))
-                (symbolp (car (car x)))
-                (booleanp (access-badge-userfn-structure-tuple-warrantp (car x)))
-                (weak-apply$-badge-p
-                 (access-badge-userfn-structure-tuple-badge (car x)))
-                (weak-badge-userfn-structure-alistp (cdr x))))))
-
-(defun ilks-plist-worldp (wrld)
-  (declare (xargs :guard t))
-  (and (plist-worldp wrld)
-       (let ((tbl (fgetprop 'badge-table 'table-alist
-                            nil wrld)))
-         (and (alistp tbl)
-              (weak-badge-userfn-structure-alistp
-               (cdr (assoc-equal :badge-userfn-structure
-                                 tbl)))))))
 
 (defun ilks-per-argument-slot (fn wrld)
 
