@@ -246,6 +246,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
+
+   (xdoc::p
+    "Added utility @(tsee show-books), which returns a tree representing the
+     @(see books) included in the current ACL2 session.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
 
    (xdoc::p
