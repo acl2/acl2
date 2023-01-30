@@ -1877,15 +1877,18 @@
   (xdoc::topstring
    (xdoc::p
     "The generated expression is @('expr'),
-     and its type is @('type').")
+     and its type is @('type').
+     The possibly updated computation state is returned as an untranslated term,
+     in @('compst-term').")
    (xdoc::p
     "The @('limit') component is the lower bound of the limit,
      i.e. the minimum limit for which
      the execution of the expression terminates."))
-  ((expr exprp)
-   (type typep)
-   (term pseudo-termp)
-   (affect symbol-listp)
+  ((expr expr)
+   (type type)
+   (term pseudo-term)
+   (compst-term pseudo-term)
+   (affect symbol-list)
    (limit pseudo-term)
    (events pseudo-event-form-list)
    (thm-name symbol)
@@ -1903,6 +1906,7 @@
   :body (make-expr-gout :expr (irr-expr)
                         :type (irr-type)
                         :term nil
+                        :compst-term nil
                         :affect nil
                         :limit nil
                         :events nil
@@ -1955,6 +1959,7 @@
         (retok (make-expr-gout :expr pure.expr
                                :type pure.type
                                :term pure.term
+                               :compst-term gin.compst-var
                                :affect nil
                                :limit bound
                                :events pure.events
@@ -2004,12 +2009,14 @@
     (retok (make-expr-gout :expr pure.expr
                            :type pure.type
                            :term pure.term
+                           :compst-term gin.compst-var
                            :limit bound
                            :events (append pure.events (list event))
                            :thm-name thm-name
                            :thm-index (1+ pure.thm-index)
                            :names-to-avoid names-to-avoid
-                           :proofs t))))
+                           :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2093,6 +2100,7 @@
                                   :args args.exprs)
             :type out-type
             :term term
+            :compst-term nil
             :affect affect
             :limit `(binary-+ '2 ,limit)
             :events args.events

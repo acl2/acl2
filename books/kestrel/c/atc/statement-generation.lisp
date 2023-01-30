@@ -14,6 +14,8 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
+(include-book "kestrel/std/system/close-lambdas" :dir :system)
+
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
@@ -232,6 +234,7 @@
   ((items block-item-list)
    (type type)
    (term pseudo-termp)
+   (compst-term pseudo-term)
    (limit pseudo-term)
    (events pseudo-event-form-list)
    (thm-name symbol)
@@ -249,6 +252,7 @@
   :body (make-stmt-gout :items nil
                         :type (irr-type)
                         :term nil
+                        :compst-term nil
                         :limit nil
                         :events nil
                         :thm-name nil
@@ -357,9 +361,16 @@
                                    (proofs booleanp)
                                    state)
   :returns (mv (item block-itemp)
+               (item-limit pseudo-termp
+                           :hyp (pseudo-termp expr-limit))
                (thm-events pseudo-event-form-listp)
+               (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp
                             :hyp (atc-symbol-varinfo-alist-listp inscope))
+               (new-compst pseudo-termp
+                           :hyp (and (symbolp compst-var)
+                                     (pseudo-termp expr-term))
+                           :hints (("Goal" :in-theory (enable pseudo-termp))))
                (new-context atc-contextp :hyp (atc-contextp context))
                (thm-index posp :hyp (posp thm-index))
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
@@ -379,16 +390,21 @@
                             (make-ident :name (symbol-name var))
                             type))
        (initer (initer-single expr))
+       (initer-limit `(binary-+ '1 ,expr-limit))
        (declon (make-obj-declon :scspec (scspecseq-none)
                                 :tyspec tyspec
                                 :declor declor
                                 :init? initer))
        (item (block-item-declon declon))
+       (item-limit `(binary-+ '1 ,initer-limit))
        (varinfo (make-atc-var-info :type type :thm nil))
        ((when (not proofs))
         (mv item
+            item-limit
+            nil
             nil
             (atc-add-var var varinfo inscope)
+            nil
             context
             thm-index
             names-to-avoid))
@@ -404,7 +420,6 @@
                                             ,fenv-var
                                             ,limit-var)
                                (mv (init-value-single ,expr-term) ,compst-var)))
-       (initer-limit `(binary-+ '1 ,expr-limit))
        (initer-formula
         (atc-contextualize initer-formula context fn fn-guard
                            compst-var limit-var initer-limit wrld))
@@ -422,9 +437,8 @@
                                                        :formula initer-formula
                                                        :hints initer-hints
                                                        :enable nil))
-       (new-compst `(add-var (ident ,(symbol-name var))
-                             ,(untranslate$ expr-term nil state)
-                             ,compst-var))
+       (new-compst
+        `(add-var (ident ',(symbol-name var)) ,expr-term ,compst-var))
        (item-thm-name (pack fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv item-thm-name names-to-avoid)
@@ -436,8 +450,7 @@
                                               ,compst-var
                                               ,fenv-var
                                               ,limit-var)
-                             (mv nil ,new-compst)))
-       (item-limit `(binary-+ '1 ,initer-limit))
+                             (mv nil ,(untranslate$ new-compst nil state))))
        (item-formula (atc-contextualize item-formula context fn fn-guard
                                         compst-var limit-var item-limit wrld))
        (type-of-value-when-type-pred (pack 'type-of-value-when- type-pred))
@@ -487,13 +500,17 @@
                                  expr-thm compst-var
                                  thm-index names-to-avoid wrld)))
     (mv item
+        item-limit
         (list* initer-thm-event
                item-thm-event
                new-inscope-events)
+        item-thm-name
         new-inscope
+        new-compst
         new-context
         thm-index
-        names-to-avoid)))
+        names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -583,6 +600,116 @@
                                             :hints hints
                                             :enable nil)))
     (mv items items-limit event name thm-index names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-block-item-list-cons ((term pseudo-termp)
+                                      (item block-itemp)
+                                      (item-limit pseudo-termp)
+                                      (item-events pseudo-event-form-listp)
+                                      (item-thm symbolp)
+                                      (item-compst pseudo-termp)
+                                      (items block-item-listp)
+                                      (items-limit pseudo-termp)
+                                      (items-events pseudo-event-form-listp)
+                                      (items-thm symbolp)
+                                      (items-type typep)
+                                      (items-compst pseudo-termp)
+                                      (gin stmt-ginp)
+                                      state)
+  :returns (gout stmt-goutp)
+  :short "Generate a list of block items by @(tsee cons)ing
+          a block item to a list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We need a limit that suffices for both @('item') and @('items').
+     We take their sum (instead of the maximum), so the term remains linear.
+     We also need to add 1, because it takes 1 to go
+     from the execution of @('(cons item items)')
+     to the execution of @('item') and @('items').")
+   (xdoc::p
+    "We are not generating modular proofs for this yet,
+     so we return @('nil') as
+     the computation state term, theorem name, and proofs flag."))
+  (b* ((wrld (w state))
+       ((stmt-gin gin) gin)
+       (all-items (cons item items))
+       (all-items-limit `(binary-+ '1 (binary-+ ,item-limit ,items-limit)))
+       ((when (not gin.proofs))
+        (make-stmt-gout
+         :items all-items
+         :type items-type
+         :term term
+         :compst-term nil
+         :limit all-items-limit
+         :events (append item-events items-events)
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :proofs nil))
+       (compst-term (acl2::fsublis-var (list (cons gin.compst-var
+                                                   item-compst))
+                                       items-compst))
+       (compst-uterm (untranslate$ compst-term nil state))
+       (uterm (untranslate$ term nil state))
+       (formula1 `(equal (exec-block-item-list ',all-items
+                                               ,gin.compst-var
+                                               ,gin.fenv-var
+                                               ,gin.limit-var)
+                         (mv ,uterm ,compst-uterm)))
+       (formula1 (atc-contextualize formula1
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    gin.compst-var
+                                    gin.limit-var
+                                    all-items-limit
+                                    wrld))
+       (type-pred (type-to-recognizer items-type wrld))
+       (formula2 `(,type-pred ,uterm))
+       (formula2 (atc-contextualize formula2
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    nil
+                                    nil
+                                    nil
+                                    wrld))
+       (formula `(and ,formula1 ,formula2))
+       (hints `(("Goal" :in-theory '(exec-block-item-list-when-consp
+                                     not-zp-of-limit-variable
+                                     ,item-thm
+                                     mv-nth-of-cons
+                                     (:e zp)
+                                     (:e value-optionp)
+                                     not-zp-of-limit-minus-const
+                                     (:e valuep)
+                                     ,items-thm))))
+       (thm-name (pack gin.fn '-correct- gin.thm-index))
+       (thm-index (1+ gin.thm-index))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil gin.names-to-avoid wrld))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (make-stmt-gout :items all-items
+                    :type items-type
+                    :term term
+                    :compst-term compst-term
+                    :limit all-items-limit
+                    :events (append item-events
+                                    items-events
+                                    (list event))
+                    :thm-name thm-name
+                    :thm-index thm-index
+                    :names-to-avoid names-to-avoid
+                    ;; We temporarily turn off proofs here,
+                    ;; because we need to make further extensions first.
+                    ;; :proofs t
+                    :proofs nil))
+  :guard-hints (("Goal" :in-theory (enable symbol-alistp strip-cdrs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -681,6 +808,7 @@
                 :items (list (block-item-stmt stmt))
                 :type expr.type
                 :term expr.term
+                :compst-term nil
                 :limit (pseudo-term-fncall
                         'binary-+
                         (list (pseudo-term-quote 3)
@@ -766,6 +894,7 @@
     (retok (make-stmt-gout :items items
                            :type expr.type
                            :term expr.term
+                           :compst-term gin.compst-var
                            :limit items-limit
                            :events (append expr.events
                                            (list stmt-event)
@@ -865,6 +994,7 @@
           :items (list (block-item-stmt stmt))
           :type type
           :term term
+          :compst-term nil
           :limit (pseudo-term-fncall
                   'binary-+
                   (list
@@ -1103,6 +1233,7 @@
       :items items
       :type type
       :term term*
+      :compst-term gin.compst-var
       :limit items-limit
       :events (append test-events
                       then-events
@@ -1551,6 +1682,7 @@
                         :items (cons item body.items)
                         :type type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append init.events body.events)
                         :thm-name nil
@@ -1644,6 +1776,7 @@
                         :items (cons item body.items)
                         :type type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -1711,6 +1844,7 @@
                   :items items
                   :type type
                   :term term
+                  :compst-term nil
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -1828,6 +1962,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append arr.events
                                         sub.events
@@ -1933,6 +2068,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append struct.events
                                         member.events)
@@ -2060,6 +2196,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append struct.events
                                         index.events
@@ -2124,8 +2261,11 @@
                            but it affects ~x2 instead."
                           val-term var init.affect)))
                    ((mv item
+                        item-limit
                         item-events
+                        item-thm
                         inscope-body
+                        compst-body
                         context-body
                         thm-index
                         names-to-avoid)
@@ -2157,25 +2297,28 @@
                                    :names-to-avoid names-to-avoid
                                    :proofs init.proofs)
                                   state))
-                   (type body.type)
-                   (limit (pseudo-term-fncall
-                           'binary-+
-                           (list (pseudo-term-quote 3)
-                                 (pseudo-term-fncall
-                                  'binary-+
-                                  (list init.limit body.limit))))))
-                (retok (make-stmt-gout
-                        :items (cons item body.items)
-                        :type type
-                        :term term
-                        :limit limit
-                        :events (append init.events
-                                        item-events
-                                        body.events)
-                        :thm-name nil
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
+                   (term* (acl2::close-lambdas
+                           `((lambda (,var) ,body.term) ,init.term))))
+                (retok
+                 (atc-gen-block-item-list-cons
+                  term*
+                  item
+                  item-limit
+                  (append init.events item-events)
+                  item-thm
+                  compst-body
+                  body.items
+                  body.limit
+                  body.events
+                  body.thm-name
+                  body.type
+                  body.compst-term
+                  (change-stmt-gin
+                   gin
+                   :thm-index body.thm-index
+                   :names-to-avoid body.names-to-avoid
+                   :proofs body.proofs)
+                  state))))
              ((unless (atc-var-assignablep var innermostp gin.affect))
               (reterr
                (msg "When generating C code for the function ~x0, ~
@@ -2254,6 +2397,7 @@
                         :items (cons item body.items)
                         :type type
                         :term term
+                        :compst-term nil
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -2310,6 +2454,7 @@
                   :items items
                   :type type
                   :term term
+                  :compst-term nil
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -2329,6 +2474,7 @@
                   :items nil
                   :type (type-void)
                   :term term
+                  :compst-term nil
                   :limit (pseudo-term-quote 1)
                   :events nil
                   :thm-name nil
@@ -2351,6 +2497,7 @@
             (retok (make-stmt-gout :items nil
                                    :type (type-void)
                                    :term term
+                                   :compst-term nil
                                    :limit (pseudo-term-quote 1)
                                    :events nil
                                    :thm-name nil
@@ -2414,6 +2561,7 @@
                   :items (list (block-item-stmt loop-stmt))
                   :type (type-void)
                   :term term
+                  :compst-term nil
                   :limit limit
                   :events nil
                   :thm-name nil
@@ -2426,6 +2574,7 @@
                     :items nil
                     :type (type-void)
                     :term term
+                    :compst-term nil
                     :limit (pseudo-term-quote 1)
                     :events nil
                     :thm-name nil
@@ -2489,6 +2638,7 @@
                   :items (list (block-item-stmt (stmt-expr call-expr)))
                   :type (type-void)
                   :term term
+                  :compst-term nil
                   :limit `(binary-+ '5 ,limit)
                   :events args.events
                   :thm-name nil
@@ -2523,7 +2673,9 @@
     :hints (("Goal"
              :do-not '(preprocess) ; for speed
              :in-theory
-             (e/d (true-listp-when-atc-var-info-option-listp-rewrite
+             (e/d (pseudo-termp
+                   length
+                   true-listp-when-atc-var-info-option-listp-rewrite
                    acl2::true-listp-when-pseudo-event-form-listp-rewrite)
                   (atc-gen-stmt))))))
 

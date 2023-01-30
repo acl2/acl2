@@ -2221,6 +2221,7 @@
                                (fn-guard symbolp)
                                (context atc-contextp)
                                (compst-var symbolp)
+                               (compst-term pseudo-termp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
   :returns (mv (thm-event pseudo-event-formp)
@@ -2247,7 +2248,7 @@
        (name (pack fn '-pop-frame))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
-       (formula `(equal (pop-frame ,compst-var)
+       (formula `(equal (pop-frame ,compst-term)
                         ,compst0-var))
        (formula (atc-contextualize formula
                                    context
@@ -2346,7 +2347,8 @@
                                (:e tyname-to-type)
                                (:e ,(pack 'type- (type-kind body-type)))
                                ,pop-frame-thm
-                               ,fn-def*))))
+                               ,fn-def*
+                               declar))))
        ((mv lemma-event &) (evmac-generate-defthm lemma-name
                                                   :formula lemma-formula
                                                   :hints lemma-hints
@@ -2533,8 +2535,13 @@
             names-to-avoid)
         (if (and proofs
                  modular-proofs)
-            (atc-gen-pop-frame-thm
-             fn fn-guard context compst-var names-to-avoid wrld)
+            (atc-gen-pop-frame-thm fn
+                                   fn-guard
+                                   context
+                                   compst-var
+                                   body.compst-term
+                                   names-to-avoid
+                                   wrld)
           (mv '(_) nil names-to-avoid)))
        (id (make-ident :name name))
        ((mv tyspec &) (ident+type-to-tyspec+declor id body.type))
