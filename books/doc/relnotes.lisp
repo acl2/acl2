@@ -165,6 +165,11 @@
      capability (see @(see note-8-6) to strengthen the use of @(see
      linear-arithmetic) during rewriting.")
 
+   (xdoc::p
+    "The @(tsee apt::simplify) transformation, when called with option
+     @(':untranslate t'), removes some unused @(tsee let) bindings and @(tsee
+     let*) bindings that formerly remained.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
@@ -238,6 +243,14 @@
     "In the library of "
     (xdoc::seetopic "fty::defresult" "result types")
     ", some names have been improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
+
+   (xdoc::p
+    "Added utility @(tsee show-books), which returns a tree representing the
+     @(see books) included in the current ACL2 session.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

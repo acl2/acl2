@@ -8066,7 +8066,18 @@
                   (mv nil (car cmds) (cdr cmds) state))
                 (mv-let (erp obj state)
                   (read-object *standard-oi* state)
-                  (mv erp obj nil state))))
+                  (mv erp
+
+; Originally 0 was accepted to mean "up"; since January 2023, however, the
+; symbol UP has also been accepted.  The simplest way to preserve behavior when
+; making that change was to treat the symbol UP as 0, and we do that here.
+
+                      (if (and (symbolp obj)
+                               (equal (symbol-name obj) "UP"))
+                          0
+                          obj)
+                       nil
+                       state))))
            (cond
             (erp (mv 'exit nil nil state))
             (t (let ((obj (cond ((not intern-flg) obj)
@@ -8153,7 +8164,7 @@
 
 (defun walkabout (x state)
   (pprogn
-   (fms "Commands:~|0, 1, 2, ..., nx, bk, pp, (pp n), (pp lev len), =, (= ~
+   (fms "Commands:~|1, 2, ..., up, nx, bk, pp, (pp n), (pp lev len), =, (= ~
          symb), (cmds c1 c2 ... cn), and q.~%~%"
         nil *standard-co* state nil)
    (mv-let (signal val cmds state)

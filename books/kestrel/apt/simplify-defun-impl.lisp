@@ -20,6 +20,7 @@
 ;;; Rewriting
 ;;; Return-last blockers
 ;;; Simplifying a term
+;;; Removing unused let/let* bindings
 ;;; Additional main utilities
 ;;; Putting it all together
 
@@ -101,6 +102,8 @@
 ;   supported.  See apt::simplify-failure (both the section on "Recursion and
 ;   equivalence relations" and the related comment in the defxdoc form) for
 ;   more information.
+; - Preserve all declare forms.  In particular, declare forms under LET seems
+;   to be dropped, as noted in simplify-defun-tests.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Introductory remarks
@@ -1984,6 +1987,192 @@
    (t (value nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Removing unused let/let* bindings
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun non-trivial-lambda-formals (formals args)
+
+; For a term ((lambda formals body) . args), return the list of formals that
+; equal their corresponding arg in args.
+
+  (cond ((endp formals) nil)
+        ((eq (car formals) (car args))
+         (non-trivial-lambda-formals (cdr formals) (cdr args)))
+        (t (cons (car formals)
+                 (non-trivial-lambda-formals (cdr formals) (cdr args))))))
+
+(defun remove-unused-vars-from-bindings (bindings term)
+
+; Bindings is a list of let-bindings.  We return (mv dropped new-bindings),
+; where dropped is the vars bound by new-bindings that do not occur in the
+; given term and new-bindings is the result of dropping those variables from
+; bindings.
+
+  (declare (xargs :guard (and (symbol-doublet-listp bindings)
+                              (pseudo-termp term))))
+  (cond ((endp bindings) (mv nil nil))
+        (t (mv-let (dropped new-bindings)
+             (remove-unused-vars-from-bindings (cdr bindings) term)
+             (cond ((dumb-occur-var (caar bindings) term)
+                    (mv dropped
+                        (cons (car bindings) new-bindings)))
+                   (t
+                    (mv (cons (caar bindings) dropped)
+                        new-bindings)))))))
+
+(defun remove-vars-from-let-dcls-lst (vars lst)
+  (cond ((endp lst) nil)
+        (t (let* ((d (car lst))
+                  (new-vars
+                   (case-match d
+                     (('ignore . ivars)
+                      (set-difference-eq ivars vars))
+                     (('ignorable . ivars)
+                      (set-difference-eq ivars vars))
+                     (('type & . tvars)
+                      (set-difference-eq tvars vars))
+                     (&
+                      (er hard 'remove-vars-from-let-dcls-lst
+                          "Implementation error: Unknown kind of declaration ~
+                           for let, ~x0."
+                          d)))))
+             (cond (new-vars (cons (if (eq (car d) 'type)
+                                       (list* 'type (cadr d) new-vars)
+                                     (cons (car d) new-vars))
+                                   (remove-vars-from-let-dcls-lst vars
+                                                                  (cdr lst))))
+                   (t (remove-vars-from-let-dcls-lst vars (cdr lst))))))))
+
+(defun remove-vars-from-let-dcls-1 (vars dcl)
+  (assert$ (eq (car dcl) 'declare)
+           (let ((x (remove-vars-from-let-dcls-lst vars (cdr dcl))))
+             (and x (cons 'declare x)))))
+
+(defun remove-vars-from-let-dcls-rec (vars dcls)
+  (cond ((endp dcls) nil)
+        (t (let ((x (remove-vars-from-let-dcls-1 vars (car dcls)))
+                 (y (remove-vars-from-let-dcls-rec vars (cdr dcls))))
+             (if x (cons x y) y)))))
+
+(defun remove-vars-from-let-dcls (vars dcls)
+
+; As per *acceptable-dcls-alist*, the only declare forms legal for a let
+; expression are ignore, ignorable, and type.
+
+  (cond ((null vars) dcls)
+        (t (remove-vars-from-let-dcls-rec vars dcls))))
+
+(mutual-recursion
+
+(defun remove-let-bindings-rec (uterm tterm wrld)
+  (declare (xargs :guard (and (pseudo-termp tterm)
+                              (plist-worldp wrld))))
+  (cond
+   ((or (variablep tterm)
+        (fquotep tterm)
+        (atom uterm))
+    uterm)
+   ((symbolp (ffn-symb tterm))
+    (cond
+     ((eq (car uterm) (car tterm))
+      (assert$
+       (= (length (cdr uterm)) (length (fargs tterm))) ; always true?
+       (cons (car uterm)
+             (remove-let-bindings-lst (cdr uterm) (fargs tterm) wrld))))
+     (t uterm)))
+
+; We have a lambda application: tterm is ((lambda formals body) . args).
+
+   ((or (eq (car uterm) 'let)
+        (and (eq (car uterm) 'let*)
+
+; We handle let* in a later case, except that here, we handle let* with at most
+; one binding just as we handle let.
+
+             (null (cdr (cadr uterm)))))
+
+; Note that we don't recur into let-bindings -- only into the let body.  That
+; could easily be remedied by making this function mutually recursive with
+; remove-unused-bindings, but that seems unlikely to make much difference in
+; practice so we keep this simple.
+
+    (cond
+     ((null (cadr uterm)) ; empty bindings: remove them
+      (car (last uterm)))
+     (t
+      (let* ((bindings (cadr uterm))
+             (body (car (last uterm)))
+             (dcls (butlast (cddr uterm) 1))
+             (lam (ffn-symb tterm))
+             (formals (lambda-formals lam))
+             (args (fargs tterm))
+             (nformals (non-trivial-lambda-formals formals args))
+             (tbody (lambda-body lam)))
+        (cond
+         ((equal (strip-cars bindings) nformals)
+          (let ((ubody (remove-let-bindings-rec body tbody wrld)))
+            (mv-let (dropped new-bindings)
+              (remove-unused-vars-from-bindings bindings tbody)
+              (cond (new-bindings
+                     `(,(car uterm) ; let or let*
+                       ,new-bindings
+                       ,@(remove-vars-from-let-dcls dropped dcls)
+                       ,ubody))
+                    (t ubody)))))
+         (t uterm))))))
+   ((and (eq (car uterm) 'let*)
+
+; We don't try to handle declare forms with let* at this point (unless there is
+; just one binding, as handled above).  That shouldn't be too difficult, but
+; it's not a priority at the moment; instead, since there are no declare forms,
+; we simply reduce to the preceding case.
+
+         (= (length uterm) 3))
+    (let* ((bindings (cadr uterm))
+           (var (caar bindings))
+           (val (cadar bindings))
+           (temp
+            (assert$
+             (consp bindings) ; otherwise previous case would apply
+             (remove-let-bindings-rec
+              `(let* ((,var ,val))
+                 (let* ,(cdr bindings) ,(caddr uterm)))
+              tterm
+              wrld))))
+      (case-match temp
+        (('let* ((!var val2))
+           ('let* bindings2 . rest))
+         `(let* ((,var ,val2) ,@bindings2)
+            ,@rest))
+        (& temp))))
+   (t uterm)))
+
+(defun remove-let-bindings-lst (uterm-lst tterm-lst wrld)
+  (declare (xargs :guard (and (true-listp uterm-lst)
+                              (pseudo-term-listp tterm-lst)
+                              (plist-worldp wrld))))
+  (cond
+   ((endp uterm-lst) nil)
+   (t (cons (remove-let-bindings-rec (car uterm-lst) (car tterm-lst) wrld)
+            (remove-let-bindings-lst (cdr uterm-lst) (cdr tterm-lst) wrld)))))
+)
+
+(defun remove-let-bindings (uterm wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (mv-let (erp tterm bindings)
+    (acl2::translate1-cmp uterm
+                          t ; stobjs-out
+                          nil ; logic-modep; could be t
+                          t   ; known-stobjs
+                          'remove-let-bindings-rec
+                          wrld
+                          (default-state-vars nil))
+    (declare (ignore bindings))
+    (cond
+     (erp uterm) ; impossible case for us, probably
+     (t (remove-let-bindings-rec uterm tterm wrld)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Additional main utilities
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2472,7 +2661,8 @@
                              (stobjs-out fn wrld)))
        (simp-body (cond
                    ((eq untranslate t)
-                    (untranslate new-body nil wrld))
+                    (remove-let-bindings (untranslate new-body nil wrld)
+                                         wrld))
                    ((eq untranslate nil)
                     new-body)
                    ((eq untranslate :nice-expanded)

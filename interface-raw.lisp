@@ -8252,7 +8252,7 @@
 ; offending function(s) provided we deal with those exceptions in the
 ; definition of get-defun-event.
 
-; This check might be coded more efficiently by walking through the world,, but
+; This check might be coded more efficiently by walking through the world, but
 ; it has taken only 0.06 seconds, which seems fine.
 
   (let ((wrld (w *the-live-state*)) ans)

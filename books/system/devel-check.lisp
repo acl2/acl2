@@ -30,7 +30,6 @@
 (include-book "merge-sort-term-order")
 (include-book "termp")
 (include-book "kestrel")
-(include-book "remove-guard-holders")
 (include-book "merge-sort-symbol-lt")
 (include-book "pseudo-good-worldp") ; for e.g. macro-args-structurep
 (include-book "bind-macro-args")
@@ -39,11 +38,9 @@
 (include-book "all-fnnames")
 (include-book "observation1-cw")
 (include-book "defstobj")
-(include-book "remove-guard-holders-strong-1")
-; Do not include "remove-guard-holders-strong-2", which has an invalid
-; skip-proofs as noted there; or "remove-guard-holders-strong-ideal-mode.lisp",
-; which puts some system functions into :logic mode without guard verification,
-; and has been seen to slow down regressions a lot.
+(include-book "remove-guard-holders") ; includes remove-guard-holders-weak
+; Do not include "remove-guard-holders-future", which has an invalid
+; skip-proofs as noted there.
 
 ; The following is commented out because we aren't currently motivated to put
 ; its functions into ACL2 system constant *system-verify-guards-alist*, which
