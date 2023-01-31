@@ -178,17 +178,19 @@
            (renamed-val (apply-renaming-to-hint-value key val renaming-alist)))
       (cons key (cons renamed-val (apply-renaming-to-hint-keyword-value-list (rest (rest keyword-value-list)) renaming-alist))))))
 
-;; TODO: Handle computed hints
+;; TODO: Handle more kinds of hint
 (defun apply-renaming-to-hint (hint renaming-alist)
   (declare (xargs :guard (symbol-alistp renaming-alist)))
   (if (and (consp hint)
            (stringp (first hint))
            (keyword-value-listp (rest hint)))
-      (let ((goal-name (first hint))
+      ;; common hint:
+      (let ((goal-spec (first hint))
             (keyword-value-list (rest hint)))
-        (cons goal-name (apply-renaming-to-hint-keyword-value-list keyword-value-list renaming-alist)))
+        (cons goal-spec (apply-renaming-to-hint-keyword-value-list keyword-value-list renaming-alist)))
+    ;; computed hint:
     (case-match hint
-      (('std::returnspec-default-default-hint ('quote fn-name) arg2 arg3)  ; for now handle in an ad-hoc manner
+      (('std::returnspec-default-default-hint ('quote fn-name) arg2 arg3) ; for now handle in an ad-hoc manner
        `(std::returnspec-default-default-hint ',(apply-renaming-to-symbol (and (symbolp fn-name) fn-name)
                                                                           renaming-alist)
                                               ,arg2 ,arg3))
