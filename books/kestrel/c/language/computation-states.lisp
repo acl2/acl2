@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,6 +15,9 @@
 (include-book "structure-operations")
 
 (include-book "kestrel/fty/defomap" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,11 +53,16 @@
   :elt-type scope
   :true-listp t
   :elementp-of-nil t
-  :pred scope-listp)
+  :pred scope-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult scope "scopes")
+(encapsulate ()
+  (local (in-theory (enable alistp identity)))
+  (defresult scope "scopes"))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (defruled not-errorp-when-scopep
   (implies (scopep x)
@@ -63,7 +71,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult scope-list "lists of scopes")
+(encapsulate ()
+  (local (in-theory (enable alistp identity)))
+  (defresult scope-list "lists of scopes"))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -96,6 +106,7 @@
    (scopes scope-list :reqfix (if (consp scopes) scopes (list nil))))
   :require (consp scopes)
   :pred framep
+  :prepwork ((local (in-theory (enable alistp))))
   ///
 
   (defrule len-of-frame->scopes-lower-bound
@@ -109,7 +120,8 @@
   :elt-type frame
   :true-listp t
   :elementp-of-nil nil
-  :pred frame-listp)
+  :pred frame-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,7 +172,8 @@
   ((static scope)
    (frames frame-list)
    (heap heap))
-  :pred compustatep)
+  :pred compustatep
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -171,25 +184,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult compustate "computation states")
+(encapsulate()
+  (local (in-theory (enable alistp identity)))
+  (defresult compustate "computation states"))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule not-compustatep-of-error
   (not (compustatep (error x)))
-  :enable (compustatep error))
+  :enable (compustatep error strip-cars))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defruled not-errorp-when-compustatep
   (implies (compustatep x)
            (not (errorp x)))
-  :enable (errorp compustatep))
+  :enable (errorp compustatep strip-cars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult compustate-option "optional computation states"
-  :enable (compustatep compustate-optionp errorp))
+(encapsulate()
+  (local (in-theory (enable alistp)))
+  (defresult compustate-option "optional computation states"
+    :enable (compustatep compustate-optionp errorp)))
 
 (defruled compustate-resultp-when-compustate-option-result-and-not-nil
   (implies (and (compustate-option-resultp x)
@@ -234,7 +251,7 @@
   (defret compustate-frames-number-of-push-frame
     (equal (compustate-frames-number new-compst)
            (1+ (compustate-frames-number compst)))
-    :hints (("Goal" :in-theory (enable compustate-frames-number)))))
+    :hints (("Goal" :in-theory (enable compustate-frames-number len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -268,7 +285,7 @@
     (equal (compustate-frames-number new-compst)
            (1- (compustate-frames-number compst)))
     :hyp (> (compustate-frames-number compst) 0)
-    :hints (("Goal" :in-theory (enable compustate-frames-number))))
+    :hints (("Goal" :in-theory (enable compustate-frames-number len fix))))
 
   (defrule pop-frame-of-push-frame
     (equal (pop-frame (push-frame frame compst))
@@ -276,6 +293,9 @@
     :enable push-frame))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (include-book "kestrel/fty/pos-list" :dir :system)
+;; (include-book "std/lists/len" :dir :system)
 
 (define compustate-scopes-numbers ((compst compustatep))
   :returns (ns pos-listp)
@@ -290,7 +310,8 @@
 
   :prepwork
   ((define compustate-scopes-numbers-aux ((frames frame-listp))
-     :returns (ns pos-listp)
+     :returns (ns pos-listp
+                  :hints (("Goal" :in-theory (enable posp pos-listp))))
      (cond ((endp frames) nil)
            (t (cons (len (frame->scopes (car frames)))
                     (compustate-scopes-numbers-aux (cdr frames)))))
@@ -298,14 +319,16 @@
      ///
      (defret len-of-compustate-scopes-numbers-aux
        (equal (len ns)
-              (len frames)))
+              (len frames))
+       :hints (("Goal" :in-theory (enable len))))
      (defret consp-of-compustate-scopes-numbers-aux
        (equal (consp ns)
               (consp frames)))
      (defret car-of-compustate-scopes-numbers-aux
        (implies (> (len frames) 0)
                 (equal (car ns)
-                       (len (frame->scopes (car frames))))))))
+                       (len (frame->scopes (car frames)))))
+       :hints (("Goal" :in-theory (enable len))))))
 
   :hooks (:fix)
 
@@ -326,7 +349,7 @@
     (posp (car ns))
     :hyp (> (compustate-frames-number compst) 0)
     :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (enable compustate-frames-number))))
+    :hints (("Goal" :in-theory (enable compustate-frames-number posp))))
 
   (defret car-of-compustate-scopes-numbers-lower-bound
     (> (car ns) 0)
@@ -391,7 +414,8 @@
   (defret compustate-frames-number-of-enter-scope
     (equal (compustate-frames-number new-compst)
            (compustate-frames-number compst))
-    :hyp (> (compustate-frames-number compst) 0))
+    :hyp (> (compustate-frames-number compst) 0)
+    :hints (("Goal" :in-theory (enable fix))))
 
   (defret compustate-scopes-numbers-of-enter-scope
     (equal (compustate-scopes-numbers new-compst)
@@ -399,7 +423,8 @@
                  (cdr (compustate-scopes-numbers compst))))
     :hyp (> (compustate-frames-number compst) 0)
     :hints (("Goal" :in-theory (enable top-frame
-                                       car-of-compustate-scopes-numbers)))))
+                                       car-of-compustate-scopes-numbers
+                                       len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -419,14 +444,16 @@
        (new-compst (push-frame new-frame (pop-frame compst))))
     new-compst)
   :guard-hints (("Goal" :in-theory (enable car-of-compustate-scopes-numbers
-                                           top-frame)))
+                                           top-frame
+                                           len)))
   :hooks (:fix)
   ///
 
   (defret compustate-frames-number-of-exit-scope
     (equal (compustate-frames-number (exit-scope compst))
            (compustate-frames-number compst))
-    :hyp (> (compustate-frames-number compst) 0))
+    :hyp (> (compustate-frames-number compst) 0)
+    :hints (("Goal" :in-theory (enable fix))))
 
   (defret compustate-scopes-numbers-of-exit-scope
     (equal (compustate-scopes-numbers new-compst)
@@ -435,7 +462,9 @@
     :hyp (and (> (compustate-frames-number compst) 0)
               (> (compustate-top-frame-scopes-number compst) 1))
     :hints (("Goal" :in-theory (enable car-of-compustate-scopes-numbers
-                                       top-frame)))))
+                                       top-frame
+                                       fix
+                                       len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -484,7 +513,8 @@
   (defret compustate-frames-number-of-create-var
     (implies (compustatep result)
              (equal (compustate-frames-number result)
-                    (compustate-frames-number compst))))
+                    (compustate-frames-number compst)))
+    :hints (("Goal" :in-theory (enable fix))))
 
   (defret compustate-scopes-numbers-of-create-var
     (implies (compustatep result)
@@ -496,7 +526,8 @@
                                        pop-frame
                                        compustate-scopes-numbers
                                        compustate-scopes-numbers-aux
-                                       compustate-frames-number)))))
+                                       compustate-frames-number
+                                       len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -655,7 +686,7 @@
                      (consp new-scopes))
                 (equal (len new-scopes)
                        (len scopes)))
-       :hints (("Goal" :in-theory (enable error errorp))))))
+       :hints (("Goal" :in-theory (enable error errorp len))))))
 
   ///
 
@@ -664,7 +695,8 @@
                   (compustatep new-compst))
              (equal (compustate-frames-number new-compst)
                     (compustate-frames-number compst)))
-    :hints (("Goal" :in-theory (enable not-errorp-when-compustatep))))
+    :hints (("Goal" :in-theory (enable not-errorp-when-compustatep
+                                       fix))))
 
   (defret compustate-scopes-numbers-of-write-auto-var
     (implies (and (> (compustate-frames-number compst) 0)
@@ -804,6 +836,7 @@
                       :supplied obj))))
      (value-struct-read objdes.name obj)))
   :measure (objdesign-count objdes)
+  :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :verify-guards :after-returns
   :hooks (:fix))
 
@@ -873,6 +906,7 @@
         ((when (errorp new-super)) new-super))
      (write-object objdes.super new-super compst)))
   :measure (objdesign-count objdes)
+  :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :hooks (:fix)
   ///
 
