@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,12 +19,16 @@
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 
 ;; to have FTY::DEFLIST generate theorems about NTH:
 (local (include-book "std/lists/nth" :dir :system))
 
 ;; to have FTY::DEFLIST generate theorems about UPDATE-NTH:
 (local (include-book "std/lists/update-nth" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -172,6 +176,8 @@
                   ,<type>-max
                   ,@(and signedp `(,<type>-min))))))
 
+  :guard-hints (("Goal" :in-theory (enable string-listp)))
+
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -189,7 +195,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(progn ,@(def-integer-range-loop *nonchar-integer-types*)))
+ `(encapsulate ()
+    (local (in-theory (enable nfix
+                              not
+                              integer-range-p
+                              signed-byte-p
+                              unsigned-byte-p)))
+    ,@(def-integer-range-loop *nonchar-integer-types*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -790,7 +802,10 @@
              slong-min
              slong-max
              sllong-min
-             sllong-max))
+             sllong-max
+             ifix
+             signed-byte-p
+             integer-range-p))
 
   (defruled integer-type-rangep-to-unsigned-byte-p
     (implies (and (type-unsigned-integerp type)
@@ -806,4 +821,7 @@
              ushort-max
              uint-max
              ulong-max
-             ullong-max)))
+             ullong-max
+             ifix
+             unsigned-byte-p
+             integer-range-p)))
