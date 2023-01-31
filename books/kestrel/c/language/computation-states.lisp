@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -56,6 +56,8 @@
 
 (defresult scope "scopes")
 
+;;;;;;;;;;;;;;;;;;;;
+
 (defruled not-errorp-when-scopep
   (implies (scopep x)
            (not (errorp x)))
@@ -86,11 +88,11 @@
    (xdoc::p
     "The variables are organized into a stack (i.e. list) of scopes,
      which grows leftward and shrinks rightward
-     (i.e. scopes are added via @(tsee cons) and removed via @(tsee cdr).
+     (i.e. scopes are added via @(tsee cons) and removed via @(tsee cdr)).
      There is always at least one scope,
      i.e. the one for the function body's block.")
    (xdoc::p
-    "As defined later, the call stack is represented as
+    "As defined later, the call stack is also represented as
      a stack (i.e. list) of frames."))
   ((function ident)
    (scopes scope-list :reqfix (if (consp scopes) scopes (list nil))))
@@ -140,9 +142,11 @@
    (xdoc::ul
     (xdoc::li
      "A scope for static storage [C:6.2.4].
-      Our current C subset only has one translation unit (i.e. file),
+      Our current C subset only has one translation unit
+      (i.e. a single @('.c') file, with an optional @('.h') file;
+      together they form a single translation unit, see @(tsee preprocess)),
       so the static storage corresponds to
-      the variables declared at the top-level in the file,
+      the variables declared at the top-level in the translation unit,
       which form a scope.")
     (xdoc::li
      "A stack of frames.
