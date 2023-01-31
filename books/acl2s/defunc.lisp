@@ -2435,3 +2435,35 @@ To debug a failed defunc form, you can proceed in multiple ways:
 (defmacro prove-function-contract (name)
   `(... ,name))
 |#
+
+; A function to determine the domain size of a type 
+(defun defdata-domain-size-fn (type wrld)
+  (declare (xargs :guard (and (symbolp type) (plist-worldp wrld))
+                  :verify-guards nil))
+  (b* ((tbl (table-alist 'type-metadata-table wrld))
+       (atbl (table-alist 'type-alias-table wrld))
+       (ttype (type-of-type type tbl atbl))
+       ((unless ttype)
+          (er hard 'domain-size
+              "~%The given type, ~x0, is not a known type or alias type." type))
+       (type-info (assoc ttype tbl))
+       (domain (cdr (assoc :domain-size (cdr type-info)))))
+    (if (equal domain t)
+        'infinite
+      domain)))
+
+(defmacro defdata-domain-size (type)
+  `(defdata-domain-size-fn ,type (w state)))
+
+(defun defdata-base-val-of-type-fn (type wrld)
+  (declare (xargs :mode :program
+                  :guard (and (symbolp type) (plist-worldp wrld))
+                  :verify-guards nil))
+  (b* ((tbl (type-metadata-table wrld))
+       (atbl (table-alist 'type-alias-table wrld))
+       (ttype (type-of-type type tbl atbl)))
+    (base-val-of-type ttype tbl wrld)))
+
+(defmacro defdata-base-val-of-type (type)
+  `(defdata-base-val-of-type-fn ,type (w state)))
+
