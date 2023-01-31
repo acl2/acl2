@@ -87,7 +87,7 @@
      rewrite calls of functions used in the deeply embedded dynamic semantics
      into their shallowly embedded counterparts,
      under hypothesis on the types of the arguments.
-     For instance, @('(exec-unary op x)')
+     For instance, @('(exec-unary op x compst)')
      is rewritten to @('(<op>-<type> x)')
      when @('op') is @('<op>')
      and @('x') has type @('<type>').

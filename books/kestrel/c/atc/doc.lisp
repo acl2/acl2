@@ -1558,7 +1558,7 @@
 
     (xdoc::p
      "ATC generates a single source file,
-      optionally accompanied  by a header,
+      optionally accompanied by a header,
       as explained in Section `Representation of C Code in ACL2'.")
 
     (xdoc::p

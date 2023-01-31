@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -63,7 +63,7 @@
                      ,@(and op-type-okp
                             `((,op-type-okp x)))))
          (formula `(implies ,hyps
-                            (equal (exec-unary op x)
+                            (equal (exec-unary op x compst)
                                    (,op-type x))))
          (enables `(exec-unary
                     ,op-value

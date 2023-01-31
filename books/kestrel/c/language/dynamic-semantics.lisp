@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -166,12 +166,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-unary ((op unopp) (arg valuep))
+(define indir-value ((val valuep) (compst compustatep))
+  :returns (resval value-resultp)
+  :short "Apply @('*') to a value [C:6.5.3.2/2] [C:6.5.3.2/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The value must be a pointer.
+     If the pointer is null, it is an error.
+     Otherwise, we read the object designated by the object designator,
+     which is a value.
+     Note that we do not return the object designator,
+     because for now we only use this operation to read pointed-to values,
+     not to assign to them;
+     so returning the value, as in an lvalue conversion,
+     is appropriate for now.
+     However, if the value is an array,
+     we return its first element instead of the whole array;
+     all the other types of values are returned unchanged.
+     The reason for this special treatment of arrays is that
+     we need to do array-to-pointer conversion [C:6.3.2.1/3]."))
+  (b* (((unless (value-case val :pointer))
+        (error (list :non-pointer-dereference (value-fix val))))
+       ((when (value-pointer-nullp val))
+        (error (list :null-pointer-dereference)))
+       (objdes (value-pointer->designator val))
+       (resval (read-object objdes compst))
+       ((when (errorp resval)) resval))
+    (if (value-case resval :array)
+        (value-array-read 0 resval)
+      resval))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-unary ((op unopp) (arg valuep) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a unary operation."
   (unop-case op
              :address (error :todo)
-             :indir (error :todo)
+             :indir (indir-value arg compst)
              :plus (plus-value arg)
              :minus (minus-value arg)
              :bitnot (bitnot-value arg)
@@ -540,7 +574,7 @@
      :predec (error (list :non-pure-expr e))
      :unary (b* ((arg (exec-expr-pure e.arg compst))
                  ((when (errorp arg)) arg))
-              (exec-unary e.op arg))
+              (exec-unary e.op arg compst))
      :cast (b* ((arg (exec-expr-pure e.arg compst))
                 ((when (errorp arg)) arg))
              (exec-cast e.type arg))
