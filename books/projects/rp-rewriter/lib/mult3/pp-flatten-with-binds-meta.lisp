@@ -728,7 +728,8 @@
   (profile 'pp-term-bind)
 
   (defret rp-term-listp-of-<fn>
-    (implies (rp-termp term)
+    (implies (and (rp-termp term)
+                  (booleanp signed))
              (rp-term-listp pp-lst))))
 
 (local
@@ -2717,6 +2718,7 @@
 (defret pp-flatten-with-binds-correct
   (implies (and (mult-formula-checks state)
                 (pp-term-p term)
+                (rp-termp term)
                 (booleanp signed)
                 (valid-sc term a)
                 (rp-evl-meta-extract-global-facts))
@@ -2729,7 +2731,7 @@
            :do-not-induct t
            :in-theory (e/d* (pp-flatten-with-binds
                              regular-eval-lemmas)
-                            ()))))
+                            (rp-termp)))))
 
 (local
  (defret valid-sc-PP-APPLY-BINDINGS-AND-ARG-LST

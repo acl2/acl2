@@ -286,6 +286,13 @@ Valid:~x8~%~%"
   (profile 'rp::create-s-c-res-instance)
   (profile 'rp::c-sum-merge-main-fn)
   (profile 'rp::sum-merge-lst-for-s)
+  (profile 'pp-sum-merge-aux)
+
+  (profile 'extract-equals-from-pp-lst)
+
+  (profile 'cross-product-pp-aux-for-pp-lst)
+
+  (profile 'extract-equals-from-pp-lst-aux)
   
   (profile 'SVL::CONCAT-META)
   (profile 'SVL::BITS-OF-META-FN)
@@ -330,3 +337,11 @@ Valid:~x8~%~%"
   (profile 'rp::merge-sorted-pp-lists)
   
   )
+
+
+(progn
+  (profile 'pp-flatten-fn)
+  (profile 'pp-term-to-pp-lists-fn)
+  (profile 'sort-pp-lists)
+  (profile 'and$-pp-lists)
+  (profile 'and$-pp-lists-aux))

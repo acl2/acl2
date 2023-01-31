@@ -1419,9 +1419,9 @@ nil)))
        (and-list-instance-to-binary-and-aux lst))
       (& term))))
 
-(define single-s-to-pp-lst ((pp1)
-                            (pp2)
-                            (pp3))
+(define single-s-to-pp-lst ((pp1 rp-termp)
+                            (pp2 rp-termp)
+                            (pp3 rp-termp))
   :returns (mv (res-pp-lst rp-term-listp
                            :hyp (and (rp-termp pp1)
                                      (rp-termp pp2)
@@ -1448,9 +1448,9 @@ nil)))
                              (pp-term-p `(binary-xor ,x ,y))))
              :in-theory (e/d (is-rp ex-from-rp) ())))))
 
-(define single-c-to-pp-lst ((pp1)
-                            (pp2)
-                            (pp3))
+(define single-c-to-pp-lst ((pp1 rp-termp)
+                            (pp2 rp-termp)
+                            (pp3 rp-termp))
   :returns (mv (res-pp-lst rp-term-listp
                            :hyp (and (rp-termp pp1)
                                      (rp-termp pp2)
@@ -5164,6 +5164,20 @@ t)||#
              :do-not-induct t
              :in-theory (e/d () ())))))
 
+(progn
+  (encapsulate
+    (((undo-rw-and-open-up-adders-enabled) => *))
+    (local
+     (defun undo-rw-and-open-up-adders-enabled ()
+       nil)))
+
+  (defmacro enable-undo-rw-and-open-up-adders (enable)
+    (if enable
+        `(defattach undo-rw-and-open-up-adders-enabled return-t)
+      `(defattach undo-rw-and-open-up-adders-enabled return-nil)))
+
+  (enable-undo-rw-and-open-up-adders t))
+
 (define new-sum-merge ((term rp-termp))
   :verify-guards t
   :returns (mv (s) (pp-lst) (c-lst) (to-be-coughed-c-lst))
@@ -5172,9 +5186,15 @@ t)||#
         (new-sum-merge-aux sum-lst *large-number*))
 
        (pp-lst (if (check-if-clearable-equals-in-pp-lst pp-lst)
-                   (b* ((- (cw "check-if-clearable-equals-in-pp-lst returned t ~%"))
+                   (b* ((- (cw "Undo-able adder is found. "))
+                        ((unless (undo-rw-and-open-up-adders-enabled))
+                         (progn$ (cw " However, undoing adder rw feature is disabled. See :doc ~p0 for details.~%"
+                                     'Multiplier-Verification-Heuristics)
+                                 pp-lst))
+                        (- (cw "Now, undoing rw and opening up some adders. See :doc ~p0 if too slow. ~%"
+                               'Multiplier-Verification-Heuristics))
                         (pp-lst (extract-equals-from-pp-lst pp-lst *large-number*))
-                        (- (cw "extract-equals-from-pp-lst finished. ~%"))
+                        (- (cw "Undoing rw (extract-equals-from-pp-lst) finished. ~%"))
                         #|(- (and (check-if-clearable-equals-in-pp-lst pp-lst)
                              (raise "pp-lst : ~p0 ~%" pp-lst)))|#
                         )

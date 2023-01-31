@@ -106,19 +106,18 @@
                             (+-is-sum))))))
 
 (local
-   (defthm is-equals-of-others
-     (implies (not (equal (car term) 'equals))
-              (not (is-equals term )))
-     :hints (("Goal"
-              :in-theory (e/d (is-equals) ())))))
-
-
+ (defthm is-equals-of-others
+   (implies (not (equal (car term) 'equals))
+            (not (is-equals term )))
+   :hints (("Goal"
+            :in-theory (e/d (is-equals) ())))))
 
 (defret unpack-booth-for-pp-lst-correct
   (implies (and
             (rp-evl-meta-extract-global-facts :state state)
             (mult-formula-checks state)
-            (valid-sc-subterms pp-lst a))
+            (valid-sc-subterms pp-lst a)
+            (rp-term-listp pp-lst))
            (and (equal (sum-list-eval res-pp-lst a)
                        (sum-list-eval pp-lst a))
                 (valid-sc-subterms res-pp-lst a)))
@@ -129,10 +128,10 @@
            :in-theory (e/d (unpack-booth-for-pp-lst) ()))))
 
 #|(defthmd rp-evlt-of-ex-from-rp-reverse
-  (implies (syntaxp (or (atom term)
-                        (not (include-fnc term 'ex-from-rp))))
-           (equal (rp-evlt term a)
-                  (rp-evlt (ex-from-rp term) a))))||#
+(implies (syntaxp (or (atom term)
+(not (include-fnc term 'ex-from-rp))))
+(equal (rp-evlt term a)
+(rp-evlt (ex-from-rp term) a))))||#
 
 (local
  (defthmd ex-from-rp-when---
@@ -206,7 +205,10 @@
                 (mult-formula-checks state)
                 (valid-sc-subterms s-lst a)
                 (valid-sc-subterms pp-lst a)
-                (valid-sc-subterms c-lst a))
+                (valid-sc-subterms c-lst a)
+                (rp-term-listp s-lst)
+                (rp-term-listp pp-lst)
+                (rp-term-listp c-lst))
            (and (equal (sum-list-eval res-c-lst a)
                        (sum (-- (sum-list-eval res-s-lst a))
                             (-- (sum-list-eval res-pp-lst a))
@@ -487,34 +489,34 @@
                              rp-trans)))))
 
 #|(defret unpack-booth-for-c-lst-correct-with-other
-    (implies (and
-              (rp-evl-meta-extract-global-facts :state state)
-              (mult-formula-checks state)
-              (valid-sc-subterms  c-lst a)
-              (rp-term-listp c-lst))
-             (and (equal (sum (sum-list-eval s-res-lst a)
-                              (sum-list-eval pp-res-lst a)
-                              (sum-list-eval c-res-lst a)
-                              other)
-                         (sum (sum-list-eval c-lst a)
-                              other))
-                  ))
-    :fn unpack-booth-for-c-lst)
+(implies (and
+(rp-evl-meta-extract-global-facts :state state)
+(mult-formula-checks state)
+(valid-sc-subterms  c-lst a)
+(rp-term-listp c-lst))
+(and (equal (sum (sum-list-eval s-res-lst a)
+(sum-list-eval pp-res-lst a)
+(sum-list-eval c-res-lst a)
+other)
+(sum (sum-list-eval c-lst a)
+other))
+))
+:fn unpack-booth-for-c-lst)
 
 (defret unpack-booth-for-s-lst-correct-with-other
-    (implies (and
-              (rp-evl-meta-extract-global-facts :state state)
-              (mult-formula-checks state)
-              (valid-sc-subterms  s-lst a)
-              (rp-term-listp s-lst))
-             (and (equal (sum (sum-list-eval s-res-lst a)
-                              (sum-list-eval pp-res-lst a)
-                              (sum-list-eval c-res-lst a)
-                              other)
-                         (sum (sum-list-eval s-lst a)
-                              other)
-                  )))
-    :fn unpack-booth-for-s-lst)|#
+(implies (and
+(rp-evl-meta-extract-global-facts :state state)
+(mult-formula-checks state)
+(valid-sc-subterms  s-lst a)
+(rp-term-listp s-lst))
+(and (equal (sum (sum-list-eval s-res-lst a)
+(sum-list-eval pp-res-lst a)
+(sum-list-eval c-res-lst a)
+other)
+(sum (sum-list-eval s-lst a)
+other)
+)))
+:fn unpack-booth-for-s-lst)|#
 
 (local
  (defthm single-c-p-implies-integerp
@@ -573,7 +575,6 @@
         (RP-TERMP x))
    :hints (("Goal"
             :in-theory (e/d (rp-termp) ())))))
-
 
 (local
  (defthm unpack-booth-meta-correct-bitp-lemma
@@ -667,8 +668,6 @@
                              rp-trans-lst
                              valid-sc)))))
 
-
-
 (local
  (defthm valid-sc-of-cons
    (implies (and (NOT (EQUAL x 'IF))
@@ -726,19 +725,19 @@
                             ())))))
 
 #|(local
- (defthm rp-evlt-cons-equivalance
-   (implies (and (AND (SYMBOLP TYPE)
-                      (NOT (BOOLEANP TYPE))
-                      (NOT (EQUAL TYPE 'QUOTE))
-                      (NOT (EQUAL TYPE 'RP))
-                      (NOT (EQUAL TYPE 'LIST))
-                      (NOT (EQUAL TYPE 'FALIST)))
-                 (equal (rp-evlt x a)
-                        (rp-evlt y a)))
-            (equal (rp-evlt (list type x) a)
-                   (rp-evlt (list type y) a)))
-   :hints (("Goal"
-            :in-theory (e/d (rp-evl-of-fncall-args) ())))))|#
+(defthm rp-evlt-cons-equivalance
+(implies (and (AND (SYMBOLP TYPE)
+(NOT (BOOLEANP TYPE))
+(NOT (EQUAL TYPE 'QUOTE))
+(NOT (EQUAL TYPE 'RP))
+(NOT (EQUAL TYPE 'LIST))
+(NOT (EQUAL TYPE 'FALIST)))
+(equal (rp-evlt x a)
+(rp-evlt y a)))
+(equal (rp-evlt (list type x) a)
+(rp-evlt (list type y) a)))
+:hints (("Goal"
+:in-theory (e/d (rp-evl-of-fncall-args) ())))))|#
 
 (local
  (defthm is-if-lemma
@@ -802,12 +801,12 @@
  (create-regular-eval-lemma if 3 MULT-FORMULA-CHECKS))
 
 #|(local
- (defthm len-of-unpack-booth-general-meta-lst
-   (equal (len (unpack-booth-general-meta-lst lst))
-          (len lst))
-   :hints (("Goal"
-            :induct (len lst)
-            :in-theory (e/d (unpack-booth-general-meta-lst) ())))))|#
+(defthm len-of-unpack-booth-general-meta-lst
+(equal (len (unpack-booth-general-meta-lst lst))
+(len lst))
+:hints (("Goal"
+:induct (len lst)
+:in-theory (e/d (unpack-booth-general-meta-lst) ())))))|#
 
 (defret-mutual unpack-booth-general-meta-correct
 

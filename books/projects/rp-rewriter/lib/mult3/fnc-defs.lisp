@@ -407,7 +407,19 @@
 
   (defun lexorder2- (x y)
     (declare (xargs :guard t))
-    (b* (((mv order &)
+    (b* (((mv x-logbit-p x-var x-index)
+          (case-match x (('acl2::logbit$inline index var) (mv t var index)) (& (mv nil nil nil))))
+         ((mv y-logbit-p y-var y-index)
+          (case-match y (('acl2::logbit$inline index var) (mv t var index)) (& (mv nil nil nil))))
+         ((when (or* x-logbit-p
+                     y-logbit-p))
+          (cond ((and* x-logbit-p
+                       y-logbit-p)
+                 (if (equal x-var y-var)
+                     (not (lexorder y-index x-index))
+                   (not (lexorder y-var x-var))))
+                (t x-logbit-p)))
+         ((mv order &)
           (lexorder2 x y)))
       order))
 

@@ -90,11 +90,14 @@
             :in-theory (e/d (is-equals) ())))))
 
 (defret create-c-instance-medwc-filtered-correct
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state)
-                (valid-sc-subterms s-lst a)
-                (valid-sc-subterms pp-lst a)
-                (valid-sc-subterms c-lst a))
+  (implies (and (mult-formula-checks state)
+                (rp-evl-meta-extract-global-facts :state state)
+                (force (valid-sc-subterms s-lst a))
+                (force (valid-sc-subterms pp-lst a))
+                (force (valid-sc-subterms c-lst a))
+                (force (rp-term-listp s-lst))
+                (force (rp-term-listp pp-lst))
+                (force (rp-term-listp c-lst)))
            (and (equal (sum-list-eval res-c-lst a)
                        (f2 (sum (sum-list-eval s-lst a)
                                 (sum-list-eval pp-lst a)
@@ -383,6 +386,12 @@
            :in-theory (e/d (dummy-lemma4)
                            (medw-compress-c-arg-lst-aux-aux-correct)))))
 
+(local
+ (defthmd dummy-sum-lemma4
+   (implies (equal x (sum a a y))
+            (equal (f2 (sum x z))
+                   (sum a (f2 (sum y z)))))))
+   
 (defret medw-compress-c-arg-lst-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -390,7 +399,10 @@
                 (booleanp sign-matters)
                 compressed
                 (valid-sc c a)
-                (valid-sc-subterms c-lst a))
+                (valid-sc-subterms c-lst a)
+                (rp-term-listp c-lst)
+                (rp-termp c)
+                )
            (and
             (valid-sc-subterms new-c-lst a)
             (implies sign-matters
@@ -404,19 +416,30 @@
   :fn medw-compress-c-arg-lst-aux
   :hints (("Goal"
            :do-not-induct t
-           :induct (medw-compress-c-arg-lst-aux c c-is-signed c-lst sign-matters)
+           :induct (medw-compress-c-arg-lst-aux c c-is-signed c-lst
+                                                sign-matters)
+           :expand ((SUM-LIST-EVAL C-LST A))
+           :do-not '(generalize fertilize)
            :in-theory (e/d* (medw-compress-c-arg-lst-aux
                              (:REWRITE
                               REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              (:REWRITE
                               REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              (:REWRITE RP-EVL-OF----WHEN-MULT-FORMULA-CHECKS)
-                             rp-evlt-of-ex-from-rp-reverse)
-                            (RP-EVL-OF-EX-FROM-RP
+                             rp-evlt-of-ex-from-rp-reverse
+                             RP-TERM-LISTP
+                             dummy-sum-lemma4)
+                            (
+                             (:REWRITE RP-EVL-OF-BADGE-USERFN-CALL)
+
+                             VALID-SC-SUBTERMS-CONS
+                             VALID-SC-SUBTERMS
+                             
+                             RP-EVL-OF-EX-FROM-RP
                              (:REWRITE VALID-SC-SUBTERMS-CDR)
 
                              (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
-                             (:DEFINITION RP-TERM-LISTP)
+                             ;;(:DEFINITION RP-TERM-LISTP)
                              (:TYPE-PRESCRIPTION MEMBER-EQUAL)
                              ex-from-rp
                              rp-equal
@@ -438,13 +461,22 @@
                              (:REWRITE
                               CREATE-LIST-INSTANCE-EQUALS-NIL-IMPLIES)
                              (:REWRITE DEFAULT-CAR)
-                             RP-EVLT-OF-EX-FROM-RP)))))
+                             RP-EVLT-OF-EX-FROM-RP)))
+          (and stable-under-simplificationp
+               '(:use ((:instance CREATE-C-INSTANCE-MEDWC-FILTERED-CORRECT
+                                  (s-lst (LIST-TO-LST (CADDR (EX-FROM-RP (CAR C-LST)))))
+                                  (pp-lst (LIST-TO-LST (CADDDR (EX-FROM-RP (CAR C-LST)))))
+                                  (c-lst (MV-NTH 0
+                                                 (MEDW-COMPRESS-C-ARG-LST-AUX-AUX
+                                                  C T
+                                                  (LIST-TO-LST (CAR (CDDDDR (EX-FROM-RP (CAR C-LST)))))
+                                                  NIL)))))))))
 
 (defret medw-compress-c-arg-lst-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (booleanp sign-matters)
-
+                (force (rp-term-listp c-lst))
                 (force (valid-sc-subterms c-lst a)))
            (and (implies sign-matters
                          (equal (sum-list-eval res-c-lst a)
@@ -846,6 +878,23 @@
                                          (sum-list-eval res-pp-lst a)
                                          (f2 (sum (sum-list-eval c-pp-arg-lst
                                                                  a)
+                                                  other)))))
+                         (equal (m2 (sum b c (f2 (sum (sum-list-eval
+                                                       res-c-pp-arg-lst a)
+                                                      other))
+                                         ))
+                                (m2 (sum b c  (sum-list-eval pp-lst a)
+                                         (sum-list-eval res-pp-lst a)
+                                         (f2 (sum (sum-list-eval c-pp-arg-lst
+                                                                 a)
+                                                  other)))))
+                         (equal (m2 (sum b c e (f2 (sum (sum-list-eval
+                                                       res-c-pp-arg-lst a)
+                                                      other))))
+                                (m2 (sum b c e (sum-list-eval pp-lst a)
+                                         (sum-list-eval res-pp-lst a)
+                                         (f2 (sum (sum-list-eval c-pp-arg-lst
+                                                                 a)
                                                   other))))))
                     ))
   :fn  medw-compress-pp-arg-lst-aux
@@ -860,6 +909,11 @@
  (defthm m2-dummy-lemma3
    (implies (equal (m2 (sum k l m n)) 0)
             (equal (m2 (sum k l m n a )) (m2 a)))))
+
+(local
+ (defthm m2-dummy-lemma4
+   (equal (m2 (sum x1 x2 x3 x4 a a))
+          (m2 (sum x1 x2 x3 x4)))))
 
 ;; (local
 ;;  (defthmd medw-compress-pp-arg-lst-correct-dummy-lemma0
@@ -885,6 +939,16 @@
 ;;             :in-theory (e/d (equal-of-m2-to-the-same-side)
 ;;                             (evenp))))))
 
+(local
+ (defthm m2-dummy-lemma5
+   (implies (equal (m2 (sum x y)) (m2 (sum a z)))
+            (equal (equal (m2 z)
+                          (m2 (sum x y a)))
+                   t))
+   :hints (("Goal"
+            :in-theory (e/d (m2-to-m2-chain) ())))))
+            
+
 (defret medw-compress-pp-arg-lst-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -897,6 +961,8 @@
             (implies (and sign-matters
                           (force (valid-sc-subterms pp-lst a))
                           (force (valid-sc-subterms c-lst a))
+                          (force (rp-term-listp pp-lst ))
+                          (force (rp-term-listp c-lst ))
                           (case-split compressed))
                      (equal (sum-list-eval res-c-lst a)
                             (sum (-- (sum-list-eval res-pp-lst a))
@@ -907,6 +973,8 @@
             (implies (and (not sign-matters)
                           (force (valid-sc-subterms pp-lst a))
                           (force (valid-sc-subterms c-lst a))
+                          (force (rp-term-listp pp-lst ))
+                          (force (rp-term-listp c-lst ))
                           (case-split compressed))
                      (equal (m2 (sum (sum-list-eval res-pp-lst a)
                                      (sum-list-eval res-c-lst  a)))
@@ -915,7 +983,9 @@
                                  (sum-list-eval c-lst a))))
                      )
             (implies (and (force (valid-sc-subterms pp-lst a))
-                          (force (valid-sc-subterms c-lst a)))
+                          (force (valid-sc-subterms c-lst a))
+                          (force (rp-term-listp pp-lst))
+                          (force (rp-term-listp c-lst)))
                      (and (valid-sc-subterms res-pp-lst a)
                           (valid-sc-subterms res-c-lst a))))
            #|(implies (and (not sign-matters)
@@ -997,7 +1067,9 @@
   (defret medw-compress-c-correct
     (implies (and (rp-evl-meta-extract-global-facts :state state)
                   (mult-formula-checks state)
-                  (valid-sc c a))
+                  (valid-sc c a)
+                  (rp-termp c)
+                  )
              (and
 
               (implies compressed
@@ -1008,15 +1080,18 @@
   (defret medw-compress-c-lst-correct
     (implies (and (rp-evl-meta-extract-global-facts :state state)
                   (mult-formula-checks state)
+                  
                   )
              (and (implies (not compressed)
                            (equal res-c-lst
                                   c-lst))
                   (implies (and (case-split compressed)
+                                (rp-term-listp c-lst)
                                 (valid-sc-subterms c-lst a))
                            (equal (sum-list-eval res-c-lst a)
                                   (sum-list-eval c-lst a)))
-                  (implies (valid-sc-subterms c-lst a)
+                  (implies (and (valid-sc-subterms c-lst a)
+                                (rp-term-listp c-lst))
                            (valid-sc-subterms res-c-lst a))))
     :fn medw-compress-c-lst)
   :mutual-recursion medw-compress-c
@@ -1034,7 +1109,11 @@
                              rp-evlt-of-ex-from-rp-reverse
                              ;;pp-order-equals-implies
                              )
-                            (RP-EVLT-OF-EX-FROM-RP
+                            ((:REWRITE SUM-OF-NEGATED-ELEMENTS)
+                             (:REWRITE +-IS-SUM)
+                             
+                             rp-termp
+                             RP-EVLT-OF-EX-FROM-RP
                              EX-FROM-RP
                              (:DEFINITION INCLUDE-FNC-FN)
                              valid-sc

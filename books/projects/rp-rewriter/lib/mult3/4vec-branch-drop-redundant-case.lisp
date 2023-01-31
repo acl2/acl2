@@ -242,6 +242,7 @@
   (implies (and (mult-formula-checks state)
                 (pp-term-p term)
                 (booleanp sign)
+                (rp-termp term)
                 (valid-sc term a)
                 (rp-evl-meta-extract-global-facts))
            (equal (sum-list-eval pp-lst a)
@@ -257,6 +258,7 @@
  (defret pp-flatten-with-binds-correct-with-sum-list-eval
   (implies (and (mult-formula-checks state)
                 (pp-term-p term)
+                (rp-termp term)
                 (booleanp signed)
                 (valid-sc term a)
                 (rp-evl-meta-extract-global-facts))
@@ -315,6 +317,7 @@
  (defthmd when-pp-flatten-is-1
    (implies (and (valid-sc term a)
                  (pp-term-p term)
+                 (rp-termp term)
                  (rp-evl-meta-extract-global-facts :state state)
                  (4vec-branch-formula-checks state)
                  (EQUAL (PP-FLATTEN term NIL :DISABLED nil)
@@ -333,6 +336,7 @@
  (defthmd when-pp-flatten-with-binds-is-1
    (implies (and (valid-sc term a)
                  (pp-term-p term)
+                 (rp-termp term)
                  (rp-evl-meta-extract-global-facts :state state)
                  (4vec-branch-formula-checks state)
                  (EQUAL (PP-FLATTEN-WITH-BINDS term NIL :DISABLED nil)
@@ -368,25 +372,16 @@
                 (mult-formula-checks state)
                 valid
                 (valid-sc term a)
+                (rp-termp term)
                 (valid-sc met-cases a)
                 (bitp (rp-evlt met-cases a))
                 (equal (rp-evlt met-cases a) 0)
+                (rp-termp met-cases)
                 (pp-term-p met-cases))
            (equal (rp-evlt new-term a)
                   (rp-evlt term a)))
   :fn 4vec-branch-drop-r-case-aux
-  :hints (("subgoal *1/7"
-           :use ((:instance when-pp-flatten-is-1
-                            (term met-cases))
-                 (:instance when-pp-flatten-with-binds-is-1
-                            (term met-cases))))
-          ("subgoal *1/8"
-           :use ((:instance when-pp-flatten-is-1
-                            (term met-cases))
-                 (:instance when-pp-flatten-with-binds-is-1
-                            (term met-cases))))
-          
-          ("goal"
+  :hints (("goal"
            :expand ((:free (x y) (pp-term-p `(binary-or ,x ,y)))
                     (:free (x y) (valid-sc `(binary-or ,x ,y) a)))
            :in-theory (e/d
@@ -399,7 +394,12 @@
                         binary-or-p)
                        (4vec-branch-formula-checks-implies-mult-formula-checks
                         pp-term-p
-                        valid-sc)))))
+                        valid-sc)))
+          (and stable-under-simplificationp
+               '(:use ((:instance when-pp-flatten-is-1
+                                  (term met-cases))
+                       (:instance when-pp-flatten-with-binds-is-1
+                                  (term met-cases)))))))
 
 
 (defret 4vec-branch-drop-r-case-aux-valid-sc

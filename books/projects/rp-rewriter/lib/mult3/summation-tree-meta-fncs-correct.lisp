@@ -1643,6 +1643,7 @@
   (implies (and (mult-formula-checks state)
                 (force (pp-term-p term))
                 (booleanp sign)
+                (force (rp-termp term))
                 (force (valid-sc term a))
                 (rp-evl-meta-extract-global-facts))
            (equal (sum-list-eval pp-lst a)
@@ -1658,6 +1659,7 @@
   (implies (and (mult-formula-checks state)
                 (pp-term-p term)
                 (booleanp signed)
+                (force (rp-termp term))
                 (valid-sc term a)
                 (rp-evl-meta-extract-global-facts))
            (equal (sum-list-eval pp-lst a)
@@ -1672,6 +1674,9 @@
 (defret single-s-to-pp-lst-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
+                (force (rp-termp pp1))
+                (force (rp-termp pp2))
+                (force (rp-termp pp3))
                 (force (valid-sc pp1 a))
                 (force (valid-sc pp2 a))
                 (force (valid-sc pp3 a))
@@ -1701,11 +1706,15 @@
            :expand ((:free (x y)
                            (valid-sc `(binary-xor ,x ,y) a))
                     (:free (x y)
-                           (pp-term-p `(binary-xor ,x ,y))))
+                           (pp-term-p `(binary-xor ,x ,y)))
+                    (:free (x y)
+                           (rp-termp `(binary-xor ,x ,y))))
            :in-theory (e/d (single-s-to-pp-lst
+                            rp-term-listp 
                             ex-from-rp
                             is-rp is-if)
-                           (and-list-instance-to-binary-and-correct
+                           (rp-termp
+                            and-list-instance-to-binary-and-correct
                             rp-trans
                             (:DEFINITION PP-TERM-P-fn)
                             (:REWRITE DEFAULT-CDR)
@@ -1719,13 +1728,15 @@
                 (mult-formula-checks state)
                 (valid-sc pp a)
                 (valid-sc c a)
+                (rp-termp pp)
                 reducedp)
            (and (valid-sc-subterms reduced-pp-lst a)))
   :fn s-pattern2-reduce
   :hints (("Goal"
            :expand ((:free (x)
                            (valid-sc `(sum-list ,x) a)))
-           :in-theory (e/d (s-pattern2-reduce
+           :in-theory (e/d (rp-term-listp
+                            s-pattern2-reduce
                             is-rp if
                             valid-sc-single-step)
                            (valid-sc)))))
@@ -1756,6 +1767,7 @@
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (valid-sc pp a)
+                (rp-termp pp)
                 (valid-sc c a)
                 reducedp)
            (and (equal (sum-list-eval REDUCED-PP-LST a)
@@ -1765,7 +1777,8 @@
   :hints (("Goal"
            :expand ((:free (x)
                            (valid-sc `(sum-list ,x) a)))
-           :in-theory (e/d (s-pattern2-reduce
+           :in-theory (e/d (rp-term-listp
+                            s-pattern2-reduce
                             is-rp if
                             m2-of-1
                             valid-sc-single-step)
@@ -2225,6 +2238,9 @@
                 (valid-sc-subterms c-lst a)
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
+                (rp-term-listp pp-lst)
+                (rp-term-listp c-lst)
+                (rp-term-listp s-lst)
                 reduced)
            (equal (f2 (sum (sum-list-eval c-lst  a)
                            (sum-list-eval pp-lst a)
@@ -2247,12 +2263,15 @@
                             (disabled nil)
                             (term-size-limit nil)))
            ;;:use ((:instance c-pattern0-reduce-correct-lemma
-           :in-theory (e/d (c-pattern0-reduce
+           :in-theory (e/d (RP-TERM-LISTP
+                            c-pattern0-reduce
                             is-rp)
                            (pp-flatten-correct)))))
 
 (defret s-pattern0-reduce-correct
-  (implies (and (valid-sc pp a)
+  (implies (and (rp-termp pp)
+                (rp-termp c)
+                (valid-sc pp a)
                 (valid-sc c a)
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -2280,7 +2299,8 @@
                             (disabled nil)
                             (term-size-limit nil)))
            ;;:use ((:instance c-pattern0-reduce-correct-lemma
-           :in-theory (e/d (s-pattern0-reduce
+           :in-theory (e/d (rp-term-listp
+                            s-pattern0-reduce
                             is-rp)
                            (PP-FLATTEN-CORRECT)))))
 
@@ -2308,6 +2328,8 @@
 (defret create-s-instance-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
+                (rp-termp pp)
+                (rp-termp c)
                 (valid-sc pp a)
                 (valid-sc c a))
            (and
@@ -2335,7 +2357,9 @@
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (valid-sc pp a)
-                (valid-sc c a))
+                (valid-sc c a)
+                (rp-termp pp)
+                (rp-termp c))
            (and
             (equal (sum (sum-list-eval s-res-lst a)
                         (sum-list-eval pp-res-lst a)
@@ -2599,6 +2623,9 @@ bitp-implies-integerp)
                 (force (valid-sc pp1 a))
                 (force (valid-sc pp2 a))
                 (force (valid-sc pp3 a))
+                (rp-termp pp1)
+                (rp-termp pp2)
+                (rp-termp pp3)
                 success)
            (equal (sum-list-eval res-pp-lst a)
                   (f2 (sum (rp-evlt pp1 a)
@@ -2630,7 +2657,7 @@ bitp-implies-integerp)
                     (:free (x y)
                            (pp-term-p `(BINARY-and ,X ,Y))))
            :in-theory (e/d (SINGLE-C-TO-PP-LST
-
+                            rp-term-listp
                             EX-FROM-RP
                             is-rp is-if)
                            (valid-sc
@@ -2648,13 +2675,18 @@ bitp-implies-integerp)
                 (mult-formula-checks state)
                 (valid-sc-subterms s-lst a)
                 (valid-sc-subterms pp-lst a)
-                (valid-sc-subterms c-lst a))
+                (valid-sc-subterms c-lst a)
+                (rp-term-listp s-lst)
+                (rp-term-listp pp-lst)
+                (rp-term-listp c-lst))
            (and (valid-sc-subterms res-pp-lst a)))
   :fn c-pattern2-reduce
   :hints (("Goal"
            :do-not-induct t
            :expand (VALID-SC ''1 A)
-           :in-theory (e/d (c-pattern2-reduce) ()))))
+           :in-theory (e/d (RP-TERM-LISTP
+                            c-pattern2-reduce)
+                           ()))))
 
 (encapsulate
   nil
@@ -2673,6 +2705,7 @@ bitp-implies-integerp)
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (valid-sc-subterms pp-lst a)
+                (rp-term-listp pp-lst)
                 reducedp)
            (equal (sum-list-eval RES-PP-LST a)
                   (f2 (sum-list-eval pp-lst a))))
@@ -2683,7 +2716,8 @@ bitp-implies-integerp)
                     (:free (x) (nth 2 x))
                     (:free (x) (nth 1 x))
                     (:free (x) (nth 0 x)))
-           :in-theory (e/d (c-pattern2-reduce
+           :in-theory (e/d (rp-term-listp
+                            c-pattern2-reduce
                             rp-evlt-of-ex-from-rp-reverse-only-atom-and-car)
                            (rp-evlt-of-ex-from-rp
                             rp-trans)))))
@@ -2692,6 +2726,7 @@ bitp-implies-integerp)
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (valid-sc-subterms pp-lst a)
+                (rp-term-listp pp-lst)
                 reducedp)
            (equal (sum (sum-list-eval RES-PP-LST a)
                        rest)
@@ -2799,7 +2834,10 @@ reducedp)
                 (mult-formula-checks state)
                 (valid-sc-subterms s-lst a)
                 (valid-sc-subterms pp-lst a)
-                (valid-sc-subterms c-lst a))
+                (valid-sc-subterms c-lst a)
+                (rp-term-listp s-lst)
+                (rp-term-listp pp-lst)
+                (rp-term-listp c-lst))
            (and
             (valid-sc-subterms res-s-lst a)
             (valid-sc-subterms res-pp-lst a)
@@ -2879,7 +2917,10 @@ reducedp)
                 (mult-formula-checks state)
                 (valid-sc-subterms s-lst a)
                 (valid-sc-subterms pp-lst a)
-                (valid-sc-subterms c-lst a))
+                (valid-sc-subterms c-lst a)
+                (rp-term-listp s-lst)
+                (rp-term-listp pp-lst)
+                (rp-term-listp c-lst))
            (and (equal (sum (sum-list-eval res-s-lst a)
                             (sum-list-eval res-pp-lst a)
                             (sum-list-eval res-c-lst a))
@@ -2959,7 +3000,10 @@ reducedp)
                 (mult-formula-checks state)
                 (valid-sc-subterms s-lst a)
                 (valid-sc-subterms pp-lst a)
-                (valid-sc-subterms c-lst a))
+                (valid-sc-subterms c-lst a)
+                (rp-term-listp s-lst)
+                (rp-term-listp pp-lst)
+                (rp-term-listp c-lst))
            (and (equal (sum (sum-list-eval res-s-lst a)
                             (sum-list-eval res-pp-lst a)
                             (sum-list-eval res-c-lst a)
@@ -2979,7 +3023,10 @@ reducedp)
                 (mult-formula-checks state)
                 (valid-sc-subterms s-lst a)
                 (valid-sc-subterms pp-lst a)
-                (valid-sc-subterms c-lst a))
+                (valid-sc-subterms c-lst a)
+                (rp-term-listp s-lst)
+                (rp-term-listp pp-lst)
+                (rp-term-listp c-lst))
            (and (equal (sum-list-eval res-c-lst a)
                        (sum (f2 (sum (sum-list-eval s-lst a)
                                      (sum-list-eval pp-lst a)
@@ -3792,7 +3839,9 @@ x5)))||#
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (valid-sc single-c1 a)
-                (valid-sc single-c2 a))
+                (valid-sc single-c2 a)
+                (rp-termp single-c1)
+                (rp-termp single-c2))
            (and (valid-sc-subterms res-s-lst a)
                 (valid-sc-subterms res-pp-lst a)
                 (valid-sc-subterms res-c-lst a)))
@@ -3916,7 +3965,9 @@ MINUS-OF-SUM)))))||#
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (valid-sc pp a)
-                (valid-sc c a))
+                (valid-sc c a)
+                (rp-termp pp)
+                (rp-termp c))
            (equal (sum-list-eval s-res-lst a)
                   (sum (-- (sum
                             (sum-list-eval pp-res-lst a)
@@ -3935,6 +3986,8 @@ MINUS-OF-SUM)))))||#
                 (mult-formula-checks state)
                 (valid-sc single-c1 a)
                 (valid-sc single-c2 a)
+                (rp-termp single-c1)
+                (rp-termp single-c2)
                 merge-success)
            (equal (sum (sum-list-eval res-s-lst a)
                        (sum-list-eval res-pp-lst a)
@@ -3961,6 +4014,8 @@ MINUS-OF-SUM)))))||#
                 (mult-formula-checks state)
                 (valid-sc single-c1 a)
                 (valid-sc single-c2 a)
+                (rp-termp single-c1)
+                (rp-termp single-c2)
                 merge-success)
            (equal (sum-list-eval res-c-lst a)
                   (sum (-- (sum (sum-list-eval res-s-lst a)
@@ -3984,8 +4039,8 @@ MINUS-OF-SUM)))))||#
                   (mult-formula-checks state)
                   (valid-sc single-c1 a)
                   (valid-sc single-c2 a)
-                  ;;(rp-termp single-c1)
-                  ;;(rp-termp single-c2)
+                  (rp-termp single-c1)
+                  (rp-termp single-c2)
                   merge-success)
              (and
               (valid-sc coughed-s a)
@@ -3997,8 +4052,8 @@ MINUS-OF-SUM)))))||#
                   (mult-formula-checks state)
                   (valid-sc single-c1 a)
                   (valid-sc-subterms c2-lst a)
-                  ;;(rp-termp single-c1)
-                  ;;(rp-term-listp c2-lst)
+                  (rp-termp single-c1)
+                  (rp-term-listp c2-lst)
                   merge-success)
              (and
               (valid-sc coughed-s a)
@@ -4011,8 +4066,8 @@ MINUS-OF-SUM)))))||#
                   (mult-formula-checks state)
                   (valid-sc single-c1 a)
                   (valid-sc-subterms c2-lst a)
-                  ;;(rp-termp single-c1)
-                  ;;(rp-term-listp c2-lst)
+                  (rp-termp single-c1)
+                  (rp-term-listp c2-lst)
                   )
              (and
               (valid-sc coughed-s a)
@@ -4025,8 +4080,8 @@ MINUS-OF-SUM)))))||#
                   (mult-formula-checks state)
                   (valid-sc-subterms c1-lst a)
                   (valid-sc-subterms c2-lst a)
-                  ;;(rp-term-listp c1-lst)
-                  ;;(rp-term-listp c2-lst)
+                  (rp-term-listp c1-lst)
+                  (rp-term-listp c2-lst)
                   )
              (and
               (valid-sc coughed-s a)
@@ -4039,8 +4094,8 @@ MINUS-OF-SUM)))))||#
                   (mult-formula-checks state)
                   (valid-sc-subterms c1-lst a)
                   (valid-sc-subterms c2-lst a)
-                  ;;(rp-term-listp c1-lst)
-                  ;;;;(rp-term-listp c2-lst)
+                  (rp-term-listp c1-lst)
+                  (rp-term-listp c2-lst)
                   )
              (and
               (valid-sc coughed-s a)
@@ -4054,8 +4109,8 @@ MINUS-OF-SUM)))))||#
                   (mult-formula-checks state)
                   (valid-sc-subterms c1-lst a)
                   (valid-sc-subterms c2-lst a)
-                  ;;(rp-term-listp c1-lst)
-                  ;;(rp-term-listp c2-lst)
+                  (rp-term-listp c1-lst)
+                  (rp-term-listp c2-lst)
                   )
              (and
               (valid-sc coughed-s a)
@@ -4472,8 +4527,8 @@ MINUS-OF-SUM)))))||#
                 (mult-formula-checks state)
                 (valid-sc-subterms c1-lst a)
                 (valid-sc-subterms c2-lst a)
-                ;;(rp-term-listp c1-lst)
-                  ;;;;(rp-term-listp c2-lst)
+                (rp-term-listp c1-lst)
+                (rp-term-listp c2-lst)
                 )
            (and
             (valid-sc coughed-s a)
@@ -4527,7 +4582,10 @@ MINUS-OF-SUM)))))||#
             (valid-sc-subterms arg-c-lst a)
             (valid-sc-subterms to-be-coughed-c-lst a)
             (MULT-FORMULA-CHECKS STATE)
-            (rp-evl-meta-extract-global-facts :state state))
+            (rp-evl-meta-extract-global-facts :state state)
+
+            (rp-term-listp arg-s-lst)
+            )
            (and (valid-sc-subterms to-be-coughed-pp-lst a)
                 (valid-sc-subterms to-be-coughed-s-lst a)
                 (valid-sc-subterms res-coughed-c-lst a)
@@ -4603,7 +4661,9 @@ MINUS-OF-SUM)))))||#
             (valid-sc-subterms arg-c-lst a)
             (valid-sc-subterms to-be-coughed-c-lst a)
             (MULT-FORMULA-CHECKS STATE)
-            (rp-evl-meta-extract-global-facts :state state))
+            (rp-evl-meta-extract-global-facts :state state)
+
+            (rp-term-listp arg-s-lst))
            (equal (sum (sum-list-eval res-pp-lst a)
                        (sum-list-eval res-c-lst a)
                        (sum-list-eval to-be-coughed-pp-lst a)
@@ -4662,7 +4722,8 @@ MINUS-OF-SUM)))))||#
             (valid-sc-subterms arg-c-lst a)
             (valid-sc-subterms to-be-coughed-c-lst a)
             (MULT-FORMULA-CHECKS STATE)
-            (rp-evl-meta-extract-global-facts :state state))
+            (rp-evl-meta-extract-global-facts :state state)
+            (rp-term-listp arg-s-lst))
            (equal (sum-list-eval res-c-lst a)
                   (sum
                    (-- (sum (sum-list-eval res-pp-lst a)
@@ -5981,6 +6042,8 @@ m2-to-m2-chain)
 (defret cross-product-pp-aux-for-s/c-valid-sc-subterms
   (implies (and (valid-sc single-s/c a)
                 (valid-sc-subterms e-lst a)
+                (rp-termp single-s/c)
+                (rp-term-listp e-lst)
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (and (valid-sc-subterms res-s-lst a)
@@ -6016,6 +6079,8 @@ m2-to-m2-chain)
 (defret cross-product-pp-aux-for-s/c-lst-valid-sc-subterms
   (implies (and (valid-sc-subterms s/c-lst a)
                 (valid-sc-subterms e-lst a)
+                (rp-term-listp s/c-lst)
+                (rp-term-listp e-lst)
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (and (valid-sc-subterms res-s-lst a)
@@ -6051,6 +6116,8 @@ m2-to-m2-chain)
 (defret cross-product-pp-aux-for-s/c-main-valid-sc-subterms
   (implies (and (valid-sc single-s/c a)
                 (valid-sc-subterms e-lst a)
+                (rp-termp single-s/c)
+                (rp-term-listp e-lst)
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (and (valid-sc-subterms res-s-lst a)
@@ -6135,6 +6202,8 @@ m2-to-m2-chain)
   (implies (and valid
                 (valid-sc single-s/c a)
                 (valid-sc-subterms e-lst a)
+                (rp-termp single-s/c)
+                (rp-term-listp e-lst)
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (and (equal (sum (sum-list-eval res-s-lst a)
@@ -6179,6 +6248,8 @@ m2-to-m2-chain)
   (implies (and valid
                 (valid-sc single-s/c a)
                 (valid-sc-subterms e-lst a)
+                (rp-termp single-s/c)
+                (rp-term-listp e-lst)
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (equal (sum-list-eval res-pp-lst a)
@@ -6195,6 +6266,8 @@ m2-to-m2-chain)
   (implies (and valid
                 (valid-sc-subterms s/c-lst a)
                 (valid-sc-subterms e-lst a)
+                (rp-term-listp s/c-lst)
+                (rp-term-listp e-lst)
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (and (equal (sum (sum-list-eval res-s-lst a)
@@ -6215,6 +6288,8 @@ m2-to-m2-chain)
   (implies (and valid
                 (force (valid-sc single-s/c a))
                 (force (valid-sc-subterms e-lst a))
+                (rp-termp single-s/c)
+                (rp-term-listp e-lst)
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (and (equal (sum (sum-list-eval res-s-lst a)
@@ -6259,6 +6334,8 @@ m2-to-m2-chain)
   (implies (and valid
                 (valid-sc single-s/c a)
                 (valid-sc-subterms e-lst a)
+                (force (rp-termp single-s/c))
+                (force (rp-term-listp e-lst))
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (equal (sum-list-eval res-pp-lst a)
@@ -6294,6 +6371,8 @@ m2-to-m2-chain)
   (implies (and valid
                 (force (valid-sc single-s/c2 a))
                 (force (valid-sc-subterms pp-lst a))
+                (rp-termp single-s/c2)
+                (rp-term-listp pp-lst)
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (bitp (rp-evlt single-s/c2 a)))
@@ -6315,6 +6394,8 @@ m2-to-m2-chain)
   (implies (and valid
                 (force (valid-sc single-s/c2 a))
                 (force (valid-sc-subterms pp-lst a))
+                (rp-termp single-s/c2)
+                (rp-term-listp pp-lst)
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (bitp (rp-evlt single-s/c2 a)))
@@ -6331,6 +6412,8 @@ m2-to-m2-chain)
 (defret cross-product-two-larges-aux-pp-lst-correct-valid-sc-subterms
   (implies (and (force (valid-sc single-s/c2 a))
                 (force (valid-sc-subterms pp-lst a))
+                (rp-termp single-s/c2)
+                (rp-term-listp pp-lst)
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (and (valid-sc-subterms res-pp-lst a)
@@ -6338,7 +6421,11 @@ m2-to-m2-chain)
                 (valid-sc-subterms res-c-lst a)))
   :fn cross-product-two-larges-aux-pp-lst
   :hints (("Goal"
-           :in-theory (e/d (cross-product-two-larges-aux-pp-lst) ()))))
+           :in-theory (e/d (cross-product-two-larges-aux-pp-lst)
+                           ((:REWRITE VALID-SC-SUBTERMS-CDR)
+                            (:REWRITE VALID-SC-SUBTERMS-OF-CDR)
+                            (:DEFINITION EVAL-AND-ALL)
+                            (:DEFINITION RP-TRANS))))))
 
 
 (local
@@ -6502,6 +6589,24 @@ regular-rp-evl-of_s_when_mult-formula-checks)
            :in-theory (e/d (rp-trans-lst)
                            ()))))
 
+(defthm and-list-p-and-rp-termp-lemma
+  (implies (and (rp-termp term)
+                (and-list-p term)
+                (CROSS-PRODUCT-PP-PATTERN-CHECK term))
+           (RP-TERM-LISTP (CDR (CADDR term))))
+  :hints (("Goal"
+           
+           :expand ((RP-TERM-LISTP (CDR TERM))
+                    (RP-TERM-LISTP (CDDR TERM))
+                    (RP-TERMP (CADDR TERM))
+                    (RP-TERMP TERM))
+           :in-theory (e/d (CROSS-PRODUCT-PP-PATTERN-CHECK
+                            AND-LIST-P
+                            RP-TERM-LISTP
+                            rp-termp
+                            rp-termp-single-step)
+                           ()))))
+
 (defret cross-product-pp-aux-correct
   (implies (and valid
                 (valid-sc single-pp a)
@@ -6527,7 +6632,7 @@ regular-rp-evl-of_s_when_mult-formula-checks)
                             regular-rp-evl-of_--_when_mult-formula-checks
                             regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp
                             regular-rp-evl-of_and-list_when_mult-formula-checks
-                            )
+                            RP-TERM-LISTP)
                            (bitp
                             cross-product-pp-aux-precollect2-correct
                             rp-trans
@@ -7002,7 +7107,7 @@ regular-rp-evl-of_s_when_mult-formula-checks)
 
 (defret extract-equals-from-pp-lst-aux-correct
   (implies (and (force (valid-sc-subterms e-lst a))
-                ;;(force (rp-term-listp e-lst))
+                (force (rp-term-listp e-lst))
                 res-pp-lst
                 (mult-formula-checks state)
                 (rp-evl-meta-extract-global-facts))
@@ -7040,7 +7145,7 @@ regular-rp-evl-of_s_when_mult-formula-checks)
 
 (defret extract-equals-from-pp-lst-aux-correct-2
   (implies (and (force (valid-sc-subterms e-lst a))
-                ;;(force (rp-term-listp e-lst))
+                (force (rp-term-listp e-lst))
                 res-pp-lst
                 (mult-formula-checks state)
                 (rp-evl-meta-extract-global-facts))
@@ -7077,6 +7182,7 @@ regular-rp-evl-of_s_when_mult-formula-checks)
 
 (defret extract-equals-from-pp-lst-correct
   (implies (and (force (valid-sc-subterms pp-lst a))
+                (force (rp-term-listp pp-lst))
                 (mult-formula-checks state)
                 (rp-evl-meta-extract-global-facts))
            (equal (sum-list-eval res-lst a)
@@ -7672,24 +7778,7 @@ regular-rp-evl-of_s_when_mult-formula-checks)
            :do-not-induct t
            :in-theory (e/d (c-pattern3-reduce) ()))))
 
-(std::defretd
-  create-s-instance-correct-singled-out
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state)
-                (valid-sc pp a)
-                (valid-sc c a))
-           (equal (sum-list-eval s-res-lst a)
-                  (sum (-- (sum
-                            (sum-list-eval pp-res-lst a)
-                            (sum-list-eval c-res-lst a)))
-                       (m2 (sum (sum-list (rp-evlt pp a))
-                                (sum-list (rp-evlt c a)))))))
-  :fn create-s-instance
-  :hints (("Goal"
-           :use ((:instance create-s-instance-correct))
-           :do-not-induct t
-           :in-theory (e/d ()
-                           (create-s-instance-correct)))))
+
 
 (defret c-pattern3-reduce-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
