@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,6 +14,9 @@
 (include-book "values")
 
 (local (include-book "std/lists/len" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,7 +91,8 @@
                              :members new-members
                              :flexiblep nil))
     (value-fix val))
-  :guard-hints (("Goal" :in-theory (enable flexible-array-member-p)))
+  :guard-hints (("Goal" :in-theory (enable flexible-array-member-p
+                                           butlast nfix len fix)))
   :hooks (:fix)
   ///
 

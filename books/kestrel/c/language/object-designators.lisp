@@ -13,6 +13,9 @@
 
 (include-book "abstract-syntax")
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ object-designators
@@ -77,7 +80,8 @@
      and not their sub-objects."))
   ((number nat))
   :tag :address
-  :pred addressp)
+  :pred addressp
+  :prepwork ((local (in-theory (enable nfix alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,7 +101,8 @@
              (index nat)))
   (:member ((super objdesign)
             (name ident)))
-  :pred objdesignp)
+  :pred objdesignp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

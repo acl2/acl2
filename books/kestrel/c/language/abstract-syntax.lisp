@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,6 +18,9 @@
 
 ; to generate more typed list theorems:
 (local (include-book "std/lists/append" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -82,7 +85,8 @@
      In the future, we may add this constraint to this fixtype."))
   ((name string))
   :tag :ident
-  :pred identp)
+  :pred identp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,7 +95,8 @@
   :elt-type ident
   :true-listp t
   :elementp-of-nil nil
-  :pred ident-listp)
+  :pred ident-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -181,7 +186,8 @@
    (unsignedp bool)
    (length iconst-length))
   :tag :iconst
-  :pred iconstp)
+  :pred iconstp
+  :prepwork ((local (in-theory (enable nfix alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -335,7 +341,8 @@
   :elt-type tyspecseq
   :true-listp t
   :elementp-of-nil nil
-  :pred tyspecseq-listp)
+  :pred tyspecseq-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -441,7 +448,8 @@
   ((tyspec tyspecseq)
    (declor obj-adeclor))
   :tag :tyname
-  :pred tynamep)
+  :pred tynamep
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -450,7 +458,8 @@
   :elt-type tyname
   :true-listp t
   :elementp-of-nil nil
-  :pred tyname-listp)
+  :pred tyname-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -490,7 +499,8 @@
   :elt-type unop
   :true-listp t
   :elementp-of-nil nil
-  :pred unop-listp)
+  :pred unop-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -558,7 +568,8 @@
   :elt-type binop
   :true-listp t
   :elementp-of-nil nil
-  :pred binop-listp)
+  :pred binop-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -661,7 +672,11 @@
     :elt-type expr
     :true-listp t
     :elementp-of-nil nil
-    :pred expr-listp))
+    :pred expr-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -690,7 +705,8 @@
   ((tyspec tyspecseq)
    (declor obj-declor))
   :tag :struct-declon
-  :pred struct-declonp)
+  :pred struct-declonp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -699,7 +715,8 @@
   :elt-type struct-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred struct-declon-listp)
+  :pred struct-declon-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -748,7 +765,8 @@
   ((tyspec tyspecseq)
    (declor obj-declor))
   :tag :param-declon
-  :pred param-declonp)
+  :pred param-declonp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -757,7 +775,8 @@
   :elt-type param-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred param-declon-listp)
+  :pred param-declon-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -811,7 +830,8 @@
   ((tyspec tyspecseq)
    (declor fun-declor))
   :tag :fun-declon
-  :pred fun-declonp)
+  :pred fun-declonp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -865,7 +885,8 @@
    (declor obj-declor)
    (init? initer-optionp))
   :tag :obj-declon
-  :pred obj-declonp)
+  :pred obj-declonp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -963,7 +984,11 @@
     :elt-type block-item
     :true-listp t
     :elementp-of-nil nil
-    :pred block-item-listp))
+    :pred block-item-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((local (in-theory (enable acl2-count nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1006,7 +1031,8 @@
    (declor fun-declor)
    (body block-item-list))
   :tag :fundef
-  :pred fundefp)
+  :pred fundefp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1015,7 +1041,8 @@
   :elt-type fundef
   :true-listp t
   :elementp-of-nil nil
-  :pred fundef-listp)
+  :pred fundef-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1042,7 +1069,8 @@
   :elt-type ext-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred ext-declon-listp)
+  :pred ext-declon-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1059,14 +1087,16 @@
      with more information if needed."))
   ((declons ext-declon-list))
   :tag :transunit
-  :pred transunitp)
+  :pred transunitp
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult transunit-result
   :short "Fixtype of errors and translation units."
   :ok transunit
-  :pred transunit-resultp)
+  :pred transunit-resultp
+  :prepwork ((local (in-theory (enable alistp identity)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1102,7 +1132,8 @@
      We plan to formalize this additional information separately."))
   ((declons ext-declon-list))
   :tag :file
-  :pred filep)
+  :pred filep
+  :prepwork ((local (in-theory (enable alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1150,4 +1181,5 @@
    (dot-h file-option)
    (dot-c file))
   :tag :fileset
-  :pred filesetp)
+  :pred filesetp
+  :prepwork ((local (in-theory (enable alistp)))))
