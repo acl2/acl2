@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,9 @@
 (in-package "C")
 
 (include-book "abstract-syntax")
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,7 +48,10 @@
      an identifier that is
      the name of a member sub-object of a structure super-object,
      or a natural number that is
-     the index of an element sub-object of an array super-object."))
+     the index of an element sub-object of an array super-object.")
+   (xdoc::p
+    "This should be eventually extended with
+     designators for objects in automatic storage (i.e. stack)."))
   :order-subtopics t
   :default-parent t)
 
@@ -74,7 +80,8 @@
      and not their sub-objects."))
   ((number nat))
   :tag :address
-  :pred addressp)
+  :pred addressp
+  :prepwork ((local (in-theory (enable nfix alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,7 +101,8 @@
              (index nat)))
   (:member ((super objdesign)
             (name ident)))
-  :pred objdesignp)
+  :pred objdesignp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

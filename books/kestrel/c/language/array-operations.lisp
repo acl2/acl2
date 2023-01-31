@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,9 @@
 
 (include-book "values")
 (include-book "flexible-array-member-removal")
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,7 +29,7 @@
 
 (define value-array->length ((array valuep))
   :guard (value-case array :array)
-  :returns (length posp)
+  :returns (length posp :hints (("Goal" :in-theory (enable posp))))
   :short "Length of an array."
   (len (value-array->elements array))
   :hooks (:fix)
@@ -37,7 +40,7 @@
 (define value-array-read ((index natp) (array valuep))
   :guard (value-case array :array)
   :returns (elem value-resultp
-                 :hints (("Goal" :in-theory (enable value-array->length))))
+                 :hints (("Goal" :in-theory (enable value-array->length nfix))))
   :short "Read an element from an array."
   :long
   (xdoc::topstring

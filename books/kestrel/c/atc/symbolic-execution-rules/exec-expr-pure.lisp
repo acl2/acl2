@@ -132,7 +132,7 @@
                   (equal val (exec-expr-pure (expr-unary->arg e) compst))
                   (valuep val))
              (equal (exec-expr-pure e compst)
-                    (exec-unary (expr-unary->op e) val)))
+                    (exec-unary (expr-unary->op e) val compst)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-cast
