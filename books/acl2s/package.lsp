@@ -138,6 +138,8 @@
     stage
     defdata-defaults-table
 
+    infinite
+    
     type-of-pred-aux
     type-of-pred
     enum-of-type
