@@ -101,6 +101,7 @@
      stage
      ;community books
      u::defloop def-ruleset
+
      )
    
    acl2s-shared::*acl2s-shared-exports*))
@@ -136,6 +137,18 @@
     defdata-alias
     stage
     defdata-defaults-table
+
+    type-of-pred-aux
+    type-of-pred
+    enum-of-type
+    trans1-cmp
+    base-val-of-type
+    type-of-type
+    pred-of-type
+    defdata-domain-size-fn
+    defdata-domain-size
+    defdata-base-val-of-type-fn
+    defdata-base-val-of-type
     ))
 
 
