@@ -20,12 +20,14 @@
 (include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
 ;(include-book "kestrel/utilities/keyword-value-lists2" :dir :system)
 
+;; Leaves SYM unchanged if it has no entry in RENAMING-ALIST.
 (defun apply-renaming-to-symbol (sym renaming-alist)
   (declare (xargs :guard (and (symbolp sym)
                               (symbol-alistp renaming-alist))))
-  (if (assoc-eq sym renaming-alist)
-      (lookup-eq sym renaming-alist)
-    sym))
+  (let ((res (assoc-eq sym renaming-alist)))
+    (if res
+        (cdr res)
+      sym)))
 
 (defun apply-renaming-to-symbols (syms renaming-alist)
   (declare (xargs :guard (and (symbol-listp syms)
@@ -35,21 +37,25 @@
     (cons (apply-renaming-to-symbol (first syms) renaming-alist)
           (apply-renaming-to-symbols (rest syms) renaming-alist))))
 
-(defun apply-renaming-to-rune (rune renaming-alist)
+(defun apply-renaming-to-symbol-or-rune (item renaming-alist)
   (declare (xargs :guard (symbol-alistp renaming-alist)))
-  (if (symbolp rune)
-      (apply-renaming-to-symbol rune renaming-alist)
-    (if (consp rune)
-        (cons (car rune) (sublis renaming-alist (cdr rune)))
-      rune)))
+  (if (symbolp item)
+      (apply-renaming-to-symbol item renaming-alist)
+    ;; must be a rune:
+    (if (not (and (= 2 (len item))
+                  (symbolp (cadr item))))
+        (er hard? 'apply-renaming-to-symbol-or-rune "Unexpected item: ~x0." item)
+      (list* (car item)
+             (apply-renaming-to-symbol (cadr item) renaming-alist)
+             (cddr item)))))
 
-(defun apply-renaming-to-runes (runes renaming-alist)
-  (declare (xargs :guard (and (true-listp runes)
+(defun apply-renaming-to-symbols-or-runes (items renaming-alist)
+  (declare (xargs :guard (and (true-listp items)
                               (symbol-alistp renaming-alist))))
-  (if (endp runes)
+  (if (endp items)
       nil
-    (cons (apply-renaming-to-rune (first runes) renaming-alist)
-          (apply-renaming-to-runes (rest runes) renaming-alist))))
+    (cons (apply-renaming-to-symbol-or-rune (first items) renaming-alist)
+          (apply-renaming-to-symbols-or-runes (rest items) renaming-alist))))
 
 (defun use-hint-instancep (val)
   (declare (xargs :guard t))
@@ -120,7 +126,7 @@
                `(:free ,(farg1 term) ,(apply-renaming-to-expand-hint-top-term (farg2 term) renaming-alist))))
       (:with (if (not (= 2 (len (fargs term))))
                  (er hard? 'apply-renaming-to-expand-hint-top-term "Unexpected :expand hint: ~x0." term)
-               `(:with ,(farg1 term) ; todo: rename this but note its form
+               `(:with ,(apply-renaming-to-symbol-or-rune (farg1 term) renaming-alist)
                        ,(apply-renaming-to-expand-hint-top-term (farg2 term) renaming-alist))))
       (otherwise
        (if (not (and (untranslated-termp term) ; todo: call a more modern util and drop this?
@@ -158,7 +164,7 @@
       (if (and (eq fn 'quote)
                (consp (fargs val))
                (true-listp (farg1 val)))
-          `'(,@(apply-renaming-to-runes (farg1 val) renaming-alist))
+          `'(,@(apply-renaming-to-symbols-or-runes (farg1 val) renaming-alist))
         (if (member-eq fn '(theory universal-theory current-theory))
             val
           (if (and (member-eq fn '(union-theories set-difference-theories intersection-theories
@@ -178,14 +184,14 @@
       (let ((fn (ffn-symb val)))
         (if (and (member-eq fn '(enable disable enable* disable*))
                  (true-listp (fargs val)))
-            `(,fn ,@(apply-renaming-to-runes (fargs val) renaming-alist))
+            `(,fn ,@(apply-renaming-to-symbols-or-runes (fargs val) renaming-alist))
           (if (and (member-eq fn '(e/d e/d*))
                    (consp (cdr val))
                    (listp (cddr val))
                    (symbol-listp (farg1 val))
                    (symbol-listp (farg2 val)))
-              `(,fn ,(apply-renaming-to-runes (farg1 val) renaming-alist)
-                    ,(apply-renaming-to-runes (farg2 val) renaming-alist))
+              `(,fn ,(apply-renaming-to-symbols-or-runes (farg1 val) renaming-alist)
+                    ,(apply-renaming-to-symbols-or-runes (farg2 val) renaming-alist))
             (if (member-eq fn '(quote append union-theories set-difference-theories intersection-theories
                                       function-theory executable-counterpart-theory theory universal-theory current-theory))
                 (apply-renaming-to-computed-theory val renaming-alist)
