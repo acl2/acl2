@@ -2436,7 +2436,10 @@ To debug a failed defunc form, you can proceed in multiple ways:
   `(... ,name))
 |#
 
-; A function to determine the domain size of a type 
+; A function to determine the domain size of a type.
+; Note that we return 'infinite instead of t if the domain
+; size is determined to be infinite.
+
 (defun defdata-domain-size-fn (type wrld)
   (declare (xargs :guard (and (symbolp type) (plist-worldp wrld))
                   :verify-guards nil))
@@ -2448,12 +2451,12 @@ To debug a failed defunc form, you can proceed in multiple ways:
               "~%The given type, ~x0, is not a known type or alias type." type))
        (type-info (assoc ttype tbl))
        (domain (cdr (assoc :domain-size (cdr type-info)))))
-    (if (equal domain t)
-        'infinite
-      domain)))
+    (if (natp domain)
+        domain
+      'infinite)))
 
 (defmacro defdata-domain-size (type)
-  `(defdata-domain-size-fn ,type (w state)))
+  `(defdata-domain-size-fn ',type (w state)))
 
 (defun defdata-base-val-of-type-fn (type wrld)
   (declare (xargs :mode :program
@@ -2465,5 +2468,5 @@ To debug a failed defunc form, you can proceed in multiple ways:
     (base-val-of-type ttype tbl wrld)))
 
 (defmacro defdata-base-val-of-type (type)
-  `(defdata-base-val-of-type-fn ,type (w state)))
+  `(defdata-base-val-of-type-fn ',type (w state)))
 

@@ -30,6 +30,7 @@
      ; mean implies
      _ ;range
      comment
+     get-alist
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -53,6 +54,7 @@
      ecw?
      => ;sig
      _ ;range
+     get-alist
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
