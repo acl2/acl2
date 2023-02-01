@@ -3687,8 +3687,6 @@
 ;sometimes we don't want these, e.g. (equal 0 (bvchop 2 x)) when we also know (equal 0 (getbit 1 x))
 (in-theory (disable BVCHOP-CONTRACT-HACK-GEN SLICE-TIGHTEN-WHEN-TOP-BIT-0))
 
-(in-theory (disable UNSIGNED-BYTE-P-OF-INTEGER-LENGTH-GEN))
-
 (in-theory (disable bvlt-tighten-non-dag-strong-arg3 bvlt-tighten-non-dag-strong-arg2)) ;do these cause the cases?
 
 (defthm unsigned-byte-p-when-bound-tighten-hack
