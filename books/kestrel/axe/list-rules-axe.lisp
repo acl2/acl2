@@ -1,7 +1,7 @@
 ; Axe rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -49,6 +49,14 @@
 ;; Only needeed for Axe, since ACL2 knows this by type-prescription.
 (defthmd consp-of-update-nth
   (consp (update-nth key val l)))
+
+;; Only needeed for Axe, since ACL2 knows this by type-prescription.
+(defthmd not-equal-of-nil-and-update-nth
+  (not (equal nil (update-nth key val l))))
+
+;; Only needeed for Axe, since ACL2 knows this by type-prescription.
+(defthmd not-equal-of-update-nth-and-nil
+  (not (equal (update-nth key val l) nil)))
 
 ;We also have equal-of-car-and-nth-of-0, so this variant is just for Axe.
 ;This helps when we don't want to commit to either form.

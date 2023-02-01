@@ -1,7 +1,7 @@
 ; Lists of rule names (general purpose)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -957,6 +957,13 @@
     update-nth2-not-nil2
     update-nth2-not-nil1
     bvchop-list-of-update-nth2))
+
+; trying to see if we can use these instead of going to update-nth2
+(defun update-nth-rules ()
+  (declare (xargs :guard t))
+  '(not-equal-of-update-nth-and-nil
+    not-equal-of-nil-and-update-nth
+    consp-of-update-nth))
 
 (defun list-rules ()
   (declare (xargs :guard t))
