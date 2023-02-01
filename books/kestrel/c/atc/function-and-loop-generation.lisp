@@ -3596,6 +3596,7 @@
        (type-prescriptions-struct-readers
         (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
                collect `(:t ,reader)))
+       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
        (type-of-value-thms
         (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
        (flexiblep-thms
@@ -3640,6 +3641,7 @@
                                    *atc-flexible-array-member-rules*
                                    '(,@not-error-thms
                                      ,@valuep-thms
+                                     ,@value-kind-thms
                                      not
                                      ,exec-stmt-while-for-fn
                                      ,@struct-reader-return-thms
@@ -3698,6 +3700,7 @@
                               *atc-flexible-array-member-rules*
                               '(,@not-error-thms
                                 ,@valuep-thms
+                                ,@value-kind-thms
                                 not
                                 ,exec-stmt-while-for-fn
                                 ,@struct-reader-return-thms
