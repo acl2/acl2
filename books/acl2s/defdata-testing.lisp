@@ -289,3 +289,11 @@ Skipping for now.
 ; because we try to define zeeerop as a macro 
 (must-fail
   (defdata zeeero 0))
+
+(defdata ds1 (enum '(1 2 3 1 2 3)))
+(defdata ds2 (or 1 2 3 1 2 3))
+(defdata ds3 (or 1 2 3 1 2 3 int))
+
+(check= (defdata-domain-size ds1) 3)
+(check= (defdata-domain-size ds2) 3)
+(check= (defdata-domain-size ds3) 'infinite)
