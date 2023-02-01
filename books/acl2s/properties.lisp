@@ -231,6 +231,8 @@ with the same hints and directives that defthm accepts.
                   (hyps-list-from-hyps hyps))
                  (('=> hyps &)
                   (hyps-list-from-hyps hyps))
+                 (('-> hyps &)
+                  (hyps-list-from-hyps hyps))
                  (& nil)))
 ;      ((unless (tlp x-hyps)) nil)
        (find-duplicate-x-hyps (find-first-duplicate x-hyps))
@@ -244,6 +246,7 @@ with the same hints and directives that defthm accepts.
   (case-match x
     (('implies & body) body)
     (('=> & body) body)
+    (('-> & body) body)
     (& x)))
 
 (definec del1 (e :all x :tl) :tl
