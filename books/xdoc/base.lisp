@@ -61,6 +61,23 @@
   (declare (xargs :mode :program))
   (cdr (assoc-eq 'default-parents (table-alist 'xdoc world))))
 
+;; Returns NIL if code-source arg looks OK, otherwise returns an error string.
+(defun check-code-source-arg (code-source)
+  (declare (xargs :guard t))
+  (cond ((null code-source) nil)
+        ((stringp code-source) nil)
+        ((and (listp code-source)
+              (= (len code-source) 3)
+              (stringp (first code-source))
+              (< 0 (length (first code-source)))
+              ;; path must not be absolute
+              (not (eql (char (first code-source) 0) #\/))
+              (eq ':DIR (second code-source))
+              (keywordp (third code-source)))
+         nil)
+        (t ":code-source is not a string or list of the form (\"path/to/book\" :dir project-keyword)")))
+
+;; Returns NIL if the args look OK, otherwise returns an error string.
 (defun check-defxdoc-args (name parents short long pkg code-source)
   (declare (xargs :guard t))
   (or (and (not (symbolp name))
@@ -73,8 +90,7 @@
            ":long is not a string (or nil)")
       (and pkg (or (not (stringp pkg)) (equal pkg "") (not (pkg-witness pkg)))
            ":pkg is not a string that is a known package (or nil)")
-      (and code-source (not (stringp code-source))
-           ":code-source is not a string (or nil)")))
+      (and code-source (check-code-source-arg code-source))))
 
 (defun guard-for-defxdoc (name parents short long pkg code-source)
   (declare (xargs :guard t))
@@ -88,6 +104,9 @@
          :hints(("Goal" :in-theory (enable state-p1)))
          :rule-classes nil))
 
+;; This function "normalizes" in the sense of changing a list form
+;; like (:SYSTEM . "kestrel/utilities/ubi.lisp") into a string form
+;; like "kestrel/utilities/ubi.lisp :DIR :SYSTEM".
 (defun normalize-bookname (bookname)
   (declare (xargs :guard t))
   (cond ((acl2::sysfile-p bookname)
@@ -124,12 +143,8 @@
                           ;; (usually relativized to acl2/books and with
                           ;; :DIR :SYSTEM added)
                           (cons :from bookname)
-                          ;; :code-from is specified by the xdoc writer,
-                          ;; and is not currently not modified/normalized
-                          ;; so when specified, the writer should self-normalize
-                          ;; it to a form similar to the :from (for now at
-                          ;; least)
-                          ; [Pending change]
+                          ; [Pending change, that will also require changes to other
+                          ; users of the xdoc table entries.]
                           ; (cons :code-from code-source)
                           ))
              (table-event
