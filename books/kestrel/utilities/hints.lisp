@@ -126,7 +126,7 @@
                `(:free ,(farg1 term) ,(apply-renaming-to-expand-hint-top-term (farg2 term) renaming-alist))))
       (:with (if (not (= 2 (len (fargs term))))
                  (er hard? 'apply-renaming-to-expand-hint-top-term "Unexpected :expand hint: ~x0." term)
-               `(:with ,(farg1 term) ; todo: rename this but note its form
+               `(:with ,(apply-renaming-to-symbol-or-rune (farg1 term) renaming-alist)
                        ,(apply-renaming-to-expand-hint-top-term (farg2 term) renaming-alist))))
       (otherwise
        (if (not (and (untranslated-termp term) ; todo: call a more modern util and drop this?
