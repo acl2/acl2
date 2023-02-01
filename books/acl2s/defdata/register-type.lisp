@@ -273,7 +273,7 @@ data last modified: [2014-08-06]
        (enum-type? (and (consp def) (equal (car def) 'enum)))
        (normalized-def (get1 :normalized-def kwd-alist))
        (or-type? (and (consp def) (equal (car def) 'or)))
-       (or-size (if or-type? (get-or-size (cdr def) wrld) 0))
+       (or-size (if or-type? (get-or-size (cdr normalized-def) wrld) 0))
        (domain-size (or (get1 :domain-size kwd-alist)
                         (and enum-type? (nfix (1- (len normalized-def))))
                         (and or-type? or-size)
