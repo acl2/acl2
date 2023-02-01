@@ -15,10 +15,6 @@ data last modified: [2014-08-06]
 
 (include-book "defdata-attach")
 
-
-
-
-
 ;TODO
 ; Q: howto to generate an enumerator or fixer from a predicate def
 ; 11 June 2014 - 2am
@@ -277,6 +273,8 @@ data last modified: [2014-08-06]
        (domain-size (or (get1 :domain-size kwd-alist)
                         (and enum-type? (nfix (1- (len normalized-def))))
                         (and or-type? or-size)
+                        (and (quotep def) 1)
+                        (and (atom def) 1) ; alias caught above
                         t))
 
        ((when (eq enum enum-name))
