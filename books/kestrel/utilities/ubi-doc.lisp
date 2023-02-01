@@ -8,7 +8,7 @@
 
 (defxdoc ubi
   :parents (kestrel-utilities history)
-  :code-source "kestrel/utilities/ubi :DIR :SYSTEM"
+  :code-source "ubi.lisp"
   :short "Undo back up to longest initial segment containing only calls of
  certain symbols, including @(tsee defpkg) and @(tsee include-book)."
   :long "<p>The following example explains how @(':ubi') works.  We start up
