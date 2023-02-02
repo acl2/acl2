@@ -147,16 +147,16 @@
              ((when (eq fn 'ulongp)) (type-ulong))
              ((when (eq fn 'sllongp)) (type-sllong))
              ((when (eq fn 'ullongp)) (type-ullong))
-             ((when (eq fn 'schar-arrayp)) (type-pointer (type-schar)))
-             ((when (eq fn 'uchar-arrayp)) (type-pointer (type-uchar)))
-             ((when (eq fn 'sshort-arrayp)) (type-pointer (type-sshort)))
-             ((when (eq fn 'ushort-arrayp)) (type-pointer (type-ushort)))
-             ((when (eq fn 'sint-arrayp)) (type-pointer (type-sint)))
-             ((when (eq fn 'uint-arrayp)) (type-pointer (type-uint)))
-             ((when (eq fn 'slong-arrayp)) (type-pointer (type-slong)))
-             ((when (eq fn 'ulong-arrayp)) (type-pointer (type-ulong)))
-             ((when (eq fn 'sllong-arrayp)) (type-pointer (type-sllong)))
-             ((when (eq fn 'ullong-arrayp)) (type-pointer (type-ullong)))
+             ((when (eq fn 'schar-arrayp)) (type-array (type-schar) nil))
+             ((when (eq fn 'uchar-arrayp)) (type-array (type-uchar) nil))
+             ((when (eq fn 'sshort-arrayp)) (type-array (type-sshort) nil))
+             ((when (eq fn 'ushort-arrayp)) (type-array (type-ushort) nil))
+             ((when (eq fn 'sint-arrayp)) (type-array (type-sint) nil))
+             ((when (eq fn 'uint-arrayp)) (type-array (type-uint) nil))
+             ((when (eq fn 'slong-arrayp)) (type-array (type-slong) nil))
+             ((when (eq fn 'ulong-arrayp)) (type-array (type-ulong) nil))
+             ((when (eq fn 'sllong-arrayp)) (type-array (type-sllong) nil))
+             ((when (eq fn 'ullong-arrayp)) (type-array (type-ullong) nil))
              ((mv okp struct/object tag/name p) (atc-check-symbol-3part fn))
              ((unless (and okp
                            (equal (symbol-name p) "P")))
@@ -185,7 +185,7 @@
                    ((unless (type-case arrtype :array))
                     (raise "Internal error: object ~s0 has type ~x1."
                            name arrtype)))
-                (type-pointer (type-array->of arrtype)))))
+                arrtype)))
           nil))
        ((unless type) (mv nil nil))
        ((when (and pointerp
@@ -913,13 +913,13 @@
           (type-conjunct `(,(type-to-recognizer type wrld) ,theresult))
           (nonnil-conjunct? (and index? (list theresult)))
           (arraylength-conjunct?
-           (b* (((unless (type-case type :pointer)) nil)
-                (reftype (type-pointer->to type))
-                ((unless (type-nonchar-integerp reftype)) nil)
-                (reftype-array-length (pack (integer-type-to-fixtype reftype)
+           (b* (((unless (type-case type :array)) nil)
+                (elemtype (type-array->of type))
+                ((unless (type-nonchar-integerp elemtype)) nil)
+                (elemtype-array-length (pack (integer-type-to-fixtype elemtype)
                                             '-array-length)))
-             (list `(equal (,reftype-array-length ,theresult)
-                           (,reftype-array-length ,name))))))
+             (list `(equal (,elemtype-array-length ,theresult)
+                           (,elemtype-array-length ,name))))))
        (append (list type-conjunct)
                nonnil-conjunct?
                arraylength-conjunct?
@@ -1122,7 +1122,8 @@
        (formal-ptr (add-suffix-to-fn formal "-PTR"))
        (formal-objdes `(value-pointer->designator ,formal-ptr))
        (formal-id `(ident ',(symbol-name formal)))
-       (pointerp (type-case type :pointer))
+       (pointerp (or (type-case type :pointer)
+                     (type-case type :array)))
        (extobjp (assoc-equal (symbol-name formal) prec-objs))
        (bindings
         (if fn-recursivep
@@ -1151,8 +1152,13 @@
                           `(equal (objdesign-kind
                                    (value-pointer->designator ,formal-ptr))
                                   :address)
-                          `(equal (value-pointer->reftype ,formal-ptr)
-                                  ,(type-to-maker (type-pointer->to type)))))))
+                          (if (type-case type :pointer)
+                              `(equal (value-pointer->reftype ,formal-ptr)
+                                      ,(type-to-maker
+                                        (type-pointer->to type)))
+                            `(equal (value-pointer->reftype ,formal-ptr)
+                                    ,(type-to-maker
+                                      (type-array->of type))))))))
        (inst (if fn-recursivep
                  (if pointerp
                      (if extobjp
@@ -1315,7 +1321,8 @@
        ((when (not info))
         (raise "Internal error: formal ~x0 not found." formal))
        (type (atc-var-info->type info))
-       ((unless (type-case type :pointer))
+       ((unless (or (type-case type :pointer)
+                    (type-case type :array)))
         (raise "Internal error: affected formal ~x0 has type ~x1."
                formal type)))
     (if (consp (assoc-equal (symbol-name formal) prec-objs))
@@ -1644,11 +1651,13 @@
 (define atc-formal-pointerp ((formal symbolp)
                              (typed-formals atc-symbol-varinfo-alistp))
   :returns (yes/no booleanp)
-  :short "Check if a formal parameter has a C pointer type."
+  :short "Check if a formal parameter is a C pointer value."
   (b* ((pair (assoc-eq (symbol-fix formal)
                        (atc-symbol-varinfo-alist-fix typed-formals))))
     (and (consp pair)
-         (type-case (atc-var-info->type (cdr pair)) :pointer)))
+         (b* ((type (atc-var-info->type (cdr pair))))
+           (or (type-case type :pointer)
+               (type-case type :array)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1694,20 +1703,20 @@
       which is the only thing we care about here,
       ignoring all the other results.")
     (xdoc::li
-     "A formal parameter @('var') of @('fn') with pointer type.
+     "A formal parameter @('var') of @('fn') with pointer or array type.
       In this case, @('term') affects the list of variables @('(var)').")
     (xdoc::li
      "A term @('ret') that is not a call of @('fn0') as above
-      and is not a formal parameter of @('fn') of pointer type.
+      and is not a formal parameter of @('fn') of pointer or array type.
       In this case, @('term') affects no variables.")
     (xdoc::li
      "A term @('(mv var1 ... varn)') where each @('vari') is
-      a formal parameter of the function that has pointer type.
+      a formal parameter of the function that has pointer or array type.
       In this case, @('term') affects
       the list of variables @('(var1 ... varn)').")
     (xdoc::li
      "A term @('(mv ret var1 ... varn)') where each @('vari') is
-      a formal parameter of the function that has pointer type
+      a formal parameter of the function that has pointer or array type
       and @('ret') is not.
       In this case, @('term') affects
       the list of variables @('(var1 ... varn)')."))
@@ -1782,7 +1791,7 @@
                         returns multiple values but they, ~
                         or at least all of them except the first one, ~
                         are not all formal parameters of ~x0 ~
-                        of pointer type."
+                        of pointer or array type."
                        fn term))))))
     (retok nil))
   :measure (pseudo-term-count term)
@@ -1921,6 +1930,16 @@
                                valuep-when-slongp
                                valuep-when-ullongp
                                valuep-when-sllongp
+                               value-kind-when-ucharp
+                               value-kind-when-scharp
+                               value-kind-when-ushortp
+                               value-kind-when-sshortp
+                               value-kind-when-uintp
+                               value-kind-when-sintp
+                               value-kind-when-ulongp
+                               value-kind-when-slongp
+                               value-kind-when-ullongp
+                               value-kind-when-sllongp
                                type-of-value-when-ucharp
                                type-of-value-when-scharp
                                type-of-value-when-ushortp
@@ -1947,6 +1966,7 @@
                                mv-nth-of-cons
                                (:e zp)
                                (:e tyname-to-type)
+                               (:e adjust-type)
                                value-listp-of-cons
                                (:e value-listp)
                                (:e init-scope)
@@ -2410,8 +2430,7 @@
   (xdoc::topstring
    (xdoc::p
     "We ensure that all the formals affected by the function body
-     have pointer types, as required in the user documentation.
-     This may change if we add support for passing integers by pointer.")
+     have pointer or array types, as required in the user documentation.")
    (xdoc::p
     "We return local and exported events for the theorems about
      the correctness of the C function definition.")
@@ -2487,7 +2506,7 @@
        ((unless (atc-formal-pointer-listp affect typed-formals))
         (reterr
          (msg "At least one of the formals of ~x0 ~
-               that are affected by its body has a non-pointer type. ~
+               that are affected by its body has a non-pointer non-array type. ~
                This is currently disallowed: ~
                only pointer variables may be affected ~
                by a non-recursive target function."
@@ -3291,7 +3310,8 @@
        ((when (not info))
         (raise "Internal error: formal ~x0 not found." mod-var))
        (type (atc-var-info->type info))
-       (ptrp (type-case type :pointer))
+       (ptrp (or (type-case type :pointer)
+                 (type-case type :array)))
        (ptr (cdr (assoc-eq mod-var subst))))
     (if ptrp
         (if (consp (assoc-equal (symbol-name mod-var) prec-objs))

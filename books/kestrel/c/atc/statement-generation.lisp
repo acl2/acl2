@@ -141,16 +141,16 @@
    (xdoc::p
     "If the body of a non-recursive function @('fn')
      includes an @(tsee mv-let)s or a @(tsee let)
-     that affects a formal of @('fn') of pointer type,
+     that affects a formal of @('fn') of pointer or array type,
      that formal must be among the variables affected by ('fn').
      If the body of a recursive function @('fn')
      includes an @(tsee mv-let)s or a @(tsee let)
      that affects a formal of @('fn') of any type,
      that formal must be among the variables affected by ('fn').
      In other words, no modification of formals must be ``lost''.
-     The case of formals of pointer types is clear,
+     The case of formals of pointer or array types is clear,
      because it means that objects in the heap are affected.
-     The case of formals of non-pointer types
+     The case of formals of non-pointer non-array types
      applies to recursive functions
      because they represent loops,
      which may affect local variables in the function where they appear.")
@@ -169,7 +169,8 @@
        (info (cdr (assoc-eq var fn-typed-formals)))
        ((when (and info
                    (or (irecursivep+ fn wrld)
-                       (type-case (atc-var-info->type info) :pointer))
+                       (type-case (atc-var-info->type info) :pointer)
+                       (type-case (atc-var-info->type info) :array))
                    (not (member-eq var fn-affect))))
         (reterr
          (msg "When generating C code for the function ~x0, ~
@@ -795,7 +796,10 @@
          (raise "Internal error: return term ~x0 has type void." term)))
        ((when (type-case expr.type :array))
         (reterr
-         (raise "Internal error: retun term ~x0 has type ~x1." expr.type)))
+         (msg "When generating a return statement for function ~x0, ~
+               the term ~x1 that represents the return expression ~
+               has array type ~x2, which is disallowed."
+              gin.fn term expr.type)))
        ((when (type-case expr.type :pointer))
         (reterr
          (msg "When generating a return statement for function ~x0, ~
@@ -1311,7 +1315,8 @@
      from the term that the variable is bound to,
      which also determines the type of the variable,
      and which must affect the bound variables except the first one;
-     the type must not be a pointer type (code generation fails if it is);
+     the type must not be a pointer or array type
+     (code generation fails if it is);
      we also ensure that the other variables are assignable.
      Otherwise, if the term involves an @('assign<n>') wrapper,
      we ensure that the first bound variable is assignable,
@@ -1419,7 +1424,8 @@
      the term represents an expression statement
      consisting of a call to the corresponding C function.
      The loop flag must be @('nil') for this to be allowed.
-     We ensure that all the pointer arguments are equal to the formals,
+     We ensure that all the pointer and array arguments
+     are equal to the formals,
      and that the variables affected by the called function are correct.
      We retrieve the limit term associated to the called function,
      which, as explained in @(tsee atc-fn-info),
@@ -1631,10 +1637,11 @@
                                    :names-to-avoid gin.names-to-avoid
                                    :proofs gin.proofs)
                                   state))
-                   ((when (type-case init.type :pointer))
+                   ((when (or (type-case init.type :pointer)
+                              (type-case init.type :array)))
                     (reterr
                      (msg "When generating C code for the function ~x0, ~
-                           the term ~x1 of pointer type ~x2 ~
+                           the term ~x1 of type ~x2 ~
                            is being assigned to a new variable ~x3. ~
                            This is currently disallowed, ~
                            because it would create an alias."
@@ -1743,7 +1750,11 @@
                                                  gin.fn
                                                  wrld))
                    ((when (type-case rhs.type :array))
-                    (reterr (raise "Internal error: array type ~x0." rhs.type)))
+                    (reterr
+                     (msg "The term ~x0 to which the variable ~x1 is bound ~
+                           must not have a C array type, ~
+                           but it has type ~x2 instead."
+                          val-term var rhs.type)))
                    ((when (type-case rhs.type :pointer))
                     (reterr
                      (msg "The term ~x0 to which the variable ~x1 is bound ~
@@ -1911,14 +1922,16 @@
                                         :names-to-avoid sub.names-to-avoid
                                         :proofs sub.proofs)
                                        state))
-                   ((unless (equal arr.type (type-pointer elem-type)))
+                   ((unless (and (type-case arr.type :array)
+                                 (equal (type-array->of arr.type)
+                                        elem-type)))
                     (reterr
                      (msg "The array ~x0 of type ~x1 ~
-                           does not have the expected type ~x2. ~
+                           does not have the expected array type of ~x2. ~
                            This is indicative of ~
                            unreachable code under the guards, ~
                            given that the code is guard-verified."
-                          var arr.type (type-pointer elem-type))))
+                          var arr.type elem-type)))
                    ((unless (equal sub.type sub-type))
                     (reterr
                      (msg "The array ~x0 of type ~x1 ~
@@ -2246,10 +2259,11 @@
                                    :names-to-avoid gin.names-to-avoid
                                    :proofs gin.proofs)
                                   state))
-                   ((when (type-case init.type :pointer))
+                   ((when (or (type-case init.type :pointer)
+                              (type-case init.type :array)))
                     (reterr
                      (msg "When generating C code for the function ~x0, ~
-                           the term ~x1 of pointer type ~x2 ~
+                           the term ~x1 of type ~x2 ~
                            is being assigned to a new variable ~x3. ~
                            This is currently disallowed, ~
                            because it would create an alias."
@@ -2364,7 +2378,10 @@
                           val-term var rhs.affect)))
                    ((when (type-case rhs.type :array))
                     (reterr
-                     (raise "Internal error: array type ~x0." rhs.type)))
+                     (msg "The term ~x0 to which the variable ~x1 is bound ~
+                           must not have a C array type, ~
+                           but it has type ~x2 instead."
+                          val-term var rhs.type)))
                    ((when (type-case rhs.type :pointer))
                     (reterr
                      (msg "The term ~x0 to which the variable ~x1 is bound ~
@@ -2654,6 +2671,7 @@
     (atc-gen-return-stmt term gin gin.affect state))
 
   :prepwork ((local (in-theory (disable equal-of-type-pointer
+                                        equal-of-type-array
                                         equal-of-type-struct))))
 
   :measure (pseudo-term-count term)
