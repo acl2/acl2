@@ -86,13 +86,15 @@
              (equal (dab-base-fix x)
                     x))))
 
-(fty::deffixtype dab-base
-  :pred dab-basep
-  :fix dab-base-fix
-  :equiv dab-base-equiv
-  :define t
-  :forward t
-  :topic dab-basep)
+(defsection dab-base
+  :short "Fixtype for @(tsee dab-basep)."
+  (fty::deffixtype dab-base
+    :pred dab-basep
+    :fix dab-base-fix
+    :equiv dab-base-equiv
+    :define t
+    :forward t
+    :topic dab-basep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
