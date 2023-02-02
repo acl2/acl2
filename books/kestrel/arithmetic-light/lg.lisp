@@ -1,7 +1,7 @@
 ; Base-2 integer logarithm
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,7 @@
 ;but my current rules may target integer-length?
 
 (include-book "power-of-2p")
-(include-book "integer-length")
+(local (include-book "integer-length"))
 (local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "floor"))
