@@ -30,6 +30,7 @@
      ; mean implies
      _ ;range
      comment
+     get-alist
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -53,6 +54,7 @@
      ecw?
      => ;sig
      _ ;range
+     get-alist
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -99,6 +101,7 @@
      stage
      ;community books
      u::defloop def-ruleset
+
      )
    
    acl2s-shared::*acl2s-shared-exports*))
@@ -134,6 +137,20 @@
     defdata-alias
     stage
     defdata-defaults-table
+
+    infinite
+    
+    type-of-pred-aux
+    type-of-pred
+    enum-of-type
+    trans1-cmp
+    base-val-of-type
+    type-of-type
+    pred-of-type
+    defdata-domain-size-fn
+    defdata-domain-size
+    defdata-base-val-of-type-fn
+    defdata-base-val-of-type
     ))
 
 

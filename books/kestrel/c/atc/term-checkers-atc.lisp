@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -153,7 +153,7 @@
         (no))
        (out-type (fixtype-to-integer-type etype))
        ((when (not out-type)) (no))
-       (in-type1 (type-pointer out-type))
+       (in-type1 (make-type-array :of out-type :size nil))
        (in-type2 (fixtype-to-integer-type itype))
        ((when (not in-type2)) (no))
        ((unless (list-lenp 2 term.args)) (no))
@@ -577,7 +577,7 @@
     (mv t term.fn term.args in-types out-type affect limit))
   ///
 
-  (defret pseudo-term-count-of-atc-check-cfun-call-args
+  (defret pseudo-term-count-of-atc-check-cfun-call
     (implies yes/no
              (< (pseudo-term-list-count args)
                 (pseudo-term-count term)))
@@ -597,9 +597,10 @@
      if the latter is successful.
      As stated in the user documentation of ATC,
      calls of non-recursive target functions must satisfy the property that
-     the argument for a formal of pointer type must be identical to the formal.
+     the argument for a formal of pointer or array type
+     must be identical to the formal.
      This is because these arguments and formals
-     represent (pointers to) arrays and structures,
+     represent arrays and pointers to structures,
      and thus they must be passed around exactly by their name,
      similarly to stobjs in ACL2.
      This code checks the condition."))
@@ -615,7 +616,8 @@
        (formal (car formals))
        (in-type (car in-types))
        (arg (car args))
-       ((unless (type-case in-type :pointer))
+       ((when (and (not (type-case in-type :pointer))
+                   (not (type-case in-type :array))))
         (atc-check-cfun-call-args (cdr formals) (cdr in-types) (cdr args)))
        ((unless (eq formal arg)) nil))
     (atc-check-cfun-call-args (cdr formals) (cdr in-types) (cdr args))))
