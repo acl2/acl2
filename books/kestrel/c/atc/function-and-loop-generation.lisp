@@ -101,10 +101,14 @@
      @('(recognizer var)') or @('(pointer (recognizer var))'),
      where @('recognizer') is a recognizer of a C type
      and @('var') is a variable.
-     If the recognizer is a known one for integer or integer array types,
+     If the recognizer is a known one for integer array types,
      the @(tsee pointer) wrapper is disallowed,
-     and the integer type is readily determined.
-     Otherwise, there may be two possibilities.
+     and the integer array type is readily determined.
+     If the recognizer is a known one for integer types,
+     the @(tsee pointer) wrapper may be present or not,
+     and distinguishes between the integer type
+     and the pointer type to the integer type.
+     Otherwise, there are two possibilities.
      One is that the recognizer is the one of a @(tsee defstruct),
      of the form @('struct-<tag>-p'):
      in this case, the type is the structure type or a pointer type to it,
@@ -126,7 +130,7 @@
         (mv nil nil))
        (fn (ffn-symb conjunct))
        (arg (fargn conjunct 1))
-       ((mv okp pointerp fn arg)
+       ((mv okp pointerp recog arg)
         (if (eq fn 'pointer)
             (if (or (variablep arg)
                     (fquotep arg)
@@ -137,27 +141,27 @@
        ((when (not okp)) (mv nil nil))
        ((unless (symbolp arg)) (mv nil nil))
        (type
-        (b* (((when (eq fn 'scharp)) (type-schar))
-             ((when (eq fn 'ucharp)) (type-uchar))
-             ((when (eq fn 'sshortp)) (type-sshort))
-             ((when (eq fn 'ushortp)) (type-ushort))
-             ((when (eq fn 'sintp)) (type-sint))
-             ((when (eq fn 'uintp)) (type-uint))
-             ((when (eq fn 'slongp)) (type-slong))
-             ((when (eq fn 'ulongp)) (type-ulong))
-             ((when (eq fn 'sllongp)) (type-sllong))
-             ((when (eq fn 'ullongp)) (type-ullong))
-             ((when (eq fn 'schar-arrayp)) (type-array (type-schar) nil))
-             ((when (eq fn 'uchar-arrayp)) (type-array (type-uchar) nil))
-             ((when (eq fn 'sshort-arrayp)) (type-array (type-sshort) nil))
-             ((when (eq fn 'ushort-arrayp)) (type-array (type-ushort) nil))
-             ((when (eq fn 'sint-arrayp)) (type-array (type-sint) nil))
-             ((when (eq fn 'uint-arrayp)) (type-array (type-uint) nil))
-             ((when (eq fn 'slong-arrayp)) (type-array (type-slong) nil))
-             ((when (eq fn 'ulong-arrayp)) (type-array (type-ulong) nil))
-             ((when (eq fn 'sllong-arrayp)) (type-array (type-sllong) nil))
-             ((when (eq fn 'ullong-arrayp)) (type-array (type-ullong) nil))
-             ((mv okp struct/object tag/name p) (atc-check-symbol-3part fn))
+        (b* (((when (eq recog 'scharp)) (type-schar))
+             ((when (eq recog 'ucharp)) (type-uchar))
+             ((when (eq recog 'sshortp)) (type-sshort))
+             ((when (eq recog 'ushortp)) (type-ushort))
+             ((when (eq recog 'sintp)) (type-sint))
+             ((when (eq recog 'uintp)) (type-uint))
+             ((when (eq recog 'slongp)) (type-slong))
+             ((when (eq recog 'ulongp)) (type-ulong))
+             ((when (eq recog 'sllongp)) (type-sllong))
+             ((when (eq recog 'ullongp)) (type-ullong))
+             ((when (eq recog 'schar-arrayp)) (type-array (type-schar) nil))
+             ((when (eq recog 'uchar-arrayp)) (type-array (type-uchar) nil))
+             ((when (eq recog 'sshort-arrayp)) (type-array (type-sshort) nil))
+             ((when (eq recog 'ushort-arrayp)) (type-array (type-ushort) nil))
+             ((when (eq recog 'sint-arrayp)) (type-array (type-sint) nil))
+             ((when (eq recog 'uint-arrayp)) (type-array (type-uint) nil))
+             ((when (eq recog 'slong-arrayp)) (type-array (type-slong) nil))
+             ((when (eq recog 'ulong-arrayp)) (type-array (type-ulong) nil))
+             ((when (eq recog 'sllong-arrayp)) (type-array (type-sllong) nil))
+             ((when (eq recog 'ullong-arrayp)) (type-array (type-ullong) nil))
+             ((mv okp struct/object tag/name p) (atc-check-symbol-3part recog))
              ((unless (and okp
                            (equal (symbol-name p) "P")))
               nil)
@@ -168,7 +172,7 @@
                    ((unless (atc-tag-infop info))
                     (raise "Internal error: malformed ATC-TAG-INFO ~x0." info))
                    (info (atc-tag-info->defstruct info))
-                   ((unless (eq fn (defstruct-info->recognizer info))) nil)
+                   ((unless (eq recog (defstruct-info->recognizer info))) nil)
                    ((when (and (defstruct-info->flexiblep info)
                                (not pointerp)))
                     nil))
@@ -180,7 +184,7 @@
                    ((unless (atc-obj-infop info))
                     (raise "Internal error: malformed ATC-OBJ-INFO ~x0." info))
                    (info (atc-obj-info->defobject info))
-                   ((unless (eq fn (defobject-info->recognizer info))) nil)
+                   ((unless (eq recog (defobject-info->recognizer info))) nil)
                    (arrtype (defobject-info->type info))
                    ((unless (type-case arrtype :array))
                     (raise "Internal error: object ~s0 has type ~x1."
@@ -189,7 +193,7 @@
           nil))
        ((unless type) (mv nil nil))
        ((when (and pointerp
-                   (not (type-case type :struct))))
+                   (type-case type :array)))
         (mv nil nil))
        (type (if pointerp
                  (type-pointer type)

@@ -278,8 +278,10 @@
     "Representation of C Code in ACL2"
 
     (xdoc::p
-     "Currently ATC supports the ACL2 representation of a single source file,
-      optionally accompanied by a header (based on the @(':header') input).
+     "Currently ATC supports the ACL2 representation of
+      a single source file (i.e. a file with extension @('.c')),
+      optionally accompanied by a header (i.e. a file with extension @('.h')),
+      based on the @(':header') input.
       If @(':header') is @('nil'),
       the source file consists of
       one or more C function definitions,
@@ -411,6 +413,26 @@
      (xdoc::li
       "@('(ullongp x)'), representing @('unsigned long long').")
      (xdoc::li
+      "@('(pointer (scharp x))'), representing @('signed char *').")
+     (xdoc::li
+      "@('(pointer (ucharp x))'), representing @('unsigned char *').")
+     (xdoc::li
+      "@('(pointer (sshortp x))'), representing @('signed short *').")
+     (xdoc::li
+      "@('(pointer (ushortp x))'), representing @('unsigned short *').")
+     (xdoc::li
+      "@('(pointer (sintp x))'), representing @('signed int *').")
+     (xdoc::li
+      "@('(pointer (uintp x))'), representing @('unsigned int *').")
+     (xdoc::li
+      "@('(pointer (slongp x))'), representing @('signed long *').")
+     (xdoc::li
+      "@('(pointer (ulongp x))'), representing @('unsigned long *').")
+     (xdoc::li
+      "@('(pointer (sllongp x))'), representing @('signed long long *').")
+     (xdoc::li
+      "@('(pointer (ullongp x))'), representing @('unsigned long long *').")
+     (xdoc::li
       "@('(schar-arrayp x)'), representing @('signed char []').")
      (xdoc::li
       "@('(uchar-arrayp x)'), representing @('unsigned char []').")
@@ -463,6 +485,19 @@
       and which formal parameters represent accesses to external objects.
       The rest of the guard (i.e. other than the conjuncts above)
       is not explicitly represented in the C code.")
+    (xdoc::p
+     "Note distinction between pointer types @('<integer type> *')
+      and array types @('<integer type> []') in the list above.
+      Even though these types are equivalent for function parameters,
+      and in fact array types are adjusted to pointer types
+      for function parameters according to [C],
+      pointed-to integers and integer arrays are different
+      in the ACL2 representation of C.
+      (More in general, even in handwritten C code,
+      using array types instead of pointer types for function parameters
+      is useful to convey the intention that something is
+      a pointer to (the first or some) element of an integer array
+      as opposed to a pointer to a single integer.)")
 
     (xdoc::p
      "The return type of
