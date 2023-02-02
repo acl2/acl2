@@ -149,6 +149,10 @@
 (std::deflist dab-digit-listp (base x)
   (dab-digitp base x)
   :short "Recognize true lists of digits in the specified base."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The fixing function for this predicate is @(tsee dab-digit-list-fix)."))
   :guard (dab-basep base)
   :true-listp t
   ///
