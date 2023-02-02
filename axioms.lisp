@@ -14292,6 +14292,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     our-with-terminal-input
     trust-mfc
     with-global-stobj
+    with-cbd
     ))
 
 (defun untouchable-marker (mac)

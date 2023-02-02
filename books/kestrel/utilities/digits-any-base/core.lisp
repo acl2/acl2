@@ -1,6 +1,6 @@
 ; Representation of Natural Numbers as Digits in Arbitrary Bases -- Core
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,9 +34,10 @@
      There are conversions to represent natural numbers as lists of digits
      of fixed length, of minimum length, and of minimum non-zero length.")
    (xdoc::p
-    "The name of some functions in these utilities start with @('dab'),
+    "The names of some functions in these utilities start with @('dab'),
      which stands for `digits any base'.
      Without this prefix, the names seem too ``general''."))
+  :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -85,13 +86,15 @@
              (equal (dab-base-fix x)
                     x))))
 
-(fty::deffixtype dab-base
-  :pred dab-basep
-  :fix dab-base-fix
-  :equiv dab-base-equiv
-  :define t
-  :forward t
-  :topic dab-basep)
+(defsection dab-base
+  :short "Fixtype for @(tsee dab-basep)."
+  (fty::deffixtype dab-base
+    :pred dab-basep
+    :fix dab-base-fix
+    :equiv dab-base-equiv
+    :define t
+    :forward t
+    :topic dab-basep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -146,6 +149,10 @@
 (std::deflist dab-digit-listp (base x)
   (dab-digitp base x)
   :short "Recognize true lists of digits in the specified base."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The fixing function for this predicate is @(tsee dab-digit-list-fix)."))
   :guard (dab-basep base)
   :true-listp t
   ///
@@ -306,6 +313,10 @@
     (equal (lendian=>nat base (true-list-fix digits))
            (lendian=>nat base digits)))
 
+  (defrule lendian=>nat-of-nat-list-fix
+    (equal (lendian=>nat base (nat-list-fix digits))
+           (lendian=>nat base digits)))
+
   (defruled lendian=>nat-of-append
     (equal (lendian=>nat base (append lodigits hidigits))
            (+ (lendian=>nat base lodigits)
@@ -338,7 +349,17 @@
   (defrule lendian=>nat-of-all-zeros-constant
     (implies (and (syntaxp (quotep digits))
                   (equal digits (repeat (len digits) 0)))
-             (equal (lendian=>nat base digits) 0))))
+             (equal (lendian=>nat base digits) 0)))
+
+  (defruled lendian=>nat-of-all-base-minus-1
+    (implies (equal digit (1- (dab-base-fix base)))
+             (equal (lendian=>nat base (repeat n digit))
+                    (1- (expt (dab-base-fix base) (nfix n)))))
+    :cases (natp n)
+    :enable (repeat
+             dab-basep
+             dab-digitp)
+    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -622,6 +643,13 @@
     (implies (and (syntaxp (quotep digits))
                   (equal digits (repeat (len digits) 0)))
              (equal (bendian=>nat base digits) 0)))
+
+  (defruled bendian=>nat-of-all-base-minus-1
+    (implies (equal digit (1- (dab-base-fix base)))
+             (equal (bendian=>nat base (repeat n digit))
+                    (1- (expt (dab-base-fix base) (nfix n)))))
+    :cases (natp n)
+    :enable lendian=>nat-of-all-base-minus-1)
 
   (defruled lendian=>nat-as-bendian=>nat
     (equal (lendian=>nat base digits)
@@ -962,8 +990,7 @@
   (defrule trim-bendian*-of-append-zeros
     (implies (zp-listp zeros)
              (equal (trim-bendian* (append zeros digits))
-                    (trim-bendian* digits)))
-    :induct (dec-induct n))
+                    (trim-bendian* digits))))
 
   (defrule trim-bendian*-when-no-starting-0
     (implies (not (zp (car digits)))
@@ -1032,8 +1059,7 @@
   (defrule trim-lendian*-of-append-zeros
     (implies (zp-listp zeros)
              (equal (trim-lendian* (append digits zeros))
-                    (trim-lendian* digits)))
-    :induct (dec-induct n))
+                    (trim-lendian* digits))))
 
   (defrule trim-lendian*-when-no-ending-0
     (implies (not (zp (car (last digits))))
