@@ -69,6 +69,7 @@
 (local (include-book "kestrel/arithmetic-light/rem" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ceiling" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
@@ -3686,8 +3687,6 @@
 
 ;sometimes we don't want these, e.g. (equal 0 (bvchop 2 x)) when we also know (equal 0 (getbit 1 x))
 (in-theory (disable BVCHOP-CONTRACT-HACK-GEN SLICE-TIGHTEN-WHEN-TOP-BIT-0))
-
-(in-theory (disable UNSIGNED-BYTE-P-OF-INTEGER-LENGTH-GEN))
 
 (in-theory (disable bvlt-tighten-non-dag-strong-arg3 bvlt-tighten-non-dag-strong-arg2)) ;do these cause the cases?
 
