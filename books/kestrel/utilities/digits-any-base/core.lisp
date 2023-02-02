@@ -986,8 +986,7 @@
   (defrule trim-bendian*-of-append-zeros
     (implies (zp-listp zeros)
              (equal (trim-bendian* (append zeros digits))
-                    (trim-bendian* digits)))
-    :induct (dec-induct n))
+                    (trim-bendian* digits))))
 
   (defrule trim-bendian*-when-no-starting-0
     (implies (not (zp (car digits)))
@@ -1056,8 +1055,7 @@
   (defrule trim-lendian*-of-append-zeros
     (implies (zp-listp zeros)
              (equal (trim-lendian* (append digits zeros))
-                    (trim-lendian* digits)))
-    :induct (dec-induct n))
+                    (trim-lendian* digits))))
 
   (defrule trim-lendian*-when-no-ending-0
     (implies (not (zp (car (last digits))))
