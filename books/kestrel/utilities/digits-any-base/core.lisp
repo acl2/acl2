@@ -313,6 +313,10 @@
     (equal (lendian=>nat base (true-list-fix digits))
            (lendian=>nat base digits)))
 
+  (defrule lendian=>nat-of-nat-list-fix
+    (equal (lendian=>nat base (nat-list-fix digits))
+           (lendian=>nat base digits)))
+
   (defruled lendian=>nat-of-append
     (equal (lendian=>nat base (append lodigits hidigits))
            (+ (lendian=>nat base lodigits)
