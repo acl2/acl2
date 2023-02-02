@@ -1,6 +1,6 @@
 ; Representation of Natural Numbers as Digits in Arbitrary Bases -- Core
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,7 +34,7 @@
      There are conversions to represent natural numbers as lists of digits
      of fixed length, of minimum length, and of minimum non-zero length.")
    (xdoc::p
-    "The name of some functions in these utilities start with @('dab'),
+    "The names of some functions in these utilities start with @('dab'),
      which stands for `digits any base'.
      Without this prefix, the names seem too ``general''."))
   :default-parent t)
