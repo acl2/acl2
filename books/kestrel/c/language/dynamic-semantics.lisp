@@ -670,8 +670,9 @@
      pairing them up into the scope.
      We return an error if they do not match in number or types,
      or if there are repeated parameters.
-     We perform array-to-pointer conversion on both types
-     before comparing them.")
+     Before the comparison,
+     we adjust the parameter types
+     and we perform array-to-pointer conversion on the argument types.")
    (xdoc::p
     "Prior to storing each actual, we remove its flexible array member, if any.
      See @(tsee remove-flexible-array-member)."))
@@ -688,7 +689,7 @@
        (formal (car formals))
        (actual (car actuals))
        ((mv name tyname) (param-declon-to-ident+tyname formal))
-       (formal-type (apconvert-type (tyname-to-type tyname)))
+       (formal-type (adjust-type (tyname-to-type tyname)))
        (actual-type (apconvert-type (type-of-value actual)))
        ((unless (equal formal-type actual-type))
         (error (list :formal-actual-mistype
