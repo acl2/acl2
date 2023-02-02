@@ -345,7 +345,17 @@
   (defrule lendian=>nat-of-all-zeros-constant
     (implies (and (syntaxp (quotep digits))
                   (equal digits (repeat (len digits) 0)))
-             (equal (lendian=>nat base digits) 0))))
+             (equal (lendian=>nat base digits) 0)))
+
+  (defruled lendian=>nat-of-all-base-minus-1
+    (implies (equal digit (1- (dab-base-fix base)))
+             (equal (lendian=>nat base (repeat n digit))
+                    (1- (expt (dab-base-fix base) (nfix n)))))
+    :cases (natp n)
+    :enable (repeat
+             dab-basep
+             dab-digitp)
+    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -629,6 +639,13 @@
     (implies (and (syntaxp (quotep digits))
                   (equal digits (repeat (len digits) 0)))
              (equal (bendian=>nat base digits) 0)))
+
+  (defruled bendian=>nat-of-all-base-minus-1
+    (implies (equal digit (1- (dab-base-fix base)))
+             (equal (bendian=>nat base (repeat n digit))
+                    (1- (expt (dab-base-fix base) (nfix n)))))
+    :cases (natp n)
+    :enable lendian=>nat-of-all-base-minus-1)
 
   (defruled lendian=>nat-as-bendian=>nat
     (equal (lendian=>nat base digits)
