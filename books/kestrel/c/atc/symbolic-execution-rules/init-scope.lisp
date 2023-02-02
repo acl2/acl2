@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -37,11 +37,12 @@
                   (equal formal (car formals))
                   (param-declonp formal)
                   (valuep val)
+                  (not (equal (value-kind val) :array))
                   (equal name+tyname (param-declon-to-ident+tyname formal))
                   (equal name (mv-nth 0 name+tyname))
                   (equal tyname (mv-nth 1 name+tyname))
                   (equal (type-of-value val)
-                         (tyname-to-type tyname))
+                         (adjust-type (tyname-to-type tyname)))
                   (value-listp vals)
                   (equal scope (init-scope (cdr formals) vals))
                   (scopep scope)
@@ -50,11 +51,12 @@
                     (omap::update name
                                   (remove-flexible-array-member val)
                                   scope)))
-    :enable init-scope)
+    :enable (init-scope apconvert-type))
 
   (defval *atc-init-scope-rules*
     '(init-scope-when-consp
       eq
       (:e init-scope)
       (:e param-declonp)
-      (:e param-declon-to-ident+tyname))))
+      (:e param-declon-to-ident+tyname)
+      (:e obj-adeclor-array->size))))
