@@ -4,7 +4,8 @@
 
 # C Library
 #
-# Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+# Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+# Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 #
 # License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 #
@@ -39,5 +40,6 @@ gcc -o nonstrict nonstrict.c nonstrict-test.c
 gcc -o not not.c not-test.c
 gcc -Wno-logical-not-parentheses -o operators operators.c operators-test.c
 gcc -o ops-diff-types ops-diff-types.c ops-diff-types-test.c
+gcc -o pointers pointers.c pointers-test.c
 gcc -o structs structs.c structs-test.c
 gcc -o ext-objs ext-objs.c ext-objs-test.c

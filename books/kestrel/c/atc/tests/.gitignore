@@ -58,6 +58,10 @@ ops-diff-types.h
 ops-diff-types.c
 ops-diff-types
 
+pointers.h
+pointers.c
+pointers
+
 structs.h
 structs.c
 structs
