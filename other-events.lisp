@@ -12974,6 +12974,9 @@
                      wrld))
         (t wrld)))
 
+(defconst *projects/apply/base-sysfile*
+  (make-sysfile :system "projects/apply/base.lisp"))
+
 (defun include-book-fn1 (user-book-name state
                                         load-compiled-file
                                         expansion-alist/cert-data
@@ -13772,9 +13775,7 @@
 ; so they will stay in sync even with :ube and local include-book events.
 
                                            (if (equal full-book-name
-                                                      (make-sysfile
-                                                       :system
-                                                       "projects/apply/base.lisp"))
+                                                      *projects/apply/base-sysfile*)
                                                (global-set
                                                 'projects/apply/base-includedp
                                                 t

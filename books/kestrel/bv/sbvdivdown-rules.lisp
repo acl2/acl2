@@ -1,7 +1,7 @@
 ; Rules about sbvdivdown
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,6 +18,7 @@
 (include-book "bvdiv")
 (include-book "rules8") ; for stuff like FLOOR-OF-SUM-OF-MINUS-EXPT-AND-BVCHOP
 (include-book "rules") ; make local or drop
+(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -29,7 +30,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 
-(in-theory (enable floor-when-multiple)) ;drop?
+(local (in-theory (enable floor-when-multiple))) ;drop?
 
 ;gen
 (defthm unsigned-byte-p-of-sbvdivdown
@@ -50,7 +51,8 @@
 
 (defthm sbvdivdown-when-bvchop-known-subst-arg2
   (implies (and (equal (bvchop size x) free)
-                (syntaxp (quotep free))
+                (syntaxp (and (quotep free)
+                              (not (quotep x))))
                 (posp size))
            (equal (sbvdivdown size x y)
                   (sbvdivdown size free y)))
@@ -58,7 +60,8 @@
 
 (defthm sbvdivdown-when-bvchop-known-subst-arg3
   (implies (and (equal (bvchop size x) free)
-                (syntaxp (quotep free))
+                (syntaxp (and (quotep free)
+                              (not (quotep x))))
                 (posp size))
            (equal (sbvdivdown size y x)
                   (sbvdivdown size y free)))
@@ -103,6 +106,17 @@
                                    ;anti-bvplus
                                    )))))
 
+(defthmd bvchop-of-minus-rule
+  (implies (and (syntaxp (not (and (consp y) (eq 'expt (ffn-symb y))))) ; prevents loops
+                (natp size))
+           (equal (bvchop size (* x (/ (+ (- (expt 2 size2)) y))))
+                  (if (equal 0 (bvchop size (* x (/ (+ (expt 2 size2) (- y))))))
+                      0
+                    (- (expt 2 size)
+                       (bvchop size (* x (/ (+ (expt 2 size2) (- y)))))))))
+  :hints (("Goal" :use (:instance (:instance bvchop-of-minus (x (* x (/ (+ (expt 2 size2) (- y)))))))
+           :in-theory (e/d (--of-*-push-into-arg2 --of-/) (bvchop-of-minus *-of---arg2 /-of--)))))
+
 (defthmd sbvdivdown-rewrite-case-4
   (implies (and (not (equal 0 (bvchop size y)))
                 (not (and (sbvle size 0 x)
@@ -119,7 +133,7 @@
                                    sbvdivdown
                                    LOGEXT-NEGATIVE
                                    LOGEXT-WHEN-NEGATIVE-2
-;logext logapp bvdiv
+                                   ;;logext logapp bvdiv
                                    sbvlt ;sbvrem
                                    BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN
                                    bvchop-when-top-bit-not-1
@@ -130,12 +144,14 @@
                                    bvplus
                                    bvcat logapp
                                    truncate-becomes-floor-other
-                                   ) (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   ;mod-sum-cases
-;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
-                                   ;anti-bvplus
-                                   ;SBVDIV-rewrite
-                                      )))))
+                                   bvchop-of-minus-rule
+                                   )
+                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   ;;mod-sum-cases
+                                   ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
+                                   ;;anti-bvplus
+                                   ;;SBVDIV-rewrite
+                                   )))))
 
 
 ;; ;move
