@@ -1708,9 +1708,7 @@
      Prior to comparing the types,
      we perform array-to-pointer conversions on
      all parameter types:
-     this corresponds to the adjustment in [C:6.7.6.3/7];
-     it is also, perhaps more aptly,
-     consistent with the treatment of assignments
+     this is consistent with the treatment of assignments
      (namely that the left-hand side of assignment
      is subjected to this conversion [C:6.3.2.1/3]),
      given that argument passing is treated like assignment [C:6.5.2.2/2].
@@ -2270,12 +2268,14 @@
      Each parameter is considered defined in the variable table.
      Note that we regard each declaration as defining the variable,
      because no multiple declarations of the same parameter are allowed.
-     We also ensure that the type is complete [C:6.7.6.3/4].
+     We adjust the type [C:6.7.6.3/7].
+     We also ensure that the (adjusted) type is complete [C:6.7.6.3/4].
      If all checks succeed, we return the variable table
-     updated with the parameter."))
+     updated with the parameter, with the adjusted type."))
   (b* (((mv var tyname) (param-declon-to-ident+tyname param))
        ((okf type) (check-tyname tyname tagenv))
        ((okf &) (check-ident var))
+       (type (adjust-type type))
        ((unless (type-completep type))
         (reserrf (list :param-type-incomplete (param-declon-fix param)))))
     (var-table-add-var var type (var-defstatus-defined) vartab))
@@ -2343,7 +2343,9 @@
   (xdoc::topstring
    (xdoc::p
     "We check the type specifier sequence and the declarator.
-     We extend the function table with information about the new function."))
+     We extend the function table with information about the new function.")
+   (xdoc::p
+    "We adjust the parameter types [C:6.7.6.3/7]."))
   (b* (((fun-declon declon) declon)
        ((mv name params out-tyname)
         (tyspec+declor-to-ident+params+tyname declon.tyspec declon.declor))

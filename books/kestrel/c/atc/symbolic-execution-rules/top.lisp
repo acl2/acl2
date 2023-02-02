@@ -34,6 +34,7 @@
 (include-book "exec-initer")
 (include-book "exec-block-item")
 (include-book "init-scope")
+(include-book "adjust-type")
 (include-book "static-variable-pointers")
 (include-book "identifiers")
 (include-book "wrappers")
@@ -159,6 +160,7 @@
           *atc-exec-block-item-rules*
           *atc-exec-block-item-list-rules*
           *atc-init-scope-rules*
+          *atc-adjust-type-rules*
           *atc-other-executable-counterpart-rules*
           *atc-wrapper-rules*
           *atc-distributivity-over-if-rewrite-rules*

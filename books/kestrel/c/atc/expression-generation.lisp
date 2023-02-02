@@ -1393,7 +1393,14 @@
                                     :thm-index arr.thm-index
                                     :names-to-avoid arr.names-to-avoid)
                                    state))
-               ((unless (and (equal arr.type in-type1)
+               ((unless (and (type-case arr.type :array)
+                             (type-case in-type1 :array)
+                             (equal (type-array->of arr.type)
+                                    (type-array->of in-type1))
+                             (or (equal (type-array->size arr.type)
+                                        (type-array->size in-type1))
+                                 (not (type-array->size arr.type))
+                                 (not (type-array->size in-type1)))
                              (equal sub.type in-type2)))
                 (reterr
                  (msg "The reading of a ~x0 array with a ~x1 index ~
