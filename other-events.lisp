@@ -3816,6 +3816,7 @@
 
 ; (local &)
 ; (skip-proofs &)
+; (with-cbd dir form)
 ; (with-guard-checking-event g &) ; g in *guard-checking-values*; (quote g) ok
 ; (with-output ... &)
 ; (with-prover-step-limit ... &)
@@ -4012,7 +4013,8 @@
                                  in-local-flg in-encapsulatep
                                  make-event-chk)))
                      (value (and new-form (list (car form) new-form))))))
-          ((and (member-eq (car form) '(with-guard-checking-event
+          ((and (member-eq (car form) '(with-cbd
+                                        with-guard-checking-event
                                         with-output
                                         with-prover-step-limit
                                         with-prover-time-limit))
@@ -4155,6 +4157,7 @@
 
   (declare (xargs :guard (true-listp form)))
   (cond ((member-eq (car form) '(local skip-proofs
+                                       with-cbd
                                        with-guard-checking-event
                                        with-output
                                        with-prover-step-limit
@@ -4474,6 +4477,7 @@
            (cond (changed-p (mv t (list* (car form) (cadr form) x)))
                  (t (mv nil form)))))
         ((member-eq (car form) '(skip-proofs
+                                 with-cbd
                                  with-guard-checking-event
                                  with-output
                                  with-prover-time-limit
@@ -7223,6 +7227,7 @@
             (cond ((not (symbolp sym))
                    nil)
                   ((member-eq sym '(skip-proofs
+                                    with-cbd
                                     with-guard-checking-event
                                     with-output
                                     with-prover-step-limit
@@ -7276,6 +7281,7 @@
         ((eq (car form) 'local)
          *local-value-triple-elided*)
         ((member-eq (car form) '(skip-proofs
+                                 with-cbd
                                  with-guard-checking-event
                                  with-output
                                  with-prover-time-limit
@@ -9318,7 +9324,22 @@
                     'set-cbd-state))
            state)))
 
-(defmacro with-cbd (dir form &key (binder 'state-global-let*))
+#-acl2-loop-only
+(defmacro with-cbd-raw (binder dir form)
+  (assert (member binder
+                  '(state-free-global-let* state-free-global-let*-safe)
+                  :test 'eq))
+
+; The two binders above are only used in raw Lisp, so we are free to generate
+; raw Lisp code.
+
+  `(let ((*default-pathname-defaults* ,(if (eq dir :same)
+                                           '*default-pathname-defaults*
+                                         dir)))
+     (,binder ((connected-book-directory *default-pathname-defaults*))
+              ,form)))
+
+(defmacro with-cbd (dir form)
 
 ; ACL2 is supposed to keep the cbd and Lisp variable
 ; *default-pathname-defaults* in sync.  So it would be a mistake merely to bind
@@ -9328,25 +9349,28 @@
 ; A special case is when dir is :SAME, meaning that we want to protect the cbd
 ; and *default-pathname-defaults* but we don't want to modify them going in.
 
-  (case binder
-    (state-global-let*
-     `(state-global-let* ((connected-book-directory (cbd) set-cbd-state))
-                         ,(if (eq dir :same)
-                              form
-                            `(pprogn (set-cbd-state ,dir state)
-                                     ,form))))
-    ((state-free-global-let* state-free-global-let*-safe)
+; Note that (with-cbd dir form) is only accepted by ACL2 form evaluates to an
+; error triple.  But since form can be an event, form can evaluate to something
+; else in raw Lisp; for example, in (with-cbd dir (defun ...)), the call of
+; defun returns a single value in raw Lisp.  But such event forms in raw Lisp
+; are the only way we can get a violation of the requirement that form
+; evaluates to an error triple, and in those cases, we don't care about the
+; value returned by with-cbd, as noted in a comment below.
 
-; The two binders above are only used in raw Lisp, so we are free to generate
-; raw Lisp code.
-
-     `(let ((*default-pathname-defaults* ,(if (eq dir :same)
-                                              '*default-pathname-defaults*
-                                            dir)))
-        (,binder ((connected-book-directory *default-pathname-defaults*))
-                 ,form)))
-    (t `(interface-er "Unexpected binder in with-cbd, ~x0"
-                      ',binder))))
+  (let ((form #+acl2-loop-only
+              form
+              #-acl2-loop-only
+              `(let ((result (multiple-value-list ,form)))
+                 (cond ((and (= (length result) 3)
+                             (eq (caddr result) *the-live-state*))
+                        (values-list result))
+                       (t ; otherwise value doesn't matter; see comment above
+                        (value nil))))))
+    `(state-global-let* ((connected-book-directory (cbd) set-cbd-state))
+                        ,(if (eq dir :same)
+                             form
+                           `(pprogn (set-cbd-state ,dir state)
+                                    ,form)))))
 
 (defun substring-p (i1 s1 len i2 s2)
 
@@ -9732,7 +9756,8 @@
     (mv nil form))
    ((eq (car form) 'make-event) ; already fixed
     (mv nil form))
-   ((and (member-eq (car form) '(with-guard-checking-event
+   ((and (member-eq (car form) '(with-cbd
+                                 with-guard-checking-event
                                  with-output
                                  with-prover-step-limit
                                  with-prover-time-limit))
