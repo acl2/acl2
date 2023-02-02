@@ -686,6 +686,7 @@
 
  <li>@('local')</li>
  <li>@('skip-proofs')</li>
+ <li>@('with-cbd')</li>
  <li>@('with-guard-checking-event')</li>
  <li>@('with-output')</li>
  <li>@('with-prover-step-limit')</li>
