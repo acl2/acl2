@@ -37,6 +37,7 @@
     "The names of some functions in these utilities start with @('dab'),
      which stands for `digits any base'.
      Without this prefix, the names seem too ``general''."))
+  :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
