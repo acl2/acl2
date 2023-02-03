@@ -1016,7 +1016,10 @@
   (defrule bendian=>nat-of-trim-bendian*
     (equal (bendian=>nat base (trim-bendian* digits))
            (bendian=>nat base digits))
-    :enable (bendian=>nat lendian=>nat))
+    :enable (bendian=>nat lendian=>nat)
+    :hints ('(:use (:instance bendian=>nat-of-append
+                              (hidigits (list (car digits)))
+                              (lodigits (cdr digits))))))
 
   (defrule len-of-trim-bendian*-upper-bound
     (<= (len (trim-bendian* digits))
