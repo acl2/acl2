@@ -50,8 +50,10 @@
      may not be completely accurate in terms of
      execution of arbitrary C in the covered subset of C,
      in particular in the treatment of arrays.
-     However, it is accurate for our current uses.
-     This dynamic semantic is work in progress;
+     However, it is accurate for our current uses
+     (namely, supporting proof generation in "
+    (xdoc::seetopic "atc" "ATC")
+    ". This dynamic semantics is work in progress;
      we plan to make it completely accurate
      for all the covered subset of C."))
   :order-subtopics t
@@ -838,12 +840,10 @@
       (xdoc::li
        "A left-hand side consisting of
         either a variable,
-        or an array subscripting expression
-        where the array is a variable,
-        or a structure member expression
-        where the target is a variable,
-        or a structure pointer member expression
-        where the target is a variable,
+        or an indirection operation whose argument is a variable,
+        or an array subscripting expression where the array is a variable,
+        or a structure member expression where the target is a variable,
+        or a structure pointer member expression where the target is a variable,
         or an array subscripting expression
         where the array is a structure member expression
         where the target is a variable,
@@ -860,20 +860,24 @@
         an array subscripting expression;
         in that case, the index expression must be also pure."))
      (xdoc::p
+      "If the left-hand side is a unary indirection expression,
+       for now we require its type to be a pointer to integer.
+       We may relax this in the future.")
+     (xdoc::p
       "If the left-hand side is
        an array subscripting expression where the array is a variable,
        we treat the content of the variable similarly to @(tsee exec-ident):
        if it is an array value, we return a pointer to it instead;
        otherwise, we return the value unchanged.
        The motivation for this is explained in @(tsee exec-ident);
-       it is due to our currently simplified (but correct, in our C subset)
-       treatment of arrays and pointer in our C dynamic semantics.")
+       it is due to our currently simplified treatment
+       of arrays and pointer in our C dynamic semantics.")
      (xdoc::p
       "We ensure that if the right-hand side expression is a function call,
        it returns a value (i.e. it is not @('void')).")
      (xdoc::p
       "We allow these assignment expressions
-       as the expressions of expression statements.
+       as the full expressions [C:6.8/4] of expression statements.
        Thus, we discard the value of the assignment
        (which is the value written to the variable);
        this ACL2 function just returns an updated computation state."))
@@ -894,6 +898,31 @@
               ((when (not val?)) (error (list :asg-void-expr (expr-fix e))))
               (val val?))
            (write-var var val compst)))
+        (:unary
+         (b* ((op (expr-unary->op left))
+              (arg (expr-unary->arg left))
+              ((unless (unop-case op :indir))
+               (error (list :expr-asg-unary-not-indir (expr-fix e))))
+              ((unless (expr-case arg :ident))
+               (error (list :expr-asg-indir-not-var (expr-fix e))))
+              (var (expr-ident->get arg))
+              (ptr (read-var var compst))
+              ((when (errorp ptr)) ptr)
+              ((unless (value-case ptr :pointer))
+               (error (list :indir-not-pointer ptr)))
+              ((when (value-pointer-nullp ptr))
+               (error (list :indir-null-pointer)))
+              (objdes (value-pointer->designator ptr))
+              (reftype (value-pointer->reftype ptr))
+              ((unless (type-integerp reftype))
+               (error (list :non-integer-pointer-type (expr-fix e))))
+              (val (exec-expr-pure right compst))
+              ((when (errorp val)) val)
+              ((unless (equal reftype (type-of-value val)))
+               (error (list :mistype-apointer
+                            :required reftype
+                            :supplied (type-of-value val)))))
+           (write-object objdes val compst)))
         (:arrsub
          (b* ((arr (expr-arrsub->arr left))
               (sub (expr-arrsub->sub left)))
