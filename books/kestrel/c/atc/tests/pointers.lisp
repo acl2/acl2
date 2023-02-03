@@ -21,16 +21,15 @@
 
 (defun |f| (|x|)
   (declare (xargs :guard (c::pointer (c::sintp |x|))))
-  (declare (ignore |x|))
-  (c::sint-dec-const 17))
+  (c::bitnot-sint (c::sint-read |x|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |g| (|x| |y|)
   (declare (xargs :guard (and (c::pointer (c::uintp |x|))
                               (c::pointer (c::uintp |y|)))))
-  (declare (ignore |x| |y|))
-  (c::sint-dec-const 1))
+  (c::add-uint-uint (c::uint-read |x|)
+                    (c::uint-read |y|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
