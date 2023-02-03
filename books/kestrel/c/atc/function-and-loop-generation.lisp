@@ -828,6 +828,16 @@
                     ullongp-of-ullong-dec-const
                     ullongp-of-ullong-oct-const
                     ullongp-of-ullong-hex-const
+                    scharp-of-schar-read
+                    ucharp-of-uchar-read
+                    sshortp-of-sshort-read
+                    ushortp-of-ushort-read
+                    sintp-of-sint-read
+                    uintp-of-uint-read
+                    slongp-of-slong-read
+                    ulongp-of-ulong-read
+                    sllongp-of-sllong-read
+                    ullongp-of-ullong-read
                     (:t sint-dec-const)
                     (:t sint-oct-const)
                     (:t sint-hex-const)
