@@ -14,6 +14,7 @@
 (include-book "../../language/dynamic-semantics")
 
 (include-book "../integer-operations")
+(include-book "../types")
 
 (include-book "syntaxp")
 (include-book "promote-value")
@@ -177,3 +178,65 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event (atc-exec-unary-nonpointer-rules-gen-all))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-indir-rules-generation
+  :short "Code to generate the rules for executing
+          the indirection unary operation."
+
+  (define atc-exec-indir-rules-gen ((type typep))
+    :guard (type-nonchar-integerp type)
+    :returns (mv (name symbolp)
+                 (event pseudo-event-formp))
+    :parents nil
+    (b* ((fixtype (integer-type-to-fixtype type))
+         (pred (pack fixtype 'p))
+         (value-kind-when-pred (pack 'value-kind-when- pred))
+         (name (pack 'exec-indir-when- pred))
+         (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+                     (valuep x)
+                     (value-case x :pointer)
+                     (not (value-pointer-nullp x))
+                     (equal (value-pointer->reftype x)
+                            ,(type-to-maker type))
+                     (unop-case op :indir)
+                     (equal val
+                            (read-object (value-pointer->designator x) compst))
+                     (,pred val)))
+         (formula `(implies ,hyps
+                            (equal (exec-unary op x compst)
+                                   val)))
+         (hints `(("Goal" :in-theory '(exec-unary
+                                       indir-value
+                                       ,value-kind-when-pred))))
+         (event `(defruled ,name
+                   ,formula
+                   :hints ,hints)))
+      (mv name event)))
+
+  (define atc-exec-indir-rules-loop ((types type-listp))
+    :guard (type-nonchar-integer-listp types)
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp types)) (mv nil nil))
+         ((mv name event) (atc-exec-indir-rules-gen (car types)))
+         ((mv names events) (atc-exec-indir-rules-loop (cdr types))))
+      (mv (cons name names) (cons event events))))
+
+  (define atc-exec-indir-rules-gen-all ()
+    :returns (event pseudo-event-formp)
+    :parents nil
+    (b* (((mv names events)
+          (atc-exec-indir-rules-loop *nonchar-integer-types*)))
+      `(defsection atc-exec-indir-rules
+         :short "Rules for executing the indirection unary operation."
+         ,@events
+         (defval *atc-exec-indir-rules*
+           '(,@names
+             (:e unop-kind)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event (atc-exec-indir-rules-gen-all))

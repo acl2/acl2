@@ -51,6 +51,7 @@
 (include-book "if-star")
 (include-book "boolean-equality")
 (include-book "hide")
+(include-book "pointed-integers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -144,6 +145,7 @@
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*
           *atc-exec-unary-nonpointer-rules*
+          *atc-exec-indir-rules*
           *atc-exec-cast-rules*
           *atc-exec-binary-strict-pure-rules*
           *atc-test-value-rules*
@@ -192,7 +194,8 @@
           *atc-integer-constructors-return-rules*
           *atc-computation-state-return-rules*
           *atc-value-fix-rules*
-          *atc-flexible-array-member-rules*))
+          *atc-flexible-array-member-rules*
+          *atc-pointed-integer-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
