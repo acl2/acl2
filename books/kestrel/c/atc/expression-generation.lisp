@@ -1254,6 +1254,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-expr-integer-read ((term pseudo-termp)
+                                   (type typep)
+                                   (arg-term pseudo-termp)
+                                   (arg-expr exprp)
+                                   (arg-type typep)
+                                   (arg-events pseudo-event-form-listp)
+                                   (arg-thm symbolp)
+                                   (gin pexpr-ginp)
+                                   state)
+  (declare (ignore arg-thm state))
+  :returns (mv erp (gout pexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents an indirection of a pointer to integer."
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       ((unless (equal arg-type
+                       (type-pointer type)))
+        (reterr
+         (msg "The indirection operator representation for integer type ~x0 ~
+               is applied to an expression term ~x1 returning ~x2, ~
+               but a ~x3 operand is expected. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              type arg-term arg-type (type-pointer type))))
+       (expr (make-expr-unary :op (unop-indir)
+                              :arg arg-expr)))
+    (retok
+     (make-pexpr-gout :expr expr
+                      :type type
+                      :term term
+                      :events arg-events
+                      :thm-name nil
+                      :thm-index gin.thm-index
+                      :names-to-avoid gin.names-to-avoid
+                      :proofs nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atc-gen-expr-pure/bool
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -1294,6 +1332,10 @@
        as described in the user documentation.
        Based on its form, we dispatch to different code,
        after recursively processing sub-expressions.")
+     (xdoc::p
+      "If the term fits the pattern of a indirection on a pointed integer,
+       we translate it to an indirection expression
+       on the recursively generated expression for the argument.")
      (xdoc::p
       "If the term fits the pattern of an array read,
        we translate it to an array subscripting expression
@@ -1381,6 +1423,22 @@
                                arg.term arg.expr arg.type
                                arg.events arg.thm-name
                                gin state)))
+         ((mv okp arg-term type) (atc-check-integer-read term))
+         ((when okp)
+          (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state))
+               (gin (change-pexpr-gin gin
+                                      :thm-index arg.thm-index
+                                      :names-to-avoid arg.names-to-avoid
+                                      :proofs arg.proofs)))
+            (atc-gen-expr-integer-read term
+                                       type
+                                       arg.term
+                                       arg.expr
+                                       arg.type
+                                       arg.events
+                                       arg.thm-name
+                                       gin
+                                       state)))
          ((mv okp arr-term sub-term in-type1 in-type2 out-type)
           (atc-check-array-read term))
          ((when okp)

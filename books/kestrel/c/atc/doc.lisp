@@ -309,7 +309,7 @@
 
     (xdoc::p
      "Each C external object declaration is represented by a @(tsee defobject),
-      whose name is passed as one of the target @('ti') to ATC.
+      whose name is passed as one of the targets @('ti') to ATC.
       The symbol name, which is a "
      (xdoc::seetopic "portable-ascii-identifiers" "portable ASCII C identifier")
      " (this is enforced by @(tsee defobject)),
@@ -1085,6 +1085,25 @@
        these functions always represent explicit casts;
        implict conversions are represented implicitly,
        e.g. via the function for a unary operator that promotes the operand.")
+     (xdoc::li
+      "A call of @('<type>-read')
+       on a pure expression term for @('fn') returning @('U'),
+       when @('<type>') is among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "@('T') is the C type corresponding to @('<type>'),
+       and @('U') is the pointer type to @('T').
+       This represents the application of the indirection operator @('*')
+       to the expression represented by the argument of @('<type>-read').")
      (xdoc::li
       "A call of @('<type1>-array-read-<type2>')
        on pure expression terms for @('fn') returning @('U') and @('V'),

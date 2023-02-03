@@ -124,6 +124,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-integer-read ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (arg pseudo-termp)
+               (type typep))
+  :short "Check if a term may represent a pointer indirection for an integer."
+  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
+       ((unless (pseudo-term-case term :fncall)) (no))
+       ((pseudo-term-fncall term) term)
+       ((mv okp fixtype read) (atc-check-symbol-2part term.fn))
+       ((unless (and okp
+                     (eq read 'read)))
+        (no))
+       (type (fixtype-to-integer-type fixtype))
+       ((when (not type)) (no))
+       ((unless (list-lenp 1 term.args)) (no))
+       (arg (first term.args)))
+    (mv t arg type))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-integer-read
+    (implies yes/no
+             (< (pseudo-term-count arg)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-array-read ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (arr pseudo-termp)
