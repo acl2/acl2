@@ -812,7 +812,7 @@
 
 (defun deftypes-events (x state)
   (b* (((flextypes x) x)
-       (- (flextypelist-check-bad-name x.types)) 
+       (- (flextypelist-check-bad-name x.types))
        (fix/pred-pairs (flextypes-collect-fix/pred-pairs x.types))
        ((mv enable-rules temp-thms) (collect-fix/pred-enable-rules fix/pred-pairs (w state)))
        (verbosep (getarg :verbosep nil x.kwd-alist)))
@@ -851,6 +851,7 @@
              (local (in-theory (acl2::enable* deftypes-theory
                                               ,@(flextypes-collect-enable-rules x)
                                               . ,enable-rules)))
+             (local (in-theory (enable alistp)))
              (local (set-default-hints
                      '((and stable-under-simplificationp
                             '(:in-theory (enable deftypes-orig-theory))))))
@@ -1116,4 +1117,3 @@
 (defmacro defomap (&whole form &rest args)
   (declare (ignore args))
   `(make-event (defomap-fn ',form state)))
-
