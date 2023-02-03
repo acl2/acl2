@@ -143,7 +143,7 @@
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*
-          *atc-exec-unary-rules*
+          *atc-exec-unary-nonpointer-rules*
           *atc-exec-cast-rules*
           *atc-exec-binary-strict-pure-rules*
           *atc-test-value-rules*

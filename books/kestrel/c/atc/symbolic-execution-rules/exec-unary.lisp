@@ -19,14 +19,17 @@
 (include-book "promote-value")
 (include-book "value-integer-get")
 
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-unary-rules-generation
-  :short "Code to generate the rules for executing unary operations."
+(defsection atc-exec-unary-nonpointer-rules-generation
+  :short "Code to generate the rules for executing
+          unary operations that do not involve pointers."
 
-  (define atc-exec-unary-rules-gen ((op unopp) (type typep))
+  (define atc-exec-unary-nonpointer-rules-gen ((op unopp) (type typep))
     :guard (type-nonchar-integerp type)
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
@@ -124,28 +127,32 @@
                              (:e integer-type-max)))))
       (mv name event)))
 
-  (define atc-exec-unary-rules-gen-loop-types ((op unopp) (types type-listp))
+  (define atc-exec-unary-nonpointer-rules-gen-loop-types ((op unopp)
+                                                          (types type-listp))
     :guard (type-nonchar-integer-listp types)
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
     (b* (((when (endp types)) (mv nil nil))
-         ((mv name event) (atc-exec-unary-rules-gen op (car types)))
-         ((mv names events) (atc-exec-unary-rules-gen-loop-types op (cdr types))))
+         ((mv name event) (atc-exec-unary-nonpointer-rules-gen op (car types)))
+         ((mv names events)
+          (atc-exec-unary-nonpointer-rules-gen-loop-types op (cdr types))))
       (mv (cons name names) (cons event events))))
 
-  (define atc-exec-unary-rules-gen-loop-ops ((ops unop-listp) (types type-listp))
+  (define atc-exec-unary-nonpointer-rules-gen-loop-ops ((ops unop-listp)
+                                                        (types type-listp))
     :guard (type-nonchar-integer-listp types)
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
     (b* (((when (endp ops)) (mv nil nil))
-         ((mv names events) (atc-exec-unary-rules-gen-loop-types (car ops) types))
+         ((mv names events)
+          (atc-exec-unary-nonpointer-rules-gen-loop-types (car ops) types))
          ((mv more-names more-events)
-          (atc-exec-unary-rules-gen-loop-ops (cdr ops) types)))
+          (atc-exec-unary-nonpointer-rules-gen-loop-ops (cdr ops) types)))
       (mv (append names more-names) (append events more-events))))
 
-  (define atc-exec-unary-rules-gen-all ()
+  (define atc-exec-unary-nonpointer-rules-gen-all ()
     :returns (event pseudo-event-formp)
     :parents nil
     (b* ((ops (list (unop-plus)
@@ -153,13 +160,14 @@
                     (unop-bitnot)
                     (unop-lognot)))
          ((mv names events)
-          (atc-exec-unary-rules-gen-loop-ops ops
-                                             *nonchar-integer-types*)))
+          (atc-exec-unary-nonpointer-rules-gen-loop-ops
+           ops *nonchar-integer-types*)))
       `(progn
-         (defsection atc-exec-unary-rules
-           :short "Rules for executing unary operations"
+         (defsection atc-exec-unary-nonpointer-rules
+           :short "Rules for executing unary operations
+                   that do not involve pointers."
            ,@events
-           (defval *atc-exec-unary-rules*
+           (defval *atc-exec-unary-nonpointer-rules*
              '(,@names
                (:e unop-plus)
                (:e unop-minus)
@@ -168,4 +176,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event (atc-exec-unary-rules-gen-all))
+(make-event (atc-exec-unary-nonpointer-rules-gen-all))
