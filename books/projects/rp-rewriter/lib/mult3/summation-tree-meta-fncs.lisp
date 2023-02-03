@@ -5188,11 +5188,9 @@ t)||#
        (pp-lst (if (check-if-clearable-equals-in-pp-lst pp-lst)
                    (b* ((- (cw "Undo-able adder is found. "))
                         ((unless (undo-rw-and-open-up-adders-enabled))
-                         (progn$ (cw " However, undoing adder rw feature is disabled. See :doc ~p0 for details.~%"
-                                     'Multiplier-Verification-Heuristics)
+                         (progn$ (cw " However, undoing adder rw feature is disabled. See :doc rp::multiplier-verification-heuristics.~%")
                                  pp-lst))
-                        (- (cw "Now, undoing rw and opening up some adders. See :doc ~p0 if too slow. ~%"
-                               'Multiplier-Verification-Heuristics))
+                        (- (cw "Now, undoing rw and opening up some adders. If too slow, either disable this feature or reduce pp-lists-limit (see :doc rp::multiplier-verification-heuristics). ~%"))
                         (pp-lst (extract-equals-from-pp-lst pp-lst *large-number*))
                         (- (cw "Undoing rw (extract-equals-from-pp-lst) finished. ~%"))
                         #|(- (and (check-if-clearable-equals-in-pp-lst pp-lst)

@@ -53,7 +53,7 @@
 
 (include-book "sum-merge-fncs")
 
-(include-book "pp-flatten-meta-correct")
+;;(include-book "pp-flatten-meta-correct")
 
 (local
  (in-theory (enable ex-from-rp-loose-is-ex-from-rp)))
@@ -458,8 +458,9 @@
    :rule-classes :rewrite))
 
 (defthmd rp-evlt-of-ex-from-rp-reverse
-  (implies (syntaxp (or (atom term)
-                        (not (equal (car term) 'ex-from-rp))))
+  (implies (and (syntaxp (or (atom term)
+                        (and (not (equal (car term) 'ex-from-rp))
+                             (not (equal (car term) 'quote))))))
            (EQUAL (RP-EVL (RP-TRANS TERM) A)
                   (RP-EVL (RP-TRANS (EX-FROM-RP TERM)) A))))
 
@@ -471,6 +472,29 @@
             :in-theory (e/d (and-list
                              AND$) ())))))
 
+(local
+ (defthm when-ex-from-rp-is-quoted
+   (implies (equal (car x) 'quote)
+            (and (equal (car (ex-from-rp x)) 'quote)))
+   :rule-classes :forward-chaining))
+
+
+
+(local
+ (defthm rp-evlt-of-quoted
+   (implies (equal (car x) 'quote)
+            (equal (rp-evlt x a)
+                   (cadr x)))))
+
+(local
+ (defthm and-list-equiv-when-ifix-are-equiv
+   (implies (equal (ifix x)
+                   (ifix y))
+            (equal (equal (and-list x a)
+                          (and-list y a))
+                   t))
+   :hints (("Goal"
+            :in-theory (e/d (and-list) ())))))
 
 (defthmd pp-order-equalsp-implies
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -562,6 +586,17 @@
                              (term x)))
             :in-theory (e/d ()
                             (rp-evlt-of-ex-from-rp))))))
+
+(local
+ (defthm rp-evl-to-of-create-list-instance
+   (equal (sum-list (rp-evlt (create-list-instance lst) a))
+          (sum-list (rp-evlt-lst lst a)))
+   :hints (("Goal"
+            :in-theory (e/d (create-list-instance
+                             sum-list
+;binary-sum
+                             )
+                            (SUM-OF-IFIX))))))
 
 (progn
   (defthm pp-sum-merge-aux-correct
