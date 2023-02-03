@@ -624,6 +624,10 @@
     (equal (bendian=>nat base (true-list-fix digits))
            (bendian=>nat base digits)))
 
+  (defrule bendian=>nat-of-nat-list-fix
+    (equal (bendian=>nat base (nat-list-fix digits))
+           (bendian=>nat base digits)))
+
   (defruled bendian=>nat-of-append
     (equal (bendian=>nat base (append hidigits lodigits))
            (+ (* (bendian=>nat base hidigits)
