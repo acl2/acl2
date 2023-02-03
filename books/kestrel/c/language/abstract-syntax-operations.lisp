@@ -30,6 +30,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define unop-nonpointerp ((op unopp))
+  :returns (yes/no booleanp)
+  :short "Check if a unary operator does not involve pointers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are unary plus, unary minus, and bitwise/logical negation/complement.
+     The other two, address and indirection, involve pointers."))
+  (and (member-eq (unop-kind op) '(:plus :minus :bitnot :lognot)) t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define binop-strictp ((op binopp))
   :returns (yes/no booleanp)
   :short "Check if a binary operator is strict."
