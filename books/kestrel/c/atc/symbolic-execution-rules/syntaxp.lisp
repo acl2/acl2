@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,16 +34,16 @@
      that are expected to be rewritten
      to their shallow embedding counterparts."))
   `(syntaxp (or (atom ,var)
-                (not (member-eq ,var '(exec-ident
-                                       exec-const
-                                       exec-iconst
-                                       exec-arrsub
-                                       exec-member
-                                       exec-memberp
-                                       exec-arrsub-of-member
-                                       exec-arrsub-of-memberp
-                                       exec-unary
-                                       exec-cast
-                                       exec-binary-strict-pure
-                                       exec-expr-pure
-                                       test-value))))))
+                (not (member-eq (car ,var) '(exec-ident
+                                             exec-const
+                                             exec-iconst
+                                             exec-arrsub
+                                             exec-member
+                                             exec-memberp
+                                             exec-arrsub-of-member
+                                             exec-arrsub-of-memberp
+                                             exec-unary
+                                             exec-cast
+                                             exec-binary-strict-pure
+                                             exec-expr-pure
+                                             test-value))))))
