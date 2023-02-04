@@ -57,8 +57,7 @@
   ((params param-declon-list)
    (result tyname)
    (body block-item-list))
-  :pred fun-infop
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred fun-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,7 +96,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable alistp identity)))
+  (local (in-theory (enable identity)))
   (fty::defresult fun-env-result
     :short "Fixtype of errors and function environments."
     :ok fun-env

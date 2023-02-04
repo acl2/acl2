@@ -130,7 +130,7 @@
   :short "Fixtype of errors and types."
   :ok type
   :pred type-resultp
-  :prepwork ((local (in-theory (enable alistp identity)))))
+  :prepwork ((local (in-theory (enable identity)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -138,7 +138,7 @@
   :short "Fixtype of errors and lists of types."
   :ok type-list
   :pred type-list-resultp
-  :prepwork ((local (in-theory (enable alistp identity)))))
+  :prepwork ((local (in-theory (enable identity)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,8 +160,7 @@
   ((name ident)
    (type type))
   :tag :member-type
-  :pred member-typep
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred member-typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -198,7 +197,7 @@
   :short "Fixtype of errors and lists of member types."
   :ok member-type-list
   :pred member-type-list-resultp
-  :prepwork ((local (in-theory (enable alistp identity)))))
+  :prepwork ((local (in-theory (enable identity)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -284,7 +283,7 @@
   :short "Fixtype of errors and initializer types."
   :ok init-type
   :pred init-type-resultp
-  :prepwork ((local (in-theory (enable init-type-kind alistp identity)))))
+  :prepwork ((local (in-theory (enable init-type-kind identity)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -85,8 +85,7 @@
      In the future, we may add this constraint to this fixtype."))
   ((name string))
   :tag :ident
-  :pred identp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred identp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -187,7 +186,7 @@
    (length iconst-length))
   :tag :iconst
   :pred iconstp
-  :prepwork ((local (in-theory (enable nfix alistp)))))
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -448,8 +447,7 @@
   ((tyspec tyspecseq)
    (declor obj-adeclor))
   :tag :tyname
-  :pred tynamep
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred tynamep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -705,8 +703,7 @@
   ((tyspec tyspecseq)
    (declor obj-declor))
   :tag :struct-declon
-  :pred struct-declonp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred struct-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -765,8 +762,7 @@
   ((tyspec tyspecseq)
    (declor obj-declor))
   :tag :param-declon
-  :pred param-declonp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred param-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -830,8 +826,7 @@
   ((tyspec tyspecseq)
    (declor fun-declor))
   :tag :fun-declon
-  :pred fun-declonp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred fun-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -885,8 +880,7 @@
    (declor obj-declor)
    (init? initer-optionp))
   :tag :obj-declon
-  :pred obj-declonp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred obj-declonp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1031,8 +1025,7 @@
    (declor fun-declor)
    (body block-item-list))
   :tag :fundef
-  :pred fundefp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred fundefp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1087,8 +1080,7 @@
      with more information if needed."))
   ((declons ext-declon-list))
   :tag :transunit
-  :pred transunitp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred transunitp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1096,7 +1088,7 @@
   :short "Fixtype of errors and translation units."
   :ok transunit
   :pred transunit-resultp
-  :prepwork ((local (in-theory (enable alistp identity)))))
+  :prepwork ((local (in-theory (enable identity)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1132,8 +1124,7 @@
      We plan to formalize this additional information separately."))
   ((declons ext-declon-list))
   :tag :file
-  :pred filep
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred filep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1181,5 +1172,4 @@
    (dot-h file-option)
    (dot-c file))
   :tag :fileset
-  :pred filesetp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred filesetp)

@@ -59,7 +59,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable alistp identity)))
+  (local (in-theory (enable identity)))
   (defresult scope "scopes"))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -74,7 +74,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable alistp identity)))
+  (local (in-theory (enable identity)))
   (defresult scope-list "lists of scopes"))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -108,7 +108,6 @@
    (scopes scope-list :reqfix (if (consp scopes) scopes (list nil))))
   :require (consp scopes)
   :pred framep
-  :prepwork ((local (in-theory (enable alistp))))
   ///
 
   (defrule len-of-frame->scopes-lower-bound
@@ -176,8 +175,7 @@
   ((static scope)
    (frames frame-list)
    (heap heap))
-  :pred compustatep
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred compustatep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,7 +187,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate()
-  (local (in-theory (enable alistp identity)))
+  (local (in-theory (enable identity)))
   (defresult compustate "computation states"))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -207,8 +205,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate()
-  (local (in-theory (enable alistp)))
+(encapsulate ()
+  (in-theory (enable alistp))
   (defresult compustate-option "optional computation states"
     :enable (compustatep compustate-optionp errorp)))
 

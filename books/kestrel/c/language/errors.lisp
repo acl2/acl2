@@ -61,7 +61,7 @@
   ((info any))
   :tag :error
   :pred errorp
-  :prepwork ((local (in-theory (enable identity alistp)))))
+  :prepwork ((local (in-theory (enable identity)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -120,5 +120,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable identity alistp)))
+  (local (in-theory (enable identity)))
   (defresult bool "booleans" :name boolean))

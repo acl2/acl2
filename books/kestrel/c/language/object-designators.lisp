@@ -81,7 +81,7 @@
   ((number nat))
   :tag :address
   :pred addressp
-  :prepwork ((local (in-theory (enable nfix alistp)))))
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

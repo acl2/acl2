@@ -75,8 +75,7 @@
      It consists of a type and a definition status."))
   ((type type)
    (defstatus var-defstatusp))
-  :pred var-sinfop
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred var-sinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -145,7 +144,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable alistp identity)))
+  (local (in-theory (enable identity)))
   (fty::defresult var-table-result
     :short "Fixtype of errors and variable table."
     :ok var-table
@@ -374,8 +373,7 @@
   ((inputs type-list)
    (output type)
    (definedp bool))
-  :pred fun-sinfop
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred fun-sinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -399,7 +397,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable alistp identity)))
+  (local (in-theory (enable identity)))
   (fty::defresult fun-table-result
     :short "Fixtype of errors and function table."
     :ok fun-table
@@ -558,7 +556,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable alistp identity)))
+  (local (in-theory (enable identity)))
   (fty::defresult wellformed-result
     :short "Fixtype of errors and the @(tsee wellformed) indicator."
     :ok wellformed
@@ -588,13 +586,12 @@
   ((type type)
    (lvalue bool))
   :tag :expr-type
-  :pred expr-typep
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred expr-typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable alistp identity)))
+  (local (in-theory (enable identity)))
   (fty::defresult expr-type-result
     :short "Fixtype of errors and expression types."
     :ok expr-type
@@ -635,13 +632,12 @@
                                     return-types))
    (variables var-table))
   :require (not (set::empty return-types))
-  :pred types+vartab-p
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred types+vartab-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable alistp identity)))
+  (local (in-theory (enable identity)))
   (fty::defresult types+vartab-result
     :short "Fixtype of errors and pairs consisting of
           a non-empty set of types and a variable table."
@@ -668,13 +664,12 @@
           a function table, a variable table, and a tag environment."
   ((funs fun-tablep)
    (vars var-tablep)
-   (tags tag-envp))
-  :prepwork ((local (in-theory (enable alistp)))))
+   (tags tag-envp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable alistp identity)))
+  (local (in-theory (enable identity)))
   (fty::defresult funtab+vartab+tagenv-result
     :short "Fixtype of errors and triples consisting of
           a function table, a variable table, and a tag environment."

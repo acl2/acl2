@@ -117,7 +117,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-  (local (in-theory (enable alistp identity)))
+  (local (in-theory (enable identity)))
   (fty::defresult tag-env-result
     :short "Fixtype of errors and tag environments."
     :ok tag-env
