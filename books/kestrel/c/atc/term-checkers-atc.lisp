@@ -128,7 +128,7 @@
   :returns (mv (yes/no booleanp)
                (arg pseudo-termp)
                (type typep))
-  :short "Check if a term may represent a pointer indirection for an integer."
+  :short "Check if a term may represent a read of an integer by pointer."
   (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
@@ -147,6 +147,48 @@
     (implies yes/no
              (< (pseudo-term-count arg)
                 (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-integer-write ((val pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (int pseudo-termp)
+               (type typep))
+  :short "Check if a term may represent a write of an integer by pointer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A write of an integer by pointer is represented by
+     a @(tsee let) of the form")
+   (xdoc::codeblock
+    "(let ((<var> (<type>-write <int>))) ...)")
+   (xdoc::p
+    "where @('<var>') is a variable of pointer-to-integer type
+     and @('<int>') is a term that yields the integer to write.")
+   (xdoc::p
+    "This ACL2 function takes as argument the value term of the @(tsee let),
+     i.e. @('(<type>-write <int>)'),
+     and checks if it has the expected form,
+     returning the integer type and the @('<int>') argument if successful."))
+  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
+       ((unless (pseudo-term-case val :fncall)) (no))
+       ((pseudo-term-fncall val) val)
+       ((mv okp fixtype write) (atc-check-symbol-2part val.fn))
+       ((unless (and okp
+                     (eq write 'write)))
+        (no))
+       (type (fixtype-to-integer-type fixtype))
+       ((when (not type)) (no))
+       ((unless (list-lenp 1 val.args)) (no))
+       (int (first val.args)))
+    (mv t int type))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-integer-write
+    (implies yes/no
+             (< (pseudo-term-count int)
+                (pseudo-term-count val)))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

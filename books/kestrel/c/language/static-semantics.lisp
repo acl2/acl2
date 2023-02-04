@@ -1280,7 +1280,7 @@
                  (arg-type (apconvert-type arg-type)))
               (if (type-case arg-type :pointer)
                   (make-expr-type :type (type-pointer->to arg-type)
-                                  :lvalue nil)
+                                  :lvalue t)
                 (reserrf (list :unary-mistype
                                (unop-fix op) (expr-fix arg-expr)
                                :required :pointer

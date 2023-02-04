@@ -802,6 +802,7 @@
                   *atc-integer-convs-type-prescription-rules*
                   *atc-array-read-type-prescription-rules*
                   *atc-array-write-type-prescription-rules*
+                  *atc-pointed-integers-type-prescription-rules*
                   *atc-array-length-write-rules*
                   *atc-wrapper-rules*
                   '(,fn
@@ -838,6 +839,16 @@
                     ulongp-of-ulong-read
                     sllongp-of-sllong-read
                     ullongp-of-ullong-read
+                    scharp-of-schar-write
+                    ucharp-of-uchar-write
+                    sshortp-of-sshort-write
+                    ushortp-of-ushort-write
+                    sintp-of-sint-write
+                    uintp-of-uint-write
+                    slongp-of-slong-write
+                    ulongp-of-ulong-write
+                    sllongp-of-sllong-write
+                    ullongp-of-ullong-write
                     (:t sint-dec-const)
                     (:t sint-oct-const)
                     (:t sint-hex-const)

@@ -29,6 +29,7 @@
 (merge-io-pairs
  dm::primep
  (include-book "crypto/top"))
+(include-book "csv/parse-csv-file")
 (include-book "error-checking/top")
 (include-book "evaluators/top")
 (include-book "event-macros/top")
