@@ -205,10 +205,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (in-theory (enable alistp))
-  (defresult compustate-option "optional computation states"
-    :enable (compustatep compustate-optionp errorp)))
+(defresult compustate-option "optional computation states"
+  :enable (compustatep compustate-optionp errorp alistp))
 
 (defruled compustate-resultp-when-compustate-option-result-and-not-nil
   (implies (and (compustate-option-resultp x)
