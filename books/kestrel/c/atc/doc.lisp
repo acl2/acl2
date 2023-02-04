@@ -645,6 +645,34 @@
        followed by the C code represented by @('body').")
      (xdoc::li
       "A term
+       @('(let ((var (<type>-write term))) body)'),
+       when @('<type>') is among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "@('var') is in scope,
+       @('var') has a pointer type whose referenced type is
+       the C integer type corresponding to @('<type>'),
+       @('var') is one of the symbols in @('vars'),
+       @('term') is a pure expression term for @('fn')
+       returning the C integer type corresponding to @('<type>'),
+       @('body') is a statement term for @('fn') with loop flag @('L')
+       returning @('T') and affecting @('vars').
+       This represents a C assignment to
+       the pointer variable represented by @('var')
+       with the value of the expression represented by @('term');
+       the wrapper @('<type>-write') signifies
+       the writing to an integer by pointer.")
+     (xdoc::li
+      "A term
        @('(let ((var (<type1>-array-write-<type2> var term1 term2))) body)'),
        when @('<type1>') and @('<type2>') are among"
       (xdoc::ul
@@ -663,9 +691,9 @@
        the C integer type corresponding to @('<type1>'),
        @('var') is one of the symbols in @('vars'),
        @('term1') is a pure expression term for @('fn')
-       returning the C type corresponding to @('<type2>'),
+       returning the C integer type corresponding to @('<type2>'),
        @('term2') is a pure expression term for @('fn')
-       returning the C type corresponding to @('<type1>'),
+       returning the C integer type corresponding to @('<type1>'),
        @('body') is a statement term for @('fn') with loop flag @('L')
        returning @('T') and affecting @('vars').
        This represents a C assignment to
