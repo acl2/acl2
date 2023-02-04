@@ -508,6 +508,32 @@
                (atc-array-write-type-presc-rules-loop-array-types (cdr atypes)
                                                                   itypes)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-pointed-integers-type-prescription-rules*
+  :short "List of type prescription rules for the
+          readers and writers of integers by pointer."
+  '((:t schar-read)
+    (:t uchar-read)
+    (:t sshort-read)
+    (:t ushort-read)
+    (:t sint-read)
+    (:t uint-read)
+    (:t slong-read)
+    (:t ulong-read)
+    (:t sllong-read)
+    (:t ullong-read)
+    (:t schar-write)
+    (:t uchar-write)
+    (:t sshort-write)
+    (:t ushort-write)
+    (:t sint-write)
+    (:t uint-write)
+    (:t slong-write)
+    (:t ulong-write)
+    (:t sllong-write)
+    (:t ullong-write)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-boolean-from-integer-return-rules
