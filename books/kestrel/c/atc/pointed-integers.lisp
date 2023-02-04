@@ -36,9 +36,15 @@
      to read and write pointed-to integers,
      which represent C code that accesses those integers by pointer.")
    (xdoc::p
-    "We start by defining a family of functions to read pointed-to integers.
+    "We define a family of functions to read pointed-to integers.
      These are identities in ACL2,
-     but they represent applications of indirection @('*') to pointers in C."))
+     but they represent applications of indirection @('*') to pointers in C.")
+   (xdoc::p
+    "We also define a family of functions to write pointed-to integers.
+     They are also identity functions,
+     but, as explained in the ATC user documentation,
+     they are actually applied to the term that represents the expression
+     whose value is being assigned to the pointed-to integer."))
   :order-subtopics t
   :default-parent t)
 
@@ -53,13 +59,22 @@
        (<type> (integer-type-to-fixtype type))
        (<type>p (pack <type> 'p))
        (<type>-fix (pack <type> '-fix))
-       (<type>-read (pack <type> '-read)))
+       (<type>-read (pack <type> '-read))
+       (<type>-write (pack <type> '-write)))
 
     `(progn
 
        (define ,<type>-read ((x ,<type>p))
          :returns (x ,<type>p)
          :short ,(str::cat "Representation of a read of a pointed "
+                           type-string
+                           ".")
+         (,<type>-fix x)
+         :hooks (:fix))
+
+       (define ,<type>-write ((x ,<type>p))
+         :returns (x ,<type>p)
+         :short ,(str::cat "Representation of a write of a pointed "
                            type-string
                            ".")
          (,<type>-fix x)
