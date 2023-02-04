@@ -119,6 +119,7 @@
     hons
     open-member-equal-on-list-of-tags
     alistp-compound-recognizer
+    alistp
     ;;  len
     ;; equal-of-plus-one fix
     prod-car
@@ -851,7 +852,6 @@
              (local (in-theory (acl2::enable* deftypes-theory
                                               ,@(flextypes-collect-enable-rules x)
                                               . ,enable-rules)))
-             (local (in-theory (enable alistp)))
              (local (set-default-hints
                      '((and stable-under-simplificationp
                             '(:in-theory (enable deftypes-orig-theory))))))
