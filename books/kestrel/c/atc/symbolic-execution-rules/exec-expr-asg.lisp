@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,6 +17,8 @@
 
 (include-book "arrays")
 (include-book "value-integer-get")
+
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
@@ -53,7 +55,91 @@
       (:e expr-ident->get)
       (:e binop-kind))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-expr-asg-indir-rule-generation
+  :short "Code to generate the rules for executing
+          assignments to integers by pointer."
+
+  (define atc-exec-expr-asg-indir-rules-gen ((type typep))
+    :guard (type-nonchar-integerp type)
+    :returns (mv (name symbolp)
+                 (event pseudo-event-formp))
+    :parents nil
+    (b* ((fixtype (integer-type-to-fixtype type))
+         (pred (pack fixtype 'p))
+         (constructor (pack 'type- fixtype))
+         (type-of-value-when-pred (pack 'type-of-value-when- pred))
+         (name (pack 'exec-expr-asg-indir-when- pred))
+         (formula
+          `(implies
+            (and (syntaxp (quotep e))
+                 (equal (expr-kind e) :binary)
+                 (equal (binop-kind (expr-binary->op e)) :asg)
+                 (equal left (expr-binary->arg1 e))
+                 (equal right (expr-binary->arg2 e))
+                 (equal (expr-kind left) :unary)
+                 (equal (unop-kind (expr-unary->op left)) :indir)
+                 (equal arg (expr-unary->arg left))
+                 (equal (expr-kind arg) :ident)
+                 (equal var (expr-ident->get arg))
+                 (not (zp limit))
+                 (equal ptr (read-var var compst))
+                 (valuep ptr)
+                 (value-case ptr :pointer)
+                 (not (value-pointer-nullp ptr))
+                 (equal (value-pointer->reftype ptr) (,constructor))
+                 (equal val (exec-expr-pure right compst))
+                 (,pred val))
+            (equal (exec-expr-asg e compst fenv limit)
+                   (write-object (value-pointer->designator ptr)
+                                 val
+                                 compst))))
+         (event `(defruled ,name
+                   ,formula
+                   :enable (exec-expr-asg
+                            ,type-of-value-when-pred))))
+      (mv name event)))
+
+  (define atc-exec-expr-asg-indir-rules-gen-loop ((types type-listp))
+    :guard (type-nonchar-integer-listp types)
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp types)) (mv nil nil))
+         ((mv name event)
+          (atc-exec-expr-asg-indir-rules-gen (car types)))
+         ((mv names events)
+          (atc-exec-expr-asg-indir-rules-gen-loop (cdr types))))
+      (mv (cons name names) (cons event events))))
+
+  (define atc-exec-expr-asg-indir-rules-gen-all ()
+    :returns (event pseudo-event-formp)
+    :parents nil
+    (b* (((mv names events)
+          (atc-exec-expr-asg-indir-rules-gen-loop *nonchar-integer-types*)))
+      `(progn
+         (defsection atc-exec-expr-asg-indir-rules
+           :short "Rules for executing assignment expressions
+                 to integers by pointer."
+           ,@events
+           (defval *atc-exec-expr-asg-indir-rules*
+             '(,@names
+               (:e expr-kind)
+               (:e binop-kind)
+               (:e expr-binary->op)
+               (:e expr-binary->arg1)
+               (:e expr-binary->arg2)
+               (:e unop-kind)
+               (:e expr-unary->op)
+               (:e expr-unary->arg)
+               (:e expr-ident->get))))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event (atc-exec-expr-asg-indir-rules-gen-all))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-exec-expr-asg-arrsub-rules-generation
   :short "Code to generate the rules for executing
@@ -197,11 +283,12 @@
 
 (make-event (atc-exec-expr-asg-arrsub-rules-gen-all))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-exec-expr-asg-rules
   :short "Rules for executing assignment expressions."
 
   (defval *atc-exec-expr-asg-rules*
     (append *atc-exec-expr-asg-ident-rules*
+            *atc-exec-expr-asg-indir-rules*
             *atc-exec-expr-asg-arrsub-rules*)))
