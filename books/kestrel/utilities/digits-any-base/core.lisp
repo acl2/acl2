@@ -1032,7 +1032,20 @@
                            0)
                    (trim-bendian* digits))
            (nat-list-fix digits))
-    :enable nat-list-fix))
+    :enable nat-list-fix)
+
+  (defruled trim-bendian*-of-append
+    (equal (trim-bendian* (append hidigits lodigits))
+           (if (zp-listp (true-list-fix hidigits))
+               (trim-bendian* lodigits)
+             (append (trim-bendian* hidigits)
+                     (nat-list-fix lodigits)))))
+
+  (defrule trim-bendian*-of-cons
+    (equal (trim-bendian* (cons digit digits))
+           (if (zp digit)
+               (trim-bendian* digits)
+             (cons (nfix digit) (nat-list-fix digits))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1111,6 +1124,14 @@
                            (trim-bendian* digits)))
               (rev (nat-list-fix digits))))))
 
+  (defruled trim-lendian*-of-append
+    (equal (trim-lendian* (append lodigits hidigits))
+           (if (zp-listp (true-list-fix hidigits))
+               (trim-lendian* lodigits)
+             (append (nat-list-fix lodigits)
+                     (trim-lendian* hidigits))))
+    :enable trim-bendian*-of-append)
+
   (defruled trim-lendian*-of-cons
     (implies (and (natp digit)
                   (nat-listp digits))
@@ -1120,7 +1141,9 @@
                             nil
                           (list digit))
                       (cons digit (trim-lendian* digits)))))
-    :enable (trim-bendian* zp-listp)))
+    :use (:instance trim-lendian*-of-append
+                    (lodigits (list digit))
+                    (hidigits digits))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
