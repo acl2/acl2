@@ -10,7 +10,7 @@ extern BreakStmt breakStmt;
 
 Program prog;
 List<Builtin> *builtins = new List<Builtin>(new Builtin("abs", &intType, &intType));
-Stack<SymDec> *symTab = new Stack<SymDec>;
+SymbolStack<SymDec> symTab;
 
 %}
 
@@ -38,6 +38,7 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 }
 
 %define parse.error verbose
+%define parse.lac full
 
 %token TYPEDEF CONST STRUCT ENUM TEMPLATE
 %token RAC
@@ -107,6 +108,7 @@ program_element
       }
       else if (prog.typeDefs->find($1->name)) {
         yyerror("Duplicate type definition");
+        YYERROR;
       }
       else {
         prog.typeDefs->add($1);
@@ -119,6 +121,7 @@ program_element
       }
       else if (prog.constDecs->find(((ConstDec*)$1)->sym->name)) {
         yyerror("Duplicate global constant declaration");
+        YYERROR;
       }
       else {
         prog.constDecs->add((ConstDec*)$1);
@@ -131,6 +134,7 @@ program_element
       }
       else if (prog.funDefs->find($1->sym->name)) {
         yyerror("Duplicate function definition");
+        YYERROR;
       }
       else {
         prog.funDefs->add($1);
@@ -157,6 +161,7 @@ typedef_dec
       }
       else {
         yyerror("Array dimension not a positive integer constant");
+        YYERROR;
       }
     }
   ;
@@ -191,6 +196,7 @@ register_type
       }
       else {
         yyerror("Illegal parameter of ac_fixed");
+        YYERROR;
       }
     }
   | AC_FIXED '<' arithmetic_expression ',' arithmetic_expression ',' FALSE '>'
@@ -200,6 +206,7 @@ register_type
       }
       else {
         yyerror("Illegal parameter of ac_fixed");
+        YYERROR;
       }
     }
   | AC_INT '<' arithmetic_expression ',' FALSE '>'
@@ -209,6 +216,7 @@ register_type
       }
       else {
         yyerror("Illegal parameter of ac_int");
+        YYERROR;
       }
     }
   | AC_INT '<' arithmetic_expression ',' TRUE '>'
@@ -218,6 +226,7 @@ register_type
       }
       else {
         yyerror("Illegal parameter of ac_int");
+        YYERROR;
       }
     }
 
@@ -231,6 +240,7 @@ array_param_type
       }
       else {
         yyerror("Non-constant array dimension");
+        YYERROR;
       }
     }
   ;
@@ -258,18 +268,18 @@ enum_const_dec_list
   ;
 
 enum_const_dec
-  : ID                 {$$ = new EnumConstDec($1); symTab->push($$);}
-  | ID '=' expression  {$$ = new EnumConstDec($1, $3); symTab->push($$);}
+  : ID                 {$$ = new EnumConstDec($1); symTab.push($$);}
+  | ID '=' expression  {$$ = new EnumConstDec($1, $3); symTab.push($$);}
   ;
 
 mv_type
-  : TUPLE '<' type_spec ',' type_spec '>'                              {$$ = new MvType(2, $3, $5);}
-  | TUPLE '<' type_spec ',' type_spec ',' type_spec '>'                {$$ = new MvType(3, $3, $5, $7);}
-  | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec '>'  {$$ = new MvType(4, $3, $5, $7, $9);}
-  | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec '>'  {$$ = new MvType(4, $3, $5, $7, $9, $11);}
-  | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec  ',' type_spec '>'  {$$ = new MvType(4, $3, $5, $7, $9, $11, $13);}
-  | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec  ',' type_spec ',' type_spec  '>'  {$$ = new MvType(4, $3, $5, $7, $9, $11, $13, $15);}
-| TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec  ',' type_spec ',' type_spec  ',' type_spec '>'  {$$ = new MvType(4, $3, $5, $7, $9, $11, $13, $15, $17);}
+  : TUPLE '<' type_spec ',' type_spec '>'                              {$$ = new MvType({$3, $5});}
+  | TUPLE '<' type_spec ',' type_spec ',' type_spec '>'                {$$ = new MvType({$3, $5, $7});}
+  | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec '>'  {$$ = new MvType({$3, $5, $7, $9});}
+  | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec '>'  {$$ = new MvType({$3, $5, $7, $9, $11});}
+  | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec  ',' type_spec '>'  {$$ = new MvType({$3, $5, $7, $9, $11, $13});}
+  | TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec  ',' type_spec ',' type_spec  '>'  {$$ = new MvType({$3, $5, $7, $9, $11, $13, $15});}
+| TUPLE '<' type_spec ',' type_spec ',' type_spec ',' type_spec ',' type_spec  ',' type_spec ',' type_spec  ',' type_spec '>'  {$$ = new MvType({$3, $5, $7, $9, $11, $13, $15, $17});}
   ;
 
 //*************************************************************************************
@@ -307,12 +317,13 @@ boolean
 symbol_ref
   : ID
     {
-      SymDec *s = symTab->find($1);
+      SymDec *s = symTab.find($1);
       if (s) {
         $$ = new SymRef(s);
       }
       else {
-        yyerror("Unknown symbol");
+        yyerror("Unknown symbol `%s`\n", $1);
+        YYERROR;
       }
     }
 
@@ -324,6 +335,7 @@ funcall
       FunDef *f;
       if ((f = prog.funDefs->find($1)) == NULL && (f = builtins->find($1)) == NULL) {
         yyerror("Undefined function");
+        YYERROR;
       }
       else {
         $$ = new FunCall(f, $3);
@@ -334,6 +346,7 @@ funcall
       Template *f;
       if ((f = (Template*)prog.funDefs->find($1)) == NULL) {
         yyerror("Undefined function template");
+        YYERROR;
       }
       else {
         $$ = new TempCall(f, $6, $3);
@@ -377,7 +390,7 @@ subrange
         $$ = new Subrange($1, new Integer($8->evalConst() + diff), $8, (new Integer($5))->evalConst());
       }
       else {
-        $$ = new Subrange($1, new BinaryExpr($8, new Integer(diff), newstr("+")), $8, (new Integer($5))->evalConst());
+        $$ = new Subrange($1, new BinaryExpr($8, new Integer(diff), strdup("+")), $8, (new Integer($5))->evalConst());
       }
     }
 
@@ -534,27 +547,29 @@ var_dec
 
 untyped_var_dec
   : ID
-    {$$ = new VarDec($1, NULL); symTab->push((VarDec*)$$);}
+    {$$ = new VarDec($1, NULL); symTab.push((VarDec*)$$);}
   | ID '=' expression
-    {$$ = new VarDec($1, NULL, $3); symTab->push((VarDec*)$$);}
+    {$$ = new VarDec($1, NULL, $3); symTab.push((VarDec*)$$);}
   | ID '=' array_or_struct_init
-    {$$ = new VarDec($1, NULL, $3); symTab->push((VarDec*)$$);}
+    {$$ = new VarDec($1, NULL, $3); symTab.push((VarDec*)$$);}
   | ID '[' arithmetic_expression ']'
     {
       if ($3->isConst() && $3->evalConst() > 0) {
-        $$ = new VarDec($1, new ArrayType($3, NULL)); symTab->push((VarDec*)$$);
+        $$ = new VarDec($1, new ArrayType($3, NULL)); symTab.push((VarDec*)$$);
       }
       else {
         yyerror("Non-constant array dimension");
+        YYERROR;
       }
     }
   | ID '[' arithmetic_expression ']' '=' array_or_struct_init
     {
       if ($3->isConst() && $3->evalConst() > 0) {
-        $$ = new VarDec($1, new ArrayType($3, NULL), $6); symTab->push((VarDec*)$$);
+        $$ = new VarDec($1, new ArrayType($3, NULL), $6); symTab.push((VarDec*)$$);
       }
       else {
         yyerror("Non-constant array dimension");
+        YYERROR;
       }
     }
   ;
@@ -584,16 +599,17 @@ const_dec
 
 untyped_const_dec
   : ID '=' expression
-    {$$ = new ConstDec($1, NULL, $3); symTab->push((ConstDec*)$$);}
+    {$$ = new ConstDec($1, NULL, $3); symTab.push((ConstDec*)$$);}
   | ID '=' array_or_struct_init
-    {$$ = new ConstDec($1, NULL, $3); symTab->push((ConstDec*)$$);}
+    {$$ = new ConstDec($1, NULL, $3); symTab.push((ConstDec*)$$);}
   | ID '[' arithmetic_expression ']' '=' array_or_struct_init
     {
       if ($3->isConst() && $3->evalConst() > 0) {
-        $$ = new ConstDec($1, new ArrayType($3, NULL), $6); symTab->push((ConstDec*)$$);
+        $$ = new ConstDec($1, new ArrayType($3, NULL), $6); symTab.push((ConstDec*)$$);
       }
       else {
         yyerror("Non-constant array dimension");
+        YYERROR;
       }
     }
   ;
@@ -675,6 +691,7 @@ assignment
    }
    if (w == 0) {
      yyerror("Second arg of set_slc must have a defined width");
+     YYERROR;
    }
    else {
      Expression *top;
@@ -682,7 +699,7 @@ assignment
        top = new Integer($5->evalConst() + w - 1);
      }
      else {
-       top = new BinaryExpr($5, new Integer(w - 1), newstr("+"));
+       top = new BinaryExpr($5, new Integer(w - 1), strdup("+"));
      }
      $$ = new Assignment(new Subrange($1, top, $5), "=", $7);
    }
@@ -721,17 +738,17 @@ null_statement
   ;
 
 dummy
-  : {symTab->pushFrame();}
+  : {symTab.pushFrame();}
   ;
 
 block
-  : '{' dummy statement_list '}'  {symTab->popFrame(); $$ = new Block($3);}
-  ; // Replace 'dummy' with the midrule action '{symTab->pushFrame();}'
+  : '{' dummy statement_list '}'  {symTab.popFrame(); $$ = new Block($3);}
+  ; // Replace 'dummy' with the midrule action '{symTab.pushFrame();}'
     // will cause reduce/reduce conflicts.
 
 r_block
-  : '{' dummy r_statement_list '}'  {symTab->popFrame(); $$ = new Block($3);}
-  ; // Replace 'dummy' with the midrule action '{symTab->pushFrame();}'
+  : '{' dummy r_statement_list '}'  {symTab.popFrame(); $$ = new Block($3);}
+  ; // Replace 'dummy' with the midrule action '{symTab.pushFrame();}'
     // will cause reduce/reduce conflicts.
 
 statement_list
@@ -744,16 +761,16 @@ r_statement_list
   ;
 
 for_statement
-  : FOR {symTab->pushFrame();} '(' for_init ';' expression ';' assignment ')'
+  : FOR {symTab.pushFrame();} '(' for_init ';' expression ';' assignment ')'
     statement
     {
       $$ = new ForStmt((SimpleStatement*)$4, $6, (Assignment*)$8, $10);
-      symTab->popFrame();
+      symTab.popFrame();
     }
   ;
 
 for_init
-  : var_dec {symTab->push((VarDec*)$1);}
+  : var_dec {symTab.push((VarDec*)$1);}
   | assignment
   ;
 
@@ -785,6 +802,7 @@ case_label
       }
       else {
         yyerror("case label must be an integer or an enum constant");
+        YYERROR;
       }
     }
 
@@ -798,8 +816,8 @@ final_statement
 //*************************************************************************************
 
 func_def
-  : type_spec ID {symTab->pushFrame();} '(' param_dec_list ')' r_block
-    {$$ = new FunDef($2, $1, $5, (Block*)$7); symTab->popFrame();}
+  : type_spec ID {symTab.pushFrame();} '(' param_dec_list ')' r_block
+    {$$ = new FunDef($2, $1, $5, (Block*)$7); symTab.popFrame();}
   | func_template
   ;
 
@@ -814,10 +832,10 @@ nontrivial_param_dec_list
   ;
 
 func_template
-  : TEMPLATE {symTab->pushFrame();} '<' template_param_dec_list '>'
+  : TEMPLATE {symTab.pushFrame();} '<' template_param_dec_list '>'
     type_spec ID '(' param_dec_list ')' r_block
     {
-      $$ = new Template($7, $6, $9, (Block*)$11, $4); symTab->popFrame();
+      $$ = new Template($7, $6, $9, (Block*)$11, $4); symTab.popFrame();
       if (!prog.templates) {
         prog.templates = new List<Template>((Template*)$$);
       }
@@ -838,7 +856,7 @@ nontrivial_template_param_dec_list
   ;
 
 template_param_dec
-: type_spec ID {$$ = new TempParamDec($2, $1);symTab->push((TempParamDec*)$$);}
+: type_spec ID {$$ = new TempParamDec($2, $1);symTab.push((TempParamDec*)$$);}
   ;
 
 %%

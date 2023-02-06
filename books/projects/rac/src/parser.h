@@ -1,5 +1,6 @@
 #ifndef PARSER_H
 #define PARSER_H
+
 #include <stdio.h>
 #include <assert.h>
 #include <iostream>
@@ -8,13 +9,65 @@
 #include <sys/types.h> // for uint
 #include <stdlib.h>    // for strtol, atoi
 #include <iomanip>
+#include <vector>
+
 using namespace std;
-//#include "linkedlist.h"
+
+class Program;
 
 extern int yylineno;
 extern void yyerror(const char *);
 
 extern char *newstr(const char *str);
+
+extern int  yyparse();
+extern FILE *yyin;
+extern FILE *yyout;
+//extern int yylineno;
+extern Program prog;
+
+#define UNREACHABLE() assert(!"Woopsie, some unreachable was reach")
+
+#include <memory>
+#include <string>
+#include <stdexcept>
+//
+//template <typename... Args>
+//char *format_cstr(const char *format, Args... args) {
+//
+//  int size = std::snprintf(nullptr, 0, format, args...);
+//  std::cout << size << '\n';
+//  assert(size >= 0 && "Format failed !");
+//
+//  auto buffer = new char[size + 1];
+//
+//  size = std::snprintf(buffer, size + 1, format, args...);
+//  assert(size >= 0 && "Format failed !");
+//
+//  return buffer;
+//}
+//
+//template <typename... Args>
+//std::string format(const char *format, Args... args) {
+//
+//  char *buffer = format_cstr(format, args...);
+//  std::string s(buffer);
+//  delete[] buffer;
+//  return s;
+//}
+//
+
+extern int yylineno;
+extern char yyfilenm[];
+
+
+template <typename... Args>
+void yyerror(const char *format, Args... args) {
+
+  std::fprintf(stderr, "%s:%d: ", yyfilenm, yylineno);
+  std::fprintf(stderr, format, args...);
+}
+
 
 //***********************************************************************************
 // Linked Lists
@@ -25,7 +78,7 @@ class List {
 public:
   T *value;
   List<T> *next;
-  List<T>(T *v, List<T> *n = NULL) {value = v; next = n;}
+  List<T>(T *v, List<T> *n = nullptr) {value = v; next = n;}
   List<T>(T *v1, T *v2) {value = v1; next = new List<T>(v2);}
   uint length();
   List<T> *nthl(uint n);
@@ -100,7 +153,7 @@ T* List<T>::find(char *name) {
     }
     ptr = ptr->next;
   }
-  return NULL;
+  return nullptr;
 }
 
 // Find a given object in a list:
@@ -183,61 +236,50 @@ public:
 
 // Stacks:
 
-template <class T>
-class Stack {
-private:
-  List<T> *head;
-  Stack<T> *next;
+#include <deque>
+
+template <typename T>
+class SymbolStack {
+// We use a deque to store all values and we use nullptr to mark the limit
+// between frames. All values are sorted from last to be pushed to first (this
+// is done cheaply by deque push_front()) and thus searching should be more or
+// less efficient (we are traversing the addresses from low to high).
 public:
-  Stack<T>() {head = NULL; next = NULL;}
-  Stack<T>(Stack<T> *n) {next = n->next; head = n->head; n->next = this;}
-  void push(T *value);
-  void pushFrame();
-  void popFrame();
-  T* find(char *name);
-  void displayList(ostream& os) {head->displayList(os);}
+  void push(T *value) {
+    assert(value && "this stack does not support nullptr ias value");
+    data_.push_front(value);
+  }
+
+  void pushFrame() {
+    data_.push_front(nullptr);
+  }
+
+  void popFrame() {
+    // While there is some values in the vector and the last one is not null
+    // (the end of the last frame), we remove the element of the last frame.
+    while (data_.size() && data_.front()) {
+      data_.pop_front();
+    }
+  }
+
+  T *find(char *name) {
+    for (auto it = begin(data_); it != end(data_); ++it) {
+      // Detect the limit of frame and ingore it.
+      if (!*it) {
+        continue;
+      }
+
+      if (!strcmp((*it)->getname(), name)) {
+        return *it;
+      }
+    }
+    return nullptr;
+  }
+
+private:
+  std::deque<T *> data_;
 };
 
-// Push an element onto the stack:
-
-template <class T>
-void Stack<T>::push(T *value) {
-  head = head->push(value);
-}
-
-// Push a stack frame:
-
-template <class T>
-void Stack<T>::pushFrame() {
-  Stack<T> *ptr = new Stack<T>;
-  ptr->head = head;
-  ptr->next = next;
-  next = ptr;
-}
-
-// Pop a stack frame:
-
-template <class T>
-void Stack<T>::popFrame() {
-  while (head != next->head) {
-    head = head->pop();
-  }
-  Stack<T> *temp = next->next;
-  delete next;
-  next = temp;
-}
-
-// Find an element in the stack:
-
-template <class T>
-T* Stack<T>::find(char *name) {
-  if (head) {
-    return head->find(name);
-  }
-  else {
-    return NULL;
-  }
-}
 
 //***********************************************************************************
 // S-Expressions
@@ -251,17 +293,34 @@ public:
 class Plist : public Sexpression {
 public:
   List<Sexpression> *list;
-  Plist(Sexpression *s);
-  Plist(Sexpression *s1, Sexpression* s2);
-  Plist(Sexpression *s1, Sexpression* s2, Sexpression* s3);
-  Plist(Sexpression *s1, Sexpression* s2, Sexpression* s3, Sexpression* s4);
-  Plist(Sexpression *s1, Sexpression* s2, Sexpression* s3, Sexpression* s4, Sexpression* s5);
-  Plist(Sexpression *s1, Sexpression* s2, Sexpression* s3, Sexpression* s4, Sexpression* s5, Sexpression* s6);
-  Plist(Sexpression *s1, Sexpression* s2, Sexpression* s3, Sexpression* s4, Sexpression* s5, Sexpression* s6, Sexpression* s7);
-  Plist(Sexpression *s1, Sexpression* s2, Sexpression* s3, Sexpression* s4, Sexpression* s5, Sexpression* s6, Sexpression* s7, Sexpression* s8);
-  Plist(List<Sexpression> *l=NULL);
+
+  Plist()
+    : list(nullptr) {
+  };
+
+  Plist(std::initializer_list<Sexpression *> sexprs) {
+
+    auto it = crbegin(sexprs);
+    if (it == crend(sexprs)) {
+      list = nullptr;
+      return;
+    }
+
+    list = new List<Sexpression>(*it);
+    for (++it; it != crend(sexprs); ++it) {
+      list = list->push(*it);
+    }
+  }
+
+  static Plist *FromList(List<Sexpression> *l=nullptr) {
+    auto pl = new Plist();
+    pl->list = l;
+    return pl;
+  }
+
   Plist *push(Sexpression *s);
   Plist *add(Sexpression *s);
+
   void display(ostream& os);
 };
 
@@ -315,7 +374,7 @@ public:
 class PrimType : public Symbol, public Type {
 public:
   char *RACname;
-  PrimType(const char *s, const char *m=NULL);
+  PrimType(const char *s, const char *m=nullptr);
   virtual bool isPrimType();
   bool isIntegerType();
   void display(ostream& os);
@@ -435,7 +494,7 @@ public:
   Symbol* sym;
   Type *type;
   Expression *init;
-  SymDec(const char *n, Type *t, Expression *i = NULL);
+  SymDec(const char *n, Type *t, Expression *i = nullptr);
   char *getname();
   void displaySymDec(ostream& os);
   virtual bool isGlobal();
@@ -447,7 +506,7 @@ public:
 
 class EnumConstDec : public SymDec {
 public:
-  EnumConstDec(const char *n, Expression *v=NULL);
+  EnumConstDec(const char *n, Expression *v=nullptr);
   void display(ostream& os);
   bool isConst();
   Sexpression *ACL2Expr();
@@ -469,9 +528,10 @@ public:
 
 class MvType : public Type {
 public:
-  uint numVals;
-  Type *type[8];
-  MvType(uint n, Type *t0, Type *t1, Type *t2 = NULL, Type *t3 = NULL, Type *t4 = NULL, Type *t5 = NULL, Type *t6 = NULL, Type *t7 = NULL);
+  std::vector<Type *> type;
+  MvType(std::initializer_list<Type* >&& t)
+    : type(t) {
+  }
   void display(ostream& os);
 };
 
@@ -741,9 +801,14 @@ public:
 class MultipleValue : public Expression {
 public:
   MvType *type;
-  Expression *expr[8];
-  MultipleValue(MvType *t, Expression **e);
+  std::vector<Expression *> expr;
+
+  MultipleValue(MvType *t, std::vector<Expression *>&& e)
+    : type(t)
+    , expr(e) {
+  }
   MultipleValue(MvType *t, List<Expression> *e);
+
   void displayNoParens(ostream& os);
   Expression *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr(bool isBV = false);
@@ -778,7 +843,7 @@ public:
 
 class VarDec : public SimpleStatement, public SymDec {
 public:
-  VarDec(const char *n, Type *t, Expression *i = NULL);
+  VarDec(const char *n, Type *t, Expression *i = nullptr);
   void displaySimple(ostream& os);
   Statement *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr();
@@ -864,7 +929,7 @@ public:
   Expression *lval;
   const char* op;
   Expression *rval;
-  Assignment(Expression *l, const char *o, Expression *r=NULL);
+  Assignment(Expression *l, const char *o, Expression *r=nullptr);
   void displaySimple(ostream& os);
   Statement *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr();
@@ -994,7 +1059,7 @@ public:
 
 class Builtin : public FunDef {
 public:
-  Builtin(const char *n, Type *t, Type *a0=NULL, Type *a1=NULL, Type *a2=NULL);
+  Builtin(const char *n, Type *t, Type *a0=nullptr, Type *a1=nullptr, Type *a2=nullptr);
 };
 
 class Template : public FunDef{

@@ -15,45 +15,6 @@
 // An Sexpression is a Symbol, a Cons, or a Plist (proper list of S-expressions).
 // Note that Constant is a derived class of Symbol.
 
-// class Plist : public Sexpression
-// --------------------------------
-
-// Data member:  List<Sexpression> *list;
-
-
-Plist::Plist(Sexpression *s) {
-  list = new List<Sexpression>(s);
-}
-
-Plist::Plist(Sexpression *s1, Sexpression* s2) {
-  list = (new List<Sexpression>(s2))->push(s1);
-}
-
-Plist::Plist(Sexpression *s1, Sexpression* s2, Sexpression* s3) {
-  list = (new List<Sexpression>(s3))->push(s2)->push(s1);
-}
-
-Plist::Plist(Sexpression *s1, Sexpression* s2, Sexpression* s3, Sexpression* s4) {
-  list = (new List<Sexpression>(s4))->push(s3)->push(s2)->push(s1);
-}
-
-Plist::Plist(Sexpression *s1, Sexpression* s2, Sexpression* s3, Sexpression* s4, Sexpression* s5) {
-  list = (new List<Sexpression>(s5))->push(s4)->push(s3)->push(s2)->push(s1);
-}
-
-Plist::Plist(Sexpression *s1, Sexpression* s2, Sexpression* s3, Sexpression* s4, Sexpression* s5, Sexpression* s6) {
-  list = (new List<Sexpression>(s6))->push(s5)->push(s4)->push(s3)->push(s2)->push(s1);
-}
-
-Plist::Plist(Sexpression *s1, Sexpression* s2, Sexpression* s3, Sexpression* s4, Sexpression* s5, Sexpression* s6, Sexpression* s7) {
-  list = (new List<Sexpression>(s7))->push(s6)->push(s5)->push(s4)->push(s3)->push(s2)->push(s1);
-}
-
-Plist::Plist(Sexpression *s1, Sexpression* s2, Sexpression* s3, Sexpression* s4, Sexpression* s5, Sexpression* s6, Sexpression* s7, Sexpression* s8) {
-  list = (new List<Sexpression>(s8))->push(s7)->push(s6)->push(s5)->push(s4)->push(s3)->push(s2)->push(s1);
-}
-
-Plist::Plist(List<Sexpression> *l) {list = l;}
 
 Plist *Plist::add(Sexpression *s) {
   if (list) {
@@ -227,7 +188,7 @@ bool SymDec::isROM() {return false;}
 
 Sexpression *SymDec::ACL2SymExpr() {// Sexpression for a reference to this symbol.
   assert(!"Undefined method: ACL2SymExpr");
-  return NULL;
+  return nullptr;
 }
 
 
@@ -375,8 +336,8 @@ Sexpression *RegType::ACL2Assign(Expression *rval) { // overridden by FPType
   }
   else {
     Sexpression *s = rval->ACL2Expr();
-    if (rval->isFP()) s = new Plist(&s_fl, s);
-    return new Plist(&s_bits, s, new Integer(width->evalConst() - 1), &i_0);
+    if (rval->isFP()) s = new Plist({&s_fl, s});
+    return new Plist({&s_bits, s, new Integer(width->evalConst() - 1), &i_0});
   }
 }
 
@@ -413,7 +374,7 @@ void IntType::display(ostream& os) {
 }
 
 Sexpression *IntType::ACL2Eval(Sexpression *s) {
-  return new Plist(&s_si, s, new Integer(width->evalConst()));
+  return new Plist({&s_si, s, new Integer(width->evalConst())});
 }
 
 
@@ -437,9 +398,9 @@ Sexpression *FPType::ACL2Assign(Expression *rval) {
   else {
     Sexpression *s = rval->ACL2Expr();
     int wVal = width->evalConst(), iwVal = iwidth->evalConst();
-    s = new Plist(&s_times, s, new Plist(&s_expt, &i_2, new Integer(wVal - iwVal)));
-    if ((rval->isFP()) || wVal < iwVal) s = new Plist(&s_fl, s);
-    return new Plist(&s_bits, s, new Integer(wVal - 1), &i_0);
+    s = new Plist({&s_times, s, new Plist({&s_expt, &i_2, new Integer(wVal - iwVal)})});
+    if ((rval->isFP()) || wVal < iwVal) s = new Plist({&s_fl, s});
+    return new Plist({&s_bits, s, new Integer(wVal - 1), &i_0});
   }
 }
 
@@ -458,7 +419,7 @@ void UfixedType::display(ostream& os) {
 }
 
 Sexpression *UfixedType::ACL2Eval(Sexpression *s) {
-  return new Plist(&s_divide, s, new Plist(&s_expt, &i_2, new Integer(width->evalConst() - iwidth->evalConst())));
+  return new Plist({&s_divide, s, new Plist({&s_expt, &i_2, new Integer(width->evalConst() - iwidth->evalConst())})});
 }
 
 // class FixedType : public RegType
@@ -477,9 +438,9 @@ void FixedType::display(ostream& os) {
 }
 
 Sexpression *FixedType::ACL2Eval(Sexpression *s) {
-  Sexpression *numerator = new Plist(&s_si, s, new Integer(width->evalConst()));
-  Sexpression *denominator = new Plist(&s_expt, &i_2, new Integer(width->evalConst() - iwidth->evalConst()));
-  return new Plist(&s_divide, numerator, denominator);
+  Sexpression *numerator = new Plist({&s_si, s, new Integer(width->evalConst())});
+  Sexpression *denominator = new Plist({&s_expt, &i_2, new Integer(width->evalConst() - iwidth->evalConst())});
+  return new Plist({&s_divide, numerator, denominator});
 }
 
 // class ArrayType : public Type
@@ -620,7 +581,7 @@ bool EnumConstDec::isConst() {return true;}
 
 Sexpression *EnumConstDec::ACL2Expr() {
   if (init) {
-    return new Plist(sym, init->ACL2Expr());
+    return new Plist({sym, init->ACL2Expr()});
   }
   else {
     return sym;
@@ -705,48 +666,47 @@ void EnumType::makeDef(const char *name, ostream& os) {
 // Data members:  uint numVals; Type *type[8];
 // 2 <= numVals <= 8; determines number of valid entries of type[].
 
-MvType::MvType(uint n, Type *t0, Type *t1, Type *t2, Type *t3, Type *t4, Type *t5, Type *t6, Type *t7) {
-  numVals = n;
-  type[0] = t0;
-  type[1] = t1;
-  type[2] = t2;
-  type[3] = t3;
-  type[4] = t4;
-  type[5] = t5;
-  type[6] = t6;
-  type[7] = t7;
-}
-
 void MvType::display(ostream& os) {
+
+  assert(type.size() >= 2
+        && "It does not make sense to have a mv with 1 or 0 elem");
+
   os << "<";
-  type[0]->display(os);
-  os << ", ";
-  type[1]->display(os);
-  if (type[2]) {
-    os << ", ";
-    type[2]->display(os);
-    if (type[3]) {
+  bool first = true;
+  for (const auto t : type) {
+    if (!first) {
       os << ", ";
-      type[3]->display(os);
-      if (type[4]) {
-        os << ", ";
-        type[4]->display(os);
-	if (type[5]) {
-          os << ", ";
-          type[5]->display(os);
-	  if (type[6]) {
-            os << ", ";
-            type[6]->display(os);
-	    if (type[7]) {
-	      os << ", ";
-	      type[7]->display(os);
-	    }
-  	  }
-	}
-      }
     }
+    t->display(os);
   }
   os << ">";
+//  type[0]->display(os);
+//  os << ", ";
+//  type[1]->display(os);
+//  if (type[2]) {
+//    os << ", ";
+//    type[2]->display(os);
+//    if (type[3]) {
+//      os << ", ";
+//      type[3]->display(os);
+//      if (type[4]) {
+//        os << ", ";
+//        type[4]->display(os);
+//  if (type[5]) {
+//          os << ", ";
+//          type[5]->display(os);
+//    if (type[6]) {
+//            os << ", ";
+//            type[6]->display(os);
+//      if (type[7]) {
+//        os << ", ";
+//        type[7]->display(os);
+//      }
+//      }
+//  }
+//      }
+//    }
+//  }
 }
 
 
@@ -811,7 +771,7 @@ bool Expression::isFP() {return isNumber() && !isInteger();}
 
 Type* Expression::exprType() { // virtual (overridden by SymRef, Funcall, ArrayRef, StructRef, PrefixExpr, and BinaryExpr)
   // Dereferenced type of expression.
-  return NULL;
+  return nullptr;
 }
 
 // displayNoParens is defined for each class of expressions and is called by the non-virtual
@@ -844,7 +804,7 @@ Expression *Expression::subst(SymRef *var, Expression *val) { // virtual
 
 Sexpression *Expression::ACL2Expr(bool isBV) { // virtual
   assert(!"Expression cannot be converted to an S-expression");
-  return NULL;
+  return nullptr;
 }
 
 // The following method converts an expression to an Sexpression to be used as an array initialization.
@@ -858,7 +818,7 @@ Sexpression *Expression::ACL2ArrayExpr() { // virtual (overridden by Initializer
 
 Sexpression *Expression::ACL2Assign(Sexpression *rval) { // virtual (overridden by valid lvalues)
   assert(!"Assigment can be made only to an expression of type SymRef, ArrayRef, StructRef, BitRef, or Subrange");
-  return NULL;
+  return nullptr;
 }
 
 // If a numerical expression is known to have a non-negative value of bounded width, then return
@@ -953,10 +913,10 @@ Integer::Integer(int n) : Constant(n) {}
 
 int Integer::evalConst() {
   if (!strncmp(name, "0x", 2)) {
-    return strtol(name+2, NULL, 16);
+    return strtol(name+2, nullptr, 16);
   }
   else if (!strncmp(name, "-0x", 3)) {
-    return -strtol(name+3, NULL, 16);
+    return -strtol(name+3, nullptr, 16);
   }
   else {
     return atoi(name);
@@ -972,7 +932,7 @@ Sexpression *Integer::ACL2Expr(bool isBV) {
   else if (!strncmp(name, "-0x", 3)) {
     Symbol *result = new Symbol(name+1);
     result->name[0] = '#';
-    return new Plist(&s_minus, result);
+    return new Plist({&s_minus, result});
   }
   else {
     return this;
@@ -991,16 +951,16 @@ Boolean::Boolean(const char *n) : Constant(n) {}
 int Boolean::evalConst() {
   if (!strcmp(name, "true")) return 1;
   else if (!strcmp(name, "false")) return 0;
-  else assert(false);
+  else UNREACHABLE();
 }
 
 Boolean b_true("true");
 Boolean b_false("false");
 
 Sexpression *Boolean::ACL2Expr(bool isBV) {
-  if (!strcmp(name, "true")) return new Plist(&s_true);
-  else if (!strcmp(name, "false")) return new Plist(&s_false);
-  else cout << name << endl; assert(false);
+  if (!strcmp(name, "true")) return new Plist({&s_true});
+  else if (!strcmp(name, "false")) return new Plist({&s_false});
+  else cout << name << endl; UNREACHABLE();
 }
 
 
@@ -1048,7 +1008,7 @@ Sexpression *SymRef::ACL2Expr(bool isBV) {
 }
 
 Sexpression *SymRef::ACL2Assign(Sexpression *rval) {
-  return new Plist(&s_assign, symDec->sym, rval);
+  return new Plist({&s_assign, symDec->sym, rval});
 }
 
 bool SymRef::isEqual(Expression *e) {
@@ -1090,7 +1050,7 @@ void FunCall::displayNoParens(ostream& os) {
 
 Expression *FunCall::subst(SymRef *var, Expression *val) {
    List<Expression> *ptr = args;
-   List<Expression> *newArgs = NULL;
+   List<Expression> *newArgs = nullptr;
    while (ptr) {
      Expression *expr = ptr->value->subst(var, val);
      if (newArgs) {
@@ -1105,7 +1065,7 @@ Expression *FunCall::subst(SymRef *var, Expression *val) {
 }
 
 Sexpression *FunCall::ACL2Expr(bool isBV) {
-  Plist *result = new Plist(new Symbol(func->getname()));
+  Plist *result = new Plist({new Symbol(func->getname())});
   List<VarDec> *p = func->params;
   List<Expression> *a = args;
   while (a) {
@@ -1124,7 +1084,7 @@ Sexpression *FunCall::ACL2Expr(bool isBV) {
 
 TempCall::TempCall(Template *f, List<Expression> *a, List<Expression> *p) : FunCall(f, a) {
   params = p;
-  if (f->calls == NULL) {
+  if (f->calls == nullptr) {
     f->calls = new List<TempCall>(this);
   }
   else {
@@ -1153,7 +1113,7 @@ void TempCall::displayNoParens(ostream& os) {
 Expression *TempCall::subst(SymRef *var, Expression *val) {
   TempCall *result = (TempCall*)FunCall::subst(var, val);
   List<Expression> *ptr = params;
-  List<Expression> *newParams = NULL;
+  List<Expression> *newParams = nullptr;
   while (ptr) {
     Expression *expr = ptr->value->subst(var, val);
     if (newParams) {
@@ -1169,8 +1129,8 @@ Expression *TempCall::subst(SymRef *var, Expression *val) {
 }
 
 Sexpression *TempCall::ACL2Expr(bool isBV) {
-  ((Template*)func)->bindParams(params);
-  Plist *result = (Plist*)FunCall::ACL2Expr(isBV);
+  dynamic_cast<Template *>(func)->bindParams(params);
+  Plist *result = dynamic_cast<Plist *>(FunCall::ACL2Expr(isBV));
   result->list->value = instanceSym;
   return result;
 }
@@ -1205,7 +1165,7 @@ Sexpression *Initializer::ACL2Expr(bool isBV) {
     result->add((Sexpression*)(ptr->value->ACL2Expr()));
     ptr = ptr->next;
   }
-  return new Plist(result->front);
+  return Plist::FromList(result->front);
 }
 
 Sexpression *Initializer::ACL2ArrayExpr() {
@@ -1220,7 +1180,7 @@ Sexpression *Initializer::ACL2ArrayExpr() {
     entries = entries->next;
   }
   if (p->list) {
-    p = new Plist(&s_quote, p);
+    p = new Plist({&s_quote, p});
   }
   return p;
 }
@@ -1230,7 +1190,7 @@ Sexpression *Initializer::ACL2StructExpr(List<StructField> *fields) {
   List<Constant> *ptr = vals;
   assert(vals->length() == fields->length());
   while (fields) {
-    result = new Plist(&s_as, new Plist(&s_quote, fields->value->sym), ptr->value->ACL2Expr(), result);
+    result = new Plist({&s_as, new Plist({&s_quote, fields->value->sym}), ptr->value->ACL2Expr(), result});
     ptr = ptr->next;
     fields = fields->next;
   }
@@ -1268,19 +1228,19 @@ Expression *ArrayRef::subst(SymRef *var, Expression *val) {
 Sexpression *ArrayRef::ACL2Expr(bool isBV) {
   Sexpression *s;
   if (array->isSymRef() && ((SymRef*)array)->symDec->isROM()) {
-    s = new Plist(&s_nth, index->ACL2Expr(), new Plist(((SymRef*)array)->symDec->sym));
+    s = new Plist({&s_nth, index->ACL2Expr(), new Plist({((SymRef*)array)->symDec->sym})});
   }
   else if (array->isSymRef() && ((SymRef*)array)->symDec->isGlobal()) {
-    s = new Plist(&s_ag, index->ACL2Expr(), new Plist(((SymRef*)array)->symDec->sym));
+    s = new Plist({&s_ag, index->ACL2Expr(), new Plist({((SymRef*)array)->symDec->sym})});
   }
   else {
-    s = new Plist(&s_ag, index->ACL2Expr(), array->ACL2Expr());
+    s = new Plist({&s_ag, index->ACL2Expr(), array->ACL2Expr()});
   }
   return isBV ? s : exprType()->ACL2Eval(s);
 }
 
 Sexpression *ArrayRef::ACL2Assign(Sexpression *rval) {
-  return array->ACL2Assign(new Plist(&s_as, index->ACL2Expr(), rval, array->ACL2Expr()));
+  return array->ACL2Assign(new Plist({&s_as, index->ACL2Expr(), rval, array->ACL2Expr()}));
 }
 
 
@@ -1324,13 +1284,13 @@ void StructRef::displayNoParens(ostream& os) {
 
 Sexpression *StructRef::ACL2Expr(bool isBV) {
   Symbol *sym = ((StructType*)(base->exprType()))->fields->find(field)->sym;
-  Sexpression *s = new Plist(&s_ag, new Plist(&s_quote, sym), base->ACL2Expr());
+  Sexpression *s = new Plist({&s_ag, new Plist({&s_quote, sym}), base->ACL2Expr()});
   return isBV ? s : exprType()->ACL2Eval(s);
 }
 
 Sexpression *StructRef::ACL2Assign(Sexpression *rval) {
   Symbol *sym = ((StructType*)(base->exprType()))->fields->find(field)->sym;
-  return base->ACL2Assign(new Plist(&s_as, new Plist(&s_quote, sym), rval, base->ACL2Expr()));
+  return base->ACL2Assign(new Plist({&s_as, new Plist({&s_quote, sym}), rval, base->ACL2Expr()}));
 }
 
 // class BitRef : public Expression
@@ -1358,7 +1318,7 @@ Expression *BitRef::subst(SymRef *var, Expression *val) {
 Sexpression *BitRef::ACL2Expr(bool isBV) {
   Sexpression *b = base->ACL2Expr(true);
   Sexpression *i = index->ACL2Expr();
-  return new Plist(&s_bitn, b, i);
+  return new Plist({&s_bitn, b, i});
 }
 
 Sexpression *BitRef::ACL2Assign(Sexpression *rval) {
@@ -1366,7 +1326,7 @@ Sexpression *BitRef::ACL2Assign(Sexpression *rval) {
   Sexpression *i = index->ACL2Expr();
   uint n = (((RegType*)(base->exprType()))->width)->evalConst();
   Integer *s = new Integer(n);
-  return base->ACL2Assign(new Plist(&s_setbitn, b, s, i, rval));
+  return base->ACL2Assign(new Plist({&s_setbitn, b, s, i, rval}));
 }
 
 uint BitRef::ACL2ValWidth() {return 1;}
@@ -1406,17 +1366,11 @@ Expression *Subrange::subst(SymRef *var, Expression *val) {
            ? this : new Subrange(newBase, newHigh, newLow);
 }
 
-char *newstr(const char *str) {
-  char *result = new char[strlen(str)+1];
-  strcpy(result, str);
-  return result;
-}
-
 Sexpression *Subrange::ACL2Expr(bool isBV) {
   Sexpression *b = base->ACL2Expr(true);
   Sexpression *hi = high->ACL2Expr();
   Sexpression *lo = low->ACL2Expr();
-  return new Plist(&s_bits, b, hi, lo);
+  return new Plist({&s_bits, b, hi, lo});
 }
 
 Sexpression *Subrange::ACL2Assign(Sexpression *rval) {
@@ -1425,7 +1379,7 @@ Sexpression *Subrange::ACL2Assign(Sexpression *rval) {
   Sexpression *lo = low->ACL2Expr();
   uint n = (((RegType*)(base->exprType()))->width)->evalConst();
   Integer *s = new Integer(n);
-  return base->ACL2Assign(new Plist(&s_setbits, b, s, hi, lo, rval));
+  return base->ACL2Assign(new Plist({&s_setbits, b, s, hi, lo, rval}));
 }
 
 uint Subrange::ACL2ValWidth() {
@@ -1464,7 +1418,7 @@ int PrefixExpr::evalConst() {
   else if (!strcmp(op, "!")) {
     return val ? 1 : 0;
   }
-  else assert(false);
+  else UNREACHABLE();
 }
 
 bool PrefixExpr::isInteger() {return expr->isInteger();}
@@ -1484,7 +1438,7 @@ Type *PrefixExpr::exprType() {
     return expr->exprType();
   }
   else {
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -1494,18 +1448,18 @@ Sexpression *PrefixExpr::ACL2Expr(bool isBV) {
     return s;
   }
   else if (!strcmp(op, "-")) {
-    return new Plist(&s_minus, s);
+    return new Plist({&s_minus, s});
   }
   else if (!strcmp(op, "!")) {
-    return new Plist(&s_lognot1, s);
+    return new Plist({&s_lognot1, s});
   }
   else if (!strcmp(op, "~")) {
     Type *t = exprType();
     if (t) {
-       Plist *bv = new Plist(&s_lognot, expr->ACL2Expr(true));
+       Plist *bv = new Plist({&s_lognot, expr->ACL2Expr(true)});
        if (isBV && t->isRegType()) {
          uint w = (((RegType*)t)->width)->evalConst();
-         return new Plist(&s_bits, bv, new Integer(w - 1), &i_0);
+         return new Plist({&s_bits, bv, new Integer(w - 1), &i_0});
        }
        else {
          return t->ACL2Eval(bv);
@@ -1513,10 +1467,10 @@ Sexpression *PrefixExpr::ACL2Expr(bool isBV) {
        }
     }
     else {
-      return new Plist(&s_lognot, s);
+      return new Plist({&s_lognot, s});
     }
   }
-  else assert(false);
+  else UNREACHABLE();
 }
 
 bool PrefixExpr::isEqual(Expression *e) {
@@ -1587,7 +1541,7 @@ int BinaryExpr::evalConst() {
   if (!strcmp(op, "!=")) return val1 != val2;
   if (!strcmp(op, "&&")) return val1 && val2;
   if (!strcmp(op, "||")) return val1 || val2;
-  assert(false);
+  UNREACHABLE();
 }
 
 bool BinaryExpr::isInteger() {return expr1->isInteger() && expr2->isInteger();}
@@ -1611,7 +1565,7 @@ Type *BinaryExpr::exprType() {
     return t1;
   }
   else {
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -1620,18 +1574,18 @@ Sexpression *BinaryExpr::ACL2Expr(bool isBV) {
   Sexpression *sexpr1 = expr1->ACL2Expr();
   Sexpression *sexpr2 = expr2->ACL2Expr();
   if (expr1->isFP() && !strcmp(op, "<<")) {
-    return new Plist(&s_times, sexpr1, new Plist(&s_expt, &i_2, sexpr2));
+    return new Plist({&s_times, sexpr1, new Plist({&s_expt, &i_2, sexpr2})});
   }
   else if (expr1->isFP() && !strcmp(op, ">>")) {
-    return new Plist(&s_divide, sexpr1, new Plist(&s_expt, &i_2, sexpr2));
+    return new Plist({&s_divide, sexpr1, new Plist({&s_expt, &i_2, sexpr2})});
   }
   if (!strcmp(op, "+")) ptr = &s_plus; else
   if (!strcmp(op, "-")) ptr = &s_minus; else
   if (!strcmp(op, "*")) ptr = &s_times; else
-  if (!strcmp(op, "/")) return new Plist(&s_fl, new Plist(&s_slash, sexpr1, sexpr2)); else
+  if (!strcmp(op, "/")) return new Plist({&s_fl, new Plist({&s_slash, sexpr1, sexpr2})}); else
   if (!strcmp(op, "%")) ptr = &s_rem; else
   if (!strcmp(op, "<<")) ptr = &s_ash; else
-  if (!strcmp(op, ">>")) {ptr = &s_ash; sexpr2 = new Plist(&s_minus, sexpr2);} else
+  if (!strcmp(op, ">>")) {ptr = &s_ash; sexpr2 = new Plist({&s_minus, sexpr2});} else
   if (!strcmp(op, "&")) ptr = &s_logand; else
   if (!strcmp(op, "^")) ptr = &s_logxor; else
   if (!strcmp(op, "|")) ptr = &s_logior; else
@@ -1643,13 +1597,13 @@ Sexpression *BinaryExpr::ACL2Expr(bool isBV) {
   if (!strcmp(op, "!=")) ptr = &s_logneq; else
   if (!strcmp(op, "&&")) ptr = &s_logand1; else
   if (!strcmp(op, "||")) ptr = &s_logior1; else
-  assert(false);
+  UNREACHABLE();
   if (exprType() && (ptr == &s_logand || ptr == &s_logior || ptr == &s_logxor)) {
-    Plist *bv = new Plist(ptr, expr1->ACL2Expr(true), expr2->ACL2Expr(true));
+    Plist *bv = new Plist({ptr, expr1->ACL2Expr(true), expr2->ACL2Expr(true)});
     return isBV ? bv : exprType()->ACL2Eval(bv);
   }
   else {
-    return new Plist(ptr, sexpr1, sexpr2);
+    return new Plist({ptr, sexpr1, sexpr2});
   }
 }
 
@@ -1699,7 +1653,7 @@ Expression *CondExpr::subst(SymRef *var, Expression *val) {
 }
 
 Sexpression *CondExpr::ACL2Expr(bool isBV) {
-  return new Plist(&s_if1, test-> ACL2Expr(), expr1->ACL2Expr(), expr2->ACL2Expr());
+  return new Plist({&s_if1, test-> ACL2Expr(), expr1->ACL2Expr(), expr2->ACL2Expr()});
 }
 
 
@@ -1708,69 +1662,55 @@ Sexpression *CondExpr::ACL2Expr(bool isBV) {
 
 // Data members: MvType *type; Expression *expr[8];
 
-MultipleValue::MultipleValue(MvType *t, Expression **e) : Expression() {
-  type = t;
-  for (uint i=0; i<8; i++) expr[i] = e[i];
-}
+MultipleValue::MultipleValue(MvType *t, List<Expression> *e)
+  : Expression()
+  , type(t) {
 
-MultipleValue::MultipleValue(MvType *t, List<Expression> *e) : Expression() {
-  type = t;
-  for (uint i=0; i<8; i++) {
-    if (e) {
-      expr[i] = e->value;
+    expr.reserve(8);
+    for (uint i = 0; i < 8 && e; ++i) {
+      expr.push_back(e->value);
       e = e->pop();
     }
-    else {
-      expr[i] = NULL;
-    }
-  }
+
+    assert(expr.size() >= 2
+        && "It does not make sense to have a mv with 1 or 0 elem");
+    assert(type->type.size() == expr.size()
+        && "We should have as many types as values");
 }
 
 void MultipleValue::displayNoParens(ostream& os) {
+
   os << "<";
-  expr[0]->display(os);
-  os << ", ";
-  expr[1]->display(os);
-  if (expr[2]) {
-    os << ", ";
-    expr[2]->display(os);
-    if (expr[3]) {
+  bool first = true;
+  for (const auto e : expr) {
+    if (!first) {
       os << ", ";
-      expr[3]->display(os);
-      if (expr[4]) {
-        os << ", ";
-        expr[4]->display(os);
-        if (expr[5]) {
-          os << ", ";
-          expr[5]->display(os);
-          if (expr[6]) {
-            os << ", ";
-            expr[6]->display(os);
-            if (expr[7]) {
-              os << ", ";
-              expr[7]->display(os);
-	    }
-          }
-	}
-      }
     }
+    e->display(os);
   }
   os << ">";
 }
 
 Expression *MultipleValue::subst(SymRef *var, Expression *val) {
-  Expression *newExpr[8];
+
+  std::vector<Expression *> newExpr;
+  newExpr.reserve(8);
   bool isNew = false;
-  for (uint i=0; i<8; i++) {
-    newExpr[i] = expr[i] ? expr[i]->subst(var, val) : NULL;
-    if (newExpr[i] != expr[i]) {isNew = true;}
+
+  for (uint i = 0; i < expr.size(); ++i) {
+    newExpr.push_back(expr[i]->subst(var, val));
+    if (newExpr[i] != expr[i]) {
+      isNew = true;
+    }
   }
-  return isNew ? new MultipleValue(type, newExpr) : this;
+  return isNew ? new MultipleValue(type, std::move(newExpr)) : this;
 }
 
 Sexpression *MultipleValue::ACL2Expr(bool isBV) {
-  Plist *result = new Plist(&s_mv);
-  for (uint i=0; i<8 && expr[i]; i++) {
+
+  Plist *result = new Plist({&s_mv});
+
+  for (unsigned i = 0; i < expr.size(); ++i) {
     result->add(type->type[i]->derefType()->ACL2Assign(expr[i]));
   }
   return result;
@@ -1837,7 +1777,7 @@ Statement* Statement::subst(SymRef *var, Expression *expr) { // virtual
 Sexpression *Statement::ACL2Expr() { // virtual
   display(cout); cout << endl;
   assert(!"Statement is not intended to be converted to an S-expression");
-  return NULL;
+  return nullptr;
 }
 
 void Statement::noteReturnType(Type *t) { // virtual (overridden by Block, ReturnStmt, and IfStmt)
@@ -1884,7 +1824,7 @@ Sexpression *VarDec::ACL2Expr() {
       val = new Plist();
     }
     else if (isROM()) {
-      val = new Plist(&s_quote, init->ACL2Expr());
+      val = new Plist({&s_quote, init->ACL2Expr()});
     }
     else {
       val = init->ACL2ArrayExpr();
@@ -1908,7 +1848,7 @@ Sexpression *VarDec::ACL2Expr() {
   else {
     val = &i_0;
   }
-  return new Plist(&s_declare, sym, val);
+  return new Plist({&s_declare, sym, val});
 }
 
 Sexpression *VarDec::ACL2SymExpr() {
@@ -1944,7 +1884,7 @@ bool ConstDec::isROM() {
 
 Sexpression *ConstDec::ACL2SymExpr() {
   if (isGlobal()) {
-    return new Plist(sym);
+    return new Plist({sym});
   }
   else {
     return sym;
@@ -1973,7 +1913,7 @@ Statement *MulVarDec::subst(SymRef *var, Expression *val) {
 }
 
 Sexpression *MulVarDec::ACL2Expr() {
-  Plist *result = new Plist(&s_list);
+  Plist *result = new Plist({&s_list});
   List<VarDec> *ptr = decs;
   while (ptr) {
     result->add(ptr->value->ACL2Expr());
@@ -2023,7 +1963,7 @@ Statement *MulConstDec::subst(SymRef *var, Expression *val) {
 }
 
 Sexpression *MulConstDec::ACL2Expr() {
-  Plist *result = new Plist(&s_list);
+  Plist *result = new Plist({&s_list});
   List<ConstDec> *ptr = decs;
   while (ptr) {
     result->add(ptr->value->ACL2Expr());
@@ -2097,7 +2037,7 @@ Statement *ReturnStmt::subst(SymRef *var, Expression *val) {
 }
 
 Sexpression *ReturnStmt::ACL2Expr() {
-  return new Plist(&s_return, returnType->derefType()->ACL2Assign(value));
+  return new Plist({&s_return, returnType->derefType()->ACL2Assign(value)});
 }
 
 void ReturnStmt::noteReturnType(Type *t) {
@@ -2124,7 +2064,7 @@ Statement *Assertion::subst(SymRef *var, Expression *val) {
 }
 
 Sexpression *Assertion::ACL2Expr() {
-  return new Plist(&s_assert, expr->ACL2Expr(), new Symbol(funDef->getname()));
+  return new Plist({&s_assert, expr->ACL2Expr(), new Symbol(funDef->getname())});
 }
 
 void Assertion::markAssertions(FunDef *f) {
@@ -2152,7 +2092,7 @@ void Assignment::displaySimple(ostream& os) {
 
 Statement *Assignment::subst(SymRef *var, Expression *val) {
   Expression *newL = lval->subst(var, val);
-  Expression *newR = rval ? rval->subst(var, val) : NULL;
+  Expression *newR = rval ? rval->subst(var, val) : nullptr;
   return (lval == newL) && (rval == newR) ? this : new Assignment(newL, op, newR);
 }
 
@@ -2255,7 +2195,7 @@ MultipleAssignment::MultipleAssignment(FunCall *r, List<Expression> *e) : Simple
       e = e->pop();
     }
     else {
-      lval[i] = NULL;
+      lval[i] = nullptr;
     }
   }
   rval = r;
@@ -2312,7 +2252,7 @@ Statement *MultipleAssignment::subst(SymRef *var, Expression *val) {
 
 Sexpression *MultipleAssignment::ACL2Expr() {
   Plist *vars = new Plist();
-  Plist *result = new Plist(&s_mv_assign, vars, rval->ACL2Expr());
+  Plist *result = new Plist({&s_mv_assign, vars, rval->ACL2Expr()});
   bool isBlock = false;
   for (uint i=0; i<8 && lval[i]; i++) {
     if (lval[i]->isSymRef()) {
@@ -2320,12 +2260,12 @@ Sexpression *MultipleAssignment::ACL2Expr() {
     }
     else {
       if (!isBlock) {
-        result = new Plist(result);
+        result = new Plist({result});
         isBlock = true;
       }
       vars->add(&s_temp[i]);
       result->add(lval[i]->ACL2Assign(&s_temp[i]));
-      result->push(new Plist(&s_declare, &s_temp[i]));
+      result->push(new Plist({&s_declare, &s_temp[i]}));
     }
   }
   if (isBlock) {
@@ -2342,7 +2282,7 @@ NullStmt::NullStmt() : SimpleStatement() {}
 void NullStmt::displaySimple(ostream& os) {}
 
 Sexpression *NullStmt::ACL2Expr() {
-  return new Plist(&s_null);
+  return new Plist({&s_null});
 }
 
 NullStmt nullStmt;
@@ -2398,7 +2338,7 @@ void Block::displayWithinBlock(ostream& os, uint indent) {
 }
 
 Statement *Block::subst(SymRef *var, Expression *val) {
-  List<Statement> *newList = NULL;
+  List<Statement> *newList = nullptr;
   bool changed = false;
   for (int i=stmtList->length()-1; i>=0; i--) {
     List<Statement> *subList = stmtList->nthl(i);
@@ -2418,7 +2358,7 @@ Statement *Block::subst(SymRef *var, Expression *val) {
 }
 
 Sexpression *Block::ACL2Expr() {
-  Plist *result = new Plist(&s_block);
+  Plist *result = new Plist({&s_block});
   List<Statement> *ptr = stmtList;
   while (ptr) {
     result->add(ptr->value->ACL2Expr());
@@ -2473,12 +2413,12 @@ void IfStmt::displayAsRightBranch(ostream& os, uint indent) {
 Statement *IfStmt::subst(SymRef *var, Expression *val) {
   Expression *t = test->subst(var, val);
   Statement *l = left->subst(var, val);
-  Statement *r = right ? right->subst(var, val) : NULL;
+  Statement *r = right ? right->subst(var, val) : nullptr;
   return (t == test && l == left && r == right) ? this : new IfStmt(t, l, r);
 }
 
 Sexpression *IfStmt::ACL2Expr() {
-  return new Plist(&s_if, test->ACL2Expr(), left->blockify()->ACL2Expr(), right ? right->blockify()->ACL2Expr() : new Plist());
+  return new Plist({&s_if, test->ACL2Expr(), left->blockify()->ACL2Expr(), right ? right->blockify()->ACL2Expr() : new Plist()});
 }
 
 void IfStmt::noteReturnType(Type *t) {
@@ -2526,7 +2466,7 @@ Sexpression *ForStmt::ACL2Expr() {
   Sexpression *sinit = init->ACL2Expr();
   Sexpression *stest = test->ACL2Expr();
   Sexpression *supdate = ((Plist*)(update->ACL2Expr()))->list->nth(2);
-  return new Plist(&s_for, new Plist(sinit, stest, supdate), body->blockify()->ACL2Expr());
+  return new Plist({&s_for, new Plist({sinit, stest, supdate}), body->blockify()->ACL2Expr()});
 }
 
 void ForStmt::markAssertions(FunDef *f) {
@@ -2558,7 +2498,7 @@ void Case::display(ostream& os, uint indent) {
 }
 
 Case* Case::subst(SymRef *var, Expression *val) {
-  List<Statement> *newAction = NULL;
+  List<Statement> *newAction = nullptr;
   bool changed = false;
   for (int i=action->length()-1; i>=0; i--) {
     List<Statement> *subList = action->nthl(i);
@@ -2605,7 +2545,7 @@ void SwitchStmt::display(ostream& os, uint indent) {
 }
 
 Statement* SwitchStmt::subst(SymRef *var, Expression *val) {
-  List<Case> *newCases = NULL;
+  List<Case> *newCases = nullptr;
   bool changed = false;
   for (int i=cases->length()-1; i>=0; i--) {
     List<Case> *subList = cases->nthl(i);
@@ -2627,7 +2567,7 @@ Statement* SwitchStmt::subst(SymRef *var, Expression *val) {
 Sexpression *SwitchStmt::ACL2Expr() {
   List<Sexpression> *result = new List<Sexpression>(&s_switch, test->ACL2Expr());
   List<Case> *clist = cases;
-  List<Sexpression> *labels = NULL;
+  List<Sexpression> *labels = nullptr;
   Case *c;
   Expression *l;
   List<Statement> *a;
@@ -2642,19 +2582,19 @@ Sexpression *SwitchStmt::ACL2Expr() {
       labels = labels ? labels->add(l->ACL2Expr()) : new List<Sexpression>(l->ACL2Expr());
     }
     if (a) {
-      Sexpression *slabel = !labels ? &s_t : !(labels->next) ? labels->value : new Plist(labels);
+      Sexpression *slabel = !labels ? &s_t : !(labels->next) ? labels->value : Plist::FromList(labels);
       s = new List<Sexpression>(slabel);
       while (a && a->value != &breakStmt) {
         s->add(a->value->ACL2Expr());
         a = a->next;
       }
-      result->add(new Plist(s));
-      labels = NULL;
+      result->add(Plist::FromList(s));
+      labels = nullptr;
     }
     clist = clist->next;
   }
-  if (l) result->add(new Plist(&s_t));
-  return new Plist(result);
+  if (l) result->add(new Plist({&s_t}));
+  return Plist::FromList(result);
 }
 
 void SwitchStmt::markAssertions(FunDef *f) {
@@ -2726,14 +2666,14 @@ void FunDef::displayACL2Expr(ostream& os) {
   }
   body->noteReturnType(returnType);
   body->markAssertions(this);
-  (new Plist(&s_funcdef, sym, sparams, body->blockify()->ACL2Expr()))->display(os);
+  (new Plist({&s_funcdef, sym, sparams, body->blockify()->ACL2Expr()}))->display(os);
 }
 
 
 // class Builtin : public FunDef
 // -----------------------------
 
-Builtin::Builtin(const char *n, Type *t, Type *a0, Type *a1, Type *a2) : FunDef(n, t, NULL, NULL) {
+Builtin::Builtin(const char *n, Type *t, Type *a0, Type *a1, Type *a2) : FunDef(n, t, nullptr, nullptr) {
       if (a0) params = new List<VarDec>(new VarDec("", a0)); else return;
       if (a1) params->add(new VarDec("", a1)); else return;
       if (a2) params->add(new VarDec("", a2));
@@ -2812,10 +2752,10 @@ void Template::displayACL2Expr(ostream& os) {
 // Data members: List<DefinedType> *typeDefs; List<ConstDec> *constDecs; List<Template> *templates; List<FunDef> *funDefs;
 
 Program::Program() {
-  typeDefs = NULL;
-  constDecs = NULL;
-  funDefs = NULL;
-  templates = NULL;
+  typeDefs = nullptr;
+  constDecs = nullptr;
+  funDefs = nullptr;
+  templates = nullptr;
 }
 
 // A program may be displayed in either of two modes:
