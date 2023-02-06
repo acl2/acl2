@@ -1269,11 +1269,11 @@
        (implies (and (dab-basep base)
                      (dab-digit-listp base digits))
                 (equal (nat=>lendian* base (lendian=>nat base digits))
-                       (trim-lendian* (dab-digit-list-fix base digits))))
+                       (trim-lendian* digits)))
        :enable (lendian=>nat
-                nat=>lendian*
                 trim-lendian*-of-cons
-                nat=>lendian*-of-digit-+-base-*-nat))))
+                nat=>lendian*-of-digit-+-base-*-nat
+                trim-lendian*-iff-not-zp-listp))))
 
   (defrule nat=>lendian+-of-lendian=>nat
     (equal (nat=>lendian+ base (lendian=>nat base digits))
