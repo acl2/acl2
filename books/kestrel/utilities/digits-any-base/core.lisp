@@ -1045,7 +1045,12 @@
     (equal (trim-bendian* (cons digit digits))
            (if (zp digit)
                (trim-bendian* digits)
-             (cons (nfix digit) (nat-list-fix digits))))))
+             (cons (nfix digit) (nat-list-fix digits)))))
+
+  (defruled trim-bendian*-iff-not-zp-listp
+    (implies (true-listp digits)
+             (iff (trim-bendian* digits)
+                  (not (zp-listp digits))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1143,7 +1148,15 @@
                       (cons digit (trim-lendian* digits)))))
     :use (:instance trim-lendian*-of-append
                     (lodigits (list digit))
-                    (hidigits digits))))
+                    (hidigits digits)))
+
+
+  (defruled trim-lendian*-iff-not-zp-listp
+    (implies (true-listp digits)
+             (iff (trim-lendian* digits)
+                  (not (zp-listp digits))))
+    :use (:instance trim-bendian*-iff-not-zp-listp
+                    (digits (rev digits)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
