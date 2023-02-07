@@ -1,17 +1,27 @@
 %{
-#include <alloca.h>
-#include <cstdlib>
-int yylex();
+#include <stdio.h>
 #include "parser.h"
-void yyerror(const char *);
-extern int yylineno;
-extern char yyfilenm[];
+
+int yylex();
+
+void yyerror(const char *s) {
+  fflush(stdout);
+  fprintf(stderr, "%s:%d: %s\n", yyfilenm, yylineno, s);
+}
+
+template <typename... Args>
+void yyerror(const char *format, Args... args) {
+
+  fflush(stdout);
+  std::fprintf(stderr, "%s:%d: ", yyfilenm, yylineno);
+  std::fprintf(stderr, format, args...);
+}
+
 extern BreakStmt breakStmt;
 
 Program prog;
-List<Builtin> *builtins = new List<Builtin>(new Builtin("abs", &intType, &intType));
+List<Builtin> builtins(new Builtin("abs", &intType, &intType));
 SymbolStack<SymDec> symTab;
-
 %}
 
 %union {
@@ -106,7 +116,7 @@ program_element
       if (!prog.typeDefs) {
         prog.typeDefs = new List<DefinedType>($1);
       }
-      else if (prog.typeDefs->find($1->name)) {
+      else if (prog.typeDefs->find($1->getname())) {
         yyerror("Duplicate type definition");
         YYERROR;
       }
@@ -119,7 +129,7 @@ program_element
       if (!prog.constDecs) {
         prog.constDecs = new List<ConstDec>((ConstDec*)$1);
       }
-      else if (prog.constDecs->find(((ConstDec*)$1)->sym->name)) {
+      else if (prog.constDecs->find(((ConstDec*)$1)->sym->getname())) {
         yyerror("Duplicate global constant declaration");
         YYERROR;
       }
@@ -132,7 +142,7 @@ program_element
       if (!prog.funDefs) {
         prog.funDefs = new List<FunDef>($1);
       }
-      else if (prog.funDefs->find($1->sym->name)) {
+      else if (prog.funDefs->find($1->sym->getname())) {
         yyerror("Duplicate function definition");
         YYERROR;
       }
@@ -157,7 +167,9 @@ typedef_dec
   | typedef_dec '[' arithmetic_expression ']'
     {
       if ($3->isConst() && $3->evalConst() > 0) {
-        $1->def = new ArrayType($3, $1->def); $$ = $1;
+        // TODO: very shady: if typedef_dec is a primitive, we end by modifying
+        // the global variable ??
+        $1->getdef_mutref() = new ArrayType($3, $1->getdef()); $$ = $1;
       }
       else {
         yyerror("Array dimension not a positive integer constant");
@@ -333,7 +345,7 @@ funcall
   : ID '(' expr_list ')'
     {
       FunDef *f;
-      if ((f = prog.funDefs->find($1)) == NULL && (f = builtins->find($1)) == NULL) {
+      if ((f = prog.funDefs->find($1)) == NULL && (f = builtins.find($1)) == NULL) {
         yyerror("Undefined function");
         YYERROR;
       }
@@ -385,7 +397,7 @@ struct_ref
 subrange
   : postfix_expression '.' SLC '<' NAT '>' '(' expression ')'
     {
-      uint diff = (new Integer($5))->evalConst() - 1;
+      unsigned diff = (new Integer($5))->evalConst() - 1;
       if ($8->isConst()) {
         $$ = new Subrange($1, new Integer($8->evalConst() + diff), $8, (new Integer($5))->evalConst());
       }
@@ -676,7 +688,7 @@ assignment
   | expression inc_op               {$$ = new Assignment($1, $2, NULL);}
   | postfix_expression '.' SET_SLC '(' expression ',' expression ')'
   {
-   uint w = 0;
+   unsigned w = 0;
    if ($7->isSubrange()) {
      w = ((Subrange*)$7)->width;
    }
@@ -685,7 +697,7 @@ assignment
      if (type) {
        type = type->derefType();
        if (type->isRegType()) {
-         w = ((RegType*)type)->width->evalConst();
+         w = ((RegType*)type)->width()->evalConst();
        }
      }
    }
@@ -858,12 +870,4 @@ nontrivial_template_param_dec_list
 template_param_dec
 : type_spec ID {$$ = new TempParamDec($2, $1);symTab.push((TempParamDec*)$$);}
   ;
-
 %%
-
-#include <stdio.h>
-
-void yyerror(const char *s) {
-  fflush(stdout);
-  fprintf(stderr, "%s:%d: %s\n", yyfilenm, yylineno, s);
-}

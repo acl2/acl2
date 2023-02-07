@@ -12,31 +12,7 @@
 // S-expressions
 //***********************************************************************************
 
-// An Sexpression is a Symbol, a Cons, or a Plist (proper list of S-expressions).
-// Note that Constant is a derived class of Symbol.
-
-
-Plist *Plist::add(Sexpression *s) {
-  if (list) {
-    list->add(s);
-  }
-  else {
-    list = new List<Sexpression>(s);
-  }
-  return this;
-}
-
-Plist *Plist::push(Sexpression *s) {
-  if (list) {
-    list = list->push(s);
-  }
-  else {
-    list = new List<Sexpression>(s);
-  }
-  return this;
-}
-
-void Plist::display(ostream& os) {
+void Plist::display(ostream& os) const {
   os << "(";
   if (list) {
     list->value->display(os);
@@ -49,53 +25,6 @@ void Plist::display(ostream& os) {
   }
   os << ")";
 }
-
-// class Cons : public Sexpression (used in Initializer::ACL2ArrayExpr())
-// ----------------------------------------------------------------------
-
-// Data members:
-//   Sexpression *car;
-//   Sexpression *cdr;
-
-Cons::Cons(Sexpression *a, Sexpression *d) {car = a; cdr = d;}
-
-void Cons::display(ostream& os) {
-   os << "(";
-   car->display(os);
-   os << " . ";
-   cdr->display(os);
-   os << ")";
-}
-
-// class Symbol : public Sexpression
-// ---------------------------------
-
-// Data member: char *name;
-
-Symbol::Symbol(const char *s) {
-  name = new char[strlen(s)+1];
-  strcpy(name, s);
-}
-
-Symbol::Symbol(int n) {
-  ostringstream ostr;
-  ostr << n;
-/*
-The following line gave me big problems because it creates a pointer
-that outlives the object to which it points:
-  const char *s = ostr.str().c_str();
-*/
-  string st = ostr.str();
-  const char *s = st.c_str();
-  name = new char[strlen(s)+1];
-  strcpy(name, s);
-}
-
-Symbol::~Symbol() {delete[] name;}
-
-char *Symbol::getname() {return name;}
-
-void Symbol::display(ostream& os) {os << name;}
 
 // Symbol constants used in translation:
 
@@ -166,9 +95,7 @@ SymDec::SymDec(const char *n, Type *t, Expression *i) {
   sym = new Symbol(n); type = t; init = i;
 }
 
-char *SymDec::getname() {return sym->name;}
-
-void SymDec::displaySymDec(ostream& os) {
+void SymDec::displaySymDec(ostream& os) const {
   type->displayVarType(os);
   os << " ";
   type->displayVarName(getname(), os);
@@ -196,102 +123,13 @@ Sexpression *SymDec::ACL2SymExpr() {// Sexpression for a reference to this symbo
 // class Type
 //***********************************************************************************
 
-// Derived classes:
-
-//   PrimType           (primitive type: uintTYpe, intType, boolType)
-//   DefinedType        (introduced by typedef)
-//   RegType            (Algorithmic C register type)
-//     UintType         (unsigned limited integer register)
-//     IntType          (signed limited integer register)
-//     FPType           (fixed-point register
-//       UfixedType     (unsigned fixed-point register
-//       FixedType      (signed fixed-point register
-//   ArrayType          (array type)
-//     ArrayParamType   (array template class, which may be passed as parameter)
-//   StructType         (struct type)
-//   EnumType           (enumeration type)
-//   MvType             (multiple value type)
-
-bool Type::isPrimType() {return false;}  // virtual (overridden by PrimType)
-
-bool Type::isRegType() {return false;}  // virtual (overridden by RegType)
-
-bool Type::isFPType() {return false;} // virtual (overridden by FPType)
-
-bool Type::isArrayType() {return false;}  // virtual (overridden by ArrayType)
-
-bool Type::isArrayParamType() {return false;}  // virtual (overridden by ArrayParamType)
-
-bool Type::isStructType() {return false;}  // virtual (overridden by StructType)
-
-bool Type::isEnumType() {return false;} // virtual (overridden by EnumType)
-
-bool Type::isNumericalType() {return isPrimType() || isRegType() || isEnumType();}
-
-bool Type::isIntegerType() {return false;} // virtual (overridden by integer types)
-
-Type *Type::derefType() {return this;} // virtual (overridden by DefinedType)
-
-void Type::display(ostream& os) {assert("!Undefined method: display");}
-
-void Type::displayVarType(ostream& os) { // virtual (overridden by ArrayType)
-  // How this type is displayed in a variable declaration
-  display(os);
-}
-
-void Type::displayVarName(const char *name, ostream& os) { // virtual (overridden by ArrayType)
-  // How a variable of this type is displayed in a variable declaration
-  os << name;
-}
-
-void Type::makeDef(const char *name, ostream& os) { // virtual (overridden by ArrayType, StructType, and EnumType)
-  // How this type is displayed in a type definition.
-  os << "\ntypedef ";
-  display(os);
-  os << " " << name << ";";
-}
-
-uint Type::ACL2ValWidth() { // virtual (overridden by UintType)
-  // Boundary on the width of the value of an object of this type.
-  // 0 indicates unknown or unbounded width.
-  // Used to avoid unnecessary call to bits.
-  return 0;
-}
-
 Sexpression *Type::ACL2Assign(Expression *rval) { // virtual (overridden by RegType)
   // Convert rval to an S-expression to be assigned to an object of this type.
   return rval->ACL2Expr();
 }
 
-Sexpression *Type::ACL2Eval(Sexpression *s) { // virtual (overridden by RegType)
-  // For a RegType, the numerical value represented by a given bit vector s.
-  // For any other type, just return s.
-  return s;
-}
-
-
 // class PrimType : public Symbol, public Type (Primitive type)
 // ------------------------------------------------------------
-
-PrimType::PrimType(const char *s, const char *m) : Symbol(s) {
-  if (m) {
-    RACname = new char[strlen(m)+1];
-   strcpy(RACname, m);
-  }
-}
-
-bool PrimType::isPrimType() {return true;}
-
-bool PrimType::isIntegerType() {return true;}
-
-void PrimType::display(ostream& os) {
-  if (RACname) {
-    os << RACname;
-  }
-  else {
-    Symbol::display(os);
-  }
-}
 
 PrimType boolType("bool");
 PrimType intType("int");
@@ -299,45 +137,25 @@ PrimType uintType("uint");
 PrimType int64Type("int64", "int");
 PrimType uint64Type("uint64", "uint");
 
-// class DefinedType : public Symbol, public Type (type introduced by typedef)
-// ---------------------------------------------------------------------------
-
-// Data member: Type *def;
-
-DefinedType::DefinedType(const char *s, Type *t) : Symbol(s) {def = t;}
-
-Type *DefinedType::derefType() {return def->derefType();}
-
-void DefinedType::display(ostream& os) {Symbol::display(os);}
-
-void DefinedType::displayDef(ostream& os) {
-  if (!(def->isRegType())) {
-    def->makeDef(name, os);
-  }
-}
-
-
 // class RegType : public Type (Algorithmic C register type)
 // ---------------------------------------------------
 
 // Data member:  Expression *width
 
-RegType::RegType(Expression *w) {width = w;}
-
-bool RegType::isRegType() {return true;}
-
-bool RegType::isSigned() {return false;} // virtual
+//bool RegType::isRegType() {return true;}
+//
+//bool RegType::isSigned() {return false;} // virtual
 
 Sexpression *RegType::ACL2Assign(Expression *rval) { // overridden by FPType
   Type *t = rval->exprType();
-  uint w = rval->ACL2ValWidth();
-  if ((t == this) || (w && w <= width->evalConst())) {
+  unsigned w = rval->ACL2ValWidth();
+  if ((t == this) || (w && w <= width_->evalConst())) {
     return rval->ACL2Expr(true);
   }
   else {
     Sexpression *s = rval->ACL2Expr();
     if (rval->isFP()) s = new Plist({&s_fl, s});
-    return new Plist({&s_bits, s, new Integer(width->evalConst() - 1), &i_0});
+    return new Plist({&s_bits, s, new Integer(width_->evalConst() - 1), &i_0});
   }
 }
 
@@ -347,15 +165,13 @@ Sexpression *RegType::ACL2Assign(Expression *rval) { // overridden by FPType
 
 UintType::UintType(Expression *w) : RegType(w) {}
 
-bool UintType::isIntegerType() {return true;}
-
-void UintType::display(ostream& os) {
+void UintType::display(ostream& os) const {
   os << "sc_uint<";
-  width->displayNoParens(os);
+  width()->displayNoParens(os);
   os << ">";
 }
 
-uint UintType::ACL2ValWidth() {return width->evalConst();}
+unsigned UintType::ACL2ValWidth() {return width()->evalConst();}
 
 
 // class IntType : public RegType
@@ -365,16 +181,14 @@ bool IntType::isSigned() {return true;}
 
 IntType::IntType(Expression *w) : RegType (w) {}
 
-bool IntType::isIntegerType() {return true;}
-
-void IntType::display(ostream& os) {
+void IntType::display(ostream& os) const {
   os << "sc_int<";
-  width->displayNoParens(os);
+  width()->displayNoParens(os);
   os << ">";
 }
 
 Sexpression *IntType::ACL2Eval(Sexpression *s) {
-  return new Plist({&s_si, s, new Integer(width->evalConst())});
+  return new Plist({&s_si, s, new Integer(width()->evalConst())});
 }
 
 
@@ -385,19 +199,14 @@ Sexpression *IntType::ACL2Eval(Sexpression *s) {
 
 FPType::FPType(Expression *w, Expression *iw) : RegType (w) {iwidth = iw;}
 
-bool FPType::isFPType() {return true;}
-
-bool FPType::isIntegerType() {return false;}
-
 Sexpression *FPType::ACL2Assign(Expression *rval) {
   Type *t = rval->exprType();
-  uint w = rval->ACL2ValWidth();
   if (t == this) {
     return rval->ACL2Expr(true);
   }
   else {
     Sexpression *s = rval->ACL2Expr();
-    int wVal = width->evalConst(), iwVal = iwidth->evalConst();
+    int wVal = width()->evalConst(), iwVal = iwidth->evalConst();
     s = new Plist({&s_times, s, new Plist({&s_expt, &i_2, new Integer(wVal - iwVal)})});
     if ((rval->isFP()) || wVal < iwVal) s = new Plist({&s_fl, s});
     return new Plist({&s_bits, s, new Integer(wVal - 1), &i_0});
@@ -410,16 +219,16 @@ Sexpression *FPType::ACL2Assign(Expression *rval) {
 
 UfixedType::UfixedType(Expression *w, Expression *iw) : FPType (w, iw) {}
 
-void UfixedType::display(ostream& os) {
+void UfixedType::display(ostream& os) const {
   os << "sc_ufixed<";
-  width->displayNoParens(os);
+  width()->displayNoParens(os);
   os << ", ";
   iwidth->displayNoParens(os);
   os << ">";
 }
 
 Sexpression *UfixedType::ACL2Eval(Sexpression *s) {
-  return new Plist({&s_divide, s, new Plist({&s_expt, &i_2, new Integer(width->evalConst() - iwidth->evalConst())})});
+  return new Plist({&s_divide, s, new Plist({&s_expt, &i_2, new Integer(width()->evalConst() - iwidth->evalConst())})});
 }
 
 // class FixedType : public RegType
@@ -429,17 +238,17 @@ FixedType::FixedType(Expression *w, Expression *iw) : FPType (w, iw) {}
 
 bool FixedType::isSigned() {return true;}
 
-void FixedType::display(ostream& os) {
+void FixedType::display(ostream& os) const {
   os << "sc_fixed<";
-  width->displayNoParens(os);
+  width()->displayNoParens(os);
   os << ", ";
   iwidth->displayNoParens(os);
   os << ">";
 }
 
 Sexpression *FixedType::ACL2Eval(Sexpression *s) {
-  Sexpression *numerator = new Plist({&s_si, s, new Integer(width->evalConst())});
-  Sexpression *denominator = new Plist({&s_expt, &i_2, new Integer(width->evalConst() - iwidth->evalConst())});
+  Sexpression *numerator = new Plist({&s_si, s, new Integer(width()->evalConst())});
+  Sexpression *denominator = new Plist({&s_expt, &i_2, new Integer(width()->evalConst() - iwidth->evalConst())});
   return new Plist({&s_divide, numerator, denominator});
 }
 
@@ -449,27 +258,20 @@ Sexpression *FixedType::ACL2Eval(Sexpression *s) {
 // Data members: Type *baseType; Expresion *dim;
 
 
-ArrayType::ArrayType(Expression *d, Type *t) {
-  baseType = t;
-  dim = d;
-}
-
 Type *ArrayType::getBaseType() {return baseType->derefType();}
 
-bool ArrayType::isArrayType() {return true;}
-
-void ArrayType::display(ostream& os) {
+void ArrayType::display(ostream& os) const {
   baseType->display(os);
   os << "[";
   dim->displayNoParens(os);
   os << "]";
 }
 
-void ArrayType::displayVarType(ostream& os) {
+void ArrayType::displayVarType(ostream& os) const {
   baseType->display(os);
 }
 
-void ArrayType::displayVarName(const char *name, ostream& os) {
+void ArrayType::displayVarName(const char *name, ostream& os) const {
   os << name << "[";
   dim->displayNoParens(os);
   os << "]";
@@ -499,17 +301,15 @@ void ArrayType::makeDef(const char *name, ostream& os) {
 
 ArrayParamType::ArrayParamType(Expression *d, Type *t) : ArrayType(d, t) {}
 
-void ArrayParamType::display(ostream& os) {
+void ArrayParamType::display(ostream& os) const {
   ArrayType::display(os);
 }
 
-bool ArrayParamType::isArrayParamType() {return true;}
-
-void ArrayParamType::displayVarType(ostream& os) {
+void ArrayParamType::displayVarType(ostream& os) const {
   ArrayType::displayVarType(os);
 }
 
-void ArrayParamType::displayVarName(const char *name, ostream& os) {
+void ArrayParamType::displayVarName(const char *name, ostream& os) const {
   ArrayType::displayVarName(name, os);
 }
 
@@ -525,9 +325,7 @@ void ArrayParamType::makeDef(const char *name, ostream& os) {
 
 StructField::StructField(Type *t, char *n) {sym = new Symbol(n); type = t;}
 
-char *StructField::getname() {return sym->name;}
-
-void StructField::display(ostream& os, uint indent) {
+void StructField::display(ostream& os, unsigned indent) const {
   if (indent) {os << setw(indent) << " ";}
   type->display(os);
   os << " " << getname() << ";";
@@ -540,9 +338,7 @@ void StructField::display(ostream& os, uint indent) {
 
 StructType::StructType(List<StructField> *f) {fields = f;}
 
-bool StructType::isStructType() {return true;}
-
-void StructType::displayFields(ostream& os) {
+void StructType::displayFields(ostream& os) const {
   os << "{";
   List<StructField> *ptr = fields;
   while (ptr) {
@@ -553,7 +349,7 @@ void StructType::displayFields(ostream& os) {
   os << "}";
 }
 
-void StructType::display(ostream& os) {
+void StructType::display(ostream& os) const {
     os << "struct ";
     this->displayFields(os);
 }
@@ -569,7 +365,7 @@ void StructType::makeDef(const char *name, ostream& os) {
 
 EnumConstDec::EnumConstDec(const char *n, Expression *v) : SymDec(n, &intType, v) {}
 
-void EnumConstDec::display(ostream& os) {
+void EnumConstDec::display(ostream& os) const {
   os << getname();
   if (init) {
     os << "=";
@@ -615,11 +411,7 @@ Sexpression *EnumType::ACL2Expr() {
   return result;
 }
 
-bool EnumType::isIntegerType() {return true;}
-
-bool EnumType::isEnumType() {return true;}
-
-void EnumType::displayConsts(ostream& os) {
+void EnumType::displayConsts(ostream& os) const {
   os << "{";
   List<EnumConstDec> *ptr = vals;
   while (ptr) {
@@ -630,14 +422,14 @@ void EnumType::displayConsts(ostream& os) {
   os << "}";
 }
 
-void EnumType::display(ostream& os) {
+void EnumType::display(ostream& os) const {
   os << "enum ";
   displayConsts(os);
 }
 
 Sexpression *EnumType::getEnumVal(Symbol *s) {
   List<EnumConstDec> *ptr = vals;
-  uint count = 0;
+  unsigned count = 0;
   while (ptr) {
     if (ptr->value->init) {
       count = ptr->value->init->evalConst();
@@ -663,10 +455,10 @@ void EnumType::makeDef(const char *name, ostream& os) {
 // class MvType : public Type (multiple-value type)
 // -------------------------------------------
 
-// Data members:  uint numVals; Type *type[8];
+// Data members:  unsigned numVals; Type *type[8];
 // 2 <= numVals <= 8; determines number of valid entries of type[].
 
-void MvType::display(ostream& os) {
+void MvType::display(ostream& os) const {
 
   assert(type.size() >= 2
         && "It does not make sense to have a mv with 1 or 0 elem");
@@ -680,60 +472,12 @@ void MvType::display(ostream& os) {
     t->display(os);
   }
   os << ">";
-//  type[0]->display(os);
-//  os << ", ";
-//  type[1]->display(os);
-//  if (type[2]) {
-//    os << ", ";
-//    type[2]->display(os);
-//    if (type[3]) {
-//      os << ", ";
-//      type[3]->display(os);
-//      if (type[4]) {
-//        os << ", ";
-//        type[4]->display(os);
-//  if (type[5]) {
-//          os << ", ";
-//          type[5]->display(os);
-//    if (type[6]) {
-//            os << ", ";
-//            type[6]->display(os);
-//      if (type[7]) {
-//        os << ", ";
-//        type[7]->display(os);
-//      }
-//      }
-//  }
-//      }
-//    }
-//  }
 }
 
 
 //***********************************************************************************
 // class Expression
 //***********************************************************************************
-
-// Derived classes:
-
-//   Constant            (also derived class of Symbol)
-//     Integer
-//     Boolean
-//   SymRef              (Reference to declared symbol, i.e., enum constant or variable)
-//   Funcall             (function call)
-//   Initializer         (initial value of array, a list of constants)
-//   ArrayRef            (array reference)
-//     ArrayParamRef
-//   StructRef           (struct field reference)
-//   BitRef              (bit extraction)
-//   Subrange            (subrange extraction)
-//   PrefixExpr          (application of unary operator)
-//   CastExpr
-//   BinaryExpr          (application of binary operator)
-//   CondExpr            (conditional expression, _ ? _ : _)
-//   MultipleValue       (used only as return values of functions)
-
-// Data member:  bool needsParens; (printed within parentheses in the source code)
 
 Expression::Expression() {needsParens = false;}
 
@@ -777,9 +521,9 @@ Type* Expression::exprType() { // virtual (overridden by SymRef, Funcall, ArrayR
 // displayNoParens is defined for each class of expressions and is called by the non-virtual
 // display method, which inserts parentheses as required:
 
-// virtual void displayNoParens(ostream& os) = 0;
+// virtual void displayNoParens(ostream& os) const = 0;
 
-void Expression::display(ostream& os) {
+void Expression::display(ostream& os) const {
   if (needsParens) os << "(";
   displayNoParens(os);
   if (needsParens) os << ")";
@@ -787,7 +531,7 @@ void Expression::display(ostream& os) {
 
 // The following method substitutes each occurrence of a given variable with a given value:
 
-Expression *Expression::subst(SymRef *var, Expression *val) { // virtual
+Expression *Expression::subst([[maybe_unused]] SymRef *var, [[maybe_unused]] Expression *val) { // virtual
   return this;
 }
 
@@ -802,7 +546,7 @@ Expression *Expression::subst(SymRef *var, Expression *val) { // virtual
 // (3) The resulting S-expression is to be the first argument of bitn, bits, setbitn, or setbits.
 // (4) The expression is an argument of a logical expression of a register type.
 
-Sexpression *Expression::ACL2Expr(bool isBV) { // virtual
+Sexpression *Expression::ACL2Expr([[maybe_unused]] bool isBV) { // virtual
   assert(!"Expression cannot be converted to an S-expression");
   return nullptr;
 }
@@ -816,7 +560,7 @@ Sexpression *Expression::ACL2ArrayExpr() { // virtual (overridden by Initializer
 
 // Translate to an ACL2 assignment with this lvalue and the rvalue given as the argument:
 
-Sexpression *Expression::ACL2Assign(Sexpression *rval) { // virtual (overridden by valid lvalues)
+Sexpression *Expression::ACL2Assign([[maybe_unused]] Sexpression *rval) { // virtual (overridden by valid lvalues)
   assert(!"Assigment can be made only to an expression of type SymRef, ArrayRef, StructRef, BitRef, or Subrange");
   return nullptr;
 }
@@ -824,7 +568,7 @@ Sexpression *Expression::ACL2Assign(Sexpression *rval) { // virtual (overridden 
 // If a numerical expression is known to have a non-negative value of bounded width, then return
 // the bound; otherwise, return 0:
 
-uint Expression::ACL2ValWidth() { // virtual (overridden by BitRef and Subrange)
+unsigned Expression::ACL2ValWidth() { // virtual (overridden by BitRef and Subrange)
   Type *t = exprType();
   return t ? t->ACL2ValWidth() : 0;
 }
@@ -833,7 +577,7 @@ uint Expression::ACL2ValWidth() { // virtual (overridden by BitRef and Subrange)
 // a little smarter by computing the width of a Subrange expression when the limits differ by a
 // computable constant:
 
-bool Expression::isPlusConst(Expression *e) { // virtual (overridden by BinaryExpr)
+bool Expression::isPlusConst([[maybe_unused]] Expression *e) { // virtual (overridden by BinaryExpr)
   // Used only by Subrange::ACL2ValWidth
   // Applied to the upper limit of a Subrange expression to determine whether it is
   // it is a binary expression representing the sum of the lower limit and a constant.
@@ -846,25 +590,25 @@ bool Expression::isEqual(Expression *e) { // virtual (overridden by PrefixExpr a
   return this == e;
 }
 
-bool Expression::isEqualPrefix(const char *o, Expression *e) { // virtual (overridden by PrefixExpr)
+bool Expression::isEqualPrefix([[maybe_unused]] const char *o, [[maybe_unused]] Expression *e) { // virtual (overridden by PrefixExpr)
   // Is this a prefix expression with the given operator and argument?
   // Used only by isEqual.
   return false;
 }
 
-bool Expression::isEqualBinary(const char *o, Expression *e1, Expression *e2) { // virtual (overridden by BinaryExpr)
+bool Expression::isEqualBinary([[maybe_unused]] const char *o, [[maybe_unused]] Expression *e1, [[maybe_unused]] Expression *e2) { // virtual (overridden by BinaryExpr)
   // Is this a binary expression with the given operator and arguments?
   // Used only by isEqual.
   return false;
 }
 
-bool Expression::isEqualConst(Constant *c) { // virtual (overridden by Constant)
+bool Expression::isEqualConst([[maybe_unused]] Constant *c) { // virtual (overridden by Constant)
   // Is this a constant equal to a given constant?
   // Used only by isEqual.
   return false;
 }
 
-bool Expression::isEqualSymRef(SymDec *s) { // virtual (overridden by SymRef)
+bool Expression::isEqualSymRef([[maybe_unused]] SymDec *s) { // virtual (overridden by SymRef)
   // Is this a reference to a given symbol?
   // Used only by isEqual.
   return false;
@@ -889,18 +633,16 @@ Constant::Constant(int n) : Expression(), Symbol(n) {}
 
 bool Constant::isConst() {return true;}
 
-bool Constant::isInteger() {return true;}
+void Constant::displayNoParens(ostream& os) const {os << getname();}
 
-void Constant::displayNoParens(ostream& os) {os << name;}
-
-Sexpression *Constant::ACL2Expr(bool isBV) {return this;}
+Sexpression *Constant::ACL2Expr([[maybe_unused]] bool isBV) {return this;}
 
 bool Constant::isEqual(Expression *e) {
   return e->isEqualConst(this);
 }
 
 bool Constant::isEqualConst(Constant *c) {
-  return !strcmp(name, c->name);
+  return !strcmp(getname(), c->getname());
 }
 
 
@@ -912,26 +654,28 @@ Integer::Integer(const char *n) : Constant(n) {}
 Integer::Integer(int n) : Constant(n) {}
 
 int Integer::evalConst() {
-  if (!strncmp(name, "0x", 2)) {
-    return strtol(name+2, nullptr, 16);
+  if (!strncmp(getname(), "0x", 2)) {
+    return strtol(getname()+2, nullptr, 16);
   }
-  else if (!strncmp(name, "-0x", 3)) {
-    return -strtol(name+3, nullptr, 16);
+  else if (!strncmp(getname(), "-0x", 3)) {
+    return -strtol(getname()+3, nullptr, 16);
   }
   else {
-    return atoi(name);
+    return atoi(getname());
   }
 }
 
-Sexpression *Integer::ACL2Expr(bool isBV) {
-  if (!strncmp(name, "0x", 2)) {
-    Symbol *result = new Symbol(name);
-    result->name[0] = '#';
+Sexpression *Integer::ACL2Expr([[maybe_unused]] bool isBV) {
+  if (!strncmp(getname(), "0x", 2)) {
+    std::string new_name(getname());
+    new_name[0] = '#';
+    Symbol *result = new Symbol(std::move(new_name));
     return result;
   }
-  else if (!strncmp(name, "-0x", 3)) {
-    Symbol *result = new Symbol(name+1);
-    result->name[0] = '#';
+  else if (!strncmp(getname(), "-0x", 3)) {
+    std::string new_name(getname() + 1);
+    new_name[0] = '#';
+    Symbol *result = new Symbol(std::move(new_name));
     return new Plist({&s_minus, result});
   }
   else {
@@ -949,18 +693,18 @@ Integer i_2("2");
 Boolean::Boolean(const char *n) : Constant(n) {}
 
 int Boolean::evalConst() {
-  if (!strcmp(name, "true")) return 1;
-  else if (!strcmp(name, "false")) return 0;
+  if (!strcmp(getname(), "true")) return 1;
+  else if (!strcmp(getname(), "false")) return 0;
   else UNREACHABLE();
 }
 
 Boolean b_true("true");
 Boolean b_false("false");
 
-Sexpression *Boolean::ACL2Expr(bool isBV) {
-  if (!strcmp(name, "true")) return new Plist({&s_true});
-  else if (!strcmp(name, "false")) return new Plist({&s_false});
-  else cout << name << endl; UNREACHABLE();
+Sexpression *Boolean::ACL2Expr([[maybe_unused]] bool isBV) {
+  if (!strcmp(getname(), "true")) return new Plist({&s_true});
+  else if (!strcmp(getname(), "false")) return new Plist({&s_false});
+  else cout << getname() << endl; UNREACHABLE();
 }
 
 
@@ -996,7 +740,7 @@ bool SymRef::isStruct() {return exprType()->isStructType();}
 
 bool SymRef::isInteger() {return exprType()->isIntegerType();}
 
-void SymRef::displayNoParens(ostream& os) {symDec->sym->display(os);}
+void SymRef::displayNoParens(ostream& os) const {symDec->sym->display(os);}
 
 Expression *SymRef::subst(SymRef *var, Expression *val) {
   return (symDec == var->symDec) ? val : (Expression*)this;
@@ -1037,7 +781,7 @@ bool FunCall::isStruct() {return exprType()->isStructType();}
 
 bool FunCall::isInteger() {return exprType()->isIntegerType();}
 
-void FunCall::displayNoParens(ostream& os) {
+void FunCall::displayNoParens(ostream& os) const {
   os << func->getname() << "(";
   List<Expression> *ptr = args;
   while (ptr) {
@@ -1092,7 +836,7 @@ TempCall::TempCall(Template *f, List<Expression> *a, List<Expression> *p) : FunC
   }
 }
 
-void TempCall::displayNoParens(ostream& os) {
+void TempCall::displayNoParens(ostream& os) const {
   os << func->getname() << "<";
   List<Expression> *ptr = params;
   while (ptr) {
@@ -1147,7 +891,7 @@ bool Initializer::isInitializer() {
   return true;
 }
 
-void Initializer::displayNoParens(ostream& os) {
+void Initializer::displayNoParens(ostream& os) const {
   os << "{";
   List<Constant> *ptr = vals;
   while (ptr) {
@@ -1158,7 +902,7 @@ void Initializer::displayNoParens(ostream& os) {
   os << "}";
 }
 
-Sexpression *Initializer::ACL2Expr(bool isBV) {
+Sexpression *Initializer::ACL2Expr([[maybe_unused]] bool isBV) {
   BigList<Sexpression> *result = new BigList<Sexpression>((Sexpression*)(vals->value->ACL2Expr()));
   List<Constant> *ptr = vals->next;
   while (ptr) {
@@ -1171,9 +915,9 @@ Sexpression *Initializer::ACL2Expr(bool isBV) {
 Sexpression *Initializer::ACL2ArrayExpr() {
   List<Sexpression> *entries = ((Plist*)(ACL2Expr()))->list;
   Plist *p = new Plist();
-  uint i = 0;
+  unsigned i = 0;
   while (entries) {
-    if (strcmp(((Constant*)(entries->value))->name, "0")) {
+    if (strcmp(((Constant*)(entries->value))->getname(), "0")) {
       p->add(new Cons(new Integer(i), entries->value));
     }
     i++;
@@ -1213,7 +957,7 @@ bool ArrayRef::isArrayParam() {return exprType()->isArrayParamType();}
 
 bool ArrayRef::isInteger() {return exprType()->isIntegerType();}
 
-void ArrayRef::displayNoParens(ostream& os) {
+void ArrayRef::displayNoParens(ostream& os) const {
   array->display(os);
   os << "[";
   index->display(os);
@@ -1254,7 +998,7 @@ Expression *ArrayParamRef::subst(SymRef *var, Expression *val) {
   return (newIndex == index) ? this : new ArrayParamRef(array, newIndex);
 }
 
-void ArrayParamRef::displayNoParens(ostream& os) {
+void ArrayParamRef::displayNoParens(ostream& os) const {
   array->display(os);
   os << "[";
   index->display(os);
@@ -1277,7 +1021,7 @@ bool StructRef::isArrayParam() {return exprType()->isArrayParamType();}
 
 bool StructRef::isInteger() {return exprType()->isIntegerType();}
 
-void StructRef::displayNoParens(ostream& os) {
+void StructRef::displayNoParens(ostream& os) const {
   base->display(os);
   os << "." << field;
 }
@@ -1302,7 +1046,7 @@ BitRef::BitRef(Expression *b, Expression *i) : Expression() {base = b; index = i
 
 bool BitRef::isInteger() {return true;}
 
-void BitRef::displayNoParens(ostream& os) {
+void BitRef::displayNoParens(ostream& os) const {
   base->display(os);
   os << "[";
   index->display(os);
@@ -1315,7 +1059,7 @@ Expression *BitRef::subst(SymRef *var, Expression *val) {
   return (newBase == base && newIndex == index) ? this : new BitRef(newBase, newIndex);
 }
 
-Sexpression *BitRef::ACL2Expr(bool isBV) {
+Sexpression *BitRef::ACL2Expr([[maybe_unused]] bool isBV) {
   Sexpression *b = base->ACL2Expr(true);
   Sexpression *i = index->ACL2Expr();
   return new Plist({&s_bitn, b, i});
@@ -1324,12 +1068,12 @@ Sexpression *BitRef::ACL2Expr(bool isBV) {
 Sexpression *BitRef::ACL2Assign(Sexpression *rval) {
   Sexpression *b = base->ACL2Expr(true);
   Sexpression *i = index->ACL2Expr();
-  uint n = (((RegType*)(base->exprType()))->width)->evalConst();
+  unsigned n = (((RegType*)(base->exprType()))->width())->evalConst();
   Integer *s = new Integer(n);
   return base->ACL2Assign(new Plist({&s_setbitn, b, s, i, rval}));
 }
 
-uint BitRef::ACL2ValWidth() {return 1;}
+unsigned BitRef::ACL2ValWidth() {return 1;}
 
 
 // class Subrange : public Expression
@@ -1341,7 +1085,7 @@ Subrange::Subrange(Expression *b, Expression *h, Expression *l) : Expression() {
   base = b; high = h; low = l; width = 0;
 }
 
-Subrange::Subrange(Expression *b, Expression *h, Expression *l, uint w) : Expression() {
+Subrange::Subrange(Expression *b, Expression *h, Expression *l, unsigned w) : Expression() {
   base = b; high = h; low = l; width = w;
 }
 
@@ -1349,7 +1093,7 @@ bool Subrange::isSubrange() {return true;}
 
 bool Subrange::isInteger() {return true;}
 
-void Subrange::displayNoParens(ostream& os) {
+void Subrange::displayNoParens(ostream& os) const {
   base->display(os);
   os << "[";
   high->display(os);
@@ -1366,7 +1110,7 @@ Expression *Subrange::subst(SymRef *var, Expression *val) {
            ? this : new Subrange(newBase, newHigh, newLow);
 }
 
-Sexpression *Subrange::ACL2Expr(bool isBV) {
+Sexpression *Subrange::ACL2Expr([[maybe_unused]] bool isBV) {
   Sexpression *b = base->ACL2Expr(true);
   Sexpression *hi = high->ACL2Expr();
   Sexpression *lo = low->ACL2Expr();
@@ -1377,12 +1121,12 @@ Sexpression *Subrange::ACL2Assign(Sexpression *rval) {
   Sexpression *b = base->ACL2Expr(true);
   Sexpression *hi = high->ACL2Expr();
   Sexpression *lo = low->ACL2Expr();
-  uint n = (((RegType*)(base->exprType()))->width)->evalConst();
+  unsigned n = (((RegType*)(base->exprType()))->width())->evalConst();
   Integer *s = new Integer(n);
   return base->ACL2Assign(new Plist({&s_setbits, b, s, hi, lo, rval}));
 }
 
-uint Subrange::ACL2ValWidth() {
+unsigned Subrange::ACL2ValWidth() {
   if (high->isConst() && low->isConst()) {
     return high->evalConst() - low->evalConst() + 1;
   }
@@ -1423,7 +1167,7 @@ int PrefixExpr::evalConst() {
 
 bool PrefixExpr::isInteger() {return expr->isInteger();}
 
-void PrefixExpr::displayNoParens(ostream& os) {
+void PrefixExpr::displayNoParens(ostream& os) const {
   os << op;
   expr->display(os);
 }
@@ -1458,7 +1202,7 @@ Sexpression *PrefixExpr::ACL2Expr(bool isBV) {
     if (t) {
        Plist *bv = new Plist({&s_lognot, expr->ACL2Expr(true)});
        if (isBV && t->isRegType()) {
-         uint w = (((RegType*)t)->width)->evalConst();
+         unsigned w = (((RegType*)t)->width())->evalConst();
          return new Plist({&s_bits, bv, new Integer(w - 1), &i_0});
        }
        else {
@@ -1497,7 +1241,7 @@ int CastExpr::evalConst() {return expr->evalConst();}
 
 bool CastExpr::isInteger() {return expr->isInteger();}
 
-void CastExpr::displayNoParens(ostream& os) {
+void CastExpr::displayNoParens(ostream& os) const {
   expr->display(os);
 }
 
@@ -1506,7 +1250,7 @@ Expression *CastExpr::subst(SymRef *var, Expression *val) {
   return (newExpr == expr) ? this : new CastExpr(newExpr, type);
 }
 
-Sexpression *CastExpr::ACL2Expr(bool isBV) {return expr->ACL2Expr();}
+Sexpression *CastExpr::ACL2Expr([[maybe_unused]] bool isBV) {return expr->ACL2Expr();}
 
 
 // class BinaryExpr : public Expression
@@ -1546,7 +1290,7 @@ int BinaryExpr::evalConst() {
 
 bool BinaryExpr::isInteger() {return expr1->isInteger() && expr2->isInteger();}
 
-void BinaryExpr::displayNoParens(ostream& os) {
+void BinaryExpr::displayNoParens(ostream& os) const {
   expr1->display(os);
   os << " " << op << " ";
   expr2->display(os);
@@ -1636,7 +1380,7 @@ CondExpr::CondExpr(Expression *e1, Expression *e2, Expression *t) : Expression()
 
 bool CondExpr::isInteger() {return expr1->isInteger() && expr2->isInteger();}
 
-void CondExpr::displayNoParens(ostream& os) {
+void CondExpr::displayNoParens(ostream& os) const {
   test->display(os);
   os << " ? ";
   expr1->display(os);
@@ -1652,7 +1396,7 @@ Expression *CondExpr::subst(SymRef *var, Expression *val) {
            ? this : new CondExpr(newExpr1, newExpr2, newTest);
 }
 
-Sexpression *CondExpr::ACL2Expr(bool isBV) {
+Sexpression *CondExpr::ACL2Expr([[maybe_unused]] bool isBV) {
   return new Plist({&s_if1, test-> ACL2Expr(), expr1->ACL2Expr(), expr2->ACL2Expr()});
 }
 
@@ -1667,7 +1411,7 @@ MultipleValue::MultipleValue(MvType *t, List<Expression> *e)
   , type(t) {
 
     expr.reserve(8);
-    for (uint i = 0; i < 8 && e; ++i) {
+    for (unsigned i = 0; i < 8 && e; ++i) {
       expr.push_back(e->value);
       e = e->pop();
     }
@@ -1678,7 +1422,7 @@ MultipleValue::MultipleValue(MvType *t, List<Expression> *e)
         && "We should have as many types as values");
 }
 
-void MultipleValue::displayNoParens(ostream& os) {
+void MultipleValue::displayNoParens(ostream& os) const {
 
   os << "<";
   bool first = true;
@@ -1697,7 +1441,7 @@ Expression *MultipleValue::subst(SymRef *var, Expression *val) {
   newExpr.reserve(8);
   bool isNew = false;
 
-  for (uint i = 0; i < expr.size(); ++i) {
+  for (unsigned i = 0; i < expr.size(); ++i) {
     newExpr.push_back(expr[i]->subst(var, val));
     if (newExpr[i] != expr[i]) {
       isNew = true;
@@ -1706,7 +1450,7 @@ Expression *MultipleValue::subst(SymRef *var, Expression *val) {
   return isNew ? new MultipleValue(type, std::move(newExpr)) : this;
 }
 
-Sexpression *MultipleValue::ACL2Expr(bool isBV) {
+Sexpression *MultipleValue::ACL2Expr([[maybe_unused]] bool isBV) {
 
   Plist *result = new Plist({&s_mv});
 
@@ -1743,13 +1487,13 @@ Statement::Statement() {}
 
 // This method is designed to handle if ... else if ... :
 
-void Statement::displayAsRightBranch(ostream& os, uint indent) { // virtual (overridden by IfStmt)
+void Statement::displayAsRightBranch(ostream& os, unsigned indent) { // virtual (overridden by IfStmt)
   display(os, indent + 2);
 }
 
 // This method is designed to handle nested blocks:
 
-void Statement::displayWithinBlock(ostream& os, uint indent) { // virtual (overridden by Block)
+void Statement::displayWithinBlock(ostream& os, unsigned indent) { // virtual (overridden by Block)
   display(os, indent);
 }
 
@@ -1768,7 +1512,7 @@ Block *Statement::blockify(Statement *s) { // virtual (overridden by Block)
 // Substitute expr for each ocurrence of var in statement; var is assumed not to occur in the left
 // side of any declaration or assignment:
 
-Statement* Statement::subst(SymRef *var, Expression *expr) { // virtual
+Statement* Statement::subst([[maybe_unused]] SymRef *var, [[maybe_unused]] Expression *expr) { // virtual
   return this;
 }
 
@@ -1780,10 +1524,10 @@ Sexpression *Statement::ACL2Expr() { // virtual
   return nullptr;
 }
 
-void Statement::noteReturnType(Type *t) { // virtual (overridden by Block, ReturnStmt, and IfStmt)
+void Statement::noteReturnType([[maybe_unused]] Type *t) { // virtual (overridden by Block, ReturnStmt, and IfStmt)
 }
 
-void Statement::markAssertions(FunDef *f) { // virtual (overridden by Assertion)
+void Statement::markAssertions([[maybe_unused]] FunDef *f) { // virtual (overridden by Assertion)
 }
 
 // class SimpleStatement : public Statement
@@ -1791,7 +1535,7 @@ void Statement::markAssertions(FunDef *f) { // virtual (overridden by Assertion)
 
 SimpleStatement::SimpleStatement() : Statement() {}
 
-void SimpleStatement::display(ostream& os, uint indent) {
+void SimpleStatement::display(ostream& os, unsigned indent) {
   os << "\n";
   if (indent) {os << setw(indent) << " ";}
   displaySimple(os);
@@ -1867,7 +1611,7 @@ void ConstDec::displaySimple(ostream& os) {
 
 bool ConstDec::isConst() {return type->isIntegerType();}
 
-Statement *ConstDec::subst(SymRef *var, Expression *val) {return this;}
+Statement *ConstDec::subst([[maybe_unused]] SymRef *var, [[maybe_unused]] Expression *val) {return this;}
 
 bool ConstDec::isGlobal() {
   List<ConstDec> *decs = prog.constDecs;
@@ -2189,7 +1933,7 @@ void AssignRange::displaySimple(ostream& os) {
 // Data members: Expression *lval[8]; FunCall *rval;
 
 MultipleAssignment::MultipleAssignment(FunCall *r, List<Expression> *e) : SimpleStatement() {
-  for (uint i=0; i<8; i++) {
+  for (unsigned i=0; i<8; i++) {
     if (e) {
       lval[i] = e->value;
       e = e->pop();
@@ -2204,7 +1948,7 @@ MultipleAssignment::MultipleAssignment(FunCall *r, List<Expression> *e) : Simple
 void MultipleAssignment::displaySimple(ostream& os) {
   os << "<";
   lval[0]->display(os);
-  for (uint i=1; i<8 && lval[i]; i++) {
+  for (unsigned i=1; i<8 && lval[i]; i++) {
     os << ", ";
     lval[i]->display(os);
   }
@@ -2216,7 +1960,7 @@ Statement *MultipleAssignment::subst(SymRef *var, Expression *val) {
   Expression *newR = rval->subst(var, val);
   bool changed = (newR != rval);
   List<Expression> *newL;
-  for (uint i=0; i<8 && lval[i]; i++) {
+  for (unsigned i=0; i<8 && lval[i]; i++) {
     Expression *temp = lval[i]->subst(var, val);
     if (temp != lval[i]) changed = true;
     if (i == 0) {
@@ -2254,7 +1998,7 @@ Sexpression *MultipleAssignment::ACL2Expr() {
   Plist *vars = new Plist();
   Plist *result = new Plist({&s_mv_assign, vars, rval->ACL2Expr()});
   bool isBlock = false;
-  for (uint i=0; i<8 && lval[i]; i++) {
+  for (unsigned i=0; i<8 && lval[i]; i++) {
     if (lval[i]->isSymRef()) {
       vars->add(((SymRef*)lval[i])->symDec->sym);
     }
@@ -2279,7 +2023,7 @@ Sexpression *MultipleAssignment::ACL2Expr() {
 
 NullStmt::NullStmt() : SimpleStatement() {}
 
-void NullStmt::displaySimple(ostream& os) {}
+void NullStmt::displaySimple([[maybe_unused]] ostream& os) {}
 
 Sexpression *NullStmt::ACL2Expr() {
   return new Plist({&s_null});
@@ -2311,7 +2055,7 @@ Block *Block::blockify(Statement *s) {
   return new Block(stmtList ? stmtList->copy()->add(s) : new List<Statement>(s));
 }
 
-void Block::display(ostream& os, uint indent) {
+void Block::display(ostream& os, unsigned indent) {
   os << " {";
   if (stmtList) {
     List<Statement> *ptr = stmtList;
@@ -2325,7 +2069,7 @@ void Block::display(ostream& os, uint indent) {
   os << "}";
 }
 
-void Block::displayWithinBlock(ostream& os, uint indent) {
+void Block::displayWithinBlock(ostream& os, unsigned indent) {
   os << "\n" << setw(indent) << (indent ? " " : "") << "{";
   List<Statement> *ptr = stmtList;
   while (ptr) {
@@ -2394,12 +2138,12 @@ IfStmt::IfStmt(Expression *t, Statement *l, Statement *r) : Statement() {
   right = r;
 }
 
-void IfStmt::display(ostream& os, uint indent) {
+void IfStmt::display(ostream& os, unsigned indent) {
   os << "\n" << setw(indent) << " ";
   displayAsRightBranch(os, indent);
 }
 
-void IfStmt::displayAsRightBranch(ostream& os, uint indent) {
+void IfStmt::displayAsRightBranch(ostream& os, unsigned indent) {
   os << "if (";
   test->display(os);
   os << ")";
@@ -2443,7 +2187,7 @@ ForStmt::ForStmt(SimpleStatement *v, Expression *t, Assignment *u, Statement *b)
   body = b;
 }
 
-void ForStmt::display(ostream& os, uint indent) {
+void ForStmt::display(ostream& os, unsigned indent) {
   os << "\n" << setw(indent) << " " << "for (";
   init->displaySimple(os);
   os << "; ";
@@ -2480,7 +2224,7 @@ void ForStmt::markAssertions(FunDef *f) {
 
 Case::Case(Expression *l, List<Statement> *a) {label = l; action = a;}
 
-void Case::display(ostream& os, uint indent) {
+void Case::display(ostream& os, unsigned indent) {
   os << "\n" << setw(indent) << " ";
   if (label) {
     os << "case ";
@@ -2536,7 +2280,7 @@ SwitchStmt::SwitchStmt(Expression *t, List<Case> *c) : Statement() {
   cases = c;
 }
 
-void SwitchStmt::display(ostream& os, uint indent) {
+void SwitchStmt::display(ostream& os, unsigned indent) {
   os << "\n" << setw(indent) << " " << "switch (";
   test->display(os);
   os << ") {";
@@ -2568,7 +2312,7 @@ Sexpression *SwitchStmt::ACL2Expr() {
   List<Sexpression> *result = new List<Sexpression>(&s_switch, test->ACL2Expr());
   List<Case> *clist = cases;
   List<Sexpression> *labels = nullptr;
-  Case *c;
+//  Case *c;
   Expression *l;
   List<Statement> *a;
   List<Sexpression> *s;
@@ -2619,11 +2363,9 @@ FunDef::FunDef(const char *n, Type *t, List<VarDec> *p, Block *b) {
   body = b;
 }
 
-uint FunDef::arity() {return params->length();}
+unsigned FunDef::arity() {return params->length();}
 
-char *FunDef::getname() {return sym->name;}
-
-void FunDef::displayDec(ostream& os, uint indent) {
+void FunDef::displayDec(ostream& os, unsigned indent) {
   os << "\n";
   if (indent) {os << setw(indent) << " ";}
   returnType->display(os);
@@ -2639,7 +2381,7 @@ void FunDef::displayDec(ostream& os, uint indent) {
   os << ");";
 }
 
-void FunDef::display(ostream& os, const char *prefix, uint indent) {
+void FunDef::display(ostream& os, const char *prefix, unsigned indent) {
   os << "\n";
   if (indent) {os << setw(indent) << " ";}
   returnType->display(os);
@@ -2688,7 +2430,7 @@ Builtin::Builtin(const char *n, Type *t, Type *a0, Type *a1, Type *a2) : FunDef(
 Template::Template(const char *n, Type *t, List<VarDec> *p, Block *b, List<TempParamDec> *tp)
   : FunDef(n, t, p, b) {tempParams = tp;}
 
-void Template::display(ostream& os, const char *prefix, uint indent) {
+void Template::display(ostream& os, const char *prefix, unsigned indent) {
   os << "\n";
   if (indent) {os << setw(indent) << " ";}
   os << "template<";
@@ -2727,11 +2469,11 @@ void Template::bindParams(List<Expression> *actuals) {
 
 void Template::displayACL2Expr(ostream& os) {
   List<TempCall> * c = calls;
-  uint numCalls = 0;
+  unsigned numCalls = 0;
   Symbol *saveSym = sym;
   while (c) {
     ostringstream ostr;
-    ostr << saveSym->name << "-" << numCalls++;
+    ostr << saveSym->getname() << "-" << numCalls++;
     string st = ostr.str();
     const char *name = st.c_str();
     sym = new Symbol(name);
@@ -2768,11 +2510,11 @@ void Program::displayTypeDefs(ostream& os, DispMode mode) {
   List<DefinedType> *ptr = typeDefs;
   while (ptr) {
     switch (mode) {
-    case rac:
-      ptr->value->displayDef(os);
-      break;
-    case acl2:
-      break;
+      case DispMode::rac:
+        ptr->value->displayDef(os);
+        break;
+      case DispMode::acl2:
+        break;
     }
     ptr = ptr->next;
   }
@@ -2782,27 +2524,27 @@ void Program::displayConstDecs(ostream& os, DispMode mode) {
   List<ConstDec> *ptr = constDecs;
   while (ptr) {
     switch (mode) {
-    case rac:
-      ptr->value->display(os);
-      break;
-    case acl2:
-      ptr->value->ACL2Expr()->display(os);
+      case DispMode::rac:
+        ptr->value->display(os);
+        break;
+      case DispMode::acl2:
+        ptr->value->ACL2Expr()->display(os);
     }
     ptr = ptr->next;
   }
 }
 
-void Program::displayFunDefs(ostream& os, DispMode mode, const char *prefix) {
+void Program::displayFunDefs(ostream& os, DispMode mode, [[maybe_unused]] const char *prefix) {
   List<FunDef> *ptr = funDefs;
   while (ptr) {
     FunDef *def =  ptr->value;
     switch (mode) {
-    case rac:
-      def->display(os);
-      break;
-    case acl2:
-      def->displayACL2Expr(os);
-      break;
+      case DispMode::rac:
+        def->display(os);
+        break;
+      case DispMode::acl2:
+        def->displayACL2Expr(os);
+        break;
     }
     ptr = ptr->next;
   }

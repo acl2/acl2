@@ -6,67 +6,28 @@
 #include <iostream>
 #include <sstream>
 #include <cstring>     // for strlen, strcpy, etc
-#include <sys/types.h> // for uint
 #include <stdlib.h>    // for strtol, atoi
 #include <iomanip>
+
 #include <vector>
+#include <optional>
+#include <deque>
 
 using namespace std;
 
 class Program;
 
 extern int yylineno;
-extern void yyerror(const char *);
-
-extern char *newstr(const char *str);
 
 extern int  yyparse();
 extern FILE *yyin;
 extern FILE *yyout;
-//extern int yylineno;
 extern Program prog;
 
 #define UNREACHABLE() assert(!"Woopsie, some unreachable was reach")
 
-#include <memory>
-#include <string>
-#include <stdexcept>
-//
-//template <typename... Args>
-//char *format_cstr(const char *format, Args... args) {
-//
-//  int size = std::snprintf(nullptr, 0, format, args...);
-//  std::cout << size << '\n';
-//  assert(size >= 0 && "Format failed !");
-//
-//  auto buffer = new char[size + 1];
-//
-//  size = std::snprintf(buffer, size + 1, format, args...);
-//  assert(size >= 0 && "Format failed !");
-//
-//  return buffer;
-//}
-//
-//template <typename... Args>
-//std::string format(const char *format, Args... args) {
-//
-//  char *buffer = format_cstr(format, args...);
-//  std::string s(buffer);
-//  delete[] buffer;
-//  return s;
-//}
-//
-
 extern int yylineno;
 extern char yyfilenm[];
-
-
-template <typename... Args>
-void yyerror(const char *format, Args... args) {
-
-  std::fprintf(stderr, "%s:%d: ", yyfilenm, yylineno);
-  std::fprintf(stderr, format, args...);
-}
 
 
 //***********************************************************************************
@@ -80,24 +41,24 @@ public:
   List<T> *next;
   List<T>(T *v, List<T> *n = nullptr) {value = v; next = n;}
   List<T>(T *v1, T *v2) {value = v1; next = new List<T>(v2);}
-  uint length();
-  List<T> *nthl(uint n);
-  T* nth(uint n);
-  T* find(char *name);
+  unsigned length();
+  List<T> *nthl(unsigned n);
+  T* nth(unsigned n);
+  T* find(const char *name);
   bool isMember(T *ptr);
   List<T> *add(T *value);
   List<T>* push(T* value);
   List<T>* pop();
   List<T>* copy();
-  void displayList(ostream& os, uint indent=0);
-  void displayDefs(ostream& os);
+  void displayList(ostream& os, unsigned indent=0) const;
+  void displayDefs(ostream& os) const;
 };
 
 // Length of a list;
 
 template <class T>
-uint List<T>::length() {
-  uint result = 0;
+unsigned List<T>::length() {
+  unsigned result = 0;
   List<T> *ptr = this;
   while (ptr) {
     result++;
@@ -109,7 +70,7 @@ uint List<T>::length() {
 // nth sublist of a list;
 
 template <class T>
-List<T>* List<T>::nthl(uint n) {
+List<T>* List<T>::nthl(unsigned n) {
   List<T> *ptr = this;
   while (ptr && n) {
     ptr = ptr->next;
@@ -121,7 +82,7 @@ List<T>* List<T>::nthl(uint n) {
 // nth element of a list;
 
 template <class T>
-T* List<T>::nth(uint n) {return this->nthl(n)->value;}
+T* List<T>::nth(unsigned n) {return this->nthl(n)->value;}
 
 // Add a new element to the end of a list:
 
@@ -145,7 +106,7 @@ List<T>* List<T>::push(T* value) {
 // Find an element in the list with a given name:
 
 template <class T>
-T* List<T>::find(char *name) {
+T* List<T>::find(const char *name) {
   List<T> *ptr = this;
   while (ptr) {
     if (!strcmp(ptr->value->getname(), name)) {
@@ -195,8 +156,8 @@ List<T>* List<T>::copy() {
 // Call "display" on each element of a list:
 
 template <class T>
-void List<T>::displayList(ostream& os, uint indent) {
-  List<T> *ptr = this;
+void List<T>::displayList(ostream& os, unsigned indent) const {
+  const List<T> *ptr = this;
   while (ptr) {
     ptr->value->display(os, indent);
     ptr = ptr->next;
@@ -206,7 +167,7 @@ void List<T>::displayList(ostream& os, uint indent) {
 // Call "displayDef" on each element of a list:
 
 template <class T>
-void List<T>::displayDefs(ostream& os) {
+void List<T>::displayDefs(ostream& os) const {
   List<T> *ptr = this;
   while (ptr) {
     ptr->value->displayDef(os);
@@ -236,8 +197,6 @@ public:
 
 // Stacks:
 
-#include <deque>
-
 template <typename T>
 class SymbolStack {
 // We use a deque to store all values and we use nullptr to mark the limit
@@ -262,7 +221,7 @@ public:
     }
   }
 
-  T *find(char *name) {
+  T *find(const char *name) {
     for (auto it = begin(data_); it != end(data_); ++it) {
       // Detect the limit of frame and ingore it.
       if (!*it) {
@@ -285,13 +244,16 @@ private:
 // S-Expressions
 //***********************************************************************************
 
+// An Sexpression is a Symbol, a Cons, or a Plist (proper list of S-expressions).
+// Note that Constant is a derived class of Symbol.
 class Sexpression {
 public:
-  virtual void display(ostream& os) = 0;
+  virtual void display(ostream& os) const = 0;
 };
 
 class Plist : public Sexpression {
 public:
+  // TODO list -> private
   List<Sexpression> *list;
 
   Plist()
@@ -318,28 +280,66 @@ public:
     return pl;
   }
 
-  Plist *push(Sexpression *s);
-  Plist *add(Sexpression *s);
+  Plist *add(Sexpression *s) {
+    if (list) {
+      list->add(s);
+    }
+    else {
+      list = new List<Sexpression>(s);
+    }
+    return this;
+  }
 
-  void display(ostream& os);
+  Plist *push(Sexpression *s) {
+    if (list) {
+      list = list->push(s);
+    }
+    else {
+      list = new List<Sexpression>(s);
+    }
+    return this;
+  }
+
+  void display(ostream& os) const;
 };
 
 class Cons : public Sexpression {
  public:
-  Sexpression *car;
-  Sexpression *cdr;
-  Cons(Sexpression *a, Sexpression *d);
-  void display(ostream& os);
+  Cons(Sexpression *a, Sexpression *d)
+    : car_(a)
+    , cdr_(d) {
+  }
+
+  void display(ostream& os) const {
+    os << "(";
+    car_->display(os);
+    os << " . ";
+    cdr_->display(os);
+    os << ")";
+  }
+
+private:
+  Sexpression *car_;
+  Sexpression *cdr_;
 };
 
 class Symbol : public Sexpression {
+  std::string name_;
 public:
-  char *name;
-  Symbol(const char *s);
-  Symbol(int n);
-  ~Symbol();
-  char *getname();
-  void display(ostream& os);
+  Symbol(std::string&& s)
+    : name_(s) {
+  }
+
+  Symbol(const char *s)
+    : name_(s) {
+  }
+
+  Symbol(int n)
+    : name_(std::to_string(n)) {
+  }
+
+  const char *getname() const { return name_.c_str(); }
+  void display(ostream& os) const { os << name_;}
 };
 
 
@@ -350,34 +350,105 @@ public:
 class Expression;
 class SymRef;
 
+// Derived classes:
+//
+//   PrimType           (primitive type: uintTYpe, intType, boolType)
+//   DefinedType        (introduced by typedef)
+//   RegType            (Algorithmic C register type)
+//   UintType           (unsigned limited integer register)
+//   IntType            (signed limited integer register)
+//   FPType             (fixed-point register
+//   UfixedType         (unsigned fixed-point register
+//   FixedType          (signed fixed-point register
+//   ArrayType          (array type)
+//   ArrayParamType     (array template class, which may be passed as parameter)
+//   StructType         (struct type)
+//   EnumType           (enumeration type)
+//   MvType             (multiple value type)
 class Type {
 public:
-  virtual bool isPrimType();
-  virtual bool isRegType();
-  virtual bool isArrayType();
-  virtual bool isArrayParamType();
-  virtual bool isStructType();
-  bool isNumericalType();
-  virtual bool isIntegerType();
-  virtual bool isFPType();
-  virtual bool isEnumType();
-  virtual Type *derefType();
-  virtual void display(ostream& os=cout);
-  virtual void displayVarType(ostream& os=cout);
-  virtual void displayVarName(const char *name, ostream& os=cout);
-  virtual void makeDef(const char *name, ostream& os=cout);
+  // overridden by PrimType
+  virtual bool isPrimType() const { return false; }
+  // overridden by RegType
+  virtual bool isRegType() const { return false; }
+  // overridden by FPType
+  virtual bool isArrayType() const { return false; }
+  // overridden by ArrayType
+  virtual bool isArrayParamType() const { return false; }
+  // overridden by ArrayParamType
+  virtual bool isStructType() const { return false; }
+  // overridden by StructType
+  virtual bool isIntegerType() const { return false; }
+  // overridden by EnumType
+  virtual bool isFPType() const { return false; }
+  // overridden by integer types
+  virtual bool isEnumType() const { return false; }
+  // overridden by DefinedType
+  virtual Type *derefType() { return this; }
+  virtual void display(ostream& os=cout) const = 0;
+
+  virtual void displayVarType(ostream& os=cout) const {
+    // How this type is displayed in a variable declaration
+    display(os);
+  }
+
+  // overridden by ArrayType
+  virtual void displayVarName([[maybe_unused]] const char *name, ostream& os=cout) {
+    // How a variable of this type is displayed in a variable declaration
+    display(os);
+  } 
+
+  // overridden by ArrayType, StructType, and EnumType
+  virtual void makeDef([[maybe_unused]] const char *name, ostream& os=cout) {
+    // How this type is displayed in a type definition.
+    os << "\ntypedef ";
+    display(os);
+    os << " " << name << ";";
+  }
+
+  // overridden by RegType 
   virtual Sexpression *ACL2Assign(Expression *rval);
-  virtual uint ACL2ValWidth();
-  virtual Sexpression *ACL2Eval(Sexpression *s);
+//    // Convert rval to an S-expression to be assigned to an object of this type.
+//    return rval->ACL2Expr();
+//  }
+
+  // overridden by UintType
+  virtual unsigned ACL2ValWidth() { 
+  // Boundary on the width of the value of an object of this type.
+  // 0 indicates unknown or unbounded width.
+  // Used to avoid unnecessary call to bits.
+  return 0;
+  }
+
+  // overridden by RegType
+  virtual Sexpression *ACL2Eval(Sexpression *s) {
+    // For a RegType, the numerical value represented by a given bit vector s.
+    // For any other type, just return s.
+    return s;
+  }
 };
 
 class PrimType : public Symbol, public Type {
 public:
-  char *RACname;
-  PrimType(const char *s, const char *m=nullptr);
-  virtual bool isPrimType();
-  bool isIntegerType();
-  void display(ostream& os);
+  PrimType(const char *s, const char *m=nullptr)
+    : Symbol(s)
+    , RACname_(m ? std::optional(std::string(m)) : nullopt) {
+  }
+
+  bool isPrimType() const override { return true; }
+  bool isIntegerType() const override { return true; }
+
+  void display(ostream& os) const {
+    if (RACname_) {
+      os << *RACname_;
+    }
+    else {
+      Symbol::display(os);
+    }
+  }
+
+private:
+  const std::optional<std::string> RACname_;
 };
 
 extern PrimType boolType;
@@ -388,36 +459,56 @@ extern PrimType uint64Type;
 
 class DefinedType : public Symbol, public Type {
 public:
-  Type *def;
-  Type *derefType();
-  DefinedType(const char *s, Type *t);
-  void display(ostream& os);
-  void displayDef(ostream& os=cout);
+  DefinedType(const char *s, Type *t)
+    : Symbol(s)
+    , def_(t) {
+  }
+
+  void display(ostream& os) const { Symbol::display(os); }
+
+  void displayDef(ostream& os=cout) const {
+    if (!(def_->isRegType())) {
+      def_->makeDef(getname(), os);
+    }
+  }
+
+  Type *getdef() { return def_; }
+  Type *& getdef_mutref() { return def_; }
+  Type *derefType() { return def_->derefType(); }
+
+private:
+  Type *def_;
 };
 
 class RegType : public Type {
 public:
-  RegType(Expression *w);
-  Expression *width;
-  bool isRegType();
-  virtual bool isSigned();
+  RegType(Expression *w)
+    : width_(w) {
+  }
+
+  Expression *width() const { return width_; }
+
+  bool isRegType() const override { return true; }
   Sexpression *ACL2Assign(Expression *rval);
+
+private:
+  Expression *width_;
 };
 
 class UintType : public RegType {
 public:
   UintType(Expression *w);
-  bool isIntegerType();
-  void display(ostream& os=cout);
-  uint ACL2ValWidth();
+  bool isIntegerType() const override { return true; }
+  void display(ostream& os=cout) const;
+  unsigned ACL2ValWidth();
 };
 
 class IntType : public RegType {
 public:
   bool isSigned();
   IntType(Expression *w);
-  bool isIntegerType();
-  void display(ostream& os=cout);
+  bool isIntegerType() const override { return true; }
+  void display(ostream& os=cout) const;
   Sexpression *ACL2Eval(Sexpression *s);
 };
 
@@ -425,15 +516,14 @@ class FPType :public RegType {
 public:
   Expression *iwidth;
   FPType(Expression *w, Expression *iw);
-  bool isFPType();
-  bool isIntegerType();
+  bool isFPType() const override { return true; }
   Sexpression *ACL2Assign(Expression *rval);
 };
 
 class UfixedType :public FPType {
 public:
   UfixedType(Expression *w, Expression *iw);
-  void display(ostream& os=cout);
+  void display(ostream& os=cout) const;
   Sexpression *ACL2Eval(Sexpression *s);
 };
 
@@ -441,7 +531,7 @@ class FixedType :public FPType {
 public:
   bool isSigned();
   FixedType(Expression *w, Expression *iw);
-  void display(ostream& os=cout);
+  void display(ostream& os=cout) const;
   Sexpression *ACL2Eval(Sexpression *s);
 };
 
@@ -449,22 +539,27 @@ class ArrayType : public Type {
 public:
   Type *baseType;
   Expression *dim;
-  ArrayType(Expression *d, Type *t);
+
+  ArrayType(Expression *d, Type *t)
+    : baseType(t)
+    , dim(d) {
+  }
+
   Type *getBaseType();
-  bool isArrayType();
-  void display(ostream& os);
-  void displayVarType(ostream& os=cout);
-  void displayVarName(const char *name, ostream& os=cout);
+  bool isArrayType() const override { return true; }
+  void display(ostream& os) const;
+  void displayVarType(ostream& os=cout) const;
+  void displayVarName(const char *name, ostream& os=cout) const;
   void makeDef(const char *name, ostream& os);
 };
 
 class ArrayParamType : public ArrayType {
 public:
   ArrayParamType(Expression *d, Type *t);
-  bool isArrayParamType();
-  void display(ostream& os);
-  void displayVarType(ostream& os=cout);
-  void displayVarName(const char *name, ostream& os=cout);
+  bool isArrayParamType() const override { return true; }
+  void display(ostream& os) const;
+  void displayVarType(ostream& os=cout) const;
+  void displayVarName(const char *name, ostream& os=cout) const;
   void makeDef(const char *name, ostream& os);
 };
 
@@ -473,17 +568,17 @@ public:
   Symbol *sym;
   Type *type;
   StructField(Type *t, char *n);
-  char *getname();
-  void display(ostream& os, uint indent=0);
+  const char *getname() const { return sym->getname(); }
+  void display(ostream& os, unsigned indent=0) const;
 };
 
 class StructType : public Type {
 public:
   List<StructField> *fields;
   StructType(List<StructField> *f);
-  bool isStructType();
-  void displayFields(ostream& os);
-  void display(ostream& os);
+  bool isStructType() const override { return true; }
+  void displayFields(ostream& os) const;
+  void display(ostream& os) const;
   void makeDef(const char *name, ostream& os=cout);
 };
 
@@ -495,8 +590,8 @@ public:
   Type *type;
   Expression *init;
   SymDec(const char *n, Type *t, Expression *i = nullptr);
-  char *getname();
-  void displaySymDec(ostream& os);
+  const char *getname() const { return sym->getname(); }
+  void displaySymDec(ostream& os) const;
   virtual bool isGlobal();
   virtual bool isROM();
   virtual bool isConst();
@@ -507,7 +602,7 @@ public:
 class EnumConstDec : public SymDec {
 public:
   EnumConstDec(const char *n, Expression *v=nullptr);
-  void display(ostream& os);
+  void display(ostream& os) const;
   bool isConst();
   Sexpression *ACL2Expr();
   Sexpression *ACL2SymExpr();
@@ -517,10 +612,10 @@ class EnumType : public Type {
 public:
   List<EnumConstDec> *vals;
   EnumType(List<EnumConstDec> *v);
-  bool isEnumType();
-  bool isIntegerType();
-  void displayConsts(ostream& os);
-  void display(ostream& os);
+  bool isEnumType() const override { return true; }
+  bool isIntegerType() const override { return true; }
+  void displayConsts(ostream& os) const;
+  void display(ostream& os) const;
   void makeDef(const char *name, ostream& os=cout);
   Sexpression *ACL2Expr();
   Sexpression *getEnumVal(Symbol *s);
@@ -532,7 +627,7 @@ public:
   MvType(std::initializer_list<Type* >&& t)
     : type(t) {
   }
-  void display(ostream& os);
+  void display(ostream& os) const;
 };
 
 //***********************************************************************************
@@ -560,13 +655,13 @@ public:
   virtual bool isInitializer();
   bool isFP();
   virtual Type* exprType();
-  void display(ostream& os);
-  virtual void displayNoParens(ostream& os) = 0;
+  void display(ostream& os) const;
+  virtual void displayNoParens(ostream& os) const = 0;
   virtual Expression *subst(SymRef *var, Expression *val);
   virtual Sexpression *ACL2Expr(bool isBV = false);
   virtual Sexpression *ACL2ArrayExpr();
   virtual Sexpression *ACL2Assign(Sexpression *rval);
-  virtual uint ACL2ValWidth();
+  virtual unsigned ACL2ValWidth();
   virtual bool isEqual(Expression *e);
   virtual bool isEqualPrefix(const char *o, Expression *e);
   virtual bool isEqualBinary(const char *o, Expression *e1, Expression *e2);
@@ -581,8 +676,8 @@ public:
   Constant(const char *n);
   Constant(int n);
   bool isConst();
-  bool isInteger();
-  void displayNoParens(ostream& os);
+  bool isInteger() override { return true; }
+  void displayNoParens(ostream& os) const;
   Sexpression *ACL2Expr(bool isBV = false);
   bool isEqual(Expression *e);
   bool isEqualConst(Constant *c);
@@ -621,8 +716,8 @@ public:
   bool isArray();
   bool isArrayParam();
   bool isStruct();
-  bool isInteger();
-  void displayNoParens(ostream& os);
+  bool isInteger() override;
+  void displayNoParens(ostream& os) const;
   Expression *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr(bool isBV = false);
   Sexpression *ACL2Assign(Sexpression *rval);
@@ -640,9 +735,9 @@ public:
   bool isArray();
   bool isArrayParam();
   bool isStruct();
-  bool isInteger();
+  bool isInteger() override;
   Type* exprType();
-  void displayNoParens(ostream& os);
+  void displayNoParens(ostream& os) const;
   Expression *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr(bool isBV = false);
 };
@@ -654,7 +749,7 @@ public:
   Symbol *instanceSym;
   List<Expression> *params;
   TempCall(Template *f, List<Expression> *a, List<Expression> *p);
-  void displayNoParens(ostream& os);
+  void displayNoParens(ostream& os) const;
   Expression *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr(bool isBV = false);
 };
@@ -664,7 +759,7 @@ public:
   List<Constant> *vals;
   Initializer(List<Constant> *v);
   bool isInitializer();
-  void displayNoParens(ostream& os);
+  void displayNoParens(ostream& os) const;
   Sexpression *ACL2Expr(bool isBV = false);
   Sexpression *ACL2ArrayExpr();
   Sexpression *ACL2StructExpr(List<StructField> *fields);
@@ -677,9 +772,9 @@ public:
   ArrayRef(Expression *a, Expression *i);
   bool isArray();
   bool isArrayParam();
-  bool isInteger();
+  bool isInteger() override;
   Type* exprType();
-  void displayNoParens(ostream& os);
+  void displayNoParens(ostream& os) const;
   Expression *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr(bool isBV = false);
   Sexpression *ACL2Assign(Sexpression *rval);
@@ -688,7 +783,7 @@ public:
 class ArrayParamRef : public ArrayRef {
 public:
   ArrayParamRef(Expression *a, Expression *i);
-  void displayNoParens(ostream& os);
+  void displayNoParens(ostream& os) const;
   Expression *subst(SymRef *var, Expression *val);
 };
 
@@ -699,9 +794,9 @@ public:
   StructRef(Expression *s, char *f);
   bool isArray();
   bool isArrayParam();
-  bool isInteger();
+  bool isInteger() override;
   Type* exprType();
-  void displayNoParens(ostream& os);
+  void displayNoParens(ostream& os) const;
   Sexpression *ACL2Expr(bool isBV = false);
   Sexpression *ACL2Assign(Sexpression *rval);
 };
@@ -711,12 +806,12 @@ public:
   Expression *base;
   Expression *index;
   BitRef(Expression *b, Expression *i);
-  bool isInteger();
-  void displayNoParens(ostream& os);
+  bool isInteger() override;
+  void displayNoParens(ostream& os) const;
   Expression *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr(bool isBV = false);
   Sexpression *ACL2Assign(Sexpression *rval);
-  uint ACL2ValWidth();
+  unsigned ACL2ValWidth();
 };
 
 class Subrange : public Expression {
@@ -724,16 +819,16 @@ public:
   Expression *base;
   Expression *high;
   Expression *low;
-  uint width;
+  unsigned width;
   Subrange(Expression *b, Expression *h, Expression *l);
-  Subrange(Expression *b, Expression *h, Expression *l, uint w);
+  Subrange(Expression *b, Expression *h, Expression *l, unsigned w);
   bool isSubrange();
-  bool isInteger();
-  void displayNoParens(ostream& os);
+  bool isInteger() override;
+  void displayNoParens(ostream& os) const;
   Expression *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr(bool isBV = false);
   Sexpression *ACL2Assign(Sexpression *rval);
-  uint ACL2ValWidth();
+  unsigned ACL2ValWidth();
 };
 
 class PrefixExpr : public Expression {
@@ -743,8 +838,8 @@ public:
   PrefixExpr(Expression *e, const char *o);
   bool isConst();
   int evalConst();
-  bool isInteger();
-  void displayNoParens(ostream& os);
+  bool isInteger() override;
+  void displayNoParens(ostream& os) const;
   Expression *subst(SymRef *var, Expression *val);
   Type *exprType();
   Sexpression *ACL2Expr(bool isBV = false);
@@ -760,8 +855,8 @@ public:
   Type* exprType();
   bool isConst();
   int evalConst();
-  bool isInteger();
-  void displayNoParens(ostream& os);
+  bool isInteger() override;
+  void displayNoParens(ostream& os) const;
   Expression *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr(bool isBV = false);
 };
@@ -775,8 +870,8 @@ public:
   BinaryExpr(Expression *e1, Expression *e2, const char *o);
   bool isConst();
   int evalConst();
-  bool isInteger();
-  void displayNoParens(ostream& os);
+  bool isInteger() override;
+  void displayNoParens(ostream& os) const;
   Expression *subst(SymRef *var, Expression *val);
   Type *exprType();
   Sexpression *ACL2Expr(bool isBV = false);
@@ -792,8 +887,8 @@ public:
   Expression *expr2;
   Expression *test;
   CondExpr(Expression *e1, Expression *e2, Expression *t);
-  bool isInteger();
-  void displayNoParens(ostream& os);
+  bool isInteger() override;
+  void displayNoParens(ostream& os) const;
   Expression *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr(bool isBV = false);
 };
@@ -809,7 +904,7 @@ public:
   }
   MultipleValue(MvType *t, List<Expression> *e);
 
-  void displayNoParens(ostream& os);
+  void displayNoParens(ostream& os) const;
   Expression *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr(bool isBV = false);
 };
@@ -823,9 +918,9 @@ class Block;
 class Statement {
 public:
   Statement();
-  virtual void display(ostream& os, uint indent=0) = 0;
-  virtual void displayAsRightBranch(ostream& os, uint indent=0);
-  virtual void displayWithinBlock(ostream& os, uint indent=0);
+  virtual void display(ostream& os, unsigned indent=0) = 0;
+  virtual void displayAsRightBranch(ostream& os, unsigned indent=0);
+  virtual void displayWithinBlock(ostream& os, unsigned indent=0);
   virtual Block *blockify();
   virtual Block *blockify(Statement *s);
   virtual Statement* subst(SymRef *var, Expression *expr);
@@ -837,7 +932,7 @@ public:
 class SimpleStatement : public Statement {
 public:
   SimpleStatement();
-  void display(ostream& os, uint indent=0);
+  void display(ostream& os, unsigned indent=0);
   virtual void displaySimple(ostream& os) = 0;
 };
 
@@ -958,9 +1053,9 @@ public:
 class AssignFull : public SimpleStatement {
 public:
   Expression *base;
-  uint width;
+  unsigned width;
   Expression *val;
-  AssignFull(Expression *b, uint w, Expression *v);
+  AssignFull(Expression *b, unsigned w, Expression *v);
   void displaySimple(ostream& os);
 };
 
@@ -983,8 +1078,8 @@ public:
   Block(Statement* s1, Statement* s2, Statement* s3);
   Block *blockify();
   Block *blockify(Statement *s);
-  void display(ostream& os, uint indent=0);
-  void displayWithinBlock(ostream& os, uint indent=0);
+  void display(ostream& os, unsigned indent=0);
+  void displayWithinBlock(ostream& os, unsigned indent=0);
   Statement *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr();
   void noteReturnType(Type *t);
@@ -997,8 +1092,8 @@ public:
   Statement *left;
   Statement *right;
   IfStmt(Expression *t, Statement *l, Statement *r);
-  void display(ostream& os, uint indent=0);
-  void displayAsRightBranch(ostream& os, uint indent=0);
+  void display(ostream& os, unsigned indent=0);
+  void displayAsRightBranch(ostream& os, unsigned indent=0);
   Statement *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr();
   void markAssertions(FunDef *f);
@@ -1012,7 +1107,7 @@ public:
   Assignment *update;
   Statement *body;
   ForStmt(SimpleStatement *v, Expression *t, Assignment *u, Statement *b);
-  void display(ostream& os, uint indent=0);
+  void display(ostream& os, unsigned indent=0);
   Statement *subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr();
   void markAssertions(FunDef *f);
@@ -1023,7 +1118,7 @@ public:
   Expression *label;
   List<Statement> *action;
   Case(Expression *l, List<Statement> *a);
-  void display(ostream& os, uint indent=0);
+  void display(ostream& os, unsigned indent=0);
   Case* subst(SymRef *var, Expression *val);
   void markAssertions(FunDef *f);
 };
@@ -1033,7 +1128,7 @@ public:
   Expression *test;
   List<Case> *cases;
   SwitchStmt(Expression *t, List<Case> *c);
-  void display(ostream& os, uint indent=0);
+  void display(ostream& os, unsigned indent=0);
   Statement* subst(SymRef *var, Expression *val);
   Sexpression *ACL2Expr();
   void markAssertions(FunDef *f);
@@ -1050,10 +1145,10 @@ public:
   List<VarDec> *params;
   Block *body;
   FunDef(const char *n, Type *t, List<VarDec> *p, Block *b);
-  uint arity();
-  char *getname();
-  void displayDec(ostream& os, uint indent=0);
-  virtual void display(ostream& os, const char *prefix = "", uint indent=0);
+  unsigned arity();
+  const char *getname() const { return sym->getname(); }
+  void displayDec(ostream& os, unsigned indent=0);
+  virtual void display(ostream& os, const char *prefix = "", unsigned indent=0);
   virtual void displayACL2Expr(ostream& os);
 };
 
@@ -1067,7 +1162,7 @@ public:
   List<TempParamDec> *tempParams;
   List<TempCall> *calls;
   Template(const char *n, Type *t, List<VarDec> *p, Block *b, List<TempParamDec> *tp);
-  void display(ostream& os, const char *prefix = "", uint indent=0);
+  void display(ostream& os, const char *prefix = "", unsigned indent=0);
   void addCall(TempCall *c);
   void bindParams(List<Expression> *a);
   void displayACL2Expr(ostream& os);
@@ -1077,7 +1172,7 @@ public:
 // Programs
 //***********************************************************************************
 
-enum DispMode {rac, acl2};
+enum class DispMode {rac, acl2};
 
 class Program {
 public:
@@ -1091,7 +1186,7 @@ public:
   void displayTemplates(ostream& os, DispMode mode, const char *prefix="");
   void displayFunDefs(ostream& os, DispMode mode, const char *prefix="");
   void displayFunDecs(ostream& os);
-  void display(ostream& os, DispMode mode=rac);
+  void display(ostream& os, DispMode mode=DispMode::rac);
   bool isEmpty() const;
 };
 

@@ -47,10 +47,10 @@ int main(int argc, char **argv) {
     DispMode type;
     if (!strcmp(argv[1], "-acl2")) {
       buf += ".ast.lsp";
-      type = acl2;
+      type = DispMode::acl2;
     } else if (!strcmp(argv[1], "-rac")) {
       buf += ".pc";
-      type = rac;
+      type = DispMode::rac;
     } else {
       std::cerr << "Unknown option `" << argv[1] << "`, for a list of available options, type `parse`";
       return 1;
