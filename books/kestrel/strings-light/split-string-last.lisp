@@ -1,7 +1,7 @@
 ; A utility to split a string at the last occurrence of a given char
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,9 +26,7 @@
 ;; the empty string "".
 (defund split-string-last (str char)
   (declare (xargs :guard (and (stringp str)
-                              (characterp char))
-                  :guard-debug t
-                  ))
+                              (characterp char))))
   (let* ((chars (coerce str 'list))
          (rev-chars (reverse chars)))
     ;; note that "before" and "after" are switched here, compared to what is
