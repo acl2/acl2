@@ -214,7 +214,7 @@ data last modified: [2014-08-06]
   (if (endp or-def)
       acc
     (b* ((type (car or-def))
-         (size-type (if (symbolp type)
+         (size-type (if (legal-variablep type) ; otherwise treat as a constant
                         (defdata-domain-size-fn (car or-def) wrld)
                       1)))
       (if (natp size-type)
