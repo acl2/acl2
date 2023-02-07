@@ -109,8 +109,8 @@
            :in-theory (e/d (evenp) (floor-weak-monotone))
            :use (:instance floor-weak-monotone (i1 k) (i2 x) (j 2)))))
 
-;gen?
-(defthm <-of-1-and-floor-of-2
+;gen? ;drop?
+(defthmd <-of-1-and-floor-of-2
   (implies (rationalp x) ;(natp x)
            (equal (< 1 (floor x 2))
                   (<= 4 x))))
