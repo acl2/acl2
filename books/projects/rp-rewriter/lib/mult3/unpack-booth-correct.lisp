@@ -190,7 +190,7 @@
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (b* (((mv coughed result)
-                 (c-fix-arg-aux pp-lst neg-flag)))
+                 (c-fix-arg-aux pp-lst)))
              (equal
               (sum-list-eval result a)
               (sum (sum-list-eval pp-lst a)
@@ -332,6 +332,13 @@
                (sum y))
         (equal (sum x y (-- x))
                (sum y)))))
+
+
+(local
+ (defthm rp-evlt-ex-from-rp-of-list
+   (equal (rp-evlt (ex-from-rp (cons 'list x)) a)
+          (rp-evlt-lst x a))))
+
 
 (defret-mutual
   unpack-booth-for-s-correct
@@ -612,11 +619,7 @@ other)
   :fn unpack-booth-meta
   ;;:otf-flg t
   :hints (("goal"
-           :do-not-induct t
-           :use ((:instance pp-has-bitp-rp-implies
-                            (term (cadr term)))
-                 (:instance pp-has-bitp-rp-implies
-                            (term (cadr (cadr term)))))
+           :do-not-induct t 
            :expand ((:free (x) (sum-list-eval (list x) a))
                     (SUM-LIST-EVAL NIL A)
                     (sum-list-eval (list (cadr (cadr term)))
@@ -636,6 +639,7 @@ other)
                              (:rewrite regular-rp-evl-of_--_when_mult-formula-checks)
                              )
                             (;;(:REWRITE ACL2::EQUAL-LEN-1)
+                             ACL2::EQUAL-LEN-1
                              (:REWRITE BINARY-FNC-P-RELIEVE)
                              (:TYPE-PRESCRIPTION SINGLE-C-P$INLINE)
                              (:TYPE-PRESCRIPTION ACL2::BINARY-OR*)
@@ -647,8 +651,8 @@ other)
                              (:TYPE-PRESCRIPTION VALID-SC)
                              pp-has-bitp-rp-implies
                              bitp
-                             rp-trans-opener-when-list
-                             rp-trans-opener
+                             ;;rp-trans-opener-when-list
+                             ;;rp-trans-opener
                              eval-and-all
                              valid-sc
                              ex-from-rp
@@ -666,7 +670,12 @@ other)
                              is-falist
                              rp-trans
                              rp-trans-lst
-                             valid-sc)))))
+                             valid-sc)))
+          (and stable-under-simplificationp
+               '(:use ((:instance pp-has-bitp-rp-implies
+                                  (term (cadr term)))
+                       (:instance pp-has-bitp-rp-implies
+                                  (term (cadr (cadr term)))))))))
 
 (local
  (defthm valid-sc-of-cons
@@ -857,7 +866,7 @@ other)
                              INCLUDE-FNC
                              rp-trans-is-term-when-list-is-absent
                              rp-trans
-                             RP-TRANS-OPENER
+                             ;;RP-TRANS-OPENER
                              RP-TRANS-LST
                              is-rp-of-cons
                              rp-termp

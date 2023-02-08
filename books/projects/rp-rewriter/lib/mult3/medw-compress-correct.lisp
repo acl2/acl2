@@ -291,6 +291,17 @@
 
    ))
 
+
+(local
+ (defthm rp-evlt-of-ex-from-rp-of--
+   (implies (and (rp-evl-meta-extract-global-facts :state state)
+                 (mult-formula-checks state))
+            (equal (rp-evlt (ex-from-rp (list '-- x))
+                            a)
+                   (-- (rp-evlt x a))))
+   :hints (("goal"
+            :in-theory (e/d* (regular-eval-lemmas-with-ex-from-rp) ())))))
+
 (defret medw-compress-c-arg-lst-aux-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -391,7 +402,19 @@
    (implies (equal x (sum a a y))
             (equal (f2 (sum x z))
                    (sum a (f2 (sum y z)))))))
-   
+
+
+(local
+ (defthm m2-dummy-sum-lemma1
+   (equal (equal (m2 (sum x a)) (m2 (sum y a z)))
+          (equal (m2 (sum x)) (m2 (sum y z))))))
+
+(local
+ (defthm rp-evlt-ex-from-rp-of-list
+   (equal (rp-evlt (ex-from-rp (cons 'list x)) a)
+          (rp-evlt-lst x a))))
+
+
 (defret medw-compress-c-arg-lst-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -421,6 +444,7 @@
            :expand ((SUM-LIST-EVAL C-LST A))
            :do-not '(generalize fertilize)
            :in-theory (e/d* (medw-compress-c-arg-lst-aux
+                             -to---
                              (:REWRITE
                               REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              (:REWRITE
@@ -706,16 +730,41 @@
                   (sum a (d2 (sum x y)))))))
 
    (local
+    (defthm dummy-d-2-of-repeated-3
+      (and (equal (d2 (sum x y k l a a))
+                  (sum a (d2 (sum x y k l)))))))
+
+   (local
     (defthm dummy-m2-of-repeated-3
       (and (equal (m2 (sum x y z a a k))
                   (m2 (sum x y z k))))))
 
+   (local
+    (defthm dummy-m2-of-repeated-4
+      (and (equal (m2 (sum x y z l a a k))
+                  (m2 (sum x y z k l))))))
+
+   (local
+    (defthm sum-of-m2-simplify-lemma
+      (implies (and (syntaxp (not (lexorder d c)))
+                    (equal (m2 c) (m2 d)))
+               (and (equal (sum (m2 c) (m2 d) other)
+                           (sum (m2 c) (m2 c) other))
+                    (equal (sum (m2 c) (m2 d))
+                           (sum (m2 c) (m2 c)))))
+      :hints (("Goal"
+               :in-theory (e/d () ())))))
+
    (defthm m2-of-f2-of-the-same
      (implies (equal (m2 c) (m2 d))
-              (equal (equal (m2 (sum a (f2 (sum c x))))
-                            (m2 (sum b (f2 (sum d x)))))
-                     (equal (m2 (sum a (f2 c)))
-                            (m2 (sum b (f2 d))))))
+              (and (equal (equal (m2 (sum a (f2 (sum c x))))
+                                 (m2 (sum b (f2 (sum d x)))))
+                          (equal (m2 (sum a (f2 c)))
+                                 (m2 (sum b (f2 d)))))
+                   (equal (equal (m2 (sum a (f2 (sum c x))))
+                                 (m2 (sum b (f2 (sum x d)))))
+                          (equal (m2 (sum a (f2 c)))
+                                 (m2 (sum b (f2 d)))))))
      ;;:otf-flg t
      :hints (("Goal"
               :in-theory (e/d (
@@ -730,14 +779,27 @@
 
    (defthm m2-of-f2-of-the-same-2
      (implies (equal (m2 c) (m2 d))
-              (equal (equal (m2 (sum a (f2 (sum c x))))
-                            (m2 (sum b b1 (f2 (sum d x)))))
-                     (equal (m2 (sum a (f2 c)))
-                            (m2 (sum b b1 (f2 d))))))
+              (and (equal (equal (m2 (sum a (f2 (sum c x))))
+                                 (m2 (sum b b1 (f2 (sum x d)))))
+                          (equal (m2 (sum a (f2 c)))
+                                 (m2 (sum b b1 (f2 d)))))
+                   (equal (equal (m2 (sum a (f2 (sum c x y))))
+                                 (m2 (sum b b1 (f2 (sum x d y)))))
+                          (equal (m2 (sum a (f2 c)))
+                                 (m2 (sum b b1 (f2 d)))))
+                   (equal (equal (m2 (sum a (f2 (sum c x y))))
+                                 (m2 (sum b (f2 (sum x d y)))))
+                          (equal (m2 (sum a (f2 c)))
+                                 (m2 (sum b (f2 d)))))))
      :otf-flg t
      :hints (("Goal"
               :use ((:instance m2-of-f2-of-the-same
-                               (b (sum b b1))))
+                               (b (sum b b1)))
+                    (:instance m2-of-f2-of-the-same
+                               (x (sum x y)))
+                    (:instance m2-of-f2-of-the-same
+                               (b (sum b b1))
+                               (x (sum x y))))
               :in-theory (e/d ()
                               (m2-of-f2-of-the-same)))))
 
@@ -754,7 +816,13 @@
                                (x (sum x1 x2))
                                (a (sum a a1))))
               :in-theory (e/d ()
-                              (m2-of-f2-of-the-same)))))))
+                              (m2-of-f2-of-the-same)))))
+
+
+   (defthm cough-negated-from-f2-lemma
+     (equal (f2 (sum x y (-- a)))
+            (sum (-- a) (f2 (sum x y a)))))
+   ))
 
 ;;:i-am-here
 
@@ -810,12 +878,21 @@
                              rp-evlt-of-ex-from-rp-reverse
                              ;;pp-order-equals-implies
                              )
-                           ((:e tau-system)
+                           (GET-PP-AND-COEF-CORRECT-WHEN-COEF-IS-0
+                            (:TYPE-PRESCRIPTION
+                             INTEGERP-OF-GET-PP-AND-COEF.COEF)
+                            (:REWRITE M2-OF-BITP-LEMMA)
+                            (:REWRITE EVENP-AND-M2)
+                            (:REWRITE WHEN-M2-OF-AN-M2-ARG-IS-ZERO)
+                            (:TYPE-PRESCRIPTION BITP)
+                            (:META BINARY-OR**/AND**-GUARD-META-CORRECT)
+                            EQUAL-WITH-ZERO-AND-1-WHEN-BITP
+                            (:e tau-system)
                             RP-EVL-OF-EX-FROM-RP
                             (:REWRITE RP-EVL-OF-VARIABLE)
                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                             (:REWRITE RP-EVL-OF-ZP-CALL)
-                            (:REWRITE SUM-OF-NEGATED-TERMS)
+                            ;;(:REWRITE SUM-OF-NEGATED-TERMS)
                             (:TYPE-PRESCRIPTION --)
                             (:TYPE-PRESCRIPTION MULT-FORMULA-CHECKS)
                             ;;(:DEFINITION RP-TRANS-LST)
@@ -1004,6 +1081,7 @@
            :in-theory (e/d ( medw-compress-pp-arg-lst
                              ;;equal-of-m2-to-the-same-side
                              m2-dummy-lemma2
+                             -to---
                              (:REWRITE
                               REGULAR-RP-EVL-OF_c_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              (:REWRITE
@@ -1017,7 +1095,7 @@
                             (:REWRITE RP-EVL-OF-VARIABLE)
                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                             (:REWRITE RP-EVL-OF-ZP-CALL)
-                            (:REWRITE SUM-OF-NEGATED-TERMS)
+                            ;;(:REWRITE SUM-OF-NEGATED-TERMS)
                             (:TYPE-PRESCRIPTION --)
                             (:TYPE-PRESCRIPTION MULT-FORMULA-CHECKS)
                             ;;(:DEFINITION RP-TRANS-LST)
@@ -1445,10 +1523,12 @@
                              rp-trans-is-term-when-list-is-absent
                              rp-trans
                              RP-TRANS-LST
-                             RP-TRANS-OPENER
+                             
                              )))))
 
-;;(create-regular-eval-lemma medw-compress 1 MULT-FORMULA-CHECKS)
+(Local
+ (create-regular-eval-lemma equal 2 MULT-FORMULA-CHECKS))
+
 
 (defret medw-compress-meta-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -1463,8 +1543,8 @@
   :hints (("Goal"
            :expand ((:free (x)
                            (valid-sc (cons 'equal x) a)))
-           :in-theory (e/d (medw-compress-meta
-
+           :in-theory (e/d* (medw-compress-meta
+                             regular-eval-lemmas
                             )
                            (valid-sc
                             rp-termp

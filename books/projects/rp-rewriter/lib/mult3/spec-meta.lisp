@@ -474,7 +474,10 @@
  (defthmd rp-trans-when-is-rp
    (implies (is-rp term)
             (equal (rp-evlt term a)
-                   (rp-evlt (caddr term) a)))))
+                   (rp-evlt (caddr term) a)))
+   :hints (("Goal"
+            :expand (RP-TRANS-LST (CDR TERM))
+            :in-theory (e/d () ())))))
 
 (defthm has-bitp-rp-lemma
   (implies (and (valid-sc term a)
@@ -484,7 +487,10 @@
   :hints (("Goal"
            :induct (HAS-BITP-RP term)
            :do-not-induct t
-           :in-theory (e/d (valid-sc-single-step
+           :expand ((RP-TRANS-LST (CDDR TERM))
+                    (RP-TRANS-LST (CDR TERM)))
+           :in-theory (e/d (
+                            valid-sc-single-step
                             rp-trans-when-is-rp
                             HAS-BITP-RP)
                            ()))))
@@ -607,7 +613,7 @@
                              rw-dir1
                              natp
                              UNSIGNED-BYTE-P
-                             RP-TRANS-OPENER
+                             ;;RP-TRANS-OPENER
                              INCLUDE-FNC)))))
 
 (defret */+-to-mult-spec-meta-valid-sc

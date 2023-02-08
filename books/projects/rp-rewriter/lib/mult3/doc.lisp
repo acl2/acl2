@@ -170,21 +170,6 @@ we recommend that you enable this heuristic: </p>
 <code> @('(rp:: enable-unpack-booth-later <t-or-nil>)') </code>
 
 
-<p> STINGY-PP-CLEAN <i>(disabled by default)</i> </p>
-<p>  Booth Encoded  designs produce  a  lot of  terms  as part  of the  partial
-product  (pp) logic.   These  terms eventually  cancel out  each  other as  the
-multiplier  designs are  expanded and  simplified.  This  happens through  some
-\"pp-clean\"  operations. By  default,  \"pp-clean\" is  rather aggressive  and
-creates a lot of copies of the same terms. When \"stingy-pp-clean\" is enabled,
-this  operation  is  done  more   selectively  which  can  deliver  performance
-improvements.  That  can range  from a  10% improvement to  2-3x or  even more,
-depending on  many different  factors.  This heuristic  might cause  some proof
-attempts to fail and it is disabled by default, and its setting is ignored when
-unpack-booth-later is enabled.  </p>
-
-<code> @('(rp::enable-stingy-pp-clean <t-or-nil>)') </code>
-
-
 <p>S-PATTERN1-REDUCE <i>(enabled by default)</i></p>
 
 <p> Enabled by default, this heuristic can cover some corner
@@ -217,30 +202,6 @@ default. </p>
 
 <code> @('(rp::enable-pattern3-reduce <t-or-nil>)') </code>
 
-
-<p>C-OF-S-FIX-MODE <i>(enabled by default)</i></p>
-<p>   We have  found mainly three  different efficient  ways to
-merge sum of two instances of \"c\" terms. The first method is described in our
-CAV2020 paper (see @(see Multiplier-Verification) for the link) and it pertains
-to converting \"c\" terms to \"d\"  terms. We discontinued this support in this
-new  library but  instead started  experimenting with  easier-to-debug methods.
-You can  switch between these  two methods by  (rp::enable-c-of-s-fix-mode nil)
-and
-(rp::enable-c-of-s-fix-mode t). When disabled, two c terms are tried to be
-merged using the lemma: (+ (c (s x) y) (c x)) = (c x y). The program searches
-for this pattern. When enabled, the program applies this lemma: (c (s x) y) =
-(+ (c x y) (- (c x))). By default, c-of-s-fix-mode is enabled because it is
-easier to manage in the program, and changes and improvements can be made more easily. We have
-seen   that  the   performance  between   two  methods   is  very   similar  in
-general. However, if c-of-s-fix-mode and stingy-pp-clean are both disabled, you
-may  observe  a  significant  reduction in  proof-time  performance  for  large
-Booth-Encoded designs. Disabling c-of-s-fix-mode may cause problems with the
-unpack-booth-later and maybe some new heuristics. We recommend that users not
-modify this mode and leave
-it enabled.
-</p >
-
-<code> @('(rp::enable-c-of-s-fix-mode <t-or-nil>)') </code>
 
 <p>RECOLLECT-PP <i>(disabled by default)</i></p>
 <p> We have discovered that after partial products are flatten (i.e., rewritten

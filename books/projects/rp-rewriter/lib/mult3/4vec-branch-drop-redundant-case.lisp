@@ -110,7 +110,7 @@
                           (not (integerp x))))
              (mv ''nil nil nil))
             (met-cases (pp-flatten-with-binds
-                        met-cases nil)))
+                        met-cases )))
          (if (equal met-cases (list ''1))
              (mv ''0 t t)
            (mv ''nil nil nil))))
@@ -179,6 +179,7 @@
        acl2::logbit$inline
        unpack-booth
        --
+       times
        sum-list
        binary-and
        and-list
@@ -244,11 +245,11 @@
                 (booleanp sign)
                 (rp-termp term)
                 (valid-sc term a)
+                (or (= coef 1)
+                    (= coef -1))
                 (rp-evl-meta-extract-global-facts))
            (equal (sum-list-eval pp-lst a)
-                  (if sign
-                      (-- (rp-evlt term a))
-                    (rp-evlt term a))))
+                  (times coef (rp-evlt term a))))
   :fn pp-flatten
   :hints (("Goal"
            :use ((:instance pp-flatten-correct))
@@ -261,11 +262,11 @@
                 (rp-termp term)
                 (booleanp signed)
                 (valid-sc term a)
+                (or (= coef 1)
+                    (= coef -1))
                 (rp-evl-meta-extract-global-facts))
            (equal (sum-list-eval pp-lst a)
-                  (if signed
-                      (-- (rp-evlt term a))
-                    (rp-evlt term a))))
+                  (times coef (rp-evlt term a))))
   :fn pp-flatten-with-binds
   :hints (("Goal"
            :use ((:instance pp-flatten-with-binds-correct))
@@ -320,16 +321,16 @@
                  (rp-termp term)
                  (rp-evl-meta-extract-global-facts :state state)
                  (4vec-branch-formula-checks state)
-                 (EQUAL (PP-FLATTEN term NIL :DISABLED nil)
+                 (EQUAL (pp-flatten term :DISABLED nil)
                         (list ''1)))
             (equal (rp-evlt term a)
                    1))
    :hints (("Goal"
             :use ((:instance pp-flatten-correct
-                             (sign nil)
+                             (coef 1)
                              (disabled nil)
                              (term-size-limit nil)))
-            :in-theory (e/d ()
+            :in-theory (e/d (ifix)
                             (pp-flatten-correct))))))
 
 (local
@@ -339,15 +340,15 @@
                  (rp-termp term)
                  (rp-evl-meta-extract-global-facts :state state)
                  (4vec-branch-formula-checks state)
-                 (EQUAL (PP-FLATTEN-WITH-BINDS term NIL :DISABLED nil)
+                 (EQUAL (PP-FLATTEN-WITH-BINDS term :DISABLED nil)
                         (list ''1)))
             (equal (rp-evlt term a)
                    1))
    :hints (("Goal"
             :use ((:instance pp-flatten-with-binds-correct
-                             (signed nil)
+                             (coef 1)
                              (disabled nil)))
-            :in-theory (e/d ()
+            :in-theory (e/d (ifix)
                             (pp-flatten-with-binds-correct))))))
 
 

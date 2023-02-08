@@ -85,9 +85,11 @@
     )
 
   (fty::defprod pp-e
-    ((hash integerp :default -1)
-     (elements rp-term-listp :default nil)
-     (sign booleanp :default nil))
+    ((elements rp-term-listp :default nil)
+     (hash integerp :default -1)
+     (coef integerp :default 1)
+     ;;(sign booleanp :default nil)
+     )
     :layout :tree)
 
   (fty::deflist pp-e-list
@@ -98,17 +100,17 @@
 
 (define calculate-pp-e-cash (elements)
   (declare (ignorable elements))
-  0
+  0 ;; disabling at least for now.
   #|(if (atom elements)
-      (logmask 64)
-    (logand (b* ((cur (ex-from-rp-loose (car elements))))
-              (case-match cur
-                (('acl2::logbit$inline ('quote num) &)
-                 (logxor -1 (ash 1 (logand (ifix num)
-                                           (logmask 64)))))
-                (&
-                 -1)))
-            (calculate-pp-e-cash (cdr elements))))|#)
+  (logmask 64)
+  (logand (b* ((cur (ex-from-rp-loose (car elements))))
+  (case-match cur
+  (('acl2::logbit$inline ('quote num) &)
+  (logxor -1 (ash 1 (logand (ifix num)
+  (logmask 64)))))
+  (&
+  -1)))
+  (calculate-pp-e-cash (cdr elements))))|#)
 
 (local
  (in-theory (disable lexorder)))
@@ -245,26 +247,26 @@
       (use-arith-5 t))
 
      (defthm sort-measure-lemma1
-       (IMPLIES
-        (AND (<= 0 size)
+       (implies
+        (and (<= 0 size)
              (integerp size)
              (<= size (len lst)))
-        (equal (LEN (MV-NTH 1 (CUT-LIST-BY-HALF LST size)))
+        (equal (len (mv-nth 1 (cut-list-by-half lst size)))
                (- (len lst) size)))
        :hints (("goal"
-                :induct (CUT-LIST-BY-HALF LST size)
+                :induct (cut-list-by-half lst size)
                 :do-not-induct t
                 :in-theory (e/d (len cut-list-by-half) ()))))
 
      (defthm sort-measure-lemma1-v2
-       (IMPLIES
-        (AND (<= 0 size)
+       (implies
+        (and (<= 0 size)
              (integerp size)
              (<= size (len lst)))
-        (equal (LEN (MV-NTH 0 (CUT-LIST-BY-HALF LST size)))
+        (equal (len (mv-nth 0 (cut-list-by-half lst size)))
                size))
        :hints (("goal"
-                :induct (CUT-LIST-BY-HALF LST size)
+                :induct (cut-list-by-half lst size)
                 :do-not-induct t
                 :in-theory (e/d (len cut-list-by-half) ()))))
 
@@ -512,10 +514,14 @@
      (t (b* (((pp-e e1) (car first))
              ((pp-e e2) (car second)))
           (cond
-           ((and* (not (equal e1.sign e2.sign))
-                  (equal e1.hash e2.hash)
-                  (equal e1.elements e2.elements))
-            (merge-sorted-pp-e-lists (cdr first) (cdr second)))
+           ((and* ;;(not (equal e1.sign e2.sign))
+             (equal e1.hash e2.hash)
+             (equal e1.elements e2.elements))
+            (b* ((new-coef (+ e1.coef e2.coef))
+                 (rest (merge-sorted-pp-e-lists (cdr first) (cdr second))))
+              (if (= new-coef 0)
+                  rest
+                (cons (change-pp-e e1 :coef new-coef) rest))))
            ((if* (equal e1.hash e2.hash)
                  (b* (((mv order &) (pp-list-order e1.elements e2.elements nil))) order)
                  (< e1.hash e2.hash))
@@ -583,16 +589,19 @@
         lst
         #|(acons (caar lst)
         (sort-and$-list (cdar lst) (len (cdar lst))) ;
-; ; ; ; ; ; ; ; ;
+; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
         nil)||#)
        ((= len 2)
         (b* (((pp-e e1) (car lst))
              ((pp-e e2) (cadr lst)))
           (cond
-           ((and (not (equal e1.sign e1.sign))
-                 (equal e1.hash e2.hash)
-                 (equal e1.elements e2.elements))
-            nil)
+           ((and ;;(not (equal e1.sign e1.sign))
+             (equal e1.hash e2.hash)
+             (equal e1.elements e2.elements))
+            (let ((new-coef (+ e1.coef e2.coef)))
+              (if (= new-coef 0)
+                  nil
+                (list (change-pp-e e1 :coef new-coef)))))
            ((if* (equal e1.hash e2.hash)
                  (b* (((mv order &) (pp-list-order e1.elements e2.elements nil))) order)
                  (< e1.hash e2.hash))
@@ -652,7 +661,7 @@
     (cons (b* (((pp-e cur))
                ((pp-e other) (car lst2)))
             (make-pp-e
-             :sign (xor cur.sign other.sign)
+             :coef (* cur.coef other.coef)
              :hash (logand cur.hash other.hash)
              :elements (merge-sorted-and$-lists cur.elements other.elements)))
           (and$-pp-e-lists-aux cur (cdr lst2) acc))))
@@ -660,17 +669,17 @@
 (define and$-pp-e-lists ((lst1 pp-e-list-p)
                          (lst2 pp-e-list-p)
                          (acc pp-e-list-p)
-                         (sign booleanp))
+                         (coef integerp))
   :returns (res-acc pp-e-list-p :hyp (and (pp-e-list-p lst1)
                                           (pp-e-list-p lst2)
                                           (pp-e-list-p acc)
-                                          (booleanp sign))
+                                          (integerp coef))
                     :rule-classes (:type-prescription :rewrite))
   (if (atom lst1)
       acc
-    (b* ((acc (and$-pp-e-lists (cdr lst1) lst2 acc sign))
+    (b* ((acc (and$-pp-e-lists (cdr lst1) lst2 acc coef))
          ((pp-e e) (car lst1)))
-      (and$-pp-e-lists-aux (change-pp-e e :sign (xor sign e.sign))
+      (and$-pp-e-lists-aux (change-pp-e e :coef (* coef e.coef))
                            lst2 acc))))
 
 #|(defthm append-of-pp-list-p
@@ -689,7 +698,7 @@
 
 (local
  ;; auxilary function used only in the local lemmas for correctness proofs.
- (define apply-sign-to-pp-e-list (lst sign)
+ (define apply-coef-to-pp-e-list (lst coef)
    :returns (res pp-e-list-p
                  :hyp (pp-e-list-p lst))
    :verify-guards nil
@@ -698,8 +707,8 @@
      (b* (((pp-e e) (car lst)))
        (cons-with-hint
         (change-pp-e e
-                     :sign (xor sign e.sign))
-        (apply-sign-to-pp-e-list (cdr lst) sign)
+                     :coef (* coef e.coef))
+        (apply-coef-to-pp-e-list (cdr lst) coef)
         lst)))))
 
 ;; Set a limit so that terms do not grow too large..
@@ -712,14 +721,13 @@
     (defthm natp-of-pp-lists-limit
       (natp (pp-lists-limit))))
 
-  (define return-16000 ()
-    16000)
+  (define return-2000 ()
+    2000)
 
-  (defattach pp-lists-limit return-16000))
-
+  (defattach pp-lists-limit return-2000))
 
 (define pp-term-to-pp-e-list ((term pp-term-p)
-                              (sign booleanp)
+                              (coef integerp)
                               &key
                               ((term-size-limit natp) 'term-size-limit))
   :guard (rp-termp term)
@@ -727,7 +735,7 @@
   :hints (("goal"
            :in-theory (e/d (measure-lemmas) ())))
   :returns (mv (result pp-e-list-p
-                       :hyp (and (booleanp sign)
+                       :hyp (and (integerp coef)
                                  (rp-termp term))
                        :rule-classes (:type-prescription :rewrite))
                (too-large-p booleanp))
@@ -739,125 +747,123 @@
     (cond ((binary-and-p term)
            (b* ((x (cadr term))
                 (y (caddr term))
-                ((mv lst1 too-large1) (pp-term-to-pp-e-list x nil))
-                ((mv lst2 too-large2) (pp-term-to-pp-e-list y nil))
-                ((when (or* too-large1 too-large2)) (mv (list (make-pp-e :sign sign :elements (list orig))) t))
+                ((mv lst1 too-large1) (pp-term-to-pp-e-list x 1))
+                ((mv lst2 too-large2) (pp-term-to-pp-e-list y 1))
+                ((when (or* too-large1 too-large2)) (mv (list (make-pp-e :coef coef :elements (list orig))) t))
 
                 ((when (> (* (len lst1) (len lst2)) ;; estimated len of anded below.
                           term-size-limit))
-                 (mv (list (make-pp-e :sign sign :elements (list orig))) t))
+                 (mv (list (make-pp-e :coef coef :elements (list orig))) t))
 
-                (anded (and$-pp-e-lists lst1 lst2 nil sign))
+                (anded (and$-pp-e-lists lst1 lst2 nil coef))
                 (len-added (len anded))
                 #|((when (> len-added term-size-limit))
-                (mv (list (make-pp-e :sign sign :elements (list orig))) t))|# ;; TODO: probably unnecessary.
+                (mv (list (make-pp-e :coef coef :elements (list orig))) t))|# ;; TODO: probably unnecessary.
                 (anded (sort-pp-e-lists anded len-added)))
              (mv anded nil)))
           ((binary-or-p term)
            (b* ((x (cadr term))
                 (y (caddr term))
-                ((mv lst1 too-large1) (pp-term-to-pp-e-list x sign))
-                ((mv lst2 too-large2) (pp-term-to-pp-e-list y sign))
-                ((when (or* too-large1 too-large2)) (mv (list (make-pp-e :sign sign :elements (list orig))) t))
+                ((mv lst1 too-large1) (pp-term-to-pp-e-list x coef))
+                ((mv lst2 too-large2) (pp-term-to-pp-e-list y coef))
+                ((when (or* too-large1 too-large2)) (mv (list (make-pp-e :coef coef :elements (list orig))) t))
 
                 (lst1+lst2 (merge-sorted-pp-e-lists lst1 lst2))
 
                 ((when (> (* (len lst1) (len lst2)) ;; overestimated len of lst1&lst2 below.
                           term-size-limit))
-                 (mv (list (make-pp-e :sign sign :elements (list orig))) t))
+                 (mv (list (make-pp-e :coef coef :elements (list orig))) t))
 
-                (lst1&lst2 (and$-pp-e-lists lst1 lst2 nil (not sign)))
+                (lst1&lst2 (and$-pp-e-lists lst1 lst2 nil (- coef)))
                 (len-lst1&lst2 (len lst1&lst2))
                 #|((when (> len-lst1&lst2 term-size-limit))
-                (mv (list (make-pp-e :sign sign :elements (list orig))) t))|# ;; TODO: probably unnecessary.
+                (mv (list (make-pp-e :coef coef :elements (list orig))) t))|# ;; TODO: probably unnecessary.
                 (lst1&lst2 (sort-pp-e-lists lst1&lst2 len-lst1&lst2))
 
                 (merged (merge-sorted-pp-e-lists lst1+lst2 lst1&lst2))
 
                 ((when (> (len merged) term-size-limit)) ;; maybe unnecessary?
-                 (mv (list (make-pp-e :sign sign :elements (list orig))) t)))
+                 (mv (list (make-pp-e :coef coef :elements (list orig))) t)))
              (mv merged nil)))
           ((binary-xor-p term)
            (b* ((x (cadr term))
                 (y (caddr term))
-                ((mv lst1 too-large1) (pp-term-to-pp-e-list x sign))
-                ((mv lst2 too-large2) (pp-term-to-pp-e-list y sign))
+                ((mv lst1 too-large1) (pp-term-to-pp-e-list x coef))
+                ((mv lst2 too-large2) (pp-term-to-pp-e-list y coef))
                 ((when (or* too-large1 too-large2))
-                 (mv (list (make-pp-e :sign sign :elements (list term))) t))
+                 (mv (list (make-pp-e :coef coef :elements (list term))) t))
 
                 (acc (merge-sorted-pp-e-lists lst1 lst2))
                 (len-acc (len acc))
 
-                ((when (> (+ len-acc (* 2 (len lst1) (len lst2))) ;; overestimation of final len.
+                ((when (> (+ len-acc (* (len lst1) (len lst2))) ;; overestimation of final len.
                           term-size-limit))
-                 (mv (list (make-pp-e :sign sign :elements (list term))) t))
+                 (mv (list (make-pp-e :coef coef :elements (list term))) t))
 
-                (minus-x-and-y (and$-pp-e-lists lst1 lst2 nil (not sign)))
-                (len-minus-x-and-y (len minus-x-and-y))
-                (minus-x-and-y (sort-pp-e-lists minus-x-and-y len-minus-x-and-y))
-                (merged (merge-sorted-pp-e-lists
-                         acc
-                         (merge-sorted-pp-e-lists minus-x-and-y minus-x-and-y))))
+                (2xminus-x-and-y (and$-pp-e-lists lst1 lst2 nil (* -2 coef)))
+                (len-2xminus-x-and-y (len 2xminus-x-and-y))
+                (2xminus-x-and-y (sort-pp-e-lists 2xminus-x-and-y len-2xminus-x-and-y))
+                (merged (merge-sorted-pp-e-lists acc 2xminus-x-and-y)))
              (mv merged nil)))
           ((binary-?-p term)
            (b* ((test (cadr term))
                 (x (caddr term))
                 (y (cadddr term))
-                ((mv test-lst too-large1) (pp-term-to-pp-e-list test sign))
-                ((mv x-lst too-large2) (pp-term-to-pp-e-list x sign))
-                ((mv y-lst too-large3) (pp-term-to-pp-e-list y sign))
+                ((mv test-lst too-large1) (pp-term-to-pp-e-list test coef))
+                ((mv x-lst too-large2) (pp-term-to-pp-e-list x coef))
+                ((mv y-lst too-large3) (pp-term-to-pp-e-list y coef))
                 ((when (or* too-large1 too-large2 too-large3))
-                 (mv (list (make-pp-e :sign sign :elements (list orig))) t))
+                 (mv (list (make-pp-e :coef coef :elements (list orig))) t))
 
                 ((when (or* (> (* (len test-lst) (len x-lst)) ;; estimated len of x-and-test below.
                                term-size-limit)
                             (> (* (1+ (len test-lst)) (len y-lst)) ;; estimated len of minus-x-and-y below.
                                term-size-limit)))
-                 (mv (list (make-pp-e :sign sign :elements (list orig))) t))
+                 (mv (list (make-pp-e :coef coef :elements (list orig))) t))
 
-                (x-and-test (and$-pp-e-lists test-lst x-lst nil sign))
+                (x-and-test (and$-pp-e-lists test-lst x-lst nil coef))
                 (len-x-and-test (len x-and-test))
                 #|((when (> len-x-and-test term-size-limit))
-                (mv (list (make-pp-e :sign sign :elements (list orig))) t))|# ;; TODO: probably unnecessary.
+                (mv (list (make-pp-e :coef coef :elements (list orig))) t))|# ;; TODO: probably unnecessary.
                 (x-and-test (sort-pp-e-lists x-and-test len-x-and-test))
 
-                (--y-and-test (and$-pp-e-lists test-lst y-lst nil (not sign)))
+                (--y-and-test (and$-pp-e-lists test-lst y-lst nil (- coef)))
                 (len--y-and-test (len --y-and-test))
                 #|((when (> len--y-and-test term-size-limit))
-                (mv (list (make-pp-e :sign sign :elements (list orig))) t))|# ;; TODO: probably unnecessary.
+                (mv (list (make-pp-e :coef coef :elements (list orig))) t))|# ;; TODO: probably unnecessary.
                 (--y-and-test (sort-pp-e-lists --y-and-test len--y-and-test))
                 (merged
                  (merge-sorted-pp-e-lists x-and-test
                                           (merge-sorted-pp-e-lists --y-and-test
                                                                    y-lst)))
-                #|((when (> (len merged) term-size-limit)) (mv (list (make-pp-e :sign sign :elements (list orig))) t))|#)
+                #|((when (> (len merged) term-size-limit)) (mv (list (make-pp-e :coef coef :elements (list orig))) t))|#)
              (mv merged nil)))
           ((binary-not-p term)
            (b* ((x (cadr term))
-                ((mv lst1 too-large1) (pp-term-to-pp-e-list x (not sign)))
-                (merged (merge-sorted-pp-e-lists (list (make-pp-e :sign sign
+                ((mv lst1 too-large1) (pp-term-to-pp-e-list x (- coef)))
+                (merged (merge-sorted-pp-e-lists (list (make-pp-e :coef coef
                                                                   :hash (calculate-pp-e-cash (list ''1))
                                                                   :elements (list ''1)))
                                                  lst1)))
              (mv merged too-large1)))
           ((pp-p term)
-           (pp-term-to-pp-e-list (cadr term) sign))
+           (pp-term-to-pp-e-list (cadr term) coef))
           ((logbit-p term)
-           (mv (list (make-pp-e :sign sign :hash (calculate-pp-e-cash (list term)) :elements (list term))) nil))
+           (mv (list (make-pp-e :coef coef :hash (calculate-pp-e-cash (list term)) :elements (list term))) nil))
           ((bit-fix-p term)
-           (mv (list (make-pp-e :sign sign :hash (calculate-pp-e-cash (list term)) :elements (list term))) nil))
+           (mv (list (make-pp-e :coef coef :hash (calculate-pp-e-cash (list term)) :elements (list term))) nil))
           ((equal term ''1)
-           (mv (list (make-pp-e :sign sign :hash (calculate-pp-e-cash (list term)) :elements (list term))) nil))
+           (mv (list (make-pp-e :coef coef :hash (calculate-pp-e-cash (list term)) :elements (list term))) nil))
           ((equal term ''0)
            (mv nil nil))
           (t (if (has-bitp-rp orig)
-                 (mv (list (make-pp-e :sign sign :hash (calculate-pp-e-cash (list orig)) :elements (list orig))) nil)
+                 (mv (list (make-pp-e :coef coef :hash (calculate-pp-e-cash (list orig)) :elements (list orig))) nil)
                (progn$
                 (cw "unexpected term ~p0 ~%" orig)
                 (hard-error 'pp-term-to-pp-e-list
                             "unexpected term ~p0 ~%"
                             (list (cons #\0 orig)))
-                (mv (list (make-pp-e :sign sign :hash (calculate-pp-e-cash (list orig)) :elements (list orig))) nil))))))
+                (mv (list (make-pp-e :coef coef :hash (calculate-pp-e-cash (list orig)) :elements (list orig))) nil))))))
 
   ///
 
@@ -945,11 +951,17 @@
                          ((atom (cddr cur)) (create-and-list-instance cur))
                          (t (create-and-list-instance cur))))
               )
-           (if e.sign
-               (cons `(-- ,cur)
-                     (pp-e-list-to-term-pp-lst (cdr lst)))
-             (cons cur
-                   (pp-e-list-to-term-pp-lst (cdr lst)))))))
+           (cons-with-times e.coef
+                            cur
+                            (pp-e-list-to-term-pp-lst (cdr lst)))
+           #|(cond ((= e.coef 0)
+                  (pp-e-list-to-term-pp-lst (cdr lst)))
+                 ((= e.coef 1)
+                  (cons cur
+                        (pp-e-list-to-term-pp-lst (cdr lst))))
+                 (t (cons ;;`(times ',e.coef ,cur)
+                          (create-times-instance e.coef cur)
+                          (pp-e-list-to-term-pp-lst (cdr lst)))))|#)))
   ///
   (defthm rp-termp-of-pp-e-list-to-term-pp-lst
     (implies (pp-e-list-p lst)
@@ -997,7 +1009,7 @@
                               (cdr term-))
               term-))
 
-            ((or (BINARY-NOT-p term-)
+            ((or (binary-not-p term-)
                  (pp-p term-))
              (cons-with-hint (car term-)
                              (cons-with-hint (pp-remove-extraneous-sc (cadr
@@ -1006,7 +1018,7 @@
                                              (cdr term-))
                              term-))
 
-            ((BINARY-?-p term-)
+            ((binary-?-p term-)
              (cons-with-hint
               (car term-)
               (cons-with-hint
@@ -1046,33 +1058,29 @@
                :in-theory (e/d () ()))))))
 
 (define pp-flatten ((term pp-term-p)
-                    (sign booleanp)
                     &key
+                    ((coef integerp) '1)
                     ((term-size-limit) 'nil)
                     (disabled 'nil))
   :returns pp-lst
   :guard (rp-termp term)
   (b* ((term (pp-remove-extraneous-sc term)))
     (cond (disabled
-           (list (if sign `(-- ,term) term)))
+           (list (create-times-instance coef term)))
           ((and (case-match term
                   (('binary-and ('logbit$inline & &) ('logbit$inline & &)) t))
                 (not (rp-equal-cnt (cadr term) (caddr term) 3)))
            (b* ((cur-single
                  (if (lexorder2- (cadr term) (caddr term))
-                     (if sign
-                         `(-- ,(create-and-list-instance (cdr term)))
-                       (create-and-list-instance (cdr term)))
-                   (if sign
-                       `(-- ,(create-and-list-instance (list (caddr term) (cadr term))))
-                     (create-and-list-instance (list (caddr term) (cadr term)))))))
+                     (create-times-instance coef (create-and-list-instance (cdr term)))
+                   (create-times-instance coef (create-and-list-instance (list (caddr term) (cadr term)))))))
              (list cur-single)))
           (t (b* ((term-size-limit (if (natp term-size-limit) term-size-limit (pp-lists-limit)))
-                  ((mv pp-e-list too-large) (pp-term-to-pp-e-list term sign))
+                  ((mv pp-e-list too-large) (pp-term-to-pp-e-list term coef))
                   ((when too-large)
                    (progn$ (cwe "Warning: pp-flatten got a term that grows too large: ~p0 ~%"
                                 term)
-                           (list (if sign `(-- ,term) term))))
+                           (list (create-times-instance coef term))))
                   (pp-lst (pp-e-list-to-term-pp-lst pp-e-list))
                   (pp-lst (if (pp-lst-orderedp pp-lst) pp-lst (pp-sum-sort-lst pp-lst)))
                   #|(result (If pp-e-list (cons 'list result) ''nil))||#
@@ -1082,7 +1090,7 @@
 
   (defret rp-term-listp-of-pp-flatten
     (implies (and (rp-termp term)
-                  (booleanp sign))
+                  (integerp coef))
              (rp-term-listp pp-lst))
     :fn pp-flatten
     :hints (("Goal"
@@ -1091,17 +1099,18 @@
   (profile 'pp-flatten-fn))
 
 (define pp-flatten-memoized ((term pp-term-p)
-                             (sign booleanp))
+                              &key
+                              ((coef integerp) '1)
+                              )
   :guard (rp-termp term)
   :enabled t
-  (pp-flatten term sign :disabled nil)
+  (pp-flatten term :coef coef :disabled nil)
   ///
 
-  (memoize 'pp-flatten-memoized
+  (memoize 'pp-flatten-memoized-fn
            :aokp t
            ;;:condition '(not disabled)
            ))
-
 
 (acl2::defsection sort-sum-meta
 
@@ -1124,7 +1133,7 @@
     :returns (mv valid e)
     :verify-guards nil
     (b* (((when (case-match cur (('rp ''bitp x) (atom x))))
-          (mv t (make-pp-e :sign nil :hash (calculate-pp-e-cash (list cur)) :elements (list cur))))
+          (mv t (make-pp-e  :hash (calculate-pp-e-cash (list cur)) :elements (list cur))))
          (cur (ex-from-rp cur)))
       (case-match cur
         (('binary-and a b)
@@ -1133,22 +1142,18 @@
                (mv nil nil)))
            (mv t
                (let ((elements (pp-remove-extraneous-sc-lst (sort-and$-list (cdr cur) 2))))
-                 (make-pp-e :sign nil
-                            :hash (calculate-pp-e-cash elements)
+                 (make-pp-e :hash (calculate-pp-e-cash elements)
                             :elements elements)))))
         (('logbit$inline & &)
          (mv t
              (let ((elements (list (pp-remove-extraneous-sc cur))))
-               (make-pp-e :sign nil
-                          :hash (calculate-pp-e-cash elements)
+               (make-pp-e :hash (calculate-pp-e-cash elements)
                           :elements elements))))
         (''1
-         (mv t (make-pp-e :sign nil
-                          :hash (calculate-pp-e-cash (list cur))
+         (mv t (make-pp-e :hash (calculate-pp-e-cash (list cur))
                           :elements (list cur))))
         (''0
-         (mv t (make-pp-e :sign nil
-                          :hash (calculate-pp-e-cash nil)
+         (mv t (make-pp-e :hash (calculate-pp-e-cash nil)
                           :elements nil)))
         (&
          (mv nil nil))))
@@ -1304,7 +1309,7 @@
                          (include-fnc cur 's-c-res)))
                (mv nil nil))
               (cur (pp-remove-extraneous-sc cur))
-              ((mv pp-e-list1 too-large) (pp-term-to-pp-e-list cur nil))
+              ((mv pp-e-list1 too-large) (pp-term-to-pp-e-list cur 1))
               ((when too-large)
                (progn$
                 (cwe "Warning: sort-sum-meta-aux2 got a term that grows too large: ~p0 ~%"
@@ -1326,7 +1331,7 @@
                  (mv nil nil))
                 (term-orig (pp-remove-extraneous-sc term-orig))
                 (term-size-limit (pp-lists-limit))
-                ((mv res too-large) (pp-term-to-pp-e-list term-orig nil))
+                ((mv res too-large) (pp-term-to-pp-e-list term-orig 1))
                 ((when too-large)
                  (progn$
                   (cwe "Warning: sort-sum-meta-aux2 got a term that grows too large: ~p0 ~%"
@@ -1387,7 +1392,7 @@
                           ,(create-list-instance pp-lst)
                           ;;(list (list . ,result) 'nil 'nil 'nil)
                           )
-                        ''0)))
+                      ''0)))
          (mv result t)))
       (&
        (progn$ (cw "sort-sum-meta got an unexpected term ~p0 ~%"
