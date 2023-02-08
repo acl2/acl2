@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -67,7 +67,7 @@
   (b* (((mv afn cfn) (afn-cfn-unary op index))
        (arg-expr (integer-to-sint-expr arg))
        ((er (cons & res)) (trans-eval `(,afn (c::sint ,arg)) 'test state nil))
-       (res (c::sint->get res))
+       (res (c::integer-from-sint res))
        (res-expr (integer-to-sint-expr res)))
     (value
      `(defun ,cfn ()
@@ -90,7 +90,7 @@
                                       'test
                                       state
                                       nil))
-       (res (c::sint->get res))
+       (res (c::integer-from-sint res))
        (res-expr (integer-to-sint-expr res)))
     (value
      `(defun ,cfn ()

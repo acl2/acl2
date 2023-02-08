@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -78,13 +78,13 @@
                               (c::sintp |len|)
                               (c::sintp |i|)
                               (equal (c::uchar-array-length |a|)
-                                     (c::sint->get |len|))
+                                     (c::integer-from-sint |len|))
                               (equal (c::uchar-array-length |b|)
-                                     (c::sint->get |len|))
+                                     (c::integer-from-sint |len|))
                               (<= 0
-                                  (c::sint->get |i|))
-                              (<= (c::sint->get |i|)
-                                  (c::sint->get |len|)))
+                                  (c::integer-from-sint |i|))
+                              (<= (c::integer-from-sint |i|)
+                                  (c::integer-from-sint |len|)))
                   :guard-hints (("Goal"
                                  :do-not-induct t
                                  :in-theory
@@ -96,8 +96,8 @@
                                          c::add-sint-sint-okp
                                          c::sint-integerp-alt-def
                                          c::assign)))
-                  :measure (nfix (- (c::sint->get |len|)
-                                    (c::sint->get |i|)))
+                  :measure (nfix (- (c::integer-from-sint |len|)
+                                    (c::integer-from-sint |i|)))
                   :hints (("Goal"
                            :in-theory (enable c::boolean-from-sint
                                               c::lt-sint-sint
@@ -106,8 +106,8 @@
                                               c::assign)))))
   (if (mbt (and (c::sintp |i|)
                 (c::sintp |len|)
-                (>= (c::sint->get |i|) 0)
-                (>= (c::sint->get |len|) 0)))
+                (>= (c::integer-from-sint |i|) 0)
+                (>= (c::integer-from-sint |len|) 0)))
       (if (c::boolean-from-sint (c::lt-sint-sint |i| |len|))
           (let* ((|b| (c::uchar-array-write-sint
                        |b| |i| (c::uchar-array-read-sint |a| |i|)))
@@ -123,9 +123,9 @@
                               (c::uchar-arrayp |b|)
                               (c::sintp |len|)
                               (equal (c::uchar-array-length |a|)
-                                     (c::sint->get |len|))
+                                     (c::integer-from-sint |len|))
                               (equal (c::uchar-array-length |b|)
-                                     (c::sint->get |len|)))))
+                                     (c::integer-from-sint |len|)))))
   (let ((|i| (c::declar (c::sint-dec-const 0))))
     (mv-let (|b| |i|)
       (|copy$loop| |a| |b| |len| |i|)

@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,7 +27,7 @@
                                 (c::uintp |r|))
                     :guard-hints (("Goal" :in-theory (enable c::declar
                                                              c::assign)))
-                    :measure (c::uint->get |n|)
+                    :measure (c::integer-from-uint |n|)
                     :hints (("Goal" :in-theory (enable c::assign
                                                        c::ne-uint-uint
                                                        c::sub-uint-uint
