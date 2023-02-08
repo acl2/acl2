@@ -1,6 +1,6 @@
 ; Getting the conjuncts of an untranslated term
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -54,4 +54,4 @@
     (true-listp (conjuncts-of-uterms uterms))
     :flag conjuncts-of-uterms))
 
-(verify-guards conjuncts-of-uterm :guard-debug t)
+(verify-guards conjuncts-of-uterm)
