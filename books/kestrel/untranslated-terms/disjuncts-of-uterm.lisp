@@ -1,6 +1,6 @@
 ; Getting the disjuncts of an untranslated term
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -59,4 +59,4 @@
     (true-listp (disjuncts-of-uterms uterms))
     :flag disjuncts-of-uterms))
 
-(verify-guards disjuncts-of-uterm :guard-debug t)
+(verify-guards disjuncts-of-uterm)
