@@ -1,4 +1,9 @@
+#include <iomanip>
+
 #include "parser.h"
+
+
+#define UNREACHABLE() assert(!"Woopsie, some unreachable was reach")
 
 // 6/27/18
 // I just eliminated two features that are no longer used: (1) CtoS mode, in which a
@@ -13,17 +18,18 @@
 //***********************************************************************************
 
 void Plist::display(ostream& os) const {
-  os << "(";
-  if (list) {
-    list->value->display(os);
-    List<Sexpression> *rest = list->next;
-    while (rest) {
-      os << " ";
-      rest->value->display(os);
-      rest = rest->next;
+  os << '(';
+
+  bool first = true;
+  for_each(list, [&](auto v) {
+    if (!first) {
+      os << ' ';
     }
-  }
-  os << ")";
+    v->display(os);
+    first = false;
+  });
+
+  os << ')';
 }
 
 // Symbol constants used in translation:
@@ -149,7 +155,9 @@ PrimType uint64Type("uint64", "uint");
 Sexpression *RegType::ACL2Assign(Expression *rval) { // overridden by FPType
   Type *t = rval->exprType();
   unsigned w = rval->ACL2ValWidth();
-  if ((t == this) || (w && w <= width_->evalConst())) {
+  int width_evaluated = width_->evalConst();
+  assert(width_evaluated >= 0);
+  if (t == this || (w && w <= (unsigned)width_evaluated)) {
     return rval->ACL2Expr(true);
   }
   else {
@@ -909,7 +917,7 @@ Sexpression *Initializer::ACL2Expr([[maybe_unused]] bool isBV) {
     result->add((Sexpression*)(ptr->value->ACL2Expr()));
     ptr = ptr->next;
   }
-  return Plist::FromList(result->front);
+  return Plist::FromList(result->front());
 }
 
 Sexpression *Initializer::ACL2ArrayExpr() {
@@ -1483,8 +1491,6 @@ Sexpression *MultipleValue::ACL2Expr([[maybe_unused]] bool isBV) {
 //   ForStmt               (for)
 //   SwitchStmt            (switch)
 
-Statement::Statement() {}
-
 // This method is designed to handle if ... else if ... :
 
 void Statement::displayAsRightBranch(ostream& os, unsigned indent) { // virtual (overridden by IfStmt)
@@ -1518,11 +1524,11 @@ Statement* Statement::subst([[maybe_unused]] SymRef *var, [[maybe_unused]] Expre
 
 // Translate to an S-expression for ACL2 translation:
 
-Sexpression *Statement::ACL2Expr() { // virtual
-  display(cout); cout << endl;
-  assert(!"Statement is not intended to be converted to an S-expression");
-  return nullptr;
-}
+//Sexpression *Statement::ACL2Expr() { // virtual
+//  display(cout); cout << endl;
+//  assert(!"Statement is not intended to be converted to an S-expression");
+//  return nullptr;
+//}
 
 void Statement::noteReturnType([[maybe_unused]] Type *t) { // virtual (overridden by Block, ReturnStmt, and IfStmt)
 }
@@ -2485,88 +2491,3 @@ void Template::displayACL2Expr(ostream& os) {
   sym = saveSym;
 }
 
-//***********************************************************************************
-// class Program
-//***********************************************************************************
-
-// A program consists of type definitions, global constant declarations, and function definitions.
-
-// Data members: List<DefinedType> *typeDefs; List<ConstDec> *constDecs; List<Template> *templates; List<FunDef> *funDefs;
-
-Program::Program() {
-  typeDefs = nullptr;
-  constDecs = nullptr;
-  funDefs = nullptr;
-  templates = nullptr;
-}
-
-// A program may be displayed in either of two modes:
-//   rac: Pseudocode representation.
-//   acl2: S-expression representation, to be processed by the ACL2 translator.
-
-void Program::displayTypeDefs(ostream& os, DispMode mode) {
-  // Note that type definitions are used in generating S-expressions for constant declarations
-  // and function definitions, but are not represented explicitly in the ACL2 translation.
-  List<DefinedType> *ptr = typeDefs;
-  while (ptr) {
-    switch (mode) {
-      case DispMode::rac:
-        ptr->value->displayDef(os);
-        break;
-      case DispMode::acl2:
-        break;
-    }
-    ptr = ptr->next;
-  }
-}
-
-void Program::displayConstDecs(ostream& os, DispMode mode) {
-  List<ConstDec> *ptr = constDecs;
-  while (ptr) {
-    switch (mode) {
-      case DispMode::rac:
-        ptr->value->display(os);
-        break;
-      case DispMode::acl2:
-        ptr->value->ACL2Expr()->display(os);
-    }
-    ptr = ptr->next;
-  }
-}
-
-void Program::displayFunDefs(ostream& os, DispMode mode, [[maybe_unused]] const char *prefix) {
-  List<FunDef> *ptr = funDefs;
-  while (ptr) {
-    FunDef *def =  ptr->value;
-    switch (mode) {
-      case DispMode::rac:
-        def->display(os);
-        break;
-      case DispMode::acl2:
-        def->displayACL2Expr(os);
-        break;
-    }
-    ptr = ptr->next;
-  }
-  os << endl;
-}
-
-void Program::displayFunDecs(ostream& os) {
-  List<FunDef> *ptr = funDefs;
-  while (ptr) {
-    ptr->value->displayDec(os);
-    ptr = ptr->next;
-  }
-}
-
-void Program::display(ostream& os, DispMode mode) {
-  displayTypeDefs(os, mode);
-  os << "\n";
-  displayConstDecs(os, mode);
-  os << "\n";
-  displayFunDefs(os, mode);
-}
-
-bool Program::isEmpty() const {
-  return !funDefs->length();
-}

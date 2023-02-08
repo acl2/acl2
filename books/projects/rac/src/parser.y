@@ -9,12 +9,14 @@ void yyerror(const char *s) {
   fprintf(stderr, "%s:%d: %s\n", yyfilenm, yylineno, s);
 }
 
+// TODO: replace this horror by C++20 std::format().
 template <typename... Args>
 void yyerror(const char *format, Args... args) {
 
   fflush(stdout);
   std::fprintf(stderr, "%s:%d: ", yyfilenm, yylineno);
   std::fprintf(stderr, format, args...);
+  std::fprintf(stderr, "\n");
 }
 
 extern BreakStmt breakStmt;
@@ -280,8 +282,24 @@ enum_const_dec_list
   ;
 
 enum_const_dec
-  : ID                 {$$ = new EnumConstDec($1); symTab.push($$);}
-  | ID '=' expression  {$$ = new EnumConstDec($1, $3); symTab.push($$);}
+  : ID {
+      if (symTab.find_last_frame($1)) {
+        yyerror("Duplicate identifier declaration (could be an enum, a "
+                "variable or template parameter) `%s`", $1);
+        YYERROR;
+      }
+      $$ = new EnumConstDec($1);
+      symTab.push($$);
+    }
+  | ID '=' expression {
+      if (symTab.find_last_frame($1)) {
+        yyerror("Duplicate identifier declaration (could be an enum, a "
+                "variable or template parameter) `%s`", $1);
+        YYERROR;
+      }
+      $$ = new EnumConstDec($1, $3);
+      symTab.push($$);
+    }
   ;
 
 mv_type
@@ -345,7 +363,7 @@ funcall
   : ID '(' expr_list ')'
     {
       FunDef *f;
-      if ((f = prog.funDefs->find($1)) == NULL && (f = builtins.find($1)) == NULL) {
+      if ((f = prog.funDefs->find($1)) == nullptr && (f = builtins.find($1)) == NULL) {
         yyerror("Undefined function");
         YYERROR;
       }
@@ -356,7 +374,7 @@ funcall
   | TEMPLATEID '<' arith_expr_list '>' '(' arith_expr_list ')'
     {
       Template *f;
-      if ((f = (Template*)prog.funDefs->find($1)) == NULL) {
+      if ((f = (Template*)prog.funDefs->find($1)) == nullptr) {
         yyerror("Undefined function template");
         YYERROR;
       }
@@ -493,7 +511,7 @@ expression
   ;
 
 expr_list
-  :                     {$$ = NULL;}
+  :                     {$$ = nullptr;}
 | nontrivial_expr_list  {$$ = $1;}
   ;
 
@@ -504,7 +522,7 @@ nontrivial_expr_list
 
 
 arith_expr_list
-  :                     {$$ = NULL;}
+  :                     {$$ = nullptr;}
 | nontrivial_arith_expr_list  {$$ = $1;}
   ;
 
@@ -558,36 +576,63 @@ var_dec
   ;
 
 untyped_var_dec
-  : ID
-    {$$ = new VarDec($1, NULL); symTab.push((VarDec*)$$);}
-  | ID '=' expression
-    {$$ = new VarDec($1, NULL, $3); symTab.push((VarDec*)$$);}
-  | ID '=' array_or_struct_init
-    {$$ = new VarDec($1, NULL, $3); symTab.push((VarDec*)$$);}
-  | ID '[' arithmetic_expression ']'
-    {
-      if ($3->isConst() && $3->evalConst() > 0) {
-        $$ = new VarDec($1, new ArrayType($3, NULL)); symTab.push((VarDec*)$$);
-      }
-      else {
-        yyerror("Non-constant array dimension");
+  : ID {
+      if (symTab.find_last_frame($1)) {
+        yyerror("Duplicate identifier declaration (could be an enum, a "
+                "variable or template parameter) `%s`", $1);
         YYERROR;
       }
+      $$ = new VarDec($1, nullptr);
+      symTab.push((VarDec*)$$);
     }
-  | ID '[' arithmetic_expression ']' '=' array_or_struct_init
-    {
-      if ($3->isConst() && $3->evalConst() > 0) {
-        $$ = new VarDec($1, new ArrayType($3, NULL), $6); symTab.push((VarDec*)$$);
-      }
-      else {
-        yyerror("Non-constant array dimension");
+  | ID '=' expression {
+      if (symTab.find_last_frame($1)) {
+        yyerror("Duplicate identifier declaration (could be an enum, a "
+                "variable or template parameter) `%s`", $1);
         YYERROR;
       }
+      $$ = new VarDec($1, nullptr, $3);
+      symTab.push((VarDec*)$$);
+    }
+  | ID '=' array_or_struct_init {
+      if (symTab.find_last_frame($1)) {
+        yyerror("Duplicate identifier declaration (could be an enum, a "
+                "variable or template parameter) `%s`", $1);
+        YYERROR;
+      }
+      $$ = new VarDec($1, nullptr, $3);
+      symTab.push((VarDec*)$$);
+    }
+  | ID '[' arithmetic_expression ']' {
+      if (!$3->isConst() || $3->evalConst() <= 0) {
+        yyerror("Invalid array size (it shoud be a constant, stricly positive expression)");
+        YYERROR;
+      }
+      if (symTab.find_last_frame($1)) {
+        yyerror("Duplicate identifier declaration (could be an enum, a "
+                "variable or template parameter) `%s`", $1);
+        YYERROR;
+      }
+      $$ = new VarDec($1, new ArrayType($3, nullptr));
+      symTab.push((VarDec*)$$);
+    }
+  | ID '[' arithmetic_expression ']' '=' array_or_struct_init {
+      if (!$3->isConst() || $3->evalConst() <= 0) {
+        yyerror("Invalid array size (it shoud be a constant, stricly positive expression)");
+        YYERROR;
+      }
+      if (symTab.find_last_frame($1)) {
+        yyerror("Duplicate identifier declaration (could be an enum, a "
+                "variable or template parameter) `%s`", $1);
+        YYERROR;
+      }
+      $$ = new VarDec($1, new ArrayType($3, nullptr), $6);
+      symTab.push((VarDec*)$$);
     }
   ;
 
 array_or_struct_init
-  : '{' init_list '}'  {$$ = new Initializer((List<Constant>*)($2->front));}
+  : '{' init_list '}'  {$$ = new Initializer((List<Constant>*)($2->front()));}
   ;
 
 init_list
@@ -610,19 +655,36 @@ const_dec
   ;
 
 untyped_const_dec
-  : ID '=' expression
-    {$$ = new ConstDec($1, NULL, $3); symTab.push((ConstDec*)$$);}
-  | ID '=' array_or_struct_init
-    {$$ = new ConstDec($1, NULL, $3); symTab.push((ConstDec*)$$);}
-  | ID '[' arithmetic_expression ']' '=' array_or_struct_init
-    {
-      if ($3->isConst() && $3->evalConst() > 0) {
-        $$ = new ConstDec($1, new ArrayType($3, NULL), $6); symTab.push((ConstDec*)$$);
-      }
-      else {
-        yyerror("Non-constant array dimension");
+  : ID '=' expression {
+       if (symTab.find_last_frame($1)) {
+        yyerror("Duplicate identifier declaration (could be an enum, a "
+                "variable or template parameter) `%s`", $1);
         YYERROR;
       }
+      $$ = new ConstDec($1, nullptr, $3);
+      symTab.push((ConstDec*)$$);
+    }
+  | ID '=' array_or_struct_init {
+      if (symTab.find_last_frame($1)) {
+        yyerror("Duplicate identifier declaration (could be an enum, a "
+                "variable or template parameter) `%s`", $1);
+        YYERROR;
+      }
+      $$ = new ConstDec($1, nullptr, $3);
+      symTab.push((ConstDec*)$$);
+    }
+  | ID '[' arithmetic_expression ']' '=' array_or_struct_init {
+      if (!$3->isConst() || $3->evalConst() <= 0) {
+        yyerror("Invalid array size (it shoud be a constant, stricly positive expression)");
+        YYERROR;
+      }
+      if (symTab.find_last_frame($1)) {
+        yyerror("Duplicate identifier declaration (could be an enum, a "
+                "variable or template parameter) `%s`", $1);
+        YYERROR;
+      }
+      $$ = new ConstDec($1, new ArrayType($3, nullptr), $6);
+      symTab.push((ConstDec*)$$);
     }
   ;
 
@@ -679,13 +741,13 @@ break_statement
   ;
 
 return_statement
-  : RETURN             {$$ = new ReturnStmt(NULL);}
+  : RETURN             {$$ = new ReturnStmt(nullptr);}
   | RETURN expression  {$$ = new ReturnStmt($2);}
   ;
 
 assignment
   : expression assign_op expression {$$ = new Assignment($1, $2, $3);}
-  | expression inc_op               {$$ = new Assignment($1, $2, NULL);}
+  | expression inc_op               {$$ = new Assignment($1, $2, nullptr);}
   | postfix_expression '.' SET_SLC '(' expression ',' expression ')'
   {
    unsigned w = 0;
@@ -764,7 +826,7 @@ r_block
     // will cause reduce/reduce conflicts.
 
 statement_list
-  : {$$ = NULL;}
+  : {$$ = nullptr;}
   | statement_list statement  {$$ = $1 ? $1->add($2) : new List<Statement>($2);}
   ;
 
@@ -782,12 +844,16 @@ for_statement
   ;
 
 for_init
-  : var_dec {symTab.push((VarDec*)$1);}
+  : var_dec {
+      // Here no need to check if the var is already declare since it's the
+      // first declaration inside the new frame.
+      symTab.push((VarDec*)$1);
+    }
   | assignment
   ;
 
 if_statement
-  : IF '(' expression ')' statement                 {$$ = new IfStmt($3, $5, NULL);}
+  : IF '(' expression ')' statement                 {$$ = new IfStmt($3, $5, nullptr);}
   | IF '(' expression ')' statement ELSE statement  {$$ = new IfStmt($3, $5, $7);}
   ;
 
@@ -802,7 +868,7 @@ case_list
 
 case
   : CASE case_label ':' statement_list  {$$ = new Case($2, $4);}
-  | DEFAULT ':' statement_list          {$$ = new Case(NULL, $3);}
+  | DEFAULT ':' statement_list          {$$ = new Case(nullptr, $3);}
   ;
 
 case_label
@@ -834,7 +900,7 @@ func_def
   ;
 
 param_dec_list
-  : {$$ = NULL;}
+  : {$$ = nullptr;}
   | nontrivial_param_dec_list
   ;
 
@@ -858,7 +924,7 @@ func_template
   ;
 
 template_param_dec_list
-  : {$$ = NULL;}
+  : {$$ = nullptr;}
   | nontrivial_template_param_dec_list
   ;
 
@@ -868,6 +934,14 @@ nontrivial_template_param_dec_list
   ;
 
 template_param_dec
-: type_spec ID {$$ = new TempParamDec($2, $1);symTab.push((TempParamDec*)$$);}
+: type_spec ID {
+    if (symTab.find_last_frame($2)) {
+        yyerror("Duplicate identifier declaration (could be an enum, a "
+                "variable or template parameter) `%s`", $2);
+        YYERROR;
+      }
+      $$ = new TempParamDec($2, $1);
+      symTab.push((TempParamDec*)$$);
+    }
   ;
 %%
