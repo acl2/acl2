@@ -1150,7 +1150,6 @@
                     (lodigits (list digit))
                     (hidigits digits)))
 
-
   (defruled trim-lendian*-iff-not-zp-listp
     (implies (true-listp digits)
              (iff (trim-lendian* digits)
