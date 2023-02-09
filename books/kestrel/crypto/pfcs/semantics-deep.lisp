@@ -242,8 +242,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-expr-list ((asg assignmentp)
-                        (exprs expression-listp)
+(define eval-expr-list ((exprs expression-listp)
+                        (asg assignmentp)
                         (p primep))
   :guard (assignment-for-prime-p asg p)
   :returns (mv (okp booleanp)
@@ -262,7 +262,7 @@
   (b* (((when (endp exprs)) (mv t nil))
        (val (eval-expr (car exprs) asg p))
        ((unless val) (mv nil nil))
-       ((mv okp vals) (eval-expr-list asg (cdr exprs) p))
+       ((mv okp vals) (eval-expr-list (cdr exprs) asg p))
        ((unless okp) (mv nil nil)))
     (mv t (cons val vals)))
   :hooks (:fix)
@@ -272,8 +272,8 @@
     (implies (and (primep p)
                   (assignmentp asg)
                   (assignment-for-prime-p asg p)
-                  (mv-nth 0 (eval-expr-list asg exprs p)))
-             (fe-listp (mv-nth 1 (eval-expr-list asg exprs p)) p))))
+                  (mv-nth 0 (eval-expr-list exprs asg p)))
+             (fe-listp (mv-nth 1 (eval-expr-list exprs asg p)) p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -498,7 +498,7 @@
          (proof-outcome-fail)))
      :relation
      (b* (((unless (assignment-for-prime-p ptree.asg p)) (proof-outcome-error))
-          ((mv okp vals) (eval-expr-list ptree.asg ptree.args p))
+          ((mv okp vals) (eval-expr-list ptree.args ptree.asg p))
           ((unless okp) (proof-outcome-error))
           (def (lookup-definition ptree.name defs))
           ((unless def) (proof-outcome-error))
