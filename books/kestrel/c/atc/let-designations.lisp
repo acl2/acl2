@@ -83,7 +83,7 @@
      (we stop at some point, but it is easy to add more if needed).
      Not that @('<n>') indicates the number of side-effected variables,
      in addition to the declared or assigned variable;
-     it does not indicate the number of variables bound by @(tsee-mv-let),
+     it does not indicate the number of variables bound by @(tsee mv-let),
      which are always @('<n> + 1').
      These must be macros, and cannot be functions,
      because function may be only applied to single-valued terms,
