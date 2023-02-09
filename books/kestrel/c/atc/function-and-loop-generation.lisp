@@ -867,6 +867,12 @@
                     (:t ullong-dec-const)
                     (:t ullong-oct-const)
                     (:t ullong-hex-const)
+                    ,@(loop$ for reader
+                             in (atc-string-taginfo-alist-to-readers prec-tags)
+                             collect `(:t ,reader))
+                    ,@(loop$ for writer
+                             in (atc-string-taginfo-alist-to-writers prec-tags)
+                             collect `(:t ,writer))
                     sintp-of-sint-from-boolean
                     mv-nth-of-cons
                     (:e zp)
