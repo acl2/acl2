@@ -820,19 +820,19 @@
     "These are the macros described in @(see atc-let-designations).
      These macros expand to")
    (xdoc::codeblock
-    "(mv-let (*1 *2 ... *<n>)"
+    "(mv-let (*0 *1 *2 ... *<n>)"
     "  <wrapped>"
-    "  (mv (<wrapper> *1) *2 ... *<n>))")
+    "  (mv (<wrapper> *0) *1 *2 ... *<n>))")
    (xdoc::p
     "which in translated terms looks like")
    (xdoc::codeblock
     "((lambda (mv)"
-    "         ((lambda (*1 *2 ... *<n>)"
-    "                  (cons ((<wrapper> *1) (cons *2 ... (cons *<n> 'nil)))))"
+    "         ((lambda (*0 *1 *2 ... *<n>)"
+    "                  (cons ((<wrapper> *0) (cons *1 ... (cons *<n> 'nil)))))"
     "          (mv-nth '0 mv)"
     "          (mv-nth '1 mv)"
     "          ..."
-    "          (mv-nth '<n-1> mv)))"
+    "          (mv-nth '<n> mv)))"
     " <wrapped>)")
    (xdoc::p
     "So here we attempt to recognize this for of translated terms.
@@ -841,29 +841,30 @@
         (fty-check-mv-let-call term))
        ((unless okp) (mv nil nil 0 nil))
        ((unless (eq mv-var 'mv)) (mv nil nil 0 nil))
-       (n (len vars))
-       ((unless (>= n 2)) (mv nil nil 0 nil))
+       (n+1 (len vars))
+       ((unless (>= n+1 2)) (mv nil nil 0 nil))
+       (n (1- n+1))
        ((unless (equal vars
-                       (loop$ for i of-type integer from 1 to n
+                       (loop$ for i of-type integer from 0 to n
                               collect (pack '* i))))
         (mv nil nil 0 nil))
        ((unless (equal indices
-                       (loop$ for i of-type integer from 0 to (1- n)
+                       (loop$ for i of-type integer from 0 to n
                               collect i)))
         (mv nil nil 0 nil))
-       ((unless (equal hides (repeat n nil)))
+       ((unless (equal hides (repeat n+1 nil)))
         (mv nil nil 0 nil))
        ((mv okp terms) (fty-check-list-call body))
        ((unless okp) (mv nil nil 0 nil))
-       ((unless (equal (len terms) n)) (mv nil nil 0 nil))
+       ((unless (equal (len terms) n+1)) (mv nil nil 0 nil))
        ((cons term terms) terms)
        ((unless (pseudo-term-case term :fncall)) (mv nil nil 0 nil))
        (wrapper (pseudo-term-fncall->fn term))
        ((unless (member-eq wrapper '(declar assign))) (mv nil nil 0 nil))
-       ((unless (equal (pseudo-term-fncall->args term) (list '*1)))
+       ((unless (equal (pseudo-term-fncall->args term) (list '*0)))
         (mv nil nil 0 nil))
        ((unless (equal terms
-                       (loop$ for i of-type integer from 2 to n
+                       (loop$ for i of-type integer from 1 to n
                               collect (pack '* i))))
         (mv nil nil 0 nil)))
     (mv t wrapper n wrapped))
