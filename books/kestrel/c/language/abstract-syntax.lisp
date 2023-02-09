@@ -1087,8 +1087,7 @@
 (fty::defresult transunit-result
   :short "Fixtype of errors and translation units."
   :ok transunit
-  :pred transunit-resultp
-  :prepwork ((local (in-theory (enable identity)))))
+  :pred transunit-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

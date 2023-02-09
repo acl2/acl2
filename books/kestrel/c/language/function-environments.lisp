@@ -95,12 +95,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable identity)))
-  (fty::defresult fun-env-result
-    :short "Fixtype of errors and function environments."
-    :ok fun-env
-    :pred fun-env-resultp))
+(fty::defresult fun-env-result
+  :short "Fixtype of errors and function environments."
+  :ok fun-env
+  :pred fun-env-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

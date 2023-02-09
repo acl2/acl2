@@ -116,12 +116,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable identity)))
-  (fty::defresult tag-env-result
-    :short "Fixtype of errors and tag environments."
-    :ok tag-env
-    :pred tag-env-resultp))
+(fty::defresult tag-env-result
+  :short "Fixtype of errors and tag environments."
+  :ok tag-env
+  :pred tag-env-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

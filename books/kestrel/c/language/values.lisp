@@ -228,9 +228,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable identity)))
-  (defresult value-list "lists of values"))
+(defresult value-list "lists of values")
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -244,9 +242,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable identity)))
-  (defresult member-value-list "lists of member values"))
+(defresult member-value-list "lists of member values")
 
 ;;;;;;;;;;;;;;;;;;;;
 

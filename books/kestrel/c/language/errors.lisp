@@ -119,6 +119,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable identity)))
-  (defresult bool "booleans" :name boolean))
+(defresult bool "booleans" :name boolean)

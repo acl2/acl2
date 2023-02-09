@@ -129,16 +129,14 @@
 (fty::defresult type-result
   :short "Fixtype of errors and types."
   :ok type
-  :pred type-resultp
-  :prepwork ((local (in-theory (enable identity)))))
+  :pred type-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult type-list-result
   :short "Fixtype of errors and lists of types."
   :ok type-list
-  :pred type-list-resultp
-  :prepwork ((local (in-theory (enable identity)))))
+  :pred type-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -196,8 +194,7 @@
 (fty::defresult member-type-list-result
   :short "Fixtype of errors and lists of member types."
   :ok member-type-list
-  :pred member-type-list-resultp
-  :prepwork ((local (in-theory (enable identity)))))
+  :pred member-type-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -283,7 +280,7 @@
   :short "Fixtype of errors and initializer types."
   :ok init-type
   :pred init-type-resultp
-  :prepwork ((local (in-theory (enable init-type-kind identity)))))
+  :prepwork ((local (in-theory (enable init-type-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

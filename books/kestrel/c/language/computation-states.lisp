@@ -58,9 +58,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable identity)))
-  (defresult scope "scopes"))
+(defresult scope "scopes")
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -73,9 +71,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable identity)))
-  (defresult scope-list "lists of scopes"))
+(defresult scope-list "lists of scopes")
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -186,9 +182,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate()
-  (local (in-theory (enable identity)))
-  (defresult compustate "computation states"))
+(defresult compustate "computation states")
 
 ;;;;;;;;;;;;;;;;;;;;
 
