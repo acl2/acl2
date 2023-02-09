@@ -78,7 +78,7 @@
     (pp-sum-merge-aux (cond ((pp-term-p (car pp-lst))
                              (pp-flatten-with-binds
                               (car pp-lst)
-                              nil))
+                              ))
                             ((or (and-list-p (car pp-lst))
                                  (--.p (car pp-lst))
                                  (logbit-p (car pp-lst)))
@@ -158,7 +158,7 @@
       0
     (if (atom (cdr lst))
         1
-      (if (rp-equal-cnt (ex-from-rp/-- (car lst)) (ex-from-rp/-- (cadr lst)) 3)
+      (if (rp-equal-cnt (ex-from-rp/times (car lst)) (ex-from-rp/times (cadr lst)) 3)
           (unique-e-count (cdr lst))
         (1+ (unique-e-count (cdr lst)))))))
 
@@ -472,7 +472,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 s-term)
                    (s-of-s-fix-lst (s-fix-pp-args-aux s-arg-lst)
                                    (s-fix-pp-args-aux pp-arg-lst)
                                    (s-fix-pp-args-aux c-arg-lst)
-                                   :clean-args t))
+                                  ))
 
                   (& (cw "after s-of-s-fix-lst len of pp-arg-lst  ~p0, c-arg-lst ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
                          (len pp-arg-lst) (len c-arg-lst)
@@ -616,7 +616,7 @@ c-arg-lst  ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
 
                   ;; cough out s-args
                   ((mv coughed-s-lst s-arg-lst)
-                   (c-fix-arg-aux s-arg-lst nil))
+                   (c-fix-arg-aux s-arg-lst ))
 
                   ((mv pp-arg-lst c-arg-lst
                        coughed-s-lst2 coughed-pp-lst2 coughed-c-lst2)
@@ -632,10 +632,10 @@ coughed-s-lst2 ~p2, coughed-pp-lst2 ~p3, coughed-c-lst2 ~p4. Unique pp-arg-lst ~
 
                   ;; cough out pp-args
                   ((mv coughed-pp-lst pp-arg-lst)
-                   (c-fix-arg-aux pp-arg-lst t))
+                   (c-fix-arg-aux pp-arg-lst ))
 
                   ((mv coughed-c-lst c-arg-lst)
-                   (c-fix-arg-aux c-arg-lst t))
+                   (c-fix-arg-aux c-arg-lst ))
 
                   (& (cw "after c-fix-arg-aux len of pp-arg-lst  ~p0, c-arg-lst ~p1~
 , coughed-pp-lst ~p2, coughed-c-lst ~p3. Unique coughed-pp-lst ~p4~%" (len pp-arg-lst)
@@ -878,7 +878,7 @@ t)
                ;; probably best to rely on the SAT solver to deal with this
                ;; case. 
                (flatten-res (and (pp-term-p subterm)
-                                 (pp-flatten subterm nil :term-size-limit 800)))
+                                 (pp-flatten subterm :term-size-limit 100)))
                ;; try with a small limit before going crazy over it. 
                ((when (equal (len flatten-res) 1))
                 (mv nil (list subterm) nil)))

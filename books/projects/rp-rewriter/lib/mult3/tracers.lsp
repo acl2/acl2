@@ -4,10 +4,13 @@
 
 ;; (ld "projects/rp-rewriter/lib/mult3/tracers.lsp" :dir :system)
 
+(include-book "projects/rp-rewriter/lib/mult3/svtv-top" :dir :system)
 
 (clear-memoize-tables)
 
 (clear-memoize-statistics)
+
+(hons-clear t)
 
 (trace$
  (s-c-spec-meta
@@ -284,8 +287,15 @@ Valid:~x8~%~%"
   (profile 'rp::create-c-instance)
   (profile 'rp::create-s-instance)
   (profile 'rp::create-s-c-res-instance)
-  (profile 'rp::c-sum-merge-main-fn)
+  
   (profile 'rp::sum-merge-lst-for-s)
+  (profile 'rp::pp-sum-merge-aux)
+
+  (profile 'rp::extract-equals-from-pp-lst)
+
+  (profile 'rp::cross-product-pp-aux-for-pp-lst)
+
+  (profile 'rp::extract-equals-from-pp-lst-aux)
   
   (profile 'SVL::CONCAT-META)
   (profile 'SVL::BITS-OF-META-FN)
@@ -311,7 +321,7 @@ Valid:~x8~%~%"
 
   (profile 'rp::4vec-branch-drop-r-case)
 
-  (profile 'rp-equal-iter-pp+-meta)
+  (profile 'rp::rp-equal-iter-pp+-meta)
 
   (profile 'rp::pp-lst-orderedp)
   (profile 'rp::pp-sum-sort-lst)
@@ -322,11 +332,22 @@ Valid:~x8~%~%"
 
   (profile 'rp::sort-sum-meta)
 
-  (profile 'rp::sort-pp-lists)
+  ;;(profile 'rp::sort-pp-lists)
 
   (profile 'rp::sort-sum-meta-aux2)
 
-  (profile 'rp::pp-term-to-pp-lists)
-  (profile 'rp::merge-sorted-pp-lists)
+  (profile 'rp::pp-term-to-pp-e-list)
+  (profile 'rp::merge-sorted-pp-e-lists)
+
+  (profile 'rp::s-c-spec-meta)
   
+  )
+
+
+(progn
+  (profile 'rp::pp-flatten-fn)
+  
+  
+  ;;(profile 'and$-pp-lists)
+  ;;(profile 'and$-pp-lists-aux)
   )

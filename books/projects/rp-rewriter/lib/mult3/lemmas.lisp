@@ -46,11 +46,35 @@
   (include-book "arithmetic-5/top" :dir :system)
   use-arithmetic-5))
 
+(local
+ (rp::fetch-new-events
+  (include-book "centaur/bitops/ihs-extensions" :dir :system)
+  use-ihs-extensions
+  :disabled t))
+
+(local
+ (rp::fetch-new-events
+  (include-book "ihs/logops-lemmas" :dir :system)
+  use-ihs-logops-lemmas
+  :disabled t))
+
+(local
+ (rp::fetch-new-events
+  (include-book "ihs/quotient-remainder-lemmas" :dir :system)
+  use-qr-lemmas
+  :disabled t))
+
+(local
+ (rp::fetch-new-events
+  (include-book "centaur/bitops/equal-by-logbitp" :dir :system)
+  use-equal-by-logbitp
+  :disabled t))
+
 (defthm <-1+-cancel
-   (implies (and (acl2-numberp x)
-                 (acl2-numberp y))
-            (equal (< (+ 1 x) (+ 1 y))
-                   (< x y))))
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (equal (< (+ 1 x) (+ 1 y))
+                  (< x y))))
 
 (defthm ifix-opener
   (implies (integerp x)
@@ -106,7 +130,17 @@
        (mv 'f2 x))
       (('d2 &)
        (mv 'd2 x))
+      (('rp-trans x)
+       (sum-comm-order-aux x (1+ cnt)))
+      (('rp-evl x)
+       (sum-comm-order-aux x (1+ cnt)))
+      (('ex-from-rp x)
+       (sum-comm-order-aux x (1+ cnt)))
       (('-- x)
+       (sum-comm-order-aux x (1+ cnt)))
+      (('times & x)
+       (sum-comm-order-aux x (1+ cnt)))
+      (('unary-- x)
        (sum-comm-order-aux x (1+ cnt)))
       (('times2 x)
        (sum-comm-order-aux x (1+ cnt)))
@@ -330,25 +364,25 @@
                             mod2-is-m2)))))
 
 #|(defthm d-sum-to-sum
-  (equal (d-sum x y z)
-         (sum (sum-list x)
-              (sum-list y)
-              z))
-  :hints (("Goal"
-           :in-theory (e/d (d-sum) ()))))||#
+(equal (d-sum x y z)
+(sum (sum-list x)
+(sum-list y)
+z))
+:hints (("Goal"
+:in-theory (e/d (d-sum) ()))))||#
 
 #|(defthm d-is-d2
-  (equal (d x)
-         (d2 x))
-  :hints (("Goal"
-           :in-theory (e/d (d2 d  --
-                               FLOOR2-IF-F2
-                               mod2-is-m2)
-                           (floor mod
-                                  (:REWRITE ACL2::|(- (if a b c))|)
-                                  (:REWRITE ACL2::|(floor x 2)| . 1)
-                                  (:REWRITE ACL2::|(mod x 2)| . 1)
-                                  (:REWRITE SUM-COMM-1))))))||#
+(equal (d x)
+(d2 x))
+:hints (("Goal"
+:in-theory (e/d (d2 d  --
+FLOOR2-IF-F2
+mod2-is-m2)
+(floor mod
+(:REWRITE ACL2::|(- (if a b c))|)
+(:REWRITE ACL2::|(floor x 2)| . 1)
+(:REWRITE ACL2::|(mod x 2)| . 1)
+(:REWRITE SUM-COMM-1))))))||#
 
 (defthm s-is-m2
   (equal (s hash-code b c)
@@ -454,7 +488,16 @@
                     (sum (-- a) (f2 (sum a b)))))
     :hints (("Goal"
              :in-theory (e/d () (SUM-COMM-1
-                                 SUM-COMM-2))))))
+                                 SUM-COMM-2)))))
+
+  (defthm f2-of-minus-2
+    (implies t ;(bitp a)
+             (equal (f2 (sum (- a) b))
+                    (sum (- a) (f2 (sum a b)))))
+    :hints (("Goal"
+             :use ((:instance f2-of-minus))
+             :in-theory (e/d (-- ifix sum f2) (SUM-COMM-1
+                                               SUM-COMM-2))))))
 
 (encapsulate
   nil
@@ -522,7 +565,9 @@
    (equal (m2 (sum rest1 (-- x)))
           (m2 (sum x rest1)))
    (equal (m2 (-- x))
-          (m2 x)))
+          (m2 x))
+
+   )
   :hints (("Goal"
            :use ((:instance s-of-minus
                             (a x) (b rest))
@@ -899,7 +944,6 @@
            :in-theory (e/d (-- sum)
                            (+-is-SUM)))))
 
-
 (defthm sumof-the-same-cancel-with--
   (and (equal (sum (-- a) a)
               0)
@@ -912,7 +956,6 @@
   :hints (("Goal"
            :in-theory (e/d (-- sum)
                            (+-is-SUM)))))
-
 
 (defthm logbit-p-of-quoted
   (implies (and (syntaxp (quotep x)))
@@ -954,7 +997,6 @@
   :hints (("Goal"
            :in-theory (e/d (pp-p) ()))))
 
-
 (defthm is-rp-of-quoted
   (implies (and (syntaxp (quotep x)))
            (equal (is-rp (cons x y))
@@ -970,3 +1012,624 @@
                          (& NIL)))))
   :hints (("Goal"
            :in-theory (e/d (is-rp) ()))))
+
+(defthm pull-out-nums-last-bit
+  (implies (integerp x)
+           (equal x
+                  (logcons (logcar x)
+                           (logcdr x))))
+  :rule-classes nil
+  :hints (("Goal"
+           :in-theory (e/d () (+-is-SUM mod2-is-m2 floor2-if-f2)))))
+
+(local
+ (use-arithmetic-5 nil))
+
+#!acl2
+(defthmd evenp-and-oddp-as-logcar
+  (implies (integerp i)
+           (and (equal (evenp i)
+                       (equal (logcar i) 0))
+                (equal (oddp i)
+                       (equal (logcar i) 1))))
+  :hints (("Goal"
+           :in-theory '((:DEFINITION BITP)
+                        (:DEFINITION EVENP)
+                        (:DEFINITION IFIX)
+                        (:DEFINITION IMOD$INLINE)
+                        (:DEFINITION LOGCAR$INLINE)
+                        (:DEFINITION NOT)
+                        (:DEFINITION ODDP)
+                        (:EXECUTABLE-COUNTERPART EQUAL)
+                        (:EXECUTABLE-COUNTERPART IFIX)
+                        (:EXECUTABLE-COUNTERPART UNARY-/)
+                        ;;(:FAKE-RUNE-FOR-TYPE-SET NIL)
+                        (:REWRITE COMMUTATIVITY-OF-*)
+                        (:REWRITE MOD-=-0 . 1)
+                        (:REWRITE MOD-=-0 . 2))
+           :use acl2::bitp-mod-2)))
+
+(local
+ (use-ihs-logops-lemmas t))
+
+(define *-recursive-shfadd (x y)
+  :measure (ifix (abs x))
+  :verify-guards nil
+  :hints (("Goal"
+           :in-theory (e/d* (ifix)
+                            (+-is-sum floor2-if-f2))))
+  :prepwork ((local (use-arithmetic-5 t)))
+  (cond ((not (integerp x))
+         0)
+        ((= x 0)
+         0)
+        ((= x 1)
+         y)
+        ((= x -1)
+         (- y))
+        (t (+ (if (equal (logcar x) 1) y 0)
+              (ash (*-recursive-shfadd (logcdr x) y) 1))))
+  ///
+  (defthmd *-redef-to-*-recursive-shfadd
+    (implies (and (integerp x)
+                  (integerp y))
+             (equal (* x y)
+                    (*-recursive-shfadd x y)))
+    :hints (("Goal"
+             :in-theory (e/d () ((:REWRITE ACL2::|(floor x 2)| . 1)
+                                 +-is-sum
+                                 mod2-is-m2
+                                 floor2-if-f2))))))
+
+(defthm logcar-of-*
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (logcar (* x y))
+                  (* (logcar x)
+                     (logcar y))))
+  :hints (("Goal"
+           :cases ((equal (LOGCAR Y) 1))
+           :use ((:instance pull-out-nums-last-bit
+                            (x x))
+                 (:instance pull-out-nums-last-bit
+                            (x y))
+                 (:instance *-redef-to-*-recursive-shfadd
+                            )
+                 #|(:instance *-of-sums
+                 (x x)
+                 (y (LOGCAR y))
+                 (z (* 2 (LOGCDR y))))|#)
+           :expand ((*-RECURSIVE-SHFADD X Y))
+           :in-theory (e/d* (BITOPS::LOGCAR-MINUS-A
+                             bitops::logcar-of-+
+                             BITOPS::LOGCAR-OF-LEFT-SHIFT)
+                            (logcons
+                             ash floor logcar logcdr
+                             mod2-is-m2 +-is-SUM
+                             floor2-if-f2)))))
+
+(defthm evenp-lemma1
+  (implies (and (integerp coef)
+                (integerp term)
+                (evenp (* coef term)))
+           (or (evenp term)
+               (evenp coef)))
+
+  :hints (("goal"
+           :do-not-induct t
+           :use ((:instance pull-out-nums-last-bit
+                            (x coef))
+                 (:instance pull-out-nums-last-bit
+                            (x term)))
+
+           :in-theory (e/d* (acl2::evenp-and-oddp-as-logcar f2 m2 sum)
+                            (logcar evenp mod floor floor2-if-f2 mod2-is-m2 +-is-sum)))
+          ))
+
+(defthm m2-of-times-when-odd
+  (implies (and (not (evenp coef))
+                (integerp coef))
+           (equal (m2 (times coef term))
+                  (m2 term)))
+  :hints (("Goal"
+           :in-theory (e/d (acl2::evenp-and-oddp-as-logcar
+                            BITOPS::SMALL-MODS
+                            m2 f2 times sum ifix)
+                           (evenp
+                            ACL2::LOGCAR$INLINE
+                            ACL2::IMOD$INLINE
+                            floor mod floor2-if-f2 MOD2-IS-M2 +-is-sum)))))
+
+(defthm m2-of-times-when-odd-2
+  (implies (and (not (evenp coef))
+                (integerp coef))
+           (equal (m2 (sum (times coef term) other))
+                  (m2 (sum term other))))
+  :hints (("Goal"
+           :in-theory (e/d (acl2::evenp-and-oddp-as-logcar
+                            bitops::logcar-of-+
+                            bitops::small-mods
+                            m2 f2 times sum ifix)
+                           (evenp
+                            acl2::logcar$inline
+                            acl2::imod$inline
+                            floor mod floor2-if-f2 mod2-is-m2 +-is-sum)))))
+
+(defthm m2-of-times-when-even
+  (implies (and (evenp coef)
+                (integerp coef))
+           (equal (m2 (times coef term))
+                  0))
+  :hints (("Goal"
+           :in-theory (e/d (acl2::evenp-and-oddp-as-logcar
+                            BITOPS::SMALL-MODS
+                            m2 f2 times sum ifix)
+                           (evenp
+                            ACL2::LOGCAR$INLINE
+                            ACL2::IMOD$INLINE
+                            floor mod floor2-if-f2 MOD2-IS-M2 +-is-sum)))))
+
+(defthm m2-of-times-when-even-2
+  (implies (and (evenp coef)
+                (integerp coef))
+           (equal (m2 (sum (times coef term) other))
+                  (m2 other)))
+  :hints (("Goal"
+           :use ((:instance m2-of-times-when-even))
+           :in-theory (e/d (acl2::evenp-and-oddp-as-logcar
+                            bitops::logcar-of-+
+                            bitops::small-mods
+                            m2 f2 times sum ifix)
+                           (evenp
+                            acl2::logcar$inline
+                            acl2::imod$inline
+                            floor mod floor2-if-f2 mod2-is-m2 +-is-sum)))))
+
+(defthm *-with-0
+  (and (equal (* 0 x) 0)
+       (equal (* x 0) 0)))
+
+(local
+ (use-arithmetic-5 t))
+
+(local
+ (defthmd f2-when-oddp
+   (implies (and (not (evenp coef))
+                 (integerp coef))
+            (equal (f2 coef)
+                   (/ (1- coef) 2)))
+   :hints (("Goal"
+            :in-theory (e/d (ifix sum f2)
+                            (+-is-sum floor2-if-f2))))))
+
+(defthm |x + (* (f2 coef) x) + (* (f2 coef) x)|-when-oddp-lemma
+  (IMPLIES (AND (NOT (EVENP COEF))
+                (INTEGERP COEF)
+                (INTEGERP X))
+           (EQUAL (+ 1 (* 2 (F2 COEF))) COEF))
+  :hints (("Goal"
+           :in-theory (e/d (f2-when-oddp) ()))))
+
+(defthm |x + (* (f2 coef) x) + (* (f2 coef) x)|-when-oddp
+  (implies (and (not (evenp coef))
+                (integerp coef)
+                (integerp x))
+           (and (equal (sum x (* (f2 coef) x) (* (f2 coef) x))
+                       (* coef x))
+                (equal (sum x (times (f2 coef) x) (times (f2 coef) x))
+                       (* coef x))))
+  :otf-flg t
+  :hints (("Goal"
+           :in-theory (e/d (ifix sum times)
+                           (evenp floor2-if-f2 +-is-sum)))))
+
+(defthm |(1/2 coef x) (1/2 coef x)|-when-evenp
+  (implies (and (integerp x)
+                (evenp coef)
+                (integerp coef))
+           (equal (sum (* 1/2 coef x) (* 1/2 coef x))
+                  (sum (* coef x))))
+  :hints (("Goal"
+           :in-theory (e/d (sum ifix) (+-is-sum)))))
+
+(defthm d2-of-repeated
+  (and (equal (d2 (sum x x))
+              (ifix x))
+       (equal (d2 (sum a a b))
+              (sum a (d2 b))))
+  :hints (("Goal"
+           :in-theory (e/d (evenpi
+                            d2 m2 sum
+                            f2)
+                           (floor2-if-f2 mod2-is-m2 +-is-sum)))))
+
+(defthm m2+f2+f2-of-num-is-num
+  (equal (sum (m2 x)
+              (f2 x)
+              (f2 x))
+         (ifix x))
+  :hints (("Goal"
+           :in-theory (e/d () ()))))
+
+(defthmd times-of-sum-reverse
+  (and (equal (sum (times coef x)
+                   (times coef y))
+              (times coef (sum x y)))
+       (equal (sum (times coef x)
+                   (-- (times coef y)))
+              (times coef (sum x (-- y))))
+       (equal (sum (-- (times coef y))
+                   (times coef x))
+              (times coef (sum x (-- y))))
+
+       (equal (sum (times coef x)
+                   (times coef y)
+                   other)
+              (sum (times coef (sum x y))
+                   other))
+       (equal (sum (times coef x)
+                   (-- (times coef y))
+                   other)
+              (sum (times coef (sum x (-- y)))
+                   other))
+       (equal (sum (-- (times coef y))
+                   (times coef x)
+                   other)
+              (sum (times coef (sum x (-- y)))
+                   other))
+
+       (equal (sum (times coef x)
+                   x)
+              (times (1+ (ifix coef)) x))
+       (equal (sum (times coef x)
+                   x
+                   other)
+              (sum (times (1+ (ifix coef)) x)
+                   other))
+
+       (equal (sum (times coef x)
+                   (-- x))
+              (sum (times (1- (ifix coef)) x)))
+       (equal (sum (times coef x)
+                   (-- x)
+                   other)
+              (sum (times (1- (ifix coef)) x)
+                   other))
+       )
+  :hints (("Goal"
+           :in-theory (e/d (-- ifix times sum)
+                           (+-IS-SUM)))))
+
+(defthm times-of-repeated-f2-coefs
+  (implies (not (evenp (ifix coef)))
+           (and (equal (sum (times (f2 coef) y)
+                            (times (f2 coef) y)
+                            y  other)
+                       (sum (times coef y) other))
+                (equal (sum (times (f2 coef) y)
+                            (times (f2 coef) y)
+                            y )
+                       (times coef y))))
+  :hints (("Goal"
+           :cases ((integerp coef))
+           :in-theory (e/d (times-of-sum-reverse
+                            ifix sum times)
+                           (evenp
+                            +-IS-SUM
+                            floor2-if-f2)))))
+
+(defthm times-of-repeated-f2-coefs-when-even
+  (implies (evenp (ifix coef))
+           (and (equal (sum (times (f2 coef) y)
+                            (times (f2 coef) y)
+                            other)
+                       (sum (times coef y) other))
+                (equal (sum (times (f2 coef) y)
+                            (times (f2 coef) y))
+                       (times coef y))))
+  :hints (("Goal"
+           :in-theory (e/d (times-of-sum-reverse
+                            f2 ifix times sum)
+                           (floor2-if-f2  +-IS-SUM)))))
+
+(defthmd divide-by-2-is-floor2-when-even
+  (implies (evenp x)
+           (equal (* 1/2 x)
+                  (floor x 2))))
+
+(progn
+  (define binary-m2-chain (a b)
+    (m2 (sum a b)))
+
+  (defmacro m2-chain (&rest rp::rst)
+    (cond ((null rp::rst) 0)
+          ((null (cdr rp::rst))
+           (list 'm2 (car rp::rst)))
+          (t (xxxjoin 'binary-m2-chain rp::rst))))
+
+  (add-macro-fn m2-chain binary-m2-chain t)
+
+  (defthmd m2-to-m2-chain
+    (and #|(implies (syntaxp (or (atom a)
+     (not (equal (car a) 'binary-sum))))
+     (equal (m2 a)
+     (m2-chain a 0)))|#
+     (equal (m2 (sum a b))
+            (m2-chain a b)))
+    :hints (("Goal"
+             :in-theory (e/d (m2-chain) ()))))
+
+  (defthm m2-chain-reorder
+    (and (equal (m2-chain (sum a b) c)
+                (m2-chain a b c))
+         (equal (m2-chain a (sum b c))
+                (m2-chain a b c))
+         (equal (m2-chain (m2-chain a b) c)
+                (m2-chain a b c)))
+    :hints (("Goal"
+             :in-theory (e/d (m2-chain) (m2-to-m2-chain)))))
+
+  (defthm m2-chain-comm
+    (and
+     (implies (syntaxp (sum-comm-order a b))
+              (equal  (m2-chain b a)
+                      (m2-chain a b)))
+     (implies (syntaxp (sum-comm-order a b))
+              (equal  (m2-chain b a c)
+                      (m2-chain a b c))))
+    :rule-classes ((:rewrite :loop-stopper nil))
+    :hints (("Goal"
+             :in-theory (e/d (m2-chain) (m2-to-m2-chain)))))
+
+  (defthm m2-chain-of-nil
+    (and (equal (m2-chain nil a)
+                (m2-chain a))
+         (equal (m2-chain a nil)
+                (m2-chain a)))
+    :hints (("Goal"
+             :in-theory (e/d (m2-chain) ()))))
+
+  (defthm m2-of-m2-chain
+    (equal (m2 (m2-chain a b))
+           (m2-chain a b))
+    :hints (("Goal"
+             :in-theory (e/d (m2-chain) ()))))
+
+  (defthm m2-chain-of-m2
+    (and (equal (m2-chain (m2 x) y)
+                (m2-chain x y))
+         (equal (m2-chain y (m2 x))
+                (m2-chain x y)))
+    :hints (("Goal"
+             :in-theory (e/d (m2-chain) ()))))
+
+  (defthm m2-chain-of-0
+    (and (equal (m2-chain 0 a)
+                (m2-chain a))
+         (equal (m2-chain a 0)
+                (m2-chain a)))
+    :hints (("Goal"
+             :in-theory (e/d (m2-chain) ()))))
+
+  (defthm m2-chain-of-same-e
+    (equal (equal (m2-chain x a)
+                  (m2-chain y a))
+           (equal (m2 x) (m2 y)))
+    :hints (("Goal"
+             :in-theory (e/d (m2-chain) ()))))
+  )
+(defthm dummy-m2-lemma7
+  (implies (and (EQUAL (M2 y)
+                       (M2 z))
+                (EQUAL (M2 x)
+                       (M2 z)))
+           (equal (M2 (SUM x y))
+                  0))
+  :hints (("Goal"
+           :in-theory (e/d (m2 sum f2 ifix) (floor2-if-f2 mod2-is-m2
+                                                          +-is-sum)))))
+
+(defthm evenp-of-sum-of-evenps-2
+  (and (implies (and (not (evenp x))
+                     (not (evenp y))
+                     (integerp x)
+                     (integerp y))
+                (evenp (sum x y)))
+       (implies (and (not (evenp x))
+                     (evenp y)
+                     (integerp x)
+                     (integerp y))
+                (and (not (evenp (sum x y)))
+                     (not (evenp (sum y x))))))
+  :hints (("goal"
+           :in-theory (e/d (sum ifix evenp) (+-is-sum)))))
+
+(defthm times-of-negated-coef
+  (implies (integerp coef)
+           (equal (times (- coef) term)
+                  (- (times coef term))))
+  :hints (("Goal"
+           :in-theory (e/d (times ifix) ()))))
+
+(defthm times-of-1
+  (equal (times 1 x)
+         (ifix x))
+  :hints (("Goal"
+           :in-theory (e/d (times) ()))))
+
+(define *-recursive-cntadd (x y)
+  :measure (ifix (abs x))
+  :verify-guards nil
+  :hints (("Goal"
+           :in-theory (e/d* (ifix)
+                            (+-is-sum floor2-if-f2))))
+  :prepwork ((local (use-arithmetic-5 t)))
+  (cond ((not (integerp x))
+         0)
+        ((= x 0)
+         0)
+        ((= x 1)
+         y)
+        ((= x -1)
+         (- y))
+        (t (if (< x 0)
+               (+ (- y)
+                  (*-recursive-cntadd (1+ x) y))
+             (+ y
+                (*-recursive-cntadd (1- x) y)))))
+  ///
+  (defthmd *-redef-to-*-recursive-cntadd
+    (implies (and (integerp x)
+                  (integerp y))
+             (equal (* x y)
+                    (*-recursive-cntadd x y)))
+    :hints (("Goal"
+             :in-theory (e/d () ((:REWRITE ACL2::|(floor x 2)| . 1)
+                                 +-is-sum
+                                 mod2-is-m2
+                                 floor2-if-f2))))))
+
+(defthmd move-over-multiplier
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z)
+                (not (equal y 0)))
+           (equal (equal (* x y) z)
+                  (equal x (/ z y)))))
+
+(defthm when-mult-of-two-integers-is-1
+  (implies (and (EQUAL (* x y) 1)
+                ;;(< x 0)
+                (integerp x)
+                (integerp y))
+           (or (and (equal x -1)
+                    (equal y -1))
+               (and (equal x 1)
+                    (equal y 1))))
+  :rule-classes :forward-chaining
+  :hints (("Goal"
+           :do-not-induct t
+           :cases ((equal y 0))
+           ;; :cases ((< x -1)
+           ;;         (< y -1)
+           ;;         (> x 1)
+           ;;         (> y 1))
+           :in-theory (e/d (move-over-multiplier
+                            sum f2 m2 *-recursive-shfadd
+                            ;;*-redef-to-*-recursive-cntadd
+                            *-recursive-cntadd)
+                           (ash floor2-if-f2
+                                +-is-sum
+                                mod2-is-m2)))))
+(defthm times-of---
+  (and (equal (times a (-- b))
+              (-- (times a b)))
+       (equal (times (-- a) b)
+              (-- (times a b))))
+  :hints (("Goal"
+           :in-theory (e/d (times ifix --) ()))))
+
+(defthm type-fix-of-times
+  (equal (ifix (times a b))
+         (times a b))
+  :hints (("goal"
+           :in-theory (e/d (times ifix) ()))))
+
+(defthm times-comm
+  (and (equal (times b (times a c))
+              (times a (times b c)))
+       (equal (times b a)
+              (times a b)))
+  :hints (("goal"
+           :in-theory (e/d (times) ()))))
+
+(defthm times-reoder
+  (equal (times (times a b) c)
+         (times a (times b c)))
+  :hints (("goal"
+           :in-theory (e/d (times) ()))))
+
+(defthm and$-of-repeated-vars
+  (and (equal (and$ a a b)
+              (and$ a b))
+       (equal (and$ a a)
+              (bit-fix a)))
+  :hints (("Goal"
+           :in-theory (e/d (and$) ()))))
+
+(defthmd sum-of-repeated-to-times
+  (and (equal (sum x x)
+              (times 2 x))
+       (equal (sum x x o)
+              (sum (times 2 x) o)))
+  :hints (("Goal"
+           :in-theory (e/d (times sum)
+                           (+-IS-SUM)))))
+
+#|(skip-proofs
+(defthm f2-of-negated-oddp
+(implies (and (not (evenp x))
+(integerp x))
+(equal (f2 (- x))
+(1- (- (f2 x)))))))|#
+
+(defthmd -to---
+  (and (implies (syntaxp (and (not (quotep x))
+                              (not (integerp x))))
+                (and (equal (sum (- x) y)
+                            (sum (-- x) y))
+                     (equal (sum y (- x))
+                            (sum (-- x) y))
+                     (equal (ifix (- x))
+                            (-- x))
+                     (equal (times2 (- x))
+                            (-- (times2 x)))))
+       (equal (- (times coef x))
+              (-- (times coef x))))
+  :hints (("Goal"
+           :in-theory (e/d (ifix -- times2 sum)
+                           (+-IS-SUM)))))
+
+(defthm multiplication-of-1-and-sum
+  (and (equal (* -1 (sum x y))
+              (-- (sum x y)))
+       (equal (* 1 (sum x y))
+              (sum x y)))
+  :hints (("Goal"
+           :in-theory (e/d (sum ifix --) (+-IS-SUM)))))
+
+
+(defthm odd+1-is-even
+  (implies (and (not (evenp (ifix x))))
+           (and (evenp (sum 1 x))
+                (evenp (sum x 1))
+                (evenp (sum -1 x))
+                (evenp (sum x -1))))
+  :hints (("Goal"
+           :in-theory (e/d (sum ifix) (+-IS-SUM)))))
+
+(defthm times-of-repeated-sum-elements
+  (equal (times coef (sum x x))
+         (times (* 2 (ifix coef)) x))
+  :hints (("Goal"
+           :in-theory (e/d (TIMES
+                            sum)
+                           (+-IS-SUM)))))
+
+
+(defthm f2*2-when-evenp
+  (implies (evenp (ifix x))
+           (equal (* 2 (f2 x))
+                  (ifix x)))
+  :hints (("Goal"
+           :in-theory (e/d (f2 ifix)
+                           (floor2-if-f2)))))
+
+
+(defthm integerp-of-1/2+1/2*odd
+  (implies (and (not (evenp x))
+                (integerp x))
+           (and (integerp (+ 1/2 (* 1/2 x)))
+                (integerp (+ -1/2 (* 1/2 x)))))
+  :hints (("goal"
+           :in-theory (e/d () ()))))

@@ -58,6 +58,8 @@
   use-arith-5
   :disabled t))
 
+(defconst *large-number*
+  (expt 2 50))
 
 (progn
   (define binary-sum (x y)
@@ -110,7 +112,7 @@
 
   (local
    (use-arith-5 t))
-  
+
   (defret bitp-of-s
     (bitp res)
     :hints (("Goal"
@@ -149,18 +151,18 @@
   (add-rp-rule bitp-of-pp))
 
 #|(define d-sum (s-lst pp-lst c)
-  (sum (sum-list s-lst)
-       (sum-list pp-lst)
-       c)
-  :returns (res integerp)
-  ///
-  (add-rp-rule integerp-of-d-sum))||#
+(sum (sum-list s-lst)
+(sum-list pp-lst)
+c)
+:returns (res integerp)
+///
+(add-rp-rule integerp-of-d-sum))||#
 
 #|(define d ((d-sum integerp))
-  (floor (sum d-sum (-- (mod (ifix d-sum) 2))) 2)
-  :returns (res integerp)
-  ///
-  (add-rp-rule integerp-of-d))||#
+(floor (sum d-sum (-- (mod (ifix d-sum) 2))) 2)
+:returns (res integerp)
+///
+(add-rp-rule integerp-of-d))||#
 
 (define s-spec (lst)
   (mod (sum-list lst) 2)
@@ -194,15 +196,15 @@
   (add-rp-rule integerp-of-s-c-res))
 
 #|(define d-new (s pp c/d new)
-  (sum (c-new s pp c/d new)
-       (-- (mod (+ (sum-list s)
-                   (sum-list pp)
-                   (sum-list c/d)
-                   (sum-list new))
-                2)))
-  :returns (res integerp)
-  ///
-  (add-rp-rule integerp-of-d-new))||#
+(sum (c-new s pp c/d new)
+(-- (mod (+ (sum-list s)
+(sum-list pp)
+(sum-list c/d)
+(sum-list new))
+2)))
+:returns (res integerp)
+///
+(add-rp-rule integerp-of-d-new))||#
 
 (define bit-fix (x)
   (if (bitp x)
@@ -407,7 +409,19 @@
 
   (defun lexorder2- (x y)
     (declare (xargs :guard t))
-    (b* (((mv order &)
+    (b* (((mv x-logbit-p x-var x-index)
+          (case-match x (('acl2::logbit$inline index var) (mv t var index)) (& (mv nil nil nil))))
+         ((mv y-logbit-p y-var y-index)
+          (case-match y (('acl2::logbit$inline index var) (mv t var index)) (& (mv nil nil nil))))
+         ((when (or* x-logbit-p
+                     y-logbit-p))
+          (cond ((and* x-logbit-p
+                       y-logbit-p)
+                 (if (equal x-var y-var)
+                     (not (lexorder y-index x-index))
+                   (not (lexorder y-var x-var))))
+                (t x-logbit-p)))
+         ((mv order &)
           (lexorder2 x y)))
       order))
 
@@ -471,9 +485,9 @@
 (add-rp-rule bitp-of-logbit)
 
 #|(define medw-compress (term)
-  term
-  ///
-  (add-rp-rule medw-compress :disabled nil))||#
+term
+///
+(add-rp-rule medw-compress :disabled nil))||#
 
 (define unpack-booth (term)
   (ifix term)
@@ -580,6 +594,78 @@
           (t
            `(list . ,lst)))))
 
+(defsection times
+  (define times (coef term)
+    (* (ifix coef)
+       (ifix term))
+    ///
+    (def-rp-rule integerp-and-list
+      (integerp (times coef term))))
+
+  (define times-p (term)
+    (case-match term
+      (('times ('quote coef) &)
+       (integerp coef)))
+    ///
+    (defthm times-p-implies
+      (implies (times-p term)
+               (case-match term
+                 (('times ('quote coef) &)
+                  (integerp coef))))
+      :rule-classes :forward-chaining))
+
+  (define get-pp-and-coef (term)
+    :inline t
+    :returns (mv (coef integerp :rule-classes (:type-prescription :rewrite))
+                 (res-term rp-termp :hyp (rp-termp term)))
+    (case-match term (('times ('quote coef) a) (mv (ifix coef) a)) (& (mv 1  term))))
+
+  (define create-times-instance ((coef integerp)
+                                 term)
+    :returns (res rp-termp :hyp (and (rp-termp term)))
+    (cond ((= coef 0) ''0)
+          ((= coef 1) term)
+          (t (case-match term
+               (('times ('quote c2) term)
+                (b* ((new-coef (* (ifix c2) (mbe :exec coef :logic (ifix coef)))))
+                `(times ',new-coef 
+                        ,term)))
+               (& `(times ',coef ,term))))))
+
+  (define cons-with-times ((coef integerp) term rest)
+    :returns (res-lst rp-term-listp :hyp (and (rp-termp term)
+                                              (rp-term-listp rest)))
+    :inline t
+    (if (= coef 0)
+        rest
+      (cons (create-times-instance coef term) rest)))
+
+  (define append-with-times-aux ((coef integerp) term-lst rest)
+    :returns (res-lst rp-term-listp :hyp (and (rp-term-listp rest)
+                                              (rp-term-listp term-lst)))
+    (if (atom term-lst)
+        rest 
+      (cons ;;`(times ',coef ,(car term-lst))
+            (create-times-instance coef (car term-lst))
+            (append-with-times-aux coef (cdr term-lst) rest))))
+
+  (define append-with-times ((coef integerp)
+                             (term-lst)
+                             rest)
+    :guard (or (true-listp term-lst)
+               (not rest))
+    :returns (res-lst rp-term-listp :hyp (and (rp-term-listp rest)
+                                              (rp-term-listp term-lst)))
+    :inline t
+    (cond ((= coef 0) rest)
+          ((and (= coef 1)
+                (not rest))
+           term-lst)
+          ((= coef 1)
+           (append term-lst rest))
+          (t (append-with-times-aux coef term-lst rest)))))
+
+
 (progn
   (encapsulate
     (((unpack-booth-later-enabled) => *))
@@ -660,6 +746,10 @@
                    ((equal (car term) '--)
                     (--
                      (safe-i-nth 0 args)))
+                   ((equal (car term) 'times)
+                    (times
+                     (safe-i-nth 0 args)
+                     (safe-i-nth 1 args)))
                    ((equal (car term) 's-spec)
                     (s-spec
                      (safe-i-nth 0 args)))
@@ -1066,6 +1156,8 @@
        `(cc . ,(append (make-readable1 s) (make-readable1 pp) (list (make-readable1 c)))))
       (('-- term)
        `(-- ,(make-readable1 term)))
+      (('times ('quote coef) term)
+       `(times ,coef ,(make-readable1 term)))
       (('list . lst)
        (make-readable1-lst lst))
       (('quote a)
@@ -1135,6 +1227,8 @@
            `(c (,hash) . ,(append s-lst pp-lst c-lst))))
         (('-- n)
          `(-- ,(make-readable n)))
+        (('times ('quote coef) n)
+         `(times ,coef ,(make-readable n)))
         (''1
          1)
         (('and-list & bits)
@@ -1170,7 +1264,6 @@
         nil
       (cons (make-readable (car lst))
             (make-readable-lst (cdr lst))))))
-
 
 (defmacro ss (&rest args)
   `(s-spec (list . ,args)))
@@ -1246,14 +1339,9 @@
   (define negate-lst-aux ((lst rp-term-listp))
     :returns (negated-lst rp-term-listp :hyp (rp-term-listp lst))
     (b* (((when (atom lst)) lst)
-         (rest (negate-lst-aux (cdr lst)))
-         (cur-orig (car lst))
-         (cur (ex-from-rp$ cur-orig)))
-      (case-match cur
-        (('-- term)
-         (cons term rest))
-        (& (cons `(-- ,cur-orig)
-                 rest)))))
+         ((mv coef cur) (get-pp-and-coef (car lst))))
+      (cons-with-times (- coef) cur
+                       (negate-lst-aux (cdr lst)))))
 
   (define negate-lst ((lst rp-term-listp)
                       &optional (enabled 't))
@@ -1316,6 +1404,7 @@
        sum-list
        binary-and
        and-list
+       times
        sort-sum
        rp::c-s-spec
        rp::s-c-spec
@@ -1349,5 +1438,5 @@
        bit-concat
        ;;sv::4vec-fix
        svl::bits
-       
+
        ))))

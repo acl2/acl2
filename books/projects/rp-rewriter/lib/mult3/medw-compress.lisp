@@ -70,6 +70,15 @@
             :in-theory (e/d () ())))))
 
 (local
+ (defthm rp-termp-of-times
+   (iff (rp-termp (list 'times a b))
+        (and (rp-termp a)
+             (rp-termp b)))
+   :hints (("Goal"
+            :expand (rp-termp (list '-- a))
+            :in-theory (e/d () ())))))
+
+(local
  (defthm rp-termp-of-list
    (iff (rp-termp (cons 'list rest))
         (rp-term-listp rest))
