@@ -81,7 +81,7 @@
      Thus, we introduce macros @('declar<n>') and @('assign<n>'),
      for @('<n>') equal to 1, 2, 3, etc.
      (we stop at some point, but it is easy to add more if needed).
-     Not that @('<n>') indicates the number of side-effected variables,
+     Note that @('<n>') indicates the number of side-effected variables,
      in addition to the declared or assigned variable;
      it does not indicate the number of variables bound by @(tsee mv-let),
      which are always @('<n> + 1').

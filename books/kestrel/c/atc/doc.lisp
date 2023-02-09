@@ -1473,42 +1473,42 @@
 
      (xdoc::p
       "An untranslated term
-       @('(mv-let (var1 var2 ... varn) (declarn term) body)')
+       @('(mv-let (var var1 ... varn) (declarn term) body)')
        is translated to")
      (xdoc::codeblock
       "((lambda (mv)"
-      "         ((lambda (var1 var2 ... varn) body)"
+      "         ((lambda (var var1 ... varn) body)"
       "          (mv-nth \'0 mv)"
       "          (mv-nth \'1 mv)"
       "          ..."
-      "          (mv-nth \'n-1 mv)))"
+      "          (mv-nth \'n mv)))"
       " ((lambda (mv)"
-      "          ((lambda (*1 *2 ... *n)"
-      "                   (cons (declar *1) (cons *2 ... (cons *n 'nil))))"
+      "          ((lambda (*0 *1 *2 ... *n)"
+      "                   (cons (declar *0) (cons *1 ... (cons *n 'nil))))"
       "           (mv-nth \'0 mv)"
       "           (mv-nth \'1 mv)"
       "           ..."
-      "           (mv-nth \'n-1 mv)))"
+      "           (mv-nth \'n mv)))"
       "  term))")
 
      (xdoc::p
       "An untranslated term
-       @('(mv-let (var1 var2 ... varn) (assignn term) body)')
+       @('(mv-let (var var1 ... varn) (assignn term) body)')
        is translated to")
      (xdoc::codeblock
       "((lambda (mv)"
-      "         ((lambda (var1 var2 ... varn) body)"
+      "         ((lambda (var var1 ... varn) body)"
       "          (mv-nth \'0 mv)"
       "          (mv-nth \'1 mv)"
       "          ..."
-      "          (mv-nth \'n-1 mv)))"
+      "          (mv-nth \'n mv)))"
       " ((lambda (mv)"
-      "          ((lambda (*1 *2 ... *n)"
-      "                   (cons (assign *1) (cons *2 ... (cons *n 'nil))))"
+      "          ((lambda (*0 *1 *2 ... *n)"
+      "                   (cons (assign *0) (cons *1 ... (cons *n 'nil))))"
       "           (mv-nth \'0 mv)"
       "           (mv-nth \'1 mv)"
       "           ..."
-      "           (mv-nth \'n-1 mv)))"
+      "           (mv-nth \'n mv)))"
       "  term))")
 
      (xdoc::p
