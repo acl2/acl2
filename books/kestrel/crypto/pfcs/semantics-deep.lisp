@@ -559,14 +559,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk constraint-satp ((asg assignmentp)
-                            (constr constraintp)
+(define-sk constraint-satp ((constr constraintp)
                             (defs definition-listp)
+                            (asg assignmentp)
                             (p primep))
   :guard (assignment-for-prime-p asg p)
   :returns (yes/no booleanp)
-  :short "Semantic function saying if an assignment satisfies a constraint,
-          given a list of definitions and a prime field."
+  :short "Semantic function checking if a constaint is satisfied,
+          given a list of definitions, an assignment, and a prime field."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -649,6 +649,6 @@
        (constr (make-constraint-relation
                 :name def.name
                 :args (expression-var-list def.para))))
-    (constraint-satp asg constr defs p))
+    (constraint-satp constr defs asg p))
   :guard-hints (("Goal" :in-theory (enable true-listp-when-fe-listp
                                            nat-listp-when-fe-listp))))

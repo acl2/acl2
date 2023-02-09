@@ -119,7 +119,7 @@
                 (constraint-case constr :equal))
            (b* ((left (constraint-equal->left constr))
                 (right (constraint-equal->right constr)))
-             (iff (constraint-satp asg constr defs p)
+             (iff (constraint-satp constr defs asg p)
                   (and (equal (eval-expr left asg p)
                               (eval-expr right asg p))
                        (eval-expr left asg p)))))
@@ -130,13 +130,13 @@
      (implies (constraint-case constr :equal)
               (b* ((left (constraint-equal->left constr))
                    (right (constraint-equal->right constr)))
-                (implies (constraint-satp asg constr defs p)
+                (implies (constraint-satp constr defs asg p)
                          (and (equal (eval-expr left asg p)
                                      (eval-expr right asg p))
                               (eval-expr left asg p)))))
      :enable constraint-satp
      :use (:instance exec-proof-tree-when-constraint-equal
-           (ptree (constraint-satp-witness asg constr defs p))))
+           (ptree (constraint-satp-witness constr defs asg p))))
 
    (defruled if-direction
      (implies (and (assignment-for-prime-p asg p)
@@ -146,7 +146,7 @@
                 (implies (and (equal (eval-expr left asg p)
                                      (eval-expr right asg p))
                               (eval-expr left asg p))
-                         (constraint-satp asg constr defs p))))
+                         (constraint-satp constr defs asg p))))
      :use (:instance constraint-satp-suff
            (ptree (make-proof-tree-equal
                    :asg asg
