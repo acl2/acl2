@@ -180,3 +180,14 @@ Have to use acl2::x to redefine, but here is the definition.
 
 (property (x :all)
   (== (acl2s-size2 x) (acl2s-size x)))
+
+;; Example due to Andrew Walter
+(defdata Foo (record (x . nat)))
+(defdata Bar (record (y . nat)))
+(definec baz (a :all) :boolean
+  (match a
+    ((:or :Foo :Bar) t)
+    (& nil)))
+
+(property (a :Foo) (baz a))
+(property (a :Bar) (baz a)) 

@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function update-nth.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,9 +11,27 @@
 
 (in-package "ACL2")
 
+;; TODO: Make the var names in these rules more uniform, but note that the
+;; first formal of update-nth is named KEY rather than N for some reason, so
+;; consider not following our usual convention where we match the names of the
+;; formals as much as possible.
+
 (local (include-book "append"))
 
 (in-theory (disable update-nth))
+
+;; Note that the rule len-update-nth is built in to ACL2.  However, this rule
+;; seems better, because here the case split is essentially on (< n (len x)),
+;; which we will often know to be true.  By contrast, in len-update-nth, the
+;; case split is essentially on (> (+ 1 n) (len x)).  The rule
+;; len-of-update-nth from STD seems even worse, as it causes an unnecessary
+;; case split on whether n is equal to one less than the length.
+(defthm len-of-update-nth-2 ; avoid name conflict with STD
+  (equal (len (update-nth n val x))
+         (if (< (nfix n) (len x))
+             (len x)
+           (+ 1 (nfix n)))))
+(in-theory (disable len-update-nth))
 
 ;; Match what's in STD
 (defthm update-nth-of-update-nth-same

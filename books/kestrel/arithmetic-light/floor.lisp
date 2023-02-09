@@ -644,8 +644,6 @@
                   0))
   :hints (("Goal" :cases ((rationalp i)))))
 
-
-
 (defthm <-of-floor-and-0-when-negative-and-positive-type
   (implies (and (< i 0)
                 (< 0 j)

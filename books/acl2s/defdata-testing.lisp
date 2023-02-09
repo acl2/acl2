@@ -296,6 +296,7 @@ Skipping for now.
 (defdata ds4 1)
 (defdata ds5 'x)
 (defdata ds6 int)
+(defdata ds7 (or 1 nil))
 
 (check= (defdata-domain-size ds1) 3)
 (check= (defdata-domain-size ds2) 3)
@@ -303,3 +304,4 @@ Skipping for now.
 (check= (defdata-domain-size ds4) 1)
 (check= (defdata-domain-size ds5) 1)
 (check= (defdata-domain-size ds6) 1)
+(check= (defdata-domain-size ds7) 2)

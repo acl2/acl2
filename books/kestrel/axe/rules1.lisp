@@ -665,7 +665,7 @@
                 (true-listp array) ;new
                 ;this is still slow:
 ;;                 (equal (bvnot-list elem-size (take (/ len 2) array))
-;;                        (nthcdr (/ len 2) array) ;;slow: (subrange (/ len 2) (+ -1 len) array) ;ffixme this could just be an nthdr?
+;;                        (nthcdr (/ len 2) array) ;;slow: (subrange (/ len 2) (+ -1 len) array) ;ffixme this could just be an nthcdr?
 ;;                        )
                 (natp elem-size))
            (equal (bv-array-read elem-size len index array)
@@ -677,7 +677,7 @@
                                         (firstn (/ len 2) array)))))
   :hints (("Goal"
            :in-theory (e/d (power-of-2p expt-of-+ natp even-when-power-of-2-and-at-least-2 lg
-                                        SUBRANGE ;prove an nthdr=subrange rule
+                                        SUBRANGE ;prove an nthcdr=subrange rule
                                         )
                            (array-reduction-when-top-bit-is-xored-in-helper ;TAKE-WHEN-<-OF-LEN
                                                                             ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
