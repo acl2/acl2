@@ -1466,9 +1466,6 @@
   :returns (new-digits (dab-digit-listp base^exp new-digits)
                        :hyp (equal base^exp
                                    (expt (dab-base-fix base) (pos-fix exp))))
-  ;; :returns (new-digits
-  ;;           (dab-digit-listp (expt (dab-base-fix base) (pos-fix exp))
-  ;;                            new-digits))
   :short "Group digits from a smaller base to a larger base, little-endian."
   :long
   (xdoc::topstring
@@ -1539,9 +1536,6 @@
   :returns (new-digits (dab-digit-listp base^exp new-digits)
                        :hyp (equal base^exp
                                    (expt (dab-base-fix base) (pos-fix exp))))
-  ;; :returns (new-digits
-  ;;           (dab-digit-listp (expt (dab-base-fix base) (pos-fix exp))
-  ;;                            new-digits))
   :short "Group digits from a smaller base to a larger base, big-endian."
   :long
   (xdoc::topstring
