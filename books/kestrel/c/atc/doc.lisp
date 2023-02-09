@@ -849,6 +849,12 @@
        a declaration of a C local variable represented by @('var'),
        initialized with the C expression represented by @('term'),
        followed by the C code represented by @('body').
+       Note that @('declarn') stands for
+       @('declar1'), @('declar2'), etc.,
+       based on whether @('n') is 1, 2, etc.;
+       this @('n') is the number of
+       side-effected variables @('var1'), ..., @('varn'),
+       which is one less than the variables bound by the @(tsee mv-let).
        The C type of the variable is determined from the initializer.")
      (xdoc::li
       "A term @('(mv-let (var var1 ... varn) (assignn term) body)'),
@@ -867,7 +873,13 @@
        an assignment to
        the C local variable or function parameter represented by @('var'),
        with the C expression represented by @('term') as right-hand side,
-       followed by the C code represented by @('body').")
+       followed by the C code represented by @('body').
+       Note that @('assignn') stands for
+       @('assign1'), @('assign2'), etc.,
+       based on whether @('n') is 1, 2, etc.;
+       this @('n') is the number of
+       side-effected variables @('var1'), ..., @('varn'),
+       which is one less than the variables bound by the @(tsee mv-let).")
      (xdoc::li
       "A term @('(mv-let (var1 ... varn) term body)'),
        when @('n') &gt; 1,

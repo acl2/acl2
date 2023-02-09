@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -107,6 +107,29 @@
           (more-readers (atc-string-taginfo-alist-to-readers-aux
                          (cdr members))))
        (append readers more-readers)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-string-taginfo-alist-to-writers
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (writers symbol-listp)
+  :short "Project the writers out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (writers (atc-string-taginfo-alist-to-writers-aux
+                 (defstruct-info->members (atc-tag-info->defstruct info))))
+       (more-writers (atc-string-taginfo-alist-to-writers (cdr prec-tags))))
+    (append writers more-writers))
+  :prepwork
+  ((define atc-string-taginfo-alist-to-writers-aux
+     ((members defstruct-member-info-listp))
+     :returns (writers symbol-listp)
+     :parents nil
+     (b* (((when (endp members)) nil)
+          (writers (defstruct-member-info->writers (car members)))
+          (more-writers (atc-string-taginfo-alist-to-writers-aux
+                         (cdr members))))
+       (append writers more-writers)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
