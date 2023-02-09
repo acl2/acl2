@@ -269,7 +269,7 @@
        (<type1>-bits (integer-type-bits-nulfun type1))
        (<type1> (integer-type-to-fixtype type1))
        (<type1>p (pack <type1> 'p))
-       (<type1>->get (pack <type1> '->get))
+       (integer-from-<type1> (pack 'integer-from- <type1>))
        (<type1>-mod (pack <type1> '-mod))
        (<type1>-integerp (pack <type1> '-integerp))
        (<type1>-integerp-alt-def (pack <type1>-integerp '-alt-def))
@@ -357,7 +357,7 @@
         :arg-type ,<type1>p
         :res-type booleanp
         :short ,(str::cat "Check if a value of " type1-string " is not 0.")
-        :body (/= (,<type1>->get x) 0))
+        :body (/= (,integer-from-<type1> x) 0))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -384,7 +384,7 @@
                                type1-string
                                " is well-defined.")
              :body ,(if samep
-                        `(,<type1>-integerp (- (,<type1>->get x)))
+                        `(,<type1>-integerp (- (,integer-from-<type1> x)))
                       `(,minus-<type>-okp (,<type>-from-<type1> x))))))
 
        ;;;;;;;;;;;;;;;;;;;;
@@ -398,7 +398,8 @@
                           type1-string
                           " [C:6.5.3].")
         :body ,(if samep
-                   `(,(if signedp <type1> <type1>-mod) (- (,<type1>->get x)))
+                   `(,(if signedp <type1> <type1>-mod)
+                     (- (,integer-from-<type1> x)))
                  `(,minus-<type> (,<type>-from-<type1> x)))
         ,@(and
            signedp
@@ -415,13 +416,13 @@
                           " [C:6.5.3].")
         :body ,(if samep
                    `(,(if signedp <type1> <type1>-mod)
-                     (lognot (,<type1>->get x)))
+                     (lognot (,integer-from-<type1> x)))
                  `(,bitnot-<type> (,<type>-from-<type1> x)))
         ,@(and samep
                signedp
                `(:guard-hints
                  (("Goal" :in-theory (enable ,<type1>-integerp-alt-def
-                                             ,<type1>->get
+                                             ,integer-from-<type1>
                                              ,<type1>p
                                              (:e ,<type>-min)
                                              (:e ,<type>-max)))))))
@@ -435,7 +436,7 @@
         :short ,(str::cat "Logical complement of a value of "
                           type1-string
                           " [C:6.5.3].")
-        :body (sint-from-boolean (= (,<type1>->get x) 0)))
+        :body (sint-from-boolean (= (,integer-from-<type1> x) 0)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -450,8 +451,8 @@
         :body ,(if samep
                    (if signedp
                        `(and (integer-range-p 0 (,<type1>-bits) (ifix y))
-                             (>= (,<type1>->get x) 0)
-                             (,<type1>-integerp (* (,<type1>->get x)
+                             (>= (,integer-from-<type1> x) 0)
+                             (,<type1>-integerp (* (,integer-from-<type1> x)
                                                    (expt 2 (ifix y)))))
                      `(integer-range-p 0 (,<type1>-bits) (ifix y)))
                  `(,shl-<type>-okp (,<type>-from-<type1> x) (ifix y))))
@@ -468,8 +469,9 @@
                           type1-string
                           " by an integer [C:6.5.7].")
         :body ,(if samep
-                   `(,(if signedp <type1> <type1>-mod) (* (,<type1>->get x)
-                                                          (expt 2 (ifix y))))
+                   `(,(if signedp <type1> <type1>-mod)
+                     (* (,integer-from-<type1> x)
+                        (expt 2 (ifix y))))
                  `(,shl-<type> (,<type>-from-<type1> x) y))
         :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-okp)))
         ,@(and (not signedp)
@@ -489,7 +491,7 @@
         :body ,(if samep
                    (if signedp
                        `(and (integer-range-p 0 (,<type1>-bits) (ifix y))
-                             (>= (,<type1>->get x) 0))
+                             (>= (,integer-from-<type1> x) 0))
                      `(integer-range-p 0 (,<type1>-bits) (ifix y)))
                  `(,shr-<type>-okp (,<type>-from-<type1> x) (ifix y))))
 
@@ -506,14 +508,14 @@
                           " by an integer C:6.5.7].")
         :body ,(if samep
                    `(,(if signedp <type1> <type1>-mod)
-                     (truncate (,<type1>->get x) (expt 2 (ifix y))))
+                     (truncate (,integer-from-<type1> x) (expt 2 (ifix y))))
                  `(,shr-<type> (,<type>-from-<type1> x) y))
         :guard-hints (("Goal"
                        :in-theory (enable ,@(if (and samep
                                                      signedp)
                                                 (list shr-<type1>-okp
                                                       <type1>-integerp
-                                                      <type1>->get
+                                                      integer-from-<type1>
                                                       <type1>p)
                                               (list shr-<type1>-okp)))))
         ,@(and
@@ -605,8 +607,8 @@
        (<type2>p (pack <type2> 'p))
        (<type>p (pack <type> 'p))
        (<ptype1>p (pack <ptype1> 'p))
-       (<type1>->get (pack <type1> '->get))
-       (<type2>->get (pack <type2> '->get))
+       (integer-from-<type1> (pack 'integer-from- <type1>))
+       (integer-from-<type2> (pack 'integer-from- <type2>))
        (<type>-mod (pack <type> '-mod))
        (<type>-integerp (pack <type> '-integerp))
        (<type>-from-<type1> (pack <type> '-from- <type1>))
@@ -681,8 +683,8 @@
                                " is well-defined.")
              :body
              ,(if samep
-                  `(,<type>-integerp (+ (,<type1>->get x)
-                                        (,<type2>->get y)))
+                  `(,<type>-integerp (+ (,integer-from-<type1> x)
+                                        (,integer-from-<type2> y)))
                 `(,add-<type>-<type>-okp
                   ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
                   ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))))
@@ -702,8 +704,8 @@
                           " [C:6.5.6].")
         :body
         ,(if samep
-             `(,(if signedp <type> <type>-mod) (+ (,<type1>->get x)
-                                                  (,<type2>->get y)))
+             `(,(if signedp <type> <type>-mod) (+ (,integer-from-<type1> x)
+                                                  (,integer-from-<type2> y)))
            `(,add-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -727,8 +729,8 @@
                                " is well-defined.")
              :body
              ,(if samep
-                  `(,<type>-integerp (- (,<type1>->get x)
-                                        (,<type2>->get y)))
+                  `(,<type>-integerp (- (,integer-from-<type1> x)
+                                        (,integer-from-<type2> y)))
                 `(,sub-<type>-<type>-okp
                   ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
                   ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))))
@@ -748,8 +750,8 @@
                           " [C:6.5.6].")
         :body
         ,(if samep
-             `(,(if signedp <type> <type>-mod) (- (,<type1>->get x)
-                                                  (,<type2>->get y)))
+             `(,(if signedp <type> <type>-mod) (- (,integer-from-<type1> x)
+                                                  (,integer-from-<type2> y)))
            `(,sub-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -773,8 +775,8 @@
                                " is well-defined.")
              :body
              ,(if samep
-                  `(,<type>-integerp (* (,<type1>->get x)
-                                        (,<type2>->get y)))
+                  `(,<type>-integerp (* (,integer-from-<type1> x)
+                                        (,integer-from-<type2> y)))
                 `(,mul-<type>-<type>-okp
                   ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
                   ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))))
@@ -794,8 +796,8 @@
                           " [C:6.5.5].")
         :body
         ,(if samep
-             `(,(if signedp <type> <type>-mod) (* (,<type1>->get x)
-                                                  (,<type2>->get y)))
+             `(,(if signedp <type> <type>-mod) (* (,integer-from-<type1> x)
+                                                  (,integer-from-<type2> y)))
            `(,mul-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -818,10 +820,10 @@
         :body
         ,(if samep
              (if signedp
-                 `(and (not (equal (,<type2>->get y) 0))
-                       (,<type>-integerp (truncate (,<type1>->get x)
-                                                   (,<type2>->get y))))
-               `(not (equal (,<type2>->get y) 0)))
+                 `(and (not (equal (,integer-from-<type2> y) 0))
+                       (,<type>-integerp (truncate (,integer-from-<type1> x)
+                                                   (,integer-from-<type2> y))))
+               `(not (equal (,integer-from-<type2> y) 0)))
            `(,div-<type>-<type>-okp
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))
@@ -841,8 +843,9 @@
                           " [C:6.5.5].")
         :body
         ,(if samep
-             `(,(if signedp <type> <type>-mod) (truncate (,<type1>->get x)
-                                                         (,<type2>->get y)))
+             `(,(if signedp <type> <type>-mod)
+               (truncate (,integer-from-<type1> x)
+                         (,integer-from-<type2> y)))
            `(,div-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -863,10 +866,10 @@
         :body
         ,(if samep
              (if signedp
-                 `(and (not (equal (,<type2>->get y) 0))
-                       (,<type>-integerp (rem (,<type1>->get x)
-                                              (,<type2>->get y))))
-               `(not (equal (,<type2>->get y) 0)))
+                 `(and (not (equal (,integer-from-<type2> y) 0))
+                       (,<type>-integerp (rem (,integer-from-<type1> x)
+                                              (,integer-from-<type2> y))))
+               `(not (equal (,integer-from-<type2> y) 0)))
            `(,rem-<type>-<type>-okp
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))
@@ -886,8 +889,8 @@
                           " [C:6.5.5].")
         :body
         ,(if samep
-             `(,(if signedp <type> <type>-mod) (rem (,<type1>->get x)
-                                                    (,<type2>->get y)))
+             `(,(if signedp <type> <type>-mod) (rem (,integer-from-<type1> x)
+                                                    (,integer-from-<type2> y)))
            `(,rem-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -905,7 +908,7 @@
                           " by a value of "
                           type2-string
                           " is well-defined.")
-        :body (,shl-<type1>-okp x (,<type2>->get y)))
+        :body (,shl-<type1>-okp x (,integer-from-<type2> y)))
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -920,7 +923,7 @@
                           " and a value of "
                           type2-string
                           " [C:6.5.7].")
-        :body (,shl-<type1> x (,<type2>->get y))
+        :body (,shl-<type1> x (,integer-from-<type2> y))
         :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-<type2>-okp))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -935,7 +938,7 @@
                           " by a value of "
                           type2-string
                           " is well-defined.")
-        :body (,shr-<type1>-okp x (,<type2>->get y)))
+        :body (,shr-<type1>-okp x (,integer-from-<type2> y)))
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -950,7 +953,7 @@
                           " and a value of "
                           type2-string
                           " [C:6.5.7].")
-        :body (,shr-<type1> x (,<type2>->get y))
+        :body (,shr-<type1> x (,integer-from-<type2> y))
         :guard-hints (("Goal" :in-theory (enable ,shr-<type1>-<type2>-okp))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -967,8 +970,8 @@
                           " [C:6.5.8].")
         :body
         ,(if samep
-             `(if (< (,<type1>->get x)
-                     (,<type2>->get y))
+             `(if (< (,integer-from-<type1> x)
+                     (,integer-from-<type2> y))
                   (sint 1)
                 (sint 0))
            `(,lt-<type>-<type>
@@ -989,8 +992,8 @@
                           " [C:6.5.8].")
         :body
         ,(if samep
-             `(if (> (,<type1>->get x)
-                     (,<type2>->get y))
+             `(if (> (,integer-from-<type1> x)
+                     (,integer-from-<type2> y))
                   (sint 1)
                 (sint 0))
            `(,gt-<type>-<type>
@@ -1011,8 +1014,8 @@
                           " [C:6.5.8].")
         :body
         ,(if samep
-             `(if (<= (,<type1>->get x)
-                      (,<type2>->get y))
+             `(if (<= (,integer-from-<type1> x)
+                      (,integer-from-<type2> y))
                   (sint 1)
                 (sint 0))
            `(,le-<type>-<type>
@@ -1033,8 +1036,8 @@
                           " [C:6.5.8].")
         :body
         ,(if samep
-             `(if (>= (,<type1>->get x)
-                      (,<type2>->get y))
+             `(if (>= (,integer-from-<type1> x)
+                      (,integer-from-<type2> y))
                   (sint 1)
                 (sint 0))
            `(,ge-<type>-<type>
@@ -1055,8 +1058,8 @@
                           " [C:6.5.9].")
         :body
         ,(if samep
-             `(if (= (,<type1>->get x)
-                     (,<type2>->get y))
+             `(if (= (,integer-from-<type1> x)
+                     (,integer-from-<type2> y))
                   (sint 1)
                 (sint 0))
            `(,eq-<type>-<type>
@@ -1077,8 +1080,8 @@
                           " [C:6.5.9].")
         :body
         ,(if samep
-             `(if (/= (,<type1>->get x)
-                      (,<type2>->get y))
+             `(if (/= (,integer-from-<type1> x)
+                      (,integer-from-<type2> y))
                   (sint 1)
                 (sint 0))
            `(,ne-<type>-<type>
@@ -1099,8 +1102,8 @@
                           " [C:6.5.10].")
         :body
         ,(if samep
-             `(,<type> (logand (,<type1>->get x)
-                               (,<type2>->get y)))
+             `(,<type> (logand (,integer-from-<type1> x)
+                               (,integer-from-<type2> y)))
            `(,bitand-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -1110,7 +1113,9 @@
              ((local (include-book "ihs/logops-lemmas" :dir :system)))
              :guard-hints
              (("Goal"
-               :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get))))))
+               :in-theory (enable ,<type>-integerp
+                                  ,<type>p
+                                  ,integer-from-<type1>))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1126,8 +1131,8 @@
                           " [C:6.5.11].")
         :body
         ,(if samep
-             `(,<type> (logxor (,<type1>->get x)
-                               (,<type2>->get y)))
+             `(,<type> (logxor (,integer-from-<type1> x)
+                               (,integer-from-<type2> y)))
            `(,bitxor-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -1137,7 +1142,9 @@
              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
              :guard-hints
              (("Goal"
-               :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get))))))
+               :in-theory (enable ,<type>-integerp
+                                  ,<type>p
+                                  ,integer-from-<type1>))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1153,8 +1160,8 @@
                           " [C:6.5.12].")
         :body
         ,(if samep
-             `(,<type> (logior (,<type1>->get x)
-                               (,<type2>->get y)))
+             `(,<type> (logior (,integer-from-<type1> x)
+                               (,integer-from-<type2> y)))
            `(,bitior-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
@@ -1164,7 +1171,9 @@
              ((local (include-book "centaur/bitops/ihs-extensions" :dir :system)))
              :guard-hints
              (("Goal"
-               :in-theory (enable ,<type>-integerp ,<type>p ,<type1>->get))))))
+               :in-theory (enable ,<type>-integerp
+                                  ,<type>p
+                                  ,integer-from-<type1>))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

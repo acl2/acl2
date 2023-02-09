@@ -75,8 +75,7 @@
      It consists of a type and a definition status."))
   ((type type)
    (defstatus var-defstatusp))
-  :pred var-sinfop
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred var-sinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -144,12 +143,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable alistp identity)))
-  (fty::defresult var-table-result
-    :short "Fixtype of errors and variable table."
-    :ok var-table
-    :pred var-table-resultp))
+(fty::defresult var-table-result
+  :short "Fixtype of errors and variable table."
+  :ok var-table
+  :pred var-table-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -374,8 +371,7 @@
   ((inputs type-list)
    (output type)
    (definedp bool))
-  :pred fun-sinfop
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred fun-sinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -398,12 +394,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable alistp identity)))
-  (fty::defresult fun-table-result
-    :short "Fixtype of errors and function table."
-    :ok fun-table
-    :pred fun-table-resultp))
+(fty::defresult fun-table-result
+  :short "Fixtype of errors and function table."
+  :ok fun-table
+  :pred fun-table-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -557,12 +551,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable alistp identity)))
-  (fty::defresult wellformed-result
-    :short "Fixtype of errors and the @(tsee wellformed) indicator."
-    :ok wellformed
-    :pred wellformed-resultp))
+(fty::defresult wellformed-result
+  :short "Fixtype of errors and the @(tsee wellformed) indicator."
+  :ok wellformed
+  :pred wellformed-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -588,17 +580,14 @@
   ((type type)
    (lvalue bool))
   :tag :expr-type
-  :pred expr-typep
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred expr-typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable alistp identity)))
-  (fty::defresult expr-type-result
-    :short "Fixtype of errors and expression types."
-    :ok expr-type
-    :pred expr-type-resultp))
+(fty::defresult expr-type-result
+  :short "Fixtype of errors and expression types."
+  :ok expr-type
+  :pred expr-type-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -635,18 +624,15 @@
                                     return-types))
    (variables var-table))
   :require (not (set::empty return-types))
-  :pred types+vartab-p
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred types+vartab-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable alistp identity)))
-  (fty::defresult types+vartab-result
-    :short "Fixtype of errors and pairs consisting of
+(fty::defresult types+vartab-result
+  :short "Fixtype of errors and pairs consisting of
           a non-empty set of types and a variable table."
-    :ok types+vartab
-    :pred types+vartab-resultp))
+  :ok types+vartab
+  :pred types+vartab-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -668,18 +654,15 @@
           a function table, a variable table, and a tag environment."
   ((funs fun-tablep)
    (vars var-tablep)
-   (tags tag-envp))
-  :prepwork ((local (in-theory (enable alistp)))))
+   (tags tag-envp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable alistp identity)))
-  (fty::defresult funtab+vartab+tagenv-result
-    :short "Fixtype of errors and triples consisting of
+(fty::defresult funtab+vartab+tagenv-result
+  :short "Fixtype of errors and triples consisting of
           a function table, a variable table, and a tag environment."
-    :ok funtab+vartab+tagenv
-    :pred funtab+vartab+tagenv-resultp))
+  :ok funtab+vartab+tagenv
+  :pred funtab+vartab+tagenv-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

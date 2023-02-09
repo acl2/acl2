@@ -471,11 +471,11 @@ fty::deftranssum).</p>"
         (honsed-foo (da-honsed-constructor-name basename)))
     `(defun ,honsed-foo ,fields
        (declare (xargs :guard ,guard
-                       ;; Same hints as for the ordinary constructor
+                       ;; Similar hints as for the ordinary constructor
                        :guard-hints
                        (("Goal"
                          :in-theory (union-theories
-                                     '(,foo)
+                                     '(,foo hons)
                                      (theory 'minimal-theory)))
                         (and stable-under-simplificationp
                              '(:in-theory (enable ))))))

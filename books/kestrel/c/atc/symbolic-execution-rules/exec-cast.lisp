@@ -41,7 +41,7 @@
      where @('<src>') is the source type and @('<dst>') is the destination type,
      with an intervening @(tsee mod) when the destination type is unsigned.
      We use the bridge rules to turn those constructor and destructors
-     into the shallowly embedded ones (i.e. @('(<dst> (<src>->get ...))'),
+     into the shallowly embedded ones (i.e. @('(<dst> (integer-from-<src> ...))'),
      which are the ones used in the definitions of
      the shallowly embedded conversion functions,
      which we also open (unless source and destination types are equal),

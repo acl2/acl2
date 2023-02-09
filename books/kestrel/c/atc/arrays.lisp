@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -420,7 +420,7 @@
        (<etype>-array-index-okp (pack <etype> '-array-index-okp))
        (<etype>-array-read (pack <etype>-array '-read))
        (<etype>-array-write (pack <etype>-array '-write))
-       (<itype>->get (pack <itype> '->get))
+       (integer-from-<itype> (pack 'integer-from- <itype>))
        (<etype>-array-<itype>-index-okp (pack
                                          <etype> '-array- <itype> '-index-okp))
        (<etype>-array-read-<itype> (pack <etype> '-array-read- <itype>))
@@ -449,7 +449,7 @@
                            " is valid for an array of type "
                            etype-string
                            ".")
-         (,<etype>-array-index-okp array (,<itype>->get index))
+         (,<etype>-array-index-okp array (,integer-from-<itype> index))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -463,7 +463,7 @@
                            ", using an index of "
                            itype-string
                            ".")
-         (,<etype>-array-read array (,<itype>->get index))
+         (,<etype>-array-read array (,integer-from-<itype> index))
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
          :hooks (:fix))
@@ -480,7 +480,7 @@
                            ", using an index of "
                            itype-string
                            ".")
-         (,<etype>-array-write array (,<itype>->get index) element)
+         (,<etype>-array-write array (,integer-from-<itype> index) element)
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
          :hooks (:fix)

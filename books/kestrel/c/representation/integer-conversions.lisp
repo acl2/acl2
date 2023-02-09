@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -91,7 +91,7 @@
        (<dtype> (integer-type-to-fixtype dtype))
        (<stype>p (pack <stype> 'p))
        (<dtype>p (pack <dtype> 'p))
-       (<stype>->get (pack <stype> '->get))
+       (integer-from-<stype> (pack 'integer-from- <stype>))
        (<dtype>-integerp (pack <dtype> '-integerp))
        (<dtype>-integerp-alt-def (pack <dtype>-integerp '-alt-def))
        (<dtype>-mod (pack <dtype> '-mod))
@@ -109,7 +109,7 @@
                                 " to "
                                 dtype-string
                                 " is well-defined.")
-              (,<dtype>-integerp (,<stype>->get x))
+              (,<dtype>-integerp (,integer-from-<stype> x))
               :hooks (:fix))))
 
        (define ,<dtype>-from-<stype> ((x ,<stype>p))
@@ -120,7 +120,7 @@
                            " to "
                            dtype-string
                            "').")
-         (,(if signedp <dtype> <dtype>-mod) (,<stype>->get x))
+         (,(if signedp <dtype> <dtype>-mod) (,integer-from-<stype> x))
          :guard-hints (("Goal"
                         :in-theory (enable ,(if guardp
                                                 <dtype>-from-<stype>-okp

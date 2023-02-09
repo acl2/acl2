@@ -173,7 +173,7 @@
     :pred member-value-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
-  :prepwork ((local (in-theory (enable nfix alistp)))))
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,9 +228,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable alistp identity)))
-  (defresult value-list "lists of values"))
+(defresult value-list "lists of values")
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -244,9 +242,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (local (in-theory (enable alistp identity)))
-  (defresult member-value-list "lists of member values"))
+(defresult member-value-list "lists of member values")
 
 ;;;;;;;;;;;;;;;;;;;;
 

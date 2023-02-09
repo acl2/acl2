@@ -54,3 +54,10 @@
 (defrule r1cs::r1cs-constraints-holdp-of-rev
   (equal (r1cs::r1cs-constraints-holdp (rev vector) valuation prime)
          (r1cs::r1cs-constraints-holdp vector valuation prime)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule r1cs::valuation-binds-allp-of-nthcdr
+  (implies (r1cs::valuation-binds-allp valuation vars)
+           (r1cs::valuation-binds-allp valuation (nthcdr n vars)))
+  :enable r1cs::valuation-binds-allp)

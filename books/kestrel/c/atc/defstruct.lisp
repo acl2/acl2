@@ -1800,7 +1800,7 @@
           (index-type (car index-types))
           (index-fixtype (integer-type-to-fixtype index-type))
           (index-typep (pack index-fixtype 'p))
-          (index-getter (pack index-fixtype '->get))
+          (index-getter (pack 'integer-from- index-fixtype))
           (index-okp-for-index (packn-pos (list struct-tag
                                                 '-
                                                 (ident->name name)

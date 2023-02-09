@@ -172,9 +172,9 @@
        (<type>-integer-fix (pack <type>-integer '-fix))
        (<type>-max (pack <type> '-max))
        (<type>-min (pack <type> '-min))
-       (<type>->get (pack <type> '->get))
+       (integer-from-<type> (pack 'integer-from- <type>))
        (<type>-of-fields (pack <type> '-of-fields))
-       (<type>->get-of-<type> (pack <type>->get '-of- <type>))
+       (integer-from-<type>-of-<type> (pack integer-from-<type> '-of- <type>))
        (equal-of-<type> (pack 'equal-of- <type>))
        (consp-when-<type>p (pack 'consp-when- <type>p))
        (<type>-list (pack <type> '-list))
@@ -262,7 +262,7 @@
            (cons ,(type-kind type) (list get)))
          :hooks (:fix))
 
-       (define ,<type>->get ((x ,<type>p))
+       (define ,integer-from-<type> ((x ,<type>p))
          :returns (y ,<type>-integerp)
          :short ,(str::cat "Accessor for values of " type-string ".")
          (mbe :logic (b* ((x (and t x)))
@@ -273,28 +273,28 @@
          ///
 
          (defrule ,<type>-of-fields
-           (equal (,<type> (,<type>->get x))
+           (equal (,<type> (,integer-from-<type> x))
                   (,<type>-fix x))
            :enable (,<type> ,<type>-fix))
 
-         (defrule ,<type>->get-of-<type>
-           (equal (,<type>->get (,<type> get))
+         (defrule ,integer-from-<type>-of-<type>
+           (equal (,integer-from-<type> (,<type> get))
                   (,<type>-integer-fix get))
            :enable ,<type>)
 
-         (defrule ,(pack <type>->get '-upper-bound)
-           (<= (,<type>->get x) (,<type>-max))
+         (defrule ,(pack integer-from-<type> '-upper-bound)
+           (<= (,integer-from-<type> x) (,<type>-max))
            :rule-classes :linear
-           :enable (,<type>->get
+           :enable (,integer-from-<type>
                     ,<type>-integer-fix
                     ,<type>-integerp-alt-def))
 
          ,@(and
             signedp
-            `((defrule ,(pack <type>->get '-lower-bound)
-                (>= (,<type>->get x) (,<type>-min))
+            `((defrule ,(pack integer-from-<type> '-lower-bound)
+                (>= (,integer-from-<type> x) (,<type>-min))
                 :rule-classes :linear
-                :enable (,<type>->get
+                :enable (,integer-from-<type>
                          ,<type>-integer-fix
                          ,<type>-integerp-alt-def)))))
 
@@ -303,9 +303,9 @@
        (defruled ,equal-of-<type>
          (equal (equal (,<type> get) x)
                 (and (,<type>p x)
-                     (equal (,<type>->get x)
+                     (equal (,integer-from-<type> x)
                             (,<type>-integer-fix get))))
-         :enable (,<type> ,<type>p ,<type>->get))
+         :enable (,<type> ,<type>p ,integer-from-<type>))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -340,9 +340,10 @@
          ((x ,<type>-listp))
          :returns (result ,<type>-integer-listp)
          :short ,(str::cat "Lift @(tsee "
-                           (str::downcase-string (symbol-name <type>->get))
+                           (str::downcase-string
+                            (symbol-name integer-from-<type>))
                            ") to lists.")
-         (,<type>->get x)
+         (,integer-from-<type> x)
          ///
          (fty::deffixequiv ,<type>-integer-list-from-<type>-list))
 

@@ -117,10 +117,10 @@
                              (:e sllong-max)))
                     ,@(and (unop-case op :lognot)
                            `(sint-from-boolean
-                             value-schar->get-to-schar->get
-                             value-uchar->get-to-uchar->get
-                             value-sshort->get-to-sshort->get
-                             value-ushort->get-to-ushort->get))))
+                             value-schar->get-to-integer-from-schar
+                             value-uchar->get-to-integer-from-uchar
+                             value-sshort->get-to-integer-from-sshort
+                             value-ushort->get-to-integer-from-ushort))))
          (event `(defruled ,name
                    ,formula
                    :enable ,enables

@@ -140,11 +140,11 @@
       nil
     (b* ((pat (car pats))
          (code (car codes))
-         (type? (match-type pat))
          (or? (match-or pat))
-         (t? (match-t pat))
          (pat (if (and or? (null (cdr or?))) (car or?) pat))
-         (or? (if (and or? (null (cdr or?))) nil or?)))
+         (or? (if (and or? (null (cdr or?))) nil or?))
+         (type? (match-type pat))
+         (t? (match-t pat)))
       (cond
        (type?
         (if (atom (cdr code))

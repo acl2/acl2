@@ -120,6 +120,7 @@
     open-member-equal-on-list-of-tags
     alistp-compound-recognizer
     alistp
+    identity
     ;;  len
     ;; equal-of-plus-one fix
     prod-car
