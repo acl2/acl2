@@ -183,7 +183,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-expr ((asg assignmentp) (expr expressionp) (p primep))
+(define eval-expr ((expr expressionp) (asg assignmentp) (p primep))
   :guard (assignment-for-prime-p asg p)
   :returns (nat? maybe-natp :hyp (primep p))
   :short "Evaluate an expression, given an assignment and a prime field."
@@ -208,14 +208,14 @@
           (if (consp pair)
               (nfix (cdr pair))
             nil))
-   :add (b* ((val1 (eval-expr asg expr.arg1 p))
+   :add (b* ((val1 (eval-expr expr.arg1 asg p))
              ((unless val1) nil)
-             (val2 (eval-expr asg expr.arg2 p))
+             (val2 (eval-expr expr.arg2 asg p))
              ((unless val2) nil))
           (add val1 val2 p))
-   :mul (b* ((val1 (eval-expr asg expr.arg1 p))
+   :mul (b* ((val1 (eval-expr expr.arg1 asg p))
              ((unless val1) nil)
-             (val2 (eval-expr asg expr.arg2 p))
+             (val2 (eval-expr expr.arg2 asg p))
              ((unless val2) nil))
           (mul val1 val2 p)))
   :measure (expression-count expr)
@@ -227,15 +227,15 @@
   (defrule natp-of-eval-expr
     (implies (and (primep p)
                   (assignmentp asg)
-                  (eval-expr asg expr p))
-             (natp (eval-expr asg expr p))))
+                  (eval-expr expr asg p))
+             (natp (eval-expr expr asg p))))
 
   (defrule fep-of-eval-expr
     (implies (and (primep p)
                   (assignmentp asg)
                   (assignment-for-prime-p asg p)
-                  (eval-expr asg expr p))
-             (fep (eval-expr asg expr p) p))
+                  (eval-expr expr asg p))
+             (fep (eval-expr expr asg p) p))
     :enable fep-of-cdr-of-in-when-assignment-for-prime-p)
 
   (verify-guards eval-expr))
@@ -260,7 +260,7 @@
      and the second result is the list of natural numbers that
      the expressions evaluate to."))
   (b* (((when (endp exprs)) (mv t nil))
-       (val (eval-expr asg (car exprs) p))
+       (val (eval-expr (car exprs) asg p))
        ((unless val) (mv nil nil))
        ((mv okp vals) (eval-expr-list asg (cdr exprs) p))
        ((unless okp) (mv nil nil)))
@@ -486,9 +486,9 @@
      ptree
      :equal
      (b* (((unless (assignment-for-prime-p ptree.asg p)) (proof-outcome-error))
-          (left (eval-expr ptree.asg ptree.left p))
+          (left (eval-expr ptree.left ptree.asg p))
           ((unless left) (proof-outcome-error))
-          (right (eval-expr ptree.asg ptree.right p))
+          (right (eval-expr ptree.right ptree.asg p))
           ((unless right) (proof-outcome-error)))
        (if (equal left right)
            (proof-outcome-assertion

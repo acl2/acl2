@@ -98,10 +98,9 @@
                             (constraint-equal->left constr))
                      (equal (proof-tree-equal->right ptree)
                             (constraint-equal->right constr))
-                     (equal (eval-expr asg (constraint-equal->left constr) p)
-                            (eval-expr asg (constraint-equal->right constr) p))
-                     (eval-expr asg (constraint-equal->left constr)
-                                p))))))
+                     (equal (eval-expr (constraint-equal->left constr) asg p)
+                            (eval-expr (constraint-equal->right constr) asg p))
+                     (eval-expr (constraint-equal->left constr) asg p))))))
   :expand ((exec-proof-tree ptree defs p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -121,9 +120,9 @@
            (b* ((left (constraint-equal->left constr))
                 (right (constraint-equal->right constr)))
              (iff (constraint-satp asg constr defs p)
-                  (and (equal (eval-expr asg left p)
-                              (eval-expr asg right p))
-                       (eval-expr asg left p)))))
+                  (and (equal (eval-expr left asg p)
+                              (eval-expr right asg p))
+                       (eval-expr left asg p)))))
   :use (only-if-direction if-direction)
 
   :prep-lemmas
@@ -132,9 +131,9 @@
               (b* ((left (constraint-equal->left constr))
                    (right (constraint-equal->right constr)))
                 (implies (constraint-satp asg constr defs p)
-                         (and (equal (eval-expr asg left p)
-                                     (eval-expr asg right p))
-                              (eval-expr asg left p)))))
+                         (and (equal (eval-expr left asg p)
+                                     (eval-expr right asg p))
+                              (eval-expr left asg p)))))
      :enable constraint-satp
      :use (:instance exec-proof-tree-when-constraint-equal
            (ptree (constraint-satp-witness asg constr defs p))))
@@ -144,9 +143,9 @@
                    (constraint-case constr :equal))
               (b* ((left (constraint-equal->left constr))
                    (right (constraint-equal->right constr)))
-                (implies (and (equal (eval-expr asg left p)
-                                     (eval-expr asg right p))
-                              (eval-expr asg left p))
+                (implies (and (equal (eval-expr left asg p)
+                                     (eval-expr right asg p))
+                              (eval-expr left asg p))
                          (constraint-satp asg constr defs p))))
      :use (:instance constraint-satp-suff
            (ptree (make-proof-tree-equal
