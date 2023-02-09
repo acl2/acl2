@@ -625,9 +625,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define definition-satp ((vals (fe-listp vals p))
-                         (def definitionp)
+(define definition-satp ((def definitionp)
                          (defs definition-listp)
+                         (vals (fe-listp vals p))
                          (p primep))
   :guard (equal (len vals)
                 (len (definition->para def)))
