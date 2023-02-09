@@ -586,9 +586,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk constraint-list-satp ((asg assignmentp)
-                                 (constrs constraint-listp)
+(define-sk constraint-list-satp ((constrs constraint-listp)
                                  (defs definition-listp)
+                                 (asg assignmentp)
                                  (p primep))
   :guard (assignment-for-prime-p asg p)
   :returns (yes/no booleanp)
@@ -618,9 +618,9 @@
    (xdoc::p
     "All the constraints in the system must be satisfied,
      in the context of the definitions in the system."))
-  (constraint-list-satp asg
-                        (system->constraints sys)
+  (constraint-list-satp (system->constraints sys)
                         (system->definitions sys)
+                        asg
                         p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
