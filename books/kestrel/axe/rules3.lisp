@@ -4950,8 +4950,8 @@
                 (integerp size))
            (UNSIGNED-BYTE-P SIZE k))
   :hints (("Goal"
-           :use (:instance INTEGER-LENGTH-BOUND (n k))
-           :in-theory (e/d (UNSIGNED-BYTE-P) (INTEGER-LENGTH-BOUND)))))
+           :use (:instance <-of-expt-of-integer-length-same (n k))
+           :in-theory (e/d (UNSIGNED-BYTE-P) (<-of-expt-of-integer-length-same)))))
 
 (defthm unsigned-byte-p-of-bvmod-helper
   (implies (and (integerp size)
