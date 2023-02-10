@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,21 +21,26 @@
 (include-book "std/strings/hex" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
+(local (include-book "std/typed-lists/string-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; library extensions
 
 (defrulel msgp-when-stringp
   (implies (stringp x)
-           (msgp x)))
+           (msgp x))
+  :enable msgp)
 
 (defrulel msgp-when-consp-and-stringp-and-character-alistp
   (implies (and (consp x)
                 (stringp (car x))
                 (character-alistp (cdr x)))
-           (msgp x)))
-
-(local (in-theory (disable msgp)))
+           (msgp x))
+  :enable msgp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,7 +99,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-comma-sep ((parts msg-listp))
-  :returns (part msgp :hyp (msg-listp parts))
+  :returns (part msgp
+                 :hyp (msg-listp parts)
+                 :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Turn zero or more parts into a single part
           containing the zero or more parts, comma-separated."
   (cond ((endp parts) "")
@@ -165,7 +172,9 @@
   (if (zp n)
       "0"
     (str::cat "0" (str::nat-to-oct-string n)))
-  :hooks (:fix))
+  ///
+  (fty::deffixequiv pprint-oct-const
+    :hints (("Goal" :in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -186,7 +195,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-iconst ((c iconstp))
-  :returns (part msgp)
+  :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Pretty-print an integer constant."
   :long
   (xdoc::topstring-p
@@ -225,7 +234,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-tyspecseq ((tss tyspecseqp))
-  :returns (part msgp)
+  :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Pretty-print a sequence of type specifiers."
   :long
   (xdoc::topstring-p
@@ -281,7 +290,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-obj-declor ((declor obj-declorp))
-  :returns (part msgp)
+  :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Pretty-print an object declarator."
   :long
   (xdoc::topstring
@@ -345,12 +354,13 @@
                        (pprint-iconst declor.size)
                      "")))))
   :measure (obj-declor-count declor)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-obj-adeclor ((declor obj-adeclorp))
-  :returns (part msgp)
+  :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Pretty-print an abstract object declarator."
   :long
   (xdoc::topstring
@@ -377,12 +387,13 @@
                        (pprint-iconst declor.size)
                      "")))))
   :measure (obj-adeclor-count declor)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-tyname ((tn tynamep))
-  :returns (part msgp)
+  :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Pretty-print a type name."
   :long
   (xdoc::topstring
@@ -953,6 +964,10 @@
 
   :ruler-extenders :all
 
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+
+  :returns-hints (("Goal" :in-theory (enable character-alistp)))
+
   :verify-guards nil ; done below
   ///
   (verify-guards pprint-expr)
@@ -969,7 +984,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-line ((content msgp) (level natp))
-  :returns (line msgp)
+  :returns (line msgp :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Pretty-print a (non-blank) line of code."
   :long
   (xdoc::topstring-p
@@ -987,7 +1002,8 @@
                       (pprint-tyspecseq member.tyspec)
                       (pprint-obj-declor member.declor))
                  (lnfix level)))
-  :hooks (:fix))
+  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable character-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -997,9 +1013,7 @@
   (cond ((endp members) nil)
         (t (cons (pprint-struct-declon (car members) level)
                  (pprint-struct-declon-list (cdr members) level))))
-  ///
-  (fty::deffixequiv pprint-struct-declon-list
-    :hints (("Goal" :in-theory (disable nfix)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1025,12 +1039,13 @@
                                  (pprint-comma-sep
                                   (pprint-ident-list declon.enumerators)))
                             (lnfix level))))
-  :hooks (:fix))
+  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable character-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-param-declon ((param param-declonp))
-  :returns (part msgp)
+  :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Pretty-print a parameter declaration."
   (b* (((param-declon param) param))
     (msg "~@0 ~@1"
@@ -1051,7 +1066,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-fun-declor ((declor fun-declorp))
-  :returns (part msgp)
+  :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Pretty-print a function declarator."
   :long
   (xdoc::topstring
@@ -1073,6 +1088,7 @@
                 "void"))
    :pointer (msg "*~@0" (pprint-fun-declor declor.decl)))
   :measure (fun-declor-count declor)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1085,12 +1101,13 @@
                             (pprint-tyspecseq declon.tyspec)
                             (pprint-fun-declor declon.declor))
                        (lnfix level))))
+  :guard-hints (("Goal" :in-theory (enable character-alistp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-initer ((initer initerp) (options pprint-options-p))
-  :returns (part msgp)
+  :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Pretty-print an initializer."
   (initer-case
    initer
@@ -1120,12 +1137,13 @@
                                      (pprint-initer declon.init? options))
                               ""))
                        (lnfix level))))
-  :hooks (:fix))
+  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable character-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-label ((lab labelp))
-  :returns (part msgp)
+  :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Pretty-print a label."
   :long
   (xdoc::topstring-p
@@ -1263,7 +1281,14 @@
     (cond ((endp items) nil)
           (t (append (pprint-block-item (car items) level options)
                      (pprint-block-item-list (cdr items) level options))))
-    :measure (block-item-list-count items)))
+    :measure (block-item-list-count items))
+
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+
+  :verify-guards nil
+  ///
+  (verify-guards pprint-stmt
+    :hints (("Goal" :in-theory (enable character-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1280,7 +1305,8 @@
                                     (pprint-fun-declor fdef.declor))
                                0))
             (pprint-block-item-list fdef.body 1 options)
-            (list (pprint-line "}" 0)))))
+            (list (pprint-line "}" 0))))
+  :guard-hints (("Goal" :in-theory (enable character-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
