@@ -658,53 +658,53 @@
 
   (defruled value-schar-to-schar
     (equal (value-schar x)
-           (schar x))
-    :enable (value-schar schar))
+           (schar-from-integer x))
+    :enable (value-schar schar-from-integer))
 
   (defruled value-uchar-to-uchar
     (equal (value-uchar x)
-           (uchar x))
-    :enable (value-uchar uchar))
+           (uchar-from-integer x))
+    :enable (value-uchar uchar-from-integer))
 
   (defruled value-sshort-to-sshort
     (equal (value-sshort x)
-           (sshort x))
-    :enable (value-sshort sshort))
+           (sshort-from-integer x))
+    :enable (value-sshort sshort-from-integer))
 
   (defruled value-ushort-to-ushort
     (equal (value-ushort x)
-           (ushort x))
-    :enable (value-ushort ushort))
+           (ushort-from-integer x))
+    :enable (value-ushort ushort-from-integer))
 
   (defruled value-sint-to-sint
     (equal (value-sint x)
-           (sint x))
-    :enable (value-sint sint))
+           (sint-from-integer x))
+    :enable (value-sint sint-from-integer))
 
   (defruled value-uint-to-uint
     (equal (value-uint x)
-           (uint x))
-    :enable (value-uint uint))
+           (uint-from-integer x))
+    :enable (value-uint uint-from-integer))
 
   (defruled value-slong-to-slong
     (equal (value-slong x)
-           (slong x))
-    :enable (value-slong slong))
+           (slong-from-integer x))
+    :enable (value-slong slong-from-integer))
 
   (defruled value-ulong-to-ulong
     (equal (value-ulong x)
-           (ulong x))
-    :enable (value-ulong ulong))
+           (ulong-from-integer x))
+    :enable (value-ulong ulong-from-integer))
 
   (defruled value-sllong-to-sllong
     (equal (value-sllong x)
-           (sllong x))
-    :enable (value-sllong sllong))
+           (sllong-from-integer x))
+    :enable (value-sllong sllong-from-integer))
 
   (defruled value-ullong-to-ullong
     (equal (value-ullong x)
-           (ullong x))
-    :enable (value-ullong ullong))
+           (ullong-from-integer x))
+    :enable (value-ullong ullong-from-integer))
 
   (defruled value-schar->get-to-integer-from-schar
     (implies (value-case x :schar)
