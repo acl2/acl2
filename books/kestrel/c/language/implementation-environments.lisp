@@ -16,6 +16,9 @@
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ implementation-environments
@@ -68,7 +71,8 @@
      This is required to be at least 8 [C:5.2.4.2.1/1]."))
   ((bits nat :reqfix (if (>= bits 8) bits 8)))
   :require (>= bits 8)
-  :pred uchar-formatp)
+  :pred uchar-formatp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -111,7 +115,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv-uchar-max ((ienv ienvp))
-  :returns (max posp)
+  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
   :short "The ACL2 integer value of @('UCHAR_MAX') [C:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
@@ -139,7 +143,8 @@
   (defret ienv-uchar-max-type-prescription
     (and (posp max)
          (> max 1))
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable posp))))
 
   (defret ienv-uchar-max-lower-bound
     (>= max 255)
