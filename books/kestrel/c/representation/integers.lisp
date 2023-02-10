@@ -173,9 +173,12 @@
        (<type>-max (pack <type> '-max))
        (<type>-min (pack <type> '-min))
        (integer-from-<type> (pack 'integer-from- <type>))
-       (<type>-of-fields (pack <type> '-of-fields))
-       (integer-from-<type>-of-<type> (pack integer-from-<type> '-of- <type>))
-       (equal-of-<type> (pack 'equal-of- <type>))
+       (<type>-from-integer (pack <type> '-from-integer))
+       (<type>-from-integer-of-integer-from-<type>
+        (pack <type>-from-integer '-of- integer-from-<type>))
+       (integer-from-<type>-of-<type>-from-integer
+        (pack integer-from-<type> '-of- <type>-from-integer))
+       (equal-of-<type>-from-integer (pack 'equal-of- <type>-from-integer))
        (consp-when-<type>p (pack 'consp-when- <type>p))
        (<type>-list (pack <type> '-list))
        (<type>-listp (pack <type>-list 'p))
@@ -240,23 +243,19 @@
                     (equal (,<type>-fix x)
                            x))))
 
-       (fty::deffixtype ,<type>
-         :pred ,<type>p
-         :fix ,<type>-fix
-         :equiv ,<type>-equiv
-         :define t
-         :topic ,<type>p)
+       (defsection ,<type>
+         :short ,(str::cat "Fixtype of values of " type-string ".")
+         (fty::deffixtype ,<type>
+           :pred ,<type>p
+           :fix ,<type>-fix
+           :equiv ,<type>-equiv
+           :define t
+           :topic ,<type>p))
 
-       (define ,<type> ((get ,<type>-integerp))
+       (define ,<type>-from-integer ((get ,<type>-integerp))
          :returns (y ,<type>p
                      :hints (("Goal" :in-theory (enable ,<type>p))))
          :short ,(str::cat "Constructor for values of " type-string ".")
-         :long
-         (xdoc::topstring
-          (xdoc::p
-           ,(str::cat
-             "This is also the name of the fixtype of values of "
-             type-string ".")))
          (b* ((get (mbe :logic (,<type>-integer-fix get)
                         :exec get)))
            (cons ,(type-kind type) (list get)))
@@ -272,15 +271,15 @@
          :hooks (:fix)
          ///
 
-         (defrule ,<type>-of-fields
-           (equal (,<type> (,integer-from-<type> x))
+         (defrule ,<type>-from-integer-of-integer-from-<type>
+           (equal (,<type>-from-integer (,integer-from-<type> x))
                   (,<type>-fix x))
-           :enable (,<type> ,<type>-fix))
+           :enable (,<type>-from-integer ,<type>-fix))
 
-         (defrule ,integer-from-<type>-of-<type>
-           (equal (,integer-from-<type> (,<type> get))
+         (defrule ,integer-from-<type>-of-<type>-from-integer
+           (equal (,integer-from-<type> (,<type>-from-integer get))
                   (,<type>-integer-fix get))
-           :enable ,<type>)
+           :enable ,<type>-from-integer)
 
          (defrule ,(pack integer-from-<type> '-upper-bound)
            (<= (,integer-from-<type> x) (,<type>-max))
@@ -300,12 +299,12 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (defruled ,equal-of-<type>
-         (equal (equal (,<type> get) x)
+       (defruled ,equal-of-<type>-from-integer
+         (equal (equal (,<type>-from-integer get) x)
                 (and (,<type>p x)
                      (equal (,integer-from-<type> x)
                             (,<type>-integer-fix get))))
-         :enable (,<type> ,<type>p ,integer-from-<type>))
+         :enable (,<type>-from-integer ,<type>p ,integer-from-<type>))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -316,7 +315,7 @@
               :short ,(str::cat "Reduce modularly ACL2 integers to values of "
                                 type-string
                                 ".")
-              (,<type> (mod (ifix x) (1+ (,<type>-max))))
+              (,<type>-from-integer (mod (ifix x) (1+ (,<type>-max))))
               :guard-hints (("Goal"
                              :in-theory (enable ,<type>-integerp-alt-def)))
               :hooks (:fix))))
@@ -355,7 +354,7 @@
          :short ,(str::cat "Lift @(tsee "
                            (str::downcase-string (symbol-name <type>))
                            ") to lists.")
-         (,<type> x)
+         (,<type>-from-integer x)
          ///
          (fty::deffixequiv ,<type>-list-from-<type>-integer-list))
 

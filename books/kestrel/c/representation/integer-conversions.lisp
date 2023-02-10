@@ -92,6 +92,7 @@
        (<stype>p (pack <stype> 'p))
        (<dtype>p (pack <dtype> 'p))
        (integer-from-<stype> (pack 'integer-from- <stype>))
+       (<dtype>-from-integer (pack <dtype> '-from-integer))
        (<dtype>-integerp (pack <dtype> '-integerp))
        (<dtype>-integerp-alt-def (pack <dtype>-integerp '-alt-def))
        (<dtype>-mod (pack <dtype> '-mod))
@@ -120,7 +121,10 @@
                            " to "
                            dtype-string
                            "').")
-         (,(if signedp <dtype> <dtype>-mod) (,integer-from-<stype> x))
+         (,(if signedp
+               <dtype>-from-integer
+             <dtype>-mod)
+          (,integer-from-<stype> x))
          :guard-hints (("Goal"
                         :in-theory (enable ,(if guardp
                                                 <dtype>-from-<stype>-okp
