@@ -579,16 +579,16 @@
   :short "Rules about the return types of the integer constructors."
 
   (defval *atc-integer-constructors-return-rules*
-    '(scharp-of-schar
-      ucharp-of-uchar
-      sshortp-of-sshort
-      ushortp-of-ushort
-      sintp-of-sint
-      uintp-of-uint
-      slongp-of-slong
-      ulongp-of-ulong
-      sllongp-of-sllong
-      ullongp-of-ullong)))
+    '(scharp-of-schar-from-integer
+      ucharp-of-uchar-from-integer
+      sshortp-of-sshort-from-integer
+      ushortp-of-ushort-from-integer
+      sintp-of-sint-from-integer
+      uintp-of-uint-from-integer
+      slongp-of-slong-from-integer
+      ulongp-of-ulong-from-integer
+      sllongp-of-sllong-from-integer
+      ullongp-of-ullong-from-integer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

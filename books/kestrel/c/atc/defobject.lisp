@@ -456,6 +456,7 @@
         (raise "Internal error: not integer array type ~x0." type)
         '(_))
        (fixtype (integer-type-to-fixtype (type-array->of type)))
+       (fixtype-from-integer (pack fixtype '-from-integer))
        (size (type-array->size type))
        (recognizer-name (packn-pos (list 'object- name '-p) name))
        (initializer-name (packn-pos (list 'object- name '-init) name))
@@ -472,7 +473,7 @@
            :returns (object ,recognizer-name)
            (,type-array-of ,(if (consp init)
                                 `(list ,@init)
-                              `(repeat ,size (,fixtype 0))))))
+                              `(repeat ,size (,fixtype-from-integer 0))))))
        (info (make-defobject-info :name-ident name-ident
                                   :name-symbol name
                                   :type type

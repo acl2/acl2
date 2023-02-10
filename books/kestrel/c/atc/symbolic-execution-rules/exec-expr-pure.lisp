@@ -164,8 +164,8 @@
     (if (errorp test)
         test
       (if test
-          (sint 1)
-        (sint 0))))
+          (sint-from-integer 1)
+        (sint-from-integer 0))))
 
   (defruled exec-expr-pure-when-binary-logand
     (implies (and (syntaxp (quotep e))
@@ -183,7 +183,7 @@
                                                     compst))
                               ((when (errorp arg2)) arg2))
                            (test-value arg2)))
-                      (sint 0))))
+                      (sint-from-integer 0))))
     :enable (exec-expr-pure binop-purep sint-from-boolean-with-error))
 
   (defruled exec-expr-pure-when-binary-logand-and-true
@@ -216,7 +216,7 @@
                   (booleanp test1)
                   (test* (not test1)))
              (equal (exec-expr-pure e compst)
-                    (sint 0)))
+                    (sint-from-integer 0)))
     :enable (exec-expr-pure binop-purep test*))
 
   (defruled exec-expr-pure-when-binary-logor
@@ -230,7 +230,7 @@
                   (booleanp test1))
              (equal (exec-expr-pure e compst)
                     (if test1
-                        (sint 1)
+                        (sint-from-integer 1)
                       (sint-from-boolean-with-error
                        (b* ((arg2 (exec-expr-pure (expr-binary->arg2 e)
                                                   compst))
@@ -249,7 +249,7 @@
                   (booleanp test1)
                   (test* test1))
              (equal (exec-expr-pure e compst)
-                    (sint 1)))
+                    (sint-from-integer 1)))
     :enable (exec-expr-pure binop-purep test*))
 
   (defruled exec-expr-pure-when-binary-logor-and-false
@@ -276,8 +276,8 @@
                     (booleanp test))
                (equal (sint-from-boolean-with-error test)
                       (if test
-                          (sint 1)
-                        (sint 0))))
+                          (sint-from-integer 1)
+                        (sint-from-integer 0))))
       :enable sint-from-boolean-with-error))
 
   (make-event
@@ -286,7 +286,7 @@
                     (booleanp test)
                     (test* test))
                (equal (sint-from-boolean-with-error test)
-                      (sint 1)))
+                      (sint-from-integer 1)))
       :enable (sint-from-boolean-with-error test*)))
 
   (make-event
@@ -295,7 +295,7 @@
                     (booleanp test)
                     (test* (not test)))
                (equal (sint-from-boolean-with-error test)
-                      (sint 0)))
+                      (sint-from-integer 0)))
       :enable (sint-from-boolean-with-error test*)))
 
   (defruled exec-expr-pure-when-cond

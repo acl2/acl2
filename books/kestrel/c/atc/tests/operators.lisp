@@ -66,7 +66,8 @@
   (declare (xargs :stobjs state :mode :program))
   (b* (((mv afn cfn) (afn-cfn-unary op index))
        (arg-expr (integer-to-sint-expr arg))
-       ((er (cons & res)) (trans-eval `(,afn (c::sint ,arg)) 'test state nil))
+       ((er (cons & res))
+        (trans-eval `(,afn (c::sint-from-integer ,arg)) 'test state nil))
        (res (c::integer-from-sint res))
        (res-expr (integer-to-sint-expr res)))
     (value
@@ -86,10 +87,12 @@
   (b* (((mv afn cfn) (afn-cfn-binary op index))
        (arg1-expr (integer-to-sint-expr arg1))
        (arg2-expr (integer-to-sint-expr arg2))
-       ((er (cons & res)) (trans-eval `(,afn (c::sint ,arg1) (c::sint ,arg2))
-                                      'test
-                                      state
-                                      nil))
+       ((er (cons & res))
+        (trans-eval `(,afn (c::sint-from-integer ,arg1)
+                           (c::sint-from-integer ,arg2))
+                    'test
+                    state
+                    nil))
        (res (c::integer-from-sint res))
        (res-expr (integer-to-sint-expr res)))
     (value
