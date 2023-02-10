@@ -17,8 +17,14 @@
 
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/alists/top" :dir :system))
+
 (local (include-book "projects/apply/loop" :dir :system))
 (local (in-theory (disable acl2::loop-book-theory)))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -868,6 +874,7 @@
                               collect (pack '* i))))
         (mv nil nil 0 nil)))
     (mv t wrapper n wrapped))
+  :guard-hints (("Goal" :in-theory (enable fix)))
   :prepwork ((local (in-theory (enable acl2::loop-book-theory))))
   ///
 
