@@ -76,7 +76,14 @@
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil nil
-  :pred atc-string-taginfo-alistp)
+  :pred atc-string-taginfo-alistp
+  ///
+
+  (defrule atc-tag-infop-of-cdr-assoc-equal-when-atc-string-taginfo-alistp
+    (implies (and (atc-string-taginfo-alistp prec-tags)
+                  (assoc-equal tag prec-tags))
+             (atc-tag-infop (cdr (assoc-equal tag prec-tags))))
+    :enable assoc-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
