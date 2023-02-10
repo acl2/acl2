@@ -163,6 +163,7 @@
        (<type> (integer-type-to-fixtype type))
        (<type>p (pack <type> 'p))
        (<type>-fix (pack <type> '-fix))
+       (<type>-from-integer (pack <type> '-from-integer))
        (<type>-list (pack <type> '-list))
        (<type>-listp (pack <type> '-listp))
        (<type>-array (pack <type> '-array))
@@ -205,7 +206,7 @@
                                    ,(type-to-maker type)))
           (elements ,<type>-list :reqfix (if (consp elements)
                                              elements
-                                           (list (,<type> 0)))))
+                                           (list (,<type>-from-integer 0)))))
          :require (and (type-case elemtype ,(type-kind type))
                        (consp elements))
          :layout :list

@@ -204,7 +204,8 @@
              (exec-const-to-fixtype (pack 'exec-const-to- fixtype))
              (fixtype-integerp (pack fixtype '-integerp))
              (recognizer (pack fixtype 'p))
-             (recognizer-of-fixtype (pack recognizer '-of- fixtype)))
+             (recognizer-of-fixtype-from-integer
+              (pack recognizer '-of- fixtype '-from-integer)))
           `(("Goal" :in-theory '(exec-expr-pure-when-const
                                  (:e expr-kind)
                                  (:e expr-const->get)
@@ -219,7 +220,7 @@
                                  (:e iconst-base-kind)
                                  (:e ,fixtype-integerp)
                                  ,type-base-const
-                                 ,recognizer-of-fixtype)))))
+                                 ,recognizer-of-fixtype-from-integer)))))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
                                        gin.fn-guard
@@ -997,7 +998,7 @@
                         test-value-when-sintp
                         sint-from-boolean-when-false
                         booleanp-compound-recognizer
-                        sintp-of-sint
+                        sintp-of-sint-from-integer
                         boolean-from-sint-of-0))))
        (instructions
         `((casesplit ,(atc-contextualize arg1-term
@@ -1107,7 +1108,7 @@
                         test-value-when-sintp
                         boolean-from-sint-of-sint-from-boolean
                         sintp-of-sint-from-boolean
-                        sintp-of-sint
+                        sintp-of-sint-from-integer
                         boolean-from-sint-of-1
                         if*-of-t-and-t
                         sint-from-boolean-when-true-test*

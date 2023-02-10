@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -41,13 +41,13 @@
     (:t exec-stmt)
     (:t exec-block-item)
     (:t exec-block-item-list)
-    (:t schar)
-    (:t uchar)
-    (:t sshort)
-    (:t ushort)
-    (:t sint)
-    (:t uint)
-    (:t slong)
-    (:t ulong)
-    (:t sllong)
-    (:t ullong)))
+    (:t schar-from-integer)
+    (:t uchar-from-integer)
+    (:t sshort-from-integer)
+    (:t ushort-from-integer)
+    (:t sint-from-integer)
+    (:t uint-from-integer)
+    (:t slong-from-integer)
+    (:t ulong-from-integer)
+    (:t sllong-from-integer)
+    (:t ullong-from-integer)))
