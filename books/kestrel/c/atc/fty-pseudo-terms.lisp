@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -28,6 +28,9 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -216,7 +219,7 @@
            (len args))
     :hints (("Goal"
              :expand ((pseudo-term-fix term))
-             :in-theory (enable check-lambda-call))))
+             :in-theory (enable check-lambda-call nfix))))
 
   (defret len-of-fty-check-lambda-calls.args-is-formals
     (equal (len args)
@@ -279,6 +282,7 @@
                            (pseudo-term-count term)))))
     :rule-classes :linear
     :enable (check-lambda-call
+             pseudo-termp
              pseudo-term-count
              pseudo-term-list-count
              pseudo-term-kind
@@ -495,7 +499,8 @@
                            (pseudo-term-count term)))))
     :rule-classes :linear
     :enable (check-mv-let-call
-             pseudo-term-kind)
+             pseudo-term-kind
+             pseudo-termp)
     :prep-lemmas
     ((defrule lemma
        (implies (and (pseudo-termp term)
@@ -520,7 +525,7 @@
                         (< (pseudo-term-count body-term)
                            (pseudo-term-count term)))))
     :rule-classes :linear
-    :enable check-mv-let-call
+    :enable (check-mv-let-call pseudo-termp)
     :prep-lemmas
     ((defrule lemma
        (implies (and (pseudo-termp term)
@@ -548,6 +553,7 @@
                            (pseudo-term-count term)))))
     :rule-classes :linear
     :enable (check-mv-let-call
+             pseudo-termp
              pseudo-term-kind
              pseudo-term-lambda->body
              pseudo-term-call->args
@@ -634,7 +640,10 @@
     ///
     (defret len-of-fty-if-to-if*-lst
       (equal (len terms1)
-             (len terms))))
+             (len terms))
+      :hints (("Goal" :in-theory (enable len)))))
+
+  :hints (("Goal" :in-theory (enable o< o-finp)))
 
   :verify-guards nil ; done below
   ///
