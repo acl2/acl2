@@ -29,6 +29,7 @@
 ;; TODO: Replace more of the hand-written functions with calls to def-untranslated-term-fold
 
 (include-book "kestrel/untranslated-terms/untranslated-constantp" :dir :system)
+(include-book "kestrel/untranslated-terms/untranslated-variablep" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system)
 (include-book "kestrel/utilities/map-symbol-name" :dir :system)
@@ -40,7 +41,6 @@
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 ;(include-book "../sequences/defforall") ;drop (after replacing the defforall-simple below)?
 ;(include-book "../sequences/generics-utilities") ;for make-pairs (TODO: move that and rename to mention doublets)
-(include-book "kestrel/utilities/legal-variablep" :dir :system) ;for legal-variable-name-in-acl2-packagep
 (include-book "std/alists/remove-assocs" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -226,32 +226,6 @@
 ;(defforall-simple untranslated-TERM-supported-bstar-binderp)
 ;(verify-guards all-untranslated-TERM-supported-bstar-binderp)
 
-;;;
-;;; untranslated-variablep
-;;;
-
-;; An untranslated variable is a symbol, with several additional restrictions.
-;; For example, t and nil are constants, as are keywords (all of these things
-;; get quoted by translate).  Something with the syntax of a constant, like
-;; *foo*, is also not an untranslated variable.
-(defund untranslated-variablep (x)
-  (declare (xargs :guard t))
-  (legal-variablep x))
-
-(defthm untranslated-variablep-forward-to-symbolp
-  (implies (untranslated-variablep x)
-           (symbolp x))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable untranslated-variablep legal-variablep))))
-
-;; Very similar to legal-variablep-of-intern-in-package-of-symbol.
-(defthm untranslated-variablep-of-intern-in-package-of-symbol
-  (implies (and (equal (symbol-package-name sym) "ACL2") ;gen
-                (stringp str)
-                (symbolp sym))
-           (equal (untranslated-variablep (intern-in-package-of-symbol str sym))
-                  (legal-variable-name-in-acl2-packagep str)))
-  :hints (("Goal" :in-theory (enable untranslated-variablep))))
 
 
 ;;these are terms that may contain let/let*/b*/cond/case-match/case/mv-let, etc.
