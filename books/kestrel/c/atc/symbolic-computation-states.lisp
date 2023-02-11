@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,9 @@
 (in-package "C")
 
 (include-book "../language/computation-states")
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -424,6 +427,7 @@
                   :element (objdesign->base-address objdes.super)
                   :member (objdesign->base-address objdes.super))
   :measure (objdesign-count objdes)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -606,7 +610,8 @@
              push-frame
              top-frame
              pop-frame
-             compustate-frames-number))
+             compustate-frames-number
+             len))
 
   (defruled exit-scope-of-add-var
     (equal (exit-scope (add-var var val compst))
@@ -858,7 +863,8 @@
        :enable (write-var-aux-okp
                 write-auto-var-aux
                 update-var-aux
-                errorp))
+                errorp
+                endp))
      (defrule lemma2
        (implies (and (consp scopes)
                      (consp (write-auto-var-aux var val scopes)))
@@ -944,7 +950,8 @@
              push-frame
              pop-frame
              top-frame
-             compustate-frames-number))
+             compustate-frames-number
+             len))
 
   (defruled read-var-of-add-var
     (equal (read-var var (add-var var2 val compst))
@@ -960,7 +967,8 @@
              compustate-frames-number
              push-frame
              pop-frame
-             top-frame))
+             top-frame
+             len))
 
   (defruled read-var-of-update-var
     (equal (read-var var (update-var var2 val2 compst))
@@ -977,7 +985,8 @@
              top-frame
              compustate-frames-number
              var-in-scopes-p-when-read-auto-var-aux
-             var-in-scopes-p)
+             var-in-scopes-p
+             len)
     :cases ((var-in-scopes-p var
                              (frame->scopes (car (compustate->frames compst)))))
     :prep-lemmas
@@ -1381,7 +1390,8 @@
                 (equal (update-var-aux var (read-auto-var-aux var scopes) scopes)
                        (scope-list-fix scopes)))
        :enable (read-auto-var-aux
-                update-var-aux))
+                update-var-aux
+                len))
      (defruled update-var-of-read-var-same-lemma
        (implies (and (compustatep compst)
                      (> (compustate-frames-number compst) 0)
@@ -1399,7 +1409,8 @@
                 pop-frame
                 compustate-frames-number
                 var-in-scopes-p-when-valuep-of-read-auto-var-aux
-                not-var-in-scopes-p-when-not-read-auto-var-aux))))
+                not-var-in-scopes-p-when-not-read-auto-var-aux
+                len))))
 
   (defval *atc-update-var-rules*
     '(update-var-of-add-frame
@@ -1882,7 +1893,8 @@
              (equal (update-static-var var (read-static-var var compst) compst1)
                     compst1))
     :enable (update-static-var
-             read-static-var)
+             read-static-var
+             identity)
     :disable omap::in-when-in-tail
     :use (:instance update-static-var-of-read-static-var-same-lemma
                     (compst compst1))
@@ -2008,7 +2020,8 @@
              push-frame
              pop-frame
              top-frame
-             var-in-scopes-p))
+             var-in-scopes-p
+             len))
 
   (defruled compustate-frames-number-of-update-static-var
     (equal (compustate-frames-number (update-static-var var val compst))

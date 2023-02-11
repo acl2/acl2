@@ -24,7 +24,12 @@
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,7 +101,8 @@
   :elt-type defstruct-member-info
   :true-listp t
   :elementp-of-nil nil
-  :pred defstruct-member-info-listp)
+  :pred defstruct-member-info-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -478,7 +484,8 @@
                            (memtypes member-type-listp)
                            (flexiblep booleanp)
                            (redundant booleanp)
-                           val))
+                           val)
+                    :hints (("Goal" :in-theory (enable len))))
                state)
   :short "Process the inputs of a @(tsee defstruct) call."
   :long
@@ -1289,7 +1296,8 @@
                                         (type typep)
                                         (size? pos-optionp))
   :guard (type-nonchar-integerp type)
-  :returns (mv (event pseudo-event-formp)
+  :returns (mv (event pseudo-event-formp
+                      :hints (("Goal" :in-theory (enable true-listp))))
                (length symbolp)
                (checkers symbol-listp)
                (readers symbol-listp)
@@ -1874,7 +1882,8 @@
 
   (defruled defstruct-len-consp-lemma
     (implies (consp x)
-             (not (equal (len x) 0)))))
+             (not (equal (len x) 0)))
+    :enable len))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -18,7 +18,12 @@
 
 (include-book "symbolic-execution-rules/integers")
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -272,7 +277,9 @@
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        (define ,<type>-array-length ((array ,<type>-arrayp))
-         :returns (length posp :rule-classes (:rewrite :type-prescription))
+         :returns (length posp
+                          :rule-classes (:rewrite :type-prescription)
+                          :hints (("Goal" :in-theory (enable posp))))
          :short ,(str::cat "Length of an array of "
                            type-string
                            ".")
@@ -313,9 +320,14 @@
                            ", using an integer index.")
          (,<type>-fix (nth index (,<type>-array->elements array)))
          :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
-                                                  ,<type>-array-length)))
-         :hooks (:fix)
+                                                  ,<type>-array-length
+                                                  nfix
+                                                  ifix
+                                                  integer-range-p)))
          ///
+
+         (fty::deffixequiv ,<type>-array-read
+           :hints (("Goal" :in-theory (enable ifix nth))))
 
          (defruled ,<type>-array-read-alt-def
            (implies (and (,<type>-arrayp array)
@@ -329,7 +341,10 @@
                     ,<type>-array-index-okp
                     ,<type>-array-length-alt-def
                     value-array->length
-                    ,<type>-arrayp-alt-def)))
+                    ,<type>-arrayp-alt-def
+                    nfix
+                    ifix
+                    integer-range-p)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -350,7 +365,9 @@
                                              (,<type>-array->elements array)))
              array))
          :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
-                                                  ,<type>-array-length)))
+                                                  ,<type>-array-length
+                                                  nfix
+                                                  integer-range-p)))
          :hooks (:fix)
 
          ///
@@ -361,7 +378,11 @@
                   (len (,<type>-array->elements array)))
            :enable (,<type>-array-index-okp
                     ,<type>-array-length
-                    ,<type>-array-of))
+                    ,<type>-array-of
+                    nfix
+                    ifix
+                    integer-range-p
+                    max))
 
          (defrule ,<type>-array-length-of-<type>-array-write
            (equal (,<type>-array-length
@@ -369,7 +390,11 @@
                   (,<type>-array-length array))
            :enable (,<type>-array-index-okp
                     ,<type>-array-length
-                    ,<type>-array-of))
+                    ,<type>-array-of
+                    nfix
+                    ifix
+                    integer-range-p
+                    max))
 
          (defruled ,<type>-array-write-alt-def
            (implies (and (,<type>-arrayp array)
@@ -388,7 +413,10 @@
                     value-array->length
                     ,type-of-value-when-<type>p
                     remove-flexible-array-member
-                    flexible-array-member-p)))
+                    flexible-array-member-p
+                    nfix
+                    ifix
+                    integer-range-p)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

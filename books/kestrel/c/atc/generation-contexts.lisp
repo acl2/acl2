@@ -20,6 +20,9 @@
 
 (local (include-book "std/lists/top" :dir :system))
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-generation-contexts
@@ -77,7 +80,8 @@
   (:cvalue ((var symbolp)
             (term any)))
   (:test ((term any)))
-  :pred atc-premisep)
+  :pred atc-premisep
+  :prepwork ((local (in-theory (enable identity)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -90,7 +94,8 @@
   :elt-type atc-premise
   :true-listp t
   :elementp-of-nil nil
-  :pred atc-contextp)
+  :pred atc-contextp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

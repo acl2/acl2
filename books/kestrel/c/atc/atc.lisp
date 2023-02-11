@@ -15,6 +15,11 @@
 (include-book "table")
 (include-book "generation")
 
+(local (include-book "kestrel/std/system/w" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-implementation
