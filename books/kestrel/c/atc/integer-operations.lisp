@@ -17,6 +17,12 @@
 
 (include-book "../language/static-semantics")
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integer-operations
@@ -430,7 +436,9 @@
                                              ,integer-from-<type1>
                                              ,<type1>p
                                              (:e ,<type>-min)
-                                             (:e ,<type>-max)))))))
+                                             (:e ,<type>-max)
+                                             lognot
+                                             ifix))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -480,7 +488,8 @@
                      (* (,integer-from-<type1> x)
                         (expt 2 (ifix y))))
                  `(,shl-<type> (,<type>-from-<type1> x) y))
-        :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-okp)))
+        :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-okp
+                                                 integer-range-p)))
         ,@(and (not signedp)
                '(:prepwork
                  ((local (include-book "arithmetic-3/top" :dir :system))))))
@@ -525,7 +534,9 @@
                                                 (list shr-<type1>-okp
                                                       <type1>-integerp
                                                       integer-from-<type1>
-                                                      <type1>p)
+                                                      <type1>p
+                                                      'signed-byte-p
+                                                      'integer-range-p)
                                               (list shr-<type1>-okp)))))
         ,@(and
            signedp
@@ -918,7 +929,9 @@
            `(,rem-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-        :guard-hints (("Goal" :in-theory (enable ,rem-<type1>-<type2>-okp))))
+        :guard-hints (("Goal" :in-theory (enable ,rem-<type1>-<type2>-okp
+                                                 ,@(and (not signedp)
+                                                        (list 'rem))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
