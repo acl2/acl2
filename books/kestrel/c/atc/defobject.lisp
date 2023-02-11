@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -23,6 +23,12 @@
 (include-book "kestrel/fty/pseudo-event-form" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
+
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "kestrel/std/system/w" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -148,7 +154,8 @@
                (val (tuple (name-string stringp)
                            (name-ident identp)
                            (redundantp booleanp)
-                           val))
+                           val)
+                    :hints (("Goal" :in-theory (enable len))))
                state)
   :short "Process the @('name') input."
   :long
@@ -186,7 +193,9 @@
                      and so the call is not redundant."
                     name-string (defobject-info->call info) call))))
     (acl2::value (list name-string name-ident nil)))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-symbol))))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-symbol
+                                           msgp
+                                           character-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -234,7 +243,9 @@
                    must not exceed ~x1."
                   pos (ullong-max))))
     (acl2::value (make-type-array :of elemtype :size pos)))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-symbol))))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-symbol
+                                           msgp
+                                           character-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -244,7 +255,8 @@
   :returns (mv erp
                (val (tuple (expr exprp)
                            (type typep)
-                           val))
+                           val)
+                    :hints (("Goal" :in-theory (enable len))))
                state)
   :short "Turn a constant expression term into the represented expression."
   :long
@@ -311,6 +323,7 @@
                does not have the required form."
               term))
   :measure (pseudo-term-count term)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards nil ; done below
   ///
 
