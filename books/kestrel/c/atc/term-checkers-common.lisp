@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -25,7 +25,11 @@
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -164,7 +168,8 @@
        (part3 (intern-in-package-of-symbol (third parts) sym))
        (part4 (intern-in-package-of-symbol (fourth parts) sym))
        (part5 (intern-in-package-of-symbol (fifth parts) sym)))
-    (mv t part1 part2 part3 part4 part5)))
+    (mv t part1 part2 part3 part4 part5))
+  :guard-hints (("Goal" :in-theory (enable len))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
