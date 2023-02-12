@@ -888,6 +888,8 @@
                           (append *builtin-defaxiom-names*
                                   *builtin-defthm-names*)))
 
+; Matt K. mod: The following assertion is false for certain "acl2data" runs.
+#-acl2data
 (assert-event (subsetp-eq (append *builtin-defaxiom-names*
                                   *builtin-defthm-names*)
                           *builtin-defaxiom/defthm-all*))
