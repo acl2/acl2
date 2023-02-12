@@ -20,9 +20,13 @@
 (include-book "promote-value")
 (include-book "value-integer-get")
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -120,7 +124,12 @@
                              value-schar->get-to-integer-from-schar
                              value-uchar->get-to-integer-from-uchar
                              value-sshort->get-to-integer-from-sshort
-                             value-ushort->get-to-integer-from-ushort))))
+                             value-ushort->get-to-integer-from-ushort))
+                    identity
+                    ifix
+                    fix
+                    mod
+                    lognot))
          (event `(defruled ,name
                    ,formula
                    :enable ,enables
