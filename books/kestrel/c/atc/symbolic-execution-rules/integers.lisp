@@ -19,6 +19,9 @@
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection integer-value-disjoint-rules
@@ -130,6 +133,8 @@
 (defsection value-listp-when-valuepred-listp
   :short "Theorems saying that
           the value list recognizers imply @(tsee value-listp)."
+
+  (local (in-theory (enable len)))
 
   (defrule value-listp-when-uchar-listp
     (implies (uchar-listp x)
@@ -943,6 +948,8 @@
     "The rule @('ifix-of-integer-from-<type>') serves to simplify away
      occurrences of @(tsee ifix) used in
      the definition of the shift operations."))
+
+  (local (in-theory (enable ifix)))
 
   (defruled ifix-of-integer-from-schar
     (equal (ifix (integer-from-schar x))

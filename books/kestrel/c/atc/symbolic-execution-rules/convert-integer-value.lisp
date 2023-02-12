@@ -22,6 +22,9 @@
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-convert-integer-value-rules
@@ -93,7 +96,10 @@
                               value-sllong-to-sllong
                               value-uint-to-uint
                               value-ulong-to-ulong
-                              value-ullong-to-ullong))))
+                              value-ullong-to-ullong
+                              ;; built-ins:
+                              ifix
+                              ))))
 
   ;; from schar:
 

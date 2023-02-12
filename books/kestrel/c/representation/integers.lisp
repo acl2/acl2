@@ -14,13 +14,18 @@
 (include-book "../language/integer-ranges")
 
 (local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 ;; to have FTY::DEFLIST generate theorems about NTH:
 (local (include-book "std/lists/nth" :dir :system))
 
 ;; to have FTY::DEFLIST generate theorems about UPDATE-NTH:
 (local (include-book "std/lists/update-nth" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -318,6 +323,7 @@
          :true-listp t
          :elementp-of-nil nil
          :pred ,<type>-listp
+         :prepwork ((local (in-theory (enable nfix))))
          ///
          (defruled ,true-listp-when-<type>-listp-rewrite
            (implies (,<type>-listp x)

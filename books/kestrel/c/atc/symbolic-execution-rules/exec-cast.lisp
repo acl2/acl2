@@ -21,9 +21,13 @@
 (include-book "value-integer-get")
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,7 +131,8 @@
                    ,@(and (not (equal dtype stype))
                           (list dtype-from-stype))
                    ,@(and guardp
-                          (list dtype-from-stype-okp)))
+                          (list dtype-from-stype-okp))
+                   ifix)
                   :disable
                   ((:e integer-type-rangep)
                    (:e integer-type-max)
