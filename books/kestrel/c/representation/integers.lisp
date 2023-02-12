@@ -193,7 +193,7 @@
         (pack integer-list-from-<type>-list
               '-of-
               <type>-list-from-integer-list))
-       (<type>-mod (pack <type> '-mod))
+       (<type>-from-integer-mod (pack <type>-from-integer '-mod))
        (true-listp-when-<type>-listp-rewrite (pack 'true-listp-when-
                                                    <type>-listp
                                                    '-rewrite)))
@@ -300,7 +300,7 @@
 
        ,@(and
           (not signedp)
-          `((define ,<type>-mod ((x integerp))
+          `((define ,<type>-from-integer-mod ((x integerp))
               :returns (result ,<type>p)
               :short ,(str::cat "Reduce modularly ACL2 integers to values of "
                                 type-string

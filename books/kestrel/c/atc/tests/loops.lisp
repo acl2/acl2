@@ -28,11 +28,12 @@
                     :guard-hints (("Goal" :in-theory (enable c::declar
                                                              c::assign)))
                     :measure (c::integer-from-uint |n|)
-                    :hints (("Goal" :in-theory (enable c::assign
-                                                       c::ne-uint-uint
-                                                       c::sub-uint-uint
-                                                       c::uint-integer-fix
-                                                       c::uint-mod)))))
+                    :hints (("Goal"
+                             :in-theory (enable c::assign
+                                                c::ne-uint-uint
+                                                c::sub-uint-uint
+                                                c::uint-integer-fix
+                                                c::uint-from-integer-mod)))))
     (if (c::boolean-from-sint (c::ne-uint-uint |n| (c::uint-dec-const 0)))
         (let* ((|r| (c::assign (c::mul-uint-uint |r| |n|)))
                (|n| (c::assign (c::sub-uint-uint |n| (c::uint-dec-const 1)))))
