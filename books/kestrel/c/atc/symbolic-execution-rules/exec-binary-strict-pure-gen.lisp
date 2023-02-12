@@ -199,9 +199,9 @@
                     ulong-integerp-alt-def
                     sllong-integerp-alt-def
                     ullong-integerp-alt-def
-                    uint-mod
-                    ulong-mod
-                    ullong-mod
+                    uint-from-integer-mod
+                    ulong-from-integer-mod
+                    ullong-from-integer-mod
                     value-unsigned-integerp-alt-def
                     integer-type-rangep
                     integer-type-min
