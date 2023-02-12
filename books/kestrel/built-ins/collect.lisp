@@ -199,6 +199,8 @@
 ; We add assertions to this effect, so that if ACL2 ever changes
 ; in a way that these lists are no longer empty, we can detect it.
 
+; Matt K. mod: The following assertion is false for certain "acl2data" runs.
+#-acl2data
 (assert-event (and (null *builtin-defstobj-names*)
                    (null *builtin-includebook-names*)))
 
