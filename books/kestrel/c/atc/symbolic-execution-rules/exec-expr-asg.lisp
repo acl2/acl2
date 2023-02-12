@@ -18,9 +18,13 @@
 (include-book "arrays")
 (include-book "value-integer-get")
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -216,7 +220,9 @@
                       (implies (and (,atype-array-index-okp array index)
                                     (integerp index))
                                (not (< index 0)))
-                      :enable ,atype-array-index-okp)
+                      :enable (,atype-array-index-okp
+                               integer-range-p
+                               ifix))
                     (defrule lemma2
                       (implies (and (,apred array)
                                     (integerp index)
