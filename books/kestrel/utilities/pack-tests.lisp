@@ -17,5 +17,28 @@
 (include-book "std/testing/assert-equal" :dir :system)
 
 (assert-equal
- (pack-in-package "APT" 'foo "BAR" 3 #\c)
- 'apt::|FOOBAR3c|)
+ (pack-in-package "APT" 'foo "BAR" 3 #\c t nil)
+ 'apt::|FOOBAR3cTNIL|)
+
+;; Test with a var passed to pack-in-package
+(assert-equal
+ (let ((x 'sym))
+   (pack-in-package "ACL2" 'foo x "BAR" x 3 x #\c))
+ '|FOOSYMBARSYM3SYMc|)
+
+;; Test with a non-atom (a term) passed to pack-in-package
+(assert-equal
+ (let ((x 'XSYM))
+   (pack-in-package "ACL2" 'foo (symbol-name x) "BAR"))
+ 'FOOXSYMBAR)
+
+;; Test with a single item
+(assert-equal
+ (pack-in-package "APT" 'foo)
+ 'apt::FOO)
+
+;; Test with a single item
+(assert-equal
+ (let ((x 'XSYM))
+   (pack-in-package "ACL2" (symbol-name x)))
+ 'XSYM)

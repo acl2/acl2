@@ -111,21 +111,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;todo: add $ to name?
+;; Returns a string rather than a symbol.
+(defmacro packtostring (&rest rst)
+  (pack$-fn rst))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns a form equivalent to calling to-string on the ITEM.
+(defun to-string-form-for-item (item)
+  (declare (xargs :guard t))
+  (if (and (quotep item)
+           (consp (cdr item)))
+      (to-string (unquote item))
+    (if (atom item)
+        (if (not (legal-variablep item))
+            ;; It's an atom but not a legal variable, so it must be a constant like 3 or t:
+            (to-string item)
+          `(to-string ,item))
+      `(to-string ,item))))
+
+;; Returns a list of forms whose concatenation is equivalent to concatenating
+;; the results of calling to-string on the ITEMS.
+(defun to-string-forms-for-items (items)
+  (declare (xargs :guard (true-listp items)))
+  (if (endp items)
+      nil
+    (let ((first-form (to-string-form-for-item (first items)))
+          (rest-forms (to-string-forms-for-items (rest items))))
+      (if (and (stringp first-form)
+               (consp rest-forms)
+               (stringp (first rest-forms)))
+          ;; special case where we can statically combine 2 strings:
+          (cons (concatenate 'string first-form (first rest-forms))
+                (rest rest-forms))
+        (cons first-form rest-forms)))))
+
 ;; Helper function for pack-in-package.  Note that when code containing a call to
 ;; pack-in-package is executed, it does not cons up a list of the given items.
 (defund pack-in-package-fn (package items)
   (declare (xargs :guard (and (stringp package)
                               (true-listp items))))
-  `(intern$ ,(pack$-fn items) ,package))
+  (let ((forms (to-string-forms-for-items items)))
+    (if (endp forms)
+        (er hard? 'pack-in-package-fn "Nothing to concatenate.")
+      (if (endp (rest forms))
+          ;; Special case for a single thing (no need to concatenate):
+          `(intern$ ,(first forms) ,package)
+        `(intern$ (concatenate 'string ,@forms) ,package)))))
 
-;; Pack all the items in RST into a symbol in PACKAGE.
-;; Example: (pack-in-package "APT" 'foo "BAR" 3 #\c)
-(defmacro pack-in-package (package &rest rst)
-  (pack-in-package-fn package rst))
+;; Packs all the ITEMS into a symbol in the given PACKAGE.  Tries to avoid
+;; consing and to compute as much statically as it can.  Example:
+;; (pack-in-package "APT" 'foo x "BAR" 3 #\c)
+(defmacro pack-in-package (package &rest items)
+  (pack-in-package-fn package items))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;todo: add $ to name?
-;; Returns a string rather than a symbol.
-(defmacro packtostring (&rest rst)
-  (pack$-fn rst))
