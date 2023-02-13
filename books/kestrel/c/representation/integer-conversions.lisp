@@ -13,6 +13,12 @@
 
 (include-book "integers")
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ representation-of-integer-conversions
@@ -95,7 +101,7 @@
        (<dtype>-from-integer (pack <dtype> '-from-integer))
        (<dtype>-integerp (pack <dtype> '-integerp))
        (<dtype>-integerp-alt-def (pack <dtype>-integerp '-alt-def))
-       (<dtype>-mod (pack <dtype> '-mod))
+       (<dtype>-from-integer-mod (pack <dtype>-from-integer '-mod))
        (<dtype>-from-<stype> (pack <dtype> '-from- <stype>))
        (<dtype>-from-<stype>-okp (pack <dtype>-from-<stype> '-okp)))
 
@@ -123,7 +129,7 @@
                            "').")
          (,(if signedp
                <dtype>-from-integer
-             <dtype>-mod)
+             <dtype>-from-integer-mod)
           (,integer-from-<stype> x))
          :guard-hints (("Goal"
                         :in-theory (enable ,(if guardp

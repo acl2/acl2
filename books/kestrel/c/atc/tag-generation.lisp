@@ -19,7 +19,11 @@
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1102,7 +1106,8 @@
                (updated-prec-tags
                 atc-string-taginfo-alistp
                 :hyp (and (stringp tag)
-                          (atc-string-taginfo-alistp prec-tags)))
+                          (atc-string-taginfo-alistp prec-tags))
+                :hints (("Goal" :in-theory (enable acons))))
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
   :short "Generate a C structure type declaration,

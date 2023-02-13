@@ -21,7 +21,6 @@
 (include-book "defstruct")
 (include-book "defobject-doc")
 (include-book "defobject")
-(include-book "promotion-uaconversion-theorems")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

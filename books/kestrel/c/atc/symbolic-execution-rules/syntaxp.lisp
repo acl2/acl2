@@ -16,10 +16,16 @@
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-syntaxp-hyp-for-expr-pure ((var symbolp))
-  :returns (hyp pseudo-termp :hyp (symbolp var))
+  :returns (hyp pseudo-termp
+                :hyp (symbolp var)
+                :hints (("Goal" :in-theory (enable pseudo-termp
+                                                   pseudo-term-listp))))
   :short "Construct a @(tsee syntaxp) hypothesis for
           a symbolic execution rule for pure expressions."
   :long

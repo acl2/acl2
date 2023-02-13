@@ -21,9 +21,13 @@
 (include-book "integer-conversions")
 (include-book "value-integer-get")
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -199,9 +203,9 @@
                     ulong-integerp-alt-def
                     sllong-integerp-alt-def
                     ullong-integerp-alt-def
-                    uint-mod
-                    ulong-mod
-                    ullong-mod
+                    uint-from-integer-mod
+                    ulong-from-integer-mod
+                    ullong-from-integer-mod
                     value-unsigned-integerp-alt-def
                     integer-type-rangep
                     integer-type-min
