@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,9 +21,13 @@
 (include-book "value-integer-get")
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -46,7 +50,7 @@
      the shallowly embedded conversion functions,
      which we also open (unless source and destination types are equal),
      along with the @('okp') predicates if applicable.
-     We also need open @('u...-mod') to expose the @(tsee mod)
+     We also need open @('u...-from-integer-mod') to expose the @(tsee mod)
      in the shallowly embedded conversions to unsigned type,
      thus matching the @(tsee mod) in @(tsee convert-integer-value).
      We open the @('<dst>-integerp') functions
@@ -109,11 +113,11 @@
                    value-ulong-to-ulong
                    value-sllong-to-sllong
                    value-ullong-to-ullong
-                   uchar-mod
-                   ushort-mod
-                   uint-mod
-                   ulong-mod
-                   ullong-mod
+                   uchar-from-integer-mod
+                   ushort-from-integer-mod
+                   uint-from-integer-mod
+                   ulong-from-integer-mod
+                   ullong-from-integer-mod
                    schar-integerp-alt-def
                    uchar-integerp-alt-def
                    sshort-integerp-alt-def
@@ -127,7 +131,8 @@
                    ,@(and (not (equal dtype stype))
                           (list dtype-from-stype))
                    ,@(and guardp
-                          (list dtype-from-stype-okp)))
+                          (list dtype-from-stype-okp))
+                   ifix)
                   :disable
                   ((:e integer-type-rangep)
                    (:e integer-type-max)

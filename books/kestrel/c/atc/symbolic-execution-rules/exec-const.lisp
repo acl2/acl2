@@ -17,6 +17,9 @@
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-exec-const-rules
@@ -35,6 +38,8 @@
      thus, we enable the executable counterparts
      of the fixtype functions that operate on constants
      and of the @('<type>-integerp') predicates."))
+
+  (local (in-theory (enable len)))
 
   (defruled exec-const-to-sint
     (implies (and (syntaxp (quotep const))

@@ -17,6 +17,12 @@
 
 (include-book "../language/static-semantics")
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integer-operations
@@ -271,7 +277,7 @@
        (<type1>p (pack <type1> 'p))
        (integer-from-<type1> (pack 'integer-from- <type1>))
        (<type1>-from-integer (pack <type1> '-from-integer))
-       (<type1>-mod (pack <type1> '-mod))
+       (<type1>-from-integer-mod (pack <type1>-from-integer '-mod))
        (<type1>-integerp (pack <type1> '-integerp))
        (<type1>-integerp-alt-def (pack <type1>-integerp '-alt-def))
        (<type1>-fix (pack <type1> '-fix))
@@ -401,7 +407,7 @@
         :body ,(if samep
                    `(,(if signedp
                           <type1>-from-integer
-                        <type1>-mod)
+                        <type1>-from-integer-mod)
                      (- (,integer-from-<type1> x)))
                  `(,minus-<type> (,<type>-from-<type1> x)))
         ,@(and
@@ -420,7 +426,7 @@
         :body ,(if samep
                    `(,(if signedp
                           <type1>-from-integer
-                        <type1>-mod)
+                        <type1>-from-integer-mod)
                      (lognot (,integer-from-<type1> x)))
                  `(,bitnot-<type> (,<type>-from-<type1> x)))
         ,@(and samep
@@ -430,7 +436,9 @@
                                              ,integer-from-<type1>
                                              ,<type1>p
                                              (:e ,<type>-min)
-                                             (:e ,<type>-max)))))))
+                                             (:e ,<type>-max)
+                                             lognot
+                                             ifix))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -476,11 +484,12 @@
         :body ,(if samep
                    `(,(if signedp
                           <type1>-from-integer
-                        <type1>-mod)
+                        <type1>-from-integer-mod)
                      (* (,integer-from-<type1> x)
                         (expt 2 (ifix y))))
                  `(,shl-<type> (,<type>-from-<type1> x) y))
-        :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-okp)))
+        :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-okp
+                                                 integer-range-p)))
         ,@(and (not signedp)
                '(:prepwork
                  ((local (include-book "arithmetic-3/top" :dir :system))))))
@@ -516,7 +525,7 @@
         :body ,(if samep
                    `(,(if signedp
                           <type1>-from-integer
-                        <type1>-mod)
+                        <type1>-from-integer-mod)
                      (truncate (,integer-from-<type1> x) (expt 2 (ifix y))))
                  `(,shr-<type> (,<type>-from-<type1> x) y))
         :guard-hints (("Goal"
@@ -525,7 +534,9 @@
                                                 (list shr-<type1>-okp
                                                       <type1>-integerp
                                                       integer-from-<type1>
-                                                      <type1>p)
+                                                      <type1>p
+                                                      'signed-byte-p
+                                                      'integer-range-p)
                                               (list shr-<type1>-okp)))))
         ,@(and
            signedp
@@ -619,7 +630,7 @@
        (integer-from-<type1> (pack 'integer-from- <type1>))
        (integer-from-<type2> (pack 'integer-from- <type2>))
        (<type>-from-integer (pack <type> '-from-integer))
-       (<type>-mod (pack <type> '-mod))
+       (<type>-from-integer-mod (pack <type>-from-integer '-mod))
        (<type>-integerp (pack <type> '-integerp))
        (<type>-from-<type1> (pack <type> '-from- <type1>))
        (<type>-from-<type2> (pack <type> '-from- <type2>))
@@ -716,7 +727,7 @@
         ,(if samep
              `(,(if signedp
                     <type>-from-integer
-                  <type>-mod)
+                  <type>-from-integer-mod)
                (+ (,integer-from-<type1> x)
                   (,integer-from-<type2> y)))
            `(,add-<type>-<type>
@@ -765,7 +776,7 @@
         ,(if samep
              `(,(if signedp
                     <type>-from-integer
-                  <type>-mod)
+                  <type>-from-integer-mod)
                (- (,integer-from-<type1> x)
                   (,integer-from-<type2> y)))
            `(,sub-<type>-<type>
@@ -814,7 +825,7 @@
         ,(if samep
              `(,(if signedp
                     <type>-from-integer
-                  <type>-mod)
+                  <type>-from-integer-mod)
                (* (,integer-from-<type1> x)
                   (,integer-from-<type2> y)))
            `(,mul-<type>-<type>
@@ -864,7 +875,7 @@
         ,(if samep
              `(,(if signedp
                     <type>-from-integer
-                  <type>-mod)
+                  <type>-from-integer-mod)
                (truncate (,integer-from-<type1> x)
                          (,integer-from-<type2> y)))
            `(,div-<type>-<type>
@@ -912,13 +923,15 @@
         ,(if samep
              `(,(if signedp
                     <type>-from-integer
-                  <type>-mod)
+                  <type>-from-integer-mod)
                (rem (,integer-from-<type1> x)
                     (,integer-from-<type2> y)))
            `(,rem-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-        :guard-hints (("Goal" :in-theory (enable ,rem-<type1>-<type2>-okp))))
+        :guard-hints (("Goal" :in-theory (enable ,rem-<type1>-<type2>-okp
+                                                 ,@(and (not signedp)
+                                                        (list 'rem))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
