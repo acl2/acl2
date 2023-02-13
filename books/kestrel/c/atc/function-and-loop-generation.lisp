@@ -75,6 +75,29 @@
               (doublet-listp b)))
   :enable (doublet-listp length))
 
+(defruledl true-listp-when-pseudo-term-listp-rewrite
+  (implies (pseudo-term-listp x)
+           (true-listp x)))
+
+(defruledl iff-consp-when-true-listp
+  (implies (true-listp x)
+           (iff (consp x)
+                x)))
+
+(defruledl symbolp-of-car-of-pseudo-termp
+  (implies (and (pseudo-termp term)
+                (consp term)
+                (not (consp (car term))))
+           (symbolp (car term)))
+  :enable pseudo-termp)
+
+(defruledl pseudo-term-listp-of-cdr-of-pseudo-termp
+  (implies (and (pseudo-termp term)
+                (consp term)
+                (not (equal (car term) 'quote)))
+           (pseudo-term-listp (cdr term)))
+  :enable pseudo-termp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-function-and-loop-generation
@@ -123,8 +146,15 @@
     "If the recognizer does not have any of the above forms,
      we return @('nil') as both results.
      If the argument is not a variable,
-     we also return @('nil') as both results."))
-  (b* (((when (or (variablep conjunct)
+     we also return @('nil') as both results.")
+   (xdoc::p
+    "As explained in the user documentation,
+     we also allow the conjuncts to be wrapped with @(tsee mbt).
+     To handle these, we preliminarily conditionally unwrap the conjuncts."))
+  (b* ((conjunct (b* (((mv mbtp arg) (check-mbt-call conjunct))
+                      ((when mbtp) arg))
+                   conjunct))
+       ((when (or (variablep conjunct)
                   (fquotep conjunct)
                   (flambda-applicationp conjunct)))
         (mv nil nil))
@@ -199,7 +229,11 @@
                  (type-pointer type)
                type)))
     (mv type arg))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+  :guard-hints
+  (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-rewrite
+                              iff-consp-when-true-listp
+                              symbolp-of-car-of-pseudo-termp
+                              pseudo-term-listp-of-cdr-of-pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
