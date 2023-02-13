@@ -2590,6 +2590,22 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code char} ACL2 built-in function,
+     * on a Java string and an ACL2 integer,
+     * returning a Java character instead of an ACL2 character.
+     *
+     * @param s The first actual argument to pass to the function.
+     *          Precondition: not null, no elements above 255.
+     * @param n The second actual argument to pass to the function.
+     *          Precondition: not null, non-negative, below the string length.
+     * @return The result of the function on the given arguments.
+     */
+    public static char execCharChar(String s, Acl2Integer n) {
+        return s.charAt(n.getJavaBigInteger().intValue());
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code hard-error} ACL2 built-in function,
      * on three Java values.
      * Note that this ACL2 function has guard {@code t},
