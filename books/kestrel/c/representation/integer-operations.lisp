@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "../representation/integer-conversions")
+(include-book "integer-conversions")
 
 (include-book "../language/static-semantics")
 
@@ -23,8 +23,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-integer-operations
-  :parents (atc-shallow-embedding)
+(defxdoc+ representation-of-integer-operations
+  :parents (representation)
   :short "A representation of C integer operations in ACL2."
   :long
   (xdoc::topstring

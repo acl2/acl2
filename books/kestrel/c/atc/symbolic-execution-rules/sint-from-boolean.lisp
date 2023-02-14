@@ -11,7 +11,8 @@
 
 (in-package "C")
 
-(include-book "../integer-operations")
+(include-book "../../representation/integer-operations")
+
 (include-book "../test-star")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))

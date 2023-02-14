@@ -13,8 +13,9 @@
 
 (include-book "../../language/dynamic-semantics")
 
+(include-book "../../representation/integer-operations")
+
 (include-book "../types")
-(include-book "../integer-operations")
 
 (include-book "syntaxp")
 (include-book "integers")
