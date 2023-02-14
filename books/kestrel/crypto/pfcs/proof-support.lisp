@@ -12,8 +12,6 @@
 
 (include-book "semantics-deep")
 
-(local (in-theory (disable primep)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ proof-support
