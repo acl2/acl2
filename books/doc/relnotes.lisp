@@ -261,6 +261,34 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+                             "PFCS (Prime Field Constraint System) Library"))
+
+   (xdoc::p
+    "A concrete syntax for PFCS, in the form of an ABNF grammar,
+     has been defined.")
+
+   (xdoc::p
+    "The formal notion of system (in the PFCS sense) has been improved,
+     to be more in line with the general notion of constraint system.")
+
+   (xdoc::p
+    "Some arguments of semantic functions have been reordered,
+     for a more natural order.")
+
+   (xdoc::p
+    "Some theorems have been added and other theorems have been improved.")
+
+   (xdoc::p
+    "The documentation has been extended and improved.")
+
+   (xdoc::p
+    "A translator from R1CSes to PFCSes has been added,
+     along with a checker for PFCSes that are in the R1CS subset,
+     and along with a notion of structured R1CSes.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
 
    (xdoc::p
