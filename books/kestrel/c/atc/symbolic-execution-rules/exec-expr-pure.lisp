@@ -14,6 +14,7 @@
 (include-book "../../language/dynamic-semantics")
 
 (include-book "../integer-operations")
+(include-book "../test-star")
 
 (include-book "syntaxp")
 

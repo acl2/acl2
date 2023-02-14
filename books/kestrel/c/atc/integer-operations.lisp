@@ -11,8 +11,6 @@
 
 (in-package "C")
 
-(include-book "test-star")
-
 (include-book "../representation/integer-conversions")
 
 (include-book "../language/static-semantics")
