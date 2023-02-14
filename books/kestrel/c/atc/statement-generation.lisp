@@ -212,8 +212,7 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred stmt-ginp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred stmt-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -242,8 +241,7 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred stmt-goutp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred stmt-goutp)
 
 ;;;;;;;;;;
 
@@ -2817,8 +2815,7 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred lstmt-ginp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred lstmt-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2846,8 +2843,7 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred lstmt-goutp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred lstmt-goutp)
 
 ;;;;;;;;;;
 
