@@ -76,21 +76,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum signed-format
+  :short "Fixtype of signed formats."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "[C:6.2.6.2/2] lists three possible ways in which a sign bit equal to 1
+     modifies the value of the integer value whose sign bit is 0.
+     We call these `signed formats', even though [C] does not use this term."))
+  (:sign-magnitude ())
+  (:ones-complement ())
+  (:twos-complement ())
+  :pred signed-formatp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod ienv
   :short "Fixtype of implementation environments."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now this only contains one component
-     for the format of @('unsigned char').
-     We plan to add more components."))
-  ((uchar-format uchar-format))
+    "For now this only contains a few components,
+     but we plan to add more components."))
+  ((uchar-format uchar-format)
+   (signed-format signed-format))
   :tag :ienv
   :pred ienvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ienv-char-bits ((ienv ienvp))
+(define ienv->char-bits ((ienv ienvp))
   :returns (bits posp)
   :short "The ACL2 integer value of @('CHAR_BIT') [C:5.2.4.2.1/1]."
   :long
@@ -103,18 +118,18 @@
   :hooks (:fix)
   ///
 
-  (defret ienv-char-bits-type-prescription
+  (defret ienv->char-bits-type-prescription
     (and (posp bits)
          (> bits 1))
     :rule-classes :type-prescription)
 
-  (defret ienv-char-bits-lower-bound
+  (defret ienv->char-bits-lower-bound
     (>= bits 8)
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ienv-uchar-max ((ienv ienvp))
+(define ienv->uchar-max ((ienv ienvp))
   :returns (max posp :hints (("Goal" :in-theory (enable posp))))
   :short "The ACL2 integer value of @('UCHAR_MAX') [C:5.2.4.2.1/1]."
   :long
@@ -127,25 +142,25 @@
      range from 0 to @($2^{\\mathtt{CHAR\\_BIT}}-1$).")
    (xdoc::p
     "This is at least 255, as required by [C:5.2.4.2.1/1]."))
-  (1- (expt 2 (ienv-char-bits ienv)))
+  (1- (expt 2 (ienv->char-bits ienv)))
   :hooks (:fix)
 
   :prepwork
   ((defrulel lemma
-     (>= (expt 2 (ienv-char-bits ienv)) 256)
+     (>= (expt 2 (ienv->char-bits ienv)) 256)
      :rule-classes :linear
      :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                     (x 2) (m 8) (n (ienv-char-bits ienv)))
+                     (x 2) (m 8) (n (ienv->char-bits ienv)))
      :disable acl2::expt-is-weakly-increasing-for-base->-1))
 
   ///
 
-  (defret ienv-uchar-max-type-prescription
+  (defret ienv->uchar-max-type-prescription
     (and (posp max)
          (> max 1))
     :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable posp))))
 
-  (defret ienv-uchar-max-lower-bound
+  (defret ienv->uchar-max-lower-bound
     (>= max 255)
     :rule-classes :linear))

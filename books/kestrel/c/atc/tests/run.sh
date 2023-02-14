@@ -28,6 +28,7 @@ set -e
 ./conditionals
 ./constants
 ./conversions
+./guard-mbt
 ./int
 ./locvars
 ./loops

@@ -52,6 +52,7 @@
 (include-book "boolean-equality")
 (include-book "hide")
 (include-book "pointed-integers")
+(include-book "sint-from-boolean")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

@@ -11,9 +11,7 @@
 
 (in-package "C")
 
-(include-book "test-star")
-
-(include-book "../representation/integer-conversions")
+(include-book "integer-conversions")
 
 (include-book "../language/static-semantics")
 
@@ -25,16 +23,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-integer-operations
-  :parents (atc-shallow-embedding)
-  :short "A model of C integer operations for ATC."
+(defxdoc+ representation-of-integer-operations
+  :parents (representation)
+  :short "A representation of C integer operations in ACL2."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are currently used for both and shallow embedding,
-     but the plan is to keep these just for the shallow embedding,
-     while @(see integer-operations) is meant to contain
-     versions of the integer operations for the deep embedding.")
+    "This is part of the "
+    (xdoc::seetopic "representation" "shallow embedding")
+    ".")
    (xdoc::p
     "We define ACL2 functions that model C operations on
      the integer types supported in our model,
@@ -142,45 +139,22 @@
      but must be booleans in ACL2 to represent their non-strictness."))
   (if b (sint-from-integer 1) (sint-from-integer 0))
   :hooks (:fix)
-  :no-function t
-  ///
-
-  (defruled sint-from-boolean-when-true
-    (implies x
-             (equal (sint-from-boolean x)
-                    (sint-from-integer 1))))
-
-  (defruled sint-from-boolean-when-true-test*
-    (implies (test* x)
-             (equal (sint-from-boolean x)
-                    (sint-from-integer 1)))
-    :enable test*)
-
-  (defruled sint-from-boolean-when-false
-    (implies (not x)
-             (equal (sint-from-boolean x)
-                    (sint-from-integer 0))))
-
-  (defruled sint-from-boolean-when-false-test*
-    (implies (test* (not x))
-             (equal (sint-from-boolean x)
-                    (sint-from-integer 0)))
-    :enable test*))
+  :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ atc-defun-integer (name
-                              &key
-                              arg-type
-                              arg1-type
-                              arg2-type
-                              guard
-                              res-type
-                              short
-                              body
-                              guard-hints
-                              no-fix
-                              prepwork)
+(defmacro+ defun-integer (name
+                          &key
+                          arg-type
+                          arg1-type
+                          arg2-type
+                          guard
+                          res-type
+                          short
+                          body
+                          guard-hints
+                          no-fix
+                          prepwork)
   :short "Function definition macro specialized for C integer operations."
   :long
   (xdoc::topstring
@@ -215,7 +189,7 @@
     (xdoc::li
      "@('no-fix') &mdash; Do not generate fixing theorem when non-@('nil')."))
    (xdoc::p
-    "The presence (i.e. being non-@('nil') of @('arg-type')
+    "The presence (i.e. being non-@('nil')) of @('arg-type')
      determines whether the function is unary or binary.")
    (xdoc::p
     "Besides shortening the formulation of the function definitions,
@@ -246,7 +220,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-operations-1 ((type1 typep))
+(define def-integer-operations-1 ((type1 typep))
   :guard (type-nonchar-integerp type1)
   :returns (event pseudo-event-formp)
   :short "Event to generate the ACL2 models of
@@ -259,7 +233,7 @@
      that take ACL2 integers as second operands.
      The latter are used in the definition of the shift operators
      whose second operands are C integers;
-     see @(tsee atc-def-integer-operations-2).")
+     see @(tsee def-integer-operations-2).")
    (xdoc::p
     "For unary plus, unary minus, and bitwise complement,
      we generate different definitions based on whether
@@ -319,7 +293,7 @@
 
        ,@(and
           samep
-          `((atc-defun-integer
+          `((defun-integer
              ,<type1>-dec-const
              :arg-type natp
              :guard (,<type1>-integerp x)
@@ -333,7 +307,7 @@
 
        ,@(and
           samep
-          `((atc-defun-integer
+          `((defun-integer
              ,<type1>-oct-const
              :arg-type natp
              :guard (,<type1>-integerp x)
@@ -347,7 +321,7 @@
 
        ,@(and
           samep
-          `((atc-defun-integer
+          `((defun-integer
              ,<type1>-hex-const
              :arg-type natp
              :guard (,<type1>-integerp x)
@@ -359,7 +333,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,boolean-from-<type1>
         :arg-type ,<type1>p
         :res-type booleanp
@@ -368,7 +342,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,plus-<type1>
         :arg-type ,<type1>p
         :res-type ,<type>p
@@ -383,7 +357,7 @@
 
        ,@(and
           signedp
-          `((atc-defun-integer
+          `((defun-integer
              ,minus-<type1>-okp
              :arg-type ,<type1>p
              :res-type booleanp
@@ -396,7 +370,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,minus-<type1>
         :arg-type ,<type1>p
         ,@(and signedp `(:guard (,minus-<type1>-okp x)))
@@ -416,7 +390,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,bitnot-<type1>
         :arg-type ,<type1>p
         :res-type ,<type>p
@@ -442,7 +416,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,lognot-<type1>
         :arg-type ,<type1>p
         :res-type sintp
@@ -453,7 +427,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,shl-<type1>-okp
         :arg1-type ,<type1>p
         :arg2-type integerp
@@ -472,7 +446,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,shl-<type1>
         :arg1-type ,<type1>p
         :arg2-type integerp
@@ -496,7 +470,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,shr-<type1>-okp
         :arg1-type ,<type1>p
         :arg2-type integerp
@@ -513,7 +487,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,shr-<type1>
         :arg1-type ,<type1>p
         :arg2-type integerp
@@ -555,14 +529,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-operations-1-loop ((types type-listp))
+(define def-integer-operations-1-loop ((types type-listp))
   :guard (type-nonchar-integer-listp types)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the ACL2 models of the C integer operations
           that involve each one integer type from a list."
   (cond ((endp types) nil)
-        (t (cons (atc-def-integer-operations-1 (car types))
-                 (atc-def-integer-operations-1-loop (cdr types))))))
+        (t (cons (def-integer-operations-1 (car types))
+                 (def-integer-operations-1-loop (cdr types))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -572,7 +546,7 @@
    ;; It is critical to generate the operations for SINT and UINT
    ;; before the ones for SCHAR and UCHAR and SSHORT and USHORT,
    ;; because the latter are defined in terms of the former.
-   ;; See :DOC ATC-DEF-INTEGER-OPERATIONS-1.
+   ;; See :DOC DEF-INTEGER-OPERATIONS-1.
    (b* ((types (list (type-sint)
                      (type-uint)
                      (type-slong)
@@ -583,11 +557,11 @@
                      (type-uchar)
                      (type-sshort)
                      (type-ushort))))
-     `(progn ,@(atc-def-integer-operations-1-loop types)))))
+     `(progn ,@(def-integer-operations-1-loop types)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-operations-2 ((type1 typep) (type2 typep))
+(define def-integer-operations-2 ((type1 typep) (type2 typep))
   :guard (and (type-nonchar-integerp type1)
               (type-nonchar-integerp type2))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp type-realp)))
@@ -610,7 +584,7 @@
      For shift operations,
      we turn the second operand into an ACL2 integer
      and then we call the shift function
-     generated by @(tsee atc-def-integer-operations-1);
+     generated by @(tsee def-integer-operations-1);
      the result has the promoted type of the first operand."))
 
   (b* ((type1-string (integer-type-xdoc-string type1))
@@ -692,7 +666,7 @@
 
        ,@(and
           signedp
-          `((atc-defun-integer
+          `((defun-integer
              ,add-<type1>-<type2>-okp
              :arg1-type ,<type1>p
              :arg2-type ,<type2>p
@@ -712,7 +686,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,add-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -741,7 +715,7 @@
 
        ,@(and
           signedp
-          `((atc-defun-integer
+          `((defun-integer
              ,sub-<type1>-<type2>-okp
              :arg1-type ,<type1>p
              :arg2-type ,<type2>p
@@ -761,7 +735,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,sub-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -790,7 +764,7 @@
 
        ,@(and
           signedp
-          `((atc-defun-integer
+          `((defun-integer
              ,mul-<type1>-<type2>-okp
              :arg1-type ,<type1>p
              :arg2-type ,<type2>p
@@ -810,7 +784,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,mul-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -837,7 +811,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,div-<type1>-<type2>-okp
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -860,7 +834,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,div-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -885,7 +859,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,rem-<type1>-<type2>-okp
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -908,7 +882,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,rem-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -935,7 +909,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,shl-<type1>-<type2>-okp
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -949,7 +923,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,shl-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -965,7 +939,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,shr-<type1>-<type2>-okp
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -979,7 +953,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,shr-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -995,7 +969,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,lt-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -1017,7 +991,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,gt-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -1039,7 +1013,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,le-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -1061,7 +1035,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,ge-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -1083,7 +1057,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,eq-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -1105,7 +1079,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,ne-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -1127,7 +1101,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,bitand-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -1157,7 +1131,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,bitxor-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -1187,7 +1161,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (atc-defun-integer
+       (defun-integer
         ,bitior-<type1>-<type2>
         :arg1-type ,<type1>p
         :arg2-type ,<type2>p
@@ -1221,19 +1195,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-operations-2-loop-same ((types type-listp))
+(define def-integer-operations-2-loop-same ((types type-listp))
   :guard (type-nonchar-integer-listp types)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the ACL2 models of
           the C integer operations that involve
           two identical integer types from a list."
   (cond ((endp types) nil)
-        (t (cons (atc-def-integer-operations-2 (car types) (car types))
-                 (atc-def-integer-operations-2-loop-same (cdr types))))))
+        (t (cons (def-integer-operations-2 (car types) (car types))
+                 (def-integer-operations-2-loop-same (cdr types))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-operations-2-loop-inner ((type typep)
+(define def-integer-operations-2-loop-inner ((type typep)
                                                  (types type-listp))
   :guard (and (type-nonchar-integerp type)
               (type-nonchar-integer-listp types))
@@ -1247,19 +1221,19 @@
    (xdoc::p
     "We skip the event if the two types are equal,
      because that case is already covered by
-     @(tsee atc-def-integer-operations-2-loop-same).")
+     @(tsee def-integer-operations-2-loop-same).")
    (xdoc::p
     "This is the inner loop for generating operations
      for all combinations of different operand types."))
   (cond ((endp types) nil)
-        ((equal type (car types)) (atc-def-integer-operations-2-loop-inner
+        ((equal type (car types)) (def-integer-operations-2-loop-inner
                                    type (cdr types)))
-        (t (cons (atc-def-integer-operations-2 type (car types))
-                 (atc-def-integer-operations-2-loop-inner type (cdr types))))))
+        (t (cons (def-integer-operations-2 type (car types))
+                 (def-integer-operations-2-loop-inner type (cdr types))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-operations-2-loop-outer ((types type-listp)
+(define def-integer-operations-2-loop-outer ((types type-listp)
                                                  (types1 type-listp))
   :guard (and (type-nonchar-integer-listp types)
               (type-nonchar-integer-listp types1))
@@ -1275,8 +1249,8 @@
      for all combinations of different operand types."))
   (cond ((endp types) nil)
         (t (append
-            (atc-def-integer-operations-2-loop-inner (car types) types1)
-            (atc-def-integer-operations-2-loop-outer (cdr types) types1)))))
+            (def-integer-operations-2-loop-inner (car types) types1)
+            (def-integer-operations-2-loop-outer (cdr types) types1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1286,7 +1260,7 @@
    ;; It is critical to generate the operations for equal operand types
    ;; before the ones for different operand types,
    ;; because the latter are defined in terms of the former.
-   ;; See :DOC ATC-DEF-INTEGER-OPERATIONS-2.
+   ;; See :DOC DEF-INTEGER-OPERATIONS-2.
    (b* ((types (list (type-sint)
                      (type-uint)
                      (type-slong)
@@ -1297,5 +1271,5 @@
                      (type-uchar)
                      (type-sshort)
                      (type-ushort))))
-     `(progn ,@(atc-def-integer-operations-2-loop-same types)
-             ,@(atc-def-integer-operations-2-loop-outer types types)))))
+     `(progn ,@(def-integer-operations-2-loop-same types)
+             ,@(def-integer-operations-2-loop-outer types types)))))

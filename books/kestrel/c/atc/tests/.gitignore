@@ -26,6 +26,10 @@ conversions.h
 conversions.c
 conversions
 
+guard-mbt.h
+guard-mbt.c
+guard-mbt
+
 int.h
 int.c
 int

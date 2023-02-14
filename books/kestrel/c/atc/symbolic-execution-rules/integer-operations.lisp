@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "../integer-operations")
+(include-book "../../representation/integer-operations")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
