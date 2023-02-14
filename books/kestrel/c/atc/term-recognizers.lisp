@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "integer-operations")
+(include-book "../representation/integer-operations")
 
 (include-book "kestrel/std/system/check-and-call" :dir :system)
 (include-book "kestrel/std/system/check-or-call" :dir :system)

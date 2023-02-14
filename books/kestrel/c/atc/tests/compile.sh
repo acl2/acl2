@@ -32,6 +32,7 @@ gcc -o checksum checksum.c checksum-test.c
 gcc -o conditionals conditionals.c conditionals-test.c
 gcc -o constants constants.c constants-test.c
 gcc -o conversions conversions.c conversions-test.c
+gcc -o guard-mbt guard-mbt.c guard-mbt-test.c
 gcc -o int int.c int-test.c
 gcc -o locvars locvars.c locvars-test.c
 gcc -o loops loops.c loops-test.c

@@ -3133,6 +3133,7 @@
     (string-append "execStringAppend")
     (len "execLen")
     (char (if guards$ "execCharChar" "execChar"))
+    (hard-error "execHardError")
     (t (prog2$ (impossible) "irrelevant-method-name")))
   :guard-hints (("Goal" :in-theory (enable aij-nativep))))
 
@@ -3290,6 +3291,7 @@
         (cw "  ~s0 for ~x1~%" method-name fn))
        (method-param-names
         (case fn
+          (hard-error (list "ctx" "str" "alist"))
           (intern-in-package-of-symbol (list "str" "sym"))
           (char (list "s" "n"))
           (if (list "x" "y" "z"))
