@@ -164,7 +164,7 @@
     (and (rp::is-rp-loose term)
          (or (equal (cadr term) ''integerp)
              (has-rp-integerp (caddr term)))))
-  
+
   (rp::def-rp-rule :disabled-for-acl2 t
     ifix-opener-with-sc
     (implies (and (syntaxp (has-rp-integerp x))
@@ -8499,274 +8499,279 @@ lognot)
           ;;      '(:in-theory (enable acl2::b-and)))
           ))
 
-
-
-
-
-
-
-
 (defsection proofs-with-logbitp
 
-   (local
-    (in-theory '(bitp
-                 SV::3VEC-P
+  (local
+   (in-theory '(bitp
+                SV::3VEC-P
 
-                 sv::4vec-bitnot
-                 sv::3vec-bitnot
-                 (:type-prescription lognot)
-                 sv::4vec-bitxor
-                 sv::4vec-bitand
-                 sv::3vec-bitand
-                 sv::4vec-bitor
-                 sv::3vec-bitor
-                 sv::3vec-fix
-                 (:e sv::4vec->lower)
-                 (:e sv::4vec->upper)
-                 (:e logxor)
-                 acl2::simplify-logxor
-                 acl2::simplify-logior
-                 acl2::simplify-logand
-                 sv::4vec->lower-of-4vec-fix
-                 sv::4vec->upper-of-4vec-fix
-                 sv::4vec-p-of-4vec-fix
-                 (:type-prescription logbitp)
-                 sv::4vec->upper-of-4vec
-                 sv::4vec->lower-of-4vec
-                 sv::4vec-equal
-                 sv::4vec-p-of-4vec
-                 ifix
-                 (:e acl2::zbp)
-                 (:e acl2::BIT->BOOL)
-                 (:e acl2::bool->bit)
-                 acl2::b-xor
-                 acl2::b-ior
-                 acl2::b-not
-                 acl2::b-and
-                 acl2::bfix
-                 ;;b-xor-def
-                 ;;acl2::bfix-opener
-                 ;;(:type-prescription acl2::bitp-of-b-xor)
-                 ;;(:rewrite acl2::bfix-opener)
-                 (:compound-recognizer acl2::bitp-compound-recognizer)
-                 acl2::bitp-of-b-ior
-                 acl2::bitp-of-b-xor
-                 acl2::bitp-of-b-not
-                 acl2::bitp-of-b-and
-                 acl2::bool->bit-of-bit->bool
-                 bitops::logbit-to-logbitp
-                 bitops::logbitp-of-logior
-                 bitops::logbitp-of-logxor
-                 bitops::logbitp-of-logand
-                 bitops::logbitp-of-lognot
+                sv::4vec-bitnot
+                sv::3vec-bitnot
+                (:type-prescription lognot)
+                sv::4vec-bitxor
+                sv::4vec-bitand
+                sv::3vec-bitand
+                sv::4vec-bitor
+                sv::3vec-bitor
+                sv::3vec-fix
+                (:e sv::4vec->lower)
+                (:e sv::4vec->upper)
+                (:e logxor)
+                acl2::simplify-logxor
+                acl2::simplify-logior
+                acl2::simplify-logand
+                sv::4vec->lower-of-4vec-fix
+                sv::4vec->upper-of-4vec-fix
+                sv::4vec-p-of-4vec-fix
+                (:type-prescription logbitp)
+                sv::4vec->upper-of-4vec
+                sv::4vec->lower-of-4vec
+                sv::4vec-equal
+                sv::4vec-p-of-4vec
+                ifix
+                (:e acl2::zbp)
+                (:e acl2::BIT->BOOL)
+                (:e acl2::bool->bit)
+                acl2::b-xor
+                acl2::b-ior
+                acl2::b-not
+                acl2::b-and
+                acl2::bfix
+                ;;b-xor-def
+                ;;acl2::bfix-opener
+                ;;(:type-prescription acl2::bitp-of-b-xor)
+                ;;(:rewrite acl2::bfix-opener)
+                (:compound-recognizer acl2::bitp-compound-recognizer)
+                acl2::bitp-of-b-ior
+                acl2::bitp-of-b-xor
+                acl2::bitp-of-b-not
+                acl2::bitp-of-b-and
+                acl2::bool->bit-of-bit->bool
+                bitops::logbit-to-logbitp
+                bitops::logbitp-of-logior
+                bitops::logbitp-of-logxor
+                bitops::logbitp-of-logand
+                bitops::logbitp-of-lognot
 
-                 (:e INTEGER-LENGTH)
-                 (:e 4vec-p)
-                 
-                 
+                (:e INTEGER-LENGTH)
+                (:e 4vec-p)
 
-                 (:type-prescription acl2::binary-logior)
-                 (:type-prescription acl2::binary-logxor)
-                 (:type-prescription acl2::binary-logand)
-                 )))
+                (:type-prescription acl2::binary-logior)
+                (:type-prescription acl2::binary-logxor)
+                (:type-prescription acl2::binary-logand)
+                )))
 
-   (local
-    (defthm bool->bit-lemma
-      (equal (ACL2::ZBP (acl2::BOOL->BIT x))
-             (not x))
-      :hints (("Goal"
-               :in-theory (e/d (acl2::zbp acl2::bool->bit) ())))))
+  (local
+   (defthm bool->bit-lemma
+     (equal (ACL2::ZBP (acl2::BOOL->BIT x))
+            (not x))
+     :hints (("Goal"
+              :in-theory (e/d (acl2::zbp acl2::bool->bit) ())))))
 
-   
+  (defthm 4vec-bitxor-assoc-and-comm
+    (and (equal (sv::4vec-bitxor (sv::4vec-bitxor x y) z)
+                (sv::4vec-bitxor x (sv::4vec-bitxor y z)))
+         (equal (sv::4vec-bitxor y x)
+                (sv::4vec-bitxor x y))
+         (equal (sv::4vec-bitxor y (sv::4vec-bitxor x z))
+                (sv::4vec-bitxor x (sv::4vec-bitxor y z))))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthm 4vec-bitxor-assoc-and-comm
-     (and (equal (sv::4vec-bitxor (sv::4vec-bitxor x y) z)
-                 (sv::4vec-bitxor x (sv::4vec-bitxor y z)))
-          (equal (sv::4vec-bitxor y x)
-                 (sv::4vec-bitxor x y))
-          (equal (sv::4vec-bitxor y (sv::4vec-bitxor x z))
-                 (sv::4vec-bitxor x (sv::4vec-bitxor y z))))
-     :hints ((bitops::logbitp-reasoning)))
+  (defthm 4vec-bitor-assoc-and-comm
+    (and (equal (sv::4vec-bitor (sv::4vec-bitor x y) z)
+                (sv::4vec-bitor x (sv::4vec-bitor y z)))
+         (equal (sv::4vec-bitor y x)
+                (sv::4vec-bitor x y))
+         (equal (sv::4vec-bitor y (sv::4vec-bitor x z))
+                (sv::4vec-bitor x (sv::4vec-bitor y z))))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthm 4vec-bitor-assoc-and-comm
-     (and (equal (sv::4vec-bitor (sv::4vec-bitor x y) z)
-                 (sv::4vec-bitor x (sv::4vec-bitor y z)))
-          (equal (sv::4vec-bitor y x)
-                 (sv::4vec-bitor x y))
-          (equal (sv::4vec-bitor y (sv::4vec-bitor x z))
-                 (sv::4vec-bitor x (sv::4vec-bitor y z))))
-     :hints ((bitops::logbitp-reasoning)))
+  (defthm 4vec-bitand-assoc-and-comm
+    (and (equal (sv::4vec-bitand (sv::4vec-bitand x y) z)
+                (sv::4vec-bitand x (sv::4vec-bitand y z)))
+         (equal (sv::4vec-bitand y x)
+                (sv::4vec-bitand x y))
+         (equal (sv::4vec-bitand y (sv::4vec-bitand x z))
+                (sv::4vec-bitand x (sv::4vec-bitand y z))))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthm 4vec-bitand-assoc-and-comm
-     (and (equal (sv::4vec-bitand (sv::4vec-bitand x y) z)
-                 (sv::4vec-bitand x (sv::4vec-bitand y z)))
-          (equal (sv::4vec-bitand y x)
-                 (sv::4vec-bitand x y))
-          (equal (sv::4vec-bitand y (sv::4vec-bitand x z))
-                 (sv::4vec-bitand x (sv::4vec-bitand y z))))
-     :hints ((bitops::logbitp-reasoning)))
+  (defthm 4vec-ab+a+b-pattern-lemma
+    (equal (sv::4vec-bitor x (sv::4vec-bitor y (sv::4vec-bitand x y)))
+           (sv::4vec-bitor x y))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthm 4vec-ab+a+b-pattern-lemma
-     (equal (sv::4vec-bitor x (sv::4vec-bitor y (sv::4vec-bitand x y)))
-            (sv::4vec-bitor x y))
-     :hints ((bitops::logbitp-reasoning)))
+  (defthmd insert-4vec-bitand-into-4vec-bitor
+    (and (equal (sv::4vec-bitand x (sv::4vec-bitor y z))
+                (sv::4vec-bitor (sv::4vec-bitand x y)
+                                (sv::4vec-bitand x z)))
+         (equal (sv::4vec-bitand (sv::4vec-bitor y z) x)
+                (sv::4vec-bitor (sv::4vec-bitand x y)
+                                (sv::4vec-bitand x z))))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthmd insert-4vec-bitand-into-4vec-bitor
-     (and (equal (sv::4vec-bitand x (sv::4vec-bitor y z))
-                 (sv::4vec-bitor (sv::4vec-bitand x y)
-                                 (sv::4vec-bitand x z)))
-          (equal (sv::4vec-bitand (sv::4vec-bitor y z) x)
-                 (sv::4vec-bitor (sv::4vec-bitand x y)
-                                 (sv::4vec-bitand x z))))
-     :hints ((bitops::logbitp-reasoning)))
+  (defthm 4vec->upper-and-lower-when-integerp
+    (implies (integerp x)
+             (and (equal (sv::4vec->upper x) x)
+                  (equal (sv::4vec->lower x) x)))
+    :hints (("goal"
+             :in-theory (e/d (sv::4vec->lower
+                              sv::4vec->upper)
+                             ()))))
 
+  (defthmd insert-4vec-bitand-into-4vec-bitxor
+    (implies (and (integerp x))
+             (and (equal (sv::4vec-bitand x (sv::4vec-bitxor y z))
+                         (sv::4vec-bitxor (sv::4vec-bitand x y)
+                                          (sv::4vec-bitand x z)))
+                  (equal (sv::4vec-bitand (sv::4vec-bitxor y z) x)
+                         (sv::4vec-bitxor (sv::4vec-bitand x y)
+                                          (sv::4vec-bitand x z)))))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthm 4vec->upper-and-lower-when-integerp
-     (implies (integerp x)
-              (and (equal (sv::4vec->upper x) x)
-                   (equal (sv::4vec->lower x) x)))
-     :hints (("goal"
-              :in-theory (e/d (sv::4vec->lower
-                               sv::4vec->upper)
-                              ()))))
+  #|(defthmd 4vec-bitand-of-4vec-bitxor-with-same-var
+  (implies (and (sv::3vec-p x)
+  (sv::3vec-p z))
+  (and (equal (sv::4vec-bitand x (sv::4vec-bitxor x z))
+  (sv::4vec-bitand x (sv::4vec-bitxor -1 z)))
+  (equal (sv::4vec-bitand x (sv::4vec-bitxor x z))
+  (sv::4vec-bitand (sv::4vec-bitxor -1 z) x))
+  ))
+  :hints ((bitops::logbitp-reasoning)))|#
 
-   (defthmd insert-4vec-bitand-into-4vec-bitxor
-     (implies (and (integerp x))
-              (and (equal (sv::4vec-bitand x (sv::4vec-bitxor y z))
-                          (sv::4vec-bitxor (sv::4vec-bitand x y)
-                                           (sv::4vec-bitand x z)))
-                   (equal (sv::4vec-bitand (sv::4vec-bitxor y z) x)
-                          (sv::4vec-bitxor (sv::4vec-bitand x y)
-                                           (sv::4vec-bitand x z)))))
-     :hints ((bitops::logbitp-reasoning)))
+  (defthmd 4vec-bitxor-to-ors-and-ands
+    (equal (sv::4vec-bitxor x y)
+           (sv::4vec-bitor (sv::4vec-bitand x
+                                            (sv::4vec-bitnot y))
+                           (sv::4vec-bitand y
+                                            (sv::4vec-bitnot x))))
+    :hints ((bitops::logbitp-reasoning)))
 
-   #|(defthmd 4vec-bitand-of-4vec-bitxor-with-same-var
-     (implies (and (sv::3vec-p x)
-                   (sv::3vec-p z))
-              (and (equal (sv::4vec-bitand x (sv::4vec-bitxor x z))
-                          (sv::4vec-bitand x (sv::4vec-bitxor -1 z)))
-                   (equal (sv::4vec-bitand x (sv::4vec-bitxor x z))
-                          (sv::4vec-bitand (sv::4vec-bitxor -1 z) x))
-                   ))
-     :hints ((bitops::logbitp-reasoning)))|#
+  (defthmd 4vec-bitnot-to-4vec-bitxor
+    (implies t
+             (equal (sv::4vec-bitnot x)
+                    (sv::4vec-bitxor -1 x)))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthmd 4vec-bitxor-to-ors-and-ands
-     (equal (sv::4vec-bitxor x y)
-            (sv::4vec-bitor (sv::4vec-bitand x
-                                             (sv::4vec-bitnot y))
-                            (sv::4vec-bitand y
-                                             (sv::4vec-bitnot x))))
-     :hints ((bitops::logbitp-reasoning)))
-
-   
-
-   (defthmd 4vec-bitnot-to-4vec-bitxor
-     (implies t
-              (equal (sv::4vec-bitnot x)
-                     (sv::4vec-bitxor -1 x)))
-     :hints ((bitops::logbitp-reasoning)))
-
-   (defthm 4vec-and-de-morgans
-     (and (equal (sv::4vec-bitnot (sv::4vec-bitor (sv::4vec-bitnot x)
+  (defthm 4vec-and-de-morgans
+    (and (equal (sv::4vec-bitnot (sv::4vec-bitor (sv::4vec-bitnot x)
+                                                 (sv::4vec-bitnot y)))
+                (sv::4vec-bitand x y))
+         (equal (sv::4vec-bitnot (sv::4vec-bitand (sv::4vec-bitnot x)
                                                   (sv::4vec-bitnot y)))
-                 (sv::4vec-bitand x y))
-          (equal (sv::4vec-bitnot (sv::4vec-bitand (sv::4vec-bitnot x)
-                                                   (sv::4vec-bitnot y)))
-                 (sv::4vec-bitor x y)))
-     ;;:otf-flg t
-     :hints ((bitops::logbitp-reasoning)))
-   
-   (defthmd 4vec-bitor-of-4vec-bitand
-     (and (equal (4vec-bitor x (4vec-bitand a b))
-                 (4vec-bitand (4vec-bitor x a)
-                              (4vec-bitor x b)))
-          (equal (4vec-bitor (4vec-bitand a b) x)
-                 (4vec-bitand (4vec-bitor x a)
-                              (4vec-bitor x b))))
-     :hints ((bitops::logbitp-reasoning)))
+                (sv::4vec-bitor x y)))
+    ;;:otf-flg t
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthmd 4vec-bitand-of-4vec-bitor
-     (and (equal (4vec-bitand x (4vec-bitor a b))
-                 (4vec-bitor (4vec-bitand x a)
-                             (4vec-bitand x b)))
-          (equal (4vec-bitand (4vec-bitor a b) x)
-                 (4vec-bitor (4vec-bitand x a)
-                             (4vec-bitand x b))))
-     :hints ((bitops::logbitp-reasoning)))
+  (defthmd 4vec-bitor-of-4vec-bitand
+    (and (equal (4vec-bitor x (4vec-bitand a b))
+                (4vec-bitand (4vec-bitor x a)
+                             (4vec-bitor x b)))
+         (equal (4vec-bitor (4vec-bitand a b) x)
+                (4vec-bitand (4vec-bitor x a)
+                             (4vec-bitor x b))))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthm 4vec-bitor-equiv-under-mask
-     (implies (and (equal (4vec-bitor mask x)
-                          (4vec-bitor mask y))
-                   (equal (4vec-bitor mask a)
-                          (4vec-bitor mask b)))
-              (equal (equal (4vec-bitor mask (4vec-bitor x a))
-                            (4vec-bitor mask (4vec-bitor y b)))
-                     t))
-     :hints ((bitops::logbitp-reasoning)))
+  (defthmd 4vec-bitand-of-4vec-bitor
+    (and (equal (4vec-bitand x (4vec-bitor a b))
+                (4vec-bitor (4vec-bitand x a)
+                            (4vec-bitand x b)))
+         (equal (4vec-bitand (4vec-bitor a b) x)
+                (4vec-bitor (4vec-bitand x a)
+                            (4vec-bitand x b))))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthm 4vec-bitand-equiv-under-mask
-     (implies (and (equal (4vec-bitand mask x)
-                          (4vec-bitand mask y))
-                   (equal (4vec-bitand mask a)
-                          (4vec-bitand mask b)))
-              (equal (equal (4vec-bitand mask (4vec-bitand x a))
-                            (4vec-bitand mask (4vec-bitand y b)))
-                     t))
-     :hints ((bitops::logbitp-reasoning)))
+  (defthm 4vec-bitor-equiv-under-mask
+    (implies (and (equal (4vec-bitor mask x)
+                         (4vec-bitor mask y))
+                  (equal (4vec-bitor mask a)
+                         (4vec-bitor mask b)))
+             (equal (equal (4vec-bitor mask (4vec-bitor x a))
+                           (4vec-bitor mask (4vec-bitor y b)))
+                    t))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthm 4vec-bitxor-of-3vec-fix
-     (and (equal (sv::4vec-bitxor (sv::3vec-fix x) y)
-                 (sv::4vec-bitxor x y))
-          (equal (sv::4vec-bitxor y (sv::3vec-fix x))
-                 (sv::4vec-bitxor y x))) 
-     :hints ((bitops::logbitp-reasoning)))
+  (defthm 4vec-bitand-equiv-under-mask
+    (implies (and (equal (4vec-bitand mask x)
+                         (4vec-bitand mask y))
+                  (equal (4vec-bitand mask a)
+                         (4vec-bitand mask b)))
+             (equal (equal (4vec-bitand mask (4vec-bitand x a))
+                           (4vec-bitand mask (4vec-bitand y b)))
+                    t))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (local
-    (defthm 4vec-upper-and-lower-when-integerp
-      (implies (integerp x)
-               (and (equal (sv::4vec->lower x) x)
-                    (equal (sv::4vec->upper x) x)))
-      :hints (("Goal"
-               :in-theory (e/d (sv::4vec->lower
-                                sv::4vec->upper) ())))))
+  (defthm 4vec-bitxor-of-3vec-fix
+    (and (equal (sv::4vec-bitxor (sv::3vec-fix x) y)
+                (sv::4vec-bitxor x y))
+         (equal (sv::4vec-bitxor y (sv::3vec-fix x))
+                (sv::4vec-bitxor y x)))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthm 4vec-bitor-equiv-under-mask-for-xor
-     (implies (and 
-                   (integerp mask)
-                   (equal (4vec-bitor mask x)
-                          (4vec-bitor mask y))
-                   (equal (4vec-bitor mask a)
-                          (4vec-bitor mask b)))
-              (equal (equal (4vec-bitor mask (sv::4vec-bitxor x a))
-                            (4vec-bitor mask (sv::4vec-bitxor y b)))
-                     t))
-     :hints ((bitops::logbitp-reasoning)))
+  (local
+   (defthm 4vec-upper-and-lower-when-integerp
+     (implies (integerp x)
+              (and (equal (sv::4vec->lower x) x)
+                   (equal (sv::4vec->upper x) x)))
+     :hints (("Goal"
+              :in-theory (e/d (sv::4vec->lower
+                               sv::4vec->upper) ())))))
 
-   (defthm 4vec-bitand-equiv-under-mask-for-xor
-     (implies (and 
-                   (integerp mask)
-                   (equal (4vec-bitand mask x)
-                          (4vec-bitand mask y))
-                   (equal (4vec-bitand mask a)
-                          (4vec-bitand mask b)))
-              (equal (equal (4vec-bitand mask (sv::4vec-bitxor x a))
-                            (4vec-bitand mask (sv::4vec-bitxor y b)))
-                     t))
-     :hints ((bitops::logbitp-reasoning)))
+  (defthm 4vec-bitor-equiv-under-mask-for-xor
+    (implies (and
+              (integerp mask)
+              (equal (4vec-bitor mask x)
+                     (4vec-bitor mask y))
+              (equal (4vec-bitor mask a)
+                     (4vec-bitor mask b)))
+             (equal (equal (4vec-bitor mask (sv::4vec-bitxor x a))
+                           (4vec-bitor mask (sv::4vec-bitxor y b)))
+                    t))
+    :hints ((bitops::logbitp-reasoning)))
 
-   (defthm 4vec-bitxor-of-the-same 
-     (and (implies (integerp x)
-                   (equal (sv::4vec-bitxor x (sv::4vec-bitxor x y))
-                          (sv::3vec-fix y)))
-          (implies (integerp x)
-                   (equal (sv::4vec-bitxor x x)
-                          0)))
-     :hints ((bitops::logbitp-reasoning)))
+  (defthm 4vec-bitand-equiv-under-mask-for-xor
+    (implies (and
+              (integerp mask)
+              (equal (4vec-bitand mask x)
+                     (4vec-bitand mask y))
+              (equal (4vec-bitand mask a)
+                     (4vec-bitand mask b)))
+             (equal (equal (4vec-bitand mask (sv::4vec-bitxor x a))
+                           (4vec-bitand mask (sv::4vec-bitxor y b)))
+                    t))
+    :hints ((bitops::logbitp-reasoning)))
 
-   
+  (defthm 4vec-bitxor-of-the-same
+    (and (implies (integerp x)
+                  (equal (sv::4vec-bitxor x (sv::4vec-bitxor x y))
+                         (sv::3vec-fix y)))
+         (implies (integerp x)
+                  (equal (sv::4vec-bitxor x x)
+                         0)))
+    :hints ((bitops::logbitp-reasoning)))
 
-   
-   
-   )
+  )
 
-
+(rp::def-rp-rule 4vec-minus-to-minus
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (sv::4vec-minus x y)
+                  (- x y)))
+  :hints (("Goal"
+           :in-theory (e/d (sv::4vec-p
+                            sv::4vec-minus)
+                           ()))))
+(rp::def-rp-rule 4vec-bitand-with-all-ones-constant
+  (implies (and (syntaxp (or (quotep num)
+                             (integerp num)))
+                (integerp num)
+                (equal (acl2::logmask (integer-length num))
+                       num))
+           (equal (sv::4vec-bitand num x)
+                  (sv::4vec-part-select 0 (integer-length num) (sv::3vec-fix x))))
+  :hints (("goal" 
+           :in-theory (e/d (logand
+                            sv::4vec-bitand
+                            sv::4vec-concat
+                            sv::3vec-bitand
+                            sv::4vec-part-select)
+                           ()))))

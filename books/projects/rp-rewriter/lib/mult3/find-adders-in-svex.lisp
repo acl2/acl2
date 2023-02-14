@@ -2901,19 +2901,34 @@ have missed any ~s0-s pattern that  has a found counterpart ~s0-c pattern...~%"
              :in-theory (e/d ()
                              (<fn>))))))
 
+(progn
+  (encapsulate
+    (((keep-missing-env-vars-in-svex) => *))
+    (local
+     (defun keep-missing-env-vars-in-svex ()
+       nil)))
+
+  (defmacro enable-keep-missing-env-vars-in-svex (enable)
+    (if enable
+        `(defattach keep-missing-env-vars-in-svex return-t)
+      `(defattach keep-missing-env-vars-in-svex return-nil)))
+
+  (enable-keep-missing-env-vars-in-svex nil))
+
 (make-event
  `(define svex-reduce-w/-env-config-1 ()
     :returns (config svl::svex-reduce-config-p)
     (svl::make-svex-reduce-config
      :width-extns ',(strip-cars (table-alist 'svl::width-of-svex-extns (w state)))
-     :integerp-extns ',(strip-cars (table-alist 'svl::integerp-of-svex-extns (w state))))
+     :integerp-extns ',(strip-cars (table-alist 'svl::integerp-of-svex-extns (w state)))
+     :keep-missing-env-vars (keep-missing-env-vars-in-svex))
     ///
     (defret <fn>-correct
-      (implies (warrants-for-adder-pattern-match)
-               (and (svl::width-of-svex-extn-correct$-lst
-                     (svl::svex-reduce-config->width-extns config))
-                    (svl::integerp-of-svex-extn-correct$-lst
-                     (svl::svex-reduce-config->integerp-extns config))))
+      (and (implies (warrants-for-adder-pattern-match)
+                    (and (svl::width-of-svex-extn-correct$-lst
+                          (svl::svex-reduce-config->width-extns config))
+                         (svl::integerp-of-svex-extn-correct$-lst
+                          (svl::svex-reduce-config->integerp-extns config)))))
       :hints (("Goal"
                :do-not-induct t
                :use (,@(loop$ for x in (strip-cdrs (table-alist 'svl::width-of-svex-extns (w state)))
@@ -3163,7 +3178,8 @@ was ~st seconds."))
                              (valid-sc (cons fn args) a))
                       (RP-TERM-LISTP (CDR TERM))
                       (RP-TERM-LISTP (CDDR TERM)))
-             :in-theory (e/d* (RP-TERM-LISTP
+             :in-theory (e/d* (or*
+                               RP-TERM-LISTP
                                rp-evlt-of-ex-from-rp-reverse
                                regular-eval-lemmas-with-ex-from-rp
                                regular-eval-lemmas
