@@ -142,30 +142,7 @@
      but must be booleans in ACL2 to represent their non-strictness."))
   (if b (sint-from-integer 1) (sint-from-integer 0))
   :hooks (:fix)
-  :no-function t
-  ///
-
-  (defruled sint-from-boolean-when-true
-    (implies x
-             (equal (sint-from-boolean x)
-                    (sint-from-integer 1))))
-
-  (defruled sint-from-boolean-when-true-test*
-    (implies (test* x)
-             (equal (sint-from-boolean x)
-                    (sint-from-integer 1)))
-    :enable test*)
-
-  (defruled sint-from-boolean-when-false
-    (implies (not x)
-             (equal (sint-from-boolean x)
-                    (sint-from-integer 0))))
-
-  (defruled sint-from-boolean-when-false-test*
-    (implies (test* (not x))
-             (equal (sint-from-boolean x)
-                    (sint-from-integer 0)))
-    :enable test*))
+  :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
