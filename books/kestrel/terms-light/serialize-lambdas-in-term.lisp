@@ -54,8 +54,7 @@
 ;; TODO: Can we work harder to minimize the number of temporaries?
 
 ;; Makes a nest of lambda applications, one for each of the BINDINGS, around BODY.
-;; TODO: Consider ignored vars
-;; Could optmize by having this also return the free vars.
+;; Could optimize by having this also return the free vars.
 (defun make-lambda-nest (bindings body)
   (declare (xargs :guard (and (symbol-alistp bindings)
                               (pseudo-term-listp (strip-cdrs bindings))
@@ -68,7 +67,7 @@
            (body (make-lambda-nest (rest bindings) body))
            (body-vars (free-vars-in-term body)))
       (if (not (member-eq var body-vars))
-          ;; This var is not used, so skip it:
+          ;; This var would be ignored, so just don't bind it:
           body
         (let ((other-body-vars (remove1-eq var body-vars)))
           `((lambda (,var ,@other-body-vars) ,body) ,val ,@other-body-vars))))))
