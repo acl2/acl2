@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,5 +26,5 @@
      specialized for the C package.
      This macro takes any number of arguments,
      which are evaluated and put into a list passed to @(tsee packn-pos);
-     thus, the arguments must be all atoms."))
+     thus, the arguments must all evaluate to atoms."))
   `(packn-pos (list ,@args) (pkg-witness "C")))

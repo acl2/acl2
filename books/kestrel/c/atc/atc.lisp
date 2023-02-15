@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,6 +14,11 @@
 (include-book "input-processing")
 (include-book "table")
 (include-book "generation")
+
+(local (include-book "kestrel/std/system/w" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,9 +233,4 @@
   :parents (atc-implementation)
   :short "Definition of the @(tsee atc) macro."
   (defmacro atc (&whole call &rest args)
-    (b* ((print-etc (member-eq :print args))
-         (print-nil-p (and (consp print-etc)
-                           (consp (cdr print-etc))
-                           (eq (cadr print-etc) nil))))
-      `(make-event-terse (atc-fn ',args ',call 'atc state)
-                         :suppress-errors ,print-nil-p))))
+    `(make-event-terse (atc-fn ',args ',call 'atc state))))

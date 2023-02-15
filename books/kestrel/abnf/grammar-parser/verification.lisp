@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -6831,7 +6831,32 @@
      @(tsee parse-ichar) with argument @('#\\.') fails
      into the fact that @(tsee parse-dot-1*bit) fails,
      needed to show that @(tsee parse-*-dot-1*bit) stops
-     before the remaining input."))
+     before the remaining input.")
+
+   (xdoc::h3 "Induction Schema Change")
+
+   (xdoc::p
+    "At some point, the mutually recursive functions
+     @(tsee parse-alternation) and companions
+     were slightly changed to use <i>@(see Seq)</i>'s @(':s=') operator
+     to insert an @(tsee mbt) check on the lengths:
+     see the `Termination' section in @(see grammar-parser-implementation)
+     for motivation.
+     Before the change, the code of those parsing functions
+     did not use any <i>Seq</i> macros,
+     and had explicit @(tsee mbt) tests.
+     After the change, the flag induction schema
+     generated from the mutually recursive functions changed slightly.
+     As a result, the lemmas for induction steps, described above,
+     no longer aligned exactly with the new induction schema.
+     However, the alignment could be easily restored
+     by combining some of the previous induction step lemmas into single ones:
+     these have names like @('...-induction-step-1+2'),
+     which combines @('...-induction-step-1') and @('...-induction-step-2').
+     It may be possible to streamline these lemmas and proofs in the future
+     (in particular, prove just one lemma for each induction step
+     in the new induction schema, instead of combining them),
+     but for now this approach works fine."))
 
   :order-subtopics t)
 
@@ -8633,6 +8658,17 @@
               fail-digit/star-when-match-element
               fail-digit/star-when-match-element))))
 
+(defruled parse-repetition-when-tree-match-induction-step-1+2
+  :parents (grammar-parser-completeness)
+  :short "Combination of
+          @(tsee parse-repetition-when-tree-match-induction-step-1) and
+          @(tsee parse-repetition-when-tree-match-induction-step-2)."
+  (implies (pred-element (mv-nth 2 (parse-?repeat input)))
+           (pred-repetition input))
+  :cases ((mv-nth 0 (parse-element (mv-nth 2 (parse-?repeat input)))))
+  :enable (parse-repetition-when-tree-match-induction-step-1
+           parse-repetition-when-tree-match-induction-step-2))
+
 (defruled parse-element-when-tree-match-induction-step-1
   :parents (grammar-parser-completeness)
   :short "First induction step of
@@ -8873,6 +8909,29 @@
      :enable (parse-element
               fail-group-when-match-option-/-char/num/prose-val))))
 
+(defruled parse-element-when-tree-match-induction-step-1+2+3+4+5
+  :parents (grammar-parser-completeness)
+  :short "Combination of
+          @(tsee parse-element-when-tree-match-induction-step-1),
+          @(tsee parse-element-when-tree-match-induction-step-2),
+          @(tsee parse-element-when-tree-match-induction-step-3),
+          @(tsee parse-element-when-tree-match-induction-step-4), and
+          @(tsee parse-element-when-tree-match-induction-step-5)."
+  (implies (and (mv-nth 0 (parse-rulename input))
+                (mv-nth 0 (parse-group input))
+                (pred-group input)
+                (pred-option input))
+           (pred-element input))
+  :cases ((mv-nth 0 (parse-option input))
+          (mv-nth 0 (parse-char-val input))
+          (mv-nth 0 (parse-num-val input))
+          (mv-nth 0 (parse-prose-val input)))
+  :use (parse-element-when-tree-match-induction-step-1
+        parse-element-when-tree-match-induction-step-2
+        parse-element-when-tree-match-induction-step-3
+        parse-element-when-tree-match-induction-step-4
+        parse-element-when-tree-match-induction-step-5))
+
 (defruled parse-element-when-tree-match-base-case
   :parents (grammar-parser-completeness)
   :short "Base case of
@@ -9087,6 +9146,34 @@
       fail-bit/digit/hexdig/dot/dash-when-match-*cwsp-close-round/square
       fail-cwsp-when-match-slash-/-close-round/square))))
 
+(defruled parse-group-when-tree-match-induction-step-1+2+3
+  :parents (grammar-parser-completeness)
+  :short "Combination of
+          @(tsee parse-group-when-tree-match-induction-step-1),
+          @(tsee parse-group-when-tree-match-induction-step-2), and
+          @(tsee parse-group-when-tree-match-induction-step-3)."
+  (implies
+   (and (not (mv-nth 0 (parse-ichar #\( input)))
+        (pred-alternation
+         (mv-nth 2 (parse-*cwsp (mv-nth 2 (parse-ichar #\( input))))))
+   (pred-group input))
+  :cases ((mv-nth 0 (parse-alternation
+                     (mv-nth 2 (parse-*cwsp
+                                (mv-nth 2 (parse-ichar #\( input))))))
+          (mv-nth 0 (parse-ichar
+                     #\)
+                     (mv-nth 2 (parse-*cwsp
+                                (mv-nth 2 (parse-alternation
+                                           (mv-nth 2 (parse-*cwsp
+                                                      (mv-nth
+                                                       2
+                                                       (parse-ichar
+                                                        #\(
+                                                        input)))))))))))
+  :use (parse-group-when-tree-match-induction-step-1
+        parse-group-when-tree-match-induction-step-2
+        parse-group-when-tree-match-induction-step-3))
+
 (defruled parse-option-when-tree-match-base-case
   :parents (grammar-parser-completeness)
   :short "Base case of
@@ -9265,6 +9352,32 @@
       fail-alpha/digit/dash-when-match-*cwsp-close-round/square
       fail-bit/digit/hexdig/dot/dash-when-match-*cwsp-close-round/square
       fail-cwsp-when-match-slash-/-close-round/square))))
+
+(defruled parse-option-when-tree-match-induction-step-1+2+3
+  :parents (grammar-parser-completeness)
+  :short "Combination of
+          @(tsee parse-option-when-tree-match-induction-step-1),
+          @(tsee parse-option-when-tree-match-induction-step-2), and
+          @(tsee parse-option-when-tree-match-induction-step-3)."
+  (implies
+   (and (not (mv-nth 0 (parse-ichar #\[ input)))
+        (pred-alternation
+         (mv-nth 2 (parse-*cwsp (mv-nth 2 (parse-ichar #\[ input))))))
+   (pred-option input))
+  :cases ((mv-nth 0 (parse-alternation
+                     (mv-nth 2 (parse-*cwsp
+                                (mv-nth 2 (parse-ichar #\[ input))))))
+          (mv-nth 0 (parse-ichar
+                     #\]
+                     (mv-nth 2 (parse-*cwsp
+                                (mv-nth 2 (parse-alternation
+                                           (mv-nth 2 (parse-*cwsp
+                                                      (mv-nth 2 (parse-ichar
+                                                                 #\[
+                                                                 input)))))))))))
+  :use (parse-option-when-tree-match-induction-step-1
+        parse-option-when-tree-match-induction-step-2
+        parse-option-when-tree-match-induction-step-3))
 
 (defruled parse-alt-rest-when-tree-list-match-induction-step-1
   :parents (grammar-parser-completeness)
@@ -9511,6 +9624,28 @@
               fail-cwsp-when-match-slash-/-close-round/square
               fail-cwsp-when-match-alt/conc/rep))))
 
+(defruled parse-alt-rest-comp-when-tree-match-induction-step-1+2
+  :parents (grammar-parser-completeness)
+  :short "Combination of
+          @(tsee parse-alt-rest-comp-when-tree-match-induction-step-1) and
+          @(tsee parse-alt-rest-comp-when-tree-match-induction-step-2)."
+  (implies
+   (and (not (mv-nth 0 (parse-ichar #\/ (mv-nth 2 (parse-*cwsp input)))))
+        (pred-concatenation
+         (mv-nth 2 (parse-*cwsp
+                    (mv-nth 2 (parse-ichar
+                               #\/
+                               (mv-nth 2 (parse-*cwsp input))))))))
+   (pred-alt-rest-comp input))
+  :cases ((not (mv-nth 0 (parse-concatenation
+                          (mv-nth 2 (parse-*cwsp
+                                     (mv-nth 2 (parse-ichar
+                                                #\/
+                                                (mv-nth 2 (parse-*cwsp
+                                                           input))))))))))
+  :enable (parse-alt-rest-comp-when-tree-match-induction-step-1
+           parse-alt-rest-comp-when-tree-match-induction-step-2))
+
 (defruled parse-conc-rest-when-tree-list-match-induction-step-1
   :parents (grammar-parser-completeness)
   :short "First induction step of
@@ -9706,6 +9841,19 @@
      :enable (parse-conc-rest-comp
               fail-cwsp-when-match-alt/conc/rep))))
 
+(defruled parse-conc-rest-comp-when-tree-match-induction-step-1+2
+  :parents (grammar-parser-completeness)
+  :short "Combination of
+          @(tsee parse-conc-rest-comp-when-tree-match-induction-step-1) and
+          @(tsee parse-conc-rest-comp-when-tree-match-induction-step-2)."
+  (implies
+   (and (not (mv-nth 0 (parse-1*cwsp input)))
+        (pred-repetition (mv-nth 2 (parse-1*cwsp input))))
+   (pred-conc-rest-comp input))
+  :cases ((mv-nth 0 (parse-repetition (mv-nth 2 (parse-1*cwsp input)))))
+  :enable (parse-conc-rest-comp-when-tree-match-induction-step-1
+           parse-conc-rest-comp-when-tree-match-induction-step-2))
+
 (defsection
   parse-alt/conc/rep/elem/group/option-when-tree-/-tree-list-match-lemmas
   :parents (grammar-parser-completeness)
@@ -9761,33 +9909,22 @@
        parse-alternation-when-tree-match-induction-step-2
        parse-concatenation-when-tree-match-induction-step-1
        parse-concatenation-when-tree-match-induction-step-2
-       parse-repetition-when-tree-match-induction-step-1
-       parse-repetition-when-tree-match-induction-step-2
-       parse-element-when-tree-match-induction-step-1
-       parse-element-when-tree-match-induction-step-2
-       parse-element-when-tree-match-induction-step-3
-       parse-element-when-tree-match-induction-step-4
-       parse-element-when-tree-match-induction-step-5
+       parse-repetition-when-tree-match-induction-step-1+2
+       parse-element-when-tree-match-induction-step-1+2+3+4+5
        parse-element-when-tree-match-induction-step-6
        parse-element-when-tree-match-base-case
        parse-group-when-tree-match-base-case
-       parse-group-when-tree-match-induction-step-1
-       parse-group-when-tree-match-induction-step-2
-       parse-group-when-tree-match-induction-step-3
+       parse-group-when-tree-match-induction-step-1+2+3
        parse-option-when-tree-match-base-case
-       parse-option-when-tree-match-induction-step-1
-       parse-option-when-tree-match-induction-step-2
-       parse-option-when-tree-match-induction-step-3
+       parse-option-when-tree-match-induction-step-1+2+3
        parse-alt-rest-when-tree-list-match-induction-step-1
        parse-alt-rest-when-tree-list-match-induction-step-2
        parse-alt-rest-comp-when-tree-match-base-case
-       parse-alt-rest-comp-when-tree-match-induction-step-1
-       parse-alt-rest-comp-when-tree-match-induction-step-2
+       parse-alt-rest-comp-when-tree-match-induction-step-1+2
        parse-conc-rest-when-tree-list-match-induction-step-1
        parse-conc-rest-when-tree-list-match-induction-step-2
        parse-conc-rest-comp-when-tree-match-base-case
-       parse-conc-rest-comp-when-tree-match-induction-step-1
-       parse-conc-rest-comp-when-tree-match-induction-step-2)))))
+       parse-conc-rest-comp-when-tree-match-induction-step-1+2)))))
 
 (defrule parse-alternation-when-tree-match
   :parents (grammar-parser-completeness)

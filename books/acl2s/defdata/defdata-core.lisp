@@ -1430,7 +1430,6 @@ because the rule-classes may matter.
   (declare (xargs :verify-guards nil))
   (predicate-name type))
 
-
 (defun is-a-typeName-gv (type wrld)
   (declare (xargs :guard t))
   (ec-call (is-a-typeName-current type wrld)))
@@ -1628,7 +1627,7 @@ capturing the metadata associated with each typename.
 |---------------------+------------------+---------+----------+-------------------------------|
 | :predicate          | 1-arity fn       |         | no       |                               |
 |---------------------+------------------+---------+----------+-------------------------------|
-| :domain-size        | oneof pos t      | 't      | no       |                               |
+| :domain-size        | oneof nat t      | 't      | no       |                               |
 |---------------------+------------------+---------+----------+-------------------------------|
 | :enumerator         | 1-arity fn       |         | no       |                               |
 |---------------------+------------------+---------+----------+-------------------------------|

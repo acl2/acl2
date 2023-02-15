@@ -336,3 +336,13 @@
  ;;                                 (BVCHOP-1-BECOMES-GETBIT
  ;;                                  slice-BECOMES-GETBIT
  ;;                                  BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+
+(defthm bvplus1c-of-0-arg2
+  (equal (bvplus1c size 0 y)
+         (bvchop size y))
+  :hints (("Goal" :in-theory (enable bvplus1c))))
+
+(defthm bvplus1c-of-0-arg3
+  (equal (bvplus1c size x 0)
+         (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvplus1c))))

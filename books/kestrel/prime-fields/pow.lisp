@@ -1,6 +1,6 @@
 ; Prime fields library: Exponentiation
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,8 +27,7 @@
                               (natp n))
                   :verify-guards nil ;done below
                   ))
-  (mbe :logic (if (or (not (mbt (natp n)))
-                      (equal 0 n))
+  (mbe :logic (if (zp n)
                   1
                 (mul x (pow x (+ -1 n) p) p))
        :exec (mod-expt-fast x n p)))

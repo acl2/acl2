@@ -12,8 +12,6 @@
 
 (include-book "semantics-deep")
 
-(local (in-theory (disable primep)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ proof-support
@@ -31,13 +29,14 @@
      (where the number of bits is a parameter),
      or even more simply a gadget parameterized over
      the choice of names of its variables,
-     needs the deeply embedded semantics.
-     The reason is that we can define an ACL2 function
+     the deeply embedded semantics ie needed.")
+   (xdoc::p
+    "The reason is that we can define an ACL2 function
      that takes the parameters as inputs
      and returns the corresponding gadget in PFCS abstract syntax,
      whose properties we can then prove,
      universally quantified over the parameters
-     (perhaps with some restrictions on the parameters).
+     (possibly with some restrictions on the parameters).
      This is only possible in the deeply embedded semantics,
      which treats the PFCS abstract syntax explicitly.
      In contrast, the shallowly embedded semantics
@@ -98,10 +97,9 @@
                             (constraint-equal->left constr))
                      (equal (proof-tree-equal->right ptree)
                             (constraint-equal->right constr))
-                     (equal (eval-expr asg (constraint-equal->left constr) p)
-                            (eval-expr asg (constraint-equal->right constr) p))
-                     (eval-expr asg (constraint-equal->left constr)
-                                p))))))
+                     (equal (eval-expr (constraint-equal->left constr) asg p)
+                            (eval-expr (constraint-equal->right constr) asg p))
+                     (eval-expr (constraint-equal->left constr) asg p))))))
   :expand ((exec-proof-tree ptree defs p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -118,12 +116,12 @@
      for the common case of equality constraints."))
   (implies (and (assignment-for-prime-p asg p)
                 (constraint-case constr :equal))
-           (b* ((left (constraint-equal->left constr))
-                (right (constraint-equal->right constr)))
-             (iff (constraint-satp asg constr defs p)
-                  (and (equal (eval-expr asg left p)
-                              (eval-expr asg right p))
-                       (eval-expr asg left p)))))
+           (iff (constraint-satp constr defs asg p)
+                (b* ((left (constraint-equal->left constr))
+                     (right (constraint-equal->right constr)))
+                  (and (equal (eval-expr left asg p)
+                              (eval-expr right asg p))
+                       (eval-expr left asg p)))))
   :use (only-if-direction if-direction)
 
   :prep-lemmas
@@ -131,26 +129,39 @@
      (implies (constraint-case constr :equal)
               (b* ((left (constraint-equal->left constr))
                    (right (constraint-equal->right constr)))
-                (implies (constraint-satp asg constr defs p)
-                         (and (equal (eval-expr asg left p)
-                                     (eval-expr asg right p))
-                              (eval-expr asg left p)))))
+                (implies (constraint-satp constr defs asg p)
+                         (and (equal (eval-expr left asg p)
+                                     (eval-expr right asg p))
+                              (eval-expr left asg p)))))
      :enable constraint-satp
      :use (:instance exec-proof-tree-when-constraint-equal
-           (ptree (constraint-satp-witness asg constr defs p))))
+           (ptree (constraint-satp-witness constr defs asg p))))
 
    (defruled if-direction
      (implies (and (assignment-for-prime-p asg p)
                    (constraint-case constr :equal))
               (b* ((left (constraint-equal->left constr))
                    (right (constraint-equal->right constr)))
-                (implies (and (equal (eval-expr asg left p)
-                                     (eval-expr asg right p))
-                              (eval-expr asg left p))
-                         (constraint-satp asg constr defs p))))
+                (implies (and (equal (eval-expr left asg p)
+                                     (eval-expr right asg p))
+                              (eval-expr left asg p))
+                         (constraint-satp constr defs asg p))))
      :use (:instance constraint-satp-suff
            (ptree (make-proof-tree-equal
                    :asg asg
                    :left (constraint-equal->left constr)
                    :right (constraint-equal->right constr))))
      :enable exec-proof-tree)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled constraint-list-satp-of-nil
+  :short "Proof rule for the empty list of constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The empty list of constraints is always satisfied.
+     Indeed, lists of constraints are conjunctions."))
+  (constraint-list-satp nil defs asg p)
+  :enable exec-proof-tree-list
+  :use (:instance constraint-list-satp-suff (ptrees nil) (constrs nil)))

@@ -17,6 +17,8 @@
 
 ;; Assert that exactly one book is included:
 ;; TODO: Check the exact string, but it depends on the user's current directory
+; Matt K. mod: The following assertion is false for certain "acl2data" runs.
+#-acl2data
 (assert-event
  (and (equal (len (included-books-in-world (w state)))
              1)
@@ -26,6 +28,8 @@
 (include-book "kestrel/lists-light/append" :dir :system)
 
 ;; Now there are 2 books included:
+; Matt K. mod: The following assertion is false for certain "acl2data" runs.
+#-acl2data
 (assert-event
  (and (equal (len (included-books-in-world (w state)))
              2)

@@ -1,7 +1,7 @@
 ; Mixed theorems about slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
 
 ;move
 ;gen the bvchops
-(defthm usigned-byte-p-of-+-of-bvchop-and-bvchop-one-more
+(defthm unsigned-byte-p-of-+-of-bvchop-and-bvchop-one-more
   (implies (and (integerp size) (<= 0 size))
            (unsigned-byte-p (+ 1 size)
                             (+ (bvchop size x) (bvchop size y))))

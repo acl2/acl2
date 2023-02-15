@@ -165,6 +165,11 @@
      capability (see @(see note-8-6) to strengthen the use of @(see
      linear-arithmetic) during rewriting.")
 
+   (xdoc::p
+    "The @(tsee apt::simplify) transformation, when called with option
+     @(':untranslate t'), removes some unused @(tsee let) bindings and @(tsee
+     let*) bindings that formerly remained.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
@@ -241,10 +246,46 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
+
+   (xdoc::p
+    "Added utility @(tsee show-books), which returns a tree representing the
+     @(see books) included in the current ACL2 session.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
 
    (xdoc::p
     "Added a theorem.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+                             "PFCS (Prime Field Constraint System) Library"))
+
+   (xdoc::p
+    "A concrete syntax for PFCS, in the form of an ABNF grammar,
+     has been defined.")
+
+   (xdoc::p
+    "The formal notion of system (in the PFCS sense) has been improved,
+     to be more in line with the general notion of constraint system.")
+
+   (xdoc::p
+    "Some arguments of semantic functions have been reordered,
+     for a more natural order.")
+
+   (xdoc::p
+    "Some theorems have been added and other theorems have been improved.")
+
+   (xdoc::p
+    "The documentation has been extended and improved.")
+
+   (xdoc::p
+    "A translator from R1CSes to PFCSes has been added,
+     along with a checker for PFCSes that are in the R1CS subset,
+     and along with a notion of structured R1CSes.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

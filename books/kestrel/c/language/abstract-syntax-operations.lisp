@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,6 +15,11 @@
 
 (include-book "std/util/defprojection" :dir :system)
 
+(local (include-book "std/lists/len" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-operations
@@ -22,6 +27,19 @@
   :short "Operations on the C abstract syntax."
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define unop-nonpointerp ((op unopp))
+  :returns (yes/no booleanp)
+  :short "Check if a unary operator does not involve pointers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are unary plus, unary minus, and bitwise/logical negation/complement.
+     The other two, address and indirection, involve pointers."))
+  (and (member-eq (unop-kind op) '(:plus :minus :bitnot :lognot)) t)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,6 +134,7 @@
    :array (b* (((mv id sub) (obj-declor-to-ident+adeclor declor.decl)))
             (mv id (make-obj-adeclor-array :decl sub :size declor.size))))
   :measure (obj-declor-count declor)
+  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
   :hooks (:fix))
 
@@ -138,6 +157,7 @@
            :decl (ident+adeclor-to-obj-declor id adeclor.decl)
            :size adeclor.size))
   :measure (obj-adeclor-count adeclor)
+  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
   :hooks (:fix)
   ///
@@ -172,6 +192,7 @@
    :pointer (b* (((mv id sub) (fun-declor-to-ident+adeclor declor.decl)))
               (mv id (fun-adeclor-pointer sub))))
   :measure (fun-declor-count declor)
+  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
   :hooks (:fix))
 
@@ -191,6 +212,7 @@
    :pointer (make-fun-declor-pointer
              :decl (ident+adeclor-to-fun-declor id adeclor.decl)))
   :measure (fun-adeclor-count adeclor)
+  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
   :hooks (:fix)
   ///
@@ -229,6 +251,7 @@
    :pointer (b* (((mv params sub) (fun-adeclor-to-params+declor declor.decl)))
               (mv params (make-obj-adeclor-pointer :decl sub))))
   :measure (fun-adeclor-count declor)
+  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
   :hooks (:fix))
 
@@ -477,6 +500,7 @@
               (expr-constp e.then)
               (expr-constp e.else)))
   :measure (expr-count e)
+  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

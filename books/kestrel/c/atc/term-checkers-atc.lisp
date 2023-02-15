@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,8 +17,14 @@
 
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/alists/top" :dir :system))
+
 (local (include-book "projects/apply/loop" :dir :system))
 (local (in-theory (disable acl2::loop-book-theory)))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -124,6 +130,75 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-integer-read ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (arg pseudo-termp)
+               (type typep))
+  :short "Check if a term may represent a read of an integer by pointer."
+  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
+       ((unless (pseudo-term-case term :fncall)) (no))
+       ((pseudo-term-fncall term) term)
+       ((mv okp fixtype read) (atc-check-symbol-2part term.fn))
+       ((unless (and okp
+                     (eq read 'read)))
+        (no))
+       (type (fixtype-to-integer-type fixtype))
+       ((when (not type)) (no))
+       ((unless (list-lenp 1 term.args)) (no))
+       (arg (first term.args)))
+    (mv t arg type))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-integer-read
+    (implies yes/no
+             (< (pseudo-term-count arg)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-integer-write ((val pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (int pseudo-termp)
+               (type typep))
+  :short "Check if a term may represent a write of an integer by pointer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A write of an integer by pointer is represented by
+     a @(tsee let) of the form")
+   (xdoc::codeblock
+    "(let ((<var> (<type>-write <int>))) ...)")
+   (xdoc::p
+    "where @('<var>') is a variable of pointer-to-integer type
+     and @('<int>') is a term that yields the integer to write.")
+   (xdoc::p
+    "This ACL2 function takes as argument the value term of the @(tsee let),
+     i.e. @('(<type>-write <int>)'),
+     and checks if it has the expected form,
+     returning the integer type and the @('<int>') argument if successful."))
+  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
+       ((unless (pseudo-term-case val :fncall)) (no))
+       ((pseudo-term-fncall val) val)
+       ((mv okp fixtype write) (atc-check-symbol-2part val.fn))
+       ((unless (and okp
+                     (eq write 'write)))
+        (no))
+       (type (fixtype-to-integer-type fixtype))
+       ((when (not type)) (no))
+       ((unless (list-lenp 1 val.args)) (no))
+       (int (first val.args)))
+    (mv t int type))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-integer-write
+    (implies yes/no
+             (< (pseudo-term-count int)
+                (pseudo-term-count val)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-array-read ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (arr pseudo-termp)
@@ -153,7 +228,7 @@
         (no))
        (out-type (fixtype-to-integer-type etype))
        ((when (not out-type)) (no))
-       (in-type1 (type-pointer out-type))
+       (in-type1 (make-type-array :of out-type :size nil))
        (in-type2 (fixtype-to-integer-type itype))
        ((when (not in-type2)) (no))
        ((unless (list-lenp 2 term.args)) (no))
@@ -577,7 +652,7 @@
     (mv t term.fn term.args in-types out-type affect limit))
   ///
 
-  (defret pseudo-term-count-of-atc-check-cfun-call-args
+  (defret pseudo-term-count-of-atc-check-cfun-call
     (implies yes/no
              (< (pseudo-term-list-count args)
                 (pseudo-term-count term)))
@@ -597,9 +672,10 @@
      if the latter is successful.
      As stated in the user documentation of ATC,
      calls of non-recursive target functions must satisfy the property that
-     the argument for a formal of pointer type must be identical to the formal.
+     the argument for a formal of pointer or array type
+     must be identical to the formal.
      This is because these arguments and formals
-     represent (pointers to) arrays and structures,
+     represent arrays and pointers to structures,
      and thus they must be passed around exactly by their name,
      similarly to stobjs in ACL2.
      This code checks the condition."))
@@ -615,7 +691,8 @@
        (formal (car formals))
        (in-type (car in-types))
        (arg (car args))
-       ((unless (type-case in-type :pointer))
+       ((when (and (not (type-case in-type :pointer))
+                   (not (type-case in-type :array))))
         (atc-check-cfun-call-args (cdr formals) (cdr in-types) (cdr args)))
        ((unless (eq formal arg)) nil))
     (atc-check-cfun-call-args (cdr formals) (cdr in-types) (cdr args))))
@@ -749,19 +826,19 @@
     "These are the macros described in @(see atc-let-designations).
      These macros expand to")
    (xdoc::codeblock
-    "(mv-let (*1 *2 ... *<n>)"
+    "(mv-let (*0 *1 *2 ... *<n>)"
     "  <wrapped>"
-    "  (mv (<wrapper> *1) *2 ... *<n>))")
+    "  (mv (<wrapper> *0) *1 *2 ... *<n>))")
    (xdoc::p
     "which in translated terms looks like")
    (xdoc::codeblock
     "((lambda (mv)"
-    "         ((lambda (*1 *2 ... *<n>)"
-    "                  (cons ((<wrapper> *1) (cons *2 ... (cons *<n> 'nil)))))"
+    "         ((lambda (*0 *1 *2 ... *<n>)"
+    "                  (cons ((<wrapper> *0) (cons *1 ... (cons *<n> 'nil)))))"
     "          (mv-nth '0 mv)"
     "          (mv-nth '1 mv)"
     "          ..."
-    "          (mv-nth '<n-1> mv)))"
+    "          (mv-nth '<n> mv)))"
     " <wrapped>)")
    (xdoc::p
     "So here we attempt to recognize this for of translated terms.
@@ -770,32 +847,34 @@
         (fty-check-mv-let-call term))
        ((unless okp) (mv nil nil 0 nil))
        ((unless (eq mv-var 'mv)) (mv nil nil 0 nil))
-       (n (len vars))
-       ((unless (>= n 2)) (mv nil nil 0 nil))
+       (n+1 (len vars))
+       ((unless (>= n+1 2)) (mv nil nil 0 nil))
+       (n (1- n+1))
        ((unless (equal vars
-                       (loop$ for i of-type integer from 1 to n
+                       (loop$ for i of-type integer from 0 to n
                               collect (pack '* i))))
         (mv nil nil 0 nil))
        ((unless (equal indices
-                       (loop$ for i of-type integer from 0 to (1- n)
+                       (loop$ for i of-type integer from 0 to n
                               collect i)))
         (mv nil nil 0 nil))
-       ((unless (equal hides (repeat n nil)))
+       ((unless (equal hides (repeat n+1 nil)))
         (mv nil nil 0 nil))
        ((mv okp terms) (fty-check-list-call body))
        ((unless okp) (mv nil nil 0 nil))
-       ((unless (equal (len terms) n)) (mv nil nil 0 nil))
+       ((unless (equal (len terms) n+1)) (mv nil nil 0 nil))
        ((cons term terms) terms)
        ((unless (pseudo-term-case term :fncall)) (mv nil nil 0 nil))
        (wrapper (pseudo-term-fncall->fn term))
        ((unless (member-eq wrapper '(declar assign))) (mv nil nil 0 nil))
-       ((unless (equal (pseudo-term-fncall->args term) (list '*1)))
+       ((unless (equal (pseudo-term-fncall->args term) (list '*0)))
         (mv nil nil 0 nil))
        ((unless (equal terms
-                       (loop$ for i of-type integer from 2 to n
+                       (loop$ for i of-type integer from 1 to n
                               collect (pack '* i))))
         (mv nil nil 0 nil)))
     (mv t wrapper n wrapped))
+  :guard-hints (("Goal" :in-theory (enable fix)))
   :prepwork ((local (in-theory (enable acl2::loop-book-theory))))
   ///
 

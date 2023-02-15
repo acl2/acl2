@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,13 +11,16 @@
 
 (in-package "C")
 
-(include-book "integer-operations")
+(include-book "../representation/integer-operations")
 
 (include-book "kestrel/std/system/check-and-call" :dir :system)
 (include-book "kestrel/std/system/check-or-call" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/check-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -261,4 +264,5 @@
     (case-match term
       ((fn . &) (or (consp fn) ; lambda
                     (consp (irecursivep+ fn wrld))))
-      (& nil))))
+      (& nil)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))

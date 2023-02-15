@@ -12,8 +12,12 @@
 (in-package "C")
 
 (include-book "../../language/dynamic-semantics")
+(include-book "../test-star")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,7 +31,7 @@
      we also prove rules used in the new modular proofs.
      The latter rules avoid @(tsee if) in the right side,
      to avoid unwanted case splits;
-     furthermore, they wrap the @(tsee if) tests into @(tsee hide)
+     furthermore, they wrap the @(tsee if) tests into @(tsee test*)
      to prevent unwanted rewrites (see @(tsee atc-contextualize))."))
 
   (defruled exec-stmt-when-compound
@@ -84,11 +88,10 @@
                   (valuep arg1)
                   (equal test (test-value arg1))
                   (booleanp test)
-                  (hide test))
+                  (test* test))
              (equal (exec-stmt s compst fenv limit)
                     (exec-stmt (stmt-if->then s) compst fenv (1- limit))))
-    :enable exec-stmt
-    :expand (:free (x) (hide x)))
+    :enable (exec-stmt test*))
 
   (defruled exec-stmt-when-if-and-false
     (implies (and (syntaxp (quotep s))
@@ -99,11 +102,10 @@
                   (valuep arg1)
                   (equal test (test-value arg1))
                   (booleanp test)
-                  (hide (not test)))
+                  (test* (not test)))
              (equal (exec-stmt s compst fenv limit)
                     (mv nil compst)))
-    :enable exec-stmt
-    :expand (:free (x) (hide x)))
+    :enable (exec-stmt test*))
 
   (defruled exec-stmt-when-ifelse
     (implies (and (syntaxp (quotep s))
@@ -127,11 +129,10 @@
                   (valuep arg1)
                   (equal test (test-value arg1))
                   (booleanp test)
-                  (hide test))
+                  (test* test))
              (equal (exec-stmt s compst fenv limit)
                     (exec-stmt (stmt-ifelse->then s) compst fenv (1- limit))))
-    :enable exec-stmt
-    :expand (:free (x) (hide x)))
+    :enable (exec-stmt test*))
 
   (defruled exec-stmt-when-ifelse-and-false
     (implies (and (syntaxp (quotep s))
@@ -141,11 +142,10 @@
                   (valuep arg1)
                   (equal test (test-value arg1))
                   (booleanp test)
-                  (hide (not test)))
+                  (test* (not test)))
              (equal (exec-stmt s compst fenv limit)
                     (exec-stmt (stmt-ifelse->else s) compst fenv (1- limit))))
-    :enable exec-stmt
-    :expand (:free (x) (hide x)))
+    :enable (exec-stmt test*))
 
   (defruled exec-stmt-when-while
     (implies (and (syntaxp (quotep s))

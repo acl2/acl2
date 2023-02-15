@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -20,8 +20,12 @@
 (include-book "std/util/defprojection" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/lists/butlast" :dir :system))
 (local (include-book "std/lists/last" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,7 +88,8 @@
   :elt-type type
   :true-listp t
   :elementp-of-nil nil
-  :pred type-listp)
+  :pred type-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,7 +113,8 @@
   :elt-type type-option
   :true-listp t
   :elementp-of-nil t
-  :pred type-option-listp)
+  :pred type-option-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,7 +167,8 @@
   :elt-type member-type
   :true-listp t
   :elementp-of-nil nil
-  :pred member-type-listp)
+  :pred member-type-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -441,7 +448,8 @@
         (t (impossible)))
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-unsigned-integerp
-                                           type-signed-integerp)))
+                                           type-signed-integerp
+                                           member-equal)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -553,6 +561,7 @@
                                                         declor.decl)
                                 :size nil)))
      :measure (obj-adeclor-count declor)
+     :hints (("Goal" :in-theory (enable o< o-finp o-p)))
      :verify-guards :after-returns
      :hooks (:fix))))
 
@@ -589,7 +598,8 @@
                   (type-nonchar-integerp type)))
     :enable (type-nonchar-integerp
              type-kind
-             typep)))
+             typep
+             member-equal)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -613,7 +623,8 @@
     (str::cat "type @('" core "')"))
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-unsigned-integerp
-                                           type-signed-integerp)))
+                                           type-signed-integerp
+                                           member-equal)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -656,7 +667,8 @@
     (t (prog2$ (impossible) 1)))
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-unsigned-integerp
-                                           type-signed-integerp)))
+                                           type-signed-integerp
+                                           member-equal)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -674,5 +686,6 @@
     (t (prog2$ (impossible) 1)))
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-unsigned-integerp
-                                           type-signed-integerp)))
+                                           type-signed-integerp
+                                           member-equal)))
   :hooks (:fix))

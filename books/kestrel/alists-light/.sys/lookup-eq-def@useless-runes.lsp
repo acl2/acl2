@@ -1,0 +1,1 @@
+(LOOKUP-EQ)

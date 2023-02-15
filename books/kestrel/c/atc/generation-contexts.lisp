@@ -11,11 +11,17 @@
 
 (in-package "C")
 
+(include-book "test-star")
+
 (include-book "centaur/fty/top" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
+(include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,13 +64,24 @@
      and a term that must represent a computation state.
      The meaning is that the variable is bound to the term.")
    (xdoc::p
+    "We also include bindings of variables that hold (ACL2 models of) C values.
+     (Note that a computation state is not, and does not model, a C value.
+     These also consist of a variable and a term,
+     like the computation state bindings.
+     However, it is useful to differentiate them in this fixtype,
+     so we can support different processing of the different kind of bindings
+     (as in @(tsee atc-contextualize)).")
+   (xdoc::p
     "We also include terms that are tests of @(tsee if)s.")
    (xdoc::p
     "We may add more kinds later."))
   (:compustate ((var symbolp)
                 (term any)))
+  (:cvalue ((var symbolp)
+            (term any)))
   (:test ((term any)))
-  :pred atc-premisep)
+  :pred atc-premisep
+  :prepwork ((local (in-theory (enable identity)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,13 +94,21 @@
   :elt-type atc-premise
   :true-listp t
   :elementp-of-nil nil
-  :pred atc-contextp)
+  :pred atc-contextp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-contextualize (term (context atc-contextp) (skip-cs booleanp))
-  :returns term1
-  :short "Put a term into a context."
+(define atc-contextualize ((formula "An untranslated term.")
+                           (context atc-contextp)
+                           (fn? symbolp)
+                           (fn-guard? symbolp)
+                           (compst-var? symbolp)
+                           (limit-var? symbolp)
+                           (limit-bound? pseudo-termp)
+                           (wrld plist-worldp))
+  :returns (formula1 "An untranslated term.")
+  :short "Put a formula into a context."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -91,29 +116,95 @@
      generating code for them
      and ending with the term given as input.")
    (xdoc::p
-    "The @('skip-cs') flag controls whether
-     we skip over the computation state bindings or not.
-     For certain generated lemmas that apply just to ACL2 terms,
-     and not to relations between ACL2 terms and C constructs,
-     we skip over the bindings of computation states,
-     because there are no computation states mentioned in the lemmas.")
+    "We also add, around the resulting term from the process described above,
+     with additional premises:")
+   (xdoc::ul
+    (xdoc::li
+     "The fact that the guard of the target function @('fn')
+      holds on the formals of the function.")
+    (xdoc::li
+     "The fact that the computation state variable is a computation state.")
+    (xdoc::li
+     "The fact that the limit variable is an integer.")
+    (xdoc::li
+     "The fact that the limit variable is greater than or equal to
+      a given bound (expressed as a term)."))
    (xdoc::p
-    "We wrap tests with @(tsee hide),
-     to prevent ACL2 from making use of them,
-     in the generated modular theorems,
-     to simplify things in ways that interfere with the compositional proofs.
-     For instance, when ACL2 has a hypothesis @('(not <term>)') in context,
-     it rewrites occurrences of @('<term>') with @('nil'):
-     this is generally good for interactive proofs,
-     but not if that prevents a previously proved theorem from applying,
-     about a subterm that is supposed not to be simplified"))
-  (b* (((when (endp context)) term)
+    "If @('fn-guard?') is @('nil'),
+     we omit the the guard hypothesis.
+     This is used to generate some claims within the ACL2 proof builder.
+     In this case, @('fn?') must be @('nil') too.")
+   (xdoc::p
+    "If @('compst-var?') is @('nil'),
+     we avoid all the premises and hypotheses that concern computation states.
+     Some of the theorems we generate do not involve computation states:
+     they apply just to ACL2 terms that represent shallowly embedded C code;
+     they do not apply to relations between ACL2 and deeply embedded C code.")
+   (xdoc::p
+    "If @('limit-var?') is @('nil'),
+     we avoid the hypotheses that concern limits.
+     Some of the theorems we generate (e.g. for pure expressions)
+     do not involve execution recursion limits.
+     In this case, @('limit-bound?') must be @('nil') too."))
+  (b* ((skip-cs (not compst-var?))
+       (formula (atc-contextualize-aux formula context skip-cs))
+       (hyps (append (and fn-guard?
+                          `((,fn-guard? ,@(formals+ fn? wrld))))
+                     (and compst-var?
+                          `((compustatep ,compst-var?)))
+                     (and limit-var?
+                          `((integerp ,limit-var?)
+                            (>= ,limit-var? ,limit-bound?)))))
+       ((when (and (not fn-guard?) fn?))
+        (raise "Internal error: FN-GUARD? is NIL but FN? is ~x0."
+               fn?))
+       ((when (and (not limit-var?) limit-bound?))
+        (raise "Internal error: LIMIT-VAR? is NIL but LIMIT-BOUND? is ~x0."
+               limit-bound?))
+       (formula `(implies (and ,@hyps) ,formula)))
+    formula)
+
+  :prepwork
+  ((define atc-contextualize-aux ((formula "An untranslated term.")
+                                  (context atc-contextp)
+                                  (skip-cs booleanp))
+     :returns (formula1 "An untranslated term.")
+     :parents nil
+     (b* (((when (endp context)) formula)
+          (premise (car context)))
+       (atc-premise-case
+        premise
+        :compustate
+        (if skip-cs
+            (atc-contextualize-aux formula (cdr context) skip-cs)
+          `(let ((,premise.var ,premise.term))
+             ,(atc-contextualize-aux formula (cdr context) skip-cs)))
+        :cvalue `(let ((,premise.var ,premise.term))
+                   ,(atc-contextualize-aux formula (cdr context) skip-cs))
+        :test `(implies
+                (test* ,premise.term)
+                ,(atc-contextualize-aux formula (cdr context) skip-cs)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-contextualize-compustate ((compst-var symbolp)
+                                      (context atc-contextp))
+  :returns (term1 "An untranslated term.")
+  :short "Put a computation state into context."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The initial computation state is expressed as a variable,
+     passed to this ACL2 function as @('compst-var').
+     We go through the context and wrap the computation state variable
+     with @(tsee let)s corresponding to binding of
+     computation states and C variables."))
+  (b* (((when (endp context)) compst-var)
        (premise (car context)))
     (atc-premise-case
      premise
-     :compustate (if skip-cs
-                     (atc-contextualize term (cdr context) skip-cs)
-                   `(let ((,premise.var ,premise.term))
-                      ,(atc-contextualize term (cdr context) skip-cs)))
-     :test `(implies (hide ,premise.term)
-                     ,(atc-contextualize term (cdr context) skip-cs)))))
+     :compustate `(let ((,premise.var ,premise.term))
+                    ,(atc-contextualize-compustate compst-var (cdr context)))
+     :cvalue `(let ((,premise.var ,premise.term))
+                ,(atc-contextualize-compustate compst-var (cdr context)))
+     :test (atc-contextualize-compustate compst-var (cdr context)))))

@@ -188,7 +188,7 @@
                  ;; booleanp rules:
                  (acl2::booleanp-rules)
                  pfield::booleanp-of-fe-listp
-                 ;; usigned-byte-p rules:
+                 ;; unsigned-byte-p rules:
                  acl2::unsigned-byte-p-of-bvcat
                  acl2::unsigned-byte-p-of-bvnot
                  ;; bitp rules:

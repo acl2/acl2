@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,14 +11,20 @@
 
 (in-package "C")
 
-(include-book "integer-operations")
-(include-book "types")
-
 (include-book "../language/array-operations")
+
+(include-book "../representation/integer-operations")
+
+(include-book "types")
 
 (include-book "symbolic-execution-rules/integers")
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -163,6 +169,7 @@
        (<type> (integer-type-to-fixtype type))
        (<type>p (pack <type> 'p))
        (<type>-fix (pack <type> '-fix))
+       (<type>-from-integer (pack <type> '-from-integer))
        (<type>-list (pack <type> '-list))
        (<type>-listp (pack <type> '-listp))
        (<type>-array (pack <type> '-array))
@@ -205,7 +212,7 @@
                                    ,(type-to-maker type)))
           (elements ,<type>-list :reqfix (if (consp elements)
                                              elements
-                                           (list (,<type> 0)))))
+                                           (list (,<type>-from-integer 0)))))
          :require (and (type-case elemtype ,(type-kind type))
                        (consp elements))
          :layout :list
@@ -271,7 +278,9 @@
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
        (define ,<type>-array-length ((array ,<type>-arrayp))
-         :returns (length posp :rule-classes (:rewrite :type-prescription))
+         :returns (length posp
+                          :rule-classes (:rewrite :type-prescription)
+                          :hints (("Goal" :in-theory (enable posp))))
          :short ,(str::cat "Length of an array of "
                            type-string
                            ".")
@@ -312,9 +321,14 @@
                            ", using an integer index.")
          (,<type>-fix (nth index (,<type>-array->elements array)))
          :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
-                                                  ,<type>-array-length)))
-         :hooks (:fix)
+                                                  ,<type>-array-length
+                                                  nfix
+                                                  ifix
+                                                  integer-range-p)))
          ///
+
+         (fty::deffixequiv ,<type>-array-read
+           :hints (("Goal" :in-theory (enable ifix nth))))
 
          (defruled ,<type>-array-read-alt-def
            (implies (and (,<type>-arrayp array)
@@ -328,7 +342,10 @@
                     ,<type>-array-index-okp
                     ,<type>-array-length-alt-def
                     value-array->length
-                    ,<type>-arrayp-alt-def)))
+                    ,<type>-arrayp-alt-def
+                    nfix
+                    ifix
+                    integer-range-p)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -349,7 +366,9 @@
                                              (,<type>-array->elements array)))
              array))
          :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
-                                                  ,<type>-array-length)))
+                                                  ,<type>-array-length
+                                                  nfix
+                                                  integer-range-p)))
          :hooks (:fix)
 
          ///
@@ -360,7 +379,11 @@
                   (len (,<type>-array->elements array)))
            :enable (,<type>-array-index-okp
                     ,<type>-array-length
-                    ,<type>-array-of))
+                    ,<type>-array-of
+                    nfix
+                    ifix
+                    integer-range-p
+                    max))
 
          (defrule ,<type>-array-length-of-<type>-array-write
            (equal (,<type>-array-length
@@ -368,7 +391,11 @@
                   (,<type>-array-length array))
            :enable (,<type>-array-index-okp
                     ,<type>-array-length
-                    ,<type>-array-of))
+                    ,<type>-array-of
+                    nfix
+                    ifix
+                    integer-range-p
+                    max))
 
          (defruled ,<type>-array-write-alt-def
            (implies (and (,<type>-arrayp array)
@@ -387,7 +414,10 @@
                     value-array->length
                     ,type-of-value-when-<type>p
                     remove-flexible-array-member
-                    flexible-array-member-p)))
+                    flexible-array-member-p
+                    nfix
+                    ifix
+                    integer-range-p)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -420,7 +450,7 @@
        (<etype>-array-index-okp (pack <etype> '-array-index-okp))
        (<etype>-array-read (pack <etype>-array '-read))
        (<etype>-array-write (pack <etype>-array '-write))
-       (<itype>->get (pack <itype> '->get))
+       (integer-from-<itype> (pack 'integer-from- <itype>))
        (<etype>-array-<itype>-index-okp (pack
                                          <etype> '-array- <itype> '-index-okp))
        (<etype>-array-read-<itype> (pack <etype> '-array-read- <itype>))
@@ -449,7 +479,7 @@
                            " is valid for an array of type "
                            etype-string
                            ".")
-         (,<etype>-array-index-okp array (,<itype>->get index))
+         (,<etype>-array-index-okp array (,integer-from-<itype> index))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -463,7 +493,7 @@
                            ", using an index of "
                            itype-string
                            ".")
-         (,<etype>-array-read array (,<itype>->get index))
+         (,<etype>-array-read array (,integer-from-<itype> index))
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
          :hooks (:fix))
@@ -480,7 +510,7 @@
                            ", using an index of "
                            itype-string
                            ".")
-         (,<etype>-array-write array (,<itype>->get index) element)
+         (,<etype>-array-write array (,integer-from-<itype> index) element)
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
          :hooks (:fix)

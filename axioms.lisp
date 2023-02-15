@@ -7656,7 +7656,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :mode :program
                   :guard (and (true-listp args)
                               (or (symbol-listp off)
-                                  (eq off :all))
+                                  (eq off :all)
+                                  (eq off :all!))
                               (or (symbol-listp on)
                                   (eq on :all))
                               (or (symbol-listp summary-off)
@@ -7703,6 +7704,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           illegal-value-string
                           (list (cons #\0 (cadr args))
                                 (cons #\1 :gag-mode))))))
+         ((and (eq (car args) :off)
+               (eq (cadr args) :all!))
+          (with-output-fn ctx0
+                          (list* :off :all :gag-mode nil (cddr args))
+                          off on gag-mode stack summary-on summary-off
+                          evisc ctx kwds))
          ((member-eq (car args) '(:on :off))
           (let ((val (with-output-on-off-arg (cadr args) *valid-output-names*)))
             (cond
@@ -8166,16 +8173,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 )
 
+(defthm pseudo-term-listp-forward-to-true-listp
+  (implies (pseudo-term-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
+
 (defthm pseudo-termp-consp-forward
     (implies (and (pseudo-termp x)
 		  (consp x))
 	     (true-listp x))
   :hints (("Goal" :expand ((pseudo-termp x))))
-  :rule-classes :forward-chaining)
-
-(defthm pseudo-term-listp-forward-to-true-listp
-  (implies (pseudo-term-listp x)
-           (true-listp x))
   :rule-classes :forward-chaining)
 
 ; For the encapsulate of too-many-ifs-post-rewrite
@@ -13998,6 +14005,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     #+acl2-devel plist-worldp-with-formals ; *the-live-state* (performance)
     set-cbd-fn1
     read-hons-copy-lambda-object-culprit ; reads wormhole data from oracle
+    #+acl2-devel ilks-plist-worldp
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -14187,6 +14195,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     increment-file-clock
     #-acl2-devel apply$-lambda
     #-acl2-devel apply$-prim
+    #-acl2-devel ilks-plist-worldp
   ))
 
 (defconst *initial-macros-with-raw-code*
@@ -14283,6 +14292,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     our-with-terminal-input
     trust-mfc
     with-global-stobj
+    with-cbd
     ))
 
 (defun untouchable-marker (mac)
@@ -14745,7 +14755,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (verbose-theory-warning . t)
     (verify-termination-on-raw-program-okp
      .
-     (apply$-lambda apply$-prim plist-worldp-with-formals))
+     (apply$-lambda apply$-prim plist-worldp-with-formals ilks-plist-worldp))
     (walkabout-alist . nil)
     (waterfall-parallelism . nil) ; for #+acl2-par
     (waterfall-parallelism-timing-threshold
@@ -25611,7 +25621,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; The following case is unfortunate, but necessary for the guard proof.
 
-           (consp (nth 4 (access metafunction-context mfc :rcnst)))
+           (consp (nth 3 (access metafunction-context mfc :rcnst)))
            (pseudo-term-listp (access rewrite-constant
                                       (access metafunction-context mfc :rcnst)
                                       :current-clause)))
