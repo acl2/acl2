@@ -184,3 +184,27 @@
         :test `(implies
                 (test* ,premise.term)
                 ,(atc-contextualize-aux formula (cdr context) skip-cs)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-contextualize-compustate ((compst-var symbolp)
+                                      (context atc-contextp))
+  :returns (term1 "An untranslated term.")
+  :short "Put a computation state into context."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The initial computation state is expressed as a variable,
+     passed to this ACL2 function as @('compst-var').
+     We go through the context and wrap the computation state variable
+     with @(tsee let)s corresponding to binding of
+     computation states and C variables."))
+  (b* (((when (endp context)) compst-var)
+       (premise (car context)))
+    (atc-premise-case
+     premise
+     :compustate `(let ((,premise.var ,premise.term))
+                    ,(atc-contextualize-compustate compst-var (cdr context)))
+     :cvalue `(let ((,premise.var ,premise.term))
+                ,(atc-contextualize-compustate compst-var (cdr context)))
+     :test (atc-contextualize-compustate compst-var (cdr context)))))

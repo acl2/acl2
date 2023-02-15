@@ -55,8 +55,7 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred pexpr-ginp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred pexpr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -75,8 +74,7 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred pexpr-goutp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred pexpr-goutp)
 
 ;;;;;;;;;;
 
@@ -1815,8 +1813,7 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred pexprs-ginp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred pexprs-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1836,8 +1833,7 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred pexprs-goutp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred pexprs-goutp)
 
 ;;;;;;;;;;
 
@@ -1932,8 +1928,7 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred expr-ginp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred expr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1961,8 +1956,7 @@
    (thm-index pos)
    (names-to-avoid symbol-list)
    (proofs bool))
-  :pred expr-goutp
-  :prepwork ((local (in-theory (enable alistp)))))
+  :pred expr-goutp)
 
 ;;;;;;;;;;
 

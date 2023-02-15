@@ -2304,9 +2304,9 @@
 
 (define atc-gen-pop-frame-thm ((fn symbolp)
                                (fn-guard symbolp)
-                               (context atc-contextp)
+                               (context-start atc-contextp)
                                (compst-var symbolp)
-                               (compst-term pseudo-termp)
+                               (context-end atc-contextp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
   :returns (mv (thm-event pseudo-event-formp)
@@ -2328,15 +2328,44 @@
      in a variable that we obtain by adding @('0')
      at the end of the symbol of the variable for the computation state.
      We should refine this to ensure that the variable does not interfere
-     with other variables."))
+     with other variables.")
+   (xdoc::p
+    "The @('context-start') parameter of this ACL2 function is
+     the context at the start of the function body
+     (incorporating the function parameters);
+     this is used to contextualize the theorem.
+     The @('context-end') parameter of this ACL2 function is
+     the context at the end of the function body;
+     this is used to contextualize the computation state
+     from where the frame is popped.
+     More precisely, the ``difference'' between the ending and starting context
+     is used to contextualize the computation state;
+     we double-check that
+     the starting context is a prefix of the ending context.")
+   (xdoc::p
+    "As a temporary hack, as we contextualize the computation state,
+     since @(tsee atc-contextualize) is meant to contextualize formulas,
+     we get an implication of the form
+     @('(implies (compustatep <compst-var>) <compst-term>)'),
+     where @('<compst-term>') is what we actually want.
+     So we extract it from the term.
+     We plan to differentiate contextualization for formulas and terms,
+     and avoid this hack."))
   (b* ((compst0-var (pack compst-var "0"))
        (name (pack fn '-pop-frame))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
+       ((unless (prefixp context-start context-end))
+        (raise "Internal error: prefix ~x0 is not a prefix of context ~x1."
+               context-start context-end)
+        (mv '(_) nil nil))
+       (context-diff (nthcdr (len context-start) context-end))
+       (compst-term (atc-contextualize-compustate compst-var
+                                                  context-diff))
        (formula `(equal (pop-frame ,compst-term)
                         ,compst0-var))
        (formula (atc-contextualize formula
-                                   context
+                                   context-start
                                    fn
                                    fn-guard
                                    compst-var
@@ -2623,7 +2652,7 @@
                                    fn-guard
                                    context
                                    compst-var
-                                   body.compst-term
+                                   body.context
                                    names-to-avoid
                                    wrld)
           (mv '(_) nil names-to-avoid)))
