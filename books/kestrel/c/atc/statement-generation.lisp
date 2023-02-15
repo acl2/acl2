@@ -655,16 +655,8 @@
                gin.context items-new-context)
         (irr-stmt-gout))
        (context-diff (nthcdr (len gin.context) items-new-context))
-       (new-compst (atc-contextualize gin.compst-var
-                                      context-diff
-                                      nil
-                                      nil
-                                      gin.compst-var
-                                      nil
-                                      nil
-                                      wrld))
-       (new-compst (and (consp new-compst)
-                        (caddr new-compst)))
+       (new-compst (atc-contextualize-compustate gin.compst-var
+                                                 context-diff))
        (uterm (untranslate$ term nil state))
        (formula1 `(equal (exec-block-item-list ',all-items
                                                ,gin.compst-var

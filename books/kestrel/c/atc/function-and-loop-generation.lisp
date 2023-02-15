@@ -2360,16 +2360,8 @@
                context-start context-end)
         (mv '(_) nil nil))
        (context-diff (nthcdr (len context-start) context-end))
-       (compst-term (atc-contextualize compst-var
-                                       context-diff
-                                       nil
-                                       nil
-                                       compst-var
-                                       nil
-                                       nil
-                                       wrld))
-       (compst-term (and (consp compst-term)
-                         (caddr compst-term)))
+       (compst-term (atc-contextualize-compustate compst-var
+                                                  context-diff))
        (formula `(equal (pop-frame ,compst-term)
                         ,compst0-var))
        (formula (atc-contextualize formula
