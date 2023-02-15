@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -305,7 +305,43 @@
      that accompany the parsing function definitions
      are used in the termination proofs,
      both of the singly recursive functions
-     and of the mutually recursive functions."))
+     and of the mutually recursive functions.")
+
+   (xdoc::p
+    "The termination of the mutually recursive parsing functions
+     involves an additional complication.
+     After @(tsee parse-alternation) calls @(tsee parse-concatenation),
+     it may call @(tsee parse-alt-rest),
+     which involves a proof obligation that
+     the input to @(tsee parse-alt-rest),
+     which is the remaining input after @(tsee parse-concatenation),
+     has length less than or equal to the input to @(tsee parse-alternation).
+     This is the case, because @(tsee parse-concatenation) always returns
+     a remaining input of length less than or equal to its input.
+     But this property can be only proved
+     after @(tsee parse-concatenation) is admitted,
+     that is after its (mutual) termination has been proved:
+     for the termination proof, it is like an uninterpreted function.
+     The same holds for the interaction between
+     other mutually recursive parsing functions.")
+
+   (xdoc::p
+    "The known solution to the issue just discussed
+     is to add tests saying that
+     the remaining input of @(tsee parse-concatenation)
+     is smaller than the initial input to @(tsee parse-alternation)
+     (which is also the input to @(tsee parse-concatenation)).
+     This way the termination proof can proceeed.
+     However, since those tests are always true,
+     they can be wrapped in @(tsee mbt),
+     which engenders the obligation to prove that are always true,
+     as part of guard verification
+     (and additionally, their execution is avoided).
+     The <i>@(see Seq)</i> macros provide operators @(':s=') and @(':w=')
+     for this purpose (see their documentation):
+     they generate @(tsee mbt) tests of inequalities
+     on the lengths of inputs and remaining inputs.
+     So we use those in our mutually recursive parsing functions."))
 
   :order-subtopics t)
 
@@ -1900,42 +1936,15 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Ideally the body of this function would be:")
-     (xdoc::codeblock
-      "(seq input"
-      "     (tree := (parse-concatenation input))"
-      "     (trees := (parse-alt-rest input))"
-      "     (return (make-tree-nonleaf :rulename? *alternation*"
-      "                                :branches (list (list tree) trees))))")
-     (xdoc::p
-      "But that would defeat the termination proof,
-       which would include a failed subgoal saying that,
-       when @(tsee parse-concatenation) succeeds,
-       the length of its remaining input
-       is less than or equal to
-       the length of its initial input.
-       This is the case for @(tsee parse-concatenation),
-       but it can only be proved after the function has been admitted.
-       In the termination proof, it is like an uninterpreted function.")
-     (xdoc::p
-      "So we add the condition on the lengths mentioned above
-       as a redundant check.
-       To do that, we cannot use @('seq'),
-       which prevents us from referring to different versions of the input.")
-     (xdoc::p
       "The linear rules below are used in the guard verification proof.")
      (xdoc::@def "parse-alternation")
      (xdoc::@def "len-of-parse-alternation-linear-1")
      (xdoc::@def "len-of-parse-alternation-linear-2"))
-    (b* (((mv error? tree input1) (parse-concatenation input))
-         ((when error?) (mv error? nil input1))
-         ((unless (mbt (< (len input1) (len input)))) (mv "" nil nil))
-         ((mv error? trees input2) (parse-alt-rest input1))
-         ((when error?) (mv error? nil input2)))
-      (mv nil
-          (make-tree-nonleaf :rulename? *alternation*
-                             :branches (list (list tree) trees))
-          input2))
+    (seq input
+         (tree :s= (parse-concatenation input))
+         (trees := (parse-alt-rest input))
+         (return (make-tree-nonleaf :rulename? *alternation*
+                                    :branches (list (list tree) trees))))
     :measure (two-nats-measure (len input) 9)
     :no-function t)
 
@@ -1950,42 +1959,15 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Ideally the body of this function would be:")
-     (xdoc::codeblock
-      "(seq input"
-      "     (tree := (parse-repetition input))"
-      "     (trees := (parse-conc-rest input))"
-      "     (return (make-tree-nonleaf :rulename? *concatenation*"
-      "                                :branches (list (list tree) trees))))")
-     (xdoc::p
-      "But that would defeat the termination proof,
-       which would include a failed subgoal saying that,
-       when @(tsee parse-repetition) succeeds,
-       the length of its remaining input
-       is less than or equal to
-       the length of its initial input.
-       This is the case for @(tsee parse-repetition),
-       but it can only be proved after the function has been admitted.
-       In the termination proof, it is like an uninterpreted function.")
-     (xdoc::p
-      "So we add the condition on the lengths mentioned above
-       as a redundant check.
-       To do that, we cannot use @('seq'),
-       which prevents us from referring to different versions of the input.")
-     (xdoc::p
       "The linear rules below are used in the guard verification proof.")
      (xdoc::@def "parse-concatenation")
      (xdoc::@def "len-of-parse-concatenation-linear-1")
      (xdoc::@def "len-of-parse-concatenation-linear-2"))
-    (b* (((mv error? tree input1) (parse-repetition input))
-         ((when error?) (mv error? nil input1))
-         ((unless (mbt (< (len input1) (len input)))) (mv "" nil nil))
-         ((mv error? trees input2) (parse-conc-rest input1))
-         ((when error?) (mv error? nil input2)))
-      (mv nil
-          (make-tree-nonleaf :rulename? *concatenation*
-                             :branches (list (list tree) trees))
-          input2))
+    (seq input
+         (tree :s= (parse-repetition input))
+         (trees := (parse-conc-rest input))
+         (return (make-tree-nonleaf :rulename? *concatenation*
+                                    :branches (list (list tree) trees))))
     :measure (two-nats-measure (len input) 8)
     :no-function t)
 
@@ -2120,43 +2102,15 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Ideally the body of this function would be:")
-     (xdoc::codeblock
-      "(seq-backtrack"
-      "  input"
-      "  ((tree := (parse-alt-rest-comp input))"
-      "   (trees := (parse-alt-rest input))"
-      "   (return (cons tree trees)))"
-      "  ((return-raw (mv nil nil (nat-list-fix input)))))")
-     (xdoc::p
-      "But that would defeat the termination proof,
-       which would include a failed subgoal saying that,
-       when @(tsee parse-alt-rest-comp) succeeds,
-       the length of its remaining input
-       is strictly less than
-       the length of its initial input.
-       This is the case for @(tsee parse-alt-rest-comp),
-       but it can only be proved after the function has been admitted.
-       In the termination proof, it is like an uninterpreted function.")
-     (xdoc::p
-      "So we add the condition on the lengths mentioned above
-       as a redundant check.
-       To do that, we cannot use @('seq-backtrack'),
-       which prevents us from referring to different versions of the input.
-       In order to maintain the invariant that
-       @(tsee parse-alt-rest) never fails,
-       we return no error if the condition is not satisfied
-       (which never happens).")
-     (xdoc::p
       "The linear rule below is used in the guard verification proof.")
      (xdoc::@def "parse-alt-rest")
      (xdoc::@def "len-of-parse-alt-rest-linear-1"))
-    (b* (((mv error? tree input1)
-          (parse-alt-rest-comp input))
-         ((when error?) (mv nil nil (nat-list-fix input)))
-         ((unless (mbt (< (len input1) (len input)))) (mv nil nil nil))
-         ((mv & trees input2) (parse-alt-rest input1)))
-      (mv nil (cons tree trees) input2))
+    (seq-backtrack
+     input
+     ((tree :s= (parse-alt-rest-comp input))
+      (trees := (parse-alt-rest input))
+      (return (cons tree trees)))
+     ((return-raw (mv nil nil (nat-list-fix input)))))
     :measure (two-nats-measure (len input) 3)
     :no-function t)
 
@@ -2200,43 +2154,15 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Ideally the body of this function would be:")
-     (xdoc::codeblock
-      "(seq-backtrack"
-      "  input"
-      "  ((tree := (parse-conc-rest-comp input))"
-      "   (trees := (parse-conc-rest input))"
-      "   (return (cons tree trees)))"
-      "  ((return-raw (mv nil nil (nat-list-fix input)))))")
-     (xdoc::p
-      "But that would defeat the termination proof,
-       which would include a failed subgoal saying that,
-       when @(tsee parse-conc-rest-comp) succeeds,
-       the length of its remaining input
-       is strictly less than
-       the length of its initial input.
-       This is the case for @(tsee parse-conc-rest-comp),
-       but it can only be proved after the function has been admitted.
-       In the termination proof, it is like an uninterpreted function.")
-     (xdoc::p
-      "So we add the condition on the lengths mentioned above
-       as a redundant check.
-       To do that, we cannot use @('seq-backtrack'),
-       which prevents us from referring to different versions of the input.
-       In order to maintain the invariant that
-       @(tsee parse-conc-rest) never fails,
-       we return no error if the condition is not satisfied
-       (which never happens).")
-     (xdoc::p
       "The linear rule below is used in the guard verification proof.")
      (xdoc::@def "parse-conc-rest")
      (xdoc::@def "len-of-parse-conc-rest-linear-1"))
-    (b* (((mv error? tree input1)
-          (parse-conc-rest-comp input))
-         ((when error?) (mv nil nil (nat-list-fix input)))
-         ((unless (mbt (< (len input1) (len input)))) (mv nil nil nil))
-         ((mv & trees input2) (parse-conc-rest input1)))
-      (mv nil (cons tree trees) input2))
+    (seq-backtrack
+     input
+     ((tree :s= (parse-conc-rest-comp input))
+      (trees := (parse-conc-rest input))
+      (return (cons tree trees)))
+     ((return-raw (mv nil nil (nat-list-fix input)))))
     :measure (two-nats-measure (len input) 1)
     :no-function t)
 
@@ -2264,6 +2190,8 @@
                                     :branches (list trees (list tree)))))
     :measure (two-nats-measure (len input) 0)
     :no-function t)
+
+  :ruler-extenders :all
 
   ///
 
