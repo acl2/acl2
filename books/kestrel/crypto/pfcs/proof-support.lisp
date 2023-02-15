@@ -152,3 +152,16 @@
                    :left (constraint-equal->left constr)
                    :right (constraint-equal->right constr))))
      :enable exec-proof-tree)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled constraint-list-satp-of-nil
+  :short "Proof rule for the empty list of constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The empty list of constraints is always satisfied.
+     Indeed, lists of constraints are conjunctions."))
+  (constraint-list-satp nil defs asg p)
+  :enable exec-proof-tree-list
+  :use (:instance constraint-list-satp-suff (ptrees nil) (constrs nil)))
