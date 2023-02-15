@@ -366,10 +366,6 @@
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp
                             :hyp (atc-symbol-varinfo-alist-listp inscope))
-               (new-compst pseudo-termp
-                           :hyp (and (symbolp compst-var)
-                                     (pseudo-termp expr-term))
-                           :hints (("Goal" :in-theory (enable pseudo-termp))))
                (new-context atc-contextp :hyp (atc-contextp context))
                (thm-index posp :hyp (posp thm-index))
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
@@ -403,7 +399,6 @@
             nil
             nil
             (atc-add-var var varinfo inscope)
-            nil
             context
             thm-index
             names-to-avoid))
@@ -505,7 +500,6 @@
                new-inscope-events)
         item-thm-name
         new-inscope
-        new-compst
         new-context
         thm-index
         names-to-avoid))
@@ -2387,7 +2381,6 @@
                         item-events
                         item-thm
                         inscope-body
-                        & ; compst-body
                         context-body
                         thm-index
                         names-to-avoid)
