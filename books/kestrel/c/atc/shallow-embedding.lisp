@@ -11,7 +11,8 @@
 
 (in-package "C")
 
-(include-book "integer-operations")
+(include-book "../representation/integer-operations")
+
 (include-book "pointed-integers")
 (include-book "arrays")
 (include-book "conditional-expressions")

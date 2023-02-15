@@ -11,7 +11,8 @@
 
 (in-package "C")
 
-(include-book "../integer-operations")
+(include-book "../../representation/integer-operations")
+
 (include-book "../arrays")
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))

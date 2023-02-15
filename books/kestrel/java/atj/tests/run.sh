@@ -114,6 +114,16 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
      CacheConstMethodsShallowGuardedTests
 java -Xss1G CacheConstMethodsNoAIJTypesTests
 
+# test the handling of hard errors (without timings):
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     HardErrorDeepUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     HardErrorDeepGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     HardErrorShallowUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G \
+     HardErrorShallowGuardedTests
+
 # printed only if all the tests succeed:
 echo "" # blank line
 echo "All the ATJ tests have succeeded."

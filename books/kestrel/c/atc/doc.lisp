@@ -387,6 +387,7 @@
      "The guard of each @('fn') must include,
       for every formal parameter @('x'),
       exactly one conjunct of one of the following forms,
+      possibly wrapped with @(tsee mbt),
       which determines the C type of
       the corresponding parameter of the C function,
       or designates the formal parameter as representing
@@ -486,7 +487,7 @@
       The rest of the guard (i.e. other than the conjuncts above)
       is not explicitly represented in the C code.")
     (xdoc::p
-     "Note distinction between pointer types @('<integer type> *')
+     "Note the distinction between pointer types @('<integer type> *')
       and array types @('<integer type> []') in the list above.
       Even though these types are equivalent for function parameters,
       and in fact array types are adjusted to pointer types
@@ -498,6 +499,17 @@
       is useful to convey the intention that something is
       a pointer to (the first or some) element of an integer array
       as opposed to a pointer to a single integer.)")
+    (xdoc::p
+     "The aforementioned option of wrapping the conjuncts with @(tsee mbt)
+      is useful for cases in which the function have stronger guards
+      that imply those conjuncts.
+      It would be inelegant to add redundant conjuncts to the guard
+      (presumably via external transformations)
+      for the sole purpose of communicating function parameter types to ATC.
+      By allowing @(tsee mbt),
+      the redundancy can be explicated and proved
+      (as part of guard verification),
+      while making it easy for ATC to obtain the types.")
 
     (xdoc::p
      "The return type of
