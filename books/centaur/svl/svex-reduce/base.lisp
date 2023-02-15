@@ -391,7 +391,7 @@
   ((width-extns width-of-svex-extn-list)
    (integerp-extns integerp-of-svex-extn-list)
    (skip-bitor/and/xor-repeated :default nil)
-
+   (keep-missing-env-vars :default nil)
    )
   :layout :tree
   )
