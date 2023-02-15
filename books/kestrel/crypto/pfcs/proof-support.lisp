@@ -29,13 +29,14 @@
      (where the number of bits is a parameter),
      or even more simply a gadget parameterized over
      the choice of names of its variables,
-     needs the deeply embedded semantics.
-     The reason is that we can define an ACL2 function
+     the deeply embedded semantics ie needed.")
+   (xdoc::p
+    "The reason is that we can define an ACL2 function
      that takes the parameters as inputs
      and returns the corresponding gadget in PFCS abstract syntax,
      whose properties we can then prove,
      universally quantified over the parameters
-     (perhaps with some restrictions on the parameters).
+     (possibly with some restrictions on the parameters).
      This is only possible in the deeply embedded semantics,
      which treats the PFCS abstract syntax explicitly.
      In contrast, the shallowly embedded semantics
@@ -115,9 +116,9 @@
      for the common case of equality constraints."))
   (implies (and (assignment-for-prime-p asg p)
                 (constraint-case constr :equal))
-           (b* ((left (constraint-equal->left constr))
-                (right (constraint-equal->right constr)))
-             (iff (constraint-satp constr defs asg p)
+           (iff (constraint-satp constr defs asg p)
+                (b* ((left (constraint-equal->left constr))
+                     (right (constraint-equal->right constr)))
                   (and (equal (eval-expr left asg p)
                               (eval-expr right asg p))
                        (eval-expr left asg p)))))
