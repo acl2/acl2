@@ -23,6 +23,7 @@
 
 ;; Returns the floor of the base 2 logarithm of the positive rational x.  Not meaningful for 0.
 ;; TODO: Rename log2 to floor-of-log2 ?
+;; TODO: Generalize the base?
 (defund log2 (x)
   (declare (xargs :guard (and (rationalp x)
                               (< 0 x))
