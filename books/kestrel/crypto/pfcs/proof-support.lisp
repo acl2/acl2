@@ -12,8 +12,6 @@
 
 (include-book "semantics-deep")
 
-(local (in-theory (disable primep)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ proof-support
@@ -31,13 +29,14 @@
      (where the number of bits is a parameter),
      or even more simply a gadget parameterized over
      the choice of names of its variables,
-     needs the deeply embedded semantics.
-     The reason is that we can define an ACL2 function
+     the deeply embedded semantics ie needed.")
+   (xdoc::p
+    "The reason is that we can define an ACL2 function
      that takes the parameters as inputs
      and returns the corresponding gadget in PFCS abstract syntax,
      whose properties we can then prove,
      universally quantified over the parameters
-     (perhaps with some restrictions on the parameters).
+     (possibly with some restrictions on the parameters).
      This is only possible in the deeply embedded semantics,
      which treats the PFCS abstract syntax explicitly.
      In contrast, the shallowly embedded semantics
@@ -117,9 +116,9 @@
      for the common case of equality constraints."))
   (implies (and (assignment-for-prime-p asg p)
                 (constraint-case constr :equal))
-           (b* ((left (constraint-equal->left constr))
-                (right (constraint-equal->right constr)))
-             (iff (constraint-satp constr defs asg p)
+           (iff (constraint-satp constr defs asg p)
+                (b* ((left (constraint-equal->left constr))
+                     (right (constraint-equal->right constr)))
                   (and (equal (eval-expr left asg p)
                               (eval-expr right asg p))
                        (eval-expr left asg p)))))
@@ -153,3 +152,16 @@
                    :left (constraint-equal->left constr)
                    :right (constraint-equal->right constr))))
      :enable exec-proof-tree)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled constraint-list-satp-of-nil
+  :short "Proof rule for the empty list of constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The empty list of constraints is always satisfied.
+     Indeed, lists of constraints are conjunctions."))
+  (constraint-list-satp nil defs asg p)
+  :enable exec-proof-tree-list
+  :use (:instance constraint-list-satp-suff (ptrees nil) (constrs nil)))
