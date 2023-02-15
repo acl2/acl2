@@ -44,7 +44,21 @@
         ;; x is in [1,2), so it's log2 is 0:
         0))))
 
+(defthm natp-of-log2-type
+  (implies (and (<= 1 x)
+                (rationalp x))
+           (natp (log2 x)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable log2))))
 
+(defthm posp-of-log2-type
+  (implies (and (<= 2 x)
+                (rationalp x))
+           (posp (log2 x)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable log2))))
+
+;; Could loop with the definition?
 (defthm log2-of-*-of-2
   (implies (and (< 0 x)
                 (rationalp x))
@@ -52,6 +66,7 @@
                   (+ 1 (log2 x))))
   :hints (("Goal" :in-theory (enable log2))))
 
+;; Could loop with the definition?
 (defthm log2-of-*-of-1/2
   (implies (and (< 0 x)
                 (rationalp x))
@@ -68,22 +83,6 @@
 (defthmd log2-of-both-sides
   (implies (equal x y)
            (equal (log2 x) (log2 y))))
-
-;todo: log2 of mask?
-
-(defthm natp-of-log2-type
-  (implies (and (<= 1 x)
-                (rationalp x))
-           (natp (log2 x)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable log2))))
-
-(defthm posp-of-log2-type
-  (implies (and (<= 2 x)
-                (rationalp x))
-           (posp (log2 x)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable log2))))
 
 (local
  (defun log2-double-induct (x y)
@@ -255,3 +254,5 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
   :hints (("Goal" :cases ((equal x 0))
            :in-theory (enable log2))))
+
+;todo: log2 of mask?
