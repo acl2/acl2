@@ -42,5 +42,12 @@
          (c::uchar-from-sint (c::sint-hex-const 2))
          (c::uchar-from-sint (c::sint-oct-const 22))))
 
-(c::defobject |no_init|
+(c::defobject |arr_no_init|
   :type (c::ullong 1000))
+
+(c::defobject |global|
+  :type c::sshort
+  :init (c::sshort-from-sint (c::bitnot-sint (c::sint-dec-const 255))))
+
+(c::defobject |global_0|
+  :type c::ushort)

@@ -140,6 +140,8 @@
         |i$loop|
         |i|
         |perm|
-        |no_init|
+        |arr_no_init|
+        |global|
+        |global_0|
         :file-name "ext-objs"
         :header t)
