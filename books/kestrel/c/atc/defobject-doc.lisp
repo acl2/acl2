@@ -95,18 +95,18 @@
      (xdoc::p
       "It must be one of")
      (xdoc::ul
-      (xdoc::li "@('(schar <pos>)')")
-      (xdoc::li "@('(uchar <pos>)')")
-      (xdoc::li "@('(sshort <pos>)')")
-      (xdoc::li "@('(ushort <pos>)')")
-      (xdoc::li "@('(sint <pos>)')")
-      (xdoc::li "@('(uint <pos>)')")
-      (xdoc::li "@('(slong <pos>)')")
-      (xdoc::li "@('(ulong <pos>)')")
-      (xdoc::li "@('(sllong <pos>)')")
-      (xdoc::li "@('(ullong <pos>)')"))
+      (xdoc::li "@('(schar <size>)')")
+      (xdoc::li "@('(uchar <size>)')")
+      (xdoc::li "@('(sshort <size>)')")
+      (xdoc::li "@('(ushort <size>)')")
+      (xdoc::li "@('(sint <size>)')")
+      (xdoc::li "@('(uint <size>)')")
+      (xdoc::li "@('(slong <size>)')")
+      (xdoc::li "@('(ulong <size>)')")
+      (xdoc::li "@('(sllong <size>)')")
+      (xdoc::li "@('(ullong <size>)')"))
      (xdoc::p
-      "where @('<pos>') is a positive integer not exceeding @(tsee ullong-max).
+      "where @('<size>') is a positive integer not exceeding @(tsee ullong-max).
        Each of these represents an integer array type with the specified size,
        where the limit on the size is so that
        it can be represented by a C integer constant."))
@@ -117,7 +117,7 @@
       "Initializer of the externally defined object.")
      (xdoc::p
       "It must be either @('nil') (the default)
-       or a list of length @('<pos>')
+       or a list of length @('<size>')
        of constant expression terms returning @('T'),
        where @('T') is the integer type specified in the @(':type') input
        (i.e. the element type of the array),
@@ -298,7 +298,7 @@
      (xdoc::codeblock
       "(defun object-<name>-p (x)"
       "  (and (<type>-arrayp x)"
-      "       (equal (<type>-array-length x) <pos>)))")
+      "       (equal (<type>-array-length x) <size>)))")
      (xdoc::p
       "where @('<name>') is the name of the object
        specified in the @('name') input
@@ -330,7 +330,7 @@
        if the @(':init') input is @('nil'),
        each term is @('(<type>-dec-const 0)'),
        where @('<type>') is the element type of the array,
-       and where the term is repeated @('<pos>') times,
+       and where the term is repeated @('<size>') times,
        reflecting the fact that an external array object
        without an explicit initializer
        is initialized with 0 values of the appropriate type.")
