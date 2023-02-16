@@ -199,39 +199,26 @@
    (xdoc::p
     "If successful, we return the C type specified by the input."))
   (b* (((reterr) (irr-type))
-       ((unless (std::tuplep 2 type))
-        (reterr (msg "The :TYPE input ~x0 must be a list of two elements."
-                     type)))
-       ((list elemfixtype size) type)
-       ((unless (symbolp elemfixtype))
-        (reterr (msg "The first element ~x0 of the :TYPE input ~x1 ~
-                      must be a symbol."
-                     elemfixtype type)))
-       (elemtype (fixtype-to-integer-type elemfixtype))
-       ((unless elemtype)
-        (reterr (msg "The first element ~x0 of the :TYPE input ~x1 ~
-                      must be among ~&2."
-                     elemfixtype
-                     type
-                     '(schar
-                       uchar
-                       sshort
-                       ushort
-                       sint
-                       uint
-                       slong
-                       ulong
-                       sllong
-                       ullong))))
-       ((unless (posp size))
-        (reterr (msg "The second element ~x0 of the :TYPE input ~x1 ~
-                      must be a positive integer."
-                     size type)))
-       ((unless (<= size (ullong-max)))
-        (reterr (msg "The second element ~x0 of the :TYPE input ~x1 ~
-                      must not exceed ~x2."
-                     size type (ullong-max)))))
-    (retok (make-type-array :of elemtype :size size))))
+       (msg (msg "The :TYPE input ~x0 must be ~
+                  either an element of ~x1 ~
+                  or a list of two elements ~
+                  where the first is an element of ~x1 ~
+                  and the second is a positive integer ~
+                  not exceeding ~x2."
+                 type *nonchar-integer-fixtypes* (ullong-max))))
+    (if (atom type)
+        (b* (((unless (symbolp type)) (reterr msg))
+             (ctype (fixtype-to-integer-type type))
+             ((unless ctype) (reterr msg)))
+          (retok ctype))
+      (b* (((unless (std::tuplep 2 type)) (reterr msg))
+           ((list elemfixtype size) type)
+           ((unless (symbolp elemfixtype)) (reterr msg))
+           (elemtype (fixtype-to-integer-type elemfixtype))
+           ((unless elemtype) (reterr msg))
+           ((unless (posp size)) (reterr msg))
+           ((unless (<= size (ullong-max))) (reterr msg)))
+        (retok (make-type-array :of elemtype :size size))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -301,17 +288,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defobject-process-init-term (term
-                                     (elemtype typep)
+                                     (required-type typep)
                                      (wrld plist-worldp))
   :returns (mv erp (expr "An @(tsee exprp)."))
   :mode :program
-  :short "Process a term that is an element of the list @(':init')."
+  :short "Process a term that is the @(':init') input
+          or an element of @(':init') input."
   :long
   (xdoc::topstring
    (xdoc::p
     "We translate the term.
      We check whether it has the form required in the user documentation,
-     and whether it has the right type.
+     and whether it has the right type, which is passed as argument.
      We return the expression represented by the term,
      if all the checks succeed."))
   (b* (((reterr) (irr-expr))
@@ -326,16 +314,16 @@
                       but it returns ~x1 instead."
                      term stobjs-out)))
        ((erp expr type) (defobject-term-to-expr term/msg))
-       ((unless (equal type elemtype))
+       ((unless (equal type required-type))
         (reterr (msg "The initializer term ~x0 has type ~x1, ~
-                      which does not match the element type ~x2 of the array."
-                     term type elemtype))))
+                      which does not match the required type ~x2."
+                     term type required-type))))
     (retok expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defobject-process-init-terms ((terms true-listp)
-                                      (elemtype typep)
+                                      (required-type typep)
                                       (wrld plist-worldp))
   :returns (mv erp (exprs "An @(tsee expr-listp)."))
   :mode :program
@@ -347,8 +335,10 @@
      returning the corresponding list of expressions if successful."))
   (b* (((reterr) nil)
        ((when (endp terms)) (retok nil))
-       ((erp expr) (defobject-process-init-term (car terms) elemtype wrld))
-       ((erp exprs) (defobject-process-init-terms (cdr terms) elemtype wrld)))
+       ((erp expr)
+        (defobject-process-init-term (car terms) required-type wrld))
+       ((erp exprs)
+        (defobject-process-init-terms (cdr terms) required-type wrld)))
     (retok (cons expr exprs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -361,25 +351,34 @@
   (xdoc::topstring
    (xdoc::p
     "We ensure that it is either @('nil'),
-     or a list of terms that appropriately represent expressions,
-     and that the length of the list (if not @('nil')) matches
+     or a single term that appropriately represents an expression
+     if the type is an integer type,
+     or a non-empty list of terms that appropriately represent expressions
+     if the type is an integer array type;
+     in the last case, the length of the list must match
      the (positive) size of the array type."))
   (b* (((reterr) (irr-initer))
-       ((unless (true-listp init))
-        (reterr (msg "The :INIT input ~x0 must be a list." init)))
-       ((unless (type-case type :array))
-        (reterr (raise "Internal error: not array type ~x0." type)))
-       ((when (endp init)) (retok nil))
-       ((unless (equal (len init) (type-array->size type)))
-        (reterr (msg "The number ~x0 of elements of the :INIT input ~
-                      must match the size ~x1 of the array ~
-                      specified by the :TYPE input."
-                     (len init) (type-array->size type))))
-       ((erp exprs) (defobject-process-init-terms
-                      init (type-array->of type) wrld)))
-    (retok (if (consp exprs)
-               (initer-list exprs)
-             nil))))
+       ((when (null init)) (retok nil)))
+    (cond ((type-integerp type)
+           (b* (((erp expr) (defobject-process-init-term init type wrld)))
+             (retok (initer-single expr))))
+          ((type-case type :array)
+           (b* (((unless (true-listp init))
+                 (reterr (msg "Since the object's type is ~x0, ~
+                               the :INIT input must be a list, ~
+                               but it is ~x0 instead."
+                              type init)))
+                (elemtype (type-array->of type))
+                (size (type-array->size type))
+                ((unless (equal (len init) size))
+                 (reterr
+                  (msg "The number ~x0 of elements of the :INIT input ~
+                        must match the size ~x1 of the array ~
+                        specified by the :TYPE input."
+                       (len init) size)))
+                ((erp exprs) (defobject-process-init-terms init elemtype wrld)))
+             (retok (initer-list exprs))))
+          (t (reterr (raise "Internal error: type ~x0." type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -413,7 +412,7 @@
                                   (name-string stringp)
                                   (name-ident identp)
                                   (type typep)
-                                  (init true-listp)
+                                  init
                                   (initer? initer-optionp)
                                   (call pseudo-event-formp))
   :returns (event pseudo-event-formp)
@@ -425,29 +424,52 @@
      They are put into one @(tsee progn) event.
      We conclude with a @(tsee deflabel) event
      that facilitates history manipulation."))
-  (b* (((unless (and (type-case type :array)
-                     (type-nonchar-integerp (type-array->of type))))
-        (raise "Internal error: not integer array type ~x0." type)
-        '(_))
-       (fixtype (integer-type-to-fixtype (type-array->of type)))
-       (fixtype-from-integer (pack fixtype '-from-integer))
-       (size (type-array->size type))
-       (recognizer-name (packn-pos (list 'object- name '-p) name))
+  (b* ((recognizer-name (packn-pos (list 'object- name '-p) name))
        (initializer-name (packn-pos (list 'object- name '-init) name))
-       (type-arrayp (pack fixtype '-arrayp))
-       (type-array-length (pack fixtype '-array-length))
-       (type-array-of (pack fixtype '-array-of))
-       (recognizer-event
-        `(define ,recognizer-name (x)
-           :returns (yes/no booleanp)
-           (and (,type-arrayp x)
-                (equal (,type-array-length x) ,size))))
-       (initializer-event
-        `(define ,initializer-name ()
-           :returns (object ,recognizer-name)
-           (,type-array-of ,(if (consp init)
-                                `(list ,@init)
-                              `(repeat ,size (,fixtype-from-integer 0))))))
+       ((mv recognizer-event initializer-event)
+        (cond
+         ((type-integerp type)
+          (b* (((unless (type-nonchar-integerp type))
+                (raise "Internal error: not integer type ~x0." type)
+                (mv '(_) '(_)))
+               (fixtype (integer-type-to-fixtype type))
+               (fixtype-pred (pack fixtype 'p))
+               (fixtype-from-integer (pack fixtype '-from-integer))
+               (recognizer-event
+                `(define ,recognizer-name (x)
+                   :returns (yes/no booleanp)
+                   (,fixtype-pred x)))
+               (initializer-event
+                `(define ,initializer-name ()
+                   :returns (object ,recognizer-name)
+                   ,(or init
+                        `(,fixtype-from-integer 0)))))
+            (mv recognizer-event initializer-event)))
+         ((type-case type :array)
+          (b* (((unless (type-nonchar-integerp (type-array->of type)))
+                (raise "Internal error: not integer array type ~x0." type)
+                (mv '(_) '(_)))
+               (fixtype (integer-type-to-fixtype (type-array->of type)))
+               (fixtype-from-integer (pack fixtype '-from-integer))
+               (size (type-array->size type))
+               (type-arrayp (pack fixtype '-arrayp))
+               (type-array-length (pack fixtype '-array-length))
+               (type-array-of (pack fixtype '-array-of))
+               (recognizer-event
+                `(define ,recognizer-name (x)
+                   :returns (yes/no booleanp)
+                   (and (,type-arrayp x)
+                        (equal (,type-array-length x) ,size))))
+               (initializer-event
+                `(define ,initializer-name ()
+                   :returns (object ,recognizer-name)
+                   (,type-array-of
+                    ,(if (consp init)
+                         `(list ,@init)
+                       `(repeat ,size (,fixtype-from-integer 0)))))))
+            (mv recognizer-event initializer-event)))
+         (t (prog2$ (raise "Internal error: type ~x0." type)
+                    (mv '(_) '(_))))))
        (info (make-defobject-info :name-ident name-ident
                                   :name-symbol name
                                   :type type
