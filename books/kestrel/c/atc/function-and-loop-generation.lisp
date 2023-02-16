@@ -798,10 +798,7 @@
   (b* ((wrld (w state))
        (results1 (and type?
                       (not (type-case type? :void))
-                      (list (cons nil
-                                  (make-atc-var-info :type type?
-                                                     :thm nil
-                                                     :externalp nil)))))
+                      (list (cons nil type?))))
        (results2 (atc-gen-fn-result-thm-aux1 affect typed-formals))
        (results (append results1 results2))
        ((unless (consp results))
@@ -952,14 +949,14 @@
 
   ((define atc-gen-fn-result-thm-aux1 ((affect symbol-listp)
                                        (typed-formals atc-symbol-varinfo-alistp))
-     :returns (results atc-symbol-varinfo-alistp :hyp (symbol-listp affect))
+     :returns (results symbol-type-alistp :hyp (symbol-listp affect))
      :parents nil
      (cond ((endp affect) nil)
            (t (b* ((info (cdr (assoc-eq (car affect)
                                         typed-formals))))
                 (if (atc-var-infop info)
                     (acons (car affect)
-                           info
+                           (atc-var-info->type info)
                            (atc-gen-fn-result-thm-aux1 (cdr affect)
                                                        typed-formals))
                   (raise "Internal error: variable ~x0 not found in ~x1."
@@ -968,9 +965,10 @@
      :prepwork
      ((local
        (in-theory (enable alistp-when-atc-symbol-varinfo-alistp-rewrite
+                          alistp-when-symbol-type-alistp-rewrite
                           acons)))))
 
-   (define atc-gen-fn-result-thm-aux2 ((results atc-symbol-varinfo-alistp)
+   (define atc-gen-fn-result-thm-aux2 ((results symbol-type-alistp)
                                        (index? maybe-natp)
                                        (fn-call pseudo-termp)
                                        (wrld plist-worldp))
@@ -980,8 +978,7 @@
           (theresult (if index?
                          `(mv-nth ,index? ,fn-call)
                        fn-call))
-          ((cons name info) (car results))
-          (type (atc-var-info->type info))
+          ((cons name type) (car results))
           (type-conjunct `(,(type-to-recognizer type wrld) ,theresult))
           (nonnil-conjunct? (and index? (list theresult)))
           (arraylength-conjunct?
