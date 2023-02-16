@@ -17,13 +17,10 @@
 
 (include-book "fty-pseudo-terms")
 
-(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
-(include-book "kestrel/error-checking/ensure-value-is-true-list" :dir :system)
-(include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/fty/pseudo-event-form" :dir :system)
+(include-book "kestrel/std/system/check-user-term" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/std/util/error-value-tuples" :dir :system)
-(include-book "kestrel/std/util/tuple" :dir :system)
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
