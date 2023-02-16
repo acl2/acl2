@@ -422,7 +422,7 @@
      so this is adequate;
      this will be properly generalized at some point."))
   (objdesign-case objdes
-                  :variable (address 0)
+                  :static (address 0)
                   :address objdes.get
                   :element (objdesign->base-address objdes.super)
                   :member (objdesign->base-address objdes.super))
@@ -1541,8 +1541,8 @@
              update-object
              objdesign->base-address))
 
-  (defruled write-object-of-objdesign-variable
-    (equal (write-object (objdesign-variable var) val compst)
+  (defruled write-object-of-objdesign-static
+    (equal (write-object (objdesign-static var) val compst)
            (write-static-var var val compst))
     :enable write-object)
 
@@ -1555,7 +1555,7 @@
       write-object-okp-of-update-object-same
       write-object-okp-of-update-object-disjoint
       write-object-okp-when-valuep-of-read-object
-      write-object-of-objdesign-variable
+      write-object-of-objdesign-static
       object-disjointp-commutative
       valuep-when-uchar-arrayp
       valuep-when-schar-arrayp
@@ -1655,8 +1655,8 @@
              object-disjointp
              objdesign->base-address))
 
-  (defruled read-object-of-objdesign-variable
-    (equal (read-object (objdesign-variable var) compst)
+  (defruled read-object-of-objdesign-static
+    (equal (read-object (objdesign-static var) compst)
            (read-static-var var compst))
     :enable read-object)
 
@@ -1667,7 +1667,7 @@
       read-object-of-update-var
       read-object-of-update-object-same
       read-object-of-update-object-disjoint
-      read-object-of-objdesign-variable
+      read-object-of-objdesign-static
       object-disjointp-commutative)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
