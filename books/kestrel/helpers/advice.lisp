@@ -3994,9 +3994,11 @@
        ;;             (if (< 1 removed-count) "successful recommendations were" "successful recommendation was"))))
        (num-successful-recs (len successful-recs-no-dupes))
        (- (and print
-               (if (< 1 num-successful-recs)
-                   (cw "~%(~x0 successful recommendations):~%" num-successful-recs)
-                 (cw "~%(1 successful recommendation):~%")))))
+               (if (= 0 num-successful-recs)
+                   (cw "~%(No successful recommendations):~%")
+                 (if (= 1 num-successful-recs)
+                     (cw "~%(1 successful recommendation):~%")
+                   (cw "~%(~x0 successful recommendations):~%" num-successful-recs))))))
     (mv nil ; no error
         (extract-actions-from-successful-recs successful-recs)
         state)))
