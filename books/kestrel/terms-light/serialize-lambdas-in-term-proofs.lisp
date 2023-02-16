@@ -1,6 +1,6 @@
 ; Proofs about serialize-lambdas-in-term
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "lambdas-closed-in-termp")
 (include-book "serialize-lambdas-in-term")
+(local (include-book "make-lambda-nest-proofs"))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
@@ -57,15 +58,6 @@
            :in-theory (enable sublis-var-simple
                               sublis-var-simple-lst
                               lambdas-closed-in-termp))))
-
-(defthm lambdas-closed-in-termp-of-make-lambda-nest
-  (implies (and (symbol-alistp bindings)
-                (pseudo-term-listp (strip-cdrs bindings))
-                (lambdas-closed-in-termsp (strip-cdrs bindings))
-                (pseudo-termp body)
-                (lambdas-closed-in-termp body))
-           (lambdas-closed-in-termp (make-lambda-nest bindings body)))
-  :hints (("Goal" :in-theory (enable lambdas-closed-in-termp))))
 
 (defthm lambdas-closed-in-termsp-of-strip-cdrs-of-mv-nth-1-of-find-safe-binding
   (implies (and (symbol-alistp bindings)

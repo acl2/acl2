@@ -1,6 +1,6 @@
 ; A tool to turn multi-var lambdas into nests of single-var lambdas
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,12 +10,13 @@
 
 (in-package "ACL2")
 
-(include-book "free-vars-in-term")
 (include-book "sublis-var-simple")
+(include-book "make-lambda-nest")
 ;; (include-book "trivial-formals")
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/utilities/fresh-names" :dir :system)
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
+(local (include-book "make-lambda-nest-proofs"))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -52,31 +53,6 @@
 ;;
 ;; Once we add the temporary (and the binding that is now safe), start again looking for additional safe ones.
 ;; TODO: Can we work harder to minimize the number of temporaries?
-
-;; Makes a nest of lambda applications, one for each of the BINDINGS, around BODY.
-;; Could optimize by having this also return the free vars.
-(defun make-lambda-nest (bindings body)
-  (declare (xargs :guard (and (symbol-alistp bindings)
-                              (pseudo-term-listp (strip-cdrs bindings))
-                              (pseudo-termp body))))
-  (if (endp bindings)
-      body
-    (let* ((binding (first bindings))
-           (var (car binding))
-           (val (cdr binding))
-           (body (make-lambda-nest (rest bindings) body))
-           (body-vars (free-vars-in-term body)))
-      (if (not (member-eq var body-vars))
-          ;; This var would be ignored, so just don't bind it:
-          body
-        (let ((other-body-vars (remove1-eq var body-vars)))
-          `((lambda (,var ,@other-body-vars) ,body) ,val ,@other-body-vars))))))
-
-(defthm pseudo-termp-of-make-lambda-nest
-  (implies (and (symbol-alistp bindings)
-                (pseudo-term-listp (strip-cdrs bindings))
-                (pseudo-termp body))
-           (pseudo-termp (make-lambda-nest bindings body))))
 
 ;; Returns (mv safe-binding other-bindings) or (mv nil nil) if no safe binding is found.
 (defund find-safe-binding (bindings earlier-bindings-rev)
