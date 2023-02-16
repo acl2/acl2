@@ -361,7 +361,7 @@
        are the terms in the list in the @(':init') input
        (if the object has integer array type and that input is not @('nil'));
        if the @(':init') input is @('nil'),
-       each term is @('(<type>-dec-const 0)'),
+       each term is @('(<type>-from-integer 0)'),
        where @('<type>') is the type or element type of the object,
        and where, in the case of the array,
        the term is repeated @('<size>') times.
