@@ -319,7 +319,10 @@
      rejecting them even if they are identical.
      Then we construct the final alist by going through the formals in order,
      and looking up their types in the preliminary alist;
-     here we detect when a formal has no corresponding conjunct in the guard."))
+     here we detect when a formal has no corresponding conjunct in the guard.")
+   (xdoc::p
+    "We also consult the @(tsee defobject) alist
+     to set the @('externalp') flag of the information about the formal."))
   (b* (((reterr) nil nil nil nil)
        (formals (formals+ fn wrld))
        (guard (uguard+ fn wrld))
@@ -416,7 +419,10 @@
                       (cons event events)
                     events))
           (proofs (and name proofs))
-          (info (make-atc-var-info :type type :thm name))
+          (externalp
+           (b* ((info? (cdr (assoc-equal (symbol-name arg) prec-objs))))
+             (and info? t)))
+          (info (make-atc-var-info :type type :thm name :externalp externalp))
           (prelim-alist (acons arg info prelim-alist)))
        (retok prelim-alist events proofs names-to-avoid))
      :prepwork ((local (in-theory (enable acons))))
@@ -794,7 +800,8 @@
                       (not (type-case type? :void))
                       (list (cons nil
                                   (make-atc-var-info :type type?
-                                                     :thm nil)))))
+                                                     :thm nil
+                                                     :externalp nil)))))
        (results2 (atc-gen-fn-result-thm-aux1 affect typed-formals))
        (results (append results1 results2))
        ((unless (consp results))
@@ -2247,6 +2254,7 @@
           ((cons var info) (car typed-formals))
           (type (atc-var-info->type info))
           (var-thm (atc-var-info->thm info))
+          (externalp (atc-var-info->externalp info))
           (type-pred (type-to-recognizer type wrld))
           (name (pack fn '- var '-in-scope-0))
           ((mv name names-to-avoid)
@@ -2295,7 +2303,9 @@
                                      (cdr typed-formals)
                                      compst-var context names-to-avoid wrld)))
        (mv (cons (cons var
-                       (make-atc-var-info :type type :thm name))
+                       (make-atc-var-info :type type
+                                          :thm name
+                                          :externalp externalp))
                  inscope-rest)
            (cons event events-rest)
            names-to-avoid)))))
