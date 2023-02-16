@@ -22,6 +22,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/fty/pseudo-event-form" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
+(include-book "kestrel/std/util/error-value-tuples" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
@@ -151,14 +152,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defobject-process-name (name (call pseudo-event-formp) (ctx ctxp) state)
+(define defobject-process-name (name
+                                (call pseudo-event-formp)
+                                (wrld plist-worldp))
   :returns (mv erp
-               (val (tuple (name-string stringp)
-                           (name-ident identp)
-                           (redundantp booleanp)
-                           val)
-                    :hints (("Goal" :in-theory (enable len))))
-               state)
+               (name-string stringp)
+               (name-ident identp)
+               (redundantp booleanp))
   :short "Process the @('name') input."
   :long
   (xdoc::topstring
@@ -171,95 +171,77 @@
      If its name is already in the @(tsee defobject) table,
      we ensure that the current call is identical to the one stored there,
      in which case we return an indication that the call is redundant."))
-  (b* ((wrld (w state))
-       ((acl2::fun (irrelevant)) (list "" (irr-ident) nil))
-       ((er &) (ensure-value-is-symbol$ name
-                                        (msg "The first input ~x0" name)
-                                        t (irrelevant)))
+  (b* (((reterr) "" (irr-ident) nil)
+       ((unless (symbolp name))
+        (reterr (msg "The first input ~x0 must be a symbol." name)))
        (name-string (symbol-name name))
        ((unless (paident-stringp name-string))
-        (er-soft+ ctx t (irrelevant)
-                  "The SYMBOL-NAME ~x0 of the first input ~x1 ~
-                   must be a portable ASCII C identifier."
-                  name-string name))
+        (reterr (msg "The SYMBOL-NAME ~x0 of the first input ~x1 ~
+                      must be a portable ASCII C identifier."
+                     name-string name)))
        (name-ident (ident name-string))
        (info (defobject-table-lookup name-string wrld))
        ((when info)
         (if (equal call (defobject-info->call info))
-            (acl2::value (list name-string name-ident t))
-          (er-soft+ ctx t (irrelevant)
-                    "There is already an external object with name ~x0, ~
-                     recorded in the table of shallowly embedded ~
-                     C external objects, ~
-                     but its call ~x1 differs from the current call ~x2, ~
-                     and so the call is not redundant."
-                    name-string (defobject-info->call info) call))))
-    (acl2::value (list name-string name-ident nil)))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-symbol
-                                           msgp
-                                           character-alistp))))
+            (retok name-string name-ident t)
+          (reterr (msg "There is already an external object with name ~x0, ~
+                        recorded in the table of shallowly embedded ~
+                        C external objects, ~
+                        but its call ~x1 differs from the current call ~x2, ~
+                        and so the call is not redundant."
+                       name-string (defobject-info->call info) call)))))
+    (retok name-string name-ident nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defobject-process-type (type (ctx ctxp) state)
-  :returns (mv erp (val typep) state)
+(define defobject-process-type (type)
+  :returns (mv erp (type typep))
   :short "Process the @(':type') input."
   :long
   (xdoc::topstring
    (xdoc::p
     "If successful, we return the C type specified by the input."))
-  (b* (((unless (std::tuplep 2 type))
-        (er-soft+ ctx t (irr-type)
-                  "The :TYPE input ~x0 must be a list of two elements."
-                  type))
-       ((list elemfixtype pos) type)
-       ((er &) (ensure-value-is-symbol$ elemfixtype
-                                        (msg "The first element ~x0 ~
-                                              of the :TYPE input"
-                                             elemfixtype)
-                                        t (irr-type)))
+  (b* (((reterr) (irr-type))
+       ((unless (std::tuplep 2 type))
+        (reterr (msg "The :TYPE input ~x0 must be a list of two elements."
+                     type)))
+       ((list elemfixtype size) type)
+       ((unless (symbolp elemfixtype))
+        (reterr (msg "The first element ~x0 of the :TYPE input ~x1 ~
+                      must be a symbol."
+                     elemfixtype type)))
        (elemtype (fixtype-to-integer-type elemfixtype))
        ((unless elemtype)
-        (er-soft+ ctx t (irr-type)
-                  "The first element ~x0 of the :TYPE input ~
-                   must be among ~&1."
-                  elemfixtype
-                  '(schar
-                    uchar
-                    sshort
-                    ushort
-                    sint
-                    uint
-                    slong
-                    ulong
-                    sllong
-                    ullong)))
-       ((unless (posp pos))
-        (er-soft+ ctx t (irr-type)
-                  "The second element ~x0 of the :TYPE input ~
-                   must be a positive integer."
-                  pos))
-       ((unless (<= pos (ullong-max)))
-        (er-soft+ ctx t (irr-type)
-                  "The second element ~x0 of the :TYPE input ~
-                   must not exceed ~x1."
-                  pos (ullong-max))))
-    (acl2::value (make-type-array :of elemtype :size pos)))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-symbol
-                                           msgp
-                                           character-alistp))))
+        (reterr (msg "The first element ~x0 of the :TYPE input ~x1 ~
+                      must be among ~&2."
+                     elemfixtype
+                     type
+                     '(schar
+                       uchar
+                       sshort
+                       ushort
+                       sint
+                       uint
+                       slong
+                       ulong
+                       sllong
+                       ullong))))
+       ((unless (posp size))
+        (reterr (msg "The second element ~x0 of the :TYPE input ~x1 ~
+                      must be a positive integer."
+                     size type)))
+       ((unless (<= size (ullong-max)))
+        (reterr (msg "The second element ~x0 of the :TYPE input ~x1 ~
+                      must not exceed ~x2."
+                     size type (ullong-max)))))
+    (retok (make-type-array :of elemtype :size size))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defobject-term-to-expr ((term pseudo-termp)
-                                (ctx ctxp)
-                                state)
+(define defobject-term-to-expr ((term pseudo-termp))
   :returns (mv erp
-               (val (tuple (expr exprp)
-                           (type typep)
-                           val)
-                    :hints (("Goal" :in-theory (enable len))))
-               state)
+               (expr exprp)
+               (type typep))
   :short "Turn a constant expression term into the represented expression."
   :long
   (xdoc::topstring
@@ -269,78 +251,62 @@
    (xdoc::p
     "In essence, this generates C code for
      a term used in the initializer of the external object."))
-  (b* (((acl2::fun (irrelevant)) (list (irr-expr) (irr-type)))
+  (b* (((reterr) (irr-expr) (irr-type))
        ((mv erp okp const out-type &) (atc-check-iconst term))
-       ((when erp) (er-soft+ ctx t (irrelevant) "~@0" erp))
+       ((when erp) (reterr (msg "~@0" erp)))
        ((when okp)
-        (acl2::value
-         (list (expr-const (const-int const))
-               out-type)))
+        (retok (expr-const (const-int const))
+               out-type))
        ((mv okp op arg in-type out-type) (atc-check-unop term))
        ((when okp)
-        (b* (((er (list arg-expr type)) (defobject-term-to-expr arg ctx state))
+        (b* (((erp arg-expr type) (defobject-term-to-expr arg))
              ((unless (equal type in-type))
-              (er-soft+ ctx t (irrelevant)
-                        "The unary operator ~x0 ~
-                         is applied to a term ~x1 returning ~x2, ~
-                         but a ~x3 operand is expected."
-                        op arg type in-type)))
-          (acl2::value (list (make-expr-unary :op op
-                                              :arg arg-expr)
-                             out-type))))
+              (reterr (msg "The unary operator ~x0 ~
+                            is applied to a term ~x1 returning ~x2, ~
+                            but a ~x3 operand is expected."
+                           op arg type in-type))))
+          (retok (make-expr-unary :op op :arg arg-expr)
+                 out-type)))
        ((mv okp op arg1 arg2 in-type1 in-type2 out-type)
         (atc-check-binop term))
        ((when okp)
-        (b* (((er (list arg1-expr type1)) (defobject-term-to-expr
-                                            arg1 ctx state))
-             ((er (list arg2-expr type2)) (defobject-term-to-expr
-                                            arg2 ctx state))
+        (b* (((erp arg1-expr type1) (defobject-term-to-expr arg1))
+             ((erp arg2-expr type2) (defobject-term-to-expr arg2))
              ((unless (and (equal type1 in-type1)
                            (equal type2 in-type2)))
-              (er-soft+ ctx t (irrelevant)
-                        "The binary operator ~x0 ~
-                         is applied to a term ~x1 returning ~x2
-                         and to a term ~x3 returning ~x4,
-                         but a ~x5 and a ~x6 operand is expected."
-                        op arg1 type1 arg2 type2 in-type1 in-type2)))
-          (acl2::value (list (make-expr-binary :op op
-                                               :arg1 arg1-expr
-                                               :arg2 arg2-expr)
-                             out-type))))
+              (reterr (msg "The binary operator ~x0 ~
+                            is applied to a term ~x1 returning ~x2
+                            and to a term ~x3 returning ~x4,
+                            but a ~x5 and a ~x6 operand is expected."
+                           op arg1 type1 arg2 type2 in-type1 in-type2))))
+          (retok (make-expr-binary :op op
+                                   :arg1 arg1-expr
+                                   :arg2 arg2-expr)
+                 out-type)))
        ((mv okp tyname arg in-type out-type) (atc-check-conv term))
        ((when okp)
-        (b* (((er (list arg-expr type)) (defobject-term-to-expr
-                                          arg ctx state))
+        (b* (((erp arg-expr type) (defobject-term-to-expr arg))
              ((unless (equal type in-type))
-              (er-soft+ ctx t (irrelevant)
-                        "The conversion from ~x0 to ~x1 ~
-                         is applied to a term ~x2 returning ~x3, ~
-                         but a ~x0 operand is expected."
-                        in-type out-type arg type)))
-          (acl2::value (list (make-expr-cast :type tyname
-                                             :arg arg-expr)
-                             out-type)))))
-    (er-soft+ ctx t (irrelevant)
-              "The term ~x0 used as an array element initializer ~
-               does not have the required form."
-              term))
+              (reterr (msg "The conversion from ~x0 to ~x1 ~
+                            is applied to a term ~x2 returning ~x3, ~
+                            but a ~x0 operand is expected."
+                           in-type out-type arg type))))
+          (retok (make-expr-cast :type tyname
+                                 :arg arg-expr)
+                 out-type))))
+    (reterr (msg "The term ~x0 used as an array element initializer ~
+                  does not have the required form."
+                 term)))
   :measure (pseudo-term-count term)
   :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards nil ; done below
-  ///
-
-  (more-returns
-   (val true-listp :rule-classes :type-prescription))
-
-  (verify-guards defobject-term-to-expr))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defobject-process-init-term (term
                                      (elemtype typep)
-                                     (ctx ctxp)
-                                     state)
-  :returns (mv erp (expr "An @(tsee exprp).") state)
+                                     (wrld plist-worldp))
+  :returns (mv erp (expr "An @(tsee exprp)."))
   :mode :program
   :short "Process a term that is an element of the list @(':init')."
   :long
@@ -351,31 +317,30 @@
      and whether it has the right type.
      We return the expression represented by the term,
      if all the checks succeed."))
-  (b* (((er (list term stobjs-out))
-        (acl2::ensure-value-is-untranslated-term$
-         term (msg "The initializer term ~x0" term) t (irr-expr)))
+  (b* (((reterr) (irr-expr))
+       ((mv term/msg stobjs-out) (acl2::check-user-term term wrld))
+       ((unless (pseudo-termp term/msg))
+        (reterr (msg "The initializer term ~x0 must be an untranslated term.  ~
+                      ~@1"
+                     term term/msg)))
        ((unless (equal stobjs-out (list nil)))
-        (er-soft+ ctx t (irr-expr)
-                  "The initializer term ~x0 must return ~
-                   a single non-stobj value, ~
-                   but it returns ~x1 instead."
-                  term stobjs-out))
-       ((er (list expr type) :iferr (irr-expr))
-        (defobject-term-to-expr term ctx state))
+        (reterr (msg "The initializer term ~x0 must return ~
+                      a single non-stobj value, ~
+                      but it returns ~x1 instead."
+                     term stobjs-out)))
+       ((erp expr type) (defobject-term-to-expr term/msg))
        ((unless (equal type elemtype))
-        (er-soft+ ctx t (irr-expr)
-                  "The initializer term ~x0 has type ~x1, ~
-                   which does not match the element type ~x2 of the array."
-                  term type elemtype)))
-    (acl2::value expr)))
+        (reterr (msg "The initializer term ~x0 has type ~x1, ~
+                      which does not match the element type ~x2 of the array."
+                     term type elemtype))))
+    (retok expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defobject-process-init-terms ((terms true-listp)
                                       (elemtype typep)
-                                      (ctx ctxp)
-                                      state)
-  :returns (mv erp (exprs "An @(tsee expr-listp).") state)
+                                      (wrld plist-worldp))
+  :returns (mv erp (exprs "An @(tsee expr-listp)."))
   :mode :program
   :short "Process the list @(':init')."
   :long
@@ -383,17 +348,16 @@
    (xdoc::p
     "We process each item,
      returning the corresponding list of expressions if successful."))
-  (b* (((when (endp terms)) (acl2::value nil))
-       ((er expr :iferr nil) (defobject-process-init-term
-                               (car terms) elemtype ctx state))
-       ((er exprs) (defobject-process-init-terms
-                     (cdr terms) elemtype ctx state)))
-    (acl2::value (cons expr exprs))))
+  (b* (((reterr) nil)
+       ((when (endp terms)) (retok nil))
+       ((erp expr) (defobject-process-init-term (car terms) elemtype wrld))
+       ((erp exprs) (defobject-process-init-terms (cdr terms) elemtype wrld)))
+    (retok (cons expr exprs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defobject-process-init (init (type typep) (ctx ctxp) state)
-  :returns (mv erp (initer? "An @(tsee initer-optionp).") state)
+(define defobject-process-init (init (type typep) (wrld plist-worldp))
+  :returns (mv erp (initer? "An @(tsee initer-optionp)."))
   :mode :program
   :short "Process the @(':init') input."
   :long
@@ -403,25 +367,22 @@
      or a list of terms that appropriately represent expressions,
      and that the length of the list (if not @('nil')) matches
      the (positive) size of the array type."))
-  (b* (((er &)
-        (acl2::ensure-value-is-true-list$ init
-                                          (msg "The :INIT input ~x0" init)
-                                          t
-                                          nil))
+  (b* (((reterr) (irr-initer))
+       ((unless (true-listp init))
+        (reterr (msg "The :INIT input ~x0 must be a list." init)))
        ((unless (type-case type :array))
-        (acl2::value (raise "Internal error: not array type ~x0." type)))
-       ((when (endp init)) (acl2::value nil))
+        (reterr (raise "Internal error: not array type ~x0." type)))
+       ((when (endp init)) (retok nil))
        ((unless (equal (len init) (type-array->size type)))
-        (er-soft+ ctx t nil
-                  "The number ~x0 of elements of the :INIT input ~
-                   must match the size ~x1 of the array ~
-                   specified by the :TYPE input."
-                  (len init) (type-array->size type)))
-       ((er exprs) (defobject-process-init-terms
-                     init (type-array->of type) ctx state)))
-    (acl2::value (if (consp exprs)
-                     (initer-list exprs)
-                   nil))))
+        (reterr (msg "The number ~x0 of elements of the :INIT input ~
+                      must match the size ~x1 of the array ~
+                      specified by the :TYPE input."
+                     (len init) (type-array->size type))))
+       ((erp exprs) (defobject-process-init-terms
+                      init (type-array->of type) wrld)))
+    (retok (if (consp exprs)
+               (initer-list exprs)
+             nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -429,28 +390,25 @@
                                   type
                                   init
                                   (call pseudo-event-formp)
-                                  (ctx ctxp)
-                                  state)
+                                  (wrld plist-worldp))
   :returns (mv erp
-               (val "A @('(tuple (name-string stringp)
-                                 (name-ident identp)
-                                 (type typep)
-                                 (initer? initer-optionp)
-                                 (redundantp booleanp)
-                                 val)').")
-               state)
+               (name-string "A @(tsee stringp).")
+               (name-ident "An @(tsee identp).")
+               (type "A @(tsee typep).")
+               (initer? "An @(tsee initer-optionp).")
+               (redundantp "A @(tsee booleanp)."))
   :mode :program
   :short "Process the inputs of @(tsee defobject)."
-  (b* (((acl2::fun (irrelevant)) (list "" (irr-ident) (irr-type) nil nil))
-       ((er (list name-string name-ident redundantp):iferr (irrelevant))
-        (defobject-process-name name call ctx state))
+  (b* (((reterr) "" (irr-ident) (irr-type) nil nil)
+       ((erp name-string name-ident redundantp)
+        (defobject-process-name name call wrld))
        ((when redundantp)
-        (acl2::value (list name-string name-ident (irr-type) nil t)))
-       ((er type :iferr (irrelevant))
-        (defobject-process-type type ctx state))
-       ((er initer? :iferr (irrelevant))
-        (defobject-process-init init type ctx state)))
-    (acl2::value (list name-string name-ident type initer? nil))))
+        (retok name-string name-ident (irr-type) nil t))
+       ((erp type)
+        (defobject-process-type type))
+       ((erp initer?)
+        (defobject-process-init init type wrld)))
+    (retok name-string name-ident type initer? nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -510,6 +468,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defobject-process-inputs-and-gen-everything (name
+                                                     type
+                                                     init
+                                                     (call pseudo-event-formp)
+                                                     (wrld plist-worldp))
+  :returns (mv erp (event "A @(tsee pseudo-event-formp)."))
+  :mode :program
+  :short "Process the inputs and generate the events."
+  (b* (((reterr) '(_))
+       ((erp name-string name-ident type exprs redundantp)
+        (defobject-process-inputs name type init call wrld))
+       ((when redundantp) (retok '(value-triple :redundant)))
+       (event (defobject-gen-everything
+                name name-string name-ident type init exprs call)))
+    (retok event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defobject-fn (name
                       type
                       init
@@ -520,12 +496,11 @@
                (event "A @(tsee pseudo-event-formp).")
                state)
   :mode :program
-  :short "Process the inputs and generate the events."
-  (b* (((er (list name-string name-ident type exprs redundantp) :iferr '(_))
-        (defobject-process-inputs name type init call ctx state))
-       ((when redundantp) (acl2::value '(value-triple :redundant)))
-       (event (defobject-gen-everything
-                name name-string name-ident type init exprs call)))
+  :short "Event expansion of @(tsee defobject)."
+  (b* (((mv erp event)
+        (defobject-process-inputs-and-gen-everything
+          name type init call (w state)))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (acl2::value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
