@@ -193,84 +193,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (declare (xargs :guard t))
   (or (equal c 't) (equal c ''t)))
 
-(defun type-of-pred-aux (pred tbl)
-  (declare (xargs :guard (and (symbolp pred) (sym-aalistp tbl))))
-  (cond ((endp tbl) nil)
-        ((equal pred (get-alist :predicate (cdar tbl)))
-         (caar tbl))
-        (t (type-of-pred-aux pred (cdr tbl)))))
-
-#|
-(defun type-of-pred (pred tbl)
-  (cond ((equal pred 'intp) 'integer)
-        ((equal pred 'boolp) 'boolean)
-        ((equal pred 'tlp) 'true-list)
-        (t (type-of-pred-aux pred tbl))))
-|#
-
-(defun type-of-pred (pred tbl ptbl)
-  (declare (xargs :guard (and (symbolp pred) (sym-aalistp tbl) (sym-aalistp ptbl))))
-  (let ((apred (assoc-equal :type (get-alist pred ptbl))))
-    (if apred
-        (cdr apred)
-    (type-of-pred-aux pred tbl))))
-
-#|
-(type-of-pred 'boolp
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-(type-of-pred 'boolp
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-(type-of-pred 'bool
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-(type-of-pred 'tlp
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-(type-of-pred 'intp
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-(type-of-pred 'integerp
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-(type-of-pred nil
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-|#
-
-(defun enum-of-type (type tbl)
-  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl))))
-  (get-alist :enumerator (get-alist type tbl)))
-
-; (enum-of-type 'integer (type-metadata-table (w state)))
-
-(defun trans1-cmp (form wrld)
-  (declare (xargs :mode :program))
-  (declare (xargs :guard (plist-worldp wrld)))
-  (acl2::translate1-cmp
-   form nil nil nil 'ctx wrld (default-state-vars nil)))
-
-(defun base-val-of-type (type tbl wrld)
-  (declare (xargs :mode :program))
-  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl) (plist-worldp wrld))))
-  (b* ((base-val (get-alist :default-base-value (get-alist type tbl)))
-       ((mv - trans-base-val -)
-        (if (and (symbolp base-val)
-                 (acl2::legal-variable-or-constant-namep base-val)
-                 (acl2::legal-constantp1 base-val))
-            (trans1-cmp base-val wrld)
-          (mv nil `',base-val nil))))
-    trans-base-val))
-
-; (defconst *x* 'x)
-; (defdata x *x*)
-; (defdata non-empty-true-list (cons all true-list))
-; (base-val-of-type 'x (type-metadata-table (w state)) (w state)) = 'x
-; (base-val-of-type 'integer (type-metadata-table (w state)) (w state)) = '0
-; (base-val-of-type 'non-empty-true-list (type-metadata-table (w state)) (w state)) = '(nil)
-; (base-val-of-type 'symbol (type-metadata-table (w state)) (w state)) = 'a
-
 (defun unalias-pred (pred ptbl)
   (declare (xargs :guard (and (symbolp pred) (sym-aalistp ptbl))))
   (let ((apred (assoc-equal :predicate (get-alist pred ptbl))))
@@ -884,53 +806,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (defun gather-alias (alias alist)
   (remove-duplicates-equal (gather-alias1 alias alist)))
-
-
-#|
-
-(defun type-of-type (type tbl atbl ctx)
-  (let ((atype (assoc-equal :type (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist type tbl)))
-        (if res
-            type
-          (er soft ctx
- "~%**Unknown type **: ~x0 is not a known type name.~%" type ))))))
-
-(defun pred-of-type (type tbl atbl ctx)
-  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist :predicate (get-alist type tbl))))
-        (or res
-            (er hard ctx
- "~%**Unknown type **: ~x0 is not a known type name.~%" type ))))))
-
-|#
-
-; Decided to take care of error printing on my own, but kept previous
-; versions above.
-
-(defun type-of-type (type tbl atbl)
-  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl)
-                              (sym-aalistp atbl))))
-  (let ((atype (assoc-equal :type (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist type tbl)))
-        (if res
-            type
-          nil)))))
-
-(defun pred-of-type (type tbl atbl)
-  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl)
-                              (sym-aalistp atbl))))
-  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist :predicate (get-alist type tbl))))
-        res))))
 
 (defun make-contract (name args pred)
   (declare (xargs :guard (and (symbolp name)
@@ -2435,3 +2310,4 @@ To debug a failed defunc form, you can proceed in multiple ways:
 (defmacro prove-function-contract (name)
   `(... ,name))
 |#
+

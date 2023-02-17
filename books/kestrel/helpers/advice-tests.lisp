@@ -10,6 +10,13 @@
 
 (in-package "ACL2")
 
+; Matt K. mod to prevent stack overflow (in test2, from *1* function
+; world-since-boot-strap, even after (comp t)) -- I think Allegro CL is failing
+; to eliminate tail recursion inside the LABELS form generated for the
+; executable-counterpart (*1*) function.
+
+; cert_param: (non-allegro)
+
 (include-book "advice") ; todo: or advice-code-only?
 (include-book "kestrel/utilities/deftest" :dir :system)
 

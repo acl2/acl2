@@ -36,10 +36,16 @@
 (local (include-book "std/lists/nth" :dir :system))
 
 (defprod fgl-exhaustive-test-config
+  :parents (fgl-solving)
+  :short "FGL SAT config object that says to use exhaustive vectorized simulation to check satisfiability."
   ((ignore-pathcond booleanp :default nil)
    (ignore-constraint booleanp :default nil)
    (transform booleanp :default nil)
-   (transform-config-override :default nil))
+   (transform-config-override :default nil)
+   (random-iters acl2::maybe-natp :default nil
+                 "If set, random simulation will be used instead of exhaustive
+simulation, and as a result, the SAT check will never return UNSAT. Therefore,
+this is useful for testing but not for proof."))
   :tag :fgl-exhaustive-test-config)
 
 (define fgl-exhaustive-test-transforms ((x fgl-exhaustive-test-config-p))
@@ -137,6 +143,37 @@
   (defret w-state-of-<fn>
     (equal (w new-state) (w state))))
 
+
+#!aignet
+(define aignet-cube-transform-and-random-test ((cube lit-listp)
+                                               xform-config
+                                               (nsims natp)
+                                               bitarr
+                                               aignet
+                                               state)
+  :guard (aignet-lit-listp cube aignet)
+  
+  :returns (mv status new-bitarr new-state)
+  (b* (((acl2::local-stobjs aignet2)
+        (mv status bitarr state aignet2))
+       (aignet2 (aignet-copy-with-conjoined-output cube aignet aignet2))
+       ((mv aignet2 state) (apply-comb-transforms! aignet2 xform-config state))
+       ((mv ctrexp bitarr state)
+        (time$ (random-sim nsims bitarr aignet2 state)))
+       ((when ctrexp)
+        (mv :sat bitarr state aignet2)))
+    (mv :failed bitarr state aignet2))
+  ///
+  (set-ignore-ok t)
+
+  ;; Soundness guarantee is that it never returns :UNSAT. :)
+  (defret <fn>-unsat-implies
+    (not (eq status :unsat)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
+
+
 (define interp-st-exhaustive-test-core ((config fgl-exhaustive-test-config-p)
                                           (bfr interp-st-bfr-p)
                                           (interp-st interp-st-bfrs-ok)
@@ -167,10 +204,16 @@
                                      (ans bitarr state)
                                      (b* ((transform-config (fgl-exhaustive-test-transforms config))
                                           ((acl2::hintcontext :check)))
-                                       (aignet::aignet-cube-transform-and-exhaustive-test
-                                        cube
-                                        transform-config
-                                        bitarr aignet state))
+                                       (if config.random-iters
+                                           (aignet::aignet-cube-transform-and-random-test
+                                            cube
+                                            transform-config
+                                            config.random-iters
+                                            bitarr aignet state)
+                                         (aignet::aignet-cube-transform-and-exhaustive-test
+                                          cube
+                                          transform-config
+                                          bitarr aignet state)))
                                      (mv ans env$ state))
                           (mv ans env$ state))
                (mv ans interp-st state)))

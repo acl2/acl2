@@ -339,7 +339,7 @@
 ;; state
 (defmacro deftransformation (name ; name of the transformation (e.g., expand-lets)
                              required-args ; a list of symbols, usually contains at least FN for the name of the function being transformed
-                             keyword-args-and-defaults ; a list of doublets (keyword arg names and their quoted default values)
+                             keyword-args-and-defaults ; a list of doublets (keyword arg names and their quoted default values), excluding :show-only and :print
                              &key
                              (pass-print 'nil) ;whether to pass the print arg to the -event function (will come after the keyword args)
                              (pass-context 'nil) ;whether to pass the context arg to the -event function (will come just before state)

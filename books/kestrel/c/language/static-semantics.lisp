@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,6 +21,9 @@
 (include-book "kestrel/fty/defunit" :dir :system)
 
 (local (include-book "std/lists/last" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,6 +131,7 @@
   :non-emptyp t
   :elementp-of-nil t
   :pred var-tablep
+  :prepwork ((local (in-theory (enable fix max))))
   ///
 
   (defrule var-tablep-of-cons-alt
@@ -1173,6 +1177,7 @@
             (check-obj-adeclor declor.decl
                                (make-type-array :of type :size size))))
   :measure (obj-adeclor-count declor)
+  :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1258,7 +1263,7 @@
                  (arg-type (apconvert-type arg-type)))
               (if (type-case arg-type :pointer)
                   (make-expr-type :type (type-pointer->to arg-type)
-                                  :lvalue nil)
+                                  :lvalue t)
                 (reserrf (list :unary-mistype
                                (unop-fix op) (expr-fix arg-expr)
                                :required :pointer
@@ -1635,6 +1640,7 @@
                 (type then-type))
              (make-expr-type :type type :lvalue nil))))
   :measure (expr-count e)
+  :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :verify-guards :after-returns
   :hooks (:fix))
 
@@ -1685,9 +1691,7 @@
      Prior to comparing the types,
      we perform array-to-pointer conversions on
      all parameter types:
-     this corresponds to the adjustment in [C:6.7.6.3/7];
-     it is also, perhaps more aptly,
-     consistent with the treatment of assignments
+     this is consistent with the treatment of assignments
      (namely that the left-hand side of assignment
      is subjected to this conversion [C:6.3.2.1/3]),
      given that argument passing is treated like assignment [C:6.5.2.2/2].
@@ -2197,6 +2201,8 @@
 
   :prepwork ((local (in-theory (enable not-reserrp-when-types+vartab-p))))
 
+  :hints (("Goal" :in-theory (enable o< o-p o-finp)))
+
   :verify-guards nil ; done below
   ///
   (verify-guards check-stmt)
@@ -2245,12 +2251,14 @@
      Each parameter is considered defined in the variable table.
      Note that we regard each declaration as defining the variable,
      because no multiple declarations of the same parameter are allowed.
-     We also ensure that the type is complete [C:6.7.6.3/4].
+     We adjust the type [C:6.7.6.3/7].
+     We also ensure that the (adjusted) type is complete [C:6.7.6.3/4].
      If all checks succeed, we return the variable table
-     updated with the parameter."))
+     updated with the parameter, with the adjusted type."))
   (b* (((mv var tyname) (param-declon-to-ident+tyname param))
        ((okf type) (check-tyname tyname tagenv))
        ((okf &) (check-ident var))
+       (type (adjust-type type))
        ((unless (type-completep type))
         (reserrf (list :param-type-incomplete (param-declon-fix param)))))
     (var-table-add-var var type (var-defstatus-defined) vartab))
@@ -2303,6 +2311,7 @@
            (check-param-declon-list declor.params vartab tagenv))
    :pointer (check-fun-declor declor.decl vartab tagenv))
   :measure (fun-declor-count declor)
+  :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2317,7 +2326,9 @@
   (xdoc::topstring
    (xdoc::p
     "We check the type specifier sequence and the declarator.
-     We extend the function table with information about the new function."))
+     We extend the function table with information about the new function.")
+   (xdoc::p
+    "We adjust the parameter types [C:6.7.6.3/7]."))
   (b* (((fun-declon declon) declon)
        ((mv name params out-tyname)
         (tyspec+declor-to-ident+params+tyname declon.tyspec declon.declor))

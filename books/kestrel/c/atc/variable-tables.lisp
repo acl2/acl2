@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,6 +14,9 @@
 (include-book "../language/types")
 
 (local (include-book "std/alists/top" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -46,7 +49,8 @@
   :elt-type atc-var-info
   :true-listp t
   :elementp-of-nil nil
-  :pred atc-var-info-listp)
+  :pred atc-var-info-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;
 
@@ -79,6 +83,7 @@
   :true-listp t
   :elementp-of-nil t
   :pred atc-var-info-option-listp
+  :prepwork ((local (in-theory (enable nfix))))
   ///
 
   (defruled true-listp-when-atc-var-info-option-listp-rewrite
@@ -108,7 +113,8 @@
   (defrule atc-var-infop-of-cdr-of-assoc-equal
     (implies (and (atc-symbol-varinfo-alistp x)
                   (assoc-equal k x))
-             (atc-var-infop (cdr (assoc-equal k x)))))
+             (atc-var-infop (cdr (assoc-equal k x))))
+    :enable assoc-equal)
 
   (defruled symbol-listp-of-strip-cars-when-atc-symbol-varinfo-alistp
     (implies (atc-symbol-varinfo-alistp x)
@@ -121,7 +127,8 @@
 
   (defruled symbol-alistp-when-atc-symbol-varinfo-alistp
     (implies (atc-symbol-varinfo-alistp x)
-             (symbol-alistp x))))
+             (symbol-alistp x))
+    :enable symbol-alistp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -135,7 +142,8 @@
   :elt-type atc-symbol-varinfo-alist
   :true-listp t
   :elementp-of-nil t
-  :pred atc-symbol-varinfo-alist-listp)
+  :pred atc-symbol-varinfo-alist-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,7 +161,8 @@
   (if (endp inscope)
       nil
     (or (cdr (assoc-eq var (atc-symbol-varinfo-alist-fix (car inscope))))
-        (atc-get-var var (cdr inscope)))))
+        (atc-get-var var (cdr inscope))))
+  :guard-hints (("Goal" :in-theory (enable assoc-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -219,18 +228,21 @@
 
   (defret len-of-atc-get-vars-check-innermost.info?-list
     (equal (len info?-list)
-           (len vars)))
+           (len vars))
+    :hints (("Goal" :in-theory (enable len))))
 
   (defret len-of-atc-get-vars-check-innermost.innermostp-list
     (equal (len innermostp-list)
-           (len vars))))
+           (len vars))
+    :hints (("Goal" :in-theory (enable len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-add-var ((var symbolp)
                      (info atc-var-infop)
                      (inscope atc-symbol-varinfo-alist-listp))
-  :returns (new-inscope atc-symbol-varinfo-alist-listp)
+  :returns (new-inscope atc-symbol-varinfo-alist-listp
+                        :hints (("Goal" :in-theory (enable acons))))
   :short "Add a variable with some information to the symbol table."
   :long
   (xdoc::topstring

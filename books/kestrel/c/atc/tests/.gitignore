@@ -26,6 +26,10 @@ conversions.h
 conversions.c
 conversions
 
+guard-mbt.h
+guard-mbt.c
+guard-mbt
+
 int.h
 int.c
 int
@@ -57,6 +61,10 @@ operators
 ops-diff-types.h
 ops-diff-types.c
 ops-diff-types
+
+pointers.h
+pointers.c
+pointers
 
 structs.h
 structs.c

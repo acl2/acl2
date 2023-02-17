@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,13 +11,18 @@
 
 (in-package "C")
 
-(include-book "../integer-operations")
+(include-book "../../representation/integer-operations")
+
 (include-book "../arrays")
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/true-list-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -508,6 +513,32 @@
                (atc-array-write-type-presc-rules-loop-array-types (cdr atypes)
                                                                   itypes)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-pointed-integers-type-prescription-rules*
+  :short "List of type prescription rules for the
+          readers and writers of integers by pointer."
+  '((:t schar-read)
+    (:t uchar-read)
+    (:t sshort-read)
+    (:t ushort-read)
+    (:t sint-read)
+    (:t uint-read)
+    (:t slong-read)
+    (:t ulong-read)
+    (:t sllong-read)
+    (:t ullong-read)
+    (:t schar-write)
+    (:t uchar-write)
+    (:t sshort-write)
+    (:t ushort-write)
+    (:t sint-write)
+    (:t uint-write)
+    (:t slong-write)
+    (:t ulong-write)
+    (:t sllong-write)
+    (:t ullong-write)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-boolean-from-integer-return-rules
@@ -553,16 +584,16 @@
   :short "Rules about the return types of the integer constructors."
 
   (defval *atc-integer-constructors-return-rules*
-    '(scharp-of-schar
-      ucharp-of-uchar
-      sshortp-of-sshort
-      ushortp-of-ushort
-      sintp-of-sint
-      uintp-of-uint
-      slongp-of-slong
-      ulongp-of-ulong
-      sllongp-of-sllong
-      ullongp-of-ullong)))
+    '(scharp-of-schar-from-integer
+      ucharp-of-uchar-from-integer
+      sshortp-of-sshort-from-integer
+      ushortp-of-ushort-from-integer
+      sintp-of-sint-from-integer
+      uintp-of-uint-from-integer
+      slongp-of-slong-from-integer
+      ulongp-of-ulong-from-integer
+      sllongp-of-sllong-from-integer
+      ullongp-of-ullong-from-integer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,12 @@
 (in-package "C")
 
 (include-book "integers")
+
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,10 +97,11 @@
        (<dtype> (integer-type-to-fixtype dtype))
        (<stype>p (pack <stype> 'p))
        (<dtype>p (pack <dtype> 'p))
-       (<stype>->get (pack <stype> '->get))
+       (integer-from-<stype> (pack 'integer-from- <stype>))
+       (<dtype>-from-integer (pack <dtype> '-from-integer))
        (<dtype>-integerp (pack <dtype> '-integerp))
        (<dtype>-integerp-alt-def (pack <dtype>-integerp '-alt-def))
-       (<dtype>-mod (pack <dtype> '-mod))
+       (<dtype>-from-integer-mod (pack <dtype>-from-integer '-mod))
        (<dtype>-from-<stype> (pack <dtype> '-from- <stype>))
        (<dtype>-from-<stype>-okp (pack <dtype>-from-<stype> '-okp)))
 
@@ -109,7 +116,7 @@
                                 " to "
                                 dtype-string
                                 " is well-defined.")
-              (,<dtype>-integerp (,<stype>->get x))
+              (,<dtype>-integerp (,integer-from-<stype> x))
               :hooks (:fix))))
 
        (define ,<dtype>-from-<stype> ((x ,<stype>p))
@@ -120,7 +127,10 @@
                            " to "
                            dtype-string
                            "').")
-         (,(if signedp <dtype> <dtype>-mod) (,<stype>->get x))
+         (,(if signedp
+               <dtype>-from-integer
+             <dtype>-from-integer-mod)
+          (,integer-from-<stype> x))
          :guard-hints (("Goal"
                         :in-theory (enable ,(if guardp
                                                 <dtype>-from-<stype>-okp

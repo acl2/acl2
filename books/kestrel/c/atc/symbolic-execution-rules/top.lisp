@@ -34,6 +34,7 @@
 (include-book "exec-initer")
 (include-book "exec-block-item")
 (include-book "init-scope")
+(include-book "adjust-type")
 (include-book "static-variable-pointers")
 (include-book "identifiers")
 (include-book "wrappers")
@@ -50,6 +51,11 @@
 (include-book "if-star")
 (include-book "boolean-equality")
 (include-book "hide")
+(include-book "pointed-integers")
+(include-book "sint-from-boolean")
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -87,7 +93,7 @@
      rewrite calls of functions used in the deeply embedded dynamic semantics
      into their shallowly embedded counterparts,
      under hypothesis on the types of the arguments.
-     For instance, @('(exec-unary op x)')
+     For instance, @('(exec-unary op x compst)')
      is rewritten to @('(<op>-<type> x)')
      when @('op') is @('<op>')
      and @('x') has type @('<type>').
@@ -142,7 +148,8 @@
           *atc-exec-ident-rules*
           *atc-exec-const-rules*
           *atc-exec-arrsub-rules*
-          *atc-exec-unary-rules*
+          *atc-exec-unary-nonpointer-rules*
+          *atc-exec-indir-rules*
           *atc-exec-cast-rules*
           *atc-exec-binary-strict-pure-rules*
           *atc-test-value-rules*
@@ -159,6 +166,7 @@
           *atc-exec-block-item-rules*
           *atc-exec-block-item-list-rules*
           *atc-init-scope-rules*
+          *atc-adjust-type-rules*
           *atc-other-executable-counterpart-rules*
           *atc-wrapper-rules*
           *atc-distributivity-over-if-rewrite-rules*
@@ -190,7 +198,8 @@
           *atc-integer-constructors-return-rules*
           *atc-computation-state-return-rules*
           *atc-value-fix-rules*
-          *atc-flexible-array-member-rules*))
+          *atc-flexible-array-member-rules*
+          *atc-pointed-integer-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

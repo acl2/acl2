@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -50,8 +50,10 @@
      may not be completely accurate in terms of
      execution of arbitrary C in the covered subset of C,
      in particular in the treatment of arrays.
-     However, it is accurate for our current uses.
-     This dynamic semantic is work in progress;
+     However, it is accurate for our current uses
+     (namely, supporting proof generation in "
+    (xdoc::seetopic "atc" "ATC")
+    ". This dynamic semantics is work in progress;
      we plan to make it completely accurate
      for all the covered subset of C."))
   :order-subtopics t
@@ -166,12 +168,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-unary ((op unopp) (arg valuep))
+(define indir-value ((val valuep) (compst compustatep))
+  :returns (resval value-resultp)
+  :short "Apply @('*') to a value [C:6.5.3.2/2] [C:6.5.3.2/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The value must be a pointer.
+     If the pointer is null, it is an error.
+     Otherwise, we read the object designated by the object designator,
+     which is a value.
+     Note that we do not return the object designator,
+     because for now we only use this operation to read pointed-to values,
+     not to assign to them;
+     so returning the value, as in an lvalue conversion,
+     is appropriate for now.
+     However, if the value is an array,
+     we return its first element instead of the whole array;
+     all the other types of values are returned unchanged.
+     The reason for this special treatment of arrays is that
+     we need to do array-to-pointer conversion [C:6.3.2.1/3]."))
+  (b* (((unless (value-case val :pointer))
+        (error (list :non-pointer-dereference (value-fix val))))
+       ((when (value-pointer-nullp val))
+        (error (list :null-pointer-dereference)))
+       (objdes (value-pointer->designator val))
+       (resval (read-object objdes compst))
+       ((when (errorp resval)) resval))
+    (if (value-case resval :array)
+        (value-array-read 0 resval)
+      resval))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-unary ((op unopp) (arg valuep) (compst compustatep))
   :returns (result value-resultp)
   :short "Execute a unary operation."
   (unop-case op
              :address (error :todo)
-             :indir (error :todo)
+             :indir (indir-value arg compst)
              :plus (plus-value arg)
              :minus (minus-value arg)
              :bitnot (bitnot-value arg)
@@ -540,7 +576,7 @@
      :predec (error (list :non-pure-expr e))
      :unary (b* ((arg (exec-expr-pure e.arg compst))
                  ((when (errorp arg)) arg))
-              (exec-unary e.op arg))
+              (exec-unary e.op arg compst))
      :cast (b* ((arg (exec-expr-pure e.arg compst))
                 ((when (errorp arg)) arg))
              (exec-cast e.type arg))
@@ -636,8 +672,9 @@
      pairing them up into the scope.
      We return an error if they do not match in number or types,
      or if there are repeated parameters.
-     We perform array-to-pointer conversion on both types
-     before comparing them.")
+     Before the comparison,
+     we adjust the parameter types
+     and we perform array-to-pointer conversion on the argument types.")
    (xdoc::p
     "Prior to storing each actual, we remove its flexible array member, if any.
      See @(tsee remove-flexible-array-member)."))
@@ -654,7 +691,7 @@
        (formal (car formals))
        (actual (car actuals))
        ((mv name tyname) (param-declon-to-ident+tyname formal))
-       (formal-type (apconvert-type (tyname-to-type tyname)))
+       (formal-type (adjust-type (tyname-to-type tyname)))
        (actual-type (apconvert-type (type-of-value actual)))
        ((unless (equal formal-type actual-type))
         (error (list :formal-actual-mistype
@@ -803,12 +840,10 @@
       (xdoc::li
        "A left-hand side consisting of
         either a variable,
-        or an array subscripting expression
-        where the array is a variable,
-        or a structure member expression
-        where the target is a variable,
-        or a structure pointer member expression
-        where the target is a variable,
+        or an indirection operation whose argument is a variable,
+        or an array subscripting expression where the array is a variable,
+        or a structure member expression where the target is a variable,
+        or a structure pointer member expression where the target is a variable,
         or an array subscripting expression
         where the array is a structure member expression
         where the target is a variable,
@@ -825,20 +860,24 @@
         an array subscripting expression;
         in that case, the index expression must be also pure."))
      (xdoc::p
+      "If the left-hand side is a unary indirection expression,
+       for now we require its type to be a pointer to integer.
+       We may relax this in the future.")
+     (xdoc::p
       "If the left-hand side is
        an array subscripting expression where the array is a variable,
        we treat the content of the variable similarly to @(tsee exec-ident):
        if it is an array value, we return a pointer to it instead;
        otherwise, we return the value unchanged.
        The motivation for this is explained in @(tsee exec-ident);
-       it is due to our currently simplified (but correct, in our C subset)
-       treatment of arrays and pointer in our C dynamic semantics.")
+       it is due to our currently simplified treatment
+       of arrays and pointer in our C dynamic semantics.")
      (xdoc::p
       "We ensure that if the right-hand side expression is a function call,
        it returns a value (i.e. it is not @('void')).")
      (xdoc::p
       "We allow these assignment expressions
-       as the expressions of expression statements.
+       as the full expressions [C:6.8/4] of expression statements.
        Thus, we discard the value of the assignment
        (which is the value written to the variable);
        this ACL2 function just returns an updated computation state."))
@@ -859,6 +898,31 @@
               ((when (not val?)) (error (list :asg-void-expr (expr-fix e))))
               (val val?))
            (write-var var val compst)))
+        (:unary
+         (b* ((op (expr-unary->op left))
+              (arg (expr-unary->arg left))
+              ((unless (unop-case op :indir))
+               (error (list :expr-asg-unary-not-indir (expr-fix e))))
+              ((unless (expr-case arg :ident))
+               (error (list :expr-asg-indir-not-var (expr-fix e))))
+              (var (expr-ident->get arg))
+              (ptr (read-var var compst))
+              ((when (errorp ptr)) ptr)
+              ((unless (value-case ptr :pointer))
+               (error (list :indir-not-pointer ptr)))
+              ((when (value-pointer-nullp ptr))
+               (error (list :indir-null-pointer)))
+              (objdes (value-pointer->designator ptr))
+              (reftype (value-pointer->reftype ptr))
+              ((unless (type-integerp reftype))
+               (error (list :non-integer-pointer-type (expr-fix e))))
+              (val (exec-expr-pure right compst))
+              ((when (errorp val)) val)
+              ((unless (equal reftype (type-of-value val)))
+               (error (list :mistype-apointer
+                            :required reftype
+                            :supplied (type-of-value val)))))
+           (write-object objdes val compst)))
         (:arrsub
          (b* ((arr (expr-arrsub->arr left))
               (sub (expr-arrsub->sub left)))

@@ -119,6 +119,8 @@
     hons
     open-member-equal-on-list-of-tags
     alistp-compound-recognizer
+    alistp
+    identity
     ;;  len
     ;; equal-of-plus-one fix
     prod-car
@@ -812,7 +814,7 @@
 
 (defun deftypes-events (x state)
   (b* (((flextypes x) x)
-       (- (flextypelist-check-bad-name x.types)) 
+       (- (flextypelist-check-bad-name x.types))
        (fix/pred-pairs (flextypes-collect-fix/pred-pairs x.types))
        ((mv enable-rules temp-thms) (collect-fix/pred-enable-rules fix/pred-pairs (w state)))
        (verbosep (getarg :verbosep nil x.kwd-alist)))
@@ -1116,4 +1118,3 @@
 (defmacro defomap (&whole form &rest args)
   (declare (ignore args))
   `(make-event (defomap-fn ',form state)))
-

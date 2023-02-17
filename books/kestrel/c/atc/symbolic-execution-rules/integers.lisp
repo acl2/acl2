@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,6 +18,9 @@
 (include-book "../defthm-disjoint")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,6 +133,8 @@
 (defsection value-listp-when-valuepred-listp
   :short "Theorems saying that
           the value list recognizers imply @(tsee value-listp)."
+
+  (local (in-theory (enable len)))
 
   (defrule value-listp-when-uchar-listp
     (implies (uchar-listp x)
@@ -658,113 +663,113 @@
 
   (defruled value-schar-to-schar
     (equal (value-schar x)
-           (schar x))
-    :enable (value-schar schar))
+           (schar-from-integer x))
+    :enable (value-schar schar-from-integer))
 
   (defruled value-uchar-to-uchar
     (equal (value-uchar x)
-           (uchar x))
-    :enable (value-uchar uchar))
+           (uchar-from-integer x))
+    :enable (value-uchar uchar-from-integer))
 
   (defruled value-sshort-to-sshort
     (equal (value-sshort x)
-           (sshort x))
-    :enable (value-sshort sshort))
+           (sshort-from-integer x))
+    :enable (value-sshort sshort-from-integer))
 
   (defruled value-ushort-to-ushort
     (equal (value-ushort x)
-           (ushort x))
-    :enable (value-ushort ushort))
+           (ushort-from-integer x))
+    :enable (value-ushort ushort-from-integer))
 
   (defruled value-sint-to-sint
     (equal (value-sint x)
-           (sint x))
-    :enable (value-sint sint))
+           (sint-from-integer x))
+    :enable (value-sint sint-from-integer))
 
   (defruled value-uint-to-uint
     (equal (value-uint x)
-           (uint x))
-    :enable (value-uint uint))
+           (uint-from-integer x))
+    :enable (value-uint uint-from-integer))
 
   (defruled value-slong-to-slong
     (equal (value-slong x)
-           (slong x))
-    :enable (value-slong slong))
+           (slong-from-integer x))
+    :enable (value-slong slong-from-integer))
 
   (defruled value-ulong-to-ulong
     (equal (value-ulong x)
-           (ulong x))
-    :enable (value-ulong ulong))
+           (ulong-from-integer x))
+    :enable (value-ulong ulong-from-integer))
 
   (defruled value-sllong-to-sllong
     (equal (value-sllong x)
-           (sllong x))
-    :enable (value-sllong sllong))
+           (sllong-from-integer x))
+    :enable (value-sllong sllong-from-integer))
 
   (defruled value-ullong-to-ullong
     (equal (value-ullong x)
-           (ullong x))
-    :enable (value-ullong ullong))
+           (ullong-from-integer x))
+    :enable (value-ullong ullong-from-integer))
 
-  (defruled value-schar->get-to-schar->get
+  (defruled value-schar->get-to-integer-from-schar
     (implies (value-case x :schar)
              (equal (value-schar->get x)
-                    (schar->get x)))
-    :enable (value-schar->get schar->get))
+                    (integer-from-schar x)))
+    :enable (value-schar->get integer-from-schar))
 
-  (defruled value-uchar->get-to-uchar->get
+  (defruled value-uchar->get-to-integer-from-uchar
     (implies (value-case x :uchar)
              (equal (value-uchar->get x)
-                    (uchar->get x)))
-    :enable (value-uchar->get uchar->get))
+                    (integer-from-uchar x)))
+    :enable (value-uchar->get integer-from-uchar))
 
-  (defruled value-sshort->get-to-sshort->get
+  (defruled value-sshort->get-to-integer-from-sshort
     (implies (value-case x :sshort)
              (equal (value-sshort->get x)
-                    (sshort->get x)))
-    :enable (value-sshort->get sshort->get))
+                    (integer-from-sshort x)))
+    :enable (value-sshort->get integer-from-sshort))
 
-  (defruled value-ushort->get-to-ushort->get
+  (defruled value-ushort->get-to-integer-from-ushort
     (implies (value-case x :ushort)
              (equal (value-ushort->get x)
-                    (ushort->get x)))
-    :enable (value-ushort->get ushort->get))
+                    (integer-from-ushort x)))
+    :enable (value-ushort->get integer-from-ushort))
 
-  (defruled value-sint->get-to-sint->get
+  (defruled value-sint->get-to-integer-from-sint
     (implies (value-case x :sint)
              (equal (value-sint->get x)
-                    (sint->get x)))
-    :enable (value-sint->get sint->get))
+                    (integer-from-sint x)))
+    :enable (value-sint->get integer-from-sint))
 
-  (defruled value-uint->get-to-uint->get
+  (defruled value-uint->get-to-integer-from-uint
     (implies (value-case x :uint)
              (equal (value-uint->get x)
-                    (uint->get x)))
-    :enable (value-uint->get uint->get))
+                    (integer-from-uint x)))
+    :enable (value-uint->get integer-from-uint))
 
-  (defruled value-slong->get-to-slong->get
+  (defruled value-slong->get-to-integer-from-slong
     (implies (value-case x :slong)
              (equal (value-slong->get x)
-                    (slong->get x)))
-    :enable (value-slong->get slong->get))
+                    (integer-from-slong x)))
+    :enable (value-slong->get integer-from-slong))
 
-  (defruled value-ulong->get-to-ulong->get
+  (defruled value-ulong->get-to-integer-from-ulong
     (implies (value-case x :ulong)
              (equal (value-ulong->get x)
-                    (ulong->get x)))
-    :enable (value-ulong->get ulong->get))
+                    (integer-from-ulong x)))
+    :enable (value-ulong->get integer-from-ulong))
 
-  (defruled value-sllong->get-to-sllong->get
+  (defruled value-sllong->get-to-integer-from-sllong
     (implies (value-case x :sllong)
              (equal (value-sllong->get x)
-                    (sllong->get x)))
-    :enable (value-sllong->get sllong->get))
+                    (integer-from-sllong x)))
+    :enable (value-sllong->get integer-from-sllong))
 
-  (defruled value-ullong->get-to-ullong->get
+  (defruled value-ullong->get-to-integer-from-ullong
     (implies (value-case x :ullong)
              (equal (value-ullong->get x)
-                    (ullong->get x)))
-    :enable (value-ullong->get ullong->get)))
+                    (integer-from-ullong x)))
+    :enable (value-ullong->get integer-from-ullong)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -863,6 +868,8 @@
     "These are the same as the linear rules,
      but they are rewrite rules."))
 
+  (local (in-theory (enable bit-width-value-choices)))
+
   (make-event
    `(defruled uchar-max-vs-sint-max-rewrite
       ,(if (<= (uchar-max) (sint-max))
@@ -938,61 +945,63 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The rule @('ifix-of-<type>->get') serves to simplify away
+    "The rule @('ifix-of-integer-from-<type>') serves to simplify away
      occurrences of @(tsee ifix) used in
      the definition of the shift operations."))
 
-  (defruled ifix-of-schar->get
-    (equal (ifix (schar->get x))
-           (schar->get x)))
+  (local (in-theory (enable ifix)))
 
-  (defruled ifix-of-uchar->get
-    (equal (ifix (uchar->get x))
-           (uchar->get x)))
+  (defruled ifix-of-integer-from-schar
+    (equal (ifix (integer-from-schar x))
+           (integer-from-schar x)))
 
-  (defruled ifix-of-sshort->get
-    (equal (ifix (sshort->get x))
-           (sshort->get x)))
+  (defruled ifix-of-integer-from-uchar
+    (equal (ifix (integer-from-uchar x))
+           (integer-from-uchar x)))
 
-  (defruled ifix-of-ushort->get
-    (equal (ifix (ushort->get x))
-           (ushort->get x)))
+  (defruled ifix-of-integer-from-sshort
+    (equal (ifix (integer-from-sshort x))
+           (integer-from-sshort x)))
 
-  (defruled ifix-of-sint->get
-    (equal (ifix (sint->get x))
-           (sint->get x)))
+  (defruled ifix-of-integer-from-ushort
+    (equal (ifix (integer-from-ushort x))
+           (integer-from-ushort x)))
 
-  (defruled ifix-of-uint->get
-    (equal (ifix (uint->get x))
-           (uint->get x)))
+  (defruled ifix-of-integer-from-sint
+    (equal (ifix (integer-from-sint x))
+           (integer-from-sint x)))
 
-  (defruled ifix-of-slong->get
-    (equal (ifix (slong->get x))
-           (slong->get x)))
+  (defruled ifix-of-integer-from-uint
+    (equal (ifix (integer-from-uint x))
+           (integer-from-uint x)))
 
-  (defruled ifix-of-ulong->get
-    (equal (ifix (ulong->get x))
-           (ulong->get x)))
+  (defruled ifix-of-integer-from-slong
+    (equal (ifix (integer-from-slong x))
+           (integer-from-slong x)))
 
-  (defruled ifix-of-sllong->get
-    (equal (ifix (sllong->get x))
-           (sllong->get x)))
+  (defruled ifix-of-integer-from-ulong
+    (equal (ifix (integer-from-ulong x))
+           (integer-from-ulong x)))
 
-  (defruled ifix-of-ullong->get
-    (equal (ifix (ullong->get x))
-           (ullong->get x)))
+  (defruled ifix-of-integer-from-sllong
+    (equal (ifix (integer-from-sllong x))
+           (integer-from-sllong x)))
+
+  (defruled ifix-of-integer-from-ullong
+    (equal (ifix (integer-from-ullong x))
+           (integer-from-ullong x)))
 
   (defval *atc-integer-ifix-rules*
-    '(ifix-of-schar->get
-      ifix-of-uchar->get
-      ifix-of-sshort->get
-      ifix-of-ushort->get
-      ifix-of-sint->get
-      ifix-of-uint->get
-      ifix-of-slong->get
-      ifix-of-ulong->get
-      ifix-of-sllong->get
-      ifix-of-ullong->get)))
+    '(ifix-of-integer-from-schar
+      ifix-of-integer-from-uchar
+      ifix-of-integer-from-sshort
+      ifix-of-integer-from-ushort
+      ifix-of-integer-from-sint
+      ifix-of-integer-from-uint
+      ifix-of-integer-from-slong
+      ifix-of-integer-from-ulong
+      ifix-of-integer-from-sllong
+      ifix-of-integer-from-ullong)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

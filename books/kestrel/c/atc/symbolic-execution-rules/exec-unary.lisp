@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,20 +13,29 @@
 
 (include-book "../../language/dynamic-semantics")
 
-(include-book "../integer-operations")
+(include-book "../../representation/integer-operations")
+
+(include-book "../types")
 
 (include-book "syntaxp")
 (include-book "promote-value")
 (include-book "value-integer-get")
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-unary-rules-generation
-  :short "Code to generate the rules for executing unary operations."
+(defsection atc-exec-unary-nonpointer-rules-generation
+  :short "Code to generate the rules for executing
+          unary operations that do not involve pointers."
 
-  (define atc-exec-unary-rules-gen ((op unopp) (type typep))
+  (define atc-exec-unary-nonpointer-rules-gen ((op unopp) (type typep))
     :guard (type-nonchar-integerp type)
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
@@ -63,7 +72,7 @@
                      ,@(and op-type-okp
                             `((,op-type-okp x)))))
          (formula `(implies ,hyps
-                            (equal (exec-unary op x)
+                            (equal (exec-unary op x compst)
                                    (,op-type x))))
          (enables `(exec-unary
                     ,op-value
@@ -96,13 +105,14 @@
                     ulong-integerp-alt-def
                     sllong-integerp-alt-def
                     ullong-integerp-alt-def
-                    uint-mod
-                    ulong-mod
-                    ullong-mod
+                    uint-from-integer-mod
+                    ulong-from-integer-mod
+                    ullong-from-integer-mod
                     value-unsigned-integerp-alt-def
                     integer-type-rangep
                     integer-type-min
                     integer-type-max
+                    bit-width-value-choices
                     ,@(and (unop-case op :bitnot)
                            `((:e sint-min)
                              (:e sint-max)
@@ -112,10 +122,15 @@
                              (:e sllong-max)))
                     ,@(and (unop-case op :lognot)
                            `(sint-from-boolean
-                             value-schar->get-to-schar->get
-                             value-uchar->get-to-uchar->get
-                             value-sshort->get-to-sshort->get
-                             value-ushort->get-to-ushort->get))))
+                             value-schar->get-to-integer-from-schar
+                             value-uchar->get-to-integer-from-uchar
+                             value-sshort->get-to-integer-from-sshort
+                             value-ushort->get-to-integer-from-ushort))
+                    identity
+                    ifix
+                    fix
+                    mod
+                    lognot))
          (event `(defruled ,name
                    ,formula
                    :enable ,enables
@@ -123,28 +138,32 @@
                              (:e integer-type-max)))))
       (mv name event)))
 
-  (define atc-exec-unary-rules-gen-loop-types ((op unopp) (types type-listp))
+  (define atc-exec-unary-nonpointer-rules-gen-loop-types ((op unopp)
+                                                          (types type-listp))
     :guard (type-nonchar-integer-listp types)
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
     (b* (((when (endp types)) (mv nil nil))
-         ((mv name event) (atc-exec-unary-rules-gen op (car types)))
-         ((mv names events) (atc-exec-unary-rules-gen-loop-types op (cdr types))))
+         ((mv name event) (atc-exec-unary-nonpointer-rules-gen op (car types)))
+         ((mv names events)
+          (atc-exec-unary-nonpointer-rules-gen-loop-types op (cdr types))))
       (mv (cons name names) (cons event events))))
 
-  (define atc-exec-unary-rules-gen-loop-ops ((ops unop-listp) (types type-listp))
+  (define atc-exec-unary-nonpointer-rules-gen-loop-ops ((ops unop-listp)
+                                                        (types type-listp))
     :guard (type-nonchar-integer-listp types)
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
     (b* (((when (endp ops)) (mv nil nil))
-         ((mv names events) (atc-exec-unary-rules-gen-loop-types (car ops) types))
+         ((mv names events)
+          (atc-exec-unary-nonpointer-rules-gen-loop-types (car ops) types))
          ((mv more-names more-events)
-          (atc-exec-unary-rules-gen-loop-ops (cdr ops) types)))
+          (atc-exec-unary-nonpointer-rules-gen-loop-ops (cdr ops) types)))
       (mv (append names more-names) (append events more-events))))
 
-  (define atc-exec-unary-rules-gen-all ()
+  (define atc-exec-unary-nonpointer-rules-gen-all ()
     :returns (event pseudo-event-formp)
     :parents nil
     (b* ((ops (list (unop-plus)
@@ -152,13 +171,14 @@
                     (unop-bitnot)
                     (unop-lognot)))
          ((mv names events)
-          (atc-exec-unary-rules-gen-loop-ops ops
-                                             *nonchar-integer-types*)))
+          (atc-exec-unary-nonpointer-rules-gen-loop-ops
+           ops *nonchar-integer-types*)))
       `(progn
-         (defsection atc-exec-unary-rules
-           :short "Rules for executing unary operations"
+         (defsection atc-exec-unary-nonpointer-rules
+           :short "Rules for executing unary operations
+                   that do not involve pointers."
            ,@events
-           (defval *atc-exec-unary-rules*
+           (defval *atc-exec-unary-nonpointer-rules*
              '(,@names
                (:e unop-plus)
                (:e unop-minus)
@@ -167,4 +187,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event (atc-exec-unary-rules-gen-all))
+(make-event (atc-exec-unary-nonpointer-rules-gen-all))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-exec-indir-rules-generation
+  :short "Code to generate the rules for executing
+          the indirection unary operation."
+
+  (define atc-exec-indir-rules-gen ((type typep))
+    :guard (type-nonchar-integerp type)
+    :returns (mv (name symbolp)
+                 (event pseudo-event-formp))
+    :parents nil
+    (b* ((fixtype (integer-type-to-fixtype type))
+         (pred (pack fixtype 'p))
+         (value-kind-when-pred (pack 'value-kind-when- pred))
+         (name (pack 'exec-indir-when- pred))
+         (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+                     (valuep x)
+                     (value-case x :pointer)
+                     (not (value-pointer-nullp x))
+                     (equal (value-pointer->reftype x)
+                            ,(type-to-maker type))
+                     (unop-case op :indir)
+                     (equal val
+                            (read-object (value-pointer->designator x) compst))
+                     (,pred val)))
+         (formula `(implies ,hyps
+                            (equal (exec-unary op x compst)
+                                   val)))
+         (hints `(("Goal" :in-theory '(exec-unary
+                                       indir-value
+                                       ,value-kind-when-pred))))
+         (event `(defruled ,name
+                   ,formula
+                   :hints ,hints)))
+      (mv name event)))
+
+  (define atc-exec-indir-rules-loop ((types type-listp))
+    :guard (type-nonchar-integer-listp types)
+    :returns (mv (names symbol-listp)
+                 (events pseudo-event-form-listp))
+    :parents nil
+    (b* (((when (endp types)) (mv nil nil))
+         ((mv name event) (atc-exec-indir-rules-gen (car types)))
+         ((mv names events) (atc-exec-indir-rules-loop (cdr types))))
+      (mv (cons name names) (cons event events))))
+
+  (define atc-exec-indir-rules-gen-all ()
+    :returns (event pseudo-event-formp)
+    :parents nil
+    (b* (((mv names events)
+          (atc-exec-indir-rules-loop *nonchar-integer-types*)))
+      `(defsection atc-exec-indir-rules
+         :short "Rules for executing the indirection unary operation."
+         ,@events
+         (defval *atc-exec-indir-rules*
+           '(,@names
+             (:e unop-kind)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event (atc-exec-indir-rules-gen-all))

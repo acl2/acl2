@@ -107,7 +107,8 @@
 
 (DEFTHM BVMOD-WHEN-BVCHOP-KNOWN-SUBST
   (IMPLIES (AND (EQUAL (BVCHOP SIZE X) FREE)
-                (SYNTAXP (QUOTEP FREE))
+                (SYNTAXP (and (QUOTEP FREE)
+                              (not (QUOTEP x))))
                 (NATP SIZE))
            (EQUAL (BVMOD SIZE Y X)
                   (BVMOD SIZE Y FREE)))
@@ -115,7 +116,8 @@
 
 (DEFTHM BVMOD-WHEN-BVCHOP-KNOWN-SUBST-alt
   (IMPLIES (AND (EQUAL (BVCHOP SIZE X) FREE)
-                (SYNTAXP (QUOTEP FREE))
+                (SYNTAXP (and (QUOTEP FREE)
+                              (not (QUOTEP x))))
                 (NATP SIZE))
            (EQUAL (BVMOD SIZE X Y)
                   (BVMOD SIZE FREE Y)))

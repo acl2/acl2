@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,9 @@
 (include-book "types")
 
 (include-book "std/basic/two-nats-measure" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -168,7 +171,9 @@
     :true-listp t
     :elementp-of-nil nil
     :pred member-value-listp
-    :measure (two-nats-measure (acl2-count x) 0)))
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -198,6 +203,8 @@
   :enable (errorp
            valuep))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (defsection value-result-theorems
   :extension value-result
 
@@ -223,6 +230,8 @@
 
 (defresult value-list "lists of values")
 
+;;;;;;;;;;;;;;;;;;;;
+
 (defsection value-list-result-theorems
   :extension value-list-result
 
@@ -234,6 +243,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult member-value-list "lists of member values")
+
+;;;;;;;;;;;;;;;;;;;;
 
 (defsection member-value-list-result-theorems
   :extension member-value-list-result
@@ -256,6 +267,8 @@
   :enable (errorp
            value-optionp
            valuep))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (defsection value-option-result-theorems
   :extension value-option
@@ -355,6 +368,10 @@
 (defsection signed/unsigned-byte-p-of-integer-values
   :short "Theorems saying that the integer values
           satisfy @(tsee signed-byte-p) and @(tsee unsigned-byte-p)."
+
+  (local (in-theory (enable signed-byte-p
+                            unsigned-byte-p
+                            integer-range-p)))
 
   (defruled signed-byte-p-of-value-schar->get
     (signed-byte-p (char-bits) (value-schar->get val))
@@ -516,7 +533,7 @@
               :array (make-type-array :of val.elemtype
                                       :size (len val.elements))
               :struct (type-struct val.tag))
-  :guard-hints (("Goal" :in-theory (enable pos-optionp)))
+  :guard-hints (("Goal" :in-theory (enable pos-optionp posp)))
   :hooks (:fix)
   :prepwork ((local (include-book "std/lists/len" :dir :system)))
   ///
@@ -687,6 +704,8 @@
 
 (defresult init-value "initialization values"
   :enable (errorp init-valuep))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (defsection init-value-result-theorems
   :extension init-value-result

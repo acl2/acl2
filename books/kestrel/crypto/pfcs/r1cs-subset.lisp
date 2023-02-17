@@ -10,7 +10,7 @@
 
 (in-package "PFCS")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,7 +28,8 @@
      One is that of a PFCS that is an R1CS,
      i.e. it has no definitions and all the constraints are in R1CS form.
      Another is that of a PFCS that has definitions,
-     but all its equality constraints are in R1CS form.
+     but all its equality constraints are in R1CS form,
+     and all its relation applications have constants or variables as arguments.
      The latter kind of PFCS can be regarded as a structured R1CS:
      the constraints are all in R1CS form in the end,
      but they may be organized hierarchically, via defined relations.
@@ -140,10 +141,15 @@
   (xdoc::topstring
    (xdoc::p
     "If the constraint is an equality, it must be in R1CS form.
-     But we also allow relation applications,
-     whose constraints are checked separately."))
-  (or (r1cs-constraintp constr)
-      (constraint-case constr :relation))
+     If the constraint is a relation application,
+     the arguments must be constants or variables:
+     this way, the constraints resulting from the body of the relation,
+     instantiated from the arguments,
+     are in R1CS form if the ones in the body of the relation are."))
+  (constraint-case
+   constr
+   :equal t
+   :relation (expression-const/var-listp constr.args))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

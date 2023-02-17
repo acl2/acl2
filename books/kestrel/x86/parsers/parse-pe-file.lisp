@@ -642,7 +642,7 @@
     (reverse pe)))
 
 ;; ;; Parse a file that is known to be a PE executable.  Returns (mv
-;; ;; erp contents state) where contents in an alist representing the
+;; ;; erp contents state) where contents is an alist representing the
 ;; ;; contents of the PE executable.
 ;; (defun parse-pe-file (filename state)
 ;;   (declare (xargs :stobjs state
@@ -651,7 +651,7 @@
 ;;   (b* (((mv existsp state) (file-existsp filename state))
 ;;        ((when (not existsp))
 ;;         (progn$ (cw "ERROR in parse-for-pe-file: File does not exist: ~x0." filename)
-;;                 (exit 1) ;return non-zero exit status ; todo: do we want this (not that below we don't exist)
+;;                 (exit 1) ;return non-zero exit status ; todo: do we want this (note that below we don't exit)
 ;;                 (mv :file-does-not-exist nil state)))
 ;;        ((mv erp bytes state) (read-file-into-byte-list filename state))
 ;;        ((when erp)

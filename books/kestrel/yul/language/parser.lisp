@@ -301,7 +301,7 @@
 
     ;; For brevity, do not walk the whole identifier tree separately here, just grab the fringe text.
     ;; abnf::tree->string states it returns stringp but it actually returns a list of nats.
-    ;; Grab the nats, make sure they are usigned bytes, and then convert them to a string.
+    ;; Grab the nats, make sure they are unsigned bytes, and then convert them to a string.
     (b* ((fringe (abnf::tree->string (first tokens)))
          ((unless (acl2::unsigned-byte-listp 8 fringe))
           (prog2$ (er hard? 'top-level

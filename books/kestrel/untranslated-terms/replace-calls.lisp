@@ -14,6 +14,8 @@
 ;; calls of new functions, perhaps with wrappers, etc.).
 
 (include-book "helpers")
+(include-book "untranslated-constantp")
+(include-book "untranslated-variablep")
 (include-book "kestrel/utilities/make-var-names" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "../utilities/lets")
@@ -131,115 +133,114 @@
              (er hard? 'replace-calls-in-untranslated-term-aux "Failed to translate ~x0. ~@1." term msg-or-translated-term)))
           ;; msg-or-translated-term was not in fact a message, so it is the translated term:
           (translated-term msg-or-translated-term))
-       (if (atom term)
+       (if (or (untranslated-constantp term)
+               (untranslated-variablep term))
+           ;; no fns to replace (we don't replace QUOTE)
            term
-         (if (fquotep term)
-             term ; no fns to replace (we don't replace QUOTE here)
-           ;;function call or lambda:
-           (let* ((fn (ffn-symb term)))
-             (case fn
-               ((let let*) ;; (let/let* <bindings> ...declares... <body>)
-                (let* ((bindings (let-bindings term))
-                       (declares (let-declares term))
-                       (body (let-body term))
-                       (binding-vars (strip-cars bindings))
-                       (binding-terms (strip-cadrs bindings)))
-                  `(,fn ,(make-doublets binding-vars (replace-calls-in-untranslated-terms-aux binding-terms alist permissivep (+ -1 count) wrld state))
-                        ,@declares ;; These can only be IGNORE, IGNORABLE, and TYPE.  TODO: What about (type (satisfies PRED) x) ?
-                        ,(replace-calls-in-untranslated-term-aux body alist permissivep (+ -1 count) wrld state))))
-               (b* ;; (b* <bindings> ...result-forms...)
-                   (let ((bindings (farg1 term)))
-                     (if (supported-b*-bindingsp bindings)
-                         (let* ((terms (extract-terms-from-b*-bindings bindings))
-                                (new-terms (replace-calls-in-untranslated-terms-aux terms alist permissivep (+ -1 count) wrld state))
-                                (new-bindings (recreate-b*-bindings bindings new-terms))
-                                (result-forms (rest (fargs term))))
-                           `(b*
-                                ,new-bindings
-                              ,@(replace-calls-in-untranslated-terms-aux result-forms alist permissivep (+ -1 count) wrld state)))
-                       ;; Not a supported b*, so macroexpand one step and try again:
-                       (prog2$
-                        (cw "NOTE: Macroexpanding non-supported b* form: ~x0.~%" term) ; suppress?
-                        (replace-calls-in-untranslated-term-aux (magic-macroexpand1$$ term 'replace-calls-in-untranslated-term-aux wrld state)
-                                                                alist permissivep (+ -1 count) wrld state)))))
-               (cond ;; (cond <clauses>)
-                ;; Note that cond clauses can have length 1 or 2.  We flatten the clauses, process the resulting list of untranslated terms, and then recreate the clauses
-                ;; by walking through them and putting in the new items:
-                (let* ((clauses (fargs term))
-                       (items (append-all2 clauses))
-                       (new-items (replace-calls-in-untranslated-terms-aux items alist permissivep (+ -1 count) wrld state)))
-                  `(cond ,@(recreate-cond-clauses clauses new-items))))
-               ((case) ;; (case <expr> ...cases...)
-                (let* ((expr (farg1 term))
-                       (cases (rest (fargs term)))
-                       (vals-to-match (strip-cars cases))
-                       (vals-to-return (strip-cadrs cases)))
-                  `(case ,(replace-calls-in-untranslated-term-aux expr alist permissivep (+ -1 count) wrld state)
-                     ,@(make-doublets vals-to-match
-                                      (replace-calls-in-untranslated-terms-aux vals-to-return alist permissivep (+ -1 count) wrld state)))))
-               ((case-match)              ;; (case-match <var> ...cases...)
-                (let* ((var (farg1 term)) ; must be a symbol
-                       (cases (rest (fargs term)))
-                       (terms-from-cases (extract-terms-from-case-match-cases cases))
-                       (new-terms-from-cases (replace-calls-in-untranslated-terms-aux terms-from-cases alist permissivep (+ -1 count) wrld state))
-                       (new-cases (recreate-case-match-cases cases new-terms-from-cases)))
-                  `(case-match ,var ; no change since it's a symbol
-                     ,@new-cases)))
-               ;; TODO: Consider FLET (watch for capture!)
-               (otherwise
-                (if (macro-namep fn wrld)
-                    ;; It's a macro we don't have special handling for:
-                    ;; First, we check the translation of the term to see whether it mentions any of the functions to be replaced:
-                    (if (not (intersection-eq (strip-cars alist) (all-fnnames translated-term))) ; todo: optimize this.  do it sooner?
-                        ;; No name to be replaced appears in the translation of TERM, so we can just return TERM (this will be more
-                        ;; readable than its translation):
-                        term
-                      ;; Some replacement does need to be done:
-                      (b* ( ;; We seek an untranslated term that translates to this but is nicer:
-                           (translated-term-after-replacement (replace-calls translated-term alist))
-                           ;; Heuristic #1: See if we can just dumbly replace symbols in the macro call (this may often work, but not if a function name to be replaced occurs as a variable or a piece of other syntax passed to a macro, or if a macro hides a function call):
-                           (dumb-replacement (replace-symbols-in-tree term alist))
-                           ((mv ctx translated-dumb-replacement) (translate-term-with-defaults dumb-replacement 'replace-calls-in-untranslated-term-aux wrld)))
-                        (if (and (not ctx) ; no error
-                                 (equal translated-dumb-replacement translated-term-after-replacement))
-                            ;; The dumb-replacement translates to the right thing, so use it (will be more readable than if we expand the macro call):
-                            dumb-replacement
-                          ;; Heuristic #2: Try treating the macro args as terms and process them recursively.  Then see if the new macro call translates to the right thing.
-                          (b* ((term-with-translated-args
-                                (cons fn (replace-calls-in-untranslated-terms-aux (fargs term) alist
-                                                                                  t ;be permissive, since the macro args may not translate
-                                                                                  (+ -1 count) wrld state)))
-                               ((mv erp translated-term-with-translated-args) (translate-term-with-defaults term-with-translated-args 'replace-calls-in-untranslated-term-aux wrld)))
-                            (if (and (not erp)
-                                     (equal translated-term-with-translated-args translated-term-after-replacement))
-                                ;; The term with processed args translates to the right thing, so use it (will be more readable than if we expand the macro call):
-                                term-with-translated-args
-                              ;; None of the above worked, so macroexpand one step and try again:
-                              (prog2$
-                               (cw "NOTE: Macroexpanding non-supported form: ~x0.~%" term) ; suppress?
-                               (replace-calls-in-untranslated-term-aux (magic-macroexpand1$$ term 'replace-calls-in-untranslated-term-aux wrld state)
-                                                                       alist permissivep (+ -1 count) wrld state)))))))
-                  ;; It's a function or lambda application:
-                  (let* ((new-args (replace-calls-in-untranslated-terms-aux (fargs term) alist permissivep (+ -1 count) wrld state)))
-                    (if (consp fn)
-                        ;; ((lambda <formals> ...declares... <body>) ...args...)
-                        ;;if it's a lambda application, replace calls in the body:
-                        ;; TODO: Consider unclosed lambdas (translation closes them)
-                        (let* ((lambda-formals (ulambda-formals fn))
-                               (declares (ulambda-declares fn))
-                               (lambda-body (ulambda-body fn))
-                               (new-lambda-body (replace-calls-in-untranslated-term-aux lambda-body alist permissivep (+ -1 count) wrld state))
-                               (new-fn (make-ulambda lambda-formals declares new-lambda-body)))
-                          (cons new-fn new-args))
-                      ;;if it's not a lambda:
-                      (let ((res (assoc-eq fn alist)))
-                        (if res
-                            ;; Replace this call:
-                            (instantiate-template-with-args (cdr res) new-args)
-                          ;; Don't replace:
-                          (fcons-term fn new-args))))))))))))))
+         (let* ((fn (ffn-symb term)))
+           (case fn
+             ((let let*) ;; (let/let* <bindings> ...declares... <body>)
+              (let* ((bindings (let-bindings term))
+                     (declares (let-declares term))
+                     (body (let-body term))
+                     (binding-vars (strip-cars bindings))
+                     (binding-terms (strip-cadrs bindings)))
+                `(,fn ,(make-doublets binding-vars (replace-calls-in-untranslated-terms-aux binding-terms alist permissivep (+ -1 count) wrld state))
+                      ,@declares ;; These can only be IGNORE, IGNORABLE, and TYPE.  TODO: What about (type (satisfies PRED) x) ?
+                      ,(replace-calls-in-untranslated-term-aux body alist permissivep (+ -1 count) wrld state))))
+             (b* ;; (b* <bindings> ...result-forms...)
+                 (let ((bindings (farg1 term)))
+                   (if (supported-b*-bindingsp bindings)
+                       (let* ((terms (extract-terms-from-b*-bindings bindings))
+                              (new-terms (replace-calls-in-untranslated-terms-aux terms alist permissivep (+ -1 count) wrld state))
+                              (new-bindings (recreate-b*-bindings bindings new-terms))
+                              (result-forms (rest (fargs term))))
+                         `(b*
+                              ,new-bindings
+                            ,@(replace-calls-in-untranslated-terms-aux result-forms alist permissivep (+ -1 count) wrld state)))
+                     ;; Not a supported b*, so macroexpand one step and try again:
+                     (prog2$
+                      (cw "NOTE: Macroexpanding non-supported b* form: ~x0.~%" term) ; suppress?
+                      (replace-calls-in-untranslated-term-aux (magic-macroexpand1$$ term 'replace-calls-in-untranslated-term-aux wrld state)
+                                                              alist permissivep (+ -1 count) wrld state)))))
+             (cond ;; (cond <clauses>)
+              ;; Note that cond clauses can have length 1 or 2.  We flatten the clauses, process the resulting list of untranslated terms, and then recreate the clauses
+              ;; by walking through them and putting in the new items:
+              (let* ((clauses (fargs term))
+                     (items (append-all2 clauses))
+                     (new-items (replace-calls-in-untranslated-terms-aux items alist permissivep (+ -1 count) wrld state)))
+                `(cond ,@(recreate-cond-clauses clauses new-items))))
+             ((case) ;; (case <expr> ...cases...)
+              (let* ((expr (farg1 term))
+                     (cases (rest (fargs term)))
+                     (vals-to-match (strip-cars cases))
+                     (vals-to-return (strip-cadrs cases)))
+                `(case ,(replace-calls-in-untranslated-term-aux expr alist permissivep (+ -1 count) wrld state)
+                   ,@(make-doublets vals-to-match
+                                    (replace-calls-in-untranslated-terms-aux vals-to-return alist permissivep (+ -1 count) wrld state)))))
+             ((case-match)              ;; (case-match <var> ...cases...)
+              (let* ((var (farg1 term)) ; must be a symbol
+                     (cases (rest (fargs term)))
+                     (terms-from-cases (extract-terms-from-case-match-cases cases))
+                     (new-terms-from-cases (replace-calls-in-untranslated-terms-aux terms-from-cases alist permissivep (+ -1 count) wrld state))
+                     (new-cases (recreate-case-match-cases cases new-terms-from-cases)))
+                `(case-match ,var ; no change since it's a symbol
+                   ,@new-cases)))
+             ;; TODO: Consider FLET (watch for capture!)
+             (otherwise
+              (if (macro-namep fn wrld)
+                  ;; It's a macro we don't have special handling for:
+                  ;; First, we check the translation of the term to see whether it mentions any of the functions to be replaced:
+                  (if (not (intersection-eq (strip-cars alist) (all-fnnames translated-term))) ; todo: optimize this.  do it sooner?
+                      ;; No name to be replaced appears in the translation of TERM, so we can just return TERM (this will be more
+                      ;; readable than its translation):
+                      term
+                    ;; Some replacement does need to be done:
+                    (b* ( ;; We seek an untranslated term that translates to this but is nicer:
+                         (translated-term-after-replacement (replace-calls translated-term alist))
+                         ;; Heuristic #1: See if we can just dumbly replace symbols in the macro call (this may often work, but not if a function name to be replaced occurs as a variable or a piece of other syntax passed to a macro, or if a macro hides a function call):
+                         (dumb-replacement (replace-symbols-in-tree term alist))
+                         ((mv ctx translated-dumb-replacement) (translate-term-with-defaults dumb-replacement 'replace-calls-in-untranslated-term-aux wrld)))
+                      (if (and (not ctx) ; no error
+                               (equal translated-dumb-replacement translated-term-after-replacement))
+                          ;; The dumb-replacement translates to the right thing, so use it (will be more readable than if we expand the macro call):
+                          dumb-replacement
+                        ;; Heuristic #2: Try treating the macro args as terms and process them recursively.  Then see if the new macro call translates to the right thing.
+                        (b* ((term-with-translated-args
+                              (cons fn (replace-calls-in-untranslated-terms-aux (fargs term) alist
+                                                                                t ;be permissive, since the macro args may not translate
+                                                                                (+ -1 count) wrld state)))
+                             ((mv erp translated-term-with-translated-args) (translate-term-with-defaults term-with-translated-args 'replace-calls-in-untranslated-term-aux wrld)))
+                          (if (and (not erp)
+                                   (equal translated-term-with-translated-args translated-term-after-replacement))
+                              ;; The term with processed args translates to the right thing, so use it (will be more readable than if we expand the macro call):
+                              term-with-translated-args
+                            ;; None of the above worked, so macroexpand one step and try again:
+                            (prog2$
+                             (cw "NOTE: Macroexpanding non-supported form: ~x0.~%" term) ; suppress?
+                             (replace-calls-in-untranslated-term-aux (magic-macroexpand1$$ term 'replace-calls-in-untranslated-term-aux wrld state)
+                                                                     alist permissivep (+ -1 count) wrld state)))))))
+                ;; It's a function call or lambda application:
+                (let* ((new-args (replace-calls-in-untranslated-terms-aux (fargs term) alist permissivep (+ -1 count) wrld state)))
+                  (if (consp fn)
+                      ;; ((lambda <formals> ...declares... <body>) ...args...)
+                      ;;if it's a lambda application, replace calls in the body:
+                      ;; TODO: Consider unclosed lambdas (translation closes them)
+                      (let* ((lambda-formals (ulambda-formals fn))
+                             (declares (ulambda-declares fn))
+                             (lambda-body (ulambda-body fn))
+                             (new-lambda-body (replace-calls-in-untranslated-term-aux lambda-body alist permissivep (+ -1 count) wrld state))
+                             (new-fn (make-ulambda lambda-formals declares new-lambda-body)))
+                        (cons new-fn new-args))
+                    ;; It's a function call:
+                    (let ((res (assoc-eq fn alist)))
+                      (if res
+                          ;; Replace this call:
+                          (instantiate-template-with-args (cdr res) new-args)
+                        ;; It's not a function whose calls are to be replaced:
+                        (fcons-term fn new-args)))))))))))))
 
- ;; replace all functions calls in TERMS according to ALIST
+ ;; Replaces all functions calls in TERMS according to ALIST.
  (defun replace-calls-in-untranslated-terms-aux (terms alist permissivep count wrld state)
    (declare (xargs :guard (and ;(untranslated-term-listp terms)
                            ;;(true-listp terms)

@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,9 +53,9 @@
   (implies (and (primep p)
                 (symbolp b-var)
                 (fep b p))
-           (iff (constraint-satp (omap::update b-var b nil)
-                                 (constraint-boolean b-var)
+           (iff (constraint-satp (constraint-boolean b-var)
                                  sys
+                                 (omap::update b-var b nil)
                                  p)
                 (spec-boolean b p)))
   :enable (constraint-boolean

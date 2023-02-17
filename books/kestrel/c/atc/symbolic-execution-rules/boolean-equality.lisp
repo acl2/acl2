@@ -11,10 +11,15 @@
 
 (in-package "C")
 
+(include-book "../test-star")
+
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,6 +45,6 @@
 
   (defruled equal-to-t-when-holds-and-boolean
     (implies (and (booleanp b)
-                  (hide b))
+                  (test* b))
              (equal (equal t b) t))
-    :expand (:free (x) (hide x))))
+    :enable test*))

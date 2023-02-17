@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "system/remove-guard-holders-lemmas" :dir :system) ;provides most of what we need
+(include-book "system/remove-guard-holders1" :dir :system) ;provides most of what we need
 
 ;(include-book "tools/flag" :dir :system)
 ;(make-flag remove-guard-holders1) ;might want this
