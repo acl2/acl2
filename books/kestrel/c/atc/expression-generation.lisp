@@ -1374,7 +1374,7 @@
          ((pexpr-gin gin) gin)
          ((when (pseudo-term-case term :var))
           (retok (atc-gen-expr-var (pseudo-term-var->name term) gin state)))
-         ((erp okp const type type-base-const) (atc-check-iconst term))
+         ((erp okp type-base-const type const) (atc-check-iconst term))
          ((when okp) (retok (atc-gen-expr-const term const type type-base-const
                                                 gin state)))
          ((mv okp op arg-term in-type out-type) (atc-check-unop term))
