@@ -85,4 +85,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; List of all the built-in rewrite rules that rewrite
+; generic calls of certain built-in functions
+; (i.e. calls on distinct variables)
+; to something simpler according to how those function treat
+; values outside the intended domain,
+; provided suitable hypotheses are satisfied
+; that say that the arguments are outside the domain.
+
+(defconst *builtin-rewrite-rules-for-defaults*
+  '(default-car
+    default-cdr
+    default-numerator
+    default-denominator
+    default-realpart
+    default-imagpart
+    default-code-char
+    default-char-code
+    default-coerce-1
+    default-coerce-2
+    default-coerce-3
+    default-complex-1
+    default-complex-2
+    default-unary-minus
+    default-unary-/
+    default-+-1
+    default-+-2
+    default-*-1
+    default-*-2
+    default-<-1
+    default-<-2
+    default-intern-in-package-of-symbol
+    default-pkg-imports))
+
+(assert-event (subsetp-eq *builtin-rewrite-rules-for-defaults*
+                          *builtin-rewrite-defaxiom/defthm-names*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro disable-builtin-rewrite-rules-for-defaults ()
+  `(in-theory (disable ,@*builtin-rewrite-rules-for-defaults*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; We could provide additional disabling macros in the future.
