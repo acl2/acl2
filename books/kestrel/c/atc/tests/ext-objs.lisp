@@ -129,6 +129,29 @@
       (declare (ignore |idx|))
       |arr2|)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |j| (|x| |global|)
+  (declare
+   (xargs :guard (and (c::sintp |x|)
+                      (object-|global|-p |global|))
+          :guard-hints (("Goal" :in-theory (enable object-|global|-p)))))
+  (c::eq-sint-sint |x| (c::sint-from-sshort |global|)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |k| (|global_0|)
+  (declare
+   (xargs :guard (object-|global_0|-p |global_0|)
+          :guard-hints (("Goal" :in-theory (enable object-|global_0|-p)))))
+  (if (c::boolean-from-sint (c::lt-uint-uint |global_0| (c::uint-dec-const 10)))
+      (let ((|global_0|
+             (c::assign (c::add-uint-uint |global_0| (c::uint-dec-const 1)))))
+        |global_0|)
+    (let ((|global_0|
+           (c::assign (c::sub-uint-uint |global_0| (c::uint-dec-const 1)))))
+      |global_0|)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::atc |arr|
@@ -140,6 +163,10 @@
         |i$loop|
         |i|
         |perm|
-        |no_init|
+        |arr_no_init|
+        |global|
+        |global_0|
+        |j|
+        |k|
         :file-name "ext-objs"
         :header t)

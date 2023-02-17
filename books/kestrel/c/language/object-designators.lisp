@@ -90,12 +90,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "An object designator is a named variable,
+    "An object designator is
+     a named variable in static storage,
      or an address in the heap,
      or a (structure) member of an object designator,
      or an (array) element of an object designator.
      See @(see object-designators)."))
-  (:variable ((get ident)))
+  (:static ((get ident)))
   (:address ((get address)))
   (:element ((super objdesign)
              (index nat)))

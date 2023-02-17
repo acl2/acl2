@@ -459,7 +459,9 @@
                                    :formula var-in-scope-formula
                                    :hints var-in-scope-hints
                                    :enable nil))
-       (varinfo (make-atc-var-info :type type :thm var-in-scope-thm))
+       (varinfo (make-atc-var-info :type type
+                                   :thm var-in-scope-thm
+                                   :externalp nil))
        (new-inscope (atc-add-var var varinfo new-inscope)))
     (mv new-inscope
         new-context
