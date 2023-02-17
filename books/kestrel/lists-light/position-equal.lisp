@@ -1,10 +1,11 @@
 ; A lightweight book about the built-in-function position-equal
 ;
-; Copyright (C) 2015-2022 Kestrel Institute
+; Copyright (C) 2015-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,6 +41,8 @@
          (member-equal item x)))
   :hints (("Goal" :in-theory (enable position-equal))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; For when X is a string.
 (defthm <-of-position-equal-and-length-linear
   (implies (and (stringp x)
@@ -60,6 +63,8 @@
                     )))
   :hints (("Goal" :use (:instance position-equal-ac-bound-special (lst (coerce x 'list)))
            :in-theory (e/d (position-equal) (position-equal-ac-bound-special)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; For when X is a list.
 (defthm <-of-position-equal-and-len-linear
@@ -87,4 +92,20 @@
                 (not (member-equal item x)))
            (equal (position-equal item x)
                   nil))
+  :hints (("Goal" :in-theory (enable position-equal))))
+
+;; For when X is a list
+(defthm position-equal-of-car-same
+  (implies (not (stringp x))
+           (equal (position-equal (car x) x)
+                  (if (consp x) 0 nil)))
+  :hints (("Goal" :in-theory (enable position-equal))))
+
+;; For when X is a list, but happens to be true when X is a string.
+(defthm nth-of-position-equal-same
+  (equal (nth (position-equal item lst) lst)
+         (if (member-equal item lst)
+             item
+           (car lst) ; unusual case
+           ))
   :hints (("Goal" :in-theory (enable position-equal))))
