@@ -804,7 +804,7 @@
      for the object designator."))
   (objdesign-case
    objdes
-   :variable (read-static-var objdes.get compst)
+   :static (read-static-var objdes.get compst)
    :address
    (b* ((addr objdes.get)
         (heap (compustate->heap compst))
@@ -863,7 +863,7 @@
      via the functions called by this function."))
   (objdesign-case
    objdes
-   :variable (write-static-var objdes.get val compst)
+   :static (write-static-var objdes.get val compst)
    :address
    (b* ((addr objdes.get)
         (heap (compustate->heap compst))
@@ -912,7 +912,7 @@
              :in-theory (e/d (compustate-frames-number)
                              (compustate-frames-number-of-write-static-var)))
             '(:use (:instance compustate-frames-number-of-write-static-var
-                              (var (objdesign-variable->get objdes))))))
+                              (var (objdesign-static->get objdes))))))
 
   (defret compustate-scopes-numbers-of-write-object
     (implies (compustatep new-compst)
@@ -922,4 +922,4 @@
              :in-theory (e/d (compustate-scopes-numbers)
                              (compustate-scopes-numbers-of-write-static-var)))
             '(:use (:instance compustate-scopes-numbers-of-write-static-var
-                              (var (objdesign-variable->get objdes)))))))
+                              (var (objdesign-static->get objdes)))))))

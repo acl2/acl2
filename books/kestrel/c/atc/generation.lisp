@@ -175,9 +175,8 @@
      is in the source file."))
   (b* ((id (defobject-info->name-ident info))
        (type (defobject-info->type info))
-       (exprs (defobject-info->init info))
+       (initer? (defobject-info->init info))
        ((mv tyspec declor) (ident+type-to-tyspec+declor id type))
-       (initer? (if (consp exprs) (initer-list exprs) nil))
        (declon-h (and header
                       (make-obj-declon :scspec (scspecseq-extern)
                                        :tyspec tyspec

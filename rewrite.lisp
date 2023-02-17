@@ -199,7 +199,8 @@
    (let ((fn (ev-fncall+-fns fn args wrld big-n safe-mode gc-off t)))
      (and (symbolp fn)
           (or (null fn)
-              (function-symbolp fn wrld))))))
+              (function-symbolp fn wrld))))
+   :rule-classes nil))
 
 #+acl2-loop-only
 (defun ev-fncall+-w (fn args w safe-mode gc-off strictp)

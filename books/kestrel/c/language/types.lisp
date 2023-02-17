@@ -126,6 +126,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defalist symbol-type-alist
+  :short "Fixtype of alists from symbols to types."
+  :key-type symbol
+  :val-type type
+  :true-listp t
+  :keyp-of-nil t
+  :valp-of-nil nil
+  :pred symbol-type-alistp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult type-result
   :short "Fixtype of errors and types."
   :ok type
