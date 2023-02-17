@@ -294,8 +294,6 @@
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
        (op-name (pack (unop-kind op)))
-       ((unless (type-nonchar-integerp arg-type))
-        (reterr (raise "Internal error: non-integer type ~x0." arg-type)))
        (fn-okp (and (unop-case op :minus)
                     (not (member-eq (type-kind in-type)
                                     '(:uint :ulong :ullong)))
