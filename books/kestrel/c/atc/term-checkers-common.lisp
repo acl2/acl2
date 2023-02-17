@@ -290,10 +290,10 @@
 
 (define atc-check-unop ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
-               (op unopp)
                (arg pseudo-termp)
                (in-type typep)
-               (out-type typep))
+               (out-type typep)
+               (op unopp))
   :short "Check if a term may represent a unary expression."
   :long
   (xdoc::topstring
@@ -306,7 +306,7 @@
    (xdoc::p
     "If the term does not have that form, we return an indication of failure.
      The term may represent some other kind of C expression."))
-  (b* (((acl2::fun (no)) (mv nil (irr-unop) nil (irr-type) (irr-type)))
+  (b* (((acl2::fun (no)) (mv nil nil (irr-type) (irr-type) (irr-unop)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp op fixtype) (atc-check-symbol-2part term.fn))
@@ -316,10 +316,10 @@
        ((unless (list-lenp 1 term.args)) (no))
        (arg (first term.args)))
     (case op
-      (plus (mv t (unop-plus) arg in-type (promote-type in-type)))
-      (minus (mv t (unop-minus) arg in-type (promote-type in-type)))
-      (bitnot (mv t (unop-bitnot) arg in-type (promote-type in-type)))
-      (lognot (mv t (unop-lognot) arg in-type (type-sint)))
+      (plus (mv t arg in-type (promote-type in-type) (unop-plus)))
+      (minus (mv t arg in-type (promote-type in-type) (unop-minus)))
+      (bitnot (mv t arg in-type (promote-type in-type) (unop-bitnot)))
+      (lognot (mv t arg in-type (type-sint) (unop-lognot)))
       (t (no))))
   ///
 
