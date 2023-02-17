@@ -198,10 +198,10 @@
                          :names-to-avoid gin.names-to-avoid
                          :proofs nil))
        (hints
-        (b* ((fixtype (pack (type-kind type)))
+        (b* ((fixtype (integer-type-to-fixtype type))
              (exec-const-to-fixtype (pack 'exec-const-to- fixtype))
              (fixtype-integerp (pack fixtype '-integerp))
-             (recognizer (pack fixtype 'p))
+             (recognizer (type-to-recognizer type (w state)))
              (recognizer-of-fixtype-from-integer
               (pack recognizer '-of- fixtype '-from-integer)))
           `(("Goal" :in-theory '(exec-expr-pure-when-const
