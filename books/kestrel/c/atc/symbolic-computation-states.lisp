@@ -708,7 +708,10 @@
      We may arrange things in the future so that
      these quoted constants do not arise
      and thus there is no need for the executable counterpart of @(tsee typep)
-     to be included in the list of rules here."))
+     to be included in the list of rules here.")
+   (xdoc::p
+    "Also see @(tsee atc-write-static-var-rules)
+     for a rule that relates @('write-var-okp') and @(tsee add-frame)."))
 
   (define write-var-okp ((var identp) (val valuep) (compst compustatep))
     :guard (> (compustate-frames-number compst) 0)
@@ -1074,7 +1077,17 @@
      We introduce a predicate saying when @(tsee write-static-var)
      is equivalent to @(tsee update-static-var),
      and rules to show that the predicate holds.
-     The final rule states the equivalence."))
+     The second-to-last rule states the equivalence.")
+   (xdoc::p
+    "The last rule is more about @('write-var-okp')
+     than about @('write-static-var-okp'),
+     but we put it here because
+     the definition and rules for @('write-var-okp')
+     come before the ones for @('write-static-var-okp')
+     (we could reorder things at some point).
+     This rule serves to reduce
+     @(tsee write-var-ok) to @('write-static-var-okp')
+     when we have a frame with no variables."))
 
   (define write-static-var-okp ((var identp) (val valuep) (compst compustatep))
     :returns (yes/no booleanp)
@@ -1153,6 +1166,14 @@
              write-static-var-okp
              update-static-var))
 
+  (defruled write-var-okp-of-add-frame
+    (equal (write-var-okp var val (add-frame fun compst))
+           (write-static-var-okp var val (add-frame fun compst)))
+    :enable (write-var-okp
+             write-static-var-okp
+             add-frame
+             var-in-scopes-p))
+
   (defval *atc-write-static-var-rules*
     '(write-static-var-okp-of-add-frame
       write-static-var-okp-of-enter-scope
@@ -1161,7 +1182,8 @@
       write-static-var-okp-of-update-static-var
       write-static-var-okp-of-update-object
       write-static-var-okp-when-valuep-of-read-static-var
-      write-static-var-to-update-static-var)))
+      write-static-var-to-update-static-var
+      write-var-okp-of-add-frame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
