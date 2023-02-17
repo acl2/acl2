@@ -3517,7 +3517,7 @@ c2-lst: ~p2 ~%"
      (t
       (progn$
        (hard-error 'extract-new-sum-element
-                   "Unexpexted term: ~p0 ~%"
+                   "Unexpected term: ~p0 ~%"
                    (list (cons #\0 term-orig)))
        (cons term-orig acc)))))
   ///

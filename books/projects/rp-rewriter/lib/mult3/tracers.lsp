@@ -194,7 +194,9 @@
           (b* (((list s-res-lst pp-res-lst c-res-lst)
                 acl2::values))
             (if (and (ordered-s/c-p-lst s-res-lst)
+                     (list-of-only-s/c-p s-res-lst 's)
                      (ordered-s/c-p-lst c-res-lst)
+                     (list-of-only-s/c-p c-res-lst 'c)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
               (msg "Not ordered from ex-from-pp-lst Input:
@@ -212,7 +214,9 @@
           (b* (((list s-res-lst pp-res-lst c-res-lst)
                 acl2::values))
             (if (and (ordered-s/c-p-lst s-res-lst)
+                     (list-of-only-s/c-p s-res-lst 's)
                      (ordered-s/c-p-lst c-res-lst)
+                     (list-of-only-s/c-p c-res-lst 'c)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
               (msg "Not ordered from pp-radix8+-fix:
@@ -236,7 +240,9 @@ c-res-lst:~%~x6 (ordered: ~x7)~%~%"
           (b* (((list s-res-lst pp-res-lst c-res-lst ?valid)
                 acl2::values))
             (if (and (ordered-s/c-p-lst s-res-lst)
+                     (list-of-only-s/c-p s-res-lst 's)
                      (ordered-s/c-p-lst c-res-lst)
+                     (list-of-only-s/c-p c-res-lst 's)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
               (msg "Not ordered from pp-radix8+-fix-aux-for-s/c
@@ -261,7 +267,9 @@ Valid:~x8~%~%"
           (b* (((list s-res-lst pp-res-lst c-res-lst ?valid)
                 acl2::values))
             (if (and (ordered-s/c-p-lst s-res-lst)
+                     (list-of-only-s/c-p s-res-lst 's)
                      (ordered-s/c-p-lst c-res-lst)
+                     (list-of-only-s/c-p c-res-lst 'c)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
               (msg "Not ordered from pp-radix8+-fix-aux-for-s/c

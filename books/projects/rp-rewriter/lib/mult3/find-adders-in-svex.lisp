@@ -2517,14 +2517,13 @@
                 (mv new-x (or there-is-more1
                               there-is-more2))))
              (t (mv x nil)))))
-    ///
+    /// 
     (defret <fn>-is-correct
       (implies (and (sv::svex-p x)
                     (rp::rp-term-listp context)
                     (rp::valid-sc env-term a)
                     (rp::eval-and-all context a)
-                    (svl::sub-alistp env big-env)
-                    (rp::falist-consistent-aux big-env env-term)
+                    (rp::falist-consistent-aux env env-term)
                     (svl::width-of-svex-extn-correct$-lst
                      (svl::svex-reduce-config->width-extns config))
                     (svl::integerp-of-svex-extn-correct$-lst
@@ -2580,8 +2579,7 @@
                     (rp::rp-term-listp context)
                     (rp::valid-sc env-term a)
                     (rp::eval-and-all context a)
-                    (svl::sub-alistp env big-env)
-                    (rp::falist-consistent-aux big-env env-term)
+                    (rp::falist-consistent-aux env env-term)
                     (svl::width-of-svex-extn-correct$-lst
                      (svl::svex-reduce-config->width-extns config))
                     (svl::integerp-of-svex-extn-correct$-lst
@@ -2655,8 +2653,7 @@
                       (rp::rp-term-listp context)
                       (rp::valid-sc env-term a)
                       (rp::eval-and-all context a)
-                      (svl::sub-alistp env big-env)
-                      (rp::falist-consistent-aux big-env env-term)
+                      (rp::falist-consistent-aux env env-term)
                       (svl::width-of-svex-extn-correct$-lst
                        (svl::svex-reduce-config->width-extns config))
                       (svl::integerp-of-svex-extn-correct$-lst
@@ -2670,8 +2667,7 @@
                       (rp::rp-term-listp context)
                       (rp::valid-sc env-term a)
                       (rp::eval-and-all context a)
-                      (svl::sub-alistp env big-env)
-                      (rp::falist-consistent-aux big-env env-term)
+                      (rp::falist-consistent-aux env env-term)
                       (svl::width-of-svex-extn-correct$-lst
                        (svl::svex-reduce-config->width-extns config))
                       (svl::integerp-of-svex-extn-correct$-lst
@@ -2705,8 +2701,7 @@
                     (rp::rp-term-listp context)
                     (rp::valid-sc env-term a)
                     (rp::eval-and-all context a)
-                    (svl::sub-alistp env big-env)
-                    (rp::falist-consistent-aux big-env env-term)
+                    (rp::falist-consistent-aux env env-term)
                     (svl::width-of-svex-extn-correct$-lst
                      (svl::svex-reduce-config->width-extns config))
                     (svl::integerp-of-svex-extn-correct$-lst
@@ -2858,8 +2853,7 @@ have missed any ~s0-s pattern that  has a found counterpart ~s0-c pattern...~%"
                   (rp::rp-term-listp context)
                   (rp::valid-sc env-term a)
                   (rp::eval-and-all context a)
-                  (svl::sub-alistp env big-env)
-                  (rp::falist-consistent-aux big-env env-term)
+                  (rp::falist-consistent-aux env env-term)
                   (svl::width-of-svex-extn-correct$-lst
                    (svl::svex-reduce-config->width-extns config))
                   (svl::integerp-of-svex-extn-correct$-lst
@@ -2881,25 +2875,7 @@ have missed any ~s0-s pattern that  has a found counterpart ~s0-c pattern...~%"
                               falist-consistent-aux
                               ex-from-rp)))))
 
-  (defret <fn>-is-correct-2
-    (implies (and (sv::svex-alist-p svex-alist)
-                  (rp::rp-term-listp context)
-                  (rp::valid-sc env-term a)
-                  (rp::eval-and-all context a)
-                  (rp::falist-consistent-aux env env-term)
-                  (svl::width-of-svex-extn-correct$-lst
-                   (svl::svex-reduce-config->width-extns config))
-                  (svl::integerp-of-svex-extn-correct$-lst
-                   (svl::svex-reduce-config->integerp-extns config))
-                  (force (warrants-for-adder-pattern-match)))
-             (equal (sv::svex-alist-eval$ res (rp-evlt env-term a))
-                    (sv::svex-alist-eval$ svex-alist (rp-evlt env-term a))))
-    :hints (("Goal"
-             ;;:do-not-induct t
-             :use ((:instance <fn>-is-correct
-                              (big-env env)))
-             :in-theory (e/d ()
-                             (<fn>))))))
+  )
 
 (progn
   (encapsulate
@@ -3020,7 +2996,9 @@ have missed any ~s0-s pattern that  has a found counterpart ~s0-c pattern...~%"
 was ~st seconds."))
 
           (config (svl::change-svex-reduce-config
-                   config :skip-bitor/and/xor-repeated nil))
+                   config
+                   :skip-bitor/and/xor-repeated nil
+                   :keep-missing-env-vars nil))
 
           (- (cw "Starting: rp::rewrite-adders-in-svex-alist. ~%"))
           (- (time-tracker :rewrite-adders-in-svex :end))
@@ -3197,7 +3175,7 @@ was ~st seconds."))
                                rp::falist-consistent-aux
                                rp::eval-and-all
                                valid-sc)))))
-
+ 
   )
 
 (rp::add-meta-rule

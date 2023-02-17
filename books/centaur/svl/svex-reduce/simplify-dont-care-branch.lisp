@@ -210,7 +210,8 @@
      (if (equal x partsel-term)
          new-val
        (b* ((args (simplify-dont-care-branch-apply-lst x.args partsel-term new-val))
-            ((unless (sv::4veclist-p args)) x))
+            ;;((unless (sv::4veclist-p args)) x)
+            )
          (svex-reduce-w/-env-apply x.fn args)))))
   (define simplify-dont-care-branch-apply-lst ((lst svexlist-p)
                                                partsel-term new-val)
@@ -241,6 +242,8 @@
                 (equal (svexlist-eval res env)
                        (svexlist-eval lst env)))
        :fn simplify-dont-care-branch-apply-lst))))
+
+(memoize 'simplify-dont-care-branch-apply)
 
 (define simplify-dont-care-branch-cancel-test ((x sv::Svex-p)
                                                (partsel-term)
@@ -387,6 +390,8 @@
                  100))
         x)
 
+       ;;(- (cw "simplify-dont-care-branch: Collected: ~p0 ~%" collected))
+
        (partsel-term (car collected))
        ((mv size ?inner-term size-valid)
         (case-match partsel-term (('sv::partsel start size inner-term)
@@ -480,7 +485,9 @@
                    (integerp-of-svex-extn-correct<$>-lst
                     (svex-reduce-config->integerp-extns config)))
                (:@ :normal-eval
-                   (equal (svex-reduce-config->integerp-extns config) nil)))
+                   (equal (svex-reduce-config->integerp-extns config) nil))
+               (or* (svex-reduce-config->keep-missing-env-vars config)
+                    (equal big-env env)))
               (equal (svex-eval res (rp-evlt env-term a))
                      (svex-eval x   (rp-evlt env-term a))))
      :hints (("Goal"

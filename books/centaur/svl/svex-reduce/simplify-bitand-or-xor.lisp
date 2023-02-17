@@ -322,8 +322,8 @@ x
           (mv new-val t)))
       (mv (4vec-part-select 0 width new-val) t)))
    #|((and* (member-hons-equal-of-negated svex leaves)
-          (equal (width-of-svex svex) 1)) 
-    (mv (4vec-part-select 0 1 (lognot new-val)) t))|#
+   (equal (width-of-svex svex) 1))
+   (mv (4vec-part-select 0 1 (lognot new-val)) t))|#
    ((and (consp svex)
          (equal (car svex) 'sv::bitor)
          (equal-len (cdr svex) 2))
@@ -605,7 +605,7 @@ x
                                                   ((env) 'env)
                                                   ((context rp::rp-term-listp) 'context)
                                                   ((config svex-reduce-config-p) 'config)
-                                                  (skip 'nil) 
+                                                  (skip 'nil)
                                                   ((limit natp) 'limit))
     :measure (nfix limit)
     :returns (res svex-p :hyp (svex-p x))
@@ -1085,7 +1085,9 @@ x
                     (integerp-of-svex-extn-correct<$>-lst
                      (svex-reduce-config->integerp-extns config)))
                 (:@ :normal-eval
-                    (equal (svex-reduce-config->integerp-extns config) nil)))
+                    (equal (svex-reduce-config->integerp-extns config) nil))
+                (or* (svex-reduce-config->keep-missing-env-vars config)
+                     (equal big-env env)))
                (integerp (svex-eval-bitor-lst lst (rp-evlt env-term a))))
       :hints (("Goal"
                :induct (len lst)
@@ -1105,7 +1107,8 @@ x
                     (integerp-of-svex-extn-correct<$>-lst
                      (svex-reduce-config->integerp-extns config)))
                 (:@ :normal-eval
-                    (equal (svex-reduce-config->integerp-extns config) nil)))
+                    (equal (svex-reduce-config->integerp-extns config) nil))
+                (svex-reduce-config->keep-missing-env-vars config))
                (integerp (svex-eval-bitor-lst lst svex-env)))
       :hints (("Goal"
                :induct (len lst)
@@ -1130,7 +1133,9 @@ x
                     (integerp-of-svex-extn-correct<$>-lst
                      (svex-reduce-config->integerp-extns config)))
                 (:@ :normal-eval
-                    (equal (svex-reduce-config->integerp-extns config) nil)))
+                    (equal (svex-reduce-config->integerp-extns config) nil))
+                (or* (svex-reduce-config->keep-missing-env-vars config)
+                     (equal big-env env)))
                (integerp (svex-eval-bitand-lst lst (rp-evlt env-term a))))
       :hints (("Goal"
                :induct (len lst)
@@ -1149,7 +1154,8 @@ x
                     (integerp-of-svex-extn-correct<$>-lst
                      (svex-reduce-config->integerp-extns config)))
                 (:@ :normal-eval
-                    (equal (svex-reduce-config->integerp-extns config) nil)))
+                    (equal (svex-reduce-config->integerp-extns config) nil))
+                (svex-reduce-config->keep-missing-env-vars config))
                (integerp (svex-eval-bitand-lst lst svex-env)))
       :hints (("Goal"
                :induct (len lst)
@@ -1255,6 +1261,8 @@ x
                        (:@ :normal-eval
                            (equal (svex-reduce-config->width-extns config) nil)
                            (equal (svex-reduce-config->integerp-extns config) nil))
+                       (or* (svex-reduce-config->keep-missing-env-vars config)
+                            (equal big-env env))
 
                        )
                   (EQUAL
@@ -1274,7 +1282,8 @@ x
                             (svex-reduce-config->integerp-extns config)))
                        (:@ :normal-eval
                            (equal (svex-reduce-config->width-extns config) nil)
-                           (equal (svex-reduce-config->integerp-extns config) nil)))
+                           (equal (svex-reduce-config->integerp-extns config) nil))
+                       (svex-reduce-config->keep-missing-env-vars config))
                   (equal
                    (4vec-bitor (svex-eval-bitor-lst leaves svex-env)
                                (svex-eval simplified-svex svex-env))
@@ -1416,7 +1425,9 @@ x
                             (svex-reduce-config->integerp-extns config)))
                        (:@ :normal-eval
                            (equal (svex-reduce-config->width-extns config) nil)
-                           (equal (svex-reduce-config->integerp-extns config) nil)))
+                           (equal (svex-reduce-config->integerp-extns config) nil))
+                       (or* (svex-reduce-config->keep-missing-env-vars config)
+                            (equal big-env env)))
                   (equal
                    (4vec-bitand (svex-eval-bitand-lst leaves (rp-evlt env-term a))
                                 (svex-eval simplified-svex (rp-evlt env-term a)))
@@ -1433,7 +1444,8 @@ x
                             (svex-reduce-config->integerp-extns config)))
                        (:@ :normal-eval
                            (equal (svex-reduce-config->width-extns config) nil)
-                           (equal (svex-reduce-config->integerp-extns config) nil)))
+                           (equal (svex-reduce-config->integerp-extns config) nil))
+                       (svex-reduce-config->keep-missing-env-vars config))
                   (equal
                    (4vec-bitand (svex-eval-bitand-lst leaves svex-env)
                                 (svex-eval simplified-svex svex-env))
@@ -1579,7 +1591,8 @@ x
                        (svex-reduce-config->integerp-extns config)))
                   (:@ :normal-eval
                       (equal (svex-reduce-config->width-extns config) nil)
-                      (equal (svex-reduce-config->integerp-extns config) nil)))
+                      (equal (svex-reduce-config->integerp-extns config) nil))
+                  )
              (equal (svex-eval res-svex env)
                     (sv::4vec-bitxor (svex-eval node-to-remove env)
                                      (svex-eval svex env))))
@@ -1590,51 +1603,65 @@ x
 
 (local
  (svex-eval-lemma-tmpl
-  (defret svex-eval-bitxor-remove-nodes-from-both-correct
-    (and
-     (implies (and (svex-p svex1)
-                   (svex-p svex2)
-                   (svexlist-p nodes-to-remove)
+  (defret svex-eval-bitxor-remove-nodes-from-both-correct-1
+    (implies (and (svex-p svex1)
+                  (svex-p svex2)
+                  (svexlist-p nodes-to-remove)
 
-                   (rp::rp-term-listp context)
-                   (rp::valid-sc env-term a)
-                   (rp::eval-and-all context a)
+                  (equal env nil)
 
-                   (sub-alistp env big-env)
-                   (rp::falist-consistent-aux big-env env-term)
+                  (:@ :dollar-eval
+                      (width-of-svex-extn-correct<$>-lst
+                       (svex-reduce-config->width-extns config))
+                      (integerp-of-svex-extn-correct<$>-lst
+                       (svex-reduce-config->integerp-extns config)))
+                  (:@ :normal-eval
+                      (equal (svex-reduce-config->width-extns config) nil)
+                      (equal (svex-reduce-config->integerp-extns config) nil))
 
-                   (:@ :dollar-eval
-                       (width-of-svex-extn-correct<$>-lst
-                        (svex-reduce-config->width-extns config))
-                       (integerp-of-svex-extn-correct<$>-lst
-                        (svex-reduce-config->integerp-extns config)))
-                   (:@ :normal-eval
-                       (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil))
-                   )
-              (equal (sv::4vec-bitxor (svex-eval res-svex1 (rp-evlt env-term a))
-                                      (svex-eval res-svex2 (rp-evlt env-term a)))
-                     (sv::4vec-bitxor (svex-eval svex1 (rp-evlt env-term a))
-                                      (svex-eval svex2 (rp-evlt env-term a)))))
-     (implies (and (svex-p svex1)
-                   (svex-p svex2)
-                   (svexlist-p nodes-to-remove)
+                  (svex-reduce-config->keep-missing-env-vars config)
+                  )
+             (equal (sv::4vec-bitxor (svex-eval res-svex1 svex-env)
+                                     (svex-eval res-svex2 svex-env))
+                    (sv::4vec-bitxor (svex-eval svex1 svex-env)
+                                     (svex-eval svex2 svex-env))))
+    :fn bitxor-remove-nodes-from-both
+    :hints (("Goal"
+             :in-theory (e/d (svex-p
+                              bitxor-remove-nodes-from-both)
+                             ()))))))
 
-                   (equal env nil)
+(local
+ (svex-eval-lemma-tmpl
+  (defret svex-eval-bitxor-remove-nodes-from-both-correct-2
+    (implies (and (rp::falist-consistent-aux big-env env-term)
+                  (sub-alistp env big-env)
+                  (svex-p svex1)
+                  (svex-p svex2)
+                  (svexlist-p nodes-to-remove)
 
-                   (:@ :dollar-eval
-                       (width-of-svex-extn-correct<$>-lst
-                        (svex-reduce-config->width-extns config))
-                       (integerp-of-svex-extn-correct<$>-lst
-                        (svex-reduce-config->integerp-extns config)))
-                   (:@ :normal-eval
-                       (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil))
-                   )
-              (equal (sv::4vec-bitxor (svex-eval res-svex1 svex-env)
-                                      (svex-eval res-svex2 svex-env))
-                     (sv::4vec-bitxor (svex-eval svex1 svex-env)
-                                      (svex-eval svex2 svex-env)))))
+                  (rp::rp-term-listp context)
+                  (rp::valid-sc env-term a)
+                  (rp::eval-and-all context a)
+
+                  
+
+                  (:@ :dollar-eval
+                      (width-of-svex-extn-correct<$>-lst
+                       (svex-reduce-config->width-extns config))
+                      (integerp-of-svex-extn-correct<$>-lst
+                       (svex-reduce-config->integerp-extns config)))
+                  (:@ :normal-eval
+                      (equal (svex-reduce-config->width-extns config) nil)
+                      (equal (svex-reduce-config->integerp-extns config) nil))
+
+                  (or* (svex-reduce-config->keep-missing-env-vars config)
+                       (equal big-env env))
+                  )
+             (equal (sv::4vec-bitxor (svex-eval res-svex1 (rp-evlt env-term a))
+                                     (svex-eval res-svex2 (rp-evlt env-term a)))
+                    (sv::4vec-bitxor (svex-eval svex1 (rp-evlt env-term a))
+                                     (svex-eval svex2 (rp-evlt env-term a)))))
     :fn bitxor-remove-nodes-from-both
     :hints (("Goal"
              :in-theory (e/d (svex-p
@@ -1668,14 +1695,14 @@ x
 
 (svex-eval-lemma-tmpl
  (defret svex-eval-of-bitand/or/xor-cancel-repeated-correct
-   (and (implies (and (fnsym-p fn)
+   (and (implies (and (rp::falist-consistent-aux big-env env-term)
+                      (sub-alistp env big-env)
+                      (fnsym-p fn)
                       (sv::svex-p x)
                       (sv::svex-p y)
                       (rp::rp-term-listp context)
                       (rp::valid-sc env-term a)
                       (rp::eval-and-all context a)
-                      (sub-alistp env big-env)
-                      (rp::falist-consistent-aux big-env env-term)
                       (:@ :dollar-eval
                           (width-of-svex-extn-correct<$>-lst
                            (svex-reduce-config->width-extns config))
@@ -1683,7 +1710,9 @@ x
                            (svex-reduce-config->integerp-extns config)))
                       (:@ :normal-eval
                           (equal (svex-reduce-config->width-extns config) nil)
-                          (equal (svex-reduce-config->integerp-extns config) nil)))
+                          (equal (svex-reduce-config->integerp-extns config) nil))
+                      (or* (svex-reduce-config->keep-missing-env-vars config)
+                           (equal big-env env)))
                  (equal
                   (svex-eval simplified-svex (rp-evlt env-term a))
                   (svex-eval `(,fn ,x ,y) (rp-evlt env-term a))))
@@ -1760,7 +1789,8 @@ x
                        (svex-reduce-config->integerp-extns config)))
                   (:@ :normal-eval
                       (equal (svex-reduce-config->width-extns config) nil)
-                      (equal (svex-reduce-config->integerp-extns config) nil)))
+                      (equal (svex-reduce-config->integerp-extns config) nil))
+                  (svex-reduce-config->keep-missing-env-vars config))
             (equal
              (svex-eval simplified-svex svex-env)
              (svex-eval `(,fn ,x ,y) svex-env)))
@@ -1838,7 +1868,9 @@ x
                         (svex-reduce-config->integerp-extns config)))
                    (:@ :normal-eval
                        (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (or* (svex-reduce-config->keep-missing-env-vars config)
+                        (equal big-env env)))
               (equal
                (svex-eval res (rp-evlt env-term a))
                (svex-eval x (rp-evlt env-term a))))
@@ -1857,7 +1889,9 @@ x
                         (svex-reduce-config->integerp-extns config)))
                    (:@ :normal-eval
                        (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (or* (svex-reduce-config->keep-missing-env-vars config)
+                        (equal big-env env)))
               (equal
                (svexlist-eval res (rp-evlt env-term a))
                (svexlist-eval lst (rp-evlt env-term a))))
@@ -1887,7 +1921,8 @@ x
                         (svex-reduce-config->integerp-extns config)))
                    (:@ :normal-eval
                        (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (svex-reduce-config->keep-missing-env-vars config))
               (equal
                (svex-eval res svex-env)
                (svex-eval x svex-env)))
@@ -1902,7 +1937,8 @@ x
                         (svex-reduce-config->integerp-extns config)))
                    (:@ :normal-eval
                        (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (svex-reduce-config->keep-missing-env-vars config))
               (equal
                (svexlist-eval res svex-env)
                (svexlist-eval lst svex-env)))
@@ -1936,7 +1972,9 @@ x
                       (svex-reduce-config->integerp-extns config)))
                  (:@ :normal-eval
                      (equal (svex-reduce-config->width-extns config) nil)
-                     (equal (svex-reduce-config->integerp-extns config) nil)))
+                     (equal (svex-reduce-config->integerp-extns config) nil))
+                 (or* (svex-reduce-config->keep-missing-env-vars config)
+                      (equal big-env env)))
             (equal
              (svex-alist-eval res (rp-evlt env-term a))
              (svex-alist-eval alist (rp-evlt env-term a))))
@@ -1982,7 +2020,8 @@ x
                       (svex-reduce-config->integerp-extns config)))
                  (:@ :normal-eval
                      (equal (svex-reduce-config->width-extns config) nil)
-                     (equal (svex-reduce-config->integerp-extns config) nil)))
+                     (equal (svex-reduce-config->integerp-extns config) nil))
+                 (svex-reduce-config->keep-missing-env-vars config))
             (equal
              (svex-alist-eval res svex-env)
              (svex-alist-eval alist svex-env)))
@@ -1991,7 +2030,6 @@ x
             :in-theory (e/d (SVEX-ALIST-EVAL
                              svex-alist-simplify-bitand/or/xor)
                             ())))))
-
 
 ;;;;;;;;;;; outside-in version
 
@@ -2011,7 +2049,9 @@ x
                         (svex-reduce-config->integerp-extns config)))
                    (:@ :normal-eval
                        (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (or* (svex-reduce-config->keep-missing-env-vars config)
+                        (equal big-env env)))
               (equal
                (svex-eval res (rp-evlt env-term a))
                (svex-eval x (rp-evlt env-term a))))
@@ -2030,7 +2070,9 @@ x
                         (svex-reduce-config->integerp-extns config)))
                    (:@ :normal-eval
                        (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (or* (svex-reduce-config->keep-missing-env-vars config)
+                        (equal big-env env)))
               (equal
                (svexlist-eval res (rp-evlt env-term a))
                (svexlist-eval lst (rp-evlt env-term a))))
@@ -2064,7 +2106,9 @@ x
                       (svex-reduce-config->integerp-extns config)))
                  (:@ :normal-eval
                      (equal (svex-reduce-config->width-extns config) nil)
-                     (equal (svex-reduce-config->integerp-extns config) nil)))
+                     (equal (svex-reduce-config->integerp-extns config) nil))
+                 (or* (svex-reduce-config->keep-missing-env-vars config)
+                      (equal big-env env)))
             (equal
              (svex-alist-eval res (rp-evlt env-term a))
              (svex-alist-eval alist (rp-evlt env-term a))))
@@ -2089,7 +2133,9 @@ x
                       (svex-reduce-config->integerp-extns config)))
                  (:@ :normal-eval
                      (equal (svex-reduce-config->width-extns config) nil)
-                     (equal (svex-reduce-config->integerp-extns config) nil)))
+                     (equal (svex-reduce-config->integerp-extns config) nil))
+                 (or* (svex-reduce-config->keep-missing-env-vars config)
+                      (equal big-env env)))
             (equal
              (svex-alist-eval res (rp-evlt env-term a))
              (svex-alist-eval alist (rp-evlt env-term a))))

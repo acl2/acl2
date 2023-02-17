@@ -272,7 +272,7 @@
                 ((unless (consp val))
                  (if (svex-reduce-config->keep-missing-env-vars config)
                      (svex-reduce-w/-env-masked-return svex)
-                 (4vec-part-select start size (sv::4vec-x))))
+                   (4vec-part-select start size (sv::4vec-x))))
                 (val (cdr val))
                 ((when (and (quotep val)
                             (consp (cdr val))
@@ -678,8 +678,8 @@ but did not resolve the branch ~%" first))))
           (otherwise
            (b* ((fn (car svex))
                 (args (cdr svex)))
-             (cond ((and (equal fn 'sv::partsel)
-                         (equal-len args 3))
+             (cond ((and* (equal fn 'sv::partsel)
+                          (equal-len args 3))
                     (b* ((start (svex-reduce-w/-env (first args)))
                          (size (svex-reduce-w/-env (second args)))
                          ((unless (and (natp start) (natp size)))
@@ -688,8 +688,8 @@ but did not resolve the branch ~%" first))))
                             (svex-reduce-w/-env-apply fn
                                                       args-evaluated))))
                       (svex-reduce-w/-env-masked (third args) start size )))
-                   ((and (equal fn 'sv::concat)
-                         (equal-len args 3))
+                   ((and* (equal fn 'sv::concat)
+                          (equal-len args 3))
                     (b* ((size (svex-reduce-w/-env (first args)))
                          (third (svex-reduce-w/-env (third args)))
                          ((unless (and (natp size)))
@@ -702,12 +702,47 @@ but did not resolve the branch ~%" first))))
                          ((when (equal third 0)) second)
                          (args-evaluated (hons-list size second third)))
                       (svex-reduce-w/-env-apply fn args-evaluated)))
-                   ((and (or (equal fn 'sv::bitor)
-                             (equal fn 'sv::bitxor)
-                             (equal fn 'sv::bitand))
-                         (equal-len args 2))
-                    (b* ((term1 (svex-reduce-w/-env (first args)))
-                         (term2 (svex-reduce-w/-env (second args)))
+                   ((and* (or (equal fn 'sv::bitor)
+                              (equal fn 'sv::bitxor)
+                              (equal fn 'sv::bitand))
+                          (equal-len args 2))
+                    (b* ((term1 (first args))
+                         (term2 (second args))
+                         ((mv term1 term2 flipped) (if (integerp term2) (mv term2 term1 t) (mv term1 term2 nil)))
+                         ((when (and* (equal fn 'sv::bitand)
+                                      (integerp term1)
+                                      ;; ifix is for guards because of and*
+                                      (equal (acl2::logmask (integer-length (ifix term1)))
+                                             term1)))
+                          (b* ((res (svex-reduce-w/-env-masked term2 0 (integer-length (ifix term1)))))
+                            (svex-reduce-w/-env-apply 'sv::unfloat (hons-list res))))
+
+                         (term1 (svex-reduce-w/-env term1))
+
+                         ;; Try to see if term1 became a mask after simplification.
+                         ((when (and* (equal fn 'sv::bitand)
+                                      (integerp term1)
+                                      ;; ifix is for guards because of and*
+                                      (equal (acl2::logmask (integer-length (ifix term1)))
+                                             term1)))
+                          (b* ((res (svex-reduce-w/-env-masked term2 0 (integer-length (ifix term1)))))
+                            (svex-reduce-w/-env-apply 'sv::unfloat (hons-list res))))
+                         
+                         (term2 (svex-reduce-w/-env term2))
+
+                         ;; if term2  became a mask after  simplification, then
+                         ;; original value of term1  will be parsed again under
+                         ;; that masked. Why parse again? because of measure. 
+                         ((when (and* (equal fn 'sv::bitand)
+                                      (integerp term2)
+                                      ;; ifix is for guards because of and*
+                                      (equal (acl2::logmask (integer-length (ifix term2)))
+                                             term2)))
+                          (b* ((res (svex-reduce-w/-env-masked (if flipped (second args) (first args))
+                                                               0
+                                                               (integer-length (ifix term2)))))
+                            (svex-reduce-w/-env-apply 'sv::unfloat (hons-list res))))
+                         
                          ((when (acl2::or* (integerp term1)
                                            (integerp term2)))
                           (bitand/or/xor-simple-constant-simplify fn term1 term2)))
@@ -1645,9 +1680,31 @@ SVEX-CALL->FN)
                              4VEC-SHIFT-CORE)
                             (floor ash))))))
 
+(local
+ (defthm 4vec-bitand-with-all-ones-constant-without-syntaxp
+  (implies (and (integerp num)
+                (equal (acl2::logmask (integer-length num))
+                       num))
+           (and (equal (sv::4vec-bitand num x)
+                       (sv::4vec-part-select 0 (integer-length num) (sv::3vec-fix x)))
+                (equal (sv::4vec-bitand x num)
+                       (sv::4vec-part-select 0 (integer-length num) (sv::3vec-fix x)))))
+  :hints (("goal"
+           :use ((:instance 4vec-bitand-with-all-ones-constant))
+           :in-theory (e/d ()
+                           ())))))
+
+
+(local
+ (defthm 4vec-p-implies-svex-p-rw
+   (implies (sv::4vec-p x)
+            (sv::svex-p x))))
+
 (progn
   (local
-   (in-theory (disable (:DEFINITION ACL2::APPLY$-BADGEP)
+   (in-theory (disable acl2::logmask
+                       integer-length
+                       (:DEFINITION ACL2::APPLY$-BADGEP)
                        SVEX-EVAL$-SVEX-REDUCE-W/-ENV-APPLY-CORRECT-WHEN-RETURNS-4VEC-P
                        SVEX-EVAL-SVEX-REDUCE-W/-ENV-APPLY-CORRECT-WHEN-RETURNS-4VEC-P
                        sv::svex-apply$-is-svex-apply
@@ -1780,18 +1837,18 @@ SVEX-CALL->FN)
                        ;; if not keeping env-vars, then big-env and env should
                        ;; be the same.
                        (or* (svex-reduce-config->keep-missing-env-vars config)
-                           (equal env big-env))
+                            (equal env big-env))
                        )
                   (and (equal (svex-eval (svex-and/or/xor-reduce-w/-env-masked svex start size) (rp-evlt env-term a))
                               (4vec-part-select start size (svex-eval svex (rp-evlt env-term a))))
 
                        #|(implies (or (acl2::and* (acl2::or* (equal (car svex) 'bitor)
-                       (equal (car svex) 'bitand) ; ;
-                       (equal (car svex) 'bitxor)) ; ;
-                       (equal-len (cdr svex) 2)) ; ;
-                       (acl2::and* (equal (car svex) 'sv::unfloat) ; ;
-                       (equal-len (cdr svex) 1))) ; ;
-; ; ; ; ; ; ; ; ;
+                       (equal (car svex) 'bitand) ; ; ;
+                       (equal (car svex) 'bitxor)) ; ; ;
+                       (equal-len (cdr svex) 2)) ; ; ;
+                       (acl2::and* (equal (car svex) 'sv::unfloat) ; ; ;
+                       (equal-len (cdr svex) 1))) ; ; ;
+; ; ; ; ; ; ; ; ; ; ;
                        (all-xor/and/or-nodes-are-masked-p res size (rp-evlt env-term a)))|#
                        ))
          :fn svex-and/or/xor-reduce-w/-env-masked)
@@ -1814,16 +1871,16 @@ SVEX-CALL->FN)
                            (equal (svex-reduce-config->width-extns config) nil)
                            (equal (svex-reduce-config->integerp-extns config) nil))
                        (or* (svex-reduce-config->keep-missing-env-vars config)
-                           (equal env big-env)))
+                            (equal env big-env)))
                   (and (equal (svex-eval (svex-reduce-w/-env-masked svex start size) (rp-evlt env-term a))
                               (4vec-part-select start size (svex-eval svex (rp-evlt env-term a))))
 
                        #|(implies (or (acl2::and* (acl2::or* (equal (car svex) 'bitor)
-                       (equal (car svex) 'bitand) ; ;
-                       (equal (car svex) 'bitxor)) ; ;
-                       (equal-len (cdr svex) 2)) ; ;
-                       (acl2::and* (equal (car svex) 'sv::unfloat) ; ;
-                       (equal-len (cdr svex) 1))) ; ;
+                       (equal (car svex) 'bitand) ; ; ;
+                       (equal (car svex) 'bitxor)) ; ; ;
+                       (equal-len (cdr svex) 2)) ; ; ;
+                       (acl2::and* (equal (car svex) 'sv::unfloat) ; ; ;
+                       (equal-len (cdr svex) 1))) ; ; ;
                        (all-xor/and/or-nodes-are-masked-p res size (rp-evlt env-term a)))|#))
          :fn svex-reduce-w/-env-masked)
        (defret svex-eval-of-svex-reduce-w/-env-correct
@@ -1842,7 +1899,7 @@ SVEX-CALL->FN)
                            (equal (svex-reduce-config->width-extns config) nil)
                            (equal (svex-reduce-config->integerp-extns config) nil))
                        (or* (svex-reduce-config->keep-missing-env-vars config)
-                           (equal env big-env)))
+                            (equal env big-env)))
                   (equal (svex-eval (svex-reduce-w/-env svex) (rp-evlt env-term a))
                          (svex-eval svex (rp-evlt env-term a))))
          :fn svex-reduce-w/-env)
@@ -1862,7 +1919,7 @@ SVEX-CALL->FN)
                            (equal (svex-reduce-config->width-extns config) nil)
                            (equal (svex-reduce-config->integerp-extns config) nil))
                        (or* (svex-reduce-config->keep-missing-env-vars config)
-                           (equal env big-env)))
+                            (equal env big-env)))
                   (equal (svexlist-eval (svex-reduce-w/-env-lst svex-list) (rp-evlt env-term a))
                          (svexlist-eval svex-list (rp-evlt env-term a))))
          :fn svex-reduce-w/-env-lst)
@@ -1871,7 +1928,7 @@ SVEX-CALL->FN)
        :hints (("Goal"
                 :do-not-induct t
 
-                :expand (
+                :expand ((SVEX-REDUCE-W/-ENV SVEX)
                          (svex-eval svex (rp-evlt env-term a))
                          (svex-eval (cons (car svex)
                                           (svex-reduce-w/-env-lst (cdr svex)))
@@ -1922,7 +1979,7 @@ SVEX-CALL->FN)
                              bits
                              ;;svex-env-lookup-when-svex-p
                              svex-reduce-w/-env-lst
-
+                             
                              4vec-concat$-of-term2=0
 
                              4vec-sign-ext-to-4vec-concat)
