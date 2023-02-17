@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function expt.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,8 +18,10 @@
 
 (local (include-book "times-and-divide"))
 (local (include-book "times"))
+(local (include-book "divide"))
 (local (include-book "plus"))
 (local (include-book "floor"))
+(local (include-book "even-and-odd"))
 
 (in-theory (disable expt))
 
@@ -134,7 +136,23 @@
          1)
   :hints (("Goal" :in-theory (enable expt))))
 
+(defthm expt-of-1-arg1
+  (equal (expt 1 i)
+         1)
+  :hints (("Goal" :in-theory (enable expt))))
 
+(defthm expt-of-1-arg2
+  (equal (expt r 1)
+         (fix r))
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthm expt-of--1-arg1
+  (implies (integerp i)
+           (equal (expt -1 i)
+                  (if (evenp i)
+                      1
+                    -1)))
+  :hints (("Goal" :in-theory (enable expt))))
 
 ;expt-minus would have a name clash with rtl
 (defthm expt-of-unary--
@@ -240,3 +258,197 @@
            (equal (* (expt 2 size) (expt 2 (+ 1 (- size))))
                   2))
   :hints (("Goal" :in-theory (enable expt-of-+))))
+
+(defthm expt-of---arg1
+  (implies (and (integerp i)
+                (rationalp r))
+           (equal (expt (- r) i)
+                  (if (evenp i)
+                      (expt r i)
+                    (- (expt r i)))))
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthmd expt-when-<-of-0
+  (implies (and (< r 0)
+                (integerp i)
+                (rationalp i))
+           (equal (expt r i)
+                  (if (evenp i)
+                      (expt (- r) i)
+                    (- (expt (- r) i)))))
+  :hints (("Goal" :in-theory (enable expt))))
+
+;move? gen?
+(local
+ (defthm <-of-*-and-1
+   (implies (and (< x 1)
+                 (< y 1)
+                 (rationalp x)
+                 (rationalp y)
+                 (<= 0 x)
+                 (<= 0 y))
+            (< (* x y) 1))
+   :rule-classes :linear
+   :hints (("Goal" :nonlinearp t))))
+
+;; TODO: Make some of these non-local?
+
+;gen?
+(local
+ (defthm <-of-expt-and-1
+  (implies (and (< r 1)
+                (<= 0 r)
+                (rationalp r)
+                (posp i))
+           (< (expt r i) 1))
+  :hints (("Goal" :in-theory (enable expt)))))
+
+(local
+ (defthmd <-of-expt-and-1-linear
+   (implies (and (< r 1)
+                 (<= 0 r)
+                 (rationalp r)
+                 (posp i))
+            (< (expt r i) 1))
+   :rule-classes :linear))
+
+(local
+ (defthmd <-of-1-and-expt-linear
+  (implies (and (< i 0) ; this case
+                (< r 1)
+                (< 0 r)
+                (rationalp r)
+                (integerp i))
+           (< 1 (expt r i)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt)))))
+
+(local
+ (defthmd <=-of-1-and-expt-linear
+  (implies (and (<= i 0) ; this case
+                (< r 1)
+                (< 0 r)
+                (rationalp r)
+                (integerp i))
+           (<= 1 (expt r i)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt)))))
+
+(local
+ (defthmd <-of-1-and-expt-linear-alt
+  (implies (and (< i 0) ; this case
+                (< 1 r) ; this case
+                (rationalp r)
+                (integerp i))
+           (< (expt r i) 1))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt)))))
+
+(local
+ (defthmd <=-of-1-and-expt-linear-alt
+  (implies (and (<= i 0) ; this case
+                (< 1 r) ; this case
+                (rationalp r)
+                (integerp i))
+           (<= (expt r i) 1))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt)))))
+
+(local
+ ;; gen to compare a product with any constant, given a bound on one factor
+ (defthm not-equal-of-1-helper
+   (implies (and (< x 1)
+                 (< y 1)
+                 (rationalp x)
+                 (<= 0 x)
+                 (rationalp y)
+                 (<= 0 y))
+            (not (equal (* x y) 1)))
+   :hints (("Goal" :nonlinearp t))))
+
+(local
+ (defthm not-equal-of-1-helper-2
+   (implies (and (< 1 x)
+                 (< 1 y)
+                 (rationalp x)
+                 (<= 0 x)
+                 (rationalp y)
+                 (<= 0 y))
+            (not (equal (* x y) 1)))
+   :hints (("Goal" :nonlinearp t))))
+
+(local
+ (defthm <-of-expt-same-linear
+   (implies (and (< 1 r)
+                 (< 1 i)
+                 (integerp i)
+                 (rationalp r))
+            (< r (expt r i)))
+   :rule-classes :linear
+   :hints (("Goal" :in-theory (enable expt)))
+   ))
+
+(defthm equal-of-expt-and-1
+  (implies (and (rationalp r)
+                (<= 0 r) ; gen?
+                (integerp i))
+           (equal (equal (expt r i) 1)
+                  (or (equal r 1)
+                      (equal i 0)
+                      ;; (and (equal r -1)
+                      ;;      (evenp i))
+                      )))
+  :hints (("subgoal *1/4" :use (<-of-expt-and-1-linear
+                                (:instance  <-of-1-and-expt-linear-alt (i (+ 1 i)))
+                                <-of-1-and-expt-linear
+                                (:instance <-of-expt-same-linear (i (+ 1 i))))
+           :cases ((equal 1 i)
+                   (and (not (equal 1 i)) (< r 1))
+                   (and (not (equal 1 i)) (> r 1)))
+           :nonlinearp t)
+          ("subgoal *1/3" :use (<-of-expt-and-1-linear
+                                (:instance  <-of-1-and-expt-linear-alt (i (+ 1 i)))
+                                <-of-1-and-expt-linear
+                                (:instance <-of-expt-same-linear (i (+ 1 i))))
+           :cases ((equal 1 i)
+                   (and (not (equal 1 i)) (< r 1))
+                   (and (not (equal 1 i)) (> r 1)))
+           :nonlinearp t)
+          ("Goal" :in-theory (enable expt zip)
+           :induct t
+           :nonlinearp t)))
+
+(local
+ (defthmd equal-of-expt-same-helper
+   (implies (and (<= 0 r)     ; todo: gen
+                 (rationalp r) ;(acl2-numberp r)
+                 (integerp i))
+            (equal (equal (expt r i) r)
+                   (if (equal r 0)
+                       (not (equal 0 i))
+                     (if (equal r 1)
+                         t
+                       (equal i 1)))))
+   :hints (("subgoal *1/4" :cases ((< r 1) (> r 1)))
+           ("Goal" :induct t
+            :in-theory (enable expt
+                               zip
+                               <=-of-1-and-expt-linear-alt
+                               <=-of-1-and-expt-linear)))))
+
+(defthm equal-of-expt-same
+  (implies (and (rationalp r) ;(acl2-numberp r)
+                (integerp i))
+           (equal (equal (expt r i) r)
+                  ;; We split into cases based on R because R is often a constant:
+                  (if (equal r 0)
+                      (not (equal 0 i))
+                    (if (equal r 1)
+                        t
+                      (if (equal r -1)
+                          (oddp i)
+                        (equal i 1))))))
+  :hints (("Goal" :use (equal-of-expt-same-helper
+                        (:instance equal-of-expt-same-helper (r (- r)))
+                        expt-when-<-of-0)
+           :in-theory (disable EXPT-OF---ARG1))))
