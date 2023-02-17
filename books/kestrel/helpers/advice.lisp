@@ -1126,15 +1126,26 @@
   (book-mapp (mv-nth 1 (parse-book-map book-map state)))
   :hints (("Goal" :in-theory (enable parse-book-map))))
 
+(defund round-to-integer (x)
+  (declare (xargs :guard (and (rationalp x)
+                              (<= 0 x))))
+  (let* ((integer-part (floor x 1))
+         (fraction-part (- x integer-part)))
+    (if (>= fraction-part 1/2)
+        (+ 1 integer-part)
+      integer-part)))
+
 (defund round-to-hundredths (x)
-  (declare (xargs :guard (rationalp x)))
-  (/ (floor (* x 100) 1)
-     100))
+  (declare (xargs :guard (and (rationalp x)
+                              (<= 0 x))))
+  (/ (round-to-integer (* 100 x)) 100))
 
 (defthm confidence-percentp-of-round-to-hundredths
   (implies (confidence-percentp x)
            (confidence-percentp (round-to-hundredths x)))
-  :hints (("Goal" :in-theory (enable confidence-percentp round-to-hundredths))))
+  :hints (("Goal" :in-theory (enable confidence-percentp
+                                     round-to-hundredths
+                                     round-to-integer))))
 
 (local
  (defthm confidence-percentp-of-*-of-100
@@ -1143,6 +1154,20 @@
                  (rationalp x))
             (confidence-percentp (* 100 x)))
    :hints (("Goal" :in-theory (enable confidence-percentp)))))
+
+;; Prints VAL, rounded to the hundredths place.
+;; Returns nil.
+(defund print-to-hundredths (val)
+  (declare (xargs :guard (and (rationalp val)
+                              (<= 0 val))))
+  (let* ((val (round-to-hundredths val))
+         (integer-part (floor val 1))
+         (fraction-part (- val integer-part))
+         (tenths (floor (* fraction-part 10) 1))
+         (fraction-part-no-tenths (- fraction-part (/ tenths 10)))
+         (hundredths (floor (* fraction-part-no-tenths 100) 1)))
+    ;; Hoping that using ~c here prevents any newlines:
+    (cw "~c0.~c1~c2" (cons integer-part (integer-length integer-part)) (cons tenths 1) (cons hundredths 1))))
 
 ;; Returns (mv erp parsed-recommendation state) where parsed-recommendation may be :none.
 (defund parse-recommendation (rec rec-num source state)
@@ -1256,20 +1281,31 @@
 
 ;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
-;; Returns a list of recs, which should contain no duplicates.
-(defun make-enable-recs (formula num-recs wrld)
+;; Returns (mv erp recs state), where recs is a list of recs, which should contain no duplicates.
+(defun make-enable-recs (formula num-recs print state)
   (declare (xargs :guard (and ;; formula is an untranslated term
-                          (natp num-recs)
-                          (plist-worldp wrld))
+                          (natp num-recs))
+                  :stobjs state
                   :mode :program ; because of acl2::translate-term
                   ))
-  (let* ((translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
-         (fns-to-try-enabling (set-difference-eq (acl2::defined-fns-in-term translated-formula wrld)
-                                                 ;; Don't bother wasting time with trying to enable implies
-                                                 ;; (I suppose we could try it if implies is disabled):
-                                                 '(implies))))
-    ;; todo: how to choose when we can't return them all?:
-    (acl2::firstn num-recs (make-enable-recs-aux fns-to-try-enabling 1))))
+  (b* ((wrld (w state))
+       (- (and (acl2::print-level-at-least-tp print)
+               (cw "Making ~x0 :enable recommendations: " ; the line is ended below when we print the time
+                   num-recs)))
+       (print-timep (acl2::print-level-at-least-tp print))
+       ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+       (translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
+       (fns-to-try-enabling (set-difference-eq (acl2::defined-fns-in-term translated-formula wrld)
+                                               ;; Don't bother wasting time with trying to enable implies
+                                               ;; (I suppose we could try it if implies is disabled):
+                                               '(implies)))
+       (recs-to-return ;; todo: how to choose when we can't return them all?:
+        (acl2::firstn num-recs (make-enable-recs-aux fns-to-try-enabling 1)))
+       ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+       (- (and print-timep (prog2$ (print-to-hundredths (- done-time start-time))
+                                   (cw "s~%") ; s = seconds
+                                   ))))
+    (mv nil recs-to-return state)))
 
 ;; (local
 ;;  (defthm recommendation-listp-of-make-enable-recs
@@ -1354,16 +1390,25 @@
                         3 ; confidence-percent (quite high)
                         nil))
 
-;; Returns (mv erp val state).
+;; Returns (mv erp recs state).
 ;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
-(defun make-recs-from-history (num-recs state)
+(defun make-recs-from-history (num-recs print state)
   (declare (xargs :guard (natp num-recs)
                   :mode :program
                   :stobjs state))
-  (b* ((events ;;(acl2::get-command-sequence-fn 1 :max state)
+  (b* ((- (and (acl2::print-level-at-least-tp print)
+               (cw "Making ~x0 :history recommendations: " ; the line is ended below when we print the time
+                   num-recs)))
+       (print-timep (acl2::print-level-at-least-tp print))
+       ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+       (events ;;(acl2::get-command-sequence-fn 1 :max state)
         (acl2::top-level-defthms-in-world (w state)))
-       )
-    (mv nil (make-recs-from-history-events num-recs events) state)))
+       (recs (make-recs-from-history-events num-recs events))
+       ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+       (- (and print-timep (prog2$ (print-to-hundredths (- done-time start-time))
+                                   (cw "s~%") ; s = seconds
+                                   ))))
+    (mv nil recs state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3185,7 +3230,7 @@
                         nil ; empty list of recommendations
                         state))
           (b* ((- (and (acl2::print-level-at-least-tp print)
-                       (cw "Asking server for ~x0 recommendations from ~x1 on ~x2 ~s3...~%"
+                       (cw "Asking server for ~x0 recommendations from ~x1 on ~x2 ~s3: " ; the line is ended below when we print the time
                            num-recs
                            model
                            (len checkpoint-clauses)
@@ -3196,8 +3241,14 @@
                (post-data (acons-all-to-val (ml-rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types))
                                             "off"
                                             post-data))
+               (print-timep (acl2::print-level-at-least-tp print))
+               ((mv server-start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url post-data debug state))
+               ((mv server-done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+               (- (and print-timep (prog2$ (print-to-hundredths (- server-done-time server-start-time))
+                                           (cw "s~%") ; s = seconds
+                                           )))
                ((when erp)
                 ;; (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp) ; was catching rare "output operation on closed SSL stream" errors
                 (mv erp nil state))
@@ -3240,15 +3291,13 @@
               ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
               (if (member-eq :add-enable-hint disallowed-rec-types)
                   (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-                (mv nil
-                    ;; todo: translate outside make-enable-recs?:
-                    (make-enable-recs theorem-body num-recs-per-model (w state))
-                    state))
+                ;; todo: translate outside make-enable-recs?:
+                (make-enable-recs theorem-body num-recs-per-model print state))
             (if (eq :history model)
                 ;; Make recs based on hints given to recent theorems:
                 (if (member-eq :exact-hints disallowed-rec-types)
                     (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-                  (make-recs-from-history num-recs-per-model state))
+                  (make-recs-from-history num-recs-per-model print state))
               ;; It's a normal ML model:
               (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses server-url debug print state))))
          ((when erp) (mv erp nil state))
@@ -3417,7 +3466,8 @@
                               (model-namesp models))
                   :stobjs state
                   :mode :program))
-  (b* (((mv erp recommendation-alist state)
+  (b* ((state (acl2::widen-margins state))
+       ((mv erp recommendation-alist state)
         (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print nil state))
        ((when erp) (mv erp nil nil state))
        ;; Combine all the lists:
@@ -3432,7 +3482,6 @@
                 state))
        ;; Try the recommendations:
        (- (and print (cw "~%TRYING RECOMMENDATIONS:~%")))
-       (state (acl2::widen-margins state))
        ((mv erp successful-recs extra-recs-ignoredp state)
         (try-recommendations recommendations current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit max-wins improve-recsp print nil state))
        (state (acl2::unwiden-margins state))
