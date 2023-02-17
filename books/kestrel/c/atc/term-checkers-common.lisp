@@ -278,11 +278,11 @@
     (retok t term.fn type const))
   ///
 
-  (defret type-integerp-of-atc-check-iconst.type
+  (defret type-integerp-of-atc-check-iconst-type
     (implies yes/no
              (type-integerp type)))
 
-  (defret type-nonchar-integerp-of-atc-check-iconst.type
+  (defret type-nonchar-integerp-of-atc-check-iconst-type
     (implies yes/no
              (type-nonchar-integerp type))))
 
@@ -328,7 +328,15 @@
     (implies yes/no
              (< (pseudo-term-count arg)
                 (pseudo-term-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-unop-in-type
+    (implies yes/no
+             (type-nonchar-integerp in-type)))
+
+  (defret type-nonchar-integerp-of-atc-check-unop-out-type
+    (implies yes/no
+             (type-nonchar-integerp out-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
