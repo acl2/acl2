@@ -1179,7 +1179,11 @@ term
 ;`(rp 'bitp
           `   ,(sa (symbol-name a) i (symbol-name b) j)
 ;    )
-          )))
+              )))
+      (('and-list & x)
+       `(and$ ,@(make-readable1 x)))
+      (('logbit$inline ('quote n) x)
+       `(bit ,n ,(make-readable1 x)))
 
       (('svl::4vec-concat$ 1 & &)
        `(4list . ,(make-readable1-lst (make-readable-4vec-concat-aux term))))

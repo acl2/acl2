@@ -230,7 +230,47 @@
        let @('*program*') be the symbol specified by this input,
        if applicable (i.e. when @(':proofs') is @('t'))."))
 
-    (xdoc::evmac-input-print atc))
+    (xdoc::desc
+     "@(':print') &mdash; default @(':result')"
+     (xdoc::p
+      "Specifies what is printed on the screen.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':error'), to print only error output (if any).")
+      (xdoc::li
+       "@(':result'), to print, besides any error output,
+        also the "
+       (xdoc::seetopic "acl2::event-macro-results" "results")
+       " of ATC. This is the default value of the @(':print') input.")
+      (xdoc::li
+       "@(':info'), to print,
+        besides any error output and the results,
+        also some additional information about
+        the internal operation of ATC.")
+      (xdoc::li
+       "@(':all'), to print,
+        besides any error output,
+        the results,
+        and the additional information,
+        also ACL2's output in response to all the submitted events."))
+     (xdoc::p
+      "The errors are printed as "
+      (xdoc::seetopic "set-inhibit-output-lst" "error output")
+      ". The results and the additional information are printed as "
+      (xdoc::seetopic "set-inhibit-output-lst" "comment output")
+      ". The ACL2 output enabled by @(':print :all') may consist of "
+      (xdoc::seetopic "set-inhibit-output-lst" "output of various kinds")
+      ".")
+     (xdoc::p
+      "If @(':print') is @(':error') or @(':result') or @(':info'),
+       ATC suppresses all kinds of outputs (via @(tsee with-output))
+       except for error and comment output.
+       Otherwise, ATC does not suppress any output.
+       However, the actual output depends on
+       which outputs are enabled or not prior to the call of ATC,
+       including any @(tsee with-output) that may wrap the call of ATC.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -238,8 +278,10 @@
     "Representation of C Code in ACL2"
 
     (xdoc::p
-     "Currently ATC supports the ACL2 representation of a single source file,
-      optionally accompanied by a header (based on the @(':header') input).
+     "Currently ATC supports the ACL2 representation of
+      a single source file (i.e. a file with extension @('.c')),
+      optionally accompanied by a header (i.e. a file with extension @('.h')),
+      based on the @(':header') input.
       If @(':header') is @('nil'),
       the source file consists of
       one or more C function definitions,
@@ -267,7 +309,7 @@
 
     (xdoc::p
      "Each C external object declaration is represented by a @(tsee defobject),
-      whose name is passed as one of the target @('ti') to ATC.
+      whose name is passed as one of the targets @('ti') to ATC.
       The symbol name, which is a "
      (xdoc::seetopic "portable-ascii-identifiers" "portable ASCII C identifier")
      " (this is enforced by @(tsee defobject)),
@@ -345,6 +387,7 @@
      "The guard of each @('fn') must include,
       for every formal parameter @('x'),
       exactly one conjunct of one of the following forms,
+      possibly wrapped with @(tsee mbt),
       which determines the C type of
       the corresponding parameter of the C function,
       or designates the formal parameter as representing
@@ -371,25 +414,45 @@
      (xdoc::li
       "@('(ullongp x)'), representing @('unsigned long long').")
      (xdoc::li
-      "@('(schar-arrayp x)'), representing @('signed char *').")
+      "@('(pointer (scharp x))'), representing @('signed char *').")
      (xdoc::li
-      "@('(uchar-arrayp x)'), representing @('unsigned char *').")
+      "@('(pointer (ucharp x))'), representing @('unsigned char *').")
      (xdoc::li
-      "@('(sshort-arrayp x)'), representing @('signed short *').")
+      "@('(pointer (sshortp x))'), representing @('signed short *').")
      (xdoc::li
-      "@('(ushort-arrayp x)'), representing @('unsigned short *').")
+      "@('(pointer (ushortp x))'), representing @('unsigned short *').")
      (xdoc::li
-      "@('(sint-arrayp x)'), representing @('signed int *').")
+      "@('(pointer (sintp x))'), representing @('signed int *').")
      (xdoc::li
-      "@('(uint-arrayp x)'), representing @('unsigned int *').")
+      "@('(pointer (uintp x))'), representing @('unsigned int *').")
      (xdoc::li
-      "@('(slong-arrayp x)'), representing @('signed long *').")
+      "@('(pointer (slongp x))'), representing @('signed long *').")
      (xdoc::li
-      "@('(ulong-arrayp x)'), representing @('unsigned long *').")
+      "@('(pointer (ulongp x))'), representing @('unsigned long *').")
      (xdoc::li
-      "@('(sllong-arrayp x)'), representing @('signed long long *').")
+      "@('(pointer (sllongp x))'), representing @('signed long long *').")
      (xdoc::li
-      "@('(ullong-arrayp x)'), representing @('unsigned long long *').")
+      "@('(pointer (ullongp x))'), representing @('unsigned long long *').")
+     (xdoc::li
+      "@('(schar-arrayp x)'), representing @('signed char []').")
+     (xdoc::li
+      "@('(uchar-arrayp x)'), representing @('unsigned char []').")
+     (xdoc::li
+      "@('(sshort-arrayp x)'), representing @('signed short []').")
+     (xdoc::li
+      "@('(ushort-arrayp x)'), representing @('unsigned short []').")
+     (xdoc::li
+      "@('(sint-arrayp x)'), representing @('signed int []').")
+     (xdoc::li
+      "@('(uint-arrayp x)'), representing @('unsigned int []').")
+     (xdoc::li
+      "@('(slong-arrayp x)'), representing @('signed long []').")
+     (xdoc::li
+      "@('(ulong-arrayp x)'), representing @('unsigned long []').")
+     (xdoc::li
+      "@('(sllong-arrayp x)'), representing @('signed long long []').")
+     (xdoc::li
+      "@('(ullong-arrayp x)'), representing @('unsigned long long []').")
      (xdoc::li
       "@('(struct-<tag>-p x)'),
        where @('<tag>') is one of the @(tsee defstruct) targets @('ti'),
@@ -423,6 +486,30 @@
       and which formal parameters represent accesses to external objects.
       The rest of the guard (i.e. other than the conjuncts above)
       is not explicitly represented in the C code.")
+    (xdoc::p
+     "Note the distinction between pointer types @('<integer type> *')
+      and array types @('<integer type> []') in the list above.
+      Even though these types are equivalent for function parameters,
+      and in fact array types are adjusted to pointer types
+      for function parameters according to [C],
+      pointed-to integers and integer arrays are different
+      in the ACL2 representation of C.
+      (More in general, even in handwritten C code,
+      using array types instead of pointer types for function parameters
+      is useful to convey the intention that something is
+      a pointer to (the first or some) element of an integer array
+      as opposed to a pointer to a single integer.)")
+    (xdoc::p
+     "The aforementioned option of wrapping the conjuncts with @(tsee mbt)
+      is useful for cases in which the function have stronger guards
+      that imply those conjuncts.
+      It would be inelegant to add redundant conjuncts to the guard
+      (presumably via external transformations)
+      for the sole purpose of communicating function parameter types to ATC.
+      By allowing @(tsee mbt),
+      the redundancy can be explicated and proved
+      (as part of guard verification),
+      while making it easy for ATC to obtain the types.")
 
     (xdoc::p
      "The return type of
@@ -439,7 +526,7 @@
        returning type @('T') and affecting variables @('vars')
        (as defined below),
        where each variable in @('vars')
-       is a formal parameter of @('fn') with pointer type
+       is a formal parameter of @('fn') with pointer or array type
        and where @('T') is not @('void') if @('vars') is @('nil').
        The return type of the C function represented by @('fn') is @('T').")
      (xdoc::li
@@ -474,7 +561,7 @@
       "An expression term for @('fn')
        returning @('T') and affecting @('vars'),
        when @('L') is @('nil'),
-       @('T') is a non-@('void') non-pointer C type,
+       @('T') is a non-@('void') non-pointer non-array C type,
        and @('vars') is @('nil').
        That is, an expression term returning a C value is also
        a statement term returning that C value.
@@ -486,7 +573,7 @@
        when @('ret') is an expression term for @('fn')
        returning @('T') and affecting no variables,
        @('L') is @('nil'),
-       @('T') is a non-@('void') non-pointer type,
+       @('T') is a non-@('void') non-pointer non-array type,
        and @('vars') is the list @('(var1 ... varn)') with @('n') &ge; 1.
        This represents a C @('return') statement
        whose expression is represented by @('ret');
@@ -545,7 +632,7 @@
       ", the symbol name of @('var') is distinct from
        the symbol names of all the other ACL2 variables in scope,
        @('term') is an expression term for @('fn')
-       returning a non-@('void') non-pointer C type
+       returning a non-@('void') non-pointer non-array C type
        and affecting no variables, and
        @('body') is a statement term for @('fn') with loop flag @('L')
        returning @('T') and affecting @('vars').
@@ -558,7 +645,7 @@
       "A term @('(let ((var (assign term))) body)'),
        when @('var') is assignable,
        @('term') is an expression term for @('fn')
-       returning the same non-@('void') non-pointer C type
+       returning the same non-@('void') non-pointer non-array C type
        as the C type of @('var')
        and affecting no variables, and
        @('body') is a statement term for @('fn') with loop flag @('L')
@@ -568,6 +655,34 @@
        the C local variable or function parameter represented by @('var'),
        with the C expression represented by @('term') as right-hand side,
        followed by the C code represented by @('body').")
+     (xdoc::li
+      "A term
+       @('(let ((var (<type>-write term))) body)'),
+       when @('<type>') is among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "@('var') is in scope,
+       @('var') has a pointer type whose referenced type is
+       the C integer type corresponding to @('<type>'),
+       @('var') is one of the symbols in @('vars'),
+       @('term') is a pure expression term for @('fn')
+       returning the C integer type corresponding to @('<type>'),
+       @('body') is a statement term for @('fn') with loop flag @('L')
+       returning @('T') and affecting @('vars').
+       This represents a C assignment to
+       the pointer variable represented by @('var')
+       with the value of the expression represented by @('term');
+       the wrapper @('<type>-write') signifies
+       the writing to an integer by pointer.")
      (xdoc::li
       "A term
        @('(let ((var (<type1>-array-write-<type2> var term1 term2))) body)'),
@@ -584,13 +699,13 @@
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
       "@('var') is in scope,
-       @('var') has a pointer type whose referenced type is
+       @('var') has an array type whose element type is
        the C integer type corresponding to @('<type1>'),
        @('var') is one of the symbols in @('vars'),
        @('term1') is a pure expression term for @('fn')
-       returning the C type corresponding to @('<type2>'),
+       returning the C integer type corresponding to @('<type2>'),
        @('term2') is a pure expression term for @('fn')
-       returning the C type corresponding to @('<type1>'),
+       returning the C integer type corresponding to @('<type1>'),
        @('body') is a statement term for @('fn') with loop flag @('L')
        returning @('T') and affecting @('vars').
        This represents a C assignment to
@@ -713,7 +828,7 @@
        when @('var') is assignable,
        @('var') is among @('vars')
        if it is a formal parameter of @('fn')
-       that has pointer type if @('fn') is non-recursive,
+       that has pointer or array type if @('fn') is non-recursive,
        @('term') is a statement term for @('fn') with loop flag @('nil')
        returning @('void') and affecting @('var')
        that is either a call of a target function
@@ -736,9 +851,9 @@
        each @('vari') is assignable,
        each @('vari') is among @('vars')
        if it is a formal parameter of @('fn')
-       that has pointer type if @('fn') is non-recursive,
+       that has pointer or array type if @('fn') is non-recursive,
        @('term') is an expression term for @('fn')
-       returning a non-@('void') non-pointer C type
+       returning a non-@('void') non-pointer non-array C type
        and affecting the variables @('(var1 ... varn)'), and
        @('body') is a statement term for @('fn') with loop flag @('L')
        returning @('T') and affecting @('vars').
@@ -746,6 +861,12 @@
        a declaration of a C local variable represented by @('var'),
        initialized with the C expression represented by @('term'),
        followed by the C code represented by @('body').
+       Note that @('declarn') stands for
+       @('declar1'), @('declar2'), etc.,
+       based on whether @('n') is 1, 2, etc.;
+       this @('n') is the number of
+       side-effected variables @('var1'), ..., @('varn'),
+       which is one less than the variables bound by the @(tsee mv-let).
        The C type of the variable is determined from the initializer.")
      (xdoc::li
       "A term @('(mv-let (var var1 ... varn) (assignn term) body)'),
@@ -753,9 +874,9 @@
        each @('vari') is assignable,
        each @('vari') is among @('vars')
        if it is a formal parameter of @('fn')
-       that has pointer type if @('fn') is non-recursive,
+       that has pointer or array type if @('fn') is non-recursive,
        @('term') is an expression term for @('fn')
-       returning the same non-@('void') non-pointer C type
+       returning the same non-@('void') non-pointer non-array C type
        as the C type of @('var')
        and affecting the variables @('(var1 ... varn)'), and
        @('body') is a statement term for @('fn') with loop flag @('L')
@@ -764,13 +885,19 @@
        an assignment to
        the C local variable or function parameter represented by @('var'),
        with the C expression represented by @('term') as right-hand side,
-       followed by the C code represented by @('body').")
+       followed by the C code represented by @('body').
+       Note that @('assignn') stands for
+       @('assign1'), @('assign2'), etc.,
+       based on whether @('n') is 1, 2, etc.;
+       this @('n') is the number of
+       side-effected variables @('var1'), ..., @('varn'),
+       which is one less than the variables bound by the @(tsee mv-let).")
      (xdoc::li
       "A term @('(mv-let (var1 ... varn) term body)'),
        when @('n') &gt; 1,
        each @('vari') is assignable,
        each @('vari') is among @('vars') if it is a formal parameter of @('fn')
-       that has pointer type if @('fn') is non-recursive,
+       that has pointer or array type if @('fn') is non-recursive,
        @('term') is a statement term for @('fn') with loop flag @('nil')
        returning @('void') and affecting @('(var1 ... varn)')
        that is either a call of a recursive target function
@@ -802,7 +929,7 @@
        on pure expression terms for @('fn') returning non-@('void') C types,
        when the C types of the terms are
        the same as the C types of the formal parameters,
-       each term of pointer type is a variable
+       each term of pointer or array type is a variable
        identical to the corresponding formal parameter of @('fn0'),
        @('L') is @('nil'),
        @('T') is @('void'),
@@ -862,7 +989,7 @@
        on pure expression terms for @('fn') returning C types,
        when the types of the terms are equal to
        the C types of the formal parameters of @('fn0'),
-       each term of pointer type is a variable
+       each term of pointer or array type is a variable
        identical to the corresponding formal parameter of @('fn0'),
        and the body of @('fn0') is
        a statement term for @('fn0')
@@ -1011,6 +1138,25 @@
        implict conversions are represented implicitly,
        e.g. via the function for a unary operator that promotes the operand.")
      (xdoc::li
+      "A call of @('<type>-read')
+       on a pure expression term for @('fn') returning @('U'),
+       when @('<type>') is among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "@('T') is the C type corresponding to @('<type>'),
+       and @('U') is the pointer type to @('T').
+       This represents the application of the indirection operator @('*')
+       to the expression represented by the argument of @('<type>-read').")
+     (xdoc::li
       "A call of @('<type1>-array-read-<type2>')
        on pure expression terms for @('fn') returning @('U') and @('V'),
        when @('<type1>') and @('<type2>') are among"
@@ -1026,7 +1172,7 @@
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
       "@('T') is the C type correponding to @('<type1>'),
-       @('U') is the pointer type to @('T'), and
+       @('U') is the array type of element type @('T'), and
        @('V') is the C type correponding to @('<type2>').
        This represents an array subscripting expression.
        The guard verification requirement ensures that
@@ -1146,34 +1292,34 @@
       (xdoc::ul
        (xdoc::li
         "If the conjunct is @('(schar-arrayp x)'),
-         the type is @('signed char *').")
+         the type is @('signed char []').")
        (xdoc::li
         "If the conjunct is @('(uchar-arrayp x)'),
-         the type is @('unsigned char *').")
+         the type is @('unsigned char []').")
        (xdoc::li
         "If the conjunct is @('(sshort-arrayp x)'),
-         the type is @('signed short *').")
+         the type is @('signed short []').")
        (xdoc::li
         "If the conjunct is @('(ushort-arrayp x)'),
-         the type is @('unsigned short *').")
+         the type is @('unsigned short []').")
        (xdoc::li
         "If the conjunct is @('(sint-arrayp x)'),
-         the type is @('signed int *').")
+         the type is @('signed int []').")
        (xdoc::li
         "If the conjunct is @('(uint-arrayp x)'),
-         the type is @('unsigned int *').")
+         the type is @('unsigned int []').")
        (xdoc::li
         "If the conjunct is @('(slong-arrayp x)'),
-         the type is @('signed long *').")
+         the type is @('signed long []').")
        (xdoc::li
         "If the conjunct is @('(ulong-arrayp x)'),
-         the type is @('unsigned long *').")
+         the type is @('unsigned long []').")
        (xdoc::li
         "If the conjunct is @('(sllong-arrayp x)'),
-         the type is @('signed llong *').")
+         the type is @('signed llong []').")
        (xdoc::li
         "If the conjunct is @('(ullong-arrayp x)'),
-         the type is @('unsigned llong *').")))
+         the type is @('unsigned llong []').")))
      (xdoc::li
       "If @('var') is not a formal parameter,
        it must be introduced by
@@ -1339,42 +1485,42 @@
 
      (xdoc::p
       "An untranslated term
-       @('(mv-let (var1 var2 ... varn) (declarn term) body)')
+       @('(mv-let (var var1 ... varn) (declarn term) body)')
        is translated to")
      (xdoc::codeblock
       "((lambda (mv)"
-      "         ((lambda (var1 var2 ... varn) body)"
+      "         ((lambda (var var1 ... varn) body)"
       "          (mv-nth \'0 mv)"
       "          (mv-nth \'1 mv)"
       "          ..."
-      "          (mv-nth \'n-1 mv)))"
+      "          (mv-nth \'n mv)))"
       " ((lambda (mv)"
-      "          ((lambda (*1 *2 ... *n)"
-      "                   (cons (declar *1) (cons *2 ... (cons *n 'nil))))"
+      "          ((lambda (*0 *1 *2 ... *n)"
+      "                   (cons (declar *0) (cons *1 ... (cons *n 'nil))))"
       "           (mv-nth \'0 mv)"
       "           (mv-nth \'1 mv)"
       "           ..."
-      "           (mv-nth \'n-1 mv)))"
+      "           (mv-nth \'n mv)))"
       "  term))")
 
      (xdoc::p
       "An untranslated term
-       @('(mv-let (var1 var2 ... varn) (assignn term) body)')
+       @('(mv-let (var var1 ... varn) (assignn term) body)')
        is translated to")
      (xdoc::codeblock
       "((lambda (mv)"
-      "         ((lambda (var1 var2 ... varn) body)"
+      "         ((lambda (var var1 ... varn) body)"
       "          (mv-nth \'0 mv)"
       "          (mv-nth \'1 mv)"
       "          ..."
-      "          (mv-nth \'n-1 mv)))"
+      "          (mv-nth \'n mv)))"
       " ((lambda (mv)"
-      "          ((lambda (*1 *2 ... *n)"
-      "                   (cons (assign *1) (cons *2 ... (cons *n 'nil))))"
+      "          ((lambda (*0 *1 *2 ... *n)"
+      "                   (cons (assign *0) (cons *1 ... (cons *n 'nil))))"
       "           (mv-nth \'0 mv)"
       "           (mv-nth \'1 mv)"
       "           ..."
-      "           (mv-nth \'n-1 mv)))"
+      "           (mv-nth \'n mv)))"
       "  term))")
 
      (xdoc::p
@@ -1518,7 +1664,7 @@
 
     (xdoc::p
      "ATC generates a single source file,
-      optionally accompanied  by a header,
+      optionally accompanied by a header,
       as explained in Section `Representation of C Code in ACL2'.")
 
     (xdoc::p

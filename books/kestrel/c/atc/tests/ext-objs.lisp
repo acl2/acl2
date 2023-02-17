@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,8 +34,8 @@
   (declare (xargs :guard (and (c::sintp |i|)
                               (c::uintp |sum|)
                               (object-|arr2|-p |arr2|)
-                              (<= 0 (c::sint->get |i|))
-                              (<= (c::sint->get |i|) 8))
+                              (<= 0 (c::integer-from-sint |i|))
+                              (<= (c::integer-from-sint |i|) 8))
                   :guard-hints (("Goal"
                                  :in-theory (enable c::add-sint-sint-okp
                                                     c::add-sint-sint
@@ -45,15 +45,15 @@
                                                     c::uint-array-index-okp
                                                     object-|arr2|-p
                                                     c::assign)))
-                  :measure (nfix (- 8 (c::sint->get |i|)))
+                  :measure (nfix (- 8 (c::integer-from-sint |i|)))
                   :hints (("Goal" :in-theory (enable c::ne-sint-sint
                                                      c::add-sint-sint
                                                      c::sint-from-boolean
                                                      c::sint-integer-fix
                                                      c::sint-integerp-alt-def
                                                      c::assign)))))
-  (if (mbt (and (<= 0 (c::sint->get |i|))
-                (<= (c::sint->get |i|) 8)))
+  (if (mbt (and (<= 0 (c::integer-from-sint |i|))
+                (<= (c::integer-from-sint |i|) 8)))
       (if (c::boolean-from-sint (c::ne-sint-sint |i| (c::sint-dec-const 8)))
           (let* ((|sum| (c::assign
                          (c::add-uint-uint
@@ -88,8 +88,8 @@
 (defun |i$loop| (|arr2| |idx|)
   (declare (xargs :guard (and (object-|arr2|-p |arr2|)
                               (c::sintp |idx|)
-                              (<= 0 (c::sint->get |idx|))
-                              (<= (c::sint->get |idx|) 8))
+                              (<= 0 (c::integer-from-sint |idx|))
+                              (<= (c::integer-from-sint |idx|) 8))
                   :guard-hints (("Goal"
                                  :in-theory (enable c::add-sint-sint-okp
                                                     c::add-sint-sint
@@ -99,15 +99,15 @@
                                                     c::uint-array-index-okp
                                                     object-|arr2|-p
                                                     c::assign)))
-                  :measure (nfix (- 8 (c::sint->get |idx|)))
+                  :measure (nfix (- 8 (c::integer-from-sint |idx|)))
                   :hints (("Goal" :in-theory (enable c::ne-sint-sint
                                                      c::add-sint-sint
                                                      c::sint-from-boolean
                                                      c::sint-integer-fix
                                                      c::sint-integerp-alt-def
                                                      c::assign)))))
-  (if (mbt (and (<= 0 (c::sint->get |idx|))
-                (<= (c::sint->get |idx|) 8)))
+  (if (mbt (and (<= 0 (c::integer-from-sint |idx|))
+                (<= (c::integer-from-sint |idx|) 8)))
       (if (c::boolean-from-sint (c::ne-sint-sint |idx| (c::sint-dec-const 8)))
           (let* ((|arr2| (c::uint-array-write-sint
                           |arr2|

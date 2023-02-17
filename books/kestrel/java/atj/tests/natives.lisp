@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -25,6 +25,9 @@
 ; with (WITH-GUARD-CHECKING :NONE ...);
 ; thus, in particular, we have no tests for BAD-ATOM<=,
 ; because all its calls with constructible ACL2 values are ill-guarded.
+; We also do not have tests for HARD-ERROR here,
+; because its Java implementation always throws an exception,
+; and thus it is not amenable to ATJ's current test generation and checking.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

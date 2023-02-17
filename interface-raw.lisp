@@ -5258,7 +5258,8 @@
 ; described in the Essay on Hash Table Support for Compilation.
 
            (null *hcomp-book-ht*))
-       (with-cbd
+       (with-cbd-raw
+        state-free-global-let*-safe
         directory-name
         (let* ((os-file (pathname-unix-to-os full-book-string state))
                (ofile (convert-book-string-to-compiled os-file state))
@@ -5323,8 +5324,7 @@
                                 (cond (efile-p
                                        (with-reckless-readtable
                                         (load efile)))
-                                      (raw-mode-p (load os-file))))))))))
-        :binder state-free-global-let*-safe))
+                                      (raw-mode-p (load os-file))))))))))))
       ((let* ((entry (assert$ *hcomp-book-ht* ; not raw mode, e.g.
                               (gethash full-book-name *hcomp-book-ht*)))
               (status (and entry
@@ -8252,7 +8252,7 @@
 ; offending function(s) provided we deal with those exceptions in the
 ; definition of get-defun-event.
 
-; This check might be coded more efficiently by walking through the world,, but
+; This check might be coded more efficiently by walking through the world, but
 ; it has taken only 0.06 seconds, which seems fine.
 
   (let ((wrld (w *the-live-state*)) ans)
@@ -8996,7 +8996,8 @@
           #+acl2-infix (f-put-global 'infixp nil *the-live-state*)
           (mv-let (erp val state)
             (with-suppression ; package locks, not just warnings, for read
-             (with-cbd
+             (with-cbd-raw
+              state-free-global-let*
               :same
               (cond (quietp
 
@@ -9030,8 +9031,7 @@
                             (ld-post-eval-print nil)
                             (ld-prompt nil))
                            (ld-fn quiet-alist *the-live-state* nil)))))))
-                    (t (ld-fn ld-alist *the-live-state* nil)))
-              :binder state-free-global-let*))
+                    (t (ld-fn ld-alist *the-live-state* nil)))))
             #+acl2-infix
             (f-put-global 'infixp old-infixp *the-live-state*)
             (cond (erp (format t "**Error encountered during LD of ACL2 ~

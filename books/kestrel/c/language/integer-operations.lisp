@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,6 +19,9 @@
 (local (include-book "kestrel/bv/logand" :dir :system))
 (local (include-book "kestrel/bv/logxor" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -144,7 +147,9 @@
              value-integer->get
              value-integerp
              value-unsigned-integerp
-             value-signed-integerp))
+             value-signed-integerp
+             fix
+             ifix))
 
   (defrule value-integer->get-of-value-integer
     (b* ((val (value-integer mathint type)))
@@ -240,7 +245,7 @@
                           type))
           ((integer-type-rangep mathint type) (value-integer mathint type))
           (t (error (list :out-of-range (value-fix val) (type-fix type))))))
-  :guard-hints (("Goal" :in-theory (enable integer-type-rangep)))
+  :guard-hints (("Goal" :in-theory (enable integer-type-rangep ifix)))
   :hooks (:fix)
   ///
 
@@ -269,7 +274,8 @@
     :enable (value-unsigned-integerp
              integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-to-unsigned
     (implies (type-unsigned-integerp type)
@@ -281,63 +287,72 @@
     :disable ((:e type-sint))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-schar-to-slong
     (implies (value-case val :schar)
              (valuep (convert-integer-value val (type-slong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-schar-to-sllong
     (implies (value-case val :schar)
              (valuep (convert-integer-value val (type-sllong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-sshort-to-sint
     (implies (value-case val :sshort)
              (valuep (convert-integer-value val (type-sint))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-sshort-to-slong
     (implies (value-case val :sshort)
              (valuep (convert-integer-value val (type-slong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-sshort-to-sllong
     (implies (value-case val :sshort)
              (valuep (convert-integer-value val (type-sllong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-sint-to-slong
     (implies (value-case val :sint)
              (valuep (convert-integer-value val (type-slong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-sint-to-sllong
     (implies (value-case val :sint)
              (valuep (convert-integer-value val (type-sllong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-slong-to-sllong
     (implies (value-case val :slong)
              (valuep (convert-integer-value val (type-sllong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-uchar-to-sint
     (implies (and (value-case val :uchar)
@@ -345,7 +360,8 @@
              (valuep (convert-integer-value val (type-sint))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-uchar-to-slong
     (implies (and (value-case val :uchar)
@@ -353,7 +369,8 @@
              (valuep (convert-integer-value val (type-slong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-uchar-to-sllong
     (implies (and (value-case val :uchar)
@@ -361,7 +378,8 @@
              (valuep (convert-integer-value val (type-sllong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-ushort-to-sint
     (implies (and (value-case val :ushort)
@@ -369,7 +387,8 @@
              (valuep (convert-integer-value val (type-sint))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-ushort-to-slong
     (implies (and (value-case val :ushort)
@@ -377,7 +396,8 @@
              (valuep (convert-integer-value val (type-slong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-ushort-to-sllong
     (implies (and (value-case val :ushort)
@@ -385,7 +405,8 @@
              (valuep (convert-integer-value val (type-sllong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-uint-to-slong
     (implies (and (value-case val :uint)
@@ -393,7 +414,8 @@
              (valuep (convert-integer-value val (type-slong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max))
+             integer-type-max
+             ifix))
 
   (defruled valuep-of-convert-integer-value-from-uint-to-sllong
     (implies (and (value-case val :uint)
@@ -401,7 +423,17 @@
              (valuep (convert-integer-value val (type-sllong))))
     :enable (integer-type-rangep
              integer-type-min
-             integer-type-max)))
+             integer-type-max
+             ifix))
+
+  (defruled valuep-of-convert-integer-value-from-ulong-to-sllong
+    (implies (and (value-case val :ulong)
+                  (<= (ulong-max) (sllong-max)))
+             (valuep (convert-integer-value val (type-sllong))))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max
+             ifix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -572,7 +604,8 @@
               valuep-of-convert-integer-value-from-ushort-to-slong
               valuep-of-convert-integer-value-from-ushort-to-sllong
               valuep-of-convert-integer-value-from-uint-to-slong
-              valuep-of-convert-integer-value-from-uint-to-sllong)
+              valuep-of-convert-integer-value-from-uint-to-sllong
+              valuep-of-convert-integer-value-from-ulong-to-sllong)
      :disable ((:e type-sint)
                (:e type-slong)
                (:e type-sllong))))
@@ -695,7 +728,7 @@
                           type))
           ((integer-type-rangep mathint type) (value-integer mathint type))
           (t (error (list :out-of-range mathint (type-fix type))))))
-  :guard-hints (("Goal" :in-theory (enable integer-type-rangep)))
+  :guard-hints (("Goal" :in-theory (enable integer-type-rangep ifix)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -827,7 +860,8 @@
                                        (:e slong-min)
                                        (:e slong-max)
                                        (:e sllong-min)
-                                       (:e sllong-max))))))
+                                       (:e sllong-max)
+                                       ifix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -954,6 +988,7 @@
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
+  :guard-hints (("Goal" :in-theory (enable rem)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1061,6 +1096,7 @@
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
+  :guard-hints (("Goal" :in-theory (enable integer-range-p)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

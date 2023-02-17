@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * Representation of ACL2 native functions in terms,
  * and implementation of these functions in Java.
- * These are functions that are natively implemented  in Java,
+ * These are functions that are natively implemented in Java,
  * as opposed to the functions that are defined via terms
  * (see {@link Acl2DefinedFunction}).
  * <p>
@@ -54,9 +54,16 @@ import java.util.Map;
  *     This function has an {@code unnormalized-body} property,
  *     but is implemented natively in Java for efficiency.
  *     Note that it is actually implemented by raw Lisp code in ACL2.</li>
+ * <li>The ACL2 built-in function {@code hard-error}.
+ *     This function has an {@code unnormalized-body} property,
+ *     but it has side effects (it terminates execution),
+ *     and thus it is necessarily implemented natively in Java.
+ *     Note that it is implemented by raw Lisp code in ACL2 too,
+ *     in order to achieve the side effects.</li>
  * </ul>
  * More native functions could be added here in the future,
- * e.g. as optimized implementations of other ACL2 built-in functions.
+ * e.g. as optimized implementations of other ACL2 built-in functions,
+ * or to properly render side effects.
  * <p>
  * These native functions are implemented in the {@code exec...} static methods,
  * which are public so that these implementations
@@ -174,6 +181,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
         functions.put(Acl2Symbol.STRING_APPEND, new StringAppend());
         functions.put(Acl2Symbol.LEN, new Len());
         functions.put(Acl2Symbol.CHAR, new Char());
+        functions.put(Acl2Symbol.HARD_ERROR, new HardError());
     }
 
     /**
@@ -1179,6 +1187,32 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
         @Override
         Acl2Value apply(Acl2Value[] values) {
             return execChar(values[0], values[1]);
+        }
+    }
+
+    /**
+     * Representation of the {@code hard-error}
+     * ACL2 built-in function.
+     */
+    private static final class HardError extends Acl2NativeFunction {
+
+        /**
+         * Constructs this native function.
+         */
+        private HardError() {
+            super(Acl2Symbol.HARD_ERROR, 3);
+        }
+
+        /**
+         * Applies this native function to the given ACL2 values.
+         *
+         * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
+         * @return Nothing, because it always throws a {@link HardError}.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
+            return execHardError(values[0], values[1], values[2]);
         }
     }
 
@@ -2568,6 +2602,30 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      */
     public static char execCharChar(String s, Acl2Integer n) {
         return s.charAt(n.getJavaBigInteger().intValue());
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code hard-error} ACL2 built-in function,
+     * on three Java values.
+     * Note that this ACL2 function has guard {@code t},
+     * so it accepts any values, even when guards are assumed.
+     * This method mimics the ACL2 side effect
+     * by throwing a {@link Acl2HardError};
+     * this method returns nothing, because it always throws the exception.
+     *
+     * @param ctx   The first actual argument to pass to the function.
+     *              Precondition: not null.
+     * @param str   The second actual argument to pass to the function.
+     *              Precondition: not null.
+     * @param alist The third actual argument to pass to the function.
+     *              Precondition: not null.
+     * @return Nothing, because it always throws a {@link HardError}.
+     */
+    public static Acl2Value execHardError(Acl2Value ctx,
+                                          Acl2Value str,
+                                          Acl2Value alist) {
+        throw new Acl2HardError(ctx, str, alist);
     }
 
 }

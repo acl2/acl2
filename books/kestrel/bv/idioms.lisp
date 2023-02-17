@@ -1,6 +1,6 @@
 ; Idioms for expressing BV ops in terms of more common ones
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ; Copyright (C) 2017-2018 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,7 @@
 (include-book "rules") ;for BVAND-OF-EXPT, todo reduce
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 
 ;;
 ;; library material

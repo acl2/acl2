@@ -203,4 +203,21 @@
        and each list of trees matches
        the corresponding repetition of the concatenation.
        For now we only generate this theorem
-       when the alternative is a singleton concatenation.")))))
+       when the alternative is a singleton concatenation."))
+
+    (xdoc::desc
+     "@('<prefix>-match-alt<i>-rep<j>-<rulename>')"
+     (xdoc::p
+      "For each rule name defined in the grammar,
+       for each alternative @('<i>') (starting from 1)
+       that defines the rule name,
+       and for each repetition @('<j>') (starting from 1)
+       of that alternative,
+       a theorem saying that
+       if a list of trees matches that repetition
+       then the list of trees has a length
+       within the range of the repetition
+       and each tree matches
+       the element of the repetition.
+       For now we only generate this theorem
+       when the repetition has a range of 1.")))))

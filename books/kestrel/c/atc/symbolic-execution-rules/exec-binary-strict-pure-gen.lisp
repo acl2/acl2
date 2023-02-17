@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,7 +13,7 @@
 
 (include-book "../../language/dynamic-semantics")
 
-(include-book "../integer-operations")
+(include-book "../../representation/integer-operations")
 
 (include-book "syntaxp")
 (include-book "promote-value")
@@ -21,14 +21,18 @@
 (include-book "integer-conversions")
 (include-book "value-integer-get")
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-sint-get-rules
-  :short "Rules about the composition of @(tsee sint->get)
+  :short "Rules about the composition of @(tsee integer-from-sint)
           with @('sint-from-<type>') functions."
   :long
   (xdoc::topstring
@@ -36,35 +40,37 @@
     "These are not used during the symbolic execution;
      they are used to prove rules used during the symbolic execution."))
 
-  (defruled sint->get-of-sint-from-schar
-    (equal (sint->get (sint-from-schar x))
-           (schar->get x))
+  (defruled integer-from-sint-of-sint-from-schar
+    (equal (integer-from-sint (sint-from-schar x))
+           (integer-from-schar x))
     :enable (sint-from-schar
              sint-integerp-alt-def))
 
-  (defruled sint->get-of-sint-from-uchar
-    (equal (sint->get (sint-from-uchar x))
-           (uchar->get x))
+  (defruled integer-from-sint-of-sint-from-uchar
+    (equal (integer-from-sint (sint-from-uchar x))
+           (integer-from-uchar x))
     :enable (sint-from-uchar
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
-  (defruled sint->get-of-sint-from-sshort
-    (equal (sint->get (sint-from-sshort x))
-           (sshort->get x))
+  (defruled integer-from-sint-of-sint-from-sshort
+    (equal (integer-from-sint (sint-from-sshort x))
+           (integer-from-sshort x))
     :enable (sint-from-sshort
              sint-integerp-alt-def))
 
-  (defruled sint->get-of-sint-from-ushort
-    (equal (sint->get (sint-from-ushort x))
-           (ushort->get x))
+  (defruled integer-from-sint-of-sint-from-ushort
+    (equal (integer-from-sint (sint-from-ushort x))
+           (integer-from-ushort x))
     :enable (sint-from-ushort
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   (defval *atc-sint-get-rules*
-    '(sint->get-of-sint-from-schar
-      sint->get-of-sint-from-uchar
-      sint->get-of-sint-from-sshort
-      sint->get-of-sint-from-ushort)))
+    '(integer-from-sint-of-sint-from-schar
+      integer-from-sint-of-sint-from-uchar
+      integer-from-sint-of-sint-from-sshort
+      integer-from-sint-of-sint-from-ushort)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,13 +203,14 @@
                     ulong-integerp-alt-def
                     sllong-integerp-alt-def
                     ullong-integerp-alt-def
-                    uint-mod
-                    ulong-mod
-                    ullong-mod
+                    uint-from-integer-mod
+                    ulong-from-integer-mod
+                    ullong-from-integer-mod
                     value-unsigned-integerp-alt-def
                     integer-type-rangep
                     integer-type-min
-                    integer-type-max))
+                    integer-type-max
+                    bit-width-value-choices))
          (event `(defruled ,name
                    ,formula
                    :enable ,enables

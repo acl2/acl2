@@ -28,11 +28,12 @@
 
 ;; TODO: Replace more of the hand-written functions with calls to def-untranslated-term-fold
 
+(include-book "kestrel/untranslated-terms/untranslated-constantp" :dir :system)
+(include-book "kestrel/untranslated-terms/untranslated-variablep" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system)
 (include-book "kestrel/utilities/map-symbol-name" :dir :system)
 (include-book "kestrel/utilities/legal-variable-listp" :dir :system)
-(include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/lets" :dir :system)
 (include-book "kestrel/utilities/lambdas" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
@@ -40,7 +41,6 @@
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 ;(include-book "../sequences/defforall") ;drop (after replacing the defforall-simple below)?
 ;(include-book "../sequences/generics-utilities") ;for make-pairs (TODO: move that and rename to mention doublets)
-(include-book "kestrel/utilities/legal-variablep" :dir :system) ;for legal-variable-name-in-acl2-packagep
 (include-book "std/alists/remove-assocs" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -226,79 +226,7 @@
 ;(defforall-simple untranslated-TERM-supported-bstar-binderp)
 ;(verify-guards all-untranslated-TERM-supported-bstar-binderp)
 
-;;;
-;;; untranslated-variablep
-;;;
 
-;; An untranslated variable is a symbol, with several additional restrictions.
-;; For example, t and nil are constants, as are keywords (all of these things
-;; get quoted by translate).  Something with the syntax of a constant, like
-;; *foo*, is also not an untranslated variable.
-(defund untranslated-variablep (x)
-  (declare (xargs :guard t))
-  (legal-variablep x))
-
-(defthm untranslated-variablep-forward-to-symbolp
-  (implies (untranslated-variablep x)
-           (symbolp x))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable untranslated-variablep legal-variablep))))
-
-;; Very similar to legal-variablep-of-intern-in-package-of-symbol.
-(defthm untranslated-variablep-of-intern-in-package-of-symbol
-  (implies (and (equal (symbol-package-name sym) "ACL2") ;gen
-                (stringp str)
-                (symbolp sym))
-           (equal (untranslated-variablep (intern-in-package-of-symbol str sym))
-                  (legal-variable-name-in-acl2-packagep str)))
-  :hints (("Goal" :in-theory (enable untranslated-variablep))))
-
-;;;
-;;; untranslated-constantp
-;;;
-
-;; Recognize an untranslated term that is a constant
-(defund untranslated-constantp (x)
-  (declare (xargs :guard t))
-  (or (acl2-numberp x) ;unquoted
-      (characterp x) ;unquoted
-      (stringp x) ;unquoted
-      (and (symbolp x)
-           (or (keywordp x) ;; unquoted keywords are constants
-               ;; t, nil, and symbols that begin and end with * are constants:
-               ;; TODO: Consider disallowing *
-               (legal-constantp1 x)))
-      (myquotep x)))
-
-;; (defthm car-when-untranslated-constantp
-;;   (implies (untranslated-constantp x)
-;;            (equal (car x)
-;;                   (if (consp x)
-;;                       'quote
-;;                     nil)))
-;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-;;   :hints (("Goal" :in-theory (enable untranslated-constantp))))
-
-(defthm untranslated-constantp-forward-to-true-listp
-  (implies (and (untranslated-constantp term)
-                (consp term))
-           (true-listp term))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable untranslated-constantp))))
-
-(defthm untranslated-constantp-forward-to-equal-of-car-and-quote
-  (implies (and (untranslated-constantp term)
-                (consp term))
-           (equal (car term) 'quote))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable untranslated-constantp))))
-
-(defthm untranslated-constantp-of-cons
-  (equal (untranslated-constantp (cons x y))
-         (and (equal x 'quote)
-              (true-listp y)
-              (equal 1 (len y))))
-  :hints (("Goal" :in-theory (enable untranslated-constantp))))
 
 ;;these are terms that may contain let/let*/b*/cond/case-match/case/mv-let, etc.
 ;ttodo: add support for case, mv-let, and more constructs.

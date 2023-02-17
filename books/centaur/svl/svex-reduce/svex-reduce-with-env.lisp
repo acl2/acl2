@@ -270,8 +270,9 @@
            (b* (;;(svex.name (svex-var->name svex))
                 (val (hons-get svex env))
                 ((unless (consp val))
-                 (svex-reduce-w/-env-masked-return svex)
-                 #|(4vec-part-select start size (sv::4vec-x))|#)
+                 (if (svex-reduce-config->keep-missing-env-vars config)
+                     (svex-reduce-w/-env-masked-return svex)
+                 (4vec-part-select start size (sv::4vec-x))))
                 (val (cdr val))
                 ((when (and (quotep val)
                             (consp (cdr val))
@@ -662,8 +663,9 @@ but did not resolve the branch ~%" first))))
           (:var
            (b* ((val (hons-get svex env))
                 ((unless (consp val))
-                 svex
-                 #|(sv::4vec-x)|#)
+                 (if (svex-reduce-config->keep-missing-env-vars config)
+                     svex
+                   (sv::4vec-x)))
                 (val (cdr val))
                 ((when (and (quotep val)
                             (consp (cdr val))
@@ -1773,7 +1775,13 @@ SVEX-CALL->FN)
                             (svex-reduce-config->integerp-extns config)))
                        (:@ :normal-eval
                            (equal (svex-reduce-config->width-extns config) nil)
-                           (equal (svex-reduce-config->integerp-extns config) nil)))
+                           (equal (svex-reduce-config->integerp-extns config) nil))
+
+                       ;; if not keeping env-vars, then big-env and env should
+                       ;; be the same.
+                       (or* (svex-reduce-config->keep-missing-env-vars config)
+                           (equal env big-env))
+                       )
                   (and (equal (svex-eval (svex-and/or/xor-reduce-w/-env-masked svex start size) (rp-evlt env-term a))
                               (4vec-part-select start size (svex-eval svex (rp-evlt env-term a))))
 
@@ -1804,7 +1812,9 @@ SVEX-CALL->FN)
                             (svex-reduce-config->integerp-extns config)))
                        (:@ :normal-eval
                            (equal (svex-reduce-config->width-extns config) nil)
-                           (equal (svex-reduce-config->integerp-extns config) nil)))
+                           (equal (svex-reduce-config->integerp-extns config) nil))
+                       (or* (svex-reduce-config->keep-missing-env-vars config)
+                           (equal env big-env)))
                   (and (equal (svex-eval (svex-reduce-w/-env-masked svex start size) (rp-evlt env-term a))
                               (4vec-part-select start size (svex-eval svex (rp-evlt env-term a))))
 
@@ -1830,7 +1840,9 @@ SVEX-CALL->FN)
                             (svex-reduce-config->integerp-extns config)))
                        (:@ :normal-eval
                            (equal (svex-reduce-config->width-extns config) nil)
-                           (equal (svex-reduce-config->integerp-extns config) nil)))
+                           (equal (svex-reduce-config->integerp-extns config) nil))
+                       (or* (svex-reduce-config->keep-missing-env-vars config)
+                           (equal env big-env)))
                   (equal (svex-eval (svex-reduce-w/-env svex) (rp-evlt env-term a))
                          (svex-eval svex (rp-evlt env-term a))))
          :fn svex-reduce-w/-env)
@@ -1848,12 +1860,14 @@ SVEX-CALL->FN)
                             (svex-reduce-config->integerp-extns config)))
                        (:@ :normal-eval
                            (equal (svex-reduce-config->width-extns config) nil)
-                           (equal (svex-reduce-config->integerp-extns config) nil)))
+                           (equal (svex-reduce-config->integerp-extns config) nil))
+                       (or* (svex-reduce-config->keep-missing-env-vars config)
+                           (equal env big-env)))
                   (equal (svexlist-eval (svex-reduce-w/-env-lst svex-list) (rp-evlt env-term a))
                          (svexlist-eval svex-list (rp-evlt env-term a))))
          :fn svex-reduce-w/-env-lst)
        :mutual-recursion svex-reduce-w/-env
-       :otf-flg t
+       ;;:otf-flg t
        :hints (("Goal"
                 :do-not-induct t
 
@@ -1929,7 +1943,9 @@ SVEX-CALL->FN)
                       (svex-reduce-config->integerp-extns config)))
                  (:@ :normal-eval
                      (equal (svex-reduce-config->width-extns config) nil)
-                     (equal (svex-reduce-config->integerp-extns config) nil)))
+                     (equal (svex-reduce-config->integerp-extns config) nil))
+                 (or* (svex-reduce-config->keep-missing-env-vars config)
+                      (equal env big-env)))
             (equal (svex-alist-eval res-alist (rp-evlt env-term a))
                    (svex-alist-eval svex-alist (rp-evlt env-term a))))
    :fn svex-alist-reduce-w/-env

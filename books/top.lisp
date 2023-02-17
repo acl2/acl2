@@ -417,7 +417,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "system/origin" :dir :system)
 (include-book "system/pseudo-termp-lemmas" :dir :system)
 (include-book "system/random" :dir :system)
-(include-book "system/remove-guard-holders-lemmas" :dir :system)
+(include-book "system/remove-guard-holders" :dir :system)
 (include-book "system/too-many-ifs" :dir :system)
 ; Dependency scan stuff only:
 ; (include-book "system/toothbrush-deps" :dir :system)

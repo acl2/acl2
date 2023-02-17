@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,6 +21,9 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,16 +87,19 @@
                               ullong-from-ulong
                               ullong-from-sllong
                               ;; modular unsigned constructors:
-                              uint-mod
-                              ulong-mod
-                              ullong-mod
+                              uint-from-integer-mod
+                              ulong-from-integer-mod
+                              ullong-from-integer-mod
                               ;; bridge rules for constructors:
                               value-sint-to-sint
                               value-slong-to-slong
                               value-sllong-to-sllong
                               value-uint-to-uint
                               value-ulong-to-ulong
-                              value-ullong-to-ullong))))
+                              value-ullong-to-ullong
+                              ;; built-ins:
+                              ifix
+                              ))))
 
   ;; from schar:
 

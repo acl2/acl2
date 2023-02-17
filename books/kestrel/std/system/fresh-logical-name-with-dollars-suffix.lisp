@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -62,7 +62,7 @@
      If we encounter problems in the future,
      we will revise this utility, or introduce a new one.")
    (xdoc::p
-    "Not that if the logical name is for a constant,
+    "Note that if the logical name is for a constant,
      the @('$') signs are added just before the final @('*'),
      so that the resulting name is still a valid constant name;
      see @(tsee add-suffix-to-fn-or-const).

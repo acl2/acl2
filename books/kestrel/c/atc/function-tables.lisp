@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,6 +15,9 @@
 (include-book "../language/abstract-syntax")
 
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,7 +103,8 @@
   (defrule atc-fn-infop-of-cdr-of-assoc-equal
     (implies (and (atc-symbol-fninfo-alistp x)
                   (assoc-equal k x))
-             (atc-fn-infop (cdr (assoc-equal k x)))))
+             (atc-fn-infop (cdr (assoc-equal k x))))
+    :enable assoc-equal)
 
   (defruled symbol-listp-of-strip-cars-when-atc-symbol-fninfo-alistp
     (implies (atc-symbol-fninfo-alistp prec-fns)

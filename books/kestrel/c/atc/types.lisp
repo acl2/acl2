@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,9 @@
 (include-book "../language/integer-ranges")
 
 (include-book "kestrel/std/util/defirrelevant" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -66,6 +69,7 @@
    :array `(make-type-array :of ,(type-to-maker (type-array->of type))
                             :size ,(type-array->size type)))
   :measure (type-count type)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -152,6 +156,7 @@
                (mv tyspec (make-obj-adeclor-array :decl declor
                                                   :size size))))
      :measure (type-count type)
+     :hints (("Goal" :in-theory (enable o< o-finp)))
      :verify-guards :after-returns
      :hooks (:fix))))
 

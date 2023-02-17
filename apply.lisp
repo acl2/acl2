@@ -2294,8 +2294,7 @@
 (defun confirm-apply-books (state)
   (declare (xargs :mode :program))
   (let ((wrld (w state))
-        (apply-lemmas-book-name (make-sysfile :system
-                                              "projects/apply/base.lisp")))
+        (apply-lemmas-book-name *projects/apply/base-sysfile*))
     (cond
      ((and (not (global-val 'projects/apply/base-includedp wrld))
            (not (equal apply-lemmas-book-name

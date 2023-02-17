@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,7 +19,11 @@
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,7 +219,7 @@
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
           (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
           (valuep-when-indextype (pack 'valuep-when- indextypep))
-          (type-thm (pack indexfixtype '->get))
+          (type-thm (pack 'integer-from- indexfixtype))
           (thm-member-name (pack 'exec-member-read-when-
                                  recognizer
                                  '-and-
@@ -284,16 +288,16 @@
                       exec-arrsub-of-memberp
                       value-struct-read
                       value-integer->get
-                      value-schar->get-to-schar->get
-                      value-uchar->get-to-uchar->get
-                      value-sshort->get-to-sshort->get
-                      value-ushort->get-to-ushort->get
-                      value-sint->get-to-sint->get
-                      value-uint->get-to-uint->get
-                      value-slong->get-to-slong->get
-                      value-ulong->get-to-ulong->get
-                      value-sllong->get-to-sllong->get
-                      value-ullong->get-to-ullong->get
+                      value-schar->get-to-integer-from-schar
+                      value-uchar->get-to-integer-from-uchar
+                      value-sshort->get-to-integer-from-sshort
+                      value-ushort->get-to-integer-from-ushort
+                      value-sint->get-to-integer-from-sint
+                      value-uint->get-to-integer-from-uint
+                      value-slong->get-to-integer-from-slong
+                      value-ulong->get-to-integer-from-ulong
+                      value-sllong->get-to-integer-from-sllong
+                      value-ullong->get-to-integer-from-ullong
                       value-kind-when-scharp
                       value-kind-when-ucharp
                       value-kind-when-sshortp
@@ -715,14 +719,14 @@
           (elemfixtype (integer-type-to-fixtype elemtype))
           (indextypep (pack indexfixtype 'p))
           (elemtypep (pack elemfixtype 'p))
-          (indextype->get (pack indexfixtype '->get))
+          (integer-from-indextype (pack 'integer-from- indexfixtype))
           (array-writer (pack elemfixtype '-array-write-alt-def))
           (array-checker (pack elemfixtype '-array-index-okp))
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
           (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
           (valuep-when-indextype (pack 'valuep-when- indextypep))
           (valuep-when-elemtypep (pack 'valuep-when- elemtypep))
-          (type-thm (pack indexfixtype '->get))
+          (type-thm (pack 'integer-from- indexfixtype))
           (thm-member-name (pack 'exec-member-write-when-
                                  recognizer
                                  '-and-
@@ -817,16 +821,16 @@
               :in-theory
               '(exec-expr-asg
                 value-integer->get
-                value-schar->get-to-schar->get
-                value-uchar->get-to-uchar->get
-                value-sshort->get-to-sshort->get
-                value-ushort->get-to-ushort->get
-                value-sint->get-to-sint->get
-                value-uint->get-to-uint->get
-                value-slong->get-to-slong->get
-                value-ulong->get-to-ulong->get
-                value-sllong->get-to-sllong->get
-                value-ullong->get-to-ullong->get
+                value-schar->get-to-integer-from-schar
+                value-uchar->get-to-integer-from-uchar
+                value-sshort->get-to-integer-from-sshort
+                value-ushort->get-to-integer-from-ushort
+                value-sint->get-to-integer-from-sint
+                value-uint->get-to-integer-from-uint
+                value-slong->get-to-integer-from-slong
+                value-ulong->get-to-integer-from-ulong
+                value-sllong->get-to-integer-from-sllong
+                value-ullong->get-to-integer-from-ullong
                 value-kind-when-scharp
                 value-kind-when-ucharp
                 value-kind-when-sshortp
@@ -869,7 +873,7 @@
               ((:instance
                 ,writer-return-thm
                 (index
-                 (,indextype->get
+                 (,integer-from-indextype
                   (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
                                   compst)))
                 (val
@@ -892,7 +896,7 @@
                       (expr-arrsub->arr (expr-binary->arg1 e))))
                     compst))))
                 (index
-                 (,indextype->get
+                 (,integer-from-indextype
                   (exec-expr-pure
                    (expr-arrsub->sub (expr-binary->arg1 e))
                    compst)))
@@ -903,16 +907,16 @@
               :in-theory
               '(exec-expr-asg
                 value-integer->get
-                value-schar->get-to-schar->get
-                value-uchar->get-to-uchar->get
-                value-sshort->get-to-sshort->get
-                value-ushort->get-to-ushort->get
-                value-sint->get-to-sint->get
-                value-uint->get-to-uint->get
-                value-slong->get-to-slong->get
-                value-ulong->get-to-ulong->get
-                value-sllong->get-to-sllong->get
-                value-ullong->get-to-ullong->get
+                value-schar->get-to-integer-from-schar
+                value-uchar->get-to-integer-from-uchar
+                value-sshort->get-to-integer-from-sshort
+                value-ushort->get-to-integer-from-ushort
+                value-sint->get-to-integer-from-sint
+                value-uint->get-to-integer-from-uint
+                value-slong->get-to-integer-from-slong
+                value-ulong->get-to-integer-from-ulong
+                value-sllong->get-to-integer-from-sllong
+                value-ullong->get-to-integer-from-ullong
                 value-kind-when-scharp
                 value-kind-when-ucharp
                 value-kind-when-sshortp
@@ -955,7 +959,7 @@
               ((:instance
                 ,writer-return-thm
                 (index
-                 (,indextype->get
+                 (,integer-from-indextype
                   (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
                                   compst)))
                 (val
@@ -984,7 +988,7 @@
                       compst))
                     compst))))
                 (index
-                 (,indextype->get
+                 (,integer-from-indextype
                   (exec-expr-pure
                    (expr-arrsub->sub (expr-binary->arg1 e))
                    compst)))
@@ -1102,7 +1106,8 @@
                (updated-prec-tags
                 atc-string-taginfo-alistp
                 :hyp (and (stringp tag)
-                          (atc-string-taginfo-alistp prec-tags)))
+                          (atc-string-taginfo-alistp prec-tags))
+                :hints (("Goal" :in-theory (enable acons))))
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
   :short "Generate a C structure type declaration,

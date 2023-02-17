@@ -1229,6 +1229,7 @@
 (defun jvm-rules-unfiled-misc ()
   (declare (xargs :guard t))
   (append (update-nth2-rules) ;since below we have rules to introduce update-nth2
+          (update-nth-rules)
           '(equal-nil-of-myif
             logext-of-0 ;move to logext-rules?
 ;basic rules:
@@ -1236,10 +1237,10 @@
 ;    possible-exception-of-nil
 ;    len-of-update-nth-rewrite-2
 
-            update-nth-becomes-update-nth2
+            update-nth-becomes-update-nth2 ; drop once arraycopy keeps types better?
             ;; update-nth-becomes-update-nth2-extend
             ;; update-nth-becomes-update-nth2-extend-gen
-            update-nth-becomes-update-nth2-extend-new
+            update-nth-becomes-update-nth2-extend-new ; drop once arraycopy keeps types better?
 
             true-listp-of-cons
 

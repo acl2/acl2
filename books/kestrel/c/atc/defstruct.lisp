@@ -24,7 +24,12 @@
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,7 +101,8 @@
   :elt-type defstruct-member-info
   :true-listp t
   :elementp-of-nil nil
-  :pred defstruct-member-info-listp)
+  :pred defstruct-member-info-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -478,7 +484,8 @@
                            (memtypes member-type-listp)
                            (flexiblep booleanp)
                            (redundant booleanp)
-                           val))
+                           val)
+                    :hints (("Goal" :in-theory (enable len))))
                state)
   :short "Process the inputs of a @(tsee defstruct) call."
   :long
@@ -805,16 +812,16 @@
    type
    :void (raise "Internal error: type ~x0." type)
    :char (raise "Internal error: type ~x0." type)
-   :schar '(schar 0)
-   :uchar '(uchar 0)
-   :sshort '(sshort 0)
-   :ushort '(ushort 0)
-   :sint '(sint 0)
-   :uint '(uint 0)
-   :slong '(slong 0)
-   :ulong '(ulong 0)
-   :sllong '(sllong 0)
-   :ullong '(ullong 0)
+   :schar '(schar-from-integer 0)
+   :uchar '(uchar-from-integer 0)
+   :sshort '(sshort-from-integer 0)
+   :ushort '(ushort-from-integer 0)
+   :sint '(sint-from-integer 0)
+   :uint '(uint-from-integer 0)
+   :slong '(slong-from-integer 0)
+   :ulong '(ulong-from-integer 0)
+   :sllong '(sllong-from-integer 0)
+   :ullong '(ullong-from-integer 0)
    :struct (raise "Internal error: type ~x0." type)
    :pointer (raise "Internal error: type ~x0." type)
    :array (b* ((size (or type.size 1)))
@@ -824,34 +831,34 @@
              :char (raise "Internal error: type ~x0." type)
              :schar `(make-value-array
                       :elemtype (type-schar)
-                      :elements (repeat ,size (schar 0)))
+                      :elements (repeat ,size (schar-from-integer 0)))
              :uchar `(make-value-array
                       :elemtype (type-uchar)
-                      :elements (repeat ,size (uchar 0)))
+                      :elements (repeat ,size (uchar-from-integer 0)))
              :sshort `(make-value-array
                        :elemtype (type-sshort)
-                       :elements (repeat ,size (sshort 0)))
+                       :elements (repeat ,size (sshort-from-integer 0)))
              :ushort `(make-value-array
                        :elemtype (type-ushort)
-                       :elements (repeat ,size (ushort 0)))
+                       :elements (repeat ,size (ushort-from-integer 0)))
              :sint `(make-value-array
                      :elemtype (type-sint)
-                     :elements (repeat ,size (sint 0)))
+                     :elements (repeat ,size (sint-from-integer 0)))
              :uint `(make-value-array
                      :elemtype (type-uint)
-                     :elements (repeat ,size (uint 0)))
+                     :elements (repeat ,size (uint-from-integer 0)))
              :slong `(make-value-array
                       :elemtype (type-slong)
-                      :elements (repeat ,size (slong 0)))
+                      :elements (repeat ,size (slong-from-integer 0)))
              :ulong `(make-value-array
                       :elemtype (type-ulong)
-                      :elements (repeat ,size (ulong 0)))
+                      :elements (repeat ,size (ulong-from-integer 0)))
              :sllong `(make-value-array
                        :elemtype (type-sllong)
-                       :elements (repeat ,size (sllong 0)))
+                       :elements (repeat ,size (sllong-from-integer 0)))
              :ullong `(make-value-array
                        :elemtype (type-ullong)
-                       :elements (repeat ,size (ullong 0)))
+                       :elements (repeat ,size (ullong-from-integer 0)))
              :struct (raise "Internal error: type ~x0." type)
              :pointer (raise "Internal error: type ~x0." type)
              :array (raise "Internal error: type ~x0." type))))
@@ -1289,7 +1296,8 @@
                                         (type typep)
                                         (size? pos-optionp))
   :guard (type-nonchar-integerp type)
-  :returns (mv (event pseudo-event-formp)
+  :returns (mv (event pseudo-event-formp
+                      :hints (("Goal" :in-theory (enable true-listp))))
                (length symbolp)
                (checkers symbol-listp)
                (readers symbol-listp)
@@ -1575,16 +1583,16 @@
                         (:e type-ulong)
                         (:e type-sllong)
                         (:e type-ullong)
-                        (:e schar)
-                        (:e uchar)
-                        (:e sshort)
-                        (:e ushort)
-                        (:e sint)
-                        (:e uint)
-                        (:e slong)
-                        (:e ulong)
-                        (:e sllong)
-                        (:e ullong)
+                        (:e schar-from-integer)
+                        (:e uchar-from-integer)
+                        (:e sshort-from-integer)
+                        (:e ushort-from-integer)
+                        (:e sint-from-integer)
+                        (:e uint-from-integer)
+                        (:e slong-from-integer)
+                        (:e ulong-from-integer)
+                        (:e sllong-from-integer)
+                        (:e ullong-from-integer)
                         (:e schar-array->elements)
                         (:e uchar-array->elements)
                         (:e sshort-array->elements)
@@ -1679,16 +1687,16 @@
                           (:e type-ulong)
                           (:e type-sllong)
                           (:e type-ullong)
-                          (:e schar)
-                          (:e uchar)
-                          (:e sshort)
-                          (:e ushort)
-                          (:e sint)
-                          (:e uint)
-                          (:e slong)
-                          (:e ulong)
-                          (:e sllong)
-                          (:e ullong)
+                          (:e schar-from-integer)
+                          (:e uchar-from-integer)
+                          (:e sshort-from-integer)
+                          (:e ushort-from-integer)
+                          (:e sint-from-integer)
+                          (:e uint-from-integer)
+                          (:e slong-from-integer)
+                          (:e ulong-from-integer)
+                          (:e sllong-from-integer)
+                          (:e ullong-from-integer)
                           (:e scharp)
                           (:e ucharp)
                           (:e sshortp)
@@ -1800,7 +1808,7 @@
           (index-type (car index-types))
           (index-fixtype (integer-type-to-fixtype index-type))
           (index-typep (pack index-fixtype 'p))
-          (index-getter (pack index-fixtype '->get))
+          (index-getter (pack 'integer-from- index-fixtype))
           (index-okp-for-index (packn-pos (list struct-tag
                                                 '-
                                                 (ident->name name)
@@ -1874,7 +1882,8 @@
 
   (defruled defstruct-len-consp-lemma
     (implies (consp x)
-             (not (equal (len x) 0)))))
+             (not (equal (len x) 0)))
+    :enable len))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

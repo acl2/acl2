@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,6 +14,9 @@
 (include-book "../../representation/integer-conversions")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,7 +44,8 @@
     :enable (uint-from-sint
              sint-from-uchar
              uint-from-uchar
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   (defruled uint-from-sint-of-sint-from-sshort
     (equal (uint-from-sint (sint-from-sshort x))
@@ -57,7 +61,8 @@
     :enable (uint-from-sint
              sint-from-ushort
              uint-from-ushort
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   ;; signed long as final type:
 
@@ -75,7 +80,8 @@
     :enable (slong-from-sint
              sint-from-uchar
              slong-from-uchar
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   (defruled slong-from-sint-of-sint-from-sshort
     (equal (slong-from-sint (sint-from-sshort x))
@@ -91,7 +97,8 @@
     :enable (slong-from-sint
              sint-from-ushort
              slong-from-ushort
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   ;; unsigned long as final type:
 
@@ -109,7 +116,8 @@
     :enable (ulong-from-sint
              sint-from-uchar
              ulong-from-uchar
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   (defruled ulong-from-sint-of-sint-from-sshort
     (equal (ulong-from-sint (sint-from-sshort x))
@@ -125,7 +133,8 @@
     :enable (ulong-from-sint
              sint-from-ushort
              ulong-from-ushort
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   ;; signed long long as final type:
 
@@ -143,7 +152,8 @@
     :enable (sllong-from-sint
              sint-from-uchar
              sllong-from-uchar
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   (defruled sllong-from-sint-of-sint-from-sshort
     (equal (sllong-from-sint (sint-from-sshort x))
@@ -159,7 +169,8 @@
     :enable (sllong-from-sint
              sint-from-ushort
              sllong-from-ushort
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   ;; unsigned long long as final type:
 
@@ -177,7 +188,8 @@
     :enable (ullong-from-sint
              sint-from-uchar
              ullong-from-uchar
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   (defruled ullong-from-sint-of-sint-from-sshort
     (equal (ullong-from-sint (sint-from-sshort x))
@@ -193,7 +205,8 @@
     :enable (ullong-from-sint
              sint-from-ushort
              ullong-from-ushort
-             sint-integerp-alt-def))
+             sint-integerp-alt-def
+             bit-width-value-choices))
 
   (defval *atc-integer-conv-rules*
     '(uint-from-sint-of-sint-from-schar

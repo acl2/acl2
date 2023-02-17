@@ -8865,10 +8865,17 @@
 ; comments).
 
 (defmacro make-sysfile (key str)
-  (cond ((and (keywordp key)
-              (stringp str))
-         `(quote (,key . ,str)))
-        (t `(cons ,key ,str))))
+
+; At one time we tried to save conses by returning `(quote (,key . ,str)) when
+; (and (keywordp key) (stringp str)).  But with GCL 2.6.14 we got an error from
+; confirm-apply-books during certification of "projects/apply/base.lisp",
+; perhaps because of the call there of make-sysfile -- that may have created a
+; code constant that is destructively modified somehow (e.g., by
+; replace-project-dir-alist), though we haven't confirmed that.  At any rate,
+; the error went away when we removed that special handling for (and (keywordp
+; key) (stringp str)).
+
+  `(cons ,key ,str))
 
 (defun sysfile-p (x)
 

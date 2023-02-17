@@ -29,10 +29,10 @@
 ;;       Minimal Multiplicative Complexity
 ;; Martin Albrecht et al.
 ;; Published in:
-;;   Advances in Cryptology – ASIACRYPT 2016: 22nd International
+;;   Advances in Cryptology - ASIACRYPT 2016: 22nd International
 ;;   Conference on the Theory and Application of Cryptology and
 ;;   Information Security, Hanoi, Vietnam, December 4-8, 2016,
-;;   Proceedings, Part 1, Springer LNCS 10031, pp. 191–219.
+;;   Proceedings, Part 1, Springer LNCS 10031, pp. 191-219.
 ;; Also available at:
 ;;   https://eprint.iacr.org/2016/492
 ;; Usually referred to as "MiMC spec" or [Alb+16].
@@ -53,7 +53,7 @@
 ;;     In [Alb+16], section 5.3 states:
 ;;         it needs to be assured that the cubing in the round function
 ;;         creates a permutation. For this, it is sufficient to require
-;;         gcd(3, p − 1) = 1.
+;;         gcd(3, p - 1) = 1.
 ;;     It so happens that 3 divides (p - 1), when p is the BN-254 curve order,
 ;;     so gcd(3, p - 1) = 3.
 ;;     However, we are using an exponent of 5 (see below).
@@ -96,7 +96,7 @@
 ;;     In [Alb+16] section 5.3 p.18, for the MiMC-2n/n case,
 ;;     they write:
 ;;         Remember that for MiMC-n/n, d has to satisfy the condition
-;;         gcd(d, 2n − 1) = 1 in order to be a permutation, while in
+;;         gcd(d, 2n - 1) = 1 in order to be a permutation, while in
 ;;         the case of MiMC-2n/n (that is, for Feistel Networks) this
 ;;         condition is not necessary.
 ;;     The MiMC spec is not explicit whether the relaxation for Feistel

@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,9 @@
 
 (in-package "C")
 
-(include-book "integer-operations")
+(include-book "../representation/integer-operations")
+
+(include-book "pointed-integers")
 (include-book "arrays")
 (include-book "conditional-expressions")
 (include-book "let-designations")
@@ -20,7 +22,6 @@
 (include-book "defstruct")
 (include-book "defobject-doc")
 (include-book "defobject")
-(include-book "promotion-uaconversion-theorems")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -26,6 +26,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/bv/rules9" :dir :system))
 (local (include-book "kestrel/bv/bitwise" :dir :system))
 (local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system))

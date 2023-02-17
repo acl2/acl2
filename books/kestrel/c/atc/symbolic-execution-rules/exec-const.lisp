@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,9 @@
 (include-book "../../representation/integers")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,6 +39,8 @@
      of the fixtype functions that operate on constants
      and of the @('<type>-integerp') predicates."))
 
+  (local (in-theory (enable len)))
+
   (defruled exec-const-to-sint
     (implies (and (syntaxp (quotep const))
                   (const-case const :int)
@@ -45,11 +50,11 @@
                   (equal value (iconst->value iconst))
                   (sint-integerp value))
              (equal (exec-const const)
-                    (sint value)))
+                    (sint-from-integer value)))
     :enable (exec-const
              exec-iconst
              value-sint->get
-             sint
+             sint-from-integer
              value-kind
              valuep))
 
@@ -68,11 +73,11 @@
                                (not (uint-integerp value))))
                       (iconst-length-case length :long)))
              (equal (exec-const const)
-                    (slong value)))
+                    (slong-from-integer value)))
     :enable (exec-const
              exec-iconst
              value-slong->get
-             slong
+             slong-from-integer
              value-kind
              valuep))
 
@@ -95,7 +100,7 @@
                                (not (ulong-integerp value))))
                       (iconst-length-case length :llong)))
              (equal (exec-const const)
-                    (sllong value)))
+                    (sllong-from-integer value)))
     :enable (exec-const
              exec-iconst
              slong-integerp-alt-def
@@ -103,7 +108,7 @@
              ulong-integerp-alt-def
              uint-integerp-alt-def
              value-sllong->get
-             sllong
+             sllong-from-integer
              value-kind
              valuep))
 
@@ -118,11 +123,11 @@
                       (and (not (iconst-base-case (iconst->base iconst) :dec))
                            (not (sint-integerp value)))))
              (equal (exec-const const)
-                    (uint value)))
+                    (uint-from-integer value)))
     :enable (exec-const
              exec-iconst
              value-uint->get
-             uint
+             uint-from-integer
              value-kind
              valuep))
 
@@ -144,13 +149,13 @@
                                     (not (uint-integerp value)))
                                (iconst-length-case length :long)))))
              (equal (exec-const const)
-                    (ulong value)))
+                    (ulong-from-integer value)))
     :enable (exec-const
              exec-iconst
              sint-integerp-alt-def
              slong-integerp-alt-def
              value-ulong->get
-             ulong
+             ulong-from-integer
              value-kind
              valuep))
 
@@ -170,7 +175,7 @@
                            (or (iconst-length-case length :llong)
                                (not (ulong-integerp value))))))
              (equal (exec-const const)
-                    (ullong value)))
+                    (ullong-from-integer value)))
     :enable (exec-const
              exec-iconst
              sint-integerp-alt-def
@@ -179,7 +184,7 @@
              uint-integerp-alt-def
              ulong-integerp-alt-def
              value-ullong->get
-             ullong
+             ullong-from-integer
              value-kind
              valuep))
 
