@@ -1717,25 +1717,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-formal-pointerp ((formal symbolp)
-                             (typed-formals atc-symbol-varinfo-alistp))
+(define atc-formal-affectablep ((formal symbolp)
+                                (typed-formals atc-symbol-varinfo-alistp))
   :returns (yes/no booleanp)
-  :short "Check if a formal parameter is a C pointer value."
+  :short "Check if a formal parameter is a affectable."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By this we mean that the formal parameter
+     either has pointer or array type or refers to an external object.
+     That is, it is the kind of parameter that may be affected in a function,
+     and that therefore must be returned by the function if affected."))
   (b* ((pair (assoc-eq (symbol-fix formal)
                        (atc-symbol-varinfo-alist-fix typed-formals))))
     (and (consp pair)
-         (b* ((type (atc-var-info->type (cdr pair))))
+         (b* ((info (cdr pair))
+              (type (atc-var-info->type info)))
            (or (type-case type :pointer)
-               (type-case type :array)))))
+               (type-case type :array)
+               (atc-var-info->externalp info)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist atc-formal-pointer-listp (x typed-formals)
+(std::deflist atc-formal-affectable-listp (x typed-formals)
   :guard (and (symbol-listp x)
               (atc-symbol-varinfo-alistp typed-formals))
-  :short "Lift @(tsee atc-formal-pointerp) to lists."
-  (atc-formal-pointerp x typed-formals)
+  :short "Lift @(tsee atc-formal-affectablep) to lists."
+  (atc-formal-affectablep x typed-formals)
   :true-listp t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1772,20 +1781,24 @@
       which is the only thing we care about here,
       ignoring all the other results.")
     (xdoc::li
-     "A formal parameter @('var') of @('fn') with pointer or array type.
+     "A formal parameter @('var') of @('fn') that
+      either has pointer or array type or refers to an external object.
       In this case, @('term') affects the list of variables @('(var)').")
     (xdoc::li
      "A term @('ret') that is not a call of @('fn0') as above
-      and is not a formal parameter of @('fn') of pointer or array type.
+      and is not a formal parameter of @('fn') that
+      either has pointer or array type or refers to an external object.
       In this case, @('term') affects no variables.")
     (xdoc::li
      "A term @('(mv var1 ... varn)') where each @('vari') is
-      a formal parameter of the function that has pointer or array type.
+      a formal parameter of the function that
+      either has pointer or array type or refers to an external object.
       In this case, @('term') affects
       the list of variables @('(var1 ... varn)').")
     (xdoc::li
      "A term @('(mv ret var1 ... varn)') where each @('vari') is
-      a formal parameter of the function that has pointer or array type
+      a formal parameter of the function that
+      either has pointer or array type or refers to an external object,
       and @('ret') is not.
       In this case, @('term') affects
       the list of variables @('(var1 ... varn)')."))
@@ -1843,16 +1856,16 @@
        ((when okp) (retok affected))
        ((when (pseudo-term-case term :var))
         (b* ((var (pseudo-term-var->name term)))
-          (if (atc-formal-pointerp var typed-formals)
+          (if (atc-formal-affectablep var typed-formals)
               (retok (list var))
             (retok nil))))
        ((mv okp terms) (fty-check-list-call term))
        ((when okp)
         (cond ((and (symbol-listp terms)
-                    (atc-formal-pointer-listp terms typed-formals))
+                    (atc-formal-affectable-listp terms typed-formals))
                (retok terms))
               ((and (symbol-listp (cdr terms))
-                    (atc-formal-pointer-listp (cdr terms) typed-formals))
+                    (atc-formal-affectable-listp (cdr terms) typed-formals))
                (retok (cdr terms)))
               (t (reterr
                   (msg "When generating code for function ~x0, ~
@@ -2604,13 +2617,15 @@
        (body (ubody+ fn wrld))
        ((erp affect)
         (atc-find-affected fn body typed-formals prec-fns wrld))
-       ((unless (atc-formal-pointer-listp affect typed-formals))
+       ((unless (atc-formal-affectable-listp affect typed-formals))
         (reterr
          (msg "At least one of the formals of ~x0 ~
-               that are affected by its body has a non-pointer non-array type. ~
+               that are affected by its body has a non-pointer non-array type, ~
+               or does not refer to an external object. ~
                This is currently disallowed: ~
-               only pointer variables may be affected ~
-               by a non-recursive target function."
+               only pointer or array variables,
+               or variables that refer to external objects, ~
+               may be affected by a non-recursive target function."
               fn)))
        ((erp (stmt-gout body))
         (atc-gen-stmt body
