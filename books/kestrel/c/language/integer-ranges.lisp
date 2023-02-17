@@ -707,7 +707,7 @@
   :enable (slong-min sint-min int-bits-vs-long-bits))
 
 (defrule sllong-min-<=-slong-min
-  :parents (slong-min slong-min)
+  :parents (sllong-min slong-min)
   :short "General relation between
           @('signed long long') and @('signed long') minima."
   (<= (sllong-min) (slong-min))
