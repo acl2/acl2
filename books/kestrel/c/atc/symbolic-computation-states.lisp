@@ -1086,7 +1086,7 @@
      come before the ones for @('write-static-var-okp')
      (we could reorder things at some point).
      This rule serves to reduce
-     @(tsee write-var-ok) to @('write-static-var-okp')
+     @('write-var-ok') to @('write-static-var-okp')
      when we have a frame with no variables."))
 
   (define write-static-var-okp ((var identp) (val valuep) (compst compustatep))
