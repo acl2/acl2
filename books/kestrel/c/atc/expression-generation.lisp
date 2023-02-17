@@ -254,6 +254,8 @@
                             (arg-thm symbolp)
                             (gin pexpr-ginp)
                             state)
+  :guard (and (type-nonchar-integerp in-type)
+              (type-nonchar-integerp out-type))
   :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression and theorem from an ACL2 term
           that represents a unary expression."
