@@ -165,7 +165,7 @@
                             (type-base-const symbolp)
                             (gin pexpr-ginp)
                             state)
-  :guard (type-integerp type)
+  :guard (type-nonchar-integerp type)
   :returns (gout pexpr-goutp)
   :short "Generate a C expression and theorem from an ACL2 term
           that represents an integer constant expression."
