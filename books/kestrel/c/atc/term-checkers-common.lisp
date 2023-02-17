@@ -277,9 +277,14 @@
           (t (mv (impossible) (impossible))))))
     (retok t const type term.fn))
   ///
+
   (defret type-integerp-of-atc-check-iconst.type
     (implies yes/no
-             (type-integerp type))))
+             (type-integerp type)))
+
+  (defret type-nonchar-integerp-of-atc-check-iconst.type
+    (implies yes/no
+             (type-nonchar-integerp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
