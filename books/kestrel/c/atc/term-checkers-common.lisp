@@ -317,10 +317,10 @@
        ((unless (list-lenp 1 term.args)) (no))
        (arg (first term.args)))
     (case op
-      (plus (mv t op arg in-type (promote-type in-type) (unop-plus)))
-      (minus (mv t op arg in-type (promote-type in-type) (unop-minus)))
-      (bitnot (mv t op arg in-type (promote-type in-type) (unop-bitnot)))
-      (lognot (mv t op arg in-type (type-sint) (unop-lognot)))
+      (plus (mv t term.fn arg in-type (promote-type in-type) (unop-plus)))
+      (minus (mv t term.fn arg in-type (promote-type in-type) (unop-minus)))
+      (bitnot (mv t term.fn arg in-type (promote-type in-type) (unop-bitnot)))
+      (lognot (mv t term.fn arg in-type (type-sint) (unop-lognot)))
       (t (no))))
   ///
 
