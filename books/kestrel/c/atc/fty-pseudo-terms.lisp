@@ -31,6 +31,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -246,7 +247,8 @@
     :rule-classes :linear
     :enable (check-lambda-call
              pseudo-term-kind
-             pseudo-term-lambda->body)
+             pseudo-term-lambda->body
+             default-cdr)
     :expand (pseudo-term-count term))
 
   (defret pseudo-term-count-of-fty-check-lambda-call.body
@@ -510,7 +512,8 @@
        :rule-classes :linear
        :expand (pseudo-term-count term)
        :enable (pseudo-term-call->args
-                pseudo-term-kind))))
+                pseudo-term-kind
+                default-cdr))))
 
   (defret pseudo-term-count-of-fty-check-mv-let-call.mv-term
     (implies yes/no
