@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in-function position-equal-ac
 ;
-; Copyright (C) 2015-2022 Kestrel Institute
+; Copyright (C) 2015-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,3 +51,26 @@
            (equal (position-equal-ac item lst acc)
                   nil))
   :hints (("Goal" :in-theory (enable position-equal-ac))))
+
+(defthm position-equal-ac-of-car-same
+  (equal (position-equal-ac (car lst) lst acc)
+         (if (consp lst) (fix acc) nil))
+  :hints (("Goal" :in-theory (enable position-equal-ac))))
+
+(local
+ (defthm nth-of-position-equal-ac-same-helper
+   (implies (member-equal item lst)
+            (equal (nth (- (position-equal-ac item lst acc)
+                           acc)
+                        lst)
+                   item))
+   :hints (("Goal" :in-theory (enable position-equal-ac)))))
+
+(defthm nth-of-position-equal-ac-of-0-same
+  (equal (nth (position-equal-ac item lst 0) lst)
+         (if (member-equal item lst)
+             item
+           (car lst) ; unusual case
+           ))
+  :hints (("Goal" :use (:instance nth-of-position-equal-ac-same-helper (acc 0))
+           :in-theory (disable nth-of-position-equal-ac-same-helper))))

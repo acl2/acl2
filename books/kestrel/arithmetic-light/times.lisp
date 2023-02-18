@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation *.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -557,3 +557,12 @@
                                   (x1 1)
                                   (x2 (- j)))
            :in-theory (disable acl2::<-of-*-and-*-cancel-gen))))
+
+(defthm equal-of-*-cancel-arg1+
+  (equal (equal (* x y) x)
+         (and (acl2-numberp x)
+              (if (equal 0 x)
+                  t
+                (equal y 1))))
+  :hints (("Goal" :use (:instance equal-of-*-and-*-cancel (z 1))
+           :in-theory (disable equal-of-*-and-*-cancel))))
