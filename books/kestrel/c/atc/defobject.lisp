@@ -27,6 +27,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -236,12 +237,12 @@
     "In essence, this generates C code for
      a term used in the initializer of the external object."))
   (b* (((reterr) (irr-expr) (irr-type))
-       ((mv erp okp const out-type &) (atc-check-iconst term))
+       ((mv erp okp & out-type const) (atc-check-iconst term))
        ((when erp) (reterr (msg "~@0" erp)))
        ((when okp)
         (retok (expr-const (const-int const))
                out-type))
-       ((mv okp op arg in-type out-type) (atc-check-unop term))
+       ((mv okp & arg in-type out-type op) (atc-check-unop term))
        ((when okp)
         (b* (((erp arg-expr type) (defobject-term-to-expr arg))
              ((unless (equal type in-type))

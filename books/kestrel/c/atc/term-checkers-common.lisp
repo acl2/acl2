@@ -30,6 +30,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -176,23 +177,23 @@
 (define atc-check-iconst ((term pseudo-termp))
   :returns (mv erp
                (yes/no booleanp)
-               (const iconstp)
+               (fn symbolp)
                (type typep)
-               (type-base-const symbolp))
+               (const iconstp))
   :short "Check if a term represents an integer constant."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of a function @('<type>-<base>-const')
      on a quoted integer constant,
-     we return the C integer constant represented by this call.
-     We also return the C integer type of the constant.
-     We also return the @('<type>-<base>-const') function symbol.")
+     we return the ACL2 function symbol,
+     the C type of the term,
+     and the C integer constant represented by the call.")
    (xdoc::p
     "In certain circumstances, we return an error in @('erp'),
      namely when the term cannot represent any other C construct."))
-  (b* (((reterr) nil (irr-iconst) (irr-type) nil)
-       ((acl2::fun (no)) (retok nil (irr-iconst) (irr-type) nil))
+  (b* (((reterr) nil nil (irr-type) (irr-iconst))
+       ((acl2::fun (no)) (retok nil nil (irr-type) (irr-iconst)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp type base const) (atc-check-symbol-3part term.fn))
@@ -275,33 +276,39 @@
                                    :length (iconst-length-llong))
                       (type-ullong)))
           (t (mv (impossible) (impossible))))))
-    (retok t const type term.fn))
+    (retok t term.fn type const))
   ///
-  (defret type-integerp-of-atc-check-iconst.type
+
+  (defret type-integerp-of-atc-check-iconst-type
     (implies yes/no
-             (type-integerp type))))
+             (type-integerp type)))
+
+  (defret type-nonchar-integerp-of-atc-check-iconst-type
+    (implies yes/no
+             (type-nonchar-integerp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-unop ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
-               (op unopp)
+               (fn symbolp)
                (arg pseudo-termp)
                (in-type typep)
-               (out-type typep))
+               (out-type typep)
+               (op unopp))
   :short "Check if a term may represent a unary expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represent C unary operators,
-     we return the operator and the argument term.")
-   (xdoc::p
-    "We also return the input and output C types of the operator.")
+     we return the function, the argument term
+     the input and output types,
+     and the C operator.")
    (xdoc::p
     "If the term does not have that form, we return an indication of failure.
      The term may represent some other kind of C expression."))
-  (b* (((acl2::fun (no)) (mv nil (irr-unop) nil (irr-type) (irr-type)))
+  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type) (irr-unop)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp op fixtype) (atc-check-symbol-2part term.fn))
@@ -311,10 +318,10 @@
        ((unless (list-lenp 1 term.args)) (no))
        (arg (first term.args)))
     (case op
-      (plus (mv t (unop-plus) arg in-type (promote-type in-type)))
-      (minus (mv t (unop-minus) arg in-type (promote-type in-type)))
-      (bitnot (mv t (unop-bitnot) arg in-type (promote-type in-type)))
-      (lognot (mv t (unop-lognot) arg in-type (type-sint)))
+      (plus (mv t term.fn arg in-type (promote-type in-type) (unop-plus)))
+      (minus (mv t term.fn arg in-type (promote-type in-type) (unop-minus)))
+      (bitnot (mv t term.fn arg in-type (promote-type in-type) (unop-bitnot)))
+      (lognot (mv t term.fn arg in-type (type-sint) (unop-lognot)))
       (t (no))))
   ///
 
@@ -322,7 +329,15 @@
     (implies yes/no
              (< (pseudo-term-count arg)
                 (pseudo-term-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-unop-in-type
+    (implies yes/no
+             (type-nonchar-integerp in-type)))
+
+  (defret type-nonchar-integerp-of-atc-check-unop-out-type
+    (implies yes/no
+             (type-nonchar-integerp out-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
