@@ -43,3 +43,32 @@
       a-temp))
    a
    b))
+
+;; Pathological example where temp name is already a lambda formal.
+(assert-equal
+ ;; swaps a and b:
+ (serialize-lambda-application '((lambda (a b a-temp) (< a b)) b a 'unused) nil)
+ ;; Uses the name a-temp1 instead of a-temp, to avoid the name of the existing formal:
+ '((lambda (a-temp1 b)
+     ((lambda (a a-temp1)
+        ((lambda (b a) (< a b)) a-temp1 a))
+      b a-temp1))
+   a b))
+
+;; More convenient interface for testing
+;move?  also of general use?
+(include-book "kestrel/utilities/translate" :dir :system)
+(defun serialize-lets-in-term (term wrld)
+  (declare (xargs :mode :program))
+  (untranslate (serialize-lambdas-in-term (translate-term term 'serialize-lets-in-term wrld) nil)
+               nil
+               wrld))
+
+(assert-equal (serialize-lets-in-term '(let ((a b) (b a)) (< a b)) (w state))
+              '(let* ((a-temp a) (a b) (b a-temp))
+                 (< a b)))
+
+;; Tricky case where a-temp is a free var used to define b, so a-temp should not be used as the temp name
+(assert-equal (serialize-lets-in-term '(let ((a b) (b (cons a a-temp))) (< a b)) (w state))
+              '(let* ((a-temp1 a) (a b) (b (cons a-temp1 a-temp)))
+                 (< a b)))
