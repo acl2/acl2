@@ -11,8 +11,6 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/bstar" :dir :system) ; todo: drop
-
 ;; Finds the members of FORMALS that don't correspond to themselves in the ARGS.
 ;; Returns (mv non-trivial-formals non-trivial-args).
 (defund non-trivial-formals-and-args (formals args)
@@ -21,15 +19,15 @@
                               )))
   (if (endp formals)
       (mv nil nil)
-    (b* ((formal (first formals))
-         (arg (first args))
-         ((mv cdr-formals cdr-args)
-          (non-trivial-formals-and-args (rest formals) (rest args))))
-      (if (equal formal arg)
-          ;; skip since trivial:
-          (mv cdr-formals cdr-args)
-        (mv (cons formal cdr-formals)
-            (cons arg cdr-args))))))
+    (let ((formal (first formals))
+          (arg (first args)))
+      (mv-let (rest-formals rest-args)
+        (non-trivial-formals-and-args (rest formals) (rest args))
+        (if (equal formal arg)
+            ;; skip since trivial:
+            (mv rest-formals rest-args)
+          (mv (cons formal rest-formals)
+              (cons arg rest-args)))))))
 
 (defthm symbol-listp-of-mv-nth-0-of-non-trivial-formals-and-args
   (implies (symbol-listp formals)
