@@ -14622,6 +14622,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (dmrp . nil)
     (evisc-hitp-without-iprint . nil)
     (eviscerate-hide-terms . nil)
+    (fast-cert-status . nil)
     (fmt-hard-right-margin . ,*fmt-hard-right-margin-default*)
     (fmt-soft-right-margin . ,*fmt-soft-right-margin-default*)
     (gag-mode . nil) ; set in lp
@@ -14649,6 +14650,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                      ; to nil.
     (inhibit-output-lst-stack . nil)
     (inhibited-summary-types . nil)
+    (inside-progn-fn1 . nil)
     (inside-skip-proofs . nil)
     (iprint-ar . ,(init-iprint-ar *iprint-hard-bound-default* nil))
     (iprint-fal . nil)
@@ -14725,7 +14727,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (skip-proofs-by-system . nil)
     (skip-proofs-okp-cert . t) ; t when not inside certify-book
     (skip-reset-prehistory . nil) ; non-nil skips (reset-prehistory nil)
-    (slow-apply$-action . t)
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
     (splitter-output . t)
     (standard-co . acl2-output-channel::standard-character-output-0)
@@ -21818,6 +21819,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     verify-termination-on-raw-program-okp
     prompt-memo
     system-attachments-cache
+    fast-cert-status
+    inside-progn-fn1
     ))
 
 ; There is a variety of state global variables, 'ld-skip-proofsp among them,
@@ -21996,7 +21999,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     (or (null entry)
                         (package-entry-hidden-p entry))
                     (cons
-                     "The symbol CLTL displays as ~s0 is not in any of the ~
+                     "The symbol displayed as ~s0 is not in any of the ~
                       packages known to ACL2.~@1"
                      (list
                       (cons #\0 (format nil "~s" x))
@@ -22005,14 +22008,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                              ((or (null entry)
                                   (null (package-entry-book-path entry)))
                               "")
+                             ((null (cdr (package-entry-book-path entry)))
+                              (msg "  This package was apparently defined ~
+                                    locally by the portcullis of the ~
+                                    book ~s0."
+                                   (book-name-to-filename-1
+                                    (car (package-entry-book-path entry))
+                                    (project-dir-alist (w *the-live-state*))
+                                    'bad-lisp-atomp)))
                              (t
-                              (msg "  This package was defined under a ~
-                                    locally included book.  Thus, some ~
-                                    include-book was local in the following ~
-                                    sequence of included books, from top-most ~
-                                    book down to the book whose portcullis ~
-                                    defines this package (with a defpkg ~
-                                    event).~|~%  ~F0"
+                              (msg "  This package was apparently defined ~
+                                    locally by the portcullis of the last in ~
+                                    the following sequence of included books, ~
+                                    where each book includes the next.~|~%  ~
+                                    ~F0"
                                    (reverse
                                     (book-name-lst-to-filename-lst
                                      (package-entry-book-path entry)

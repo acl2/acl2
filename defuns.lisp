@@ -51,11 +51,11 @@
 ; One of the fields in a .cert file is a :CERT-DATA field, which is an alist
 ; mapping keys to fast-alists.  As of this writing there are two keys:
 ; :TYPE-PRESCRIPTION and :TRANSLATE.  Each of the two fast-alists (for the two
-; keys) is called a "cert-data entry".  See for example fast-cert-data, which
+; keys) is called a "cert-data entry".  See for example cert-data-fal, which
 ; takes a :cert-data field value from a certificate and creates an alist
 ; mapping each of the two keys to a cert-data entry (which is a fast-alist).
-; (Fast-cert-data is normally the identity function, but if the .cert file is
-; written without the serialize writer then fast-cert-data serves to create a
+; (cert-data-fal is normally the identity function, but if the .cert file is
+; written without the serialize writer then cert-data-fal serves to create a
 ; fast-alist to associate with each of those keys.)
 
 ; Each of the two entries is a fast-alist whose keys are symbols.  In the case
@@ -364,7 +364,7 @@
 ; 2020, is only for translation of defun(s) and defthm bodies.
 
 ; (6) Because of our calls of make-fast-alist in the definition of the function
-; fast-cert-data, it is unnecessary to store cert-data entries as fast-alists
+; cert-data-fal, it is unnecessary to store cert-data entries as fast-alists
 ; in the .cert file.  But profiling has suggested that it is harmless to do so.
 ; The type-prescription cert-data is already a fast-alists anyhow; we'd have to
 ; free it if we want to avoid storing it as a fast-alist.
@@ -419,22 +419,6 @@
          (not (f-get-global 'in-local-flg state))
          (int= (f-get-global 'make-event-debug-depth state) 0)
          (cdr (assoc-eq key cert-data)))))
-
-(defun in-encapsulatep (embedded-event-lst non-trivp)
-
-; This function determines if we are in the scope of an encapsulate.
-; If non-trivp is t, we restrict the interpretation to mean ``in the
-; scope of a non-trivial encapsulate'', i.e., in an encapsulate that
-; introduces a constrained function symbol.
-
-  (cond
-   ((endp embedded-event-lst) nil)
-   ((and (eq (car (car embedded-event-lst)) 'encapsulate)
-         (if non-trivp
-             (cadr (car embedded-event-lst))
-           t))
-    t)
-   (t (in-encapsulatep (cdr embedded-event-lst) non-trivp))))
 
 (mutual-recursion
 
@@ -6566,21 +6550,6 @@
                 not a recognized defun-mode."
                defun-mode))))
 
-(defun scan-to-cltl-command (wrld)
-
-; Scan to the next binding of 'cltl-command or to the end of this event block.
-; Return either nil or the global-value of cltl-command for this event.
-
-  (declare (xargs :guard (plist-worldp wrld)))
-  (cond ((endp wrld) nil)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value))
-         nil)
-        ((and (eq (caar wrld) 'cltl-command)
-              (eq (cadar wrld) 'global-value))
-         (cddar wrld))
-        (t (scan-to-cltl-command (cdr wrld)))))
-
 (defun dcl-fields1 (lst)
   (declare (xargs :guard (plausible-dclsp1 lst)))
   (cond ((endp lst) nil)
@@ -7159,9 +7128,7 @@
                                         (butlast (cddr def) 1)))
                   (cond
                    ((let* ((event-tuple (cddr (car wrld1)))
-                           (event (if (symbolp (cadr event-tuple))
-                                      (cdr event-tuple) ; see make-event-tuple
-                                    (cddr event-tuple))))
+                           (event (access-event-tuple-form event-tuple)))
                       (non-identical-defp
                        def
                        (case (car event)
@@ -8430,7 +8397,7 @@
                        (t `(include-book ,(remove-lisp-suffix book-name
                                                               t))))))))))))
 
-(defun chk-acceptable-defuns-redundancy (names ctx wrld state)
+(defun chk-acceptable-defuns-redundancy (names defun-mode ctx wrld state)
 
 ; The following comment is referenced in :doc redundant-events and in a comment
 ; in defmacro-fn.  If it is removed or altered, consider modifying that
@@ -8522,7 +8489,7 @@
          (er soft ctx
              "~@0"
              (redundant-predefined-error-msg (car names) wrld)))
-        (t (value 'redundant))))
+        (t (value (cons 'redundant defun-mode)))))
 
 (defun chk-acceptable-defuns-verify-guards-er (names ctx wrld state)
 
@@ -10940,7 +10907,7 @@
                  (default-state-vars t))))
        (cond
         ((eq rc 'redundant)
-         (chk-acceptable-defuns-redundancy names ctx wrld state))
+         (chk-acceptable-defuns-redundancy names defun-mode ctx wrld state))
         ((eq rc 'verify-guards)
 
 ; We avoid needless complication by simply causing a polite error in this
@@ -11629,7 +11596,7 @@
                                 'non-executable-programp
                               (cdr kwd-value-list-lst)))))))
 
-(defun intro-udf-lst (insigs kwd-value-list-lst wrld)
+(defun intro-udf-lst (insigs kwd-value-list-lst in-local-flg wrld state)
 
 ; Insigs is a list of internal form signatures.  We know all the function
 ; symbols are new in wrld.  We declare each of them to have the given formals,
@@ -11644,8 +11611,10 @@
                          ,@(intro-udf-lst2 insigs
                                            (and (not (eq kwd-value-list-lst t))
                                                 kwd-value-list-lst)))
+                      in-local-flg
                       (intro-udf-lst1 insigs wrld)
-                      wrld)))
+                      wrld
+                      state)))
 
 (defun defun-ctx (def-lst state event-form #+:non-standard-analysis std-p)
   #-acl2-infix (declare (ignore event-form state))
@@ -11804,8 +11773,11 @@
 ; All other properties are put by the defuns-fn0 call below.
 
        (cond
-        ((eq tuple 'redundant)
-         (stop-redundant-event ctx state))
+        ((eq (car tuple) 'redundant)
+         (stop-redundant-event ctx state
+                               :name (caar def-lst0)
+                               :defun-mode (cdr tuple)
+                               :def-lst def-lst0))
         (t
          (enforce-redundancy
           event-form ctx wrld

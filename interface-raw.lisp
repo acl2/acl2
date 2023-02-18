@@ -5795,9 +5795,11 @@
 ; eliminated comments; see add-trip for those.
 
 ; Cltl-cmds is a list of cltl-command values, each the cddr of some triple in
-; the world.  We are certifying a book, and we want to populate the
-; *hcomp-xxx-ht* hash-tables much as we do when processing events in the book.
-; We also start populating *declaim-list*.
+; the world.  We are certifying a book, and we have performed any rolling back
+; of the world that will be done and installed the resulting world.  Here we
+; populate the *hcomp-xxx-ht* hash-tables and *declaim-list* based on that
+; world, much as we do when processing events in the book after the rollback
+; (if there is a rollback).
 
   (let ((*inside-include-book-fn* 'hcomp-build))
     (dolist (cltl-cmd cltl-cmds)
@@ -9437,6 +9439,11 @@
                                      (not (equal s ""))
                                      (not (equal (string-upcase s)
                                                  "NIL")))))
+              (set-fast-cert-p
+               (and (null (f-get-global 'fast-cert-status state))
+                    (let ((x (getenv$-raw "ACL2_FAST_CERT")))
+                      (and x
+                           (not (equal x ""))))))
               (book-hash-alistp-env
 
 ; A non-nil value of this variable indicates that we are to use the "book-hash"
@@ -9470,6 +9477,8 @@
               (system-dir0 (getenv$-raw "ACL2_SYSTEM_BOOKS")))
          (when save-expansion
            (f-put-global 'save-expansion-file t *the-live-state*))
+         (when set-fast-cert-p
+           (set-fast-cert t state))
          (when book-hash-alistp-env
            (f-put-global 'book-hash-alistp t *the-live-state*))
          (when user-home-dir
