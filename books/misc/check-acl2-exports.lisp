@@ -211,10 +211,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    EXPLAIN-GIANT-LAMBDA-OBJECT
-    WITH-CBD
-    SET-FAST-CERT
-
   ))
 
 (defconst *special-ops*
