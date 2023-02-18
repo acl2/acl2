@@ -293,7 +293,6 @@
                           :thm-index gin.thm-index
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
-       (op-name (pack (unop-kind op)))
        (fn-okp (and (unop-case op :minus)
                     (not (member-eq (type-kind in-type)
                                     '(:uint :ulong :ullong)))
@@ -338,6 +337,7 @@
        (hints
         (b* ((in-type-pred (type-to-recognizer in-type wrld))
              (valuep-when-in-type-pred (pack 'valuep-when- in-type-pred))
+             (op-name (pack (unop-kind op)))
              (exec-unary-when-op-and-in-type-pred
               (pack op-name '-value-when- in-type-pred))
              (type-pred (type-to-recognizer out-type wrld))
