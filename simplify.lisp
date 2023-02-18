@@ -3609,7 +3609,7 @@
         ((fquotep term) (mv fc vc))
         ((flambda-applicationp term)
          (mv-let (fc vc)
-                 (sort-fcds1-rating1 (lambda-body term) wrld fc vc)
+                 (sort-fcds1-rating1 (lambda-body (ffn-symb term)) wrld fc vc)
                  (sort-fcds1-rating1-lst (fargs term) wrld (1+ fc) vc)))
         ((or (eq (ffn-symb term) 'not)
              (= (getpropc (ffn-symb term) 'absolute-event-number 0 wrld)
