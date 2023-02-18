@@ -15,6 +15,10 @@
 (include-book "computation-states")
 (include-book "function-environments")
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ dynamic-semantics
@@ -617,6 +621,7 @@
                  (exec-expr-pure e.then compst)
                (exec-expr-pure e.else compst)))))
   :measure (expr-count e)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix)
   :verify-guards nil ; done below
   ///
@@ -703,6 +708,11 @@
       (omap::update name (remove-flexible-array-member actual) scope)))
   :hooks (:fix)
   :measure (len formals)
+  :hints (("Goal" :in-theory (enable o<
+                                     o-finp
+                                     endp
+                                     cdr-of-param-declon-list-fix
+                                     len)))
   :verify-guards nil ; done below
   ///
   (verify-guards init-scope))
@@ -1409,7 +1419,12 @@
               (in-theory
                (enable
                 value-optionp-when-value-option-resultp-and-not-errorp
-                compustatep-when-compustate-resultp-and-not-errorp))))
+                compustatep-when-compustate-resultp-and-not-errorp
+                fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :hints (("Goal" :in-theory (enable o< o-finp nfix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1466,15 +1481,17 @@
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item-list)
-    :hints (("Goal" :expand ((exec-expr-call fun args compst fenv limit)
-                             (exec-expr-call-or-pure e compst fenv limit)
-                             (exec-expr-asg e compst fenv limit)
-                             (exec-expr-call-or-asg e compst fenv limit)
-                             (exec-fun fun args compst fenv limit)
-                             (exec-stmt s compst fenv limit)
-                             (exec-initer initer compst fenv limit)
-                             (exec-block-item item compst fenv limit)
-                             (exec-block-item-list items compst fenv limit)))))
+    :hints (("Goal"
+             :in-theory (enable len)
+             :expand ((exec-expr-call fun args compst fenv limit)
+                      (exec-expr-call-or-pure e compst fenv limit)
+                      (exec-expr-asg e compst fenv limit)
+                      (exec-expr-call-or-asg e compst fenv limit)
+                      (exec-fun fun args compst fenv limit)
+                      (exec-stmt s compst fenv limit)
+                      (exec-initer initer compst fenv limit)
+                      (exec-block-item item compst fenv limit)
+                      (exec-block-item-list items compst fenv limit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1530,21 +1547,24 @@
       :hyp (and (> (compustate-frames-number compst) 0)
                 (> (compustate-top-frame-scopes-number compst) 0))
       :fn exec-block-item-list)
-    :hints (("Goal" :expand ((exec-expr-call fun args compst fenv limit)
-                             (exec-expr-call-or-pure e compst fenv limit)
-                             (exec-expr-asg e compst fenv limit)
-                             (exec-expr-call-or-asg e compst fenv limit)
-                             (exec-fun fun args compst fenv limit)
-                             (exec-stmt s compst fenv limit)
-                             (exec-stmt-while test body compst fenv limit)
-                             (exec-initer initer compst fenv limit)
-                             (exec-block-item item compst fenv limit)
-                             (exec-block-item-list items compst fenv limit)))))
+    :hints (("Goal"
+             :in-theory (enable len)
+             :expand ((exec-expr-call fun args compst fenv limit)
+                      (exec-expr-call-or-pure e compst fenv limit)
+                      (exec-expr-asg e compst fenv limit)
+                      (exec-expr-call-or-asg e compst fenv limit)
+                      (exec-fun fun args compst fenv limit)
+                      (exec-stmt s compst fenv limit)
+                      (exec-stmt-while test body compst fenv limit)
+                      (exec-initer initer compst fenv limit)
+                      (exec-block-item item compst fenv limit)
+                      (exec-block-item-list items compst fenv limit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards exec-stmt)
+  (verify-guards exec-stmt :hints (("Goal" :in-theory (enable len))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deffixequiv-mutual exec))
+  (fty::deffixequiv-mutual exec
+    :hints (("Goal" :in-theory (enable nfix)))))

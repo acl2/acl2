@@ -29,6 +29,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -707,7 +708,7 @@
   :enable (slong-min sint-min int-bits-vs-long-bits))
 
 (defrule sllong-min-<=-slong-min
-  :parents (slong-min slong-min)
+  :parents (sllong-min slong-min)
   :short "General relation between
           @('signed long long') and @('signed long') minima."
   (<= (sllong-min) (slong-min))

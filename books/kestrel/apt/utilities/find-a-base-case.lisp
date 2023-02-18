@@ -9,16 +9,16 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/magic-macroexpand" :dir :system)
 (include-book "kestrel/utilities/fake-worlds" :dir :system)
-(include-book "xdoc/constructors" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Export fargn macros to APT package
 (defmacro farg1 (x) (list 'acl2::farg1 x))
 (defmacro farg2 (x) (list 'acl2::farg2 x))
 (defmacro farg3 (x) (list 'acl2::farg3 x))
-
 
 (local
  (defthm pseudo-termp-of-if-condition
@@ -37,6 +37,14 @@
    (implies (and (pseudo-termp term)
                  (eq 'if (ffn-symb term)))
             (pseudo-termp (farg3 term)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ find-base-cases
+  :parents (utilities)
+  :short "Utilities to find base cases of recursive function definitions."
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

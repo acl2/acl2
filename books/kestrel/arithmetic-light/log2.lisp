@@ -1,7 +1,7 @@
-; Base-2 integer logarithm (works on all positive rationals)
+; (Floor of) base-2 logarithm (works on all positive rationals)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,7 @@
 
 ;; Returns the floor of the base 2 logarithm of the positive rational x.  Not meaningful for 0.
 ;; TODO: Rename log2 to floor-of-log2 ?
+;; TODO: Generalize the base?
 (defund log2 (x)
   (declare (xargs :guard (and (rationalp x)
                               (< 0 x))
@@ -44,36 +45,6 @@
         ;; x is in [1,2), so it's log2 is 0:
         0))))
 
-
-
-(defthm log2-of-*-of-2
-  (implies (and (< 0 x)
-                (rationalp x))
-           (equal (log2 (* 2 x))
-                  (+ 1 (log2 x))))
-  :hints (("Goal" :in-theory (enable log2))))
-
-(defthm log2-of-*-of-1/2
-  (implies (and (< 0 x)
-                (rationalp x))
-           (equal (log2 (* 1/2 x))
-                  (+ -1 (log2 x))))
-  :hints (("Goal" :in-theory (enable log2))))
-
-(defthm log2-of-expt
-  (implies (integerp i)
-           (equal (log2 (expt 2 i))
-                  i))
-  :hints (("Goal" :in-theory (enable log2 (:I expt) expt-of-+))))
-
-(defthmd log2-of-both-sides
-  (implies (equal x y)
-           (equal (log2 x) (log2 y))))
-
-
-
-;todo: log2 of mask?
-
 (defthm natp-of-log2-type
   (implies (and (<= 1 x)
                 (rationalp x))
@@ -88,25 +59,51 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable log2))))
 
-(defun log2-double-induct (x y)
-  (declare (xargs :measure (if (and (rationalp x)
-                                    (< 0 x))
-                               (if (<= 2 x)
-                                   (floor x 1)
-                                 (if (< x 1)
-                                     (floor (/ x) 1)
-                                   0))
-                             0)))
-  (if (not (mbt (and (rationalp x)
-                     (< 0 x))))
-      (list x y)
-    (if (<= 2 x)
-        (+ 1 (log2-double-induct (/ x 2) (/ y 2)))
-      (if (< x 1)
-          (+ -1 (log2-double-induct (* x 2) (* 2 y)))
-        ;; x is in [1,2), so it's log2 is 0:
-        0))))
+;; Could loop with the definition?
+(defthm log2-of-*-of-2
+  (implies (and (< 0 x)
+                (rationalp x))
+           (equal (log2 (* 2 x))
+                  (+ 1 (log2 x))))
+  :hints (("Goal" :in-theory (enable log2))))
 
+;; Could loop with the definition?
+(defthm log2-of-*-of-1/2
+  (implies (and (< 0 x)
+                (rationalp x))
+           (equal (log2 (* 1/2 x))
+                  (+ -1 (log2 x))))
+  :hints (("Goal" :in-theory (enable log2))))
+
+(defthm log2-of-expt
+  (implies (integerp i)
+           (equal (log2 (expt 2 i))
+                  i))
+  :hints (("Goal" :in-theory (enable log2 (:i expt) expt-of-+))))
+
+(defthmd log2-of-both-sides
+  (implies (equal x y)
+           (equal (log2 x) (log2 y))))
+
+(local
+ (defun log2-double-induct (x y)
+   (declare (xargs :measure (if (and (rationalp x)
+                                     (< 0 x))
+                                (if (<= 2 x)
+                                    (floor x 1)
+                                  (if (< x 1)
+                                      (floor (/ x) 1)
+                                    0))
+                              0)))
+   (if (not (mbt (and (rationalp x)
+                      (< 0 x))))
+       (list x y)
+     (if (<= 2 x)
+         (+ 1 (log2-double-induct (/ x 2) (/ y 2)))
+       (if (< x 1)
+           (+ -1 (log2-double-induct (* x 2) (* 2 y)))
+         ;; x is in [1,2), so it's log2 is 0:
+         0)))))
 
 ;; TODO: Without these, some things below are very slow
 (local (in-theory (disable <-of-*-and-*-same-linear-3
@@ -258,3 +255,5 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
   :hints (("Goal" :cases ((equal x 0))
            :in-theory (enable log2))))
+
+;todo: log2 of mask?

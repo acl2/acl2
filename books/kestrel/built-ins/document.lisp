@@ -1,6 +1,6 @@
 ; Built-Ins Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -52,139 +52,139 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc built-defaxioms/defthms-without-rule-classes
+(defxdoc builtin-defaxioms/defthms-without-rule-classes
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems without rule classes."
   :long (builtin-names-to-xdoc-defs
          *builtin-noclass-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-rewrite
+(defxdoc builtin-defaxioms/defthms-of-class-rewrite
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':rewrite') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-rewrite-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-rewrite-quoted-constant
+(defxdoc builtin-defaxioms/defthms-of-class-rewrite-quoted-constant
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':rewrite-quoted-constant') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-rewrite-quoted-constant-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-built-in-clause
+(defxdoc builtin-defaxioms/defthms-of-class-built-in-clause
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':built-in-clause') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-built-in-clause-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-clause-processor
+(defxdoc builtin-defaxioms/defthms-of-class-clause-processor
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':clause-processor') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-clause-processor-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-compound-recognizer
+(defxdoc builtin-defaxioms/defthms-of-class-compound-recognizer
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':compound-recognizer') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-compound-recognizer-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-congruence
+(defxdoc builtin-defaxioms/defthms-of-class-congruence
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':congruence') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-congruence-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-definition
+(defxdoc builtin-defaxioms/defthms-of-class-definition
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':definition') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-definition-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-elim
+(defxdoc builtin-defaxioms/defthms-of-class-elim
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':elim') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-elim-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-equivalence
+(defxdoc builtin-defaxioms/defthms-of-class-equivalence
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':equivalence') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-equivalence-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-forward-chaining
+(defxdoc builtin-defaxioms/defthms-of-class-forward-chaining
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':forward-chaining') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-forward-chaining-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-generalize
+(defxdoc builtin-defaxioms/defthms-of-class-generalize
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':generalize') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-generalize-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-induction
+(defxdoc builtin-defaxioms/defthms-of-class-induction
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':induction') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-induction-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-linear
+(defxdoc builtin-defaxioms/defthms-of-class-linear
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':linear') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-linear-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-meta
+(defxdoc builtin-defaxioms/defthms-of-class-meta
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':meta') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-meta-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-refinement
+(defxdoc builtin-defaxioms/defthms-of-class-refinement
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':refinement') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-refinement-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-tau-system
+(defxdoc builtin-defaxioms/defthms-of-class-tau-system
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':tau-system') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-tau-system-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-type-prescription
+(defxdoc builtin-defaxioms/defthms-of-class-type-prescription
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':type-prescription') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-type-prescription-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-type-set-inverter
+(defxdoc builtin-defaxioms/defthms-of-class-type-set-inverter
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':type-set-inverter') rule class."
   :long (builtin-names-to-xdoc-defs
          *builtin-type-set-inverter-defaxiom/defthm-names*))
 
-(defxdoc built-defaxioms/defthms-of-class-well-founded-relation
+(defxdoc builtin-defaxioms/defthms-of-class-well-founded-relation
   :parents (builtin-defaxioms/defthms-by-rule-classes)
   :short "Built-in axioms and theorems
           of the @(':well-founded-relation') rule class."
