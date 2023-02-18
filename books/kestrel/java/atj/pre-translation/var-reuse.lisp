@@ -224,7 +224,7 @@
      Thus, in this case we return the union of the variables
      recursively computed for the argument terms.")
    (xdoc::p
-    "A call of a lamda expression is translated to
+    "A call of a lambda expression is translated to
      a Java block that assigns expressions to local variables
      that correspond to the formal parameters of the lambda expression,
      and to a Java expression obtained by translating
