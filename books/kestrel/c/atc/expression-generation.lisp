@@ -244,14 +244,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-unary ((fn symbolp)
-                            (op unopp)
-                            (in-type typep)
-                            (out-type typep)
                             (arg-term pseudo-termp)
                             (arg-expr exprp)
                             (arg-type typep)
                             (arg-events pseudo-event-form-listp)
                             (arg-thm symbolp)
+                            (in-type typep)
+                            (out-type typep)
+                            (op unopp)
                             (gin pexpr-ginp)
                             state)
   :guard (and (type-nonchar-integerp in-type)
@@ -336,10 +336,10 @@
                   names-to-avoid))
           (mv nil nil gin.thm-index gin.names-to-avoid)))
        (hints
-        (b* ((arg-type-pred (type-to-recognizer arg-type wrld))
-             (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
-             (exec-unary-when-op-and-arg-type-pred
-              (pack op-name '-value-when- arg-type-pred))
+        (b* ((in-type-pred (type-to-recognizer in-type wrld))
+             (valuep-when-in-type-pred (pack 'valuep-when- in-type-pred))
+             (exec-unary-when-op-and-in-type-pred
+              (pack op-name '-value-when- in-type-pred))
              (type-pred (type-to-recognizer out-type wrld))
              (type-pred-of-fn (pack type-pred '-of- fn)))
           `(("Goal" :in-theory '(exec-expr-pure-when-unary
@@ -347,8 +347,8 @@
                                  (:e expr-unary->op)
                                  (:e expr-unary->arg)
                                  ,arg-thm
-                                 ,valuep-when-arg-type-pred
-                                 ,exec-unary-when-op-and-arg-type-pred
+                                 ,valuep-when-in-type-pred
+                                 ,exec-unary-when-op-and-in-type-pred
                                  (:e ,(pack 'unop- op-name))
                                  ,type-pred-of-fn
                                  ,@(and fn-okp
@@ -1383,9 +1383,10 @@
                                       :thm-index arg.thm-index
                                       :names-to-avoid arg.names-to-avoid
                                       :proofs arg.proofs)))
-            (atc-gen-expr-unary fn op in-type out-type
-                                arg.term arg.expr arg.type
+            (atc-gen-expr-unary fn arg.term
+                                arg.expr arg.type
                                 arg.events arg.thm-name
+                                in-type out-type op
                                 gin state)))
          ((mv okp op arg1-term arg2-term in1-type in2-type out-type)
           (atc-check-binop term))
