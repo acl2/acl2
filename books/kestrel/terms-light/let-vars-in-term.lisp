@@ -49,7 +49,6 @@
      (union-eq (let-vars-in-term (first terms))
                (let-vars-in-terms (rest terms))))))
 
-;todo: make a variant of defthm-flag-xxx that puts in the guards as assumptions
 (make-flag let-vars-in-term)
 
 (defthm-flag-let-vars-in-term
