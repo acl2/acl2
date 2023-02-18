@@ -39,19 +39,9 @@
                   x))
   :hints (("Goal" :in-theory (enable lg))))
 
-(defthmd lg-of-both-sides
-  (implies (equal x y)
-           (equal (lg x) (lg y))))
-
-(defthm equal-of-expt-and-constant
-  (implies (and (syntaxp (and (quotep k)
-                              (not (quotep size)) ;avoid loops if (:e expt) is disabled
-                              ))
-                (natp size))
-           (equal (equal (expt 2 size) k)
-                  (and (equal k (expt 2 (lg k))) ;k must be a power of 2
-                       (equal size (lg k)))))
-  :hints (("Goal" :use ((:instance lg-of-both-sides (x (expt 2 size)) (y k))))))
+;; (defthmd lg-of-both-sides
+;;   (implies (equal x y)
+;;            (equal (lg x) (lg y))))
 
 ;todo: lg of mask?
 

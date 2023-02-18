@@ -217,3 +217,25 @@
                        (<= 0 i)
                        (<= i size))))
   :hints (("Goal" :in-theory (disable expt-of-+))))
+
+(local
+ ;; Also in integer-length.lisp.
+ (defthm integer-length-of-expt2
+   (implies (integerp n)
+            (equal (integer-length (expt 2 n))
+                   (if (< n 0)
+                       0
+                     (+ 1 n))))
+   :hints (("Goal" :in-theory (enable integer-length expt)))))
+
+;; Solves for i.
+(defthm equal-of-expt2-and-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (not (quotep i)) ; avoids loops if (:e expt) is disabled
+                              ))
+                (natp i) ; todo: gen
+                )
+           (equal (equal (expt 2 i) k)
+                  (and (equal k (expt 2 (+ -1 (integer-length k)))) ;k must be a power of 2; this gets computed
+                       ;; the (+ -1 (integer-length k)) will be evaluated to a constant:
+                       (equal i (+ -1 (integer-length k)))))))
