@@ -155,13 +155,94 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled constraint-list-satp-of-nil
-  :short "Proof rule for the empty list of constraints."
+(defruled constraint-list-satp-of-atom
+  :short "Proof rule for the empty list of constraints
+          expressed as any atom."
   :long
   (xdoc::topstring
    (xdoc::p
     "The empty list of constraints is always satisfied.
-     Indeed, lists of constraints are conjunctions."))
+     Indeed, lists of constraints are conjunctions.")
+   (xdoc::p
+    "Here we phrase the rule in terms of @(tsee atom)
+     so that it is more generally applicable to proving other rules
+     without having to require the list of constraints
+     to be a true list (of constraints).
+     The rule @(tsee constraint-list-satp-of-nil) is a specialized version
+     for the case of an empty list expressed as @('nil')."))
+  (implies (atom constrs)
+           (constraint-list-satp constrs defs asg p))
+  :enable (exec-proof-tree-list
+           assertion-list-from)
+  :use (:instance constraint-list-satp-suff (ptrees nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled constraint-list-satp-of-nil
+  :short "Proof rule for the empty list of constraint."
   (constraint-list-satp nil defs asg p)
-  :enable exec-proof-tree-list
-  :use (:instance constraint-list-satp-suff (ptrees nil) (constrs nil)))
+  :enable constraint-list-satp-of-atom)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled constraint-list-satp-of-cons
+  :short "Proof rule for a @(tsee cons) list of constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The satisfaction of a @(tsee cons) list of constraints
+     reduces to the satisfaction of the two constituents
+     (the first constraint and the remaining list).")
+   (xdoc::p
+    "This is a key proof rule to decompose
+     the satisfaction of lists of constraints
+     into the satisfaction of their constituent constraints."))
+  (equal (constraint-list-satp (cons constr constrs) defs asg p)
+         (and (constraint-satp constr defs asg p)
+              (constraint-list-satp constrs defs asg p)))
+  :use (only-if-direction if-direction)
+
+  :prep-lemmas
+
+  ((defruled only-if-direction
+     (implies (constraint-list-satp (cons constr constrs) defs asg p)
+              (and (constraint-satp constr defs asg p)
+                   (constraint-list-satp constrs defs asg p)))
+     :expand ((constraint-list-satp (cons constr constrs) defs asg p)
+              (exec-proof-tree-list (constraint-list-satp-witness
+                                     (cons constr constrs) defs asg p)
+                                    defs
+                                    p))
+     :cases ((consp (constraint-list-satp-witness
+                     (cons constr constrs) defs asg p)))
+     :use ((:instance constraint-satp-suff
+                      (ptree (car (constraint-list-satp-witness
+                                   (cons constr constrs) defs asg p))))
+           (:instance constraint-list-satp-suff
+                      (ptrees (cdr (constraint-list-satp-witness
+                                    (cons constr constrs) defs asg p)))))
+     :enable (exec-proof-tree-list
+              assertion-list-from))
+
+   (defruled if-direction
+     (implies (and (constraint-satp constr defs asg p)
+                   (constraint-list-satp constrs defs asg p))
+              (constraint-list-satp (cons constr constrs) defs asg p))
+     :expand ((constraint-satp constr defs asg p)
+              (constraint-list-satp constrs defs asg p))
+     :use (:instance constraint-list-satp-suff
+                     (ptrees
+                      (cons (constraint-satp-witness constr defs asg p)
+                            (constraint-list-satp-witness constrs defs asg p)))
+                     (constrs (cons constr constrs)))
+     :enable (exec-proof-tree-list
+              assertion-list-from))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled constraint-list-satp-of-append
+  (equal (constraint-list-satp (append constrs1 constrs2) defs asg p)
+         (and (constraint-list-satp constrs1 defs asg p)
+              (constraint-list-satp constrs2 defs asg p)))
+  :enable (constraint-list-satp-of-cons
+           constraint-list-satp-of-atom))
