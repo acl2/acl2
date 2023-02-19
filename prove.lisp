@@ -4905,7 +4905,7 @@
         ((fquotep term) n)
         ((flambda-applicationp term)
          (term-difficulty1-lst (fargs term) wrld
-                               (term-difficulty1 (lambda-body term)
+                               (term-difficulty1 (lambda-body (ffn-symb term))
                                                  wrld (1+ n))))
         ((eq (ffn-symb term) 'not)
          (term-difficulty1 (fargn term 1) wrld n))

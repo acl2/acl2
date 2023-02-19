@@ -1,7 +1,7 @@
 ; A lightweight book about expt where the base is 2.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -176,12 +176,6 @@
   :hints (("Goal" :in-theory (e/d (expt-of-+)
                                   (;normalize-factors-gather-exponents
                                    )))))
-
-;;move and gen
-(defthm equal-of-expt-same
-  (equal (equal (expt 2 n) 2)
-         (equal 1 n))
-  :hints (("Goal" :in-theory (e/d (expt zip expt-of-+) ()))))
 
 ;this helps a lot
 (defthm expt-of-one-less-linear
