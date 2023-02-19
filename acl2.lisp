@@ -661,15 +661,15 @@
 
 ;;; Special-form-or-op-p: treat ecl like sbcl.
 
-;;; System-call: treat ecl like akcl (actually replace #+akcl by #+(or akcl
+;;; System-call: treat ecl like gcl (actually replace #+gcl by #+(or gcl
 ;;; ecl)).
 
 ;;; Initialize-state-globals: treat ecl just like lispworks.
 
-;;; Where we have the binding (compiler:*suppress-compiler-notes* t) for akcl,
+;;; Where we have the binding (compiler:*suppress-compiler-notes* t) for gcl,
 ;;; perhaps include the binding (*compile-verbose* t) for ecl.
 
-;;; Modify exit-lisp to treat ecl like akcl, except using ext::quit instead of
+;;; Modify exit-lisp to treat ecl like gcl, except using ext::quit instead of
 ;;; si::bye.
 
 #+ccl
@@ -1254,22 +1254,14 @@ ACL2 from scratch.")
 (defconstant *acl2-package* (find-package "ACL2"))
 
 (dolist (x *features*)
-        (cond ((or (equal "AKCL-SET-MV"
-                          (symbol-name x))
-                   (equal "ACL2-LOOP-ONLY"
+        (cond ((or (equal "ACL2-LOOP-ONLY"
                           (symbol-name x))
                    (equal "ACL2-METERING"
                           (symbol-name x)))
                (format t "~%~%Warning:  This Common Lisp may be ~
                           unsuitable for ACL2 because a symbol with~
-                          ~%the name \"ACL2-LOOP-ONLY\", ~
-                          \"AKCL-SET-MV\" or \"ACL2-METERING\" is ~
+                          ~%the name \"ACL2-LOOP-ONLY\" or \"ACL2-METERING\" is ~
                           a member of *FEATURES*."))))
-
-#+akcl
-(if (fboundp 'si::set-mv)
-    (push :akcl-set-mv *features*)
-  (error "Use a version of ACKL after 206"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            EXITING LISP
@@ -1343,7 +1335,7 @@ ACL2 from scratch.")
   (if status-p (user::exit status) (user::exit))
   #+lispworks ; Version 4.2.0; older versions have used bye
   (if status-p (lispworks:quit :status status) (lispworks:quit))
-  #+akcl
+  #+gcl
   (if status-p (si::bye status) (si::bye))
   #+lucid
   (lisp::exit) ; don't know how to handle status, but don't support lucid
@@ -2078,7 +2070,7 @@ which is saved just in case it's needed later.")
 ; terminating macro character.
 
 ; Finally, here is an argument that we cannot reasonably allow ACL2 to
-; accept character notations of the sort akcl allows, such as #\\112
+; accept character notations of the sort gcl allows, such as #\\112
 ; for #\J for example.  (By the way, 112 is octal for 74, which is
 ; (char-code #\J).)  This is sad, because it would have been nice to
 ; provide a way of reading arbitrary 8-bit characters in ACL2.
@@ -2094,9 +2086,8 @@ which is saved just in case it's needed later.")
 ; "\\112".  Then, the documentation for ``char-name'' (part of which
 ; is also below) implies that CHAR-NAME returns the character name,
 ; and hence (CHAR-NAME #\J) must be "\\112".  But probably this isn't
-; true of the implementation (it's not true for akcl or allegro, for
-; example).  And, it seems really dangerous for us to redefine
-; CHAR-NAME in ACL2.
+; true of the implementation.  And, it seems really dangerous for us
+; to redefine CHAR-NAME in ACL2.
 
 ; What's worse, if we apply the first part of this argument to
 ; #\Newline, we see that the name of the character #\Newline is
@@ -2270,9 +2261,9 @@ You are using version ~s.~s.~s."
    (when (not *suppress-compile-build-time*)
      (our-with-compilation-unit
       (let ((*readtable* *acl2-readtable*)
-            #+akcl
+            #+gcl
 
-; AKCL compiler note stuff.  We have so many tail recursive functions
+; GCL compiler note stuff.  We have so many tail recursive functions
 ; that the notes about tail recursion optimization are just too much
 ; to take.
 
@@ -2323,19 +2314,19 @@ You are using version ~s.~s.~s."
     (when fast
       (setq user::*fast-acl2-gcl-build* t))
 
-    #+akcl
+    #+gcl
 
 ; We grow the image slowly, since we now do allocation on start-up.  We are
 ; assuming that people will be using load-acl2 only as part of the process of
 ; building a saved image, and hence that this slow growth policy will be undone
-; by the function save-acl2-in-akcl.  If we are
+; by the function save-acl2-in-gcl.  If we are
 
     (when (not fast)
       (loop
        for type in
        '(cons fixnum symbol array string cfun sfun
 
-; In akcl, at least some versions of it, we cannot call allocate-growth on the
+; In gcl, at least some versions of it, we cannot call allocate-growth on the
 ; following two types.
 
               #+gcl contiguous

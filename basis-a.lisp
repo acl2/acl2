@@ -616,10 +616,10 @@
 ; from using REST as an argument, you should see the severed end of a
 ; once tangled rope.
 
-; For example, akcl and lucid (and others perhaps) allow you to define
+; For example, gcl and lucid (and others perhaps) allow you to define
 ; (defun foo (boole-c2) boole-c2) but then (foo 3) causes an error.
 ; Note that boole-c2 is recognized as special (by
-; system::proclaimed-special-p) in lucid, but not in akcl (by
+; system::proclaimed-special-p) in lucid, but not in gcl (by
 ; si::specialp); in fact it's a constant in both.  Ugh.
 
 ; End of Historical Note.
