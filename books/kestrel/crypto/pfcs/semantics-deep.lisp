@@ -72,7 +72,7 @@
      runs into an issue.
      A constraint that is a call of a relation is satisfied
      when all the constraints that form the body of the relation are satisfied,
-     in some assigment that extends the one that assigns
+     in some assignment that extends the one that assigns
      the actual parameters to the formal parameters.
      This is an existential quantification,
      which is expressed via @(tsee defun-sk) in ACL2,
@@ -273,7 +273,12 @@
                   (assignmentp asg)
                   (assignment-for-prime-p asg p)
                   (mv-nth 0 (eval-expr-list exprs asg p)))
-             (fe-listp (mv-nth 1 (eval-expr-list exprs asg p)) p))))
+             (fe-listp (mv-nth 1 (eval-expr-list exprs asg p)) p)))
+
+  (defret len-of-eval-expr-list
+    (implies okp
+             (equal (len nats)
+                    (len exprs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
