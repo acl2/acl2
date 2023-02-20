@@ -299,8 +299,8 @@
 
 ;; (defthm array-contents-list-of-set-field-car
 ;;   (implies (not (endp ref-list))
-;;	      (equal (array-contents-list ref-list (set-field (car ref-list) (array-contents-pair) value heap))
-;;		     (set-row 0 value (array-contents-list ref-list heap)))))
+;;            (equal (array-contents-list ref-list (set-field (car ref-list) (array-contents-pair) value heap))
+;;                   (set-row 0 value (array-contents-list ref-list heap)))))
 
 
 ;turns nth of 0 into car.  i think i prefer nth
