@@ -13,8 +13,6 @@
 
 ;; See also lg.lisp and ceiling-of-lg.lisp.
 
-;(include-book "power-of-2p")
-(include-book "integer-length")
 (local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "floor"))
