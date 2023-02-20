@@ -7106,8 +7106,8 @@
       nil
     (let* ((formal (first formals))
            (traces (lookup-eq formal formal-traces-alist))
-	   (shape (shape-of-traces traces)))
-	  (acons-fast formal shape (make-formal-shape-alist (rest formals) formal-traces-alist)))))
+           (shape (shape-of-traces traces)))
+          (acons-fast formal shape (make-formal-shape-alist (rest formals) formal-traces-alist)))))
 
 
 ;; TODO: There are now better ways to answer questions like this
@@ -11683,8 +11683,8 @@
            (formal-and-path (get-formal-and-path item nil))
            (formal (car formal-and-path))
            (path (cdr formal-and-path))
-	   (formal-traces (lookup-eq formal formal-traces-alist)))
-	   (progn$
+           (formal-traces (lookup-eq formal formal-traces-alist)))
+           (progn$
             (cw "(Traces for ~x0:~%" item)
             (print-components-of-traces path formal-traces)
             (cw ")")

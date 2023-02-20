@@ -40,7 +40,7 @@
                   :guard (stringp fname)
                   :stobjs state))
   (mv-let (channel state)
-	  (open-output-channel! fname :character state)
+          (open-output-channel! fname :character state)
           (if (not channel)
               (prog2$ (hard-error 'print-dag-array-to-file "Unable to open file ~s0 for :character output." (acons #\0 fname nil))
                       state)
