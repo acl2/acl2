@@ -637,7 +637,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define system-satp ((asg assignmentp) (sys systemp) (p primep))
+(define system-satp ((sys systemp) (asg assignmentp) (p primep))
   :guard (assignment-for-prime-p asg p)
   :returns (yes/no booleanp)
   :short "Check if an assignment satisfies a system."
