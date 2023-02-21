@@ -1258,6 +1258,8 @@
                  (:instance equal-of-bvchop-and-bvchop-when-unsigned-byte-p-of-bvchop (size1 size2) (size2 size1))))))
 
 (local (include-book "../../ihs/math-lemmas"))
+(local (in-theory (disable <-unary-/-positive-right ; looped on (< x '1/2) !
+                           <-unary-/-negative-right))) ;looped
 
 ;loops with LOGTAIL-EQUAL-0
 (defthmd unsigned-byte-p-of-bvchop-tighter
@@ -1316,6 +1318,7 @@
            :in-theory (e/d (bvcat logapp posp bvchop getbit)
                            (SLICE-BECOMES-GETBIT
                             BVCHOP-1-BECOMES-GETBIT
+                            <-unary-/-positive-right ; looped
                             ))
            :use ((:instance split-with-bvcat (x x) (hs 1) (ls (+ -1 size)))))))
 

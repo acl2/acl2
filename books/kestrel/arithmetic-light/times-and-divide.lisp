@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (local (include-book "times"))
+(local (include-book "divide"))
 
 (defthm *-of-/-same
   (equal (* x (/ x))
@@ -63,6 +64,21 @@
                   (< (* x z) y)))
   :hints (("Goal" :cases ((< Z (* (/ X) Y))))))
 
+;; Handles all the cases
+(defthm <-of-*-of-/-arg2-arg1-gen
+  (implies (and (rationalp x)
+                (rationalp y)
+                (rationalp z))
+           (equal (< z (* (/ x) y))
+                  (if (< 0 x)
+                      (< (* x z) y)
+                    (if (equal 0 x)
+                        (< z 0)
+                      (< y (* x z))))))
+  :hints (("Goal" :use ((:instance <-of-*-of-/-arg2-arg1)
+                        (:instance <-of-*-of-/-arg2-arg1 (x (- x))))
+           :in-theory (disable <-of-*-of-/-arg2-arg1))))
+
 (defthm <-of-*-of-/-arg2-arg2
   (implies (and (< 0 x)
                 (rationalp x)
@@ -102,3 +118,18 @@
                   (< (* y y2) (* x z))))
   :hints (("Goal" :use (:instance <-of-*-of-/-arg1-arg1 (y (* y y2)))
            :in-theory (disable <-of-*-of-/-arg1-arg1))))
+
+(defthm <-of-*-of-constant-and-constant
+  (implies (and (syntaxp (and (quotep k2)
+                              (quotep k1)))
+                (rationalp x)
+                (rationalp k1)
+                (rationalp k2))
+           (equal (< (* k1 x) k2)
+                  ;; lots of stuff gets computed in this rhs:
+                  (if (< 0 k1)
+                      (< x (/ k2 k1))
+                    (if (equal 0 k1)
+                        (< 0 k2)
+                      (< (/ k2 k1) x)))))
+  :hints (("Goal" :cases ((< (* k1 x) k2)))))
