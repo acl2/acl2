@@ -191,6 +191,20 @@
  (defthm svex-p-of-3vec-fix
    (svex-p (sv::3vec-fix x))))
 
+(define min-width (x y)
+  (cond ((and (natp x)
+              (natp y))
+         (min x y))
+        ((natp x)
+         x)
+        ((natp y)
+         y)
+        (t nil)))
+
+(defmacro if*-exec (x y z)
+  `(mbe :logic (if* ,x ,y ,z)
+        :exec (if ,x ,y ,z)))
+
 (with-output
   :off :All
   :on (error summary)
@@ -649,13 +663,79 @@ but did not resolve the branch ~%" first))))
                                                         args-evaluated)))
                  (svex-reduce-w/-env-masked-return new-svex)))))))))
 
+    (define svex-reduce-w/-env-unmasked-bitand ((svex svex-p)
+                                                &key
+                                                ((env) 'env)
+                                                ((context rp::rp-term-listp) 'context)
+                                                ((config svex-reduce-config-p) 'config))
+      ;; Splitting this case into another function because proofs are just too slow otherwise.
+      :measure (acl2::nat-list-measure (list (cons-count svex)
+                                             0))
+      :guard (and (equal (svex-kind svex) :call)
+                  (equal (car svex) 'sv::bitand)
+                  (equal-len (cdr svex) 2))
+      :returns (res svex-p :hyp (svex-p svex))
+      (b* ((fn (car svex))
+           (args (cdr svex)))
+        (cond 
+         ((mbt (and* (equal (svex-kind svex) :call)
+                     (equal fn 'sv::bitand)
+                     (equal-len args 2)))
+          (b* ((term1 (first args))
+               (term2 (second args))
+               (term1-width (width-of-svex term1))
+               (term2-width (width-of-svex term2))
+
+               ;; first get the min width
+               (min-width (min-width term1-width term2-width))
+               ;; simplify term1
+               (term1 (if*-exec (natp min-width)
+                                (svex-reduce-w/-env-masked term1 0 min-width)
+                                (svex-reduce-w/-env term1)))
+
+               ;; recalculate term1's width because it might be smaller now.
+               (term1-width (width-of-svex term1))
+               (min-width (min-width min-width term1-width))
+
+               (term2 (if*-exec (natp min-width)
+                                (svex-reduce-w/-env-masked term2 0 min-width)
+                                (svex-reduce-w/-env term2)))
+
+
+               ;; !!!!
+               ;; TODO:
+               ;; IDEALLY, WE RECALCULATE TERM2'S WIDTH HERE AND RECURSE IF IT'S SMALLER THAN MIN-WIDTH
+               
+               ;; ;; recalculate term2's width
+               ;; (term2-width (width-of-svex term2))
+
+               ;; (min-width (min-width term2-width min-width))
+
+               ;; ;; if  term1 can  be simplified  with a  smaller width
+               ;; ;; after term2's  simplification, redo the work  on it
+               ;; ;; (simplified  term1 could  be  passed  too but  then
+               ;; ;; proving measure becomes difficult.
+               ;; (term1 (if*-exec (and* min-width term1-width (< (nfix min-width) (nfix term1-width)))
+               ;;                  (svex-reduce-w/-env-masked (first args) 0 min-width)
+               ;;                  term1))
+
+               ;; TODO: bitand of mask cases could be simplified here maybe.
+
+               ((when (acl2::or* (integerp term1)
+                                 (integerp term2)))
+                (bitand/or/xor-simple-constant-simplify fn term1 term2)))
+            (bitand/or/xor-cancel-repeated fn term1 term2)))
+                   
+         (t (acl2::impossible svex)))))
+      
+    
     (define svex-reduce-w/-env ((svex svex-p)
                                 &key
                                 ((env) 'env)
                                 ((context rp::rp-term-listp) 'context)
                                 ((config svex-reduce-config-p) 'config))
       :measure (acl2::nat-list-measure (list (cons-count svex)
-                                             0))
+                                             1))
       :returns (res svex-p :hyp (svex-p svex))
       (let* ((svex.kind (svex-kind svex)))
         (case  svex.kind
@@ -702,47 +782,14 @@ but did not resolve the branch ~%" first))))
                          ((when (equal third 0)) second)
                          (args-evaluated (hons-list size second third)))
                       (svex-reduce-w/-env-apply fn args-evaluated)))
-                   ((and* (or (equal fn 'sv::bitor)
-                              (equal fn 'sv::bitxor)
-                              (equal fn 'sv::bitand))
+                   ((and* (equal fn 'sv::bitand)
                           (equal-len args 2))
-                    (b* ((term1 (first args))
-                         (term2 (second args))
-                         ((mv term1 term2 flipped) (if (integerp term2) (mv term2 term1 t) (mv term1 term2 nil)))
-                         ((when (and* (equal fn 'sv::bitand)
-                                      (integerp term1)
-                                      ;; ifix is for guards because of and*
-                                      (equal (acl2::logmask (integer-length (ifix term1)))
-                                             term1)))
-                          (b* ((res (svex-reduce-w/-env-masked term2 0 (integer-length (ifix term1)))))
-                            (svex-reduce-w/-env-apply 'sv::unfloat (hons-list res))))
-
-                         (term1 (svex-reduce-w/-env term1))
-
-                         ;; Try to see if term1 became a mask after simplification.
-                         ((when (and* (equal fn 'sv::bitand)
-                                      (integerp term1)
-                                      ;; ifix is for guards because of and*
-                                      (equal (acl2::logmask (integer-length (ifix term1)))
-                                             term1)))
-                          (b* ((res (svex-reduce-w/-env-masked term2 0 (integer-length (ifix term1)))))
-                            (svex-reduce-w/-env-apply 'sv::unfloat (hons-list res))))
-                         
-                         (term2 (svex-reduce-w/-env term2))
-
-                         ;; if term2  became a mask after  simplification, then
-                         ;; original value of term1  will be parsed again under
-                         ;; that masked. Why parse again? because of measure. 
-                         ((when (and* (equal fn 'sv::bitand)
-                                      (integerp term2)
-                                      ;; ifix is for guards because of and*
-                                      (equal (acl2::logmask (integer-length (ifix term2)))
-                                             term2)))
-                          (b* ((res (svex-reduce-w/-env-masked (if flipped (second args) (first args))
-                                                               0
-                                                               (integer-length (ifix term2)))))
-                            (svex-reduce-w/-env-apply 'sv::unfloat (hons-list res))))
-                         
+                    (svex-reduce-w/-env-unmasked-bitand svex))
+                   ((and* (or (equal fn 'sv::bitor)
+                              (equal fn 'sv::bitxor))
+                          (equal-len args 2))
+                    (b* ((term1 (svex-reduce-w/-env (first args)))
+                         (term2 (svex-reduce-w/-env (second args)))
                          ((when (acl2::or* (integerp term1)
                                            (integerp term2)))
                           (bitand/or/xor-simple-constant-simplify fn term1 term2)))
@@ -796,6 +843,7 @@ but did not resolve the branch ~%" first))))
   :off :All
   :on (error summary)
   (verify-guards svex-reduce-w/-env-lst-fn
+    :guard-debug t
     :hints (("Goal"
              :expand ((SVEX-P SVEX))
              :in-theory (e/d (svex-kind)
@@ -1682,131 +1730,233 @@ SVEX-CALL->FN)
 
 (local
  (defthm 4vec-bitand-with-all-ones-constant-without-syntaxp
-  (implies (and (integerp num)
-                (equal (acl2::logmask (integer-length num))
-                       num))
-           (and (equal (sv::4vec-bitand num x)
-                       (sv::4vec-part-select 0 (integer-length num) (sv::3vec-fix x)))
-                (equal (sv::4vec-bitand x num)
-                       (sv::4vec-part-select 0 (integer-length num) (sv::3vec-fix x)))))
-  :hints (("goal"
-           :use ((:instance 4vec-bitand-with-all-ones-constant))
-           :in-theory (e/d ()
-                           ())))))
-
+   (implies (and (integerp num)
+                 (equal (acl2::logmask (integer-length num))
+                        num))
+            (and (equal (sv::4vec-bitand num x)
+                        (sv::4vec-part-select 0 (integer-length num) (sv::3vec-fix x)))
+                 (equal (sv::4vec-bitand x num)
+                        (sv::4vec-part-select 0 (integer-length num) (sv::3vec-fix x)))))
+   :hints (("goal"
+            :use ((:instance 4vec-bitand-with-all-ones-constant))
+            :in-theory (e/d ()
+                            ())))))
 
 (local
  (defthm 4vec-p-implies-svex-p-rw
    (implies (sv::4vec-p x)
             (sv::svex-p x))))
 
-(progn
+(local
+ (defthm 4vec-bitand-of-only-one-part-select
+   (implies (and (or (equal (4vec-part-select 0 size x) x)
+                     (equal (sv::4vec-bitand (4vec-part-select 0 size x) y)
+                            (sv::4vec-bitand x y)))
+                 (natp size))
+            (equal (4vec-bitand x (4vec-part-select 0 size y))
+                   (4vec-bitand x y)))
+   :hints (("Goal"
+            :in-theory (e/d (move-over-part-select-from-4vec-bitand) ())))))
+
+(local
+ (defthm 4vec-bitand-of-two--part-selects-with-known-relation
+   (implies (and (natp size1)
+                 (natp size2)
+                 (case-split (<= size1 size2)))
+            (and (equal (4vec-bitand (4vec-part-select 0 size1 x)
+                                     (4vec-part-select 0 size2 y))
+                        (4vec-bitand x
+                                     (4vec-part-select 0 size1 y)))
+                 (equal (4vec-bitand (4vec-part-select 0 size2 x)
+                                     (4vec-part-select 0 size1 y))
+                        (4vec-bitand x
+                                     (4vec-part-select 0 size1 y)))))
+   :hints (("Goal"
+            :in-theory (e/d (move-over-part-select-from-4vec-bitand) ())))))
+
+
+(local
+ (defthm 4vec-bitand-of-same-sized-args
+   (implies (and (natp start)
+                 (natp size))
+            (equal (4vec-bitand (4vec-part-select 0 size x)
+                                (4vec-part-select start size y))
+                   (4vec-bitand x
+                                (4vec-part-select start size y))))
+   :hints (("goal"
+            :use ((:instance move-over-part-select-from-4vec-bitand
+                             (width size)
+                             (y x)
+                             (x (4vec-part-select start size y))))
+            :in-theory (e/d ()
+                            (4vec-bitand-of-only-one-part-select))))))
+
+(local
+ (svex-eval-lemma-tmpl
+  (defthm svex-eval-of-width-of-svex-more-general-lemma
+    (implies (and (sv::Svex-p x)
+                  (sv::Svex-p y)
+                  (:@ :dollar-eval
+                      (width-of-svex-extn-correct<$>-lst
+                       (svex-reduce-config->width-extns config)))
+                  (:@ :normal-eval
+                      (equal (svex-reduce-config->width-extns config) nil))
+                  (width-of-svex x)
+                  (equal (svex-eval x env-term)
+                         (svex-eval y env-term)))
+             (equal (4vec-part-select 0 (width-of-svex x) (svex-eval y env-term))
+                    (svex-eval y env-term))))))
+
+(local
+ (svex-eval-lemma-tmpl
+  (defthm svex-eval-of-width-of-svex-more-general-lemma-2
+    (implies (and (sv::Svex-p x)
+                  (sv::Svex-p y)
+                  (:@ :dollar-eval
+                      (width-of-svex-extn-correct<$>-lst
+                       (svex-reduce-config->width-extns config)))
+                  (:@ :normal-eval
+                      (equal (svex-reduce-config->width-extns config) nil))
+                  (width-of-svex x)
+                  (equal (4vec-bitand other (svex-eval x env-term))
+                         (4vec-bitand other (svex-eval y env-term))))
+             (equal (4vec-bitand other
+                                 (4vec-part-select 0 (width-of-svex x) (svex-eval y env-term)))
+                    (4vec-bitand other
+                                 (svex-eval y env-term))))
+    :hints (("Goal"
+             :use ((:instance PULL-OUT-PART-SELECT-FROM-4VEC-BITAND
+                              (width (width-of-svex x))
+                              (y (svex-eval y env-term))
+                              (x other))
+                   (:instance PULL-OUT-PART-SELECT-FROM-4VEC-BITAND
+                              (width (width-of-svex x))
+                              (y (svex-eval x env-term))
+                              (x other)))
+             :in-theory (e/d () ()))))))
+
+ 
+
+(encapsulate nil
   (local
    (in-theory (disable acl2::logmask
                        integer-length
-                       (:DEFINITION ACL2::APPLY$-BADGEP)
-                       SVEX-EVAL$-SVEX-REDUCE-W/-ENV-APPLY-CORRECT-WHEN-RETURNS-4VEC-P
-                       SVEX-EVAL-SVEX-REDUCE-W/-ENV-APPLY-CORRECT-WHEN-RETURNS-4VEC-P
+                       (:definition acl2::apply$-badgep)
+                       svex-eval$-svex-reduce-w/-env-apply-correct-when-returns-4vec-p
+                       svex-eval-svex-reduce-w/-env-apply-correct-when-returns-4vec-p
                        sv::svex-apply$-is-svex-apply
-                       (:definition rp::Eval-and-all)
-                       (:REWRITE
-                        ACL2::SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL)
-                       ;;(:REWRITE NOT-CONSP-HONS-ASSOC-EQUAL)
-                       (:REWRITE ACL2::ACL2-NUMBERP-X)
-                       (:REWRITE ACL2::RATIONALP-X)
-                       (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                       (:DEFINITION HONS-ASSOC-EQUAL)
-                       (:DEFINITION QUOTEP)
-                       (:DEFINITION HONS-EQUAL)
-                       (:DEFINITION ACL2::WEAK-APPLY$-BADGE-P)
-                       (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 2)
-                       (:DEFINITION RP-TRANS)
-                       (:REWRITE SV::4VEC-P-OF-CAR-WHEN-4VECLIST-P)
-                       (:REWRITE
-                        SV::4VECLIST-P-OF-CDR-WHEN-4VECLIST-P)
-                       (:DEFINITION SUBSETP-EQUAL)
-                       (:REWRITE SV::4VECLIST-P-WHEN-NOT-CONSP)
-                       (:DEFINITION RP::IS-FALIST)
-                       (:REWRITE ACL2::NATP-WHEN-GTE-0)
-                       (:REWRITE ACL2::PREFER-POSITIVE-ADDENDS-EQUAL)
-                       ;;(:DEFINITION HONS-GET)
-                       (:TYPE-PRESCRIPTION HONS-ASSOC-EQUAL)
-                       (:REWRITE ACL2::SIMPLIFY-SUMS-EQUAL)
-                       (:REWRITE
-                        ACL2::ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP)
-                       (:REWRITE
-                        ACL2::REDUCE-ADDITIVE-CONSTANT-EQUAL)
-                       (:REWRITE
-                        ACL2::REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL)
-                       acl2::EQUAL-OF-PREDICATES-REWRITE
-                       (:REWRITE ACL2::|(equal c (- x))|)
-                       (:REWRITE ACL2::|(equal (/ x) c)|)
-                       (:REWRITE ACL2::|(equal (/ x) (/ y))|)
-                       (:REWRITE ACL2::|(equal (- x) c)|)
-                       (:REWRITE ACL2::|(equal (- x) (- y))|)
-                       ;;                       (:REWRITE ACL2::O-P-O-INFP-CAR)
-                       (:REWRITE ACL2::REDUCE-INTEGERP-+)
-                       (:REWRITE ACL2::INTEGERP-MINUS-X)
-                       (:REWRITE
-                        ACL2::INTEGER-LISTP-IMPLIES-INTEGERP)
-                       (:META ACL2::META-INTEGERP-CORRECT)
-                       (:TYPE-PRESCRIPTION ACL2::APPLY$-BADGEP)
-                       (:DEFINITION RP::TRANS-LIST)
-                       (:REWRITE SV::4VEC-P-WHEN-MAYBE-4VEC-P)
-                       (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 3)
-                       (:REWRITE ACL2::REDUCE-RATIONALP-+)
-                       (:REWRITE DEFAULT-CAR)
-                       (:DEFINITION LEN)
-                       (:REWRITE ACL2::REDUCE-RATIONALP-*)
-                       (:REWRITE ACL2::RATIONALP-MINUS-X)
-                       (:REWRITE ACL2::REDUCE-RATIONALP-*)
-                       (:REWRITE
-                        ACL2::RATIONAL-LISTP-IMPLIES-RATIONALP)
-                       (:META ACL2::META-RATIONALP-CORRECT)
-                       (:REWRITE SV::4VECLIST-NTH-SAFE-OUT-OF-BOUNDS)
-                       (:REWRITE SV::MAYBE-4VEC-P-WHEN-4VEC-P)
-                       (:REWRITE SV::LEN-OF-SVEXLIST-EVAL)
-                       (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                       (:REWRITE ACL2::NATP-WHEN-INTEGERP)
-                       (:REWRITE SV::4VEC->LOWER-WHEN-2VEC-P)
-                       (:REWRITE ACL2::SYMBOL-LISTP-IMPLIES-SYMBOLP)
-                       (:REWRITE
-                        SV::4VEC-P-WHEN-MEMBER-EQUAL-OF-4VECLIST-P)
-                       (:REWRITE DEFAULT-CDR)
-                       (:REWRITE BITP-IMPLIES-4VECP)
-                       (:TYPE-PRESCRIPTION NATP-IMPLIES-SVEX-P)
-                       (:REWRITE DEFAULT-+-2)
-                       (:REWRITE DEFAULT-+-1)
-                       (:TYPE-PRESCRIPTION EQUAL-LEN)
+                       (:definition rp::eval-and-all)
+                       (:rewrite
+                        acl2::simplify-products-gather-exponents-equal)
+                       ;;(:rewrite not-consp-hons-assoc-equal)
+                       (:rewrite acl2::acl2-numberp-x)
+                       (:rewrite acl2::rationalp-x)
+                       (:rewrite acl2::apply$-badgep-properties . 1)
+                       (:definition hons-assoc-equal)
+                       (:definition quotep)
+                       (:definition hons-equal)
+                       (:definition acl2::weak-apply$-badge-p)
+                       (:rewrite acl2::apply$-badgep-properties . 2)
+                       (:definition rp-trans)
+                       (:rewrite sv::4vec-p-of-car-when-4veclist-p)
+                       (:rewrite
+                        sv::4veclist-p-of-cdr-when-4veclist-p)
+                       (:definition subsetp-equal)
+                       (:rewrite sv::4veclist-p-when-not-consp)
+                       (:definition rp::is-falist)
+                       (:rewrite acl2::natp-when-gte-0)
+                       (:rewrite acl2::prefer-positive-addends-equal)
+                       ;;(:definition hons-get)
+                       (:type-prescription hons-assoc-equal)
+                       (:rewrite acl2::simplify-sums-equal)
+                       (:rewrite
+                        acl2::acl2-number-listp-implies-acl2-numberp)
+                       (:rewrite
+                        acl2::reduce-additive-constant-equal)
+                       (:rewrite
+                        acl2::reduce-multiplicative-constant-equal)
+                       acl2::equal-of-predicates-rewrite
+                       (:rewrite acl2::|(equal c (- x))|)
+                       (:rewrite acl2::|(equal (/ x) c)|)
+                       (:rewrite acl2::|(equal (/ x) (/ y))|)
+                       (:rewrite acl2::|(equal (- x) c)|)
+                       (:rewrite acl2::|(equal (- x) (- y))|)
+                       ;;                       (:rewrite acl2::o-p-o-infp-car)
+                       (:rewrite acl2::reduce-integerp-+)
+                       (:rewrite acl2::integerp-minus-x)
+                       (:rewrite
+                        acl2::integer-listp-implies-integerp)
+                       (:meta acl2::meta-integerp-correct)
+                       (:type-prescription acl2::apply$-badgep)
+                       (:definition rp::trans-list)
+                       (:rewrite sv::4vec-p-when-maybe-4vec-p)
+                       (:rewrite acl2::apply$-badgep-properties . 3)
+                       (:rewrite acl2::reduce-rationalp-+)
+                       (:rewrite default-car)
+                       (:definition len)
+                       (:rewrite acl2::reduce-rationalp-*)
+                       (:rewrite acl2::rationalp-minus-x)
+                       (:rewrite acl2::reduce-rationalp-*)
+                       (:rewrite
+                        acl2::rational-listp-implies-rationalp)
+                       (:meta acl2::meta-rationalp-correct)
+                       (:rewrite sv::4veclist-nth-safe-out-of-bounds)
+                       (:rewrite sv::maybe-4vec-p-when-4vec-p)
+                       (:rewrite sv::len-of-svexlist-eval)
+                       (:linear acl2::apply$-badgep-properties . 1)
+                       (:rewrite acl2::natp-when-integerp)
+                       (:rewrite sv::4vec->lower-when-2vec-p)
+                       (:rewrite acl2::symbol-listp-implies-symbolp)
+                       (:rewrite
+                        sv::4vec-p-when-member-equal-of-4veclist-p)
+                       (:rewrite default-cdr)
+                       (:rewrite bitp-implies-4vecp)
+                       (:type-prescription natp-implies-svex-p)
+                       (:rewrite default-+-2)
+                       (:rewrite default-+-1)
+                       (:type-prescription equal-len)
 
-                       ;;(:DEFINITION NATP)
-                       ;;(:TYPE-PRESCRIPTION 4VEC-P)
-                       (:REWRITE DEFAULT-<-2)
-                       (:REWRITE DEFAULT-<-1)
-                       (:REWRITE ACL2::FOLD-CONSTS-IN-+)
-                       (:REWRITE SV::SVEX-P-WHEN-MAYBE-SVEX-P)
-                       ;;                       (:REWRITE ACL2::O-INFP->NEQ-0)
-                       (:REWRITE SV::MAYBE-SVEX-P-WHEN-SVEX-P)
-                       (:TYPE-PRESCRIPTION O-FINP)
-                       ;;                       (:REWRITE ACL2::O-FIRST-EXPT-O-INFP)
-                       (:REWRITE
-                        ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-3)
-                       (:REWRITE ACL2::DEFAULT-LESS-THAN-2)
-                       ACL2::|(equal c (/ x))|
+                       ;;(:definition natp)
+                       ;;(:type-prescription 4vec-p)
+                       (:rewrite default-<-2)
+                       (:rewrite default-<-1)
+                       (:rewrite acl2::fold-consts-in-+)
+                       (:rewrite sv::svex-p-when-maybe-svex-p)
+                       ;;                       (:rewrite acl2::o-infp->neq-0)
+                       (:rewrite sv::maybe-svex-p-when-svex-p)
+                       (:type-prescription o-finp)
+                       ;;                       (:rewrite acl2::o-first-expt-o-infp)
+                       (:rewrite
+                        acl2::member-equal-newvar-components-3)
+                       (:rewrite acl2::default-less-than-2)
+                       acl2::|(equal c (/ x))|
 
                        rp::falist-consistent-aux
                        rp::eval-and-all
 
-                       (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX)
-                       (:TYPE-PRESCRIPTION 4VECLIST-NTH-SAFE)
-                       (:TYPE-PRESCRIPTION SV::4VEC-BIT?!)
-                       (:TYPE-PRESCRIPTION SV::4VEC-?!)
-                       (:TYPE-PRESCRIPTION SV::4VEC-BIT?)
-                       (:TYPE-PRESCRIPTION 4VEC-?*)
-                       (:TYPE-PRESCRIPTION 4VEC-?)
-                       (:TYPE-PRESCRIPTION SV::4VEC-BITXOR)
-                       (:TYPE-PRESCRIPTION 4VEC-BITOR)
-                       (:TYPE-PRESCRIPTION 4VEC-BITAND)
+                       (:type-prescription rp::falist-consistent-aux)
+                       (:type-prescription 4veclist-nth-safe)
+                       (:type-prescription sv::4vec-bit?!)
+                       (:type-prescription sv::4vec-?!)
+                       (:type-prescription sv::4vec-bit?)
+                       (:type-prescription 4vec-?*)
+                       (:type-prescription 4vec-?)
+                       (:type-prescription sv::4vec-bitxor)
+                       (:type-prescription 4vec-bitor)
+                       (:type-prescription 4vec-bitand)
+
+                       natp
+                       rp::valid-sc
+                       (:TYPE-PRESCRIPTION ACL2::BINARY-OR*)
+
+                       ACL2::OR*-TRUE-FIRST
+                       ACL2::OR*-TRUE-SECOND
+                       ACL2::OR*-FORWARD
+                       (:TYPE-PRESCRIPTION ACL2::BINARY-AND*)
+                       (:REWRITE-QUOTED-CONSTANT
+                        SV::MAYBE-4VEC-FIX-UNDER-MAYBE-4VEC-EQUIV)
+                       (:REWRITE-QUOTED-CONSTANT
+                                    SV::4VEC-FIX-UNDER-4VEC-EQUIV)
                        )))
 
   (svex-eval-lemma-tmpl
@@ -1848,7 +1998,7 @@ SVEX-CALL->FN)
                        (equal-len (cdr svex) 2)) ; ; ;
                        (acl2::and* (equal (car svex) 'sv::unfloat) ; ; ;
                        (equal-len (cdr svex) 1))) ; ; ;
-; ; ; ; ; ; ; ; ; ; ;
+; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
                        (all-xor/and/or-nodes-are-masked-p res size (rp-evlt env-term a)))|#
                        ))
          :fn svex-and/or/xor-reduce-w/-env-masked)
@@ -1883,6 +2033,29 @@ SVEX-CALL->FN)
                        (equal-len (cdr svex) 1))) ; ; ;
                        (all-xor/and/or-nodes-are-masked-p res size (rp-evlt env-term a)))|#))
          :fn svex-reduce-w/-env-masked)
+
+       (defret svex-eval-of-svex-reduce-w/-env-unmasked-bitand-correct
+         (implies (and (svex-p svex)
+                       (rp::rp-term-listp context)
+                       (rp::valid-sc env-term a)
+                       (rp::eval-and-all context a)
+                       (sub-alistp env big-env)
+                       (rp::falist-consistent-aux big-env env-term)
+                       (:@ :dollar-eval
+                           (width-of-svex-extn-correct<$>-lst
+                            (svex-reduce-config->width-extns config))
+                           (integerp-of-svex-extn-correct<$>-lst
+                            (svex-reduce-config->integerp-extns config)))
+                       (:@ :normal-eval
+                           (equal (svex-reduce-config->width-extns config) nil)
+                           (equal (svex-reduce-config->integerp-extns config) nil))
+                       (or* (svex-reduce-config->keep-missing-env-vars config)
+                            (equal env big-env)))
+                  (equal (svex-eval (svex-reduce-w/-env-unmasked-bitand svex)
+                                    (rp-evlt env-term a))
+                         (svex-eval svex (rp-evlt env-term a))))
+         :fn svex-reduce-w/-env-unmasked-bitand)
+
        (defret svex-eval-of-svex-reduce-w/-env-correct
          (implies (and (svex-p svex)
                        (rp::rp-term-listp context)
@@ -1928,7 +2101,11 @@ SVEX-CALL->FN)
        :hints (("Goal"
                 :do-not-induct t
 
-                :expand ((SVEX-REDUCE-W/-ENV SVEX)
+                
+
+                :expand ((:free (x y)
+                                (natp (+ x y)))
+                         (SVEX-REDUCE-W/-ENV SVEX)
                          (svex-eval svex (rp-evlt env-term a))
                          (svex-eval (cons (car svex)
                                           (svex-reduce-w/-env-lst (cdr svex)))
@@ -1955,8 +2132,15 @@ SVEX-CALL->FN)
                          (:free (args) (sv::svex-apply 'sv::bit?! args))
                          (:free (args) (sv::svex-apply 'sv::partinst args)))
                 :in-theory (e/d
-                            (svex-eval-svex-reduce-w/-env-apply-correct-when-returns-4vec-P
+                            (;;pull-out-part-select-from-4vec-bitand
+
+                             min-width
+
+                             ;;move-over-part-select-from-4vec-bitand
+                             
+                             svex-eval-svex-reduce-w/-env-apply-correct-when-returns-4vec-P
                              svex-reduce-w/-env-masked
+                             svex-reduce-w/-env-unmasked-bitand
                              svex-and/or/xor-reduce-w/-env-masked
                              sv::svex-quote->val
                              svex-env-lookup-when-svex-p
@@ -1979,7 +2163,7 @@ SVEX-CALL->FN)
                              bits
                              ;;svex-env-lookup-when-svex-p
                              svex-reduce-w/-env-lst
-                             
+
                              4vec-concat$-of-term2=0
 
                              4vec-sign-ext-to-4vec-concat)

@@ -3584,7 +3584,7 @@ c2-lst: ~p2 ~%"
            ((when (and (is-equals cur)
                        (pp-term-p (caddr cur))))
             (mv (cdr e-lst)
-                (pp-flatten (caddr cur))))
+                (pp-flatten-memoized (caddr cur))))
            ((mv rest1 rest2)
             (extract-equals-from-pp-lst-aux (cdr e-lst))))
         (mv (cons-with-hint (car e-lst) rest1 e-lst)
@@ -4188,9 +4188,6 @@ nil
               (in-theory (disable natp))))
   (b* ((arg-s-lst (list-to-lst arg-s))
 
-
-      
-       
        ((mv arg-pp-lst arg-c-lst coughed-s-lst2 coughed-pp-lst2 to-be-coughed-c-lst)
         (c-of-s-fix-lst arg-s-lst arg-pp-lst arg-c-lst nil))
 
@@ -4227,6 +4224,32 @@ nil
                                      quarternaryp)))
     res))
 
+
+(progn
+  (define extract-binary-xor-for-s-spec-aux ((term rp-termp))
+    :returns (res rp-termp
+                  :hyp (rp-termp term))
+    (case-match term
+      (('binary-xor x y)
+       `(binary-sum ,(extract-binary-xor-for-s-spec-aux x)
+                    ,(extract-binary-xor-for-s-spec-aux y)))
+      (& term)))
+
+  (define extract-binary-xor-for-s-spec ((term rp-termp))
+    :returns (res rp-termp
+                  :hyp (rp-termp term))
+    (case-match term
+      (('cons x rest)
+       (b* ((x-orig x)
+            (x (ex-from-rp$ x)))
+         (if (and (consp x)
+                  (equal (car x) 'binary-xor)
+                  (pp-term-p x))
+             `(cons ,(extract-binary-xor-for-s-spec-aux x)
+                    ,(extract-binary-xor-for-s-spec rest))
+           `(cons ,x-orig ,(extract-binary-xor-for-s-spec rest)))))
+      (& term))))
+        
 
 
 (define s-c-spec-meta ((term rp-termp))
@@ -4272,9 +4295,14 @@ nil
                          (c-spec-meta-aux s pp-lst c-lst quarternaryp))))
              `(cons ,c-res (cons ,s-res 'nil))))
           (('s-spec sum)
-           (b* (((mv s pp-lst c-lst);;(mv s pp c)
-                 (new-sum-merge sum))
-                ((mv ?quarternaryp ?bitp) (quarternaryp-sum sum)))
+           (b* (((mv ?quarternaryp ?bitp) (quarternaryp-sum sum))
+                (sum (if bitp ;; when bitp, we'll want things to be coughed out
+                         ;; as is so don't try to prematurely flatten
+                         ;; binary-xors in such cases.
+                         sum
+                       (extract-binary-xor-for-s-spec sum)))
+                ((mv s pp-lst c-lst)
+                 (new-sum-merge sum)))
              (if bitp
                  (create-s-c-res-instance (list-to-lst s)
                                           pp-lst
@@ -4288,9 +4316,7 @@ nil
              (if bitp
                  ''0
                (c-spec-meta-aux s pp-lst c-lst quarternaryp))))
-          (& term)))
-
-       )
+          (& term))))
     (mv result t)))
 
 #|

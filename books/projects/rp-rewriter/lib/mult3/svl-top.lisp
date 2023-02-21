@@ -159,6 +159,14 @@
 (def-rp-rule integerp-of-logbit
   (integerp (logbit pos num)))
 
+(def-rp-rule binary-and-of-binary-not-of-the-same
+  (and (equal (binary-and x (binary-xor 1 x))
+              0)
+       (equal (binary-and (binary-xor 1 x) x)
+              0))
+  :hints (("Goal"
+           :in-theory (e/d (and$ not$) ()))))
+
 (def-rp-rule integerp-of-binary-fncs
   (and (integerp (binary-or x y))
        (integerp (binary-xor x y))
@@ -1935,3 +1943,37 @@ z)
 (:meta s-c-spec-meta . s-c-spec)
 (:meta s-c-spec-meta . c-s-spec)
 (:meta unpack-booth-meta . unpack-booth))|#
+
+
+;; (def-rp-rule s-spec-of-binary-xor
+;;   (implies (and (force (bitp x))
+;;                 (force (bitp y)))
+;;            (and (equal (s-spec (cons (binary-xor x y) other))
+;;                        (s-spec (list* x y other)))
+;;                 (equal (s-spec (list* o1 (binary-xor x y) other))
+;;                        (s-spec (list* x y o1 other)))
+;;                 (equal (s-spec (list* o1 o2 (binary-xor x y) other))
+;;                        (s-spec (list* x y o1 o2 other)))
+;;                 (equal (s-spec (list* o1 o2 o3 (binary-xor x y) other))
+;;                        (s-spec (list* x y o1 o2 o3 other)))))
+;;   :hints (("Goal"
+;;            :in-theory (e/d (bitp) ()))))
+
+(def-rp-rule s-c-spec-of-binary-xor
+  (implies (and (force (bitp x))
+                (force (bitp y)))
+           (and (equal (s-c-spec (cons (binary-xor x y) other))
+                       (list (s-spec (cons (binary-xor x y) other))
+                             (c-spec (cons (binary-xor x y) other))))
+                (equal (s-c-spec (list* o1 (binary-xor x y) other))
+                       (list (s-spec (list* o1 (binary-xor x y) other))
+                             (c-spec (list* o1 (binary-xor x y) other))))
+                (equal (s-c-spec (list* o1 o2 (binary-xor x y) other))
+                       (list (s-spec (list* o1 o2 (binary-xor x y) other))
+                             (c-spec (list* o1 o2 (binary-xor x y) other))))
+                (equal (s-c-spec (list* o1 o2 o3 (binary-xor x y) other))
+                       (list (s-spec (list* o1 o2 o3 (binary-xor x y) other))
+                             (c-spec (list* o1 o2 o3 (binary-xor x y) other))))))
+  :hints (("Goal"
+           :in-theory (e/d (s-c-spec) ()))))
+

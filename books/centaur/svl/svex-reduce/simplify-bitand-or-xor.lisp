@@ -350,8 +350,11 @@ x
     (b* ((x (first (cdr svex))) (y (second (cdr svex)))
          ((mv new-x changed-x) (bitand/bitor-cancel-repeated-aux x leaves new-val :limit (+ limit -1) :under-xor t))
          ((mv new-y changed-y) (bitand/bitor-cancel-repeated-aux y leaves new-val :limit (+ limit -1) :under-xor t))
-         ((Unless (and (or changed-x changed-y)
-                       (integer-listp-of-svexlist leaves)))
+         ((Unless (and (or changed-x changed-y) ;; this is and not and* becasue
+                       ;; don't want to run integer-listp-of-svexlist if first
+                       ;; test fails. 
+                       (or (integer-listp-of-svexlist leaves)
+                           (rp::cwe "integer-listp-of-svexlist check has failed for ~p0~%" leaves))))
           (mv svex nil))
          (res (bitand/or/xor-simple-constant-simplify 'sv::bitxor new-x new-y))
          (res (clear-1s-from-bitxor res)))
@@ -1332,80 +1335,79 @@ x
                    (single-bit-part-select-case-splitter clause)))
             ))))
 
-(local
- (encapsulate
-   nil
-   (local
-    (use-equal-by-logbitp t))
+(encapsulate
+  nil
+  (local
+   (use-equal-by-logbitp t))
 
-   (local
-    (in-theory (enable acl2::b-and
-                       acl2::b-ior)))
+  (local
+   (in-theory (enable acl2::b-and
+                      acl2::b-ior)))
 
-   (local
-    (defthmd logand-of-single-loghead-2
-      (and (equal (logand x (loghead size y))
-                  (loghead size (logand x y)))
-           (equal (logand (loghead size y) x)
-                  (loghead size (logand x y))))
-      :hints (("goal"
-               :use ((:instance logand-of-single-loghead))
-               :in-theory (e/d* (bitops::ihsext-recursive-redefs
-                                 bitops::ihsext-inductions)
-                                ()) ))))
-
-   (defthmd pull-out-part-select-from-4vec-bitand
-     (implies (natp width)
-              (equal (4vec-bitand x
-                                  (4vec-part-select 0 width y))
-                     (4vec-part-select 0 width
-                                       (4vec-bitand x y))))
+  (local
+   (defthmd logand-of-single-loghead-2
+     (and (equal (logand x (loghead size y))
+                 (loghead size (logand x y)))
+          (equal (logand (loghead size y) x)
+                 (loghead size (logand x y))))
      :hints (("goal"
-              :in-theory (e/d (4vec-bitand
-                               3vec-bitand
-                               4vec-part-select
-                               4vec-concat
-                               4vec
-                               sv::3vec-fix)
-                              (4vec
-                               logapp logand loghead
-                               )))
-             (bitops::logbitp-reasoning)
-             ))
+              :use ((:instance logand-of-single-loghead))
+              :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                bitops::ihsext-inductions)
+                               ()) ))))
 
-   (defthmd move-over-part-select-from-4vec-bitand
-     (implies (natp width)
-              (equal (4vec-bitand x
-                                  (4vec-part-select 0 width y))
-                     (4vec-bitand y
-                                  (4vec-part-select 0 width x))))
+  (defthmd pull-out-part-select-from-4vec-bitand
+    (implies (natp width)
+             (equal (4vec-bitand x
+                                 (4vec-part-select 0 width y))
+                    (4vec-part-select 0 width
+                                      (4vec-bitand x y))))
+    :hints (("goal"
+             :in-theory (e/d (4vec-bitand
+                              3vec-bitand
+                              4vec-part-select
+                              4vec-concat
+                              4vec
+                              sv::3vec-fix)
+                             (4vec
+                              logapp logand loghead
+                              )))
+            (bitops::logbitp-reasoning)
+            ))
+
+  (defthmd move-over-part-select-from-4vec-bitand
+    (implies (natp width)
+             (equal (4vec-bitand x
+                                 (4vec-part-select 0 width y))
+                    (4vec-bitand y
+                                 (4vec-part-select 0 width x))))
+    :hints (("goal"
+             :in-theory (e/d (4vec-bitand
+                              3vec-bitand
+                              4vec-part-select
+                              4vec-concat
+                              4vec
+                              sv::3vec-fix)
+                             (4vec
+                              logapp logand loghead
+                              )))
+            (bitops::logbitp-reasoning)
+            ))
+
+  (svex-eval-lemma-tmpl
+   (defthm width-of-svex-eval-bitand-lst-lemma
+     (implies (and (member-equal svex leaves)
+                   (natp width)
+                   (equal (4vec-part-select 0 width (svex-eval svex env))
+                          (svex-eval svex env)))
+              (equal (4vec-part-select 0 width (svex-eval-bitand-lst leaves env))
+                     (svex-eval-bitand-lst leaves env)))
      :hints (("goal"
-              :in-theory (e/d (4vec-bitand
-                               3vec-bitand
-                               4vec-part-select
-                               4vec-concat
-                               4vec
-                               sv::3vec-fix)
-                              (4vec
-                               logapp logand loghead
-                               )))
-             (bitops::logbitp-reasoning)
-             ))
-
-   (svex-eval-lemma-tmpl
-    (defthm width-of-svex-eval-bitand-lst-lemma
-      (implies (and (member-equal svex leaves)
-                    (natp width)
-                    (equal (4vec-part-select 0 width (svex-eval svex env))
-                           (svex-eval svex env)))
-               (equal (4vec-part-select 0 width (svex-eval-bitand-lst leaves env))
-                      (svex-eval-bitand-lst leaves env)))
-      :hints (("goal"
-               :in-theory (e/d (move-over-part-select-from-4vec-bitand
-                                member-equal
-                                svex-eval-bitand-lst
-                                4vec-part-select-of-4vec-bitand-better)
-                               ())))))))
+              :in-theory (e/d (move-over-part-select-from-4vec-bitand
+                               member-equal
+                               svex-eval-bitand-lst
+                               4vec-part-select-of-4vec-bitand-better)
+                              ()))))))
 
 (local
  (svex-eval-lemma-tmpl

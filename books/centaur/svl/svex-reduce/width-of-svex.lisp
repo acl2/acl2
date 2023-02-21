@@ -589,6 +589,24 @@
 (local
  (in-theory (disable SV::SVEXLIST-EVAL$-IS-SVEXLIST-EVAL)))
 
+(defret-mutual integerp-of-<fn>
+   (defret return-val-of-<fn>
+     (implies width
+              (and (natp width)
+                   (integerp width)
+                   (rationalp width)))
+     :fn width-of-svex)
+   (defret return-val-of-<fn>
+     t
+     :fn widths-of-svexlist
+     :rule-classes nil)
+   ;;:otf-flg t
+   :mutual-recursion width-of-svex
+   :hints (("Goal"
+            :in-theory (e/d (width-of-svex
+                             widths-of-svexlist)
+                            ()))))
+
 (svex-eval-lemma-tmpl
  (defret-mutual svex-eval-width-is-correct-1
    (defret svex-eval-<fn>-is-correct-1
