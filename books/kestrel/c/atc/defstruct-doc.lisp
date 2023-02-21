@@ -45,7 +45,7 @@
      "C code shallowly embedded in ACL2 can use
       the generated recognizers @('struct-<tag>-p') in guards
       to specify structure types for parameters;
-      if wrapped in @(tsee pointer), they specify "
+      if wrapped in @(tsee star), they specify "
      (xdoc::seetopic "pointer-types" "pointer types")
      " to structure types.")
 
