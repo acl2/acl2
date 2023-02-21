@@ -77,7 +77,7 @@
   (xdoc::topstring
    (xdoc::p
     "If running a proof tree is successful
-     and returns an assertion for a single list of constraints,
+     and returns an assertion for an equality constraint,
      then the proof tree must be one for an equality,
      and its components (assignment and expressions)
      must coincide with the ones from the assertion.")
@@ -100,6 +100,52 @@
                      (equal (eval-expr (constraint-equal->left constr) asg p)
                             (eval-expr (constraint-equal->right constr) asg p))
                      (eval-expr (constraint-equal->left constr) asg p))))))
+  :expand ((exec-proof-tree ptree defs p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled exec-proof-tree-when-constraint-relation
+  :short "Characterization of a proof tree for a relation constraint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If running a proof tree is successful
+     and returns an assertion for a relation constraint,
+     then the proof tree must be one for a relation application,
+     and it has to satisfy a number of other requirements,
+     explicated in this theorem.")
+   (xdoc::p
+    "This is used to prove @(tsee constraint-satp-of-relation."))
+  (b* ((outcome (exec-proof-tree ptree defs p))
+       (asser (proof-outcome-assertion->get outcome))
+       (asg (assertion->asg asser))
+       (constr (assertion->constr asser))
+       (name (constraint-relation->name constr))
+       (args (constraint-relation->args constr))
+       (def (lookup-definition name defs))
+       (para (definition->para def))
+       (body (definition->body def))
+       ((mv okp vals) (eval-expr-list args asg p))
+       (asgext (proof-tree-relation->asgext ptree))
+       (outcome-sub (exec-proof-tree-list
+                     (proof-tree-relation->sub ptree) defs p))
+       (asser-sub (proof-list-outcome-assertions->get outcome-sub)))
+    (implies (and (proof-outcome-case outcome :assertion)
+                  (constraint-case constr :relation))
+             (and (proof-tree-case ptree :relation)
+                  (equal (proof-tree-relation->asg ptree) asg)
+                  (equal (proof-tree-relation->name ptree) name)
+                  (equal (proof-tree-relation->args ptree) args)
+                  def
+                  okp
+                  (equal (len para) (len vals))
+                  (assignment-for-prime-p asgext p)
+                  (omap::submap (omap::from-lists para vals) asgext)
+                  (proof-list-outcome-case outcome-sub :assertions)
+                  (equal (assertion-list->asg-list asser-sub)
+                         (repeat (len body) asgext))
+                  (equal (assertion-list->constr-list asser-sub)
+                         body))))
   :expand ((exec-proof-tree ptree defs p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -246,3 +292,138 @@
               (constraint-list-satp constrs2 defs asg p)))
   :enable (constraint-list-satp-of-cons
            constraint-list-satp-of-atom))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk constraint-relation-satp ((name symbolp)
+                                     (args expression-listp)
+                                     (defs definition-listp)
+                                     (asg assignmentp)
+                                     (p primep))
+  :guard (assignment-for-prime-p asg p)
+  :returns (yes/no booleanp)
+  :short "Satisfaction of a relation constraint,
+          expressed without proof trees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like an alternative definition of @(tsee constraint-satp)
+     for the case in which the constraint is an application of a relation.
+     We prove below its equivalence to @(tsee constraint-satp).")
+   (xdoc::p
+    "This is a simpler definition,
+     because it does not directly involve the execution of proof trees.
+     It says that the relation application is satisfied
+     exactly when there exists an assignment
+     that extends the one binding the relation's parameters
+     to the values of the arguments,
+     and that satisfies all the relation's constraints."))
+  (exists
+   (asgext)
+   (and (assignmentp asgext)
+        (assignment-for-prime-p asgext p)
+        (b* ((def (lookup-definition name defs)))
+          (and def
+               (b* (((definition def) def))
+                 (and (equal (len args) (len def.para))
+                      (b* (((mv okp vals) (eval-expr-list args asg p)))
+                        (and okp
+                             (omap::submap (omap::from-lists def.para vals)
+                                           asgext)
+                             (constraint-list-satp def.body
+                                                   defs
+                                                   asgext
+                                                   p))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled constraint-satp-of-relation
+  :short "Proof rule for relation application constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This says that the satisfaction of a relation application constraint
+     reduces to @(tsee constraint-relation-satp).")
+   (xdoc::p
+    "This rule lets us dispense with the existentially quantified proof tree,
+     limiting the existential quantification to the extended assignment
+     in @(tsee constraint-relation-satp).
+     Some existential quantification is unavoidable in general,
+     but the one for the extended assignment
+     is simpler to handle than the one for the whole proof tree."))
+  (implies (and (assignmentp asg)
+                (assignment-for-prime-p asg p)
+                (constraint-case constr :relation))
+           (equal (constraint-satp constr defs asg p)
+                  (constraint-relation-satp (constraint-relation->name constr)
+                                            (constraint-relation->args constr)
+                                            defs
+                                            asg
+                                            p)))
+  :use (only-if-direction if-direction)
+
+  :prep-lemmas
+
+  ((defruled only-if-direction
+     (implies (and (assignmentp asg)
+                   (assignment-for-prime-p asg p)
+                   (constraint-case constr :relation))
+              (implies (constraint-satp constr defs asg p)
+                       (constraint-relation-satp
+                        (constraint-relation->name constr)
+                        (constraint-relation->args constr)
+                        defs
+                        asg
+                        p)))
+     :enable constraint-satp
+     :use ((:instance exec-proof-tree-when-constraint-relation
+                      (ptree (constraint-satp-witness constr defs asg p)))
+           (:instance constraint-relation-satp-suff
+                      (name (constraint-relation->name constr))
+                      (args (constraint-relation->args constr))
+                      (asg (proof-tree-relation->asg
+                            (constraint-satp-witness constr defs asg p)))
+                      (asgext (proof-tree-relation->asgext
+                               (constraint-satp-witness constr defs asg p))))
+           (:instance constraint-list-satp-suff
+                      (constrs (definition->body
+                                 (lookup-definition
+                                  (constraint-relation->name constr) defs)))
+                      (asg (proof-tree-relation->asgext
+                            (constraint-satp-witness constr defs asg p)))
+                      (ptrees (proof-tree-relation->sub
+                               (constraint-satp-witness constr defs asg p))))))
+
+   (defruled if-direction
+     (implies (and (assignmentp asg)
+                   (assignment-for-prime-p asg p)
+                   (constraint-case constr :relation))
+              (implies (constraint-relation-satp
+                        (constraint-relation->name constr)
+                        (constraint-relation->args constr)
+                        defs
+                        asg
+                        p)
+                       (constraint-satp constr defs asg p)))
+     :enable (constraint-relation-satp
+              constraint-list-satp
+              exec-proof-tree)
+     :use (:instance constraint-satp-suff
+                     (ptree (make-proof-tree-relation
+                             :asg asg
+                             :name (constraint-relation->name constr)
+                             :args (constraint-relation->args constr)
+                             :sub (constraint-list-satp-witness
+                                   (definition->body
+                                     (lookup-definition
+                                      (constraint-relation->name constr) defs))
+                                   defs
+                                   (constraint-relation-satp-witness
+                                    (constraint-relation->name constr)
+                                    (constraint-relation->args constr)
+                                    defs asg p)
+                                   p)
+                             :asgext (constraint-relation-satp-witness
+                                      (constraint-relation->name constr)
+                                      (constraint-relation->args constr)
+                                      defs asg p)))))))
