@@ -15,6 +15,7 @@
 (include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
+(local (include-book "kestrel/evaluators/defevaluator-theorems" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
@@ -33,43 +34,9 @@
 
 ;; TODO: Clean up and harvest this file
 
-(local (in-theory (disable alistp)))
+(local (in-theory (disable alistp no-duplicatesp-equal)))
 
-;; todo: add this to defevaluator+
-(defthm-flag-free-vars-in-term
-  ;; Adding a pair to the alist has no effect if the key is not one of the free vars in the term.
-  (defthm empty-eval-of-cons-irrel
-    (implies (and (not (member-equal (car pair) (free-vars-in-term term)))
-                  (pseudo-termp term))
-             (equal (empty-eval term (cons pair a))
-                    (empty-eval term a)))
-    :flag free-vars-in-term)
-  (defthm empty-eval-list-of-cons-irrel
-    (implies (and (not (member-equal (car pair) (free-vars-in-terms terms)))
-                  (pseudo-term-listp terms))
-             (equal (empty-eval-list terms (cons pair a))
-                    (empty-eval-list terms a)))
-    :flag free-vars-in-terms)
-  :hints (("Goal" :in-theory (e/d (empty-eval-of-fncall-args)
-                                  (empty-eval-of-fncall-args-back)))))
-
-;; todo: add this to defevaluator+
-(defthm-flag-free-vars-in-term
-  ;; Binds a var to the value it already has in the alist has no effect
-  (defthm empty-eval-of-cons-irrel2
-    (implies (and (equal val (cdr (assoc-equal var a))) ; so binding var to val has no effect
-                  (pseudo-termp term))
-             (equal (empty-eval term (cons (cons var val) a))
-                    (empty-eval term a)))
-    :flag free-vars-in-term)
-  (defthm empty-eval-list-of-cons-irrel2
-    (implies (and (equal val (cdr (assoc-equal var a))) ; so binding var to val has no effect
-                  (pseudo-term-listp terms))
-             (equal (empty-eval-list terms (cons (cons var val) a))
-                    (empty-eval-list terms a)))
-    :flag free-vars-in-terms)
-  :hints (("Goal" :in-theory (e/d (empty-eval-of-fncall-args)
-                                  (empty-eval-of-fncall-args-back)))))
+(local (defevaluator-theorems empty-eval empty-eval-list))
 
 (defthm empty-eval-of-append-of-pairlis$-of-EMPTY-EVAL-LIST-when-relevant-actuals-are-formals
   (IMPLIES  (and (pseudo-termp body)
@@ -95,8 +62,6 @@
   :hints (("Goal" :in-theory (enable FILTER-FORMALS-AND-ACTUALS
                                      PAIRLIS$
                                      symbolp-when-member-equal-and-symbol-listp))))
-
-(local (in-theory (disable no-duplicatesp-equal))) ;move up
 
 (defthm-flag-free-vars-in-term
   (defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-alt ; todo: similar to one in the proof of expand-lambdas
