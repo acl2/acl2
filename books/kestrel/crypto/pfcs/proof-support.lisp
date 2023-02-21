@@ -115,7 +115,7 @@
      and it has to satisfy a number of other requirements,
      explicated in this theorem.")
    (xdoc::p
-    "This is used to prove @(tsee constraint-satp-of-relation."))
+    "This is used to prove @(tsee constraint-satp-of-relation)."))
   (b* ((outcome (exec-proof-tree ptree defs p))
        (asser (proof-outcome-assertion->get outcome))
        (asg (assertion->asg asser))
