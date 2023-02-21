@@ -265,7 +265,7 @@
                              "PFCS (Prime Field Constraint System) Library"))
 
    (xdoc::p
-    "A concrete syntax for PFCS, in the form of an ABNF grammar,
+    "A concrete syntax for PFCSes, in the form of an ABNF grammar,
      has been defined.")
 
    (xdoc::p
@@ -273,8 +273,8 @@
      to be more in line with the general notion of constraint system.")
 
    (xdoc::p
-    "Some arguments of semantic functions have been reordered,
-     for a more natural order.")
+    "Some arguments of semantic functions
+     have been put into a more natural order.")
 
    (xdoc::p
     "Some theorems have been added and other theorems have been improved.")
