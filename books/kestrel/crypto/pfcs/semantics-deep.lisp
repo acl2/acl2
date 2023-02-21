@@ -37,12 +37,14 @@
      This mathematical semantic function takes the following inputs:")
    (xdoc::ol
     (xdoc::li
-     "A list of definitions, of type @(tsee definition-list).")
-    (xdoc::li
      "A constraint, of type @(tsee constraint).")
     (xdoc::li
+     "A list of definitions, of type @(tsee definition-list).")
+    (xdoc::li
      "An assignment,
-      i.e. a finite map from variables to prime field elements."))
+      i.e. a finite map from variables to prime field elements.")
+    (xdoc::li
+     "The prime."))
    (xdoc::p
     "The mathematical semantic function
      returns one of the following possible outputs:")
@@ -72,7 +74,7 @@
      runs into an issue.
      A constraint that is a call of a relation is satisfied
      when all the constraints that form the body of the relation are satisfied,
-     in some assigment that extends the one that assigns
+     in some assignment that extends the one that assigns
      the actual parameters to the formal parameters.
      This is an existential quantification,
      which is expressed via @(tsee defun-sk) in ACL2,
@@ -273,7 +275,12 @@
                   (assignmentp asg)
                   (assignment-for-prime-p asg p)
                   (mv-nth 0 (eval-expr-list exprs asg p)))
-             (fe-listp (mv-nth 1 (eval-expr-list exprs asg p)) p))))
+             (fe-listp (mv-nth 1 (eval-expr-list exprs asg p)) p)))
+
+  (defret len-of-eval-expr-list
+    (implies okp
+             (equal (len nats)
+                    (len exprs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -310,18 +317,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define assertion-list-from ((asgs assignment-listp) (constrs constraint-listp))
-  :guard (equal (len asgs) (len constrs))
-  :returns (asrs assertion-listp)
-  :short "Lift @(tsee assertion) to lists."
-  (cond ((endp asgs) nil)
-        ((endp constrs) (acl2::impossible))
-        (t (cons (assertion (car asgs) (car constrs))
-                 (assertion-list-from (cdr asgs) (cdr constrs)))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (std::defprojection assertion-list->asg-list ((x assertion-listp))
   :returns (asgs assignment-listp)
   :short "Lift @(tsee assertion->asg) to lists."
@@ -332,11 +327,51 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection assertion-list->constr-list ((x assertion-listp))
-  :returns (asgs constraint-listp)
+  :returns (constrs constraint-listp)
   :short "Lift @(tsee assertion->constr) to lists."
   (assertion->constr x)
   ///
   (fty::deffixequiv assertion-list->constr-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define assertion-list-from ((asgs assignment-listp) (constrs constraint-listp))
+  :guard (equal (len asgs) (len constrs))
+  :returns (asrs assertion-listp)
+  :short "Lift @(tsee assertion) to lists."
+  (cond ((endp asgs) nil)
+        ((endp constrs) (acl2::impossible))
+        (t (cons (assertion (car asgs) (car constrs))
+                 (assertion-list-from (cdr asgs) (cdr constrs)))))
+  :hooks (:fix)
+  ///
+
+  (defrule assertion-list->asg-list-of-assertion-list-from
+    (implies (equal (len asgs) (len constrs))
+             (equal (assertion-list->asg-list
+                     (assertion-list-from asgs constrs))
+                    (assignment-list-fix asgs)))
+    :enable assertion-list->asg-list)
+
+  (defrule assertion-list->constr-list-of-assertion-list-from
+    (implies (equal (len asgs) (len constrs))
+             (equal (assertion-list->constr-list
+                     (assertion-list-from asgs constrs))
+                    (constraint-list-fix constrs)))
+    :enable assertion-list->constr-list)
+
+  (defrule assertion-list-from-of-assertion-list->asg/constr-list
+    (implies (assertion-listp assertions)
+             (equal (assertion-list-from
+                     (assertion-list->asg-list assertions)
+                     (assertion-list->constr-list assertions))
+                    assertions))
+    :enable (assertion-list->asg-list
+             assertion-list->constr-list))
+
+  (defrule len-of-assertion-list-from
+    (equal (len (assertion-list-from asgs constrs))
+           (min (len asgs) (len constrs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -368,7 +403,9 @@
         the constraints in the body that defines the relation,
         for some assignment that extends the one that assigns
         the values of the expressions to the formal parameters;
-        the assignment must be the same for all the subtrees.
+        the assignment must be the same for all the subtrees,
+        and we make this assignment an explicit component of the proof tree
+        for greater convenience in manipulating proof trees.
         This is formalized later; the description above is only a sketch.")))
     (:equal ((asg assignment)
              (left expression)
@@ -376,7 +413,8 @@
     (:relation ((asg assignment)
                 (name symbol)
                 (args expression-list)
-                (sub proof-tree-list)))
+                (sub proof-tree-list)
+                (asgext assignment)))
     :pred proof-treep)
 
   (fty::deflist proof-tree-list
@@ -462,9 +500,10 @@
      Then we execute the proof subtrees, propagating errors and failures.
      If the proof subtrees all succeed, they yield a list of assertions.
      We ensure that they all have the same assignment,
-     that such an assignment extends the one that assigns
-     the values of the argument expressions to the relation's formal parameters,
-     and that the constraints are the ones that
+     specifically the one that is part of the proof tree;
+     we ensure that such an assignment extends the one that assigns
+     the values of the argument expressions to the relation's formal parameters.
+     We ensure that the constraints are the ones that
      form the body of the named relation.
      In other words, the subtrees must prove that
      it is possible to extend the assignment of arguments to parameters
@@ -474,9 +513,9 @@
      in some suitable sense.
      We allow relations with an empty body (i.e. no constraints)
      to be proved by an empty list of subtrees;
-     note that in this case there is no assignment
-     in the assertions proved by the subtrees,
-     because they do not prove any assertions in fact."))
+     note that in this case there is no use of the extended assignment
+     that is part of the proof tree,
+     because the subtrees do not prove any assertions in fact."))
 
   (define exec-proof-tree ((ptree proof-treep)
                            (defs definition-listp)
@@ -497,7 +536,10 @@
                                                            :right ptree.right)))
          (proof-outcome-fail)))
      :relation
-     (b* (((unless (assignment-for-prime-p ptree.asg p)) (proof-outcome-error))
+     (b* (((unless (assignment-for-prime-p ptree.asg p))
+           (proof-outcome-error))
+          ((unless (assignment-for-prime-p ptree.asgext p))
+           (proof-outcome-error))
           ((mv okp vals) (eval-expr-list ptree.args ptree.asg p))
           ((unless okp) (proof-outcome-error))
           (def (lookup-definition ptree.name defs))
@@ -514,9 +556,8 @@
         (b* ((asgs (assertion-list->asg-list outcome.get))
              (constrs (assertion-list->constr-list outcome.get))
              ((unless (equal constrs def.body)) (proof-outcome-fail))
-             ((unless (or (endp asgs)
-                          (and (equal asgs (repeat (len asgs) (car asgs)))
-                               (omap::submap asg-para-vals (car asgs)))))
+             ((unless (and (equal asgs (repeat (len asgs) ptree.asgext))
+                           (omap::submap asg-para-vals ptree.asgext)))
               (proof-outcome-fail)))
           (proof-outcome-assertion
            (make-assertion
@@ -555,7 +596,25 @@
   ///
   (verify-guards exec-proof-tree)
 
-  (fty::deffixequiv-mutual exec-proof-tree))
+  (fty::deffixequiv-mutual exec-proof-tree)
+
+  (defrule proof-tree-equal-assignment-is-assertion-assignment
+    (implies (proof-tree-case ptree :equal)
+             (b* ((outcome (exec-proof-tree ptree defs p)))
+               (implies (proof-outcome-case outcome :assertion)
+                        (equal (assertion->asg
+                                (proof-outcome-assertion->get outcome))
+                               (proof-tree-equal->asg ptree)))))
+    :expand (exec-proof-tree ptree defs p))
+
+  (defrule proof-tree-relation-assignment-is-assertion-assignment
+    (implies (proof-tree-case ptree :relation)
+             (b* ((outcome (exec-proof-tree ptree defs p)))
+               (implies (proof-outcome-case outcome :assertion)
+                        (equal (assertion->asg
+                                (proof-outcome-assertion->get outcome))
+                               (proof-tree-relation->asg ptree)))))
+    :expand (exec-proof-tree ptree defs p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -609,7 +668,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define system-satp ((asg assignmentp) (sys systemp) (p primep))
+(define system-satp ((sys systemp) (asg assignmentp) (p primep))
   :guard (assignment-for-prime-p asg p)
   :returns (yes/no booleanp)
   :short "Check if an assignment satisfies a system."

@@ -2514,6 +2514,10 @@
   (let* ((concl (remove-guard-holders concl wrld))
          (xconcl (expand-inequality-fncall concl))
          (lst (and (null trigger-terms) ; optimization
+
+; By evaluating ground terms, we improve the chance that a trigger term matches
+; a rewritten target.
+
                    (external-linearize xconcl ens wrld state)))
          (hyps (preprocess-hyps hyps wrld))
          (all-vars-hyps (and (null trigger-terms) ; optimization
@@ -4819,8 +4823,9 @@
            (bad-attached-fns-2 (attached-fns common-anc-2 wrld)))
       (cond
        ((or bad-attached-fns-1 bad-attached-fns-2)
-        (let* ((msg "because of the attached function~#0~[~/s~] ~&0 being ~
-                     ancestral in both the ~@1 and ~@2 functions")
+        (let* ((msg "because the attached function~#0~[~/s~] ~&0 ~
+                     ~#1~[is~/are~/would be~] ancestral in both the ~@2 and ~
+                     ~@3 functions")
                (type-string
                 (if (eq rule-class :meta) "meta" "clause-processor"))
                (btm (canonical-sibling (car (or bad-attached-fns-1
@@ -4835,28 +4840,39 @@
               "The ~#0~[proposed~/existing~] ~x1 rule, ~x2, ~#0~[is ~
                illegal~/would become illegal after the proposed defattach ~
                event changes one or more attachments made to transparent ~
-               functions,~] ~@3~@4.  See :DOC ~
-               evaluator-restrictions.~@5~@6"
+               functions,~] ~@3~@4.  See :DOC evaluator-restrictions and see ~
+               :DOC transparent-functions.~@5~@6"
               (if newp 0 1)
               rule-class
               name
               (msg msg
                    (or bad-attached-fns-1 bad-attached-fns-2)
+                   (cond ((not newp) 2)
+                         ((cdr (or bad-attached-fns-1 bad-attached-fns-2)) 1)
+                         (t 0))
                    (if bad-attached-fns-1 "evaluator" "meta-extract")
                    type-string)
               (cond ((and bad-attached-fns-1 bad-attached-fns-2)
                      (msg ", and ~@0"
                           (msg msg
                                bad-attached-fns-2
+                               (cond ((not newp) 2)
+                                     ((cdr bad-attached-fns-2) 1)
+                                     (t 0))
                                "meta-extract"
                                type-string)))
                     (t ""))
-              (msg "~|~%The revised attachments would create the following ~
-                    ancestor path from ~x0 to ~x1:~|~%~X23"
-                   (car m-path) btm m-path nil)
-              (msg "~|~%The revised attachments would also create the ~
-                    following ancestor path from ~x0 to ~x1:~|~%~X23"
-                   (car e-path) btm e-path nil))))
+              (msg "~|~%The following ~#0~[is~/would be~] an ancestor path ~
+                    from ~x1 to the ~s2 function ~x3, i.e., each function ~
+                    symbol ~#0~[is~/would be~] a supporter of the ~
+                    next:~|~%~X45"
+                   (if newp 0 1) btm type-string (car m-path) (reverse m-path)
+                   nil)
+              (msg "~|~%The following ~#0~[is~/would be~] an ancestor path ~
+                    from ~x1 to the evaluator function ~x2, i.e., each ~
+                    function symbol ~#0~[is~/would be~] a supporter of the ~
+                    next:~|~%~X34"
+                   (if newp 0 1) btm (car e-path) (reverse e-path) nil))))
        (t (value (and (or tr-fns common-anc-2 common-anc-1)
                       (cons tr-fns
                             (union-eq common-anc-2 common-anc-1)))))))))

@@ -9715,9 +9715,15 @@
 ; unique and top-level is t.  Otherwise we return nil, except we return
 ; :several if top-level is nil.
 
+; Meta lemmas have a very dissimilar structure compared to the others and are
+; not of interest for our intended application, so we exclude them from
+; consideration.
+
   (cond ((null lst) nil)
-        ((equal sym
-                (base-symbol (access rewrite-rule (car lst) :rune)))
+        ((and (equal sym
+                     (base-symbol (access rewrite-rule (car lst) :rune)))
+              (not (eq (access rewrite-rule (car lst) :subclass)
+                       'meta)))
          (cond ((and top-level
                      (null (find-named-lemma sym (cdr lst) nil)))
                 (car lst))
