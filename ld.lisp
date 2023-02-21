@@ -1906,7 +1906,7 @@
 ; SETQ THROWN-VAL).  We make the convention that we always throw non-nil
 ; values to the tag so as to distinguish these two cases.
 
-                         #+akcl (si::RESET-STACK-LIMITS)
+                         #+gcl (si::RESET-STACK-LIMITS)
                          (COND ((EQ THROWN-VAL :ABORT)
 
 ; THROWN-VAL is always either NIL (meaning no throw occurred) or else the

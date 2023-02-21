@@ -17,28 +17,26 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
-;move?
-(defthm lambdas-closed-in-termsp-of-strip-cdrs-of-non-trivial-bindings
-  (implies (lambdas-closed-in-termsp vals)
-           (lambdas-closed-in-termsp (strip-cdrs (non-trivial-bindings vars vals))))
-  :hints (("Goal" :in-theory (enable non-trivial-bindings))))
+;; TODO: Prove that serialize-lambdas-in-term preserves the meaning of terms.
 
 ;move?
-(defthm lambdas-closed-in-termsp-of-strip-cdrs-of-revappend
-  (implies (and (lambdas-closed-in-termsp (strip-cdrs terms1))
-                (lambdas-closed-in-termsp (strip-cdrs terms2)))
-           (lambdas-closed-in-termsp (strip-cdrs (revappend terms1 terms2))))
-  :hints (("Goal" :in-theory (enable revappend))))
+(local
+ (defthm lambdas-closed-in-termsp-of-strip-cdrs-of-non-trivial-bindings
+   (implies (lambdas-closed-in-termsp vals)
+            (lambdas-closed-in-termsp (strip-cdrs (non-trivial-bindings vars vals))))
+   :hints (("Goal" :in-theory (enable non-trivial-bindings)))))
 
 ;move?
-(defthm lambdas-closed-in-termp-of-cdr-of-assoc-equal
-  (implies (lambdas-closed-in-termsp (strip-cdrs alist))
-           (lambdas-closed-in-termp (cdr (assoc-equal term alist))))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
+(local
+ (defthm lambdas-closed-in-termp-of-cdr-of-assoc-equal
+   (implies (lambdas-closed-in-termsp (strip-cdrs alist))
+            (lambdas-closed-in-termp (cdr (assoc-equal term alist))))
+   :hints (("Goal" :in-theory (enable assoc-equal)))))
 
 ;move?
 (defthm-flag-sublis-var-simple
@@ -86,6 +84,7 @@
            (lambdas-closed-in-termsp (strip-cdrs (serialize-bindings bindings names-to-avoid))))
   :hints (("Goal" :in-theory (enable serialize-bindings))))
 
+;; Serialize-lambdas-in-term doesn't create any unclosed lambdas.
 (defthm-flag-serialize-lambdas-in-term
   (defthm lambdas-closed-in-termp-of-serialize-lambdas-in-term
     (implies (and (pseudo-termp term)

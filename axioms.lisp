@@ -4816,15 +4816,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (:forward-chaining :trigger-terms
                       ((coerce str 'list)))))
 
-; In AKCL the nonstandard character #\Page prints as ^L and may be included in
-; strings, as in "^L".  Now if you try to type that string in ACL2, you get an
-; error.  And ACL2 does not let you use coerce to produce the string, e.g.,
-; with (coerce (list #\Page) 'string), because the guard for coerce is
-; violated.  So here we have a situation in which no ACL2 function in LP will
-; ever see a nonstandard char in a string, but CLTL permits it.  However, we
-; consider the axiom to be appropriate, because ACL2 strings contain only
-; standard characters.
-
 (in-theory (disable standard-char-listp standard-char-p))
 
 ; (defthm standard-char-listp-coerce-forward-chaining
@@ -9276,9 +9267,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (push ,item (car ,g))
          (if *lp-ever-entered-p*
              (illegal ,ctx
-                      "Apparently you have tried to execute a form in raw Lisp ~
-                       that is only intended to be executed inside the ACL2 ~
-                       loop.  You should probably abort (e.g., :Q in akcl or ~
+                      "Apparently you have tried to execute a form in raw ~
+                       Lisp that is only intended to be executed inside the ~
+                       ACL2 loop.  You should probably abort (e.g., :Q in ~
                        gcl, :A in LispWorks, :POP in Allegro), then type (LP) ~
                        and try again.  If this explanation seems incorrect, ~
                        then please contact the implementors of ACL2."
@@ -13561,8 +13552,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; *number-of-return-values* may be increased (but not reduced) to be
 ; as high as required to increase the allowed number of ACL2 return
 ; values.  However, if it is increased, the entire ACL2 system must be
-; recompiled.  Currently, the first 10 locations are handled specially
-; in releases of AKCL past 206.
+; recompiled.
 
 (defun cdrn (x i)
   (declare (xargs :guard (and (integerp i)
@@ -14544,8 +14534,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the value of state global 'acl2-version, which gets printed in .cert files.
 
 ; Leave this here.  It is read when loading acl2.lisp.  This constant should be
-; a string containing at least one `.'.  The function save-acl2-in-akcl in
-; akcl-init.lisp suggests that the user see :doc notexxx, where xxx is the
+; a string containing at least one `.'.  The function save-acl2-in-gcl in
+; acl2-init.lisp suggests that the user see :doc notexxx, where xxx is the
 ; substring appearing after the first `.'.
 
 ; We have occasion to write fixed version numbers in this code, that is,
@@ -17910,7 +17900,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; We here set up the property list of the three channels that are open
 ; at the beginning.  The order of the setfs and the superfluous call
-; of symbol-name are to arrange, in AKCL, for the stream component to
+; of symbol-name are to arrange, in GCL, for the stream component to
 ; be first on the property list.
 
 #-acl2-loop-only
@@ -18241,7 +18231,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (interface-er "Illegal input-type ~x0." typ)))))
               (cond
                ((null stream) (mv nil *the-live-state*))
-               #+(and acl2-infix akcl)
+               #+(and acl2-infix gcl)
                ((and (eq typ :object)
                      (not (lisp-book-syntaxp os-file-name)))
 

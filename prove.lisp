@@ -8250,7 +8250,7 @@
 ; might have been two or three where an 8 hour day was put in.  We
 ; worked separately, "contracting" with one another to do the various
 ; parts and meeting to go over the code.  Bill Schelter was extremely
-; helpful in tuning akcl for us.  Several times we did massive
+; helpful in tuning akcl (later gcl) for us.  Several times we did massive
 ; rewrites as we changed the subset or discovered new programming
 ; styles.  During that period Moore went to the beach at Rockport one
 ; weekend, to Carlsbad Caverns for Labor Day, to the University of
