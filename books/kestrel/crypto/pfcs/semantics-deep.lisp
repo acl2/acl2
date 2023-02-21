@@ -317,18 +317,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define assertion-list-from ((asgs assignment-listp) (constrs constraint-listp))
-  :guard (equal (len asgs) (len constrs))
-  :returns (asrs assertion-listp)
-  :short "Lift @(tsee assertion) to lists."
-  (cond ((endp asgs) nil)
-        ((endp constrs) (acl2::impossible))
-        (t (cons (assertion (car asgs) (car constrs))
-                 (assertion-list-from (cdr asgs) (cdr constrs)))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (std::defprojection assertion-list->asg-list ((x assertion-listp))
   :returns (asgs assignment-listp)
   :short "Lift @(tsee assertion->asg) to lists."
@@ -344,6 +332,46 @@
   (assertion->constr x)
   ///
   (fty::deffixequiv assertion-list->constr-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define assertion-list-from ((asgs assignment-listp) (constrs constraint-listp))
+  :guard (equal (len asgs) (len constrs))
+  :returns (asrs assertion-listp)
+  :short "Lift @(tsee assertion) to lists."
+  (cond ((endp asgs) nil)
+        ((endp constrs) (acl2::impossible))
+        (t (cons (assertion (car asgs) (car constrs))
+                 (assertion-list-from (cdr asgs) (cdr constrs)))))
+  :hooks (:fix)
+  ///
+
+  (defrule assertion-list->asg-list-of-assertion-list-from
+    (implies (equal (len asgs) (len constrs))
+             (equal (assertion-list->asg-list
+                     (assertion-list-from asgs constrs))
+                    (assignment-list-fix asgs)))
+    :enable assertion-list->asg-list)
+
+  (defrule assertion-list->constr-list-of-assertion-list-from
+    (implies (equal (len asgs) (len constrs))
+             (equal (assertion-list->constr-list
+                     (assertion-list-from asgs constrs))
+                    (constraint-list-fix constrs)))
+    :enable assertion-list->constr-list)
+
+  (defrule assertion-list-from-of-assertion-list->asg/constr-list
+    (implies (assertion-listp assertions)
+             (equal (assertion-list-from
+                     (assertion-list->asg-list assertions)
+                     (assertion-list->constr-list assertions))
+                    assertions))
+    :enable (assertion-list->asg-list
+             assertion-list->constr-list))
+
+  (defrule len-of-assertion-list-from
+    (equal (len (assertion-list-from asgs constrs))
+           (min (len asgs) (len constrs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -508,7 +536,10 @@
                                                            :right ptree.right)))
          (proof-outcome-fail)))
      :relation
-     (b* (((unless (assignment-for-prime-p ptree.asg p)) (proof-outcome-error))
+     (b* (((unless (assignment-for-prime-p ptree.asg p))
+           (proof-outcome-error))
+          ((unless (assignment-for-prime-p ptree.asgext p))
+           (proof-outcome-error))
           ((mv okp vals) (eval-expr-list ptree.args ptree.asg p))
           ((unless okp) (proof-outcome-error))
           (def (lookup-definition ptree.name defs))
