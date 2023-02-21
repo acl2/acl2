@@ -17,9 +17,20 @@
 ;; We might prefer the result to be (the translation of) (let ((z 3)) (+ y z))
 ;; but then we have to think about capture
 (assert-equal
+ ;; the regular sublis-var gives the same thing on this
  (sublis-var-simple (acons 'x 'y nil)
                     ;; :trans (let ((z 3)) (+ x z))
                     '((lambda (z x) (binary-+ x z)) '3 x)
                     )
  ;; :trans (let ((z 3) (x y)) (+ x z))
  '((lambda (z x) (binary-+ x z)) '3 y))
+
+;; Here, it's less clear that there is a nicer alternate result, due to
+;; capture:
+(assert-equal
+ (sublis-var-simple (acons 'x '(cons z z) nil)
+                    ;; :trans (let ((z 3)) (+ x z))
+                    '((lambda (z x) (binary-+ x z)) '3 x)
+                    )
+ ;; :trans (let ((z 3) (x (cons z z))) (+ x z))
+ '((lambda (z x) (binary-+ x z)) '3 (cons z z)))
