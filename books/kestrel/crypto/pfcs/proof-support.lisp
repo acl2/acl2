@@ -485,6 +485,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled constraint-list-satp-of-append
+  :short "Proof rule for the concatenation of lists of constraints."
   (equal (constraint-list-satp (append constrs1 constrs2) defs asg p)
          (and (constraint-list-satp constrs1 defs asg p)
               (constraint-list-satp constrs2 defs asg p)))
@@ -494,6 +495,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled constraint-list-satp-of-rev
+  :short "Proof rule for a reversed list of constraints."
   (equal (constraint-list-satp (rev constrs) defs asg p)
          (constraint-list-satp constrs defs asg p))
   :enable (rev
