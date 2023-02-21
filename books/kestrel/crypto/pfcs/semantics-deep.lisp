@@ -339,7 +339,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection assertion-list->constr-list ((x assertion-listp))
-  :returns (asgs constraint-listp)
+  :returns (constrs constraint-listp)
   :short "Lift @(tsee assertion->constr) to lists."
   (assertion->constr x)
   ///
