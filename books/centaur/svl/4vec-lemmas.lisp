@@ -4063,6 +4063,13 @@ t))
                              SV::4VEC->lower)
                             (4vec)))))
 
+; Matt K. mod, 2/20/2023: The use of (logbitp-reasoning) makes ACL2(p) with
+; waterfall-parallelism enabled complain that "the form (LOGBITP-REASONING) was
+; expected to represent an ordinary value, not an error triple (mv erp val
+; state), as would be acceptable in a serial execution of ACL2".  So I'll turn
+; off waterfall parallelism here.
+(local (set-waterfall-parallelism nil))
+
 (defthm 4vec-bitxor-of-0-better
   (and (equal (sv::4vec-bitxor 0 x)
               (sv::3vec-fix x))
@@ -8545,8 +8552,8 @@ lognot)
 
                  (:e INTEGER-LENGTH)
                  (:e 4vec-p)
-                 
-                 
+
+
 
                  (:type-prescription acl2::binary-logior)
                  (:type-prescription acl2::binary-logxor)
@@ -8560,7 +8567,7 @@ lognot)
       :hints (("Goal"
                :in-theory (e/d (acl2::zbp acl2::bool->bit) ())))))
 
-   
+
 
    (defthm 4vec-bitxor-assoc-and-comm
      (and (equal (sv::4vec-bitxor (sv::4vec-bitxor x y) z)
@@ -8641,7 +8648,7 @@ lognot)
                                              (sv::4vec-bitnot x))))
      :hints ((bitops::logbitp-reasoning)))
 
-   
+
 
    (defthmd 4vec-bitnot-to-4vec-bitxor
      (implies t
@@ -8658,7 +8665,7 @@ lognot)
                  (sv::4vec-bitor x y)))
      ;;:otf-flg t
      :hints ((bitops::logbitp-reasoning)))
-   
+
    (defthmd 4vec-bitor-of-4vec-bitand
      (and (equal (4vec-bitor x (4vec-bitand a b))
                  (4vec-bitand (4vec-bitor x a)
@@ -8701,7 +8708,7 @@ lognot)
      (and (equal (sv::4vec-bitxor (sv::3vec-fix x) y)
                  (sv::4vec-bitxor x y))
           (equal (sv::4vec-bitxor y (sv::3vec-fix x))
-                 (sv::4vec-bitxor y x))) 
+                 (sv::4vec-bitxor y x)))
      :hints ((bitops::logbitp-reasoning)))
 
    (local
@@ -8714,7 +8721,7 @@ lognot)
                                 sv::4vec->upper) ())))))
 
    (defthm 4vec-bitor-equiv-under-mask-for-xor
-     (implies (and 
+     (implies (and
                    (integerp mask)
                    (equal (4vec-bitor mask x)
                           (4vec-bitor mask y))
@@ -8726,7 +8733,7 @@ lognot)
      :hints ((bitops::logbitp-reasoning)))
 
    (defthm 4vec-bitand-equiv-under-mask-for-xor
-     (implies (and 
+     (implies (and
                    (integerp mask)
                    (equal (4vec-bitand mask x)
                           (4vec-bitand mask y))
@@ -8737,7 +8744,7 @@ lognot)
                      t))
      :hints ((bitops::logbitp-reasoning)))
 
-   (defthm 4vec-bitxor-of-the-same 
+   (defthm 4vec-bitxor-of-the-same
      (and (implies (integerp x)
                    (equal (sv::4vec-bitxor x (sv::4vec-bitxor x y))
                           (sv::3vec-fix y)))
@@ -8746,10 +8753,10 @@ lognot)
                           0)))
      :hints ((bitops::logbitp-reasoning)))
 
-   
 
-   
-   
+
+
+
    )
 
 

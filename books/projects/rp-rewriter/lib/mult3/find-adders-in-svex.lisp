@@ -2179,6 +2179,13 @@
                       (svl::svex-eval$-bitxor-lst exploded-args env)
                       )))))
 
+; Matt K. mod, 2/20/2023: The use of (logbitp-reasoning) makes ACL2(p) with
+; waterfall-parallelism enabled complain that "the form (LOGBITP-REASONING) was
+; expected to represent an ordinary value, not an error triple (mv erp val
+; state), as would be acceptable in a serial execution of ACL2".  So I'll turn
+; off waterfall parallelism here.
+(local (set-waterfall-parallelism nil))
+
 ;; This is to remove everyting in to-remove-lst
 ;; When remaining-to-remove is nil, then it means everything in to-remove-lst was removed.
 (define find-s-from-found-c-in-svex-aux-remove ((svex)
@@ -2403,7 +2410,7 @@
                                           ()))))
 
                )
-             
+
              (define find-s-from-found-c-bitxor-args (args)
                :returns (res sv::svex-p :hyp (force (sv::Svexlist-p args)))
                (cond
@@ -2658,14 +2665,14 @@
 
        ;;(- (rp::cwe "in find-f/h-adders-in-svex-alist. Incoming svex-alist: ~p0 ~%" svex-alist))
 
-       
-       
+
+
        ((mv pattern-alist &)
         (gather-adder-patterns-in-svex-alist svex-alist nil nil pass-num))
        (svex-alist (replace-adder-patterns-in-svex-alist svex-alist pattern-alist pass-num))
 
-       
-       
+
+
        (- (clear-memoize-table 'replace-adder-patterns-in-svex))
        (pattern-alist (fast-alist-clean pattern-alist))
        (replaced-pattern-cnt (pattern-alist-has-complete-full-adder-patterns-p pattern-alist))
@@ -2682,7 +2689,7 @@
         (progn$ (cw "- Replacement after the previous quick search revealed ~p0 more ~s1 patterns, which are all replaced. Let's make another pass.~%"
                     new-pattern-cnt adder-str)
                 (b* ((svex-alist (replace-adder-patterns-in-svex-alist svex-alist pattern-alist pass-num))
-                     
+
                      (- (fast-alist-free pattern-alist)))
                   (find-f/h-adders-in-svex-alist svex-alist (1- limit)))))
 
@@ -2696,7 +2703,7 @@
 
        (new-svex-alist (find-s-from-found-c-in-svex-alist-aux svex-alist collected-args-alist))
 
-       
+
 
        (- (clear-memoize-table 'find-s-from-found-c-in-svex-aux-for-fa))
        (- (fast-alist-free collected-args-alist))
@@ -3323,7 +3330,7 @@
        (- (cw "Finished: rp::rewrite-adders-in-svex-alist.~%"))
 
 
-       
+
 
        )
     svex-alist)

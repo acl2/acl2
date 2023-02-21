@@ -7199,7 +7199,7 @@
 ; is the first property on every property list upon which it is found.  We try
 ; to maintain that invariant in set-w where we always move the property up when
 ; we mess with a symbol's plist.  Of course, one must then wonder why this
-; program is ever useful.  The reason is that in some lisps, e.g., AKCL, when
+; program is ever useful.  The reason is that in some lisps, e.g., GCL, when
 ; you ask for the symbol-name of a symbol it has the side-effect of storing the
 ; string on the plist for future use.  Thus, for example, during booting of
 ; ACL2 we keep the world key at the front but then when we print the name of
@@ -8374,7 +8374,7 @@
 ; added since the last such proof.  But it will leave you in a state so that
 ; you can continue to develop proofs.  In particular, if you have changed some
 ; of the proved code, e.g., axioms.lisp, and you wish to re-verify it, you can
-; proceed as follows.  First, fire up akcl.  Then do (acl2::load-acl2).
+; proceed as follows.  First, fire up gcl.  Then do (acl2::load-acl2).
 ; Finally do (initialize-acl2 nil) and wait for the first proof to fail.  When
 ; it fails you will be returned to lisp.  There, in raw lisp, you should
 ; execute
@@ -8444,7 +8444,7 @@
 ; the form using state is not compiled.
 
 ; Finally: another way to prove your way through axioms.lisp is to invoke
-; (acl2::load-acl2) and (initialize-acl2), then save the system (e.g., in akcl
+; (acl2::load-acl2) and (initialize-acl2), then save the system (e.g., in gcl
 ; execute (si::save-system "my-saved_acl2")), and now each time you invoke that
 ; saved image first execute
 
@@ -8462,9 +8462,9 @@
    (set-initial-cbd)
    (makunbound '*copy-of-common-lisp-symbols-from-main-lisp-package*)
    (let* ((*features* (cons :acl2-loop-only *features*))
-          #+akcl
+          #+gcl
 
-; AKCL compiler note stuff.  We have so many tail recursive functions
+; GCL compiler note stuff.  We have so many tail recursive functions
 ; that the notes about tail recursion optimization are just too much
 ; to take.
 
@@ -9337,7 +9337,7 @@
   (when (not *acl2-default-restart-complete*)
     (acl2-default-restart t)
     #+gcl
-    (save-acl2-in-akcl nil nil nil t))
+    (save-acl2-in-gcl nil nil nil t))
 
   (with-more-warnings-suppressed
 
