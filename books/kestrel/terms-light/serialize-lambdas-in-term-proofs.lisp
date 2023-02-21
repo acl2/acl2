@@ -14,6 +14,7 @@
 (include-book "serialize-lambdas-in-term")
 (include-book "non-trivial-formals")
 (local (include-book "make-lambda-nest-proofs"))
+(local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
@@ -31,32 +32,6 @@
    (implies (lambdas-closed-in-termsp vals)
             (lambdas-closed-in-termsp (strip-cdrs (non-trivial-bindings vars vals))))
    :hints (("Goal" :in-theory (enable non-trivial-bindings)))))
-
-;move?
-(local
- (defthm lambdas-closed-in-termp-of-cdr-of-assoc-equal
-   (implies (lambdas-closed-in-termsp (strip-cdrs alist))
-            (lambdas-closed-in-termp (cdr (assoc-equal term alist))))
-   :hints (("Goal" :in-theory (enable assoc-equal)))))
-
-;move?
-(defthm-flag-sublis-var-simple
-  (defthm lambdas-closed-in-termp-of-sublis-var-simple
-    (implies (and (pseudo-termp term)
-                  (lambdas-closed-in-termp term)
-                  (lambdas-closed-in-termsp (strip-cdrs alist)))
-             (lambdas-closed-in-termp (sublis-var-simple alist term)))
-    :flag sublis-var-simple)
-  (defthm lambdas-closed-in-termp-of-sublis-var-lst-simple
-    (implies (and (pseudo-term-listp terms)
-                  (lambdas-closed-in-termsp terms)
-                  (lambdas-closed-in-termsp (strip-cdrs alist)))
-             (lambdas-closed-in-termsp (sublis-var-simple-lst alist terms)))
-    :flag sublis-var-simple-lst)
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable sublis-var-simple
-                              sublis-var-simple-lst
-                              lambdas-closed-in-termp))))
 
 (defthm lambdas-closed-in-termsp-of-strip-cdrs-of-mv-nth-1-of-find-safe-binding
   (implies (and (symbol-alistp bindings)

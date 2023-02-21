@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 ;; See tests in sublis-var-simple-tests.lisp.
+;; See proofs in sublis-var-simple-proofs.lisp.
 
 (include-book "kestrel/utilities/symbol-term-alistp" :dir :system)
 (include-book "tools/flag" :dir :system)
@@ -74,6 +75,7 @@
          (len terms))
   :hints (("Goal" :in-theory (enable sublis-var-simple-lst))))
 
+;;sublis-var-simple preserves pseudo-termp.
 (defthm-flag-sublis-var-simple
   (defthm pseudo-termp-of-sublis-var-simple
     (implies (and (pseudo-termp term)
