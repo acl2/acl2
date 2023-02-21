@@ -375,7 +375,9 @@
         the constraints in the body that defines the relation,
         for some assignment that extends the one that assigns
         the values of the expressions to the formal parameters;
-        the assignment must be the same for all the subtrees.
+        the assignment must be the same for all the subtrees,
+        and we make this assignment an explicit component of the proof tree
+        for greater convenience in manipulating proof trees.
         This is formalized later; the description above is only a sketch.")))
     (:equal ((asg assignment)
              (left expression)
@@ -383,7 +385,8 @@
     (:relation ((asg assignment)
                 (name symbol)
                 (args expression-list)
-                (sub proof-tree-list)))
+                (sub proof-tree-list)
+                (asgext assignment)))
     :pred proof-treep)
 
   (fty::deflist proof-tree-list
@@ -469,9 +472,10 @@
      Then we execute the proof subtrees, propagating errors and failures.
      If the proof subtrees all succeed, they yield a list of assertions.
      We ensure that they all have the same assignment,
-     that such an assignment extends the one that assigns
-     the values of the argument expressions to the relation's formal parameters,
-     and that the constraints are the ones that
+     specifically the one that is part of the proof tree;
+     we ensure that such an assignment extends the one that assigns
+     the values of the argument expressions to the relation's formal parameters.
+     We ensure that the constraints are the ones that
      form the body of the named relation.
      In other words, the subtrees must prove that
      it is possible to extend the assignment of arguments to parameters
@@ -481,9 +485,9 @@
      in some suitable sense.
      We allow relations with an empty body (i.e. no constraints)
      to be proved by an empty list of subtrees;
-     note that in this case there is no assignment
-     in the assertions proved by the subtrees,
-     because they do not prove any assertions in fact."))
+     note that in this case there is no use of the extended assignment
+     that is part of the proof tree,
+     because the subtrees do not prove any assertions in fact."))
 
   (define exec-proof-tree ((ptree proof-treep)
                            (defs definition-listp)
@@ -521,9 +525,8 @@
         (b* ((asgs (assertion-list->asg-list outcome.get))
              (constrs (assertion-list->constr-list outcome.get))
              ((unless (equal constrs def.body)) (proof-outcome-fail))
-             ((unless (or (endp asgs)
-                          (and (equal asgs (repeat (len asgs) (car asgs)))
-                               (omap::submap asg-para-vals (car asgs)))))
+             ((unless (and (equal asgs (repeat (len asgs) ptree.asgext))
+                           (omap::submap asg-para-vals ptree.asgext)))
               (proof-outcome-fail)))
           (proof-outcome-assertion
            (make-assertion
