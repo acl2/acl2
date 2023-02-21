@@ -208,7 +208,7 @@
          (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                      (valuep x)
                      (value-case x :pointer)
-                     (not (value-pointer-nullp x))
+                     (value-pointer-validp x)
                      (equal (value-pointer->reftype x)
                             ,(type-to-maker type))
                      (unop-case op :indir)

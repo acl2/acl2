@@ -194,6 +194,11 @@
 ; in w must be a multiple of *event-index-interval*; this follows from the case
 ; for i=0.
 
+(defabbrev safe-remove-local (x)
+  (if (and (consp x)
+           (eq (car x) 'local))
+      (cdr x)
+    x))
 
 (defun safe-access-event-tuple-number (x)
 
@@ -201,15 +206,16 @@
 ; always returns an integer.  The smallest actual value for
 ; access-event-tuple-number in a well-formed world is -1.
 
-  (if (consp x)
-      (if (integerp (car x))
-          (car x)
+  (let ((x (safe-remove-local x)))
+    (if (consp x)
+        (if (integerp (car x))
+            (car x)
           (if (consp (car x))
               (if (integerp (caar x))
                   (caar x)
-                  -2)
-              -2))
-      -2))
+                -2)
+            -2))
+      -2)))
 
 (defun pseudo-event-indexp (x w)
   (declare (xargs :guard (plist-worldp w)))
@@ -273,22 +279,6 @@
 
 ; EVENT-LANDMARK [GLOBAL-VALUE]
 
-(defun pseudo-function-symbolp (fn n)
-
-; The n above is just a placeholder to allow me to record the requirements on
-; the arity of fn.  These requirements cannot be checked in pseudo situation
-; because there is no world.  But my convention is that n = nil means no
-; requirement stated and otherwise n is a natural that must be the arity of fn.
-
-  (declare (ignore n))
-  (symbolp fn))
-
-(defun pseudo-function-symbol-listp (lst n)
-  (if (atom lst)
-      (null lst)
-      (and (pseudo-function-symbolp (car lst) n)
-           (pseudo-function-symbol-listp (cdr lst) n))))
-
 ; See pseudo-event-landmarkp in pseudo-event-landmarkp.lisp.
 ; That function was originally here in this file.
 
@@ -314,6 +304,22 @@
        (symbolp (cadr rune))
        (or (null (cddr rune))
            (natp (cddr rune)))))
+
+(defun pseudo-function-symbolp (fn n)
+
+; The n above is just a placeholder to allow me to record the requirements on
+; the arity of fn.  These requirements cannot be checked in pseudo situation
+; because there is no world.  But my convention is that n = nil means no
+; requirement stated and otherwise n is a natural that must be the arity of fn.
+
+  (declare (ignore n))
+  (symbolp fn))
+
+(defun pseudo-function-symbol-listp (lst n)
+  (if (atom lst)
+      (null lst)
+      (and (pseudo-function-symbolp (car lst) n)
+           (pseudo-function-symbol-listp (cdr lst) n))))
 
 (defun pseudo-well-founded-relation-alistp (val)
   (cond ((atom val) (null val))
