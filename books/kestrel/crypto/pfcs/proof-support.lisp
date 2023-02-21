@@ -29,13 +29,13 @@
      (where the number of bits is a parameter),
      or even more simply a gadget parameterized over
      the choice of names of its variables,
-     the deeply embedded semantics ie needed.")
+     the deeply embedded semantics is needed.")
    (xdoc::p
     "The reason is that we can define an ACL2 function
      that takes the parameters as inputs
      and returns the corresponding gadget in PFCS abstract syntax,
      whose properties we can then prove,
-     universally quantified over the parameters
+     universally quantified over the aforementioned parameters
      (possibly with some restrictions on the parameters).
      This is only possible in the deeply embedded semantics,
      which treats the PFCS abstract syntax explicitly.
@@ -43,13 +43,13 @@
      turns fixed instances of PFCS abstract syntax into ACL2 predicates,
      without an easy way to parameterize them.
      It may be possible to extend the shallowly embedded semantics
-     to recognize and take into account certain forms of parameterized PFCS,
-     or even extend PFCS with forms of parameterization.
+     to recognize and take into account certain forms of parameterized PFCSes,
+     or even extend PFCSes with forms of parameterization.
      It may be also possible to define ACL2 functions
      that generate both PFCS abstract syntax and associated proofs,
      based on the kind of parameters mentioned above.
      But for now,
-     with PFCS and their shallowly embedded semantics being what they are,
+     with PFCSes and their shallowly embedded semantics being what they are,
      the deeply embedded semantics must be used
      to reason about parameterized PFCSes.")
    (xdoc::p
@@ -58,14 +58,52 @@
      existentially quantified proof trees and their execution.
      The reason for that complication is discussed
      in @(see semantics-deeply-embedded).
-     The complication extends to attempts to reason about PFCSes
+     The complication burdens the task to reason about PFCSes
      (whether parameterized or not)
-     directly in terms of the defined semantics.")
+     directly in terms of the deeply embedded semantics.")
    (xdoc::p
-    "Fortunately, it should be possible to prove rules
-     that facilitate reasoning with the deeply embedded semantics.
-     These rules let us avoid dealing explcitly with proof trees.
-     These rules are work in progress."))
+    "Therefore, here we provide functions and theorems (rules)
+     to facilitate reasoning with the deeply embedded semantics.
+     These let us dispense with explicitly dealing with proof trees,
+     and instead have essentially alternative definitions
+     of semantic predicates like @(tsee constraint-satp)
+     that are expressed in simpler terms than
+     via existentially quantified proof trees.
+     (These alternative definitions could not be used as actual definitions,
+     because of the recursion and existential quantification issues
+     discussed in @(see semantics-deeply-embedded).)")
+   (xdoc::p
+    "Currently we provide the following forms of proof support:")
+   (xdoc::ul
+    (xdoc::li
+     "A rule @(tsee constraint-satp-of-equal),
+      to rewrite @(tsee constraint-satp) over an equality constraint
+      to an alternative definition @(tsee constraint-equal-satp),
+      which is directly expressed in terms of
+      the two expressions being equal and non-erroneous.")
+    (xdoc::li
+     "A rule @(tsee constraint-satp-of-relation),
+      to rewrite @(tsee constraint-satp) over a relation application constraint
+      to an alternative definition @(tsee constraint-relation-satp),
+      which is directly expressed in terms of
+      the satisfaction of the suitably instantiated body of the relation.")
+    (xdoc::li
+     "Rules that decompose @(tsee constraint-list-satp)
+      into @(tsee constraint-satp) of the elements,
+      specifically @(tsee constraint-list-satp-of-cons)
+      and @(tsee constraint-list-satp-of-append),
+      along with rules @(tsee constraint-list-satp-of-nil)
+      and @(tsee constraint-list-satp-of-atom)
+      to resolve empty lists of constraints as alwasy satisfied.
+      We also have a rule @(tsee constraint-list-satp-of-rev)
+      that simplifies @(tsee rev) away,
+      since constraint satisfaction is not ordered-dependent."))
+   (xdoc::p
+    "More proof rules may be added here in the future,
+     but it should be clear from the list above
+     that we already have rules to cover
+     both kinds of single constraints
+     as well as lists of constraints."))
   :order-subtopics t
   :default-parent t)
 
