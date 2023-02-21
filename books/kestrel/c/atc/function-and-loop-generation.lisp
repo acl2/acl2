@@ -1258,7 +1258,7 @@
                       (list `(not (var-autop ,formal-id ,compst-var)))
                     (list `(valuep ,formal-ptr)
                           `(value-case ,formal-ptr :pointer)
-                          `(not (value-pointer-nullp ,formal-ptr))
+                          `(value-pointer-validp ,formal-ptr)
                           `(equal (objdesign-kind
                                    (value-pointer->designator ,formal-ptr))
                                   :address)

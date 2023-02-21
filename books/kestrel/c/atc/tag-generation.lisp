@@ -123,7 +123,7 @@
               `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                              (valuep ptr)
                              (value-case ptr :pointer)
-                             (not (value-pointer-nullp ptr))
+                             (value-pointer-validp ptr)
                              (equal (value-pointer->reftype ptr)
                                     (type-struct (ident ,(ident->name tag))))
                              (equal struct
@@ -264,7 +264,7 @@
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                           (valuep ptr)
                           (value-case ptr :pointer)
-                          (not (value-pointer-nullp ptr))
+                          (value-pointer-validp ptr)
                           (equal (value-pointer->reftype ptr)
                                  (type-struct (ident ,(ident->name tag))))
                           (equal struct
@@ -533,7 +533,7 @@
                                                   compst))
                              (valuep ptr)
                              (value-case ptr :pointer)
-                             (not (value-pointer-nullp ptr))
+                             (value-pointer-validp ptr)
                              (equal (value-pointer->reftype ptr)
                                     (type-struct (ident ,(ident->name tag))))
                              (equal struct
@@ -801,7 +801,7 @@
                                                compst))
                           (valuep ptr)
                           (value-case ptr :pointer)
-                          (not (value-pointer-nullp ptr))
+                          (value-pointer-validp ptr)
                           (equal (value-pointer->reftype ptr)
                                  (type-struct (ident ,(ident->name tag))))
                           (equal struct
