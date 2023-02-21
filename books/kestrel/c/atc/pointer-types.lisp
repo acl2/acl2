@@ -40,7 +40,7 @@
      may be operated upon either by value or by pointer.")
    (xdoc::p
     "To distinguish the two cases, i.e. by value or by pointer,
-     we introduce an identity wrapper @(tsee pointer),
+     we introduce an identity wrapper @(tsee star),
      which we can use to wrap recognizers of C values
      to signify that we mean pointers to those values.
      This wrapper can be used in guards of ACL2 functions
@@ -52,12 +52,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pointer (x)
+(define star (x)
   :short "Wrapper to represent a C pointer type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The idea is that @('(pointer (P ...))') represents,
+    "The idea is that @('(star (P ...))') represents,
      for the purpose of generating a C type,
      the pointer type @('T *')
      if the recognizer @('P') represents type @('T')."))

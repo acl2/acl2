@@ -122,7 +122,7 @@
      as explained in the user documentation.")
    (xdoc::p
     "The conjunct must have the form
-     @('(recognizer var)') or @('(pointer (recognizer var))'),
+     @('(recognizer var)') or @('(star (recognizer var))'),
      where @('recognizer') is a recognizer of a C type
      and @('var') is a variable.
      If the recognizer is a known one for integer array types,
@@ -164,7 +164,7 @@
        (fn (ffn-symb conjunct))
        (arg (fargn conjunct 1))
        ((mv okp pointerp recog arg)
-        (if (eq fn 'pointer)
+        (if (eq fn 'star)
             (if (or (variablep arg)
                     (fquotep arg)
                     (flambda-applicationp arg))
