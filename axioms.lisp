@@ -15639,9 +15639,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; state-global-let*.  It generates a list of f-put-globals that will set the
 ; bound variables in bindings to their desired local values, except that
 ; ``setters'' are used instead where provided (see the discussion of setters in
-; state-global-let*).  We insist that those initialization forms not mention
-; the temporary variable state-global-let* uses to hang onto the restoration
-; values.
+; :DOC state-global-let*).  We insist that those initialization forms not
+; mention the temporary variable state-global-let* uses to hang onto the
+; restoration values.
 
   (declare (xargs :guard (state-global-let*-bindings-p bindings)))
   (cond ((endp bindings) nil)
@@ -15692,7 +15692,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; way, which makes each f-put-global explicit and needs no special treatment.
 
 ; Finally, note that we use setters in place of f-put-global, when they are
-; provided; see the discussion of setters in state-global-let*.
+; provided; see the discussion of setters in :DOC state-global-let*.
 
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
                               (natp index))))
