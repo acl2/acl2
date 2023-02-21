@@ -560,7 +560,25 @@
   ///
   (verify-guards exec-proof-tree)
 
-  (fty::deffixequiv-mutual exec-proof-tree))
+  (fty::deffixequiv-mutual exec-proof-tree)
+
+  (defrule proof-tree-equal-assignment-is-assertion-assignment
+    (implies (proof-tree-case ptree :equal)
+             (b* ((outcome (exec-proof-tree ptree defs p)))
+               (implies (proof-outcome-case outcome :assertion)
+                        (equal (assertion->asg
+                                (proof-outcome-assertion->get outcome))
+                               (proof-tree-equal->asg ptree)))))
+    :expand (exec-proof-tree ptree defs p))
+
+  (defrule proof-tree-relation-assignment-is-assertion-assignment
+    (implies (proof-tree-case ptree :relation)
+             (b* ((outcome (exec-proof-tree ptree defs p)))
+               (implies (proof-outcome-case outcome :assertion)
+                        (equal (assertion->asg
+                                (proof-outcome-assertion->get outcome))
+                               (proof-tree-relation->asg ptree)))))
+    :expand (exec-proof-tree ptree defs p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
