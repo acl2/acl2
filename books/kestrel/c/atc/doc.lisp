@@ -414,25 +414,25 @@
      (xdoc::li
       "@('(ullongp x)'), representing @('unsigned long long').")
      (xdoc::li
-      "@('(pointer (scharp x))'), representing @('signed char *').")
+      "@('(star (scharp x))'), representing @('signed char *').")
      (xdoc::li
-      "@('(pointer (ucharp x))'), representing @('unsigned char *').")
+      "@('(star (ucharp x))'), representing @('unsigned char *').")
      (xdoc::li
-      "@('(pointer (sshortp x))'), representing @('signed short *').")
+      "@('(star (sshortp x))'), representing @('signed short *').")
      (xdoc::li
-      "@('(pointer (ushortp x))'), representing @('unsigned short *').")
+      "@('(star (ushortp x))'), representing @('unsigned short *').")
      (xdoc::li
-      "@('(pointer (sintp x))'), representing @('signed int *').")
+      "@('(star (sintp x))'), representing @('signed int *').")
      (xdoc::li
-      "@('(pointer (uintp x))'), representing @('unsigned int *').")
+      "@('(star (uintp x))'), representing @('unsigned int *').")
      (xdoc::li
-      "@('(pointer (slongp x))'), representing @('signed long *').")
+      "@('(star (slongp x))'), representing @('signed long *').")
      (xdoc::li
-      "@('(pointer (ulongp x))'), representing @('unsigned long *').")
+      "@('(star (ulongp x))'), representing @('unsigned long *').")
      (xdoc::li
-      "@('(pointer (sllongp x))'), representing @('signed long long *').")
+      "@('(star (sllongp x))'), representing @('signed long long *').")
      (xdoc::li
-      "@('(pointer (ullongp x))'), representing @('unsigned long long *').")
+      "@('(star (ullongp x))'), representing @('unsigned long long *').")
      (xdoc::li
       "@('(schar-arrayp x)'), representing @('signed char []').")
      (xdoc::li
@@ -462,7 +462,7 @@
        The @('<tag>') target must precede @('fn')
        in the list of targets @('(t1 ... tp)').")
      (xdoc::li
-      "@('(pointer (struct-<tag>-p x))'),
+      "@('(star (struct-<tag>-p x))'),
        where @('<tag>') is one of the @(tsee defstruct) targets @('ti'),
        representing a pointer type to the corresponding C structure type,
        @('struct <tag> *').
