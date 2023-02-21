@@ -38,31 +38,31 @@
 
 (defthm equal-set-field-destruct
   (equal (equal (set-field ref pair value1 heap1)
-		(set-field ref pair value2 heap2))
-	 (and (equal value1 value2)
-	      (equal (clear-field ref pair heap1)
-		     (clear-field ref pair heap2))))
+                (set-field ref pair value2 heap2))
+         (and (equal value1 value2)
+              (equal (clear-field ref pair heap1)
+                     (clear-field ref pair heap2))))
   :hints (("Goal" :in-theory (enable clear-field set-field))))
 
 (defthm clear-field-of-set-field-both
   (equal (clear-field ref1 pair1 (set-field ref2 pair2 value heap))
-	 (if (and (equal ref1 ref2)
+         (if (and (equal ref1 ref2)
                   (equal pair1 pair2))
-	     (clear-field ref1 pair1 heap)
-	   (set-field ref2 pair2 value (clear-field ref1 pair1 heap))))
+             (clear-field ref1 pair1 heap)
+           (set-field ref2 pair2 value (clear-field ref1 pair1 heap))))
   :hints (("Goal" :in-theory (enable clear-field set-field ))))
 
 (defthm clear-field-of-set-field-diff
   (implies (not (and (equal ref1 ref2)
-		     (equal pair1 pair2))) ;distribute?
-	   (equal (clear-field ref1 pair1
-				      (set-field ref2 pair2 value heap))
-		  (set-field ref2 pair2 value (clear-field ref1 pair1 heap))))
+                     (equal pair1 pair2))) ;distribute?
+           (equal (clear-field ref1 pair1
+                                      (set-field ref2 pair2 value heap))
+                  (set-field ref2 pair2 value (clear-field ref1 pair1 heap))))
   :hints (("Goal" :in-theory (enable clear-field set-field ))))
 
 (defthm clear-field-of-set-field-same
   (equal (clear-field ref pair (set-field ref pair value heap))
-	 (clear-field ref pair heap))
+         (clear-field ref pair heap))
   :hints (("Goal" :in-theory (enable clear-field set-field ))))
 
 (defthm get-class-of-clear-field-irrel-pair

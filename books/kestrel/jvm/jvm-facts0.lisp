@@ -111,25 +111,25 @@
 
 (defthm reduce-make-state-equality-when-all-but-heaps-match
   (equal (equal (make-state thread-table heap class-table hrt monitor-table sfm ic intern-table)
-		(make-state thread-table heap2 class-table hrt monitor-table sfm ic intern-table))
-	 (equal heap heap2))
+                (make-state thread-table heap2 class-table hrt monitor-table sfm ic intern-table))
+         (equal heap heap2))
   :hints (("Goal" :in-theory (enable make-state))))
 
 (defthm reduce-make-state-equality-when-all-but-thread-tables-match
   (equal (equal (make-state thread-table heap class-table hrt monitor-table sfm ic intern-table)
-		(make-state thread-table2 heap class-table hrt monitor-table sfm ic intern-table))
-	 (equal thread-table thread-table2))
+                (make-state thread-table2 heap class-table hrt monitor-table sfm ic intern-table))
+         (equal thread-table thread-table2))
   :hints (("Goal" :in-theory (enable make-state))))
 
 ;; (defthm move-bound?-inside-bind
 ;;   (implies (not (equal x y))
-;; 	   (equal (BOUND?
-;; 		   x
-;; 		   (BIND
-;; 		    y
-;; 		    val
-;; 		    alist))
-;; 		  (bound? x alist)))
+;;         (equal (BOUND?
+;;                 x
+;;                 (BIND
+;;                  y
+;;                  val
+;;                  alist))
+;;                (bound? x alist)))
 ;;   :hints (("Goal" :in-theory (enable bound?))))
 
 ;; (defthm bound?-bind
@@ -139,47 +139,47 @@
 
 (defthm move-binding-inside-bind
   (implies (not (equal x y))
-	   (equal (binding x (bind y val alist))
+           (equal (binding x (bind y val alist))
                   (binding x alist)))
   :hints (("Goal" :in-theory (enable bind binding))))
 
 (defthm bind-bind-diff
   (implies (and (assoc-equal y alist) ;case-split?
-		(case-split (not (equal x y)))
-		)
-	   (equal (bind x xval (bind y yval alist))
-		  (bind y yval (bind x xval alist))))
+                (case-split (not (equal x y)))
+                )
+           (equal (bind x xval (bind y yval alist))
+                  (bind y yval (bind x xval alist))))
   :rule-classes ((:rewrite :loop-stopper ((x y))))
   :hints (("Goal" :in-theory (enable bind ;bound?
                                      assoc-equal))))
 
 (defthm bind-bind-diff-2
   (implies (and (assoc-equal x alist) ;case-split?
-		(case-split (not (equal x y)))
-		)
-	   (equal (bind x xval (bind y yval alist))
-		  (bind y yval (bind x xval alist))))
+                (case-split (not (equal x y)))
+                )
+           (equal (bind x xval (bind y yval alist))
+                  (bind y yval (bind x xval alist))))
   :rule-classes ((:rewrite :loop-stopper ((x y))))
   :hints (("Goal" :in-theory (enable bind assoc-equal))))
 
 (defthm bind-with-constant-key-move-past-first-binding-with-diff-constant-key
   (implies (and (stringp (caar alist)) ;generalize this but still restrict to constants
-		(stringp key1) ;generalize this but still restrict to constants
-		(not (equal key1 (caar alist)))
-		(case-split (consp alist))
-		)
-	   (equal (bind key1 val1 alist)
-		  (cons (car alist) (bind key1 val1 (cdr alist)))))
+                (stringp key1) ;generalize this but still restrict to constants
+                (not (equal key1 (caar alist)))
+                (case-split (consp alist))
+                )
+           (equal (bind key1 val1 alist)
+                  (cons (car alist) (bind key1 val1 (cdr alist)))))
   :hints (("Goal" :in-theory (enable bind))))
 
 (defthm bind-with-constant-key-move-past-first-binding-with-same-constant-key
   (implies (and (stringp (caar alist)) ;generalize this but still restrict to constants
-		(stringp key1) ;generalize this but still restrict to constants
-		(equal key1 (caar alist))
-		(case-split (consp alist))
-		)
-	   (equal (bind key1 val1 alist)
-		  (cons (cons key1 val1) (cdr alist))))
+                (stringp key1) ;generalize this but still restrict to constants
+                (equal key1 (caar alist))
+                (case-split (consp alist))
+                )
+           (equal (bind key1 val1 alist)
+                  (cons (cons key1 val1) (cdr alist))))
   :hints (("Goal" :in-theory (enable bind))))
 
 ; test for the rules above
@@ -202,8 +202,8 @@
 ;; ;Does the JVM model check that we are setting a valid field?  It really should, and return an error state if we are not setting a valid field.
 ;; (defun set-field-in-instance (field class value instance)
 ;;   (let* ((fields-for-this-class (binding class instance))
-;; 	 (new-fields-for-this-class (bind field value fields-for-this-class))
-;; 	 (new-instance (bind class new-fields-for-this-class instance)))
+;;       (new-fields-for-this-class (bind field value fields-for-this-class))
+;;       (new-instance (bind class new-fields-for-this-class instance)))
 ;;     new-instance))
 
 
@@ -215,10 +215,10 @@
 ;; ;this allowed effect-of-invoking-addbefore to be proved
 ;; (def axiom bind-bind-diff-3
 ;;   (implies (and ;(bound? y alist) ;case-split?
-;; 		(case-split (not (equal x y)))
-;; 		)
-;; 	   (equal (bind x xval (bind y yval alist))
-;; 		  (bind y yval (bind x xval alist)))))
+;;              (case-split (not (equal x y)))
+;;              )
+;;         (equal (bind x xval (bind y yval alist))
+;;                (bind y yval (bind x xval alist)))))
 
 
 
@@ -226,30 +226,30 @@
 ;rename
 (defthm binding-with-const-1
   (implies (not (equal key1 key2))
-	   (equal (BINDING
-		   key1
-		   (cons
-		    (CONS key2
-			  val)
-		    rest))
-		  (binding key1 rest)))
+           (equal (BINDING
+                   key1
+                   (cons
+                    (CONS key2
+                          val)
+                    rest))
+                  (binding key1 rest)))
   :hints (("Goal" :in-theory (enable binding))))
 
 (defthm binding-with-const-2
   (equal (BINDING
-	  key1
-	  (cons
-	   (CONS key1
-		 val)
-	   rest))
-	 val)
+          key1
+          (cons
+           (CONS key1
+                 val)
+           rest))
+         val)
   :hints (("Goal" :in-theory (enable binding))))
 
 (defthm binding-with-const-both
   (equal (binding key1 (cons (cons key2 val) rest))
-	 (if (equal key1 key2)
-	     val
-	   (binding key1 rest)))
+         (if (equal key1 key2)
+             val
+           (binding key1 rest)))
   :hints (("goal" :in-theory (enable binding))))
 
 (defthm binding-bind
@@ -260,9 +260,9 @@
 ;causes a case-split but I think we usually want this rule
 (defthm move-binding-inside-bind-both
   (equal (binding x (bind y val alist))
-	 (if (equal x y)
-	     val
-	   (binding x alist)))
+         (if (equal x y)
+             val
+           (binding x alist)))
   :hints (("goal" :in-theory (enable bind binding))))
 
 
@@ -280,14 +280,14 @@
 ;; ;expand a call to set-field-of-instance when everything but perhaps the value is constant
 ;; (defthm set-field-of-instance-in-const
 ;;   (implies (syntaxp (and (quotep instance)
-;; 			 (quotep class-name)
-;; 			 (quotep field-id)))
-;; 	   (equal
-;; 	    (set-field-of-instance CLASS-NAME FIELD-ID VALUE INSTANCE)
-;; 	    (s CLASS-NAME
-;; 		  (s FIELD-ID
-;; 			VALUE (g CLASS-NAME INSTANCE))
-;; 		  INSTANCE)))
+;;                       (quotep class-name)
+;;                       (quotep field-id)))
+;;         (equal
+;;          (set-field-of-instance CLASS-NAME FIELD-ID VALUE INSTANCE)
+;;          (s CLASS-NAME
+;;                (s FIELD-ID
+;;                      VALUE (g CLASS-NAME INSTANCE))
+;;                INSTANCE)))
 ;;   :hints (("Goal" :in-theory (enable set-field-of-instance)))
 ;;   )
 
@@ -300,15 +300,15 @@
 ;; (defthm set-field-of-instance-into-cons
 ;;   (equal
 ;;    (set-field-of-instance class1 field val
-;; 		       (cons (cons class2 class2-binding)
-;; 			     rest))
+;;                     (cons (cons class2 class2-binding)
+;;                           rest))
 ;;    (if (equal class1 class2)
 ;;        (cons (cons class2 (bind field val class2-binding))
 ;;              rest)
 ;;      (cons (cons class2 class2-binding)
-;; 	   (bind class1
-;; 		 (bind field val (binding class1 rest))
-;; 		 rest))))
+;;         (bind class1
+;;               (bind field val (binding class1 rest))
+;;               rest))))
 ;;   :hints (("goal" :in-theory (enable set-field-of-instance bind)))
 ;;   )
 
@@ -332,8 +332,8 @@
 ;;    (DEREF
 ;;     ref
 ;;     (BIND adr
-;; 	  val
-;; 	  alist))
+;;        val
+;;        alist))
 ;;    (if (equal (get-adr ref) adr)
 ;;        val
 ;;      (deref ref alist)))
@@ -341,23 +341,23 @@
 
 (defthm bind-equal-rewrite
  (equal (equal (bind key val1 alist)
-	       (bind key val2 alist))
-	(equal val1 val2))
+               (bind key val2 alist))
+        (equal val1 val2))
  :hints (("Goal" :in-theory (enable bind)))
 )
 
 ;; (defthm set-field-of-instance-diff
 ;;   (implies (not (equal field1 field2))
-;; 	   (equal (set-field-of-instance
-;; 		   class field1 val1
-;; 		   (set-field-of-instance
-;; 		    class field2 val2
-;; 		    instance))
-;; 		  (set-field-of-instance
-;; 		   class field2 val2
-;; 		   (set-field-of-instance
-;; 		    class field1 val1
-;; 		    instance))))
+;;         (equal (set-field-of-instance
+;;                 class field1 val1
+;;                 (set-field-of-instance
+;;                  class field2 val2
+;;                  instance))
+;;                (set-field-of-instance
+;;                 class field2 val2
+;;                 (set-field-of-instance
+;;                  class field1 val1
+;;                  instance))))
 ;;   :rule-classes ((:rewrite :loop-stopper ((field1 field2))))
 ;;  :hints (("Goal" :in-theory (enable set-field-of-instance)))
 ;; )
@@ -365,13 +365,13 @@
 
 ;; (defthm set-field-of-instance-same
 ;;   (equal (set-field-of-instance
-;; 		   class field val1
-;; 		   (set-field-of-instance
-;; 		    class field val2
-;; 		    instance))
-;; 		  (set-field-of-instance
-;; 		    class field val1
-;; 		    instance))
+;;                 class field val1
+;;                 (set-field-of-instance
+;;                  class field val2
+;;                  instance))
+;;                (set-field-of-instance
+;;                  class field val1
+;;                  instance))
 
 ;;  :hints (("Goal" :in-theory (enable set-field-of-instance))))
 
@@ -380,19 +380,19 @@
 ;BOZO yuck! this caused problems later on.
 (defthm bind-bind-diff-force
   (implies (and (force (or (assoc-equal y alist) (assoc-equal x alist))) ;case-split?
-		(case-split (not (equal x y)))
-		)
-	   (equal (bind x xval (bind y yval alist))
-		  (bind y yval (bind x xval alist))))
+                (case-split (not (equal x y)))
+                )
+           (equal (bind x xval (bind y yval alist))
+                  (bind y yval (bind x xval alist))))
   :rule-classes ((:rewrite :loop-stopper ((x y))))
   :hints (("Goal" :in-theory (enable bind assoc-equal assoc-equal))))
 
 (defthm bind-to-binding
   (implies (and (force (alistp alist))
-		(force (assoc-equal field alist))
-		)
-	   (equal (bind field (binding field alist) alist)
-		  alist))
+                (force (assoc-equal field alist))
+                )
+           (equal (bind field (binding field alist) alist)
+                  alist))
   :hints (("goal" :in-theory (enable bind assoc-equal binding assoc-equal))))
 
 (defthm bind-to-binding-better
@@ -408,60 +408,60 @@
 ;; ;can any of the classes be diff?
 ;; (defthm set-field-of-instance-to-get-field-of-instance-with-an-intervening-set
 ;;   (implies (and
-;; 	    (not (equal field1 field2))
-;; 	    (force (BOUND? FIELD1 (BINDING CLASS1 REF)))
-;; 	    (force (ALISTP (BINDING CLASS1 REF)))
-;; 	    (force (BOUND? FIELD2 (BINDING CLASS1 REF)))
-;; 	    )
-;; 	   (equal
-;; 	    (set-field-of-instance
-;; 	     class1 field2
-;; 	     (GET-FIELD-OF-INSTANCE class1
-;; 			  field2 ref)
-;; 	     (set-field-of-instance class1 field1
-;; 				 val2
-;; 				 ref))
-;; 	    (set-field-of-instance class1 field1
-;; 				val2
-;; 				ref)))
+;;          (not (equal field1 field2))
+;;          (force (BOUND? FIELD1 (BINDING CLASS1 REF)))
+;;          (force (ALISTP (BINDING CLASS1 REF)))
+;;          (force (BOUND? FIELD2 (BINDING CLASS1 REF)))
+;;          )
+;;         (equal
+;;          (set-field-of-instance
+;;           class1 field2
+;;           (GET-FIELD-OF-INSTANCE class1
+;;                        field2 ref)
+;;           (set-field-of-instance class1 field1
+;;                               val2
+;;                               ref))
+;;          (set-field-of-instance class1 field1
+;;                              val2
+;;                              ref)))
 ;;    :hints (("Goal" :in-theory (enable set-field-of-instance get-field-of-instance))))
 
 ;; (defthm set-field-of-instance-to-get-field-of-instance
 ;;   (implies (and
-;; 	    (force (ALISTP (BINDING CLASS1 instance)))
-;; 	    (force (BOUND? FIELD2 (BINDING CLASS1 instance)))
-;; 	    (BOUND? CLASS1 INSTANCE)
-;; 	    (force (alistp instance))
-;; 	    )
-;; 	   (equal
-;; 	    (set-field-of-instance
-;; 	     class1 field2
-;; 	     (GET-FIELD-OF-INSTANCE class1
-;; 			  field2 instance)
-;; 	     instance)
-;; 	    instance))
+;;          (force (ALISTP (BINDING CLASS1 instance)))
+;;          (force (BOUND? FIELD2 (BINDING CLASS1 instance)))
+;;          (BOUND? CLASS1 INSTANCE)
+;;          (force (alistp instance))
+;;          )
+;;         (equal
+;;          (set-field-of-instance
+;;           class1 field2
+;;           (GET-FIELD-OF-INSTANCE class1
+;;                        field2 instance)
+;;           instance)
+;;          instance))
 ;;    :hints (("Goal" :do-not-induct t
-;; 	    :in-theory (enable set-field-of-instance get-field-of-instance))))
+;;          :in-theory (enable set-field-of-instance get-field-of-instance))))
 
 ;; ;remove?
 ;; ;expensive?
 ;; (defthm set-field-of-instance-to-get-field-of-instance-2
 ;;   (implies (and
-;; 	    (equal val2 (GET-FIELD-OF-INSTANCE class1 field2 instance))
-;; 	    (force (ALISTP (BINDING CLASS1 instance)))
-;; 	    (force (BOUND? FIELD2 (BINDING CLASS1 instance)))
-;; 	    (force (BOUND? CLASS1 INSTANCE))
-;; 	    (force (alistp instance))
+;;          (equal val2 (GET-FIELD-OF-INSTANCE class1 field2 instance))
+;;          (force (ALISTP (BINDING CLASS1 instance)))
+;;          (force (BOUND? FIELD2 (BINDING CLASS1 instance)))
+;;          (force (BOUND? CLASS1 INSTANCE))
+;;          (force (alistp instance))
 
-;; 	    )
-;; 	   (equal
-;; 	    (set-field-of-instance
-;; 	     class1 field2
-;; 	     val2
-;; 	     instance)
-;; 	    instance))
+;;          )
+;;         (equal
+;;          (set-field-of-instance
+;;           class1 field2
+;;           val2
+;;           instance)
+;;          instance))
 ;;    :hints (("Goal" :do-not-induct t
-;; 	    :in-theory (enable set-field-of-instance get-field-of-instance))))
+;;          :in-theory (enable set-field-of-instance get-field-of-instance))))
 
 
 
@@ -470,20 +470,20 @@
 
 ;; (defthm hack2
 ;;   (equal (SET-FIELD-OF-REF
-;; 	  adr ; adrs match
-;; 	  class-name
-;; 	  field-id
-;; 	  value
-;; 	  (S adr
-;; 	     instance
-;; 	     heap))
-;; 	 (s adr
-;; 	    (SET-FIELD-OF-instance
-;; 	     class-name
-;; 	     field-id
-;; 	     value
-;; 	     instance)
-;; 	    heap))
+;;        adr ; adrs match
+;;        class-name
+;;        field-id
+;;        value
+;;        (S adr
+;;           instance
+;;           heap))
+;;       (s adr
+;;          (SET-FIELD-OF-instance
+;;           class-name
+;;           field-id
+;;           value
+;;           instance)
+;;          heap))
 ;; :hints (("Goal" :in-theory (enable set-field-of-ref set-instance get-instance))))
 
 ;(local (in-theory (disable ACL2::MOD-X-Y-=-X+Y))) ;made local since the include-book is local -EWS
