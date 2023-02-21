@@ -37,12 +37,14 @@
      This mathematical semantic function takes the following inputs:")
    (xdoc::ol
     (xdoc::li
-     "A list of definitions, of type @(tsee definition-list).")
-    (xdoc::li
      "A constraint, of type @(tsee constraint).")
     (xdoc::li
+     "A list of definitions, of type @(tsee definition-list).")
+    (xdoc::li
      "An assignment,
-      i.e. a finite map from variables to prime field elements."))
+      i.e. a finite map from variables to prime field elements.")
+    (xdoc::li
+     "The prime."))
    (xdoc::p
     "The mathematical semantic function
      returns one of the following possible outputs:")
