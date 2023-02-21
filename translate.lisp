@@ -2449,7 +2449,8 @@
         (t (cons (car (car signatures))
                  (signature-fns (cdr signatures))))))
 
-(defun make-event-tuple (n d form ev-type namex symbol-class skipped-proofs-p)
+(defun make-event-tuple (n d form ev-type namex symbol-class skipped-proofs-p
+                           local-p)
 
 ; An event tuple is always a cons.  Except in the initial case created by
 ; primordial-world-globals, the car is always either a natural (denoting n and
@@ -2472,6 +2473,7 @@
 ;                     events that cannot perform proofs (see install-event) and
 ;                     otherwise indicates that proofs were skipped (except by
 ;                     the system only, as for include-book).
+;  local-p - t when event is in a local context, else nil
 
 ; In what we expect is the normal case, where d is 0 and the form is one of our
 ; standard ACL2 event macros, this concrete representation costs one cons.  If
@@ -2481,33 +2483,43 @@
 ; tuple if the car is an integer, then change the default value given getprop
 ; in max-absolute-event-number.
 
-  (cons (if (= d 0) n (cons n d))
-        (if (and (eq symbol-class :program)
-                 (consp form)
-                 (or (eq (car form) ev-type)
-                     (and (eq ev-type 'defuns)
-                          (eq (car form) 'mutual-recursion)))
-                 (equal namex
-                        (case (car form)
-                              (defuns (strip-cars (cdr form)))
-                              (mutual-recursion (strip-cadrs (cdr form)))
-                              ((verify-guards in-theory
-                                              in-arithmetic-theory
-                                              regenerate-tau-database
-                                              push-untouchable
-                                              remove-untouchable
-                                              reset-prehistory
-                                              set-body
-                                              table)
-                               0)
-                              (encapsulate (signature-fns (cadr form)))
-                              (otherwise (cadr form)))))
-            form
-          (cons (cons (cons ev-type
-                            (and (not (eq symbol-class :program))
-                                 skipped-proofs-p))
-                      (cons namex symbol-class))
-                form))))
+  (let ((x
+         (cons (if (= d 0) n (cons n d))
+               (if (and (eq symbol-class :program)
+                        (consp form)
+                        (or (eq (car form) ev-type)
+                            (and (eq ev-type 'defuns)
+                                 (eq (car form) 'mutual-recursion)))
+                        (equal namex
+                               (case (car form)
+                                 (defuns (strip-cars (cdr form)))
+                                 (mutual-recursion (strip-cadrs (cdr form)))
+                                 ((verify-guards in-theory
+                                    in-arithmetic-theory
+                                    regenerate-tau-database
+                                    push-untouchable
+                                    remove-untouchable
+                                    reset-prehistory
+                                    set-body
+                                    table)
+                                  0)
+                                 (encapsulate (signature-fns (cadr form)))
+                                 (otherwise (cadr form)))))
+                   form
+                 (cons (cons (cons ev-type
+                                   (and (not (eq symbol-class :program))
+                                        skipped-proofs-p))
+                             (cons namex symbol-class))
+                       form)))))
+    (if local-p `(local . ,x) x)))
+
+(defabbrev remove-local (x)
+  (if (eq (car x) 'local)
+      (cdr x)
+    x))
+
+(defun access-event-tuple-local-p (x)
+  (eq (car x) 'local))
 
 (defun access-event-tuple-number (x)
 
@@ -2515,26 +2527,30 @@
 ; is an integerp, then change the default value given getprop in
 ; max-absolute-event-number.
 
-  (if (integerp (car x)) (car x) (caar x)))
+  (let ((x (remove-local x)))
+    (if (integerp (car x)) (car x) (caar x))))
 
 (defun access-event-tuple-depth (x)
-  (if (integerp (car x)) 0 (cdar x)))
+  (let ((x (remove-local x)))
+    (if (integerp (car x)) 0 (cdar x))))
 
 (defun access-event-tuple-type (x)
-  (cond ((symbolp (cdr x)) ;eviscerated event
-         nil)
-        ((symbolp (cadr x))
-         (if (eq (cadr x) 'mutual-recursion)
-             'defuns
-           (cadr x)))
-        (t (caaadr x))))
+  (let ((x (remove-local x)))
+    (cond ((symbolp (cdr x)) ;eviscerated event
+           nil)
+          ((symbolp (cadr x))
+           (if (eq (cadr x) 'mutual-recursion)
+               'defuns
+             (cadr x)))
+          (t (caaadr x)))))
 
 (defun access-event-tuple-skipped-proofs-p (x)
-  (cond ((symbolp (cdr x)) ;eviscerated event
-         nil)
-        ((symbolp (cadr x))
-         nil)
-        (t (cdaadr x))))
+  (let ((x (remove-local x)))
+    (cond ((symbolp (cdr x)) ;eviscerated event
+           nil)
+          ((symbolp (cadr x))
+           nil)
+          (t (cdaadr x)))))
 
 (defun access-event-tuple-namex (x)
 
@@ -2542,32 +2558,35 @@
 ; the last case is the possibility of the list being nil (as from an
 ; encapsulate event introducing no constrained functions).
 
-  (cond
-   ((symbolp (cdr x)) ;eviscerated event
-    nil)
-   ((symbolp (cadr x))
-    (case (cadr x)
-          (defuns (strip-cars (cddr x)))
-          (mutual-recursion (strip-cadrs (cddr x)))
-          ((verify-guards in-theory
-                          in-arithmetic-theory
-                          regenerate-tau-database
-                          push-untouchable remove-untouchable reset-prehistory
-                          set-body table)
-           0)
-          (encapsulate (signature-fns (caddr x)))
-          (t (caddr x))))
-   (t (cadadr x))))
+  (let ((x (remove-local x)))
+    (cond
+     ((symbolp (cdr x)) ;eviscerated event
+      nil)
+     ((symbolp (cadr x))
+      (case (cadr x)
+        (defuns (strip-cars (cddr x)))
+        (mutual-recursion (strip-cadrs (cddr x)))
+        ((verify-guards in-theory
+           in-arithmetic-theory
+           regenerate-tau-database
+           push-untouchable remove-untouchable reset-prehistory
+           set-body table)
+         0)
+        (encapsulate (signature-fns (caddr x)))
+        (t (caddr x))))
+     (t (cadadr x)))))
 
 (defun access-event-tuple-form (x)
-  (if (symbolp (cadr x))
-      (cdr x)
-    (cddr x)))
+  (let ((x (remove-local x)))
+    (if (symbolp (cadr x))
+        (cdr x)
+      (cddr x))))
 
 (defun access-event-tuple-symbol-class (x)
-  (if (symbolp (cadr x))
-      :program
-    (cddadr x)))
+  (let ((x (remove-local x)))
+    (if (symbolp (cadr x))
+        :program
+      (cddadr x))))
 
 ; Essay on Command Tuples
 

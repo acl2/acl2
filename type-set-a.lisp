@@ -252,10 +252,10 @@
 (defun one-bit-type-setp (ts)
 
 ; Tests in AKCL (long before we added *ts-one* using one million iterations
-; show that this function, as coded, is roughly 75 times faster than one based
-; on logcount.  We do not currently use this function but it was once used in
-; the double whammy heuristics and because we spent some time finding the best
-; way to code it, we've left it for now.
+; showed that this function, as coded, is roughly 75 times faster than one
+; based on logcount.  We do not currently use this function but it was once
+; used in the double whammy heuristics and because we spent some time finding
+; the best way to code it, we've left it for now.
 
   (or (= (the-type-set ts) *ts-zero*)
       (= (the-type-set ts) *ts-one*)

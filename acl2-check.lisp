@@ -76,7 +76,7 @@ is using two characters to indicate a new line?"))
 ; (the (unsigned-byte 29) 536870912) ; fails
 
 ; Values of most-positive-fixnum in 32-bit Lisps:
-; AKCL, GCL: 2147483647
+; GCL:        2147483647
 ; Allegro:    536870911
 ; Lucid:      536870911
 ; CMUCL:      536870911

@@ -48,18 +48,45 @@
 
   (defrule value-pointer-nullp-of-value-pointer
     (equal (value-pointer-nullp (value-pointer objdes type))
-           (not objdes))
-    :enable value-pointer-nullp))
+           (not objdes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-pointer-validp ((ptr valuep))
+  :guard (value-case ptr :pointer)
+  :returns (yes/no booleanp)
+  :short "Check if a pointer is valid, i.e. it can be dereferenced."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently this just means that the pointer is not null.
+     However, when (as planned) we extend our model with dangling pointers,
+     this predicate will also exclude dangling pointers.")
+   (xdoc::p
+    "Using `valid' for this notion is perhaps not ideal
+     because null pointers are perfectly ``valid''values
+     (in the sense of being legitimate values
+     usable in correct and well-written code),
+     even though they cannot be dereferenced.
+     Perhaps we might change the name of this predicate in the future."))
+  (not (value-pointer-nullp ptr))
+  :hooks (:fix)
+  ///
+
+  (defrule value-pointer-validp-of-value-pointer
+    (iff (value-pointer-validp (value-pointer objdes type))
+         objdes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-pointer->designator ((ptr valuep))
   :guard (and (value-case ptr :pointer)
-              (not (value-pointer-nullp ptr)))
+              (value-pointer-validp ptr))
   :returns (design objdesignp)
-  :short "Object designator of a non-null pointer."
+  :short "Object designator of a valid pointer."
   (objdesign-fix (value-pointer->designator? ptr))
-  :guard-hints (("Goal" :in-theory (enable value-pointer-nullp)))
+  :guard-hints (("Goal" :in-theory (enable value-pointer-validp
+                                           value-pointer-nullp)))
   :hooks (:fix)
   ///
 

@@ -720,26 +720,31 @@
  comments that explain the fields; perhaps more illuminating, accessors for
  event-tuple fields are defined immediately below the definition of
  @('make-event-tuple').  We can apply these accessors to deconstruct the value,
- @('val'), in the triple above, @('(event-landmark global-value . val)').</p>
+ @('val'), in the triple above, @('(event-landmark global-value . val)').
+ Regarding the @('local-p') field of an event-tuple: if an event @('E') is
+ evaluated in a @(see local) context, then the corresponding event-tuple is
+ @('(local . x)') where @('x') is the event-tuple for @('E').</p>
 
  @({
  ACL2 !>(let ((val (cddr '(EVENT-LANDMARK GLOBAL-VALUE 8625 ((DEFUN) FOO . :IDEAL)
-                                          DEFUN FOO (X)
-                                          X))))
-          (list :number (access-event-tuple-number val)
-                :depth  (access-event-tuple-depth val)
-                :type   (access-event-tuple-type val)
-                :skipp  (access-event-tuple-skipped-proofs-p val)
-                :namex  (access-event-tuple-namex val)
-                :form   (access-event-tuple-form val)
-                :symcls (access-event-tuple-symbol-class val)))
- (:NUMBER 8625
-          :DEPTH 0
-          :TYPE DEFUN
-          :SKIPP NIL
-          :NAMEX FOO
-          :FORM (DEFUN FOO (X) X)
-          :SYMCLS :IDEAL)
+                                           DEFUN FOO (X)
+                                           X))))
+           (list :local-p (access-event-tuple-local-p val)
+                 :number  (access-event-tuple-number val)
+                 :depth   (access-event-tuple-depth val)
+                 :type    (access-event-tuple-type val)
+                 :skipp   (access-event-tuple-skipped-proofs-p val)
+                 :namex   (access-event-tuple-namex val)
+                 :form    (access-event-tuple-form val)
+                 :symcls  (access-event-tuple-symbol-class val)))
+ (:LOCAL-P NIL
+           :NUMBER 8625
+           :DEPTH 0
+           :TYPE DEFUN
+           :SKIPP NIL
+           :NAMEX FOO
+           :FORM (DEFUN FOO (X) X)
+           :SYMCLS :IDEAL)
  ACL2 !>
  })
 

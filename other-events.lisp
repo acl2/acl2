@@ -280,7 +280,8 @@
 ; optimization if redefinition is on, in case we have redefined a constant or
 ; macro used in the body of this defconst form.
 
-          (stop-redundant-event ctx state))
+          (stop-redundant-event ctx state
+                                :name name))
          (t
           (er-let*
            ((val (defconst-val name form ctx wrld1 state)))
@@ -292,7 +293,8 @@
 ; Thus, if there is no 'const property, we will getprop the nil and
 ; the consp will fail.
 
-             (stop-redundant-event ctx state))
+             (stop-redundant-event ctx state
+                                   :name name))
             (t
              (enforce-redundancy
               event-form ctx wrld1
@@ -406,7 +408,8 @@
                          (er soft ctx
                              "~@0"
                              (redundant-predefined-error-msg name wrld)))
-                        (t (stop-redundant-event ctx state))))
+                        (t (stop-redundant-event ctx state
+                                                 :name name))))
                  (t
                   (enforce-redundancy
                    event-form ctx wrld
@@ -911,7 +914,7 @@
   (let ((wrld
          (global-set-lst
           (list*
-           (list 'event-landmark (make-event-tuple -1 0 nil nil 0 nil nil))
+           (list 'event-landmark (make-event-tuple -1 0 nil nil 0 nil nil nil))
            (list 'command-landmark (make-command-tuple -1 :logic nil nil nil))
            (list 'known-package-alist *initial-known-package-alist*)
            (list 'well-founded-relation-alist
@@ -1163,6 +1166,7 @@
                           operating-system
                           project-dir-alist))))))))))))))))))))
       t
+      nil
       nil))))
 
 (defun same-name-twice (l)
@@ -2659,6 +2663,7 @@
       0
       wrld2
       t
+      nil
       nil))))
 
 (defun theory-namep (name wrld)
@@ -4549,6 +4554,16 @@
        :guard
        (eq key 'empty-event-key))
 
+(defmacro table-put (name key val)
+
+; Just as with table, name isn't quoted and key and val are expressions (where
+; key might well be quoted).
+
+  `(TABLE-FN ',name
+             '(,key ,val)
+             STATE
+             '(TABLE ,name ,key ,val)))
+
 (defun maybe-add-event-landmark (state)
 
 ; If (and only if) the installed world doesn't end with an event landmark, we
@@ -4568,30 +4583,17 @@
 ;                 'top-level state)
 
   (cond ((let ((wrld (w state)))
-           (not (and (eq (caar wrld)
-                         'event-landmark)
-                     (eq (cadar wrld)
-                         'global-value))))
+           (not (and (eq (caar wrld) 'event-landmark)
+                     (eq (cadar wrld) 'global-value))))
          (state-global-let*
           ((inhibit-output-lst
-            (add-to-set-eq
-             'summary
-             (f-get-global 'inhibit-output-lst
-                           state))))
-          (TABLE-FN
-           'ACL2-SYSTEM-TABLE
-           '('EMPTY-EVENT-KEY
-             (NOT (CDR (ASSOC-EQ 'EMPTY-EVENT-KEY
-                                 (TABLE-ALIST
-                                  'ACL2-SYSTEM-TABLE
-                                  WORLD)))))
-           STATE
-           '(TABLE ACL2-SYSTEM-TABLE 'EMPTY-EVENT-KEY
-                   (NOT (CDR (ASSOC-EQ
-                              'EMPTY-EVENT-KEY
-                              (TABLE-ALIST
-                               'ACL2-SYSTEM-TABLE
-                               WORLD))))))))
+            (add-to-set-eq 'summary
+                           (f-get-global 'inhibit-output-lst state))))
+          (table-put acl2-system-table
+                     'empty-event-key
+                     (not (cdr (assoc-eq 'empty-event-key
+                                         (table-alist 'acl2-system-table
+                                                      world)))))))
         (t (value nil))))
 
 (defun eval-event-lst (index expansion-alist ev-lst quietp environment
@@ -5442,9 +5444,9 @@
 
        (cons 'pcert x)))))
 
-(defun process-embedded-events
-  (caller acl2-defaults-table skip-proofsp pkg ee-entry ev-lst index
-          make-event-chk cert-data ctx state)
+(defun process-embedded-events (caller acl2-defaults-table skip-proofsp pkg
+                                       ee-entry ev-lst index make-event-chk
+                                       cert-data ctx state)
 
 ; Warning: This function uses set-w and hence may only be called within a
 ; revert-world-on-error.  See the statement of policy in set-w.
@@ -5529,6 +5531,7 @@
           (global-val 'embedded-event-lst wrld1))
          (new-embedded-event-lst
           (cons ee-entry old-embedded-event-lst))
+         (in-local-flg (f-get-global 'in-local-flg state))
 
 ; We now declare the signatures of the hidden functions (when we're in pass 2
 ; of encapsulate), producing what we here call proto-wrld3.  We also extend the
@@ -5540,31 +5543,32 @@
           (global-set 'embedded-event-lst new-embedded-event-lst
                       (cond
                        ((eq caller 'encapsulate-pass-2)
-                        (intro-udf-lst (cadr ee-entry) (cddr ee-entry) wrld1))
-                       (t wrld1)))))
-    (let ((state (set-w 'extension proto-wrld3 state)))
-      (er-progn
-       (cond ((not (find-non-hidden-package-entry pkg kpa))
-              (er soft 'in-package
-                  "The argument to IN-PACKAGE must be a known package ~
-                   name, but ~x0 is not.  The known packages are~*1"
-                  pkg
-                  (tilde-*-&v-strings
-                   '&
-                   (strip-non-hidden-package-names kpa)
-                   #\.)))
-             (t (value nil)))
+                        (intro-udf-lst (cadr ee-entry) (cddr ee-entry)
+                                       in-local-flg wrld1 state))
+                       (t wrld1))))
+         (state (set-w 'extension proto-wrld3 state)))
+    (er-progn
+     (cond ((not (find-non-hidden-package-entry pkg kpa))
+            (er soft 'in-package
+                "The argument to IN-PACKAGE must be a known package name, but ~
+                 ~x0 is not.  The known packages are~*1"
+                pkg
+                (tilde-*-&v-strings
+                 '&
+                 (strip-non-hidden-package-names kpa)
+                 #\.)))
+           (t (value nil)))
 
 ; If we really executed an (in-package-fn pkg state) it would do the check
 ; above and cause an error if pkg was unknown.  But we just bind
 ; current-package to pkg (with "unwind protection") and so we have to make the
 ; check ourselves.
 
-       (mv-let (erp val/expansion-alist/final-kpa state)
-               (state-global-let*
-                ((current-package pkg)
-                 (cert-data cert-data)
-                 (skip-proofs-by-system
+     (mv-let (erp val/expansion-alist/final-kpa state)
+       (state-global-let*
+        ((current-package pkg)
+         (cert-data cert-data)
+         (skip-proofs-by-system
 
 ; When we pass in a non-nil value of skip-proofsp, we generally set
 ; skip-proofs-by-system to a non-nil value here so that install-event will not
@@ -5572,13 +5576,13 @@
 ; specified the skipping of proofs.  However, if we are already skipping proofs
 ; by other than the system, then we do not want to make such an exception.
 
-                  (let ((user-skip-proofsp
-                         (and (ld-skip-proofsp state)
-                              (not (f-get-global 'skip-proofs-by-system state)))))
-                    (and (not user-skip-proofsp)
-                         skip-proofsp)))
-                 (ld-skip-proofsp skip-proofsp))
-                (er-progn
+          (let ((user-skip-proofsp
+                 (and (ld-skip-proofsp state)
+                      (not (f-get-global 'skip-proofs-by-system state)))))
+            (and (not user-skip-proofsp)
+                 skip-proofsp)))
+         (ld-skip-proofsp skip-proofsp))
+        (er-progn
 
 ; Once upon a time, under the same conditions on caller as shown below, we
 ; added '(logic) to the front of ev-lst before doing the eval-event-lst below.
@@ -5596,9 +5600,9 @@
 ; allow defstobj array resizing, for the resizing and length field functions.
 ; But for simplicity, we always lay them down for defstobj and defabsstobj.
 
-                 (cond ((eq acl2-defaults-table :do-not-install!)
-                        (value nil))
-                       ((eq caller 'include-book)
+         (cond ((eq acl2-defaults-table :do-not-install!)
+                (value nil))
+               ((eq caller 'include-book)
 
 ; The following is equivalent to (logic), without the PROGN (value :invisible).
 ; The PROGN is illegal in Common Lisp code because its ACL2 semantics differs
@@ -5606,118 +5610,113 @@
 ; acl2-defaults-table :defun-mode :logic) because, like PROGN, its CLTL
 ; semantics is different.
 
-                        (state-global-let*
-                         ((inhibit-output-lst (cons 'summary
-                                                    (@ inhibit-output-lst))))
-                         (table-fn 'acl2-defaults-table
-                                   '(:defun-mode :logic)
-                                   state
-                                   '(table acl2-defaults-table
-                                           :defun-mode :logic))))
-                       ((member-eq caller ; see comments above
-                                   '(defstobj defabsstobj))
-                        (state-global-let*
-                         ((inhibit-output-lst (cons 'summary
-                                                    (@ inhibit-output-lst))))
-                         (er-progn (table-fn 'acl2-defaults-table
-                                             '(:defun-mode :logic)
-                                             state
-                                             '(table acl2-defaults-table
-                                                     :defun-mode :logic))
-                                   (table-fn 'acl2-defaults-table
-                                             '(:ignore-ok t)
-                                             state
-                                             '(table acl2-defaults-table
-                                                     :ignore-ok t))
-                                   (table-fn 'acl2-defaults-table
-                                             '(:irrelevant-formals-ok t)
-                                             state
-                                             '(table acl2-defaults-table
-                                                     :irrelevant-formals-ok
-                                                     t)))))
-                       (t
-                        (value nil)))
-                 (mv-let
-                  (erp val expansion-alist final-kpa state)
-                  (pprogn
-                   (cond ((or (eq caller 'encapsulate-pass-1)
-                              (eq caller 'certify-book))
-                          (pprogn (f-put-global 'redo-flat-succ nil state)
-                                  (f-put-global 'redo-flat-fail nil state)))
-                         (t state))
-                   (eval-event-lst index nil
-                                   ev-lst
-                                   (and (ld-skip-proofsp state)
-                                        (not (eq caller 'certify-book)))
-                                   (eval-event-lst-environment
-                                    (in-encapsulatep new-embedded-event-lst
-                                                     nil)
-                                    state)
-                                   (f-get-global 'in-local-flg state)
-                                   nil make-event-chk
-                                   (cond ((eq caller 'certify-book) kpa)
-                                         (t nil))
-                                   caller ctx (proofs-co state) state))
-                  (cond (erp (pprogn
-                              (cond ((or (eq caller 'encapsulate-pass-1)
-                                         (eq caller 'certify-book))
-                                     (update-for-redo-flat (- val index)
-                                                           ev-lst
-                                                           state))
-                                    (t state))
-                              (mv erp val state)))
-                        (t (er-progn
-                            (if (member-eq acl2-defaults-table
-                                           '(:do-not-install :do-not-install!))
-                                (value nil)
-                              (maybe-install-acl2-defaults-table
-                               acl2-defaults-table state))
-                            (value (list* val expansion-alist final-kpa))))))))
-               (cond
-                (erp
+                (state-global-let*
+                 ((inhibit-output-lst (cons 'summary
+                                            (@ inhibit-output-lst))))
+                 (table-fn 'acl2-defaults-table
+                           '(:defun-mode :logic)
+                           state
+                           '(table acl2-defaults-table
+                                   :defun-mode :logic))))
+               ((member-eq caller ; see comments above
+                           '(defstobj defabsstobj))
+                (state-global-let*
+                 ((inhibit-output-lst (cons 'summary
+                                            (@ inhibit-output-lst))))
+                 (er-progn (table-fn 'acl2-defaults-table
+                                     '(:defun-mode :logic)
+                                     state
+                                     '(table acl2-defaults-table
+                                             :defun-mode :logic))
+                           (table-fn 'acl2-defaults-table
+                                     '(:ignore-ok t)
+                                     state
+                                     '(table acl2-defaults-table
+                                             :ignore-ok t))
+                           (table-fn 'acl2-defaults-table
+                                     '(:irrelevant-formals-ok t)
+                                     state
+                                     '(table acl2-defaults-table
+                                             :irrelevant-formals-ok
+                                             t)))))
+               (t
+                (value nil)))
+         (mv-let
+           (erp val expansion-alist final-kpa state)
+           (pprogn
+            (cond ((or (eq caller 'encapsulate-pass-1)
+                       (eq caller 'certify-book))
+                   (pprogn (f-put-global 'redo-flat-succ nil state)
+                           (f-put-global 'redo-flat-fail nil state)))
+                  (t state))
+            (eval-event-lst index nil
+                            ev-lst
+                            (and (ld-skip-proofsp state)
+                                 (not (eq caller 'certify-book)))
+                            (eval-event-lst-environment
+                             (in-encapsulatep new-embedded-event-lst
+                                              nil)
+                             state)
+                            in-local-flg
+                            nil make-event-chk
+                            (cond ((eq caller 'certify-book) kpa)
+                                  (t nil))
+                            caller ctx (proofs-co state) state))
+           (cond (erp (pprogn
+                       (cond ((or (eq caller 'encapsulate-pass-1)
+                                  (eq caller 'certify-book))
+                              (update-for-redo-flat (- val index)
+                                                    ev-lst
+                                                    state))
+                             (t state))
+                       (mv erp val state)))
+                 (t (er-progn
+                     (if (member-eq acl2-defaults-table
+                                    '(:do-not-install :do-not-install!))
+                         (value nil)
+                       (maybe-install-acl2-defaults-table
+                        acl2-defaults-table state))
+                     (value (list* val expansion-alist final-kpa))))))))
+       (cond
+        (erp
 
 ; The evaluation of the embedded events caused an error.  If skip-proofsp is t,
 ; then we have a local incompatibility (because we know the events were
 ; successfully processed while not skipping proofs earlier).  If skip-proofsp
 ; is nil, we simply have an inappropriate ev-lst.
 
-                 (cond
-                  ((member-eq caller '(defstobj defabsstobj))
-                   (value (er hard ctx
-                              "An error has occurred while ~x0 was ~
-                               defining the supporting functions.  This is ~
-                               supposed to be impossible!  Please report this ~
-                               error to the ACL2 implementors."
-                              caller)))
-                  (t
-                   (pprogn
-                    (warning$ ctx nil
-                              (cond
-                               ((or (eq skip-proofsp nil)
-                                    (eq skip-proofsp t))
-                                "The attempted ~x0 has failed while ~
-                                 trying to establish the ~
-                                 admissibility of one of the (local ~
-                                 or non-local) forms in ~#1~[the body ~
-                                 of the ENCAPSULATE~/the book to be ~
-                                 certified~].")
-                               ((eq caller 'encapsulate-pass-2)
-                                "The error reported above is the ~
-                                 manifestation of a local ~
-                                 incompatibility.  See :DOC ~
-                                 local-incompatibility.  The ~
-                                 attempted ~x0 has failed.")
-                               (t "The error reported above indicates ~
-                                   that this book is incompatible ~
-                                   with the current logical world.  ~
-                                   The attempted ~x0 has failed."))
-                              (if (or (eq caller 'encapsulate-pass-1)
-                                      (eq caller 'encapsulate-pass-2))
-                                  'encapsulate
-                                caller)
-                              (if (eq caller 'encapsulate-pass-1) 0 1))
-                    (mv t nil state)))))
-                (t
+         (cond
+          ((member-eq caller '(defstobj defabsstobj))
+           (value (er hard ctx
+                      "An error has occurred while ~x0 was defining the ~
+                       supporting functions.  This is supposed to be ~
+                       impossible!  Please report this error to the ACL2 ~
+                       implementors."
+                      caller)))
+          (t
+           (pprogn
+            (warning$ ctx nil
+                      (cond
+                       ((or (eq skip-proofsp nil)
+                            (eq skip-proofsp t))
+                        "The attempted ~x0 has failed while trying to ~
+                         establish the admissibility of one of the (local or ~
+                         non-local) forms in ~#1~[the body of the ~
+                         ENCAPSULATE~/the book to be certified~].")
+                       ((eq caller 'encapsulate-pass-2)
+                        "The error reported above is the manifestation of a ~
+                         local incompatibility.  See :DOC ~
+                         local-incompatibility.  The attempted ~x0 has failed.")
+                       (t "The error reported above indicates that this book ~
+                           is incompatible with the current logical world.  ~
+                           The attempted ~x0 has failed."))
+                      (if (or (eq caller 'encapsulate-pass-1)
+                              (eq caller 'encapsulate-pass-2))
+                          'encapsulate
+                        caller)
+                      (if (eq caller 'encapsulate-pass-1) 0 1))
+            (mv t nil state)))))
+        (t
 
 ; The evaluation caused no error.  The world inside state is the current one
 ; (because nothing but events were evaluated and they each install the world).
@@ -5726,20 +5725,20 @@
 ; caller can compute the difference attributable to the embedded events.  This
 ; is how the constraints are determined.
 
-                 (let ((state
-                        (set-w 'extension
-                               (global-set 'embedded-event-lst
-                                           old-embedded-event-lst
-                                           (w state))
-                               state)))
-                   (cond ((eq caller 'encapsulate-pass-2)
-                          (value (list* (car val/expansion-alist/final-kpa)
-                                        (cadr val/expansion-alist/final-kpa)
-                                        proto-wrld3)))
-                         ((eq caller 'certify-book)
-                          (value (cdr val/expansion-alist/final-kpa)))
-                         (t (value
-                             (cadr val/expansion-alist/final-kpa))))))))))))
+         (let ((state
+                (set-w 'extension
+                       (global-set 'embedded-event-lst
+                                   old-embedded-event-lst
+                                   (w state))
+                       state)))
+           (cond ((eq caller 'encapsulate-pass-2)
+                  (value (list* (car val/expansion-alist/final-kpa)
+                                (cadr val/expansion-alist/final-kpa)
+                                proto-wrld3)))
+                 ((eq caller 'certify-book)
+                  (value (cdr val/expansion-alist/final-kpa)))
+                 (t (value
+                     (cadr val/expansion-alist/final-kpa)))))))))))
 
 (defun constrained-functions (exported-fns sig-fns new-trips)
 
@@ -6098,37 +6097,70 @@
                    (remove-type-prescription-cert-data
                     (f-get-global 'cert-data state)))
                  ctx state))))
-      (let* ((retval (car val/expansion-alist/proto-wrld3))
-             (expansion-alist (cadr val/expansion-alist/proto-wrld3))
+      (let* ((expansion-alist (cadr val/expansion-alist/proto-wrld3))
              (proto-wrld3 (cddr val/expansion-alist/proto-wrld3))
              (wrld (w state))
-             (new-trips (new-trips wrld proto-wrld3)))
+             (new-trips (new-trips wrld proto-wrld3))
+             (empty-p (and (null insigs)
+                           (not (assoc-eq 'event-landmark new-trips))))
+             (fast-cert-extension
+              (and empty-p
+                   (fast-cert-p state) ; optimization
+                   (f-get-global 'certify-book-info state)
+                   (assoc-eq 'top-level-cltl-command-stack new-trips)))
+             (retval (if fast-cert-extension
+                         :trivial-extension-for-fast-cert
+                       (car val/expansion-alist/proto-wrld3))))
         (cond
-         ((and (null insigs)
-               (not (assoc-eq 'event-landmark new-trips)))
+         ((and empty-p
+               (not fast-cert-extension))
           (let ((state (set-w 'retraction wrld1 state)))
             (value (cons :empty-encapsulate expansion-alist))))
-         (t (let* ((exported-names (exported-function-names new-trips))
-                   (unknown-constraints-table
-                    (table-alist 'unknown-constraints-table (w state)))
-                   (unknown-constraints-p
-                    (and insigs ; unknown-constraints are for this encapsulate
-                         (not (equal unknown-constraints-table
-                                     saved-unknown-constraints-table))))
-                   (transparent
-                    (cadr (assoc-keyword :transparent
-                                         (car kwd-value-list-lst)))))
-              (cond
-               ((and unknown-constraints-p exported-names)
-                (er soft ctx
-                    "A partial-encapsulate must introduce only the functions ~
-                     listed in its signature.  However, the signature's list ~
-                     of names, ~x0, is missing the function name~#1~[~/s~] ~
-                     ~&1, also introduced by that encapsulate.  See :DOC ~
-                     partial-encapsulate."
-                    (strip-cars insigs)
-                    exported-names))
-               ((and unknown-constraints-p transparent)
+         (t
+          (pprogn
+           (cond
+            (fast-cert-extension ; hence empty-p
+
+; Since empty-p is true, there are no events introduced by this encapsulate,
+; presumably because all events in pass 2 are either local or redundant.
+; Normally we consider this to be an "empty encapsulate" and we retract the
+; world rather than to keep whatever properties may have been added to the
+; world.  However, when certifying a book with fast-cert we need to preserve
+; any extensions that have been made to the top-level-cltl-command-stack on
+; behalf of non-local events that are redundant with existing local events.
+
+; The extensions to the top-level-cltl-command-stack are for non-local
+; redundant defun, defmacro, defconst, defchoose, defstobj, and defabsstobj
+; events.  Rather than enumerate those event types, we just say "definition" in
+; the following observation.
+
+             (observation ctx
+                          "This encapsulate event does not introduce any new ~
+                           events, but it has encountered at least one ~
+                           non-local definition that was redundant with an ~
+                           existing local definition."))
+            (t state))
+           (let* ((exported-names (exported-function-names new-trips))
+                  (unknown-constraints-table
+                   (table-alist 'unknown-constraints-table (w state)))
+                  (unknown-constraints-p
+                   (and insigs ; unknown-constraints are for this encapsulate
+                        (not (equal unknown-constraints-table
+                                    saved-unknown-constraints-table))))
+                  (transparent
+                   (cadr (assoc-keyword :transparent
+                                        (car kwd-value-list-lst)))))
+             (cond
+              ((and unknown-constraints-p exported-names)
+               (er soft ctx
+                   "A partial-encapsulate must introduce only the functions ~
+                    listed in its signature.  However, the signature's list ~
+                    of names, ~x0, is missing the function name~#1~[~/s~] ~
+                    ~&1, also introduced by that encapsulate.  See :DOC ~
+                    partial-encapsulate."
+                   (strip-cars insigs)
+                   exported-names))
+              ((and unknown-constraints-p transparent)
 
 ; It's not allowed to attach to a function with unknown-constraints, so there
 ; is no point in making such a function transparent, since it can't receive an
@@ -6137,11 +6169,11 @@
 ; about overwriting an unknown-constraints value for the 'attachment property
 ; by a transparent-rec value (with (make transparent-rec ...) below).
 
-                (er soft ctx
-                    "A partial-encapsulate must not specify :transparent t in ~
-                     its signature.  However, the signature with list of ~
-                     names ~x0 does just that.  See :DOC signature."
-                    (strip-cars insigs)))
+               (er soft ctx
+                   "A partial-encapsulate must not specify :transparent t in ~
+                    its signature.  However, the signature with list of names ~
+                    ~x0 does just that.  See :DOC signature."
+                   (strip-cars insigs)))
 
 ; At one time we added a case here to cause an error here when expansion-alist
 ; is non-nil and only-pass-p is nil (with an exception made for when
@@ -6218,11 +6250,11 @@
 ; second pass is the only pass, we simply process the events that we are given
 ; and we handle the resulting expansion-alist in the normal way.
 
-               ((null insigs)
-                (value (if only-pass-p
-                           (cons expansion-alist retval)
-                         (list nil retval nil exported-names))))
-               (t
+              ((null insigs)
+               (value (if only-pass-p
+                          (cons expansion-alist retval)
+                        (list nil retval nil exported-names))))
+              (t
 
 ; We are about to collect the constraint generated by this encapsulate on the
 ; signature functions.  We ``optimize'' one common case: if this is a top-level
@@ -6235,14 +6267,14 @@
 ; point is moot if this encapsulate has an empty signature -- there will be no
 ; constraints anyway.
 
-                (let* ((new-trips (new-trips wrld wrld1))
-                       (sig-fns (strip-cars insigs)))
-                  (mv-let
-                    (constraints constrained-fns subversive-fns infectious-fns
-                                 exports-with-sig-ancestors)
-                    (encapsulate-constraint sig-fns exported-names new-trips
-                                            wrld)
-                    (let ((transparent-mismatch
+               (let* ((new-trips (new-trips wrld wrld1))
+                      (sig-fns (strip-cars insigs)))
+                 (mv-let
+                   (constraints constrained-fns subversive-fns infectious-fns
+                                exports-with-sig-ancestors)
+                   (encapsulate-constraint sig-fns exported-names new-trips
+                                           wrld)
+                   (let ((transparent-mismatch
 
 ; We look for every member of infectious-fns that was introduced in a signature
 ; with :transparent value in disagreement with that of sig-fns.  Note that
@@ -6250,111 +6282,112 @@
 ; subversive-fns (all with 'justification property, hence not constrained), and
 ; infectious-fns.
 
-                           (transparent-mismatch transparent infectious-fns
-                                                 wrld)))
-                      (cond
-                       (transparent-mismatch
-                        (if transparent
-                            (er soft ctx
-                                "The signature~#0~[~/s~] of the proposed ~
-                                 encapsulate event ~#0~[specifies~/specify~] ~
-                                 :transparent t (for ~&0).  But function ~
-                                 symbol~#1~[~/s~] ~&1 ~#1~[is~/are~] not ~
-                                 marked as transparent in ~#1~[its subsidiary ~
-                                 encapsulate signature~/their subsidiary ~
-                                 encapsulate signatures~].  This is illegal; ~
-                                 see :DOC evaluator-restrictions."
-                                sig-fns transparent-mismatch)
-                          (er soft ctx
-                              "The signature~#0~[~/s~] of the proposed ~
-                               encapsulate event ~#0~[does~/do~] not specify ~
-                               :transparent t (for ~&0).  But function ~
-                               symbol~#1~[~/s~] ~&1 ~#1~[is~/are~] marked ~
-                               with :transparent t in ~#1~[its subsidiary ~
-                               encapsulate signature~/their subsidiary ~
-                               encapsulate signatures~].  This is illegal; ~
-                               see :DOC evaluator-restrictions."
-                              sig-fns transparent-mismatch)))
-                       (t
-                        (let* ((wrld2
-                                (putprop-constraints
-                                 (car sig-fns)
-                                 (remove1-eq (car sig-fns) constrained-fns)
-                                 (if unknown-constraints-p
-                                     (cons *unknown-constraints*
-                                           (all-fnnames1
-                                            t
-                                            constraints
+                          (transparent-mismatch transparent infectious-fns
+                                                wrld)))
+                     (cond
+                      (transparent-mismatch
+                       (if transparent
+                           (er soft ctx
+                               "The signature~#0~[~/s~] of the proposed ~
+                                encapsulate event ~#0~[specifies~/specify~] ~
+                                :transparent t (for ~&0).  But function ~
+                                symbol~#1~[~/s~] ~&1 ~#1~[is~/are~] not ~
+                                marked as transparent in ~#1~[its subsidiary ~
+                                encapsulate signature~/their subsidiary ~
+                                encapsulate signatures~].  This is illegal; ~
+                                see :DOC evaluator-restrictions."
+                               sig-fns transparent-mismatch)
+                         (er soft ctx
+                             "The signature~#0~[~/s~] of the proposed ~
+                              encapsulate event ~#0~[does~/do~] not specify ~
+                              :transparent t (for ~&0).  But function ~
+                              symbol~#1~[~/s~] ~&1 ~#1~[is~/are~] marked with ~
+                              :transparent t in ~#1~[its subsidiary ~
+                              encapsulate signature~/their subsidiary ~
+                              encapsulate signatures~].  This is illegal; see ~
+                              :DOC evaluator-restrictions."
+                             sig-fns transparent-mismatch)))
+                      (t
+                       (let* ((wrld2
+                               (putprop-constraints
+                                (car sig-fns)
+                                (remove1-eq (car sig-fns) constrained-fns)
+                                (if unknown-constraints-p
+                                    (cons *unknown-constraints*
+                                          (all-fnnames1
+                                           t
+                                           constraints
 
 ; The following contains sig-fns.  That is arranged by
 ; set-unknown-constraints-supporters, and is enforced (in case the table is set
 ; directly rather than with set-unknown-constraints-supporters) aby
 ; unknown-constraints-table-guard.
 
-                                            (cdr (assoc-eq
-                                                  :supporters
-                                                  unknown-constraints-table))))
-                                   constraints)
-                                 unknown-constraints-p
-                                 (if constrained-fns
+                                           (cdr (assoc-eq
+                                                 :supporters
+                                                 unknown-constraints-table))))
+                                  constraints)
+                                unknown-constraints-p
+                                (if constrained-fns
+                                    (assert$
+                                     (subsetp-eq subversive-fns
+                                                 constrained-fns)
                                      (assert$
-                                      (subsetp-eq subversive-fns
+                                      (subsetp-eq infectious-fns
                                                   constrained-fns)
-                                      (assert$
-                                       (subsetp-eq infectious-fns
-                                                   constrained-fns)
-                                       (putprop-x-lst1
-                                        constrained-fns
-                                        'siblings
+                                      (putprop-x-lst1
+                                       constrained-fns
+                                       'siblings
 
 ; Normally we don't care which of the siblings is first, i.e., is the
 ; canonical-sibling.  But in the case that we are introducing transparent
 ; functions, we want it to be a function with a non-nil 'constrained property,
 ; so that we can store information about transparent functions there.
 
-                                        (if (and transparent
-                                                 (not (member-eq
-                                                       (car constrained-fns)
-                                                       sig-fns)))
-                                            (cons (car sig-fns)
-                                                  (remove1 (car sig-fns)
-                                                           constrained-fns))
-                                          constrained-fns)
-                                        (if transparent ; see comment above
-                                            (putprop (car sig-fns)
-                                                     'constrainedp
-                                                     (make transparent-rec
-                                                           :names nil)
-                                                     wrld)
-                                          wrld))))
-                                   wrld)))
-                               (state (set-w 'extension wrld2 state))
+                                       (if (and transparent
+                                                (not (member-eq
+                                                      (car constrained-fns)
+                                                      sig-fns)))
+                                           (cons (car sig-fns)
+                                                 (remove1 (car sig-fns)
+                                                          constrained-fns))
+                                         constrained-fns)
+                                       (if transparent ; see comment above
+                                           (putprop (car sig-fns)
+                                                    'constrainedp
+                                                    (make transparent-rec
+                                                          :names nil)
+                                                    wrld)
+                                         wrld))))
+                                  wrld)))
+                              (state (set-w 'extension wrld2 state))
+                              (bogus-exported-compliants
                                (bogus-exported-compliants
-                                (bogus-exported-compliants
-                                 exported-names exports-with-sig-ancestors sig-fns
-                                 wrld2)))
-                          (cond
-                           (bogus-exported-compliants
-                            (er soft ctx
-                                "For the following function~#0~[~/s~] ~
-                                 introduced by this encapsulate event, guard ~
-                                 verification may depend on local properties ~
-                                 that are not exported from the encapsulate ~
-                                 event: ~&0.  Consider delaying guard ~
-                                 verification until after the encapsulate ~
-                                 event, for example by using :verify-guards ~
-                                 nil."
-                                bogus-exported-compliants))
-                           (t (value (if only-pass-p
-                                         (cons expansion-alist retval)
-                                       (list constrained-fns
-                                             retval
-                                             (if unknown-constraints-p
-                                                 *unknown-constraints*
-                                               constraints)
-                                             exported-names
-                                             subversive-fns
-                                             infectious-fns))))))))))))))))))))
+                                exported-names exports-with-sig-ancestors sig-fns
+                                wrld2)))
+                         (cond
+                          (bogus-exported-compliants
+                           (er soft ctx
+                               "For the following function~#0~[~/s~] ~
+                                introduced by this encapsulate event, guard ~
+                                verification may depend on local properties ~
+                                that are not exported from the encapsulate ~
+                                event: ~&0.  Consider delaying guard ~
+                                verification until after the encapsulate ~
+                                event, for example by using :verify-guards ~
+                                nil."
+                               bogus-exported-compliants))
+                          (t (value
+                              (if only-pass-p
+                                  (cons expansion-alist retval)
+                                (list constrained-fns
+                                      retval
+                                      (if unknown-constraints-p
+                                          *unknown-constraints*
+                                        constraints)
+                                      exported-names
+                                      subversive-fns
+                                      infectious-fns)))))))))))))))))))))
 
 ; Here I have collected a sequence of encapsulates to test the implementation.
 ; After each is an undo.  They are not meant to co-exist.  Just eval each
@@ -7433,8 +7466,22 @@
                                     r-e-p
                                     t))))
 
+(defun redundant-encapsulatep-result (x old-ev-wrld wrld state)
+  (cond ((store-cltl-command-for-redundant-def state)
+         (let ((event-tuple (cddr (car old-ev-wrld))))
+           (cond ((access-event-tuple-local-p event-tuple)
+                  (list* :update-top-level-cltl-command-stack
+                         x
+                         (new-top-level-cltl-command-stack
+                          (access-event-tuple-depth event-tuple)
+                          (global-val 'top-level-cltl-command-stack wrld)
+                          (cdr old-ev-wrld))))
+                 (t x))))
+        (t x)))
+
 (defun redundant-encapsulate-tuplep (event-form mode ruler-extenders vge
-                                                event-number wrld r-e-p)
+                                                event-number wrld wrld0 state
+                                                r-e-p)
 
 ; We return non-nil iff the non-prehistoric (if that's where we start) part of
 ; wrld later than the given absolute event number (unless it's nil) contains an
@@ -7468,13 +7515,16 @@
                                ruler-extenders)
                         (eql (default-verify-guards-eagerness-from-table adt)
                              vge)
-                        (if (eq equal? :expanded)
-                            old-event-form
-                          t)))))))
+                        (redundant-encapsulatep-result
+                         (if (eq equal? :expanded)
+                             old-event-form
+                           t)
+                         wrld wrld0 state)))))))
         (t (redundant-encapsulate-tuplep event-form mode ruler-extenders vge
-                                         event-number (cdr wrld) r-e-p))))
+                                         event-number (cdr wrld) wrld0 state
+                                         r-e-p))))
 
-(defun redundant-encapsulatep (signatures ev-lst event-form wrld)
+(defun redundant-encapsulatep (signatures ev-lst event-form wrld state)
 
 ; We wish to know if is there an event-tuple in wrld that is redundant with
 ; event-form (see :doc redundant-encapsulate).  We do know that event-form is
@@ -7538,9 +7588,10 @@
                         old-adt)
                       (default-verify-guards-eagerness-from-table
                         new-adt))
-                 (if (eq equal? :expanded)
-                     old-event-form
-                   t))))))))
+                 (redundant-encapsulatep-result (if (eq equal? :expanded)
+                                                    old-event-form
+                                                  t)
+                                                wrld-tail wrld state))))))))
    (t (let* ((name0 (find-first-non-local-name-lst ev-lst
                                                    wrld
                                                    (primitive-event-macros)
@@ -7563,6 +7614,8 @@
                 (and name
                      (getpropc name 'absolute-event-number nil wrld))
                 wrld
+                wrld
+                state
                 (null (global-val 'include-book-path wrld)))))))))
 
 (defun mark-missing-as-hidden-p (a1 a2)
@@ -7899,12 +7952,16 @@
 ; Warning: Consider all cert-data keys here and in all other functions with
 ; this warning.  There is no need to consider the key :pass1-saved here.
 ; Moreover, keep the order of keys here the same as the order of keys produced
-; by fast-cert-data: this one is used by certify-book and that one by
+; by cert-data-fal: this one is used by certify-book and that one by
 ; include-book.
 
   (acons :type-prescription
          (cert-data-tps-from-fns fns wrld nil)
          (acons :translate
+
+; Note that we do not need to restrict translate-cert-data to fns even when
+; fast-cert is active, since the world global 'translate-cert-data is not
+; modified for local events.
 
 ; We avoid saving translate-cert-data if there has been redefinition (which
 ; would require a trust tag used during certification).  That may be overly
@@ -7927,79 +7984,33 @@
                      (make-fast-alist translate-cert-data))
                 nil)))
 
-(defun newly-defined-top-level-fns-rec (trips collect-p full-book-name acc)
+(defun top-level-user-fns-rec (cltl-command-lst acc)
+  (cond ((endp cltl-command-lst) acc)
+        (t (top-level-user-fns-rec
+            (cdr cltl-command-lst)
+            (if (eq (caar cltl-command-lst) 'defuns)
+                (reverse-strip-cars (cdddr (car cltl-command-lst))
+                                    acc)
+              acc)))))
 
-; Trips is a world segment in reverse order, i.e., with oldest events first.
-; Initially trips corresponds to an extension of the certification world by
-; either by processing all the events in the book during the proof pass of
-; certify-book on full-book-name (none of the events being local, in that
-; case), or else by processing an initial subsequence of those events followed
-; by including that book (but replacing each of the already-processed events by
-; a no-op; see cert-include-expansion-alist).  We accumulate into acc (which is
-; eventually returned) the list of function symbols defined in trips whose
-; definition comes from the top level of the book with path full-book-name,
-; rather than some sub-book; or, if full-book-name is nil, then we accumulate
-; events not inside any book.  Collect-p is true only when we are to collect up
-; such function symbols.
+(defun top-level-user-fns (cltl-command-lst acc)
 
-; Note: The list returned by this function may have duplicates.
+; This function returns a list of all function symbols introduced in wrld that
+; meet all of the following criteria: they are introduced non-locally, at the
+; top level (not under an included book), and after the boot-strap.  They are
+; returned in reverse order of their introduction in wrld.
 
-  (cond ((endp trips)
-         acc)
-        ((and (eq (caar trips) 'include-book-path)
-              (eq (cadar trips) 'global-value))
-         (newly-defined-top-level-fns-rec (cdr trips)
-                                          (or (null (cddar trips))
-                                              (equal (car (cddar trips))
-                                                     full-book-name))
-                                          full-book-name
-                                          acc))
-        ((not collect-p)
-         (newly-defined-top-level-fns-rec (cdr trips) nil full-book-name acc))
-        ((and (eq (caar trips) 'cltl-command)
-              (eq (cadar trips) 'global-value)
-              (equal (caddar trips) 'defuns))
-         (newly-defined-top-level-fns-rec
-          (cdr trips)
-          collect-p
-          full-book-name
-          (append-strip-cars (cdddr (cddar trips)) acc)))
-        (t
-         (newly-defined-top-level-fns-rec (cdr trips) collect-p full-book-name
-                                          acc))))
+; Note: The list returned by this function may have duplicates due to
+; reclassifying a function from program mode to logic mode and also (though
+; this shouldn't happen during certification) redefinition.
 
-(defun newly-defined-top-level-fns (old-wrld new-wrld full-book-name)
-
-; New-wrld is the installed world, an extension of old-wrld.
-
-; Note: The list returned by this function have duplicates.
-
-  (let ((old-len (length old-wrld))
-        (new-len (length new-wrld)))
-    (assert$
-     (<= old-len new-len)
-     (let ((len-old-past-boot-strap
-            (cond
-             ((equal (access-command-tuple-form (cddar old-wrld))
-                     '(exit-boot-strap-mode)) ; optimization for common case
-              0)
-             (t (- old-len
-                   (length (lookup-world-index
-                            'command
-                            (access command-number-baseline-info
-                                    (global-val 'command-number-baseline-info
-                                                new-wrld) ; installed world
-                                    :original)
-                            new-wrld)))))))
-       (newly-defined-top-level-fns-rec
-        (first-n-ac-rev (- new-len old-len) new-wrld nil)
-        t
-        full-book-name
-        (newly-defined-top-level-fns-rec
-         (first-n-ac-rev len-old-past-boot-strap old-wrld nil)
-         t
-         nil
-         nil))))))
+  (cond ((endp cltl-command-lst) (reverse acc))
+        (t (top-level-user-fns
+            (cdr cltl-command-lst)
+            (if (eq (caar cltl-command-lst) 'defuns)
+                (reverse-strip-cars (cdddr (car cltl-command-lst))
+                                    acc)
+              acc)))))
 
 (defun cert-data-tps-1 (defs wrld acc)
   (cond
@@ -8286,19 +8297,39 @@
             (event-form (or event-form
                             (list* 'encapsulate signatures ev-lst))))
        (revert-world-on-error
-        (let ((r (redundant-encapsulatep signatures ev-lst event-form wrld1)))
+        (let ((r (redundant-encapsulatep signatures ev-lst event-form wrld1
+                                         state)))
           (cond
            (r
-            (pprogn
-             (if (eq r t)
-                 state
-               (f-put-global 'last-make-event-expansion r state))
-             (stop-redundant-event
-              ctx state
-              (and (not (eq r t))
-                   "(This event is redundant with a previous encapsulate ~
-                    event even though the two might not be equal; see :DOC ~
-                    redundant-encapsulate.)"))))
+            (mv-let (r new-top-level-cltl-command-stack)
+              (if (and (consp r)
+                       (eq (car r) :update-top-level-cltl-command-stack))
+                  (mv (cadr r) (cddr r))
+                (mv r nil))
+              (pprogn
+               (if (eq r t)
+                   state
+                 (f-put-global 'last-make-event-expansion r state))
+               (er-progn
+                (if new-top-level-cltl-command-stack
+                    (let ((state
+                           (set-w 'extension
+                                  (global-set?
+                                   'top-level-cltl-command-stack
+                                   new-top-level-cltl-command-stack
+                                   wrld1
+                                   (global-val 'top-level-cltl-command-stack
+                                               wrld1))
+                                  state)))
+                      (maybe-add-event-landmark state))
+                  (value nil))
+                (stop-redundant-event
+                 ctx state
+                 :extra-msg
+                 (and (not (eq r t))
+                      "(This event is redundant with a previous encapsulate ~
+                       event even though the two might not be equal; see :DOC ~
+                       redundant-encapsulate.)"))))))
            ((and (not (eq (ld-skip-proofsp state) 'include-book))
                  (not (eq (ld-skip-proofsp state) 'include-book-with-locals))
                  (not (eq (ld-skip-proofsp state) 'initialize-acl2)))
@@ -8437,10 +8468,21 @@
                                        (eq-pass12-kpa
                                         (equal pass1-kpa pass2-kpa)))
                                   (pprogn
-                                   (print-encapsulate-msg3
-                                    ctx insigs new-ev-lst exports
-                                    constrained-fns constraints-introduced
-                                    subversive-fns infectious-fns wrld3 state)
+                                   (if (eq retval
+                                           :trivial-extension-for-fast-cert)
+                                       (assert$
+                                        (and (null insigs)
+                                             (null exports)
+                                             (null constrained-fns)
+                                             (null constraints-introduced)
+                                             (null subversive-fns)
+                                             (null infectious-fns))
+                                        state)
+                                     (print-encapsulate-msg3
+                                      ctx insigs new-ev-lst exports
+                                      constrained-fns constraints-introduced
+                                      subversive-fns infectious-fns wrld3
+                                      state))
                                    (er-let*
                                        ((wrld3a (intro-udf-guards
                                                  insigs
@@ -8680,62 +8722,64 @@
     (with-ctx-summarized
      ctx
      (revert-world-on-error
-      (mv-let
-       (erp val expansion-alist ignore-kpa state)
-       (pprogn
-        (f-put-global 'redo-flat-succ nil state)
-        (f-put-global 'redo-flat-fail nil state)
-        (eval-event-lst
-         0 nil
-         ev-lst
-         (or (ld-skip-proofsp state)
-             progn!p) ; quietp
-         (eval-event-lst-environment in-encapsulatep state)
-         (f-get-global 'in-local-flg state)
-         nil
-         (if progn!p
-             :non-event-ok
+      (state-global-let*
+       ((inside-progn-fn1 t))
+       (mv-let
+         (erp val expansion-alist ignore-kpa state)
+         (pprogn
+          (f-put-global 'redo-flat-succ nil state)
+          (f-put-global 'redo-flat-fail nil state)
+          (eval-event-lst
+           0 nil
+           ev-lst
+           (or (ld-skip-proofsp state)
+               progn!p) ; quietp
+           (eval-event-lst-environment in-encapsulatep state)
+           (f-get-global 'in-local-flg state)
+           nil
+           (if progn!p
+               :non-event-ok
 
 ; It is unknown here whether make-event must have a consp :check-expansion, but
 ; if this progn is in such a context, chk-embedded-event-form will check that
 ; for us.
 
-           nil)
-         nil
-         'progn-fn1 ctx (proofs-co state) state))
-       (declare (ignore ignore-kpa))
-       (pprogn
-        (if erp
-            (update-for-redo-flat val ev-lst state)
-          state)
-        (cond ((eq erp 'non-event)
-               (er soft ctx
-                   "PROGN may only be used on legal event forms (see :DOC ~
+             nil)
+           nil
+           'progn-fn1 ctx (proofs-co state) state))
+         (declare (ignore ignore-kpa))
+         (pprogn
+          (if erp
+              (update-for-redo-flat val ev-lst state)
+            state)
+          (cond ((eq erp 'non-event)
+                 (er soft ctx
+                     "PROGN may only be used on legal event forms (see :DOC ~
                     embedded-event-form).  Consider using ER-PROGN instead."))
-              (erp
+                (erp
 
 ; The component events are responsible for reporting errors.
 
-               (silent-error state))
-              (t (pprogn (f-put-global 'last-make-event-expansion
-                                       (and expansion-alist
-                                            (cons (if progn!p 'progn! 'progn)
-                                                  (if bindings
-                                                      (assert$
-                                                       progn!p
-                                                       `(:state-global-bindings
-                                                         ,bindings
-                                                         ,@(subst-by-position
-                                                            expansion-alist
-                                                            ev-lst
-                                                            0)))
-                                                    (subst-by-position
-                                                     expansion-alist
-                                                     ev-lst
-                                                     0))))
-                                       state)
-                         (value (and (not (f-get-global 'acl2-raw-mode-p
-                                                        state))
+                 (silent-error state))
+                (t (pprogn (f-put-global 'last-make-event-expansion
+                                         (and expansion-alist
+                                              (cons (if progn!p 'progn! 'progn)
+                                                    (if bindings
+                                                        (assert$
+                                                         progn!p
+                                                         `(:state-global-bindings
+                                                           ,bindings
+                                                           ,@(subst-by-position
+                                                              expansion-alist
+                                                              ev-lst
+                                                              0)))
+                                                      (subst-by-position
+                                                       expansion-alist
+                                                       ev-lst
+                                                       0))))
+                                         state)
+                           (value (and (not (f-get-global 'acl2-raw-mode-p
+                                                          state))
 
 ; If we allow a non-nil value in raw-mode (so presumably we are in progn!, not
 ; progn), then it might be a bad-lisp-objectp.  Of course, in raw-mode one can
@@ -8743,7 +8787,7 @@
 ; raw-mode -- so the point here isn't to make raw-mode sound.  But this nulling
 ; out in raw-mode should prevent most bad-lisp-objectp surprises from progn!.
 
-                                     val))))))))
+                                       val)))))))))
      :event-type 'progn)))
 
 (defun progn-fn (ev-lst state)
@@ -11114,7 +11158,7 @@
              (keyword-listp template)
              (mv 'stray-value2 (list val template) state)))))))))))
 
-(defun fast-cert-data (cert-data)
+(defun cert-data-fal (cert-data)
 
 ; Warning: Consider all cert-data keys here and in all other functions with
 ; this warning.  There is no need to consider the key :pass1-saved here.
@@ -11230,7 +11274,7 @@
                file1 file2))
          (t
           (let* ((expansion-alist (nth 0 tuple))
-                 (cert-data (fast-cert-data (nth 1 tuple)))
+                 (cert-data (cert-data-fal (nth 1 tuple)))
                  (pre-alist (nth 2 tuple))
                  (post-alist3 (nth 3 tuple))
                  (cert-hash1 (nth 4 tuple))
@@ -11384,90 +11428,133 @@
 ; file and we must read the :BEGIN-PORTCULLIS-CMDS before proceeding.
 ; Otherwise, this isn't well-formed and we cause an error.
 
+; See the Essay on Fast-cert for discussion related to code below that involves
+; hackp or fast-cert-p.
+
   (mv-let
-   (eofp version state)
-   (with-infixp-nil (read-object ch state))
-   (cond
-    (eofp (ill-formed-certificate-er
-           ctx 'chk-certificate-file1{empty}
-           file1 file2))
-    (t (let* ((version-okp (equal version (f-get-global 'acl2-version state))))
+    (eofp version0 state)
+    (with-infixp-nil (read-object ch state))
+    (cond
+     (eofp (ill-formed-certificate-er
+            ctx 'chk-certificate-file1{empty}
+            file1 file2))
+     (t
+      (let* ((acl2-version (f-get-global 'acl2-version state))
+             (hackp (consp version0))
+             (version (if hackp (car version0) version0))
+             (fast-cert-p (fast-cert-p state))
+             (version-okp
+              (or (equal version0 acl2-version)
+                  (and fast-cert-p
+                       (equal version acl2-version)))))
+        (pprogn
+         (cond ((and hackp
+                     (eq fast-cert-p t))
+
+; This is admittedly very early in the include-book process to convert the
+; fast-cert-status from t to a string (thus making fast-cert mode permanent for
+; the session).  After all, the book may be uncertified, in which case one
+; could very reasonably argue that including this uncertified book gives no
+; more reason to consider the session to be tainted than including any other
+; uncertified book: either way, shouldn't we be able to undo and then certify
+; some book later?  But we change fast-cert-status here nonetheless, for two
+; reasons.  One reason is our own convenience: we have in hand here, as the
+; value of local variable hackp, the information that the certificate is a
+; fast-cert certificate (i.e., the book was certified with fast-cert mode
+; active).  But a second reason is to protect against the possibility (even if
+; only a future possibility) that including this book, which was certified in
+; fast-cert mode, could pollute the session somehow.
+
+                (f-put-global 'fast-cert-status
+                              (sysfile-to-filename file1 state)
+                              state))
+               (t state))
          (cond
           (version-okp
            (mv-let
-            (eofp key state)
-            (with-infixp-nil (read-object ch state))
-            (cond
-             (eofp
-              (ill-formed-certificate-er
-               ctx
-               'chk-certificate-file1{begin-portcullis-cmds-1}
-               file1 file2))
-             ((not (eq key :begin-portcullis-cmds))
-              (ill-formed-certificate-er
-               ctx
-               'chk-certificate-file1{begin-portcullis-cmds-2}
-               file1 file2 key))
-             (t (chk-raise-portcullis file1 file2 ch light-chkp caller ctx
-                                      state suspect-book-action-alist
-                                      evalp)))))
-          ((not (equal (acl2-version-r-p (f-get-global 'acl2-version state))
-                       (acl2-version-r-p version)))
-           (er soft ctx
-               "We do not permit ACL2 books to be processed by ACL2(r) or vice ~
-                versa.  The book ~x0 was last certified with ~s1 but this is ~
-                ~s2."
-               file1
-               version
-               (f-get-global 'acl2-version state)))
+             (eofp key state)
+             (with-infixp-nil (read-object ch state))
+             (cond
+              (eofp
+               (ill-formed-certificate-er
+                ctx
+                'chk-certificate-file1{begin-portcullis-cmds-1}
+                file1 file2))
+              ((not (eq key :begin-portcullis-cmds))
+               (ill-formed-certificate-er
+                ctx
+                'chk-certificate-file1{begin-portcullis-cmds-2}
+                file1 file2 key))
+              (t (chk-raise-portcullis file1 file2 ch light-chkp caller ctx
+                                       state suspect-book-action-alist
+                                       evalp)))))
           (t
-           (mv-let
-            (erp val state)
-            (include-book-er
-             file1 file2
-             (cons "~x0 was apparently certified with ~sa.  The inclusion of ~
-                    this book in the current ACL2 may render this ACL2 ~
-                    session unsound!  We recommend you recertify the book ~
-                    with the current version, ~sb.  See :DOC version.  No ~
-                    compiled file will be loaded with this book."
-                   (list (cons #\a version)
-                         (cons #\b (f-get-global 'acl2-version state))))
-             :uncertified-okp
-             suspect-book-action-alist
-             ctx state)
+           (let ((msg
+                  (cond
+                   ((equal version acl2-version) ; hence not fast-cert-p
+                    (cons
+                     "~x0 was certified using fast-cert, but fast-cert is not ~
+                      currently active.  See :DOC fast-cert.  No compiled ~
+                      file will be loaded with this book."
+                     nil))
+                   ((not (equal (acl2-version-r-p acl2-version)
+                                (acl2-version-r-p version)))
+                    (cons
+                     "We do not permit ACL2 books to be processed by ACL2(r) ~
+                      or vice versa.  ~x0 was certified with ~sa but this is ~
+                      ~sb.  No compiled file will be loaded with this book."
+                     (list (cons #\a version)
+                           (cons #\b acl2-version))))
+                   (t
+                    (cons "~x0 was apparently certified with ~sa.  The ~
+                           inclusion of this book in the current ACL2 may ~
+                           render this ACL2 session unsound!  We recommend ~
+                           you recertify the book with the current version, ~
+                           ~sb.  See :DOC version.  No compiled file will be ~
+                           loaded with this book."
+                          (list (cons #\a version)
+                                (cons #\b acl2-version)))))))
+             (mv-let
+               (erp val state)
+               (include-book-er
+                file1 file2
+                msg
+                :uncertified-okp
+                suspect-book-action-alist
+                ctx state)
 
 ; Because the book was certified under a different version of ACL2, we
 ; consider it uncertified and, at best, return nil rather than a
 ; certificate object below.  Of course, we might yet cause an error.
 
-            (cond
-             (erp (mv erp val state))
-             ((and (stringp version)
-                   (<= 13 (length version))
-                   (equal (subseq version 0 13) "ACL2 Version "))
-              (mv-let
-               (eofp key state)
-               (with-infixp-nil (read-object ch state))
                (cond
-                (eofp
-                 (ill-formed-certificate-er
-                  ctx
-                  'chk-certificate-file1{begin-portcullis-cmds-3}
-                  file1 file2))
-                ((not (eq key :begin-portcullis-cmds))
-                 (ill-formed-certificate-er
-                  ctx
-                  'chk-certificate-file1{begin-portcullis-cmds-4}
-                  file1 file2 key))
-                (t (er-progn
-                    (chk-raise-portcullis file1 file2 ch light-chkp caller
-                                          ctx state suspect-book-action-alist
-                                          t)
-                    (value nil))))))
-             (t (ill-formed-certificate-er
-                 ctx
-                 'chk-certificate-file1{acl2-version}
-                 file1 file2 version)))))))))))
+                (erp (mv erp val state))
+                ((and (stringp version)
+                      (<= 13 (length version))
+                      (equal (subseq version 0 13) "ACL2 Version "))
+                 (mv-let
+                   (eofp key state)
+                   (with-infixp-nil (read-object ch state))
+                   (cond
+                    (eofp
+                     (ill-formed-certificate-er
+                      ctx
+                      'chk-certificate-file1{begin-portcullis-cmds-3}
+                      file1 file2))
+                    ((not (eq key :begin-portcullis-cmds))
+                     (ill-formed-certificate-er
+                      ctx
+                      'chk-certificate-file1{begin-portcullis-cmds-4}
+                      file1 file2 key))
+                    (t (er-progn
+                        (chk-raise-portcullis file1 file2 ch light-chkp caller
+                                              ctx state suspect-book-action-alist
+                                              t)
+                        (value nil))))))
+                (t (ill-formed-certificate-er
+                    ctx
+                    'chk-certificate-file1{acl2-version}
+                    file1 file2 version)))))))))))))
 
 (defun certificate-file (full-book-string state)
   (mv-let (ch cert-name pcert-op state)
@@ -12181,7 +12268,10 @@
            (print-readably t))
           (pprogn
            (print-object$ '(in-package "ACL2") ch state)
-           (print-object$ (f-get-global 'acl2-version state) ch state)
+           (print-object$ (if (fast-cert-p state)
+                              (list (f-get-global 'acl2-version state))
+                            (f-get-global 'acl2-version state))
+                          ch state)
            (print-object$ :BEGIN-PORTCULLIS-CMDS ch state)
            (print-objects
 
@@ -14118,24 +14208,41 @@
                           (subseq file 0 (- len 5))
                           "@expansion.lsp"))))
 
-(defun top-level-loop$-alist-rec (loop$-alist acc)
-  (cond ((endp loop$-alist) acc)
-        (t (top-level-loop$-alist-rec (cdr loop$-alist)
-                                      (if (access loop$-alist-entry
-                                                  (cdar loop$-alist)
-                                                  :flg)
-                                          (acons (caar loop$-alist)
-                                                 (change loop$-alist-entry
-                                                         (cdar loop$-alist)
-                                                         :flg nil)
-                                                 acc)
-                                        acc)))))
+#-acl2-loop-only
+(defun write-*1*-defuns-to-expansion-file (compressed-cltl-command-stack chan
+                                                                         state)
 
-(defun top-level-loop$-alist (wrld)
-  (top-level-loop$-alist-rec (global-val 'loop$-alist wrld)
-                             nil))
+; This function is a variant of compile-uncompiled-*1*-defuns, suitable for
+; writing *1* definitions to the expansion file.  The code here is considerably
+; simpler than that of compile-uncompiled-*1*-defuns.  One key reason is that
+; here we assume that print-controls and such are already set as part of
+; writing the expansion file; another is that our use of the
+; compressed-cltl-command-stack avoids the need to consider compilation for *1*
+; functions of built-in functions.
+
+  (let ((seen (make-hash-table :test 'eq))
+        (wrld (w state))
+        (defs nil))
+    (dolist (cmd compressed-cltl-command-stack)
+      (when (eq (car cmd) 'defuns)
+        (let ((defun-mode (cadr cmd)))
+          (dolist (def (cdddr cmd))
+            (let ((*1*fn (*1*-symbol (car def))))
+              (assert$
+               (fboundp *1*fn) ; surely defined at expansion-file writing time
+               (when (not (gethash *1*fn seen))
+                 (setf (gethash *1*fn seen) t)
+                 (push (cons 'defun
+                             (oneify-cltl-code
+                              defun-mode
+                              def
+                              (getpropc (car def) 'stobj-function nil wrld)
+                              wrld))
+                       defs))))))))
+    (print-object$ (cons 'progn defs) chan state)))
 
 (defun write-expansion-file (portcullis-cmds declaim-list new-fns-exec
+                                             compressed-cltl-command-stack
                                              expansion-filename expansion-alist
                                              pkg-names
                                              ev-lst known-package-alist
@@ -14174,7 +14281,8 @@
 ; character reader, which can handle #\Null in CCL, but not in GCL.
 
   #+acl2-loop-only
-  (declare (ignore new-fns-exec pkg-names known-package-alist))
+  (declare (ignore new-fns-exec compressed-cltl-command-stack pkg-names
+                   known-package-alist))
   (with-output-object-channel-sharing
    ch expansion-filename
    (cond
@@ -14323,8 +14431,8 @@
                                   retrace-alist)
                             (setf (symbol-function *1*fn)
                                   old-*1*fn))))
-                    (compile-uncompiled-*1*-defuns "" ; irrelevant filename
-                                                   new-fns-exec nil ch))
+                    (write-*1*-defuns-to-expansion-file
+                     compressed-cltl-command-stack ch state))
                   (dolist (pair retrace-alist)
                     (let ((fn (car pair))
                           (val (cdr pair)))
@@ -14509,6 +14617,12 @@
                                         guard-checking from its default of T.")
                                 "")))
               (proofs-co state) state nil))
+        ((fast-cert-p state)
+         (fms "* Step 3:  That completes the admissibility check.  Each form ~
+               read was an embedded event form and was admissible.  Fast-cert ~
+               mode is active, so we skip the check for local ~
+               incompatibilities.~%"
+              nil (proofs-co state) state nil))
         (t
          (fms "* Step 3:  That completes the admissibility check.  Each form ~
                read was an embedded event form and was admissible.  No LOCAL ~
@@ -14626,15 +14740,13 @@
             (list (cons #\0 full-book-string))
             (proofs-co state) state nil)))
 
-(defun hcomp-build-from-state (state)
+(defun hcomp-build-from-state (cltl-command-stack state)
+  #+acl2-loop-only
+  (declare (ignore cltl-command-stack))
   #+acl2-loop-only
   (read-acl2-oracle state)
   #-acl2-loop-only
-  (hcomp-build-from-state-raw
-   (reverse (global-val
-             'top-level-cltl-command-stack
-             (w state)))
-   state))
+  (hcomp-build-from-state-raw (reverse cltl-command-stack) state))
 
 ; Essay on .acl2x Files (Double Certification)
 
@@ -16269,6 +16381,52 @@
 
 ; End of Essay on Hidden Packages Added by Certify-book
 
+(defun compress-cltl-command-stack-rec (stack fal)
+
+; See the Essay on Fast-cert.
+
+  (cond
+   ((endp stack) (strip-cdrs (fast-alist-free fal)))
+   (t (compress-cltl-command-stack-rec
+       (cdr stack)
+       (let ((x (car stack)))
+         (case-match x
+           (('defuns mode & . defs)
+            (assert$
+             (and (alistp defs) defs)
+             (let* ((name (caar defs))
+                    (pair (hons-get name fal)))
+               (cond
+                (pair (let ((old (cdr pair)))
+                        (cond
+                         ((and (eq (cadr old) :program) ; old mode
+                               (eq mode :logic))
+                          (hons-acons name
+                                      `(defuns :logic reclassifying
+                                         ,@defs)
+                                      fal))
+                         (t fal))))
+                (t
+
+; Unlike the case above, here we do not need to put 'reclassifying into x.  The
+; reason is that if this definition is truly reclassifying a non-local defun
+; when including a book, then we would be in the preceding case.
+
+                 (hons-acons name x fal))))))
+           ((defx name . &)
+            (cond ((and (member-eq defx
+                                   '(defconst defmacro defstobj defabsstobj))
+                        (hons-get name fal))
+                   fal)
+                  (t (hons-acons name x fal))))
+           (& (hons-acons nil x fal))))))))
+
+(defun compress-cltl-command-stack (stack)
+
+; See the Essay on Fast-cert.
+
+  (compress-cltl-command-stack-rec (reverse stack) nil))
+
 (defun certify-book-fn (user-book-name k compile-flg defaxioms-okp
                                        skip-proofs-okp ttags ttagsx ttagsxp
                                        acl2x write-port pcert
@@ -16276,7 +16434,8 @@
                                        state)
 
 ; For a discussion of the addition of hidden defpkg events to the portcullis,
-; see the Essay on Hidden Packages Added by Certify-book, above.
+; see the Essay on Hidden Packages Added by Certify-book, above.  Also see the
+; Essay on Fast-cert for discussion pertaining to fast-cert mode.
 
   (with-ctx-summarized
    (make-ctx-for-event
@@ -16524,29 +16683,47 @@
                           (wrld1-known-package-alist
                            (global-val 'known-package-alist wrld1))
                           (acl2x-file
-                           (convert-book-string-to-acl2x full-book-string)))
+                           (convert-book-string-to-acl2x full-book-string))
+                          (fast-cert-p0 (fast-cert-p state))
+                          (fast-cert-p
+
+; Maybe later we'll support fast-cert for pcert, but not now.
+                                        
+                           (and (not pcert)
+                                fast-cert-p0)))
                      (pprogn
                       (f-put-global 'useless-runes useless-runes state)
                       (io? event nil state
-                           (full-book-string cert-op)
-                           (fms "CERTIFICATION ATTEMPT~@0 FOR ~x1~%~s2~%~%*~ ~
-                                 Step 1:  Read ~x1 and compute its ~
-                                 book-hash.~%"
-                                (list (cons #\0
+                           (fast-cert-p full-book-string cert-op fast-cert-p0
+                                        pcert)
+                           (fms "CERTIFICATION ATTEMPT~#h~[~|**using ~
+                                 fast-cert mode**~|~/ ~]~@0FOR ~
+                                 ~x1~%~s2~@3~%~%*~ Step 1: Read ~x1 and ~
+                                 compute its book-hash.~%"
+                                (list (cons #\h (if fast-cert-p 0 1))
+                                      (cons #\0
                                             (case cert-op
                                               ((:write-acl2xu :write-acl2x)
-                                               " (for writing .acl2x file)")
+                                               "(for writing .acl2x file) ")
                                               (:create-pcert
-                                               " (for writing .pcert0 file)")
+                                               "(for writing .pcert0 file) ")
                                               (:create+convert-pcert
-                                               " (for writing .pcert0 and ~
-                                               .pcert1 files)")
+                                               "(for writing .pcert0 and ~
+                                               .pcert1 files) ")
                                               (:convert-pcert
-                                               " (for writing .pcert1 file)")
+                                               "(for writing .pcert1 file) ")
                                               (t "")))
                                       (cons #\1 full-book-string)
                                       (cons #\2 (f-get-global 'acl2-version
-                                                              state)))
+                                                              state))
+                                      (cons #\3 (if (and fast-cert-p0 pcert)
+                                                    "~|Note that fast-cert ~
+                                                     mode is active but will ~
+                                                     be ignored during ~
+                                                     certification until ~
+                                                     writing the certificate ~
+                                                     file."
+                                                  "")))
                                 (proofs-co state) state nil))
                       (er-let* ((ev-lst
                                  (let (#-acl2-loop-only
@@ -16812,7 +16989,17 @@
 
                                    (cons :axiomsp axiomsp)
                                    (cons :ttags ttags-seen)))
-                                 (post-alist1 new-include-book-alist-all))
+                                 (post-alist1 (if fast-cert-p
+
+; With fast-cert we don't roll back the world, so we might have local-include
+; book commands in the world.  We punt and simply record nil here for this
+; post-alist, which forces us to rely on the build system to check that the
+; included books (or at least those that would be included non-locally at
+; include-book time) are all certified.  Future work could perhaps sort out
+; which included books are local and hence to be ignored here.
+
+                                                  nil
+                                                new-include-book-alist-all)))
                             (er-progn
                              (chk-cert-annotations
                               cert-annotations portcullis-skipped-proofsp
@@ -16844,8 +17031,12 @@
                               (t
                                (let* ((wrld-post-pass1 (w state))
                                       (rollback-pair ; nil or consp
-                                       (global-val 'cert-replay
-                                                   wrld-post-pass1))
+
+; There is no rollback with fast-cert, hence no rollback-pair.
+
+                                       (and (not fast-cert-p)
+                                            (global-val 'cert-replay
+                                                        wrld-post-pass1)))
                                       (index
                                        (assert$
                                         (listp rollback-pair)
@@ -16994,11 +17185,23 @@
                                                               wrld1)))
                                                     (pre-alist
                                                      (value
-                                                      (if port-index
-                                                          (global-val
-                                                           'include-book-alist
-                                                           portcullis-wrld)
-                                                        pre-alist-wrld1)))
+                                                      (cond
+                                                       (fast-cert-p
+
+; With fast-cert we don't roll back the world, so we might have local-include
+; book commands in the certification world.  We punt and simply record nil here
+; for the pre-alist , which forces us to rely on the build system to check that
+; the included books from the portcullis commands (or at least those that would
+; be included non-locally at include-book time) are all certified.  Future work
+; could perhaps sort out which included books are local and hence to be ignored
+; here.
+
+                                                        nil)
+                                                       (port-index
+                                                        (global-val
+                                                         'include-book-alist
+                                                         portcullis-wrld))
+                                                       (t pre-alist-wrld1))))
                                                     (portcullis-wrld-known-package-alist
                                                      (value
                                                       (global-val
@@ -17011,12 +17214,27 @@
 ; packages may become hidden defpkgs; see new-defpkg-list below, and for a more
 ; thorough discussion see the Essay on Hidden Packages Added by Certify-book.
 
-                                                      (defpkg-items
-                                                        pass1-known-package-alist
-                                                        (if rollback-pair
-                                                            rollback-wrld-known-package-alist
-                                                          wrld1-known-package-alist)
-                                                        ctx portcullis-wrld state))
+                                                      (if fast-cert-p
+; We don't bother with hidden packages when fast-cert is active.
+                                                          (value nil)
+                                                        (defpkg-items
+                                                          pass1-known-package-alist
+                                                          (if rollback-pair
+                                                              rollback-wrld-known-package-alist
+                                                            wrld1-known-package-alist)
+                                                          ctx portcullis-wrld state)))
+                                                    (cltl-command-stack0
+                                                     (value
+                                                      (if fast-cert-p
+                                                          (compress-cltl-command-stack
+                                                           (global-val
+                                                            'top-level-cltl-command-stack
+                                                            (w state)))
+
+; If we are not using fast-cert, then we will compute an appropriate
+; cltl-command-stack later, when we need it.
+
+                                                        nil)))
                                                     (declaim-list
                                                      (state-global-let*
                                                       ((ld-redefinition-action
@@ -17029,6 +17247,11 @@
 
                                                       (er-progn
                                                        (hcomp-build-from-state
+                                                        (if fast-cert-p
+                                                            cltl-command-stack0
+                                                          (global-val
+                                                           'top-level-cltl-command-stack
+                                                           (w state)))
                                                         state)
                                                        (cond
                                                         (rollback-pair
@@ -17067,10 +17290,19 @@
                                                         saved-acl2-defaults-table
                                                         state))
                                                       (t (value nil)))))
-                                            (let* ((wrld2 (w state))
+                                            (let* ((wrld2
+; This is the world after include-book (if include-book was evaluated).
+                                                    (w state))
+                                                   (cltl-command-stack
+                                                    (if fast-cert-p
+                                                        cltl-command-stack0
+                                                      (global-val
+                                                       'top-level-cltl-command-stack
+                                                       wrld2)))
                                                    (new-fns
-                                                    (newly-defined-top-level-fns
-                                                     portcullis-wrld wrld2 full-book-name))
+                                                    (top-level-user-fns
+                                                     cltl-command-stack
+                                                     nil))
                                                    (cert-data-pass2
                                                     (cert-data-for-certificate
                                                      new-fns
@@ -17121,6 +17353,12 @@
                                                                 wrld2))
                                                    (post-alist2
                                                     (cond
+                                                     (fast-cert-p
+
+; We punt here as we do for post-alist1; see the comment on "punt" above for
+; post-alist1.
+
+                                                      nil)
                                                      (rollback-pair
 
 ; In this case, include-book-fn was evaluated above.  The following call of cdr
@@ -17145,14 +17383,16 @@
                                                 (mv-let
                                                   (new-bad-fns all-bad-fns)
                                                   (cond
-                                                   ((not (warning-disabled-p
-                                                          "Guards"))
+                                                   ((or fast-cert-p
+                                                        (warning-disabled-p
+                                                         "Guards"))
+                                                    (mv nil nil))
+                                                   (t
                                                     (mv (collect-ideals new-fns
                                                                         wrld2
                                                                         nil)
                                                         (collect-ideal-user-defuns
-                                                         wrld2)))
-                                                   (t (mv nil nil)))
+                                                         wrld2))))
                                                   (cond
                                                    ((or new-bad-fns all-bad-fns)
                                                     (print-certify-book-guards-warning
@@ -17235,6 +17475,7 @@
                                                                 portcullis-cmds
                                                                 declaim-list
                                                                 new-fns
+                                                                cltl-command-stack
                                                                 (expansion-filename
                                                                  full-book-string)
                                                                 expansion-alist
@@ -17644,7 +17885,8 @@
               The event ~x0 is thus illegal."
              event-form))
         ((redundant-defchoosep (car def) event-form wrld)
-         (stop-redundant-event ctx state))
+         (stop-redundant-event ctx state
+                               :name (car def)))
         (t
          (enforce-redundancy
           event-form ctx wrld
@@ -19788,7 +20030,8 @@
      (er-let* ((wrld1 (chk-acceptable-defstobj name args ctx wrld0 state)))
        (cond
         ((eq wrld1 'redundant)
-         (stop-redundant-event ctx state))
+         (stop-redundant-event ctx state
+                               :name name))
         (t
          (enforce-redundancy
           event-form ctx wrld0
@@ -22707,7 +22950,8 @@
                 event-form)))
       (cond
        ((eq missing/methods/wrld1 'redundant)
-        (stop-redundant-event ctx state))
+        (stop-redundant-event ctx state
+                              :name st-name))
        ((and missing-only
              (not congruent-to)) ; else do check before returning missing
         (value (car missing/methods/wrld1)))
@@ -32008,34 +32252,32 @@
                     (set-w! original-wrld state)
                     (value (list* (cadr vals) new-kpa new-ttags-seen)))))))))))
 
-(defun make-event-debug-pre (form on-behalf-of state)
-  (cond
-   ((null (f-get-global 'make-event-debug state))
-    (value nil))
-   (t
-    (let ((depth (f-get-global 'make-event-debug-depth state)))
-      (pprogn (fms "~x0> Expanding for MAKE-EVENT~@1~|  ~y2~|"
-                   (list (cons #\0 depth)
-                         (cons #\1
-                               (if (and on-behalf-of
-                                        (not (member-eq on-behalf-of
-                                                        '(:quiet :quiet!))))
-                                   (msg " on behalf of~|  ~Y01:"
-                                        on-behalf-of
-                                        (term-evisc-tuple nil state))
-                                 ":"))
-                         (cons #\2 form))
-                   (proofs-co state) state nil)
-              (value depth))))))
+(defun make-event-debug-pre (depth form on-behalf-of state)
+
+; Assumes state global 'make-event-debug has a non-nil value.
+
+  (fms "~x0> Expanding for MAKE-EVENT~@1~|  ~y2~|"
+       (list (cons #\0 depth)
+             (cons #\1
+                   (if (and on-behalf-of
+                            (not (member-eq on-behalf-of
+                                            '(:quiet :quiet!))))
+                       (msg " on behalf of~|  ~Y01:"
+                            on-behalf-of
+                            (term-evisc-tuple nil state))
+                     ":"))
+             (cons #\2 form))
+       (proofs-co state) state nil))
 
 (defun make-event-debug-post (debug-depth expansion0 state)
-  (cond ((null debug-depth) state)
-        (t
-         (fms "<~x0 Returning MAKE-EVENT expansion:~|  ~Y12~|"
-              (list (cons #\0 debug-depth)
-                    (cons #\1 expansion0)
-                    (cons #\2 (term-evisc-tuple nil state)))
-              (proofs-co state) state nil))))
+
+; Assumes state global 'make-event-debug has a non-nil value.
+
+  (fms "<~x0 Returning MAKE-EVENT expansion:~|  ~Y12~|"
+       (list (cons #\0 debug-depth)
+             (cons #\1 expansion0)
+             (cons #\2 (term-evisc-tuple nil state)))
+       (proofs-co state) state nil))
 
 (defstub always-do-proofs-during-make-event-expansion () t)
 
@@ -32274,42 +32516,47 @@
             the ACL2 implementors."))
       (t
        (revert-world-on-error
-        (state-global-let*
-         ((make-event-debug-depth (1+ (f-get-global 'make-event-debug-depth
-                                                    state))))
-         (let* ((wrld (w state))
-                (include-book-phase-p
-                 (let ((info (f-get-global 'certify-book-info state)))
-                   (and info
-                        (access certify-book-info info :include-book-phase))))
-                (skip-check-expansion
-                 (and (consp check-expansion)
-                      include-book-phase-p)))
-           (er-let*
-               ((debug-depth (make-event-debug-pre form on-behalf-of state))
-                (expansion0/new-kpa/new-ttags-seen
-                 (cond
-                  ((and expansion?
-                        (eq (ld-skip-proofsp state) 'include-book)
-                        (or (not (f-get-global 'including-uncertified-p state))
-                            include-book-phase-p)
+        (let* ((make-event-debug (f-get-global 'make-event-debug state))
+               (new-debug-depth (1+ (f-get-global 'make-event-debug-depth state)))
+               (wrld (w state))
+               (include-book-phase-p
+                (let ((info (f-get-global 'certify-book-info state)))
+                  (and info
+                       (access certify-book-info info :include-book-phase))))
+               (skip-check-expansion
+                (and (consp check-expansion)
+                     include-book-phase-p)))
+          (er-let*
+              ((expansion0/new-kpa/new-ttags-seen
+                (pprogn
+                 (if make-event-debug
+                     (make-event-debug-pre new-debug-depth form on-behalf-of
+                                           state)
+                   state)
+                 (state-global-let*
+                  ((make-event-debug-depth new-debug-depth))
+                  (cond
+                   ((and expansion?
+                         (eq (ld-skip-proofsp state) 'include-book)
+                         (or (not (f-get-global 'including-uncertified-p state))
+                             include-book-phase-p)
 
 ; Even if expansion? is specified, we do not assume it's right if
 ; check-expansion is t.
 
-                        (assert$ (iff check-expansion
+                         (assert$ (iff check-expansion
 
 ; In code above, we disallowed the combination of non-nil expansion? with a
 ; consp value of :check-expansion.
 
-                                      (eq check-expansion t))
-                                 (not (eq check-expansion t))))
-                   (value (list* expansion? nil nil)))
-                  (skip-check-expansion
-                   (value (list* check-expansion nil nil)))
-                  (t
-                   (do-proofs?
-                    (or check-expansion
+                                       (eq check-expansion t))
+                                  (not (eq check-expansion t))))
+                    (value (list* expansion? nil nil)))
+                   (skip-check-expansion
+                    (value (list* check-expansion nil nil)))
+                   (t
+                    (do-proofs?
+                     (or check-expansion
 
 ; For example, a must-fail form in community book books/make-event/defspec.lisp
 ; will fail during the Pcertify process of provisional certification unless we
@@ -32322,8 +32569,8 @@
 ; certification as a way of validating some code.  So our approach is only to
 ; move proofs from the Convert procedure to the Pcertify procedure.
 
-                        (eq (cert-op state) :create-pcert))
-                    t ; use-always-do-proofs (for the main expansion here)
+                         (eq (cert-op state) :create-pcert))
+                     t ; use-always-do-proofs (for the main expansion here)
 
 ; Just below, the use of protected-eval ensures, among other things, that
 ; global cert-data won't be consulted.  To see why, imagine that a defun for
@@ -32331,44 +32578,46 @@
 ; :check-expansion while including a book, where a different defun of foo
 ; occurs later at the top level of the book.
 
-                    (protected-eval form on-behalf-of ctx state t)))))
-                (expansion0 (value (car expansion0/new-kpa/new-ttags-seen)))
-                (new-kpa (value (cadr expansion0/new-kpa/new-ttags-seen)))
-                (new-ttags-seen
-                 (value (cddr expansion0/new-kpa/new-ttags-seen)))
-                (need-event-landmark-p
-                 (pprogn
-                  (make-event-debug-post debug-depth expansion0 state)
-                  (cond ((or (null new-ttags-seen)
+                     (protected-eval form on-behalf-of ctx state t)))))))
+               (expansion0 (value (car expansion0/new-kpa/new-ttags-seen)))
+               (new-kpa (value (cadr expansion0/new-kpa/new-ttags-seen)))
+               (new-ttags-seen
+                (value (cddr expansion0/new-kpa/new-ttags-seen)))
+               (need-event-landmark-p
+                (pprogn
+                 (if make-event-debug
+                     (make-event-debug-post new-debug-depth expansion0 state)
+                   state)
+                 (cond ((or (null new-ttags-seen)
 
 ; The condition above holds when the new ttags-seen is nil or was not computed.
 ; Either way, no addition has been made to the value of world global
 ; 'ttags-seen.
 
-                             (equal new-ttags-seen
-                                    (global-val 'ttags-seen wrld)))
-                         (value nil))
-                        (t (pprogn
-                            (set-w 'extension
-                                   (global-set 'ttags-seen new-ttags-seen
-                                               wrld)
-                                   state)
-                            (value t))))))
-                (wrld0 (value (w state)))
-                (expansion1/stobjs-out/result
-                 (make-event-fn1
-                  expansion0 whole-form
-                  (in-encapsulatep (global-val 'embedded-event-lst wrld0) nil)
-                  check-expansion on-behalf-of wrld0 ctx state)))
-             (let* ((expansion1 (car expansion1/stobjs-out/result))
-                    (stobjs-out (cadr expansion1/stobjs-out/result))
-                    (result (cddr expansion1/stobjs-out/result))
-                    (expansion2
-                     (cond
-                      ((f-get-global 'last-make-event-expansion state)
-                       (mv-let
-                         (wrappers base)
-                         (destructure-expansion expansion1)
+                            (equal new-ttags-seen
+                                   (global-val 'ttags-seen wrld)))
+                        (value nil))
+                       (t (pprogn
+                           (set-w 'extension
+                                  (global-set 'ttags-seen new-ttags-seen
+                                              wrld)
+                                  state)
+                           (value t))))))
+               (wrld0 (value (w state)))
+               (expansion1/stobjs-out/result
+                (make-event-fn1
+                 expansion0 whole-form
+                 (in-encapsulatep (global-val 'embedded-event-lst wrld0) nil)
+                 check-expansion on-behalf-of wrld0 ctx state)))
+            (let* ((expansion1 (car expansion1/stobjs-out/result))
+                   (stobjs-out (cadr expansion1/stobjs-out/result))
+                   (result (cddr expansion1/stobjs-out/result))
+                   (expansion2
+                    (cond
+                     ((f-get-global 'last-make-event-expansion state)
+                      (mv-let
+                        (wrappers base)
+                        (destructure-expansion expansion1)
 
 ; At this point we know that (car base) is from the list '(make-event progn
 ; progn! encapsulate); indeed, just after the release of v3-5, we ran a
@@ -32378,66 +32627,66 @@
 ; ACL2s can create make-event expansions out of events other than the four
 ; types above, e.g., defun.
 
-                         (declare (ignore base))
-                         (rebuild-expansion
-                          wrappers
-                          (ultimate-expansion
-                           (f-get-global 'last-make-event-expansion state)))))
-                      (t (ultimate-expansion expansion1)))))
-               (assert$
-                (equal stobjs-out *error-triple-sig*) ; evaluated an event form
-                (let ((expected-expansion (if (consp check-expansion)
-                                              check-expansion
-                                            (and (eq (ld-skip-proofsp state)
-                                                     'include-book)
-                                                 check-expansion
-                                                 expansion?))))
-                  (cond ((and expected-expansion
-                              (not (equal expected-expansion ; easy try first
-                                          expansion2))
-                              (not (equal (ultimate-expansion
-                                           expected-expansion)
-                                          expansion2)))
-                         (er soft ctx
-                             "The current MAKE-EVENT expansion differs from ~
+                        (declare (ignore base))
+                        (rebuild-expansion
+                         wrappers
+                         (ultimate-expansion
+                          (f-get-global 'last-make-event-expansion state)))))
+                     (t (ultimate-expansion expansion1)))))
+              (assert$
+               (equal stobjs-out *error-triple-sig*) ; evaluated an event form
+               (let ((expected-expansion (if (consp check-expansion)
+                                             check-expansion
+                                           (and (eq (ld-skip-proofsp state)
+                                                    'include-book)
+                                                check-expansion
+                                                expansion?))))
+                 (cond ((and expected-expansion
+                             (not (equal expected-expansion ; easy try first
+                                         expansion2))
+                             (not (equal (ultimate-expansion
+                                          expected-expansion)
+                                         expansion2)))
+                        (er soft ctx
+                            "The current MAKE-EVENT expansion differs from ~
                               the expected (original or specified) expansion. ~
                               ~ See :DOC make-event.~|~%~|~%Make-event ~
                               argument:~|~%~y0~|~%Expected ~
                               expansion:~|~%~y1~|~%Current expansion:~|~%~y2~|"
-                             form
-                             expected-expansion
-                             expansion2))
-                        (t
-                         (let ((actual-expansion
-                                (cond
-                                 ((or (consp check-expansion)
-                                      (equal expansion?
-                                             expansion2) ; easy try first
-                                      (equal (ultimate-expansion
-                                              expansion?)
-                                             expansion2))
+                            form
+                            expected-expansion
+                            expansion2))
+                       (t
+                        (let ((actual-expansion
+                               (cond
+                                ((or (consp check-expansion)
+                                     (equal expansion?
+                                            expansion2) ; easy try first
+                                     (equal (ultimate-expansion
+                                             expansion?)
+                                            expansion2))
 
 ; The original make-event form does not generate a make-event replacement (see
 ; :doc make-event).
 
-                                  nil)
-                                 (check-expansion
-                                  (assert$
-                                   (eq check-expansion t) ; from macro guard
-                                   (list* 'make-event form
+                                 nil)
+                                (check-expansion
+                                 (assert$
+                                  (eq check-expansion t) ; from macro guard
+                                  (list* 'make-event form
 
 ; Note that we deliberately omit :expansion? here, even if it was supplied
 ; originally.  If :expansion? had been supplied and appropropriate, then we
 ; would be in the previous case, where we don't generate a make-event around
 ; the expansion.
 
-                                          :check-expansion expansion2
-                                          (and on-behalf-of
-                                               `(:on-behalf-of
-                                                 ,on-behalf-of)))))
-                                 (t expansion2))))
-                           #-acl2-loop-only
-                           (let ((msg
+                                         :check-expansion expansion2
+                                         (and on-behalf-of
+                                              `(:on-behalf-of
+                                                ,on-behalf-of)))))
+                                (t expansion2))))
+                          #-acl2-loop-only
+                          (let ((msg
 
 ; We now may check the expansion to see if an unknown package appears.  The
 ; following example shows why this can be important.  Consider a book "foo"
@@ -32473,58 +32722,58 @@
 ; world installed at the end of expansion, so if expansion doesn't extend the
 ; world with any new packages, then we can avoid this check.
 
-                                  (and (not (eq old-kpa new-kpa))
-                                       (bad-lisp-objectp actual-expansion))))
-                             (when msg
-                               (er hard ctx
-                                   "Make-event expansion for the form ~x0 has ~
+                                 (and (not (eq old-kpa new-kpa))
+                                      (bad-lisp-objectp actual-expansion))))
+                            (when msg
+                              (er hard ctx
+                                  "Make-event expansion for the form ~x0 has ~
                                     produced an illegal object for the ~
                                     current ACL2 world.  ~@1"
-                                   form
-                                   msg)))
-                           (er-progn
-                            (cond ((f-get-global 'boot-strap-flg state)
+                                  form
+                                  msg)))
+                          (er-progn
+                           (cond ((f-get-global 'boot-strap-flg state)
 
 ; In the boot-strap, we prevent make-event from storing an expansion, since
 ; otherwise we get an error for (when-pass-2 ... (make-event ...) ...), because
 ; make-event is not in an event context.
 
-                                   (pprogn
-                                    (if (in-encapsulatep
-                                         (global-val 'embedded-event-lst
-                                                     (w state))
-                                         nil)
-                                        (er soft ctx
-                                            "Illegal form:~|~x0~|~%Make-event ~
+                                  (pprogn
+                                   (if (in-encapsulatep
+                                        (global-val 'embedded-event-lst
+                                                    (w state))
+                                        nil)
+                                       (er soft ctx
+                                           "Illegal form:~|~x0~|~%Make-event ~
                                              is illegal inside an encapsulate ~
                                              when in the boot-strap. See the ~
                                              relevant discussion in ~
                                              make-event-fn."
-                                            form)
-                                      (value nil))))
-                                  (t
-                                   (pprogn
-                                    (f-put-global 'last-make-event-expansion
-                                                  actual-expansion
-                                                  state)
-                                    (value nil))))
-                            (pprogn
-                             (cond
-                              ((f-get-global 'make-event-debug state)
-                               (fms "Saving make-event replacement into state ~
-                                     global 'last-make-event-expansion (debug ~
-                                     level ~
-                                     ~x0):~|Form:~|~X13~|Expansion:~|~X23~|"
-                                    (list (cons #\0 debug-depth)
-                                          (cons #\1 form)
-                                          (cons #\2 actual-expansion)
-                                          (cons #\3 (abbrev-evisc-tuple state)))
-                                    (proofs-co state)
-                                    state
-                                    nil))
-                              (t state))
-                             (er-progn
-                              (cond (need-event-landmark-p ; optimization
+                                           form)
+                                     (value nil))))
+                                 (t
+                                  (pprogn
+                                   (f-put-global 'last-make-event-expansion
+                                                 actual-expansion
+                                                 state)
+                                   (value nil))))
+                           (pprogn
+                            (cond
+                             ((f-get-global 'make-event-debug state)
+                              (fms "Saving make-event replacement into state ~
+                                    global 'last-make-event-expansion (debug ~
+                                    level ~
+                                    ~x0):~|Form:~|~X13~|Expansion:~|~X23~|"
+                                   (list (cons #\0 new-debug-depth)
+                                         (cons #\1 form)
+                                         (cons #\2 actual-expansion)
+                                         (cons #\3 (abbrev-evisc-tuple state)))
+                                   (proofs-co state)
+                                   state
+                                   nil))
+                             (t state))
+                            (er-progn
+                             (cond (need-event-landmark-p ; optimization
 
 ; We lay down an event landmark if we aren't already looking at one.  Before we
 ; did so, an error was reported by print-redefinition-warning in the following
@@ -32534,9 +32783,9 @@
 ; (make-event (er-progn (defttag t)
 ;                       (value '(value-triple nil))))
 
-                                     (maybe-add-event-landmark state))
-                                    (t (value nil)))
-                              (value result))))))))))))))))
+                                    (maybe-add-event-landmark state))
+                                   (t (value nil)))
+                             (value result)))))))))))))))
      :event-type 'make-event)))
 
 (defun get-check-invariant-risk (state)

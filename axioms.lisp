@@ -4816,15 +4816,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (:forward-chaining :trigger-terms
                       ((coerce str 'list)))))
 
-; In AKCL the nonstandard character #\Page prints as ^L and may be included in
-; strings, as in "^L".  Now if you try to type that string in ACL2, you get an
-; error.  And ACL2 does not let you use coerce to produce the string, e.g.,
-; with (coerce (list #\Page) 'string), because the guard for coerce is
-; violated.  So here we have a situation in which no ACL2 function in LP will
-; ever see a nonstandard char in a string, but CLTL permits it.  However, we
-; consider the axiom to be appropriate, because ACL2 strings contain only
-; standard characters.
-
 (in-theory (disable standard-char-listp standard-char-p))
 
 ; (defthm standard-char-listp-coerce-forward-chaining
@@ -8832,23 +8823,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (symbol-listp lst)))
   (position-ac-eq-exec item lst 0))
 
-(defun-with-guard-check position-eql-exec (item lst)
-  (or (stringp lst)
-      (and (true-listp lst)
-           (or (eqlablep item)
-               (eqlable-listp lst))))
-  (if (stringp lst)
-      (position-ac item (coerce lst 'list) 0)
-    (position-ac item lst 0)))
+(defun-with-guard-check position-eql-exec (x seq)
+  (or (stringp seq)
+      (and (true-listp seq)
+           (or (eqlablep x)
+               (eqlable-listp seq))))
+  (if (stringp seq)
+      (position-ac x (coerce seq 'list) 0)
+    (position-ac x seq 0)))
 
-(defun position-equal (item lst)
-  (declare (xargs :guard (or (stringp lst) (true-listp lst))))
+(defun position-equal (x seq)
+  (declare (xargs :guard (or (stringp seq) (true-listp seq))))
   #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
-  (position item lst :test #'equal)
+  (position x seq :test #'equal)
   #+acl2-loop-only
-  (if (stringp lst)
-      (position-ac item (coerce lst 'list) 0)
-    (position-equal-ac item lst 0)))
+  (if (stringp seq)
+      (position-ac x (coerce seq 'list) 0)
+    (position-equal-ac x seq 0)))
 
 (defmacro position-eq (item lst)
   `(position ,item ,lst :test 'eq))
@@ -9276,9 +9267,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (push ,item (car ,g))
          (if *lp-ever-entered-p*
              (illegal ,ctx
-                      "Apparently you have tried to execute a form in raw Lisp ~
-                       that is only intended to be executed inside the ACL2 ~
-                       loop.  You should probably abort (e.g., :Q in akcl or ~
+                      "Apparently you have tried to execute a form in raw ~
+                       Lisp that is only intended to be executed inside the ~
+                       ACL2 loop.  You should probably abort (e.g., :Q in ~
                        gcl, :A in LispWorks, :POP in Allegro), then type (LP) ~
                        and try again.  If this explanation seems incorrect, ~
                        then please contact the implementors of ACL2."
@@ -13561,8 +13552,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; *number-of-return-values* may be increased (but not reduced) to be
 ; as high as required to increase the allowed number of ACL2 return
 ; values.  However, if it is increased, the entire ACL2 system must be
-; recompiled.  Currently, the first 10 locations are handled specially
-; in releases of AKCL past 206.
+; recompiled.
 
 (defun cdrn (x i)
   (declare (xargs :guard (and (integerp i)
@@ -14544,8 +14534,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the value of state global 'acl2-version, which gets printed in .cert files.
 
 ; Leave this here.  It is read when loading acl2.lisp.  This constant should be
-; a string containing at least one `.'.  The function save-acl2-in-akcl in
-; akcl-init.lisp suggests that the user see :doc notexxx, where xxx is the
+; a string containing at least one `.'.  The function save-acl2-in-gcl in
+; acl2-init.lisp suggests that the user see :doc notexxx, where xxx is the
 ; substring appearing after the first `.'.
 
 ; We have occasion to write fixed version numbers in this code, that is,
@@ -14622,6 +14612,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (dmrp . nil)
     (evisc-hitp-without-iprint . nil)
     (eviscerate-hide-terms . nil)
+    (fast-cert-status . nil)
     (fmt-hard-right-margin . ,*fmt-hard-right-margin-default*)
     (fmt-soft-right-margin . ,*fmt-soft-right-margin-default*)
     (gag-mode . nil) ; set in lp
@@ -14649,6 +14640,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                      ; to nil.
     (inhibit-output-lst-stack . nil)
     (inhibited-summary-types . nil)
+    (inside-progn-fn1 . nil)
     (inside-skip-proofs . nil)
     (iprint-ar . ,(init-iprint-ar *iprint-hard-bound-default* nil))
     (iprint-fal . nil)
@@ -14725,7 +14717,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (skip-proofs-by-system . nil)
     (skip-proofs-okp-cert . t) ; t when not inside certify-book
     (skip-reset-prehistory . nil) ; non-nil skips (reset-prehistory nil)
-    (slow-apply$-action . t)
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
     (splitter-output . t)
     (standard-co . acl2-output-channel::standard-character-output-0)
@@ -17909,7 +17900,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; We here set up the property list of the three channels that are open
 ; at the beginning.  The order of the setfs and the superfluous call
-; of symbol-name are to arrange, in AKCL, for the stream component to
+; of symbol-name are to arrange, in GCL, for the stream component to
 ; be first on the property list.
 
 #-acl2-loop-only
@@ -18240,7 +18231,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (interface-er "Illegal input-type ~x0." typ)))))
               (cond
                ((null stream) (mv nil *the-live-state*))
-               #+(and acl2-infix akcl)
+               #+(and acl2-infix gcl)
                ((and (eq typ :object)
                      (not (lisp-book-syntaxp os-file-name)))
 
@@ -21818,6 +21809,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     verify-termination-on-raw-program-okp
     prompt-memo
     system-attachments-cache
+    fast-cert-status
+    inside-progn-fn1
     ))
 
 ; There is a variety of state global variables, 'ld-skip-proofsp among them,
@@ -21996,7 +21989,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     (or (null entry)
                         (package-entry-hidden-p entry))
                     (cons
-                     "The symbol CLTL displays as ~s0 is not in any of the ~
+                     "The symbol displayed as ~s0 is not in any of the ~
                       packages known to ACL2.~@1"
                      (list
                       (cons #\0 (format nil "~s" x))
@@ -22005,14 +21998,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                              ((or (null entry)
                                   (null (package-entry-book-path entry)))
                               "")
+                             ((null (cdr (package-entry-book-path entry)))
+                              (msg "  This package was apparently defined ~
+                                    locally by the portcullis of the ~
+                                    book ~s0."
+                                   (book-name-to-filename-1
+                                    (car (package-entry-book-path entry))
+                                    (project-dir-alist (w *the-live-state*))
+                                    'bad-lisp-atomp)))
                              (t
-                              (msg "  This package was defined under a ~
-                                    locally included book.  Thus, some ~
-                                    include-book was local in the following ~
-                                    sequence of included books, from top-most ~
-                                    book down to the book whose portcullis ~
-                                    defines this package (with a defpkg ~
-                                    event).~|~%  ~F0"
+                              (msg "  This package was apparently defined ~
+                                    locally by the portcullis of the last in ~
+                                    the following sequence of included books, ~
+                                    where each book includes the next.~|~%  ~
+                                    ~F0"
                                    (reverse
                                     (book-name-lst-to-filename-lst
                                      (package-entry-book-path entry)
