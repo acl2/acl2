@@ -3724,7 +3724,7 @@
 
 ;drop the non-gen? and any other specific versions
 (defthm slice-of-bvmult-of-expt-gen
-  (implies (and	(<= m low) ;gen?
+  (implies (and (<= m low) ;gen?
                 (<= (+ 1 high) size) ;gen?
                 (<= low high)
                 (natp low)
@@ -3736,7 +3736,7 @@
   :hints (("Goal" :in-theory (e/d (bvmult SLICE-WHEN-VAL-IS-NOT-AN-INTEGER) (bvchop-of-*)))))
 
 (defthm slice-of-bvmult-of-expt-gen-alt
-  (implies (and	(<= m low) ;gen?
+  (implies (and (<= m low) ;gen?
                 (<= (+ 1 high) size) ;gen?
                 (<= low high)
                 (natp low)
@@ -3750,7 +3750,7 @@
 
 ;kill SLICE-OF-BVMULT-33-9-34-8
 (defthm slice-of-bvmult-of-expt-gen-constant-version
-  (implies (and	(syntaxp (quotep k))
+  (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
                 (<= (lg k) low)      ;gen?
                 (<= (+ 1 high) size) ;gen?
@@ -4311,7 +4311,7 @@
                 (integerp y) ;drop?
                 (natp size)
                 (integerp size2)
-		)
+                )
            (equal (bvmult size x (logext size2 y))
                   (bvmult size x y)))
   :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
@@ -4323,7 +4323,7 @@
                 (integerp y) ;drop?
                 (natp size)
                 (integerp size2)
-		)
+                )
            (equal (bvmult size (logext size2 y) x)
                   (bvmult size y x)))
   :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))

@@ -177,13 +177,13 @@
 
 (defthmd subsetp-equal-of-remove-equal-arg2-irrel
   (implies (not (member-equal a x))
-	   (equal (subsetp-equal x (remove-equal a y))
+           (equal (subsetp-equal x (remove-equal a y))
                   (subsetp-equal x y)))
   :hints (("Goal" :in-theory (enable subsetp-equal remove-equal))))
 
 (defthm subsetp-equal-of-remove-equal-arg2-irrel-cheap
   (implies (not (member-equal a x))
-	   (equal (subsetp-equal x (remove-equal a y))
+           (equal (subsetp-equal x (remove-equal a y))
                   (subsetp-equal x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :use (:instance subsetp-equal-of-remove-equal-arg2-irrel))))
@@ -296,7 +296,7 @@
 
 (defthm subsetp-equal-of-set-difference-equal-arg1
   (implies (subsetp-equal x z)
-	   (subsetp-equal (set-difference-equal x y) z)))
+           (subsetp-equal (set-difference-equal x y) z)))
 
 (defthm subsetp-equal-of-intersection-equal-arg1
   (implies (or (subsetp-equal x z)

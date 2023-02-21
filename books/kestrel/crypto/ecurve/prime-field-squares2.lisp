@@ -40,14 +40,14 @@
     "@('fep') because some of the theorems used have @('natp') and @('< p') as hyps."))
   :parents (elliptic-curves)
   (implies (and (dm::primep p)
-		(not (equal p 2))
-		(fep a p)
-		(primes::has-square-root? a p))
-	   (pfield-squarep a p))
+                (not (equal p 2))
+                (fep a p)
+                (primes::has-square-root? a p))
+           (pfield-squarep a p))
   :cases ((equal a 0))
   :enable (mul fep dm::residue primes::residue-meaning-backwards)
   :use ((:instance pfield-squarep-suff (r (dm::find-root (- p 1) a p)) (x a))
-	(:instance dm::res-root1-lemma (n (- p 1)) (m a) (p p))))
+        (:instance dm::res-root1-lemma (n (- p 1)) (m a) (p p))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

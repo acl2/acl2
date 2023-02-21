@@ -21,10 +21,10 @@
    (xdoc::p
     "The following executable formal specifications follow the "
     (xdoc::ahref "https://keccak.team/files/Keccak-submission-3.pdf"
-		 "Keccak SHA-3 submission, Version 3")
+                 "Keccak SHA-3 submission, Version 3")
     ", January 14, 2011, before SHA-3 was finalized. "
     (xdoc::ahref "https://ethereum.stackexchange.com/questions/550/which-cryptographic-hash-function-does-ethereum-use"
-		 "Here")
+                 "Here")
     " is a page that discusses the history.")
    (xdoc::p
     "There are two sets of functions described here: bit-oriented and byte-oriented.

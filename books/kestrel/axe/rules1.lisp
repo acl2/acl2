@@ -908,7 +908,7 @@
   (implies (and (< n esize) ;bozo
                 (equal len (len data))
                 ;(< 1 esize)
-		(< i len)
+                (< i len)
                 (natp i)
                 (natp n)
                 (natp esize)
