@@ -56,7 +56,7 @@
                   :measure (+ 1 (nfix (+ 1 index)))
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
                   :split-types t)
-	   (type integer index))
+           (type integer index))
   (if (or (< index 0)
           (not (mbt (integerp index))))
       nil
@@ -120,7 +120,7 @@
                   :measure (+ 1 (nfix (+ 1 nodenum)))
 ;                  :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
                   :split-types t)
-	   (type integer nodenum))
+           (type integer nodenum))
   (if (or (< nodenum 0)
           (not (mbt (integerp nodenum))))
       nil

@@ -15,12 +15,12 @@
 (defn least-divisor (k n)
   (declare (xargs :measure (nfix (- n k))))
   (if (and (integerp n)
-	   (integerp k)
-	   (< 1 k)
-	   (<= k n))
+           (integerp k)
+           (< 1 k)
+           (<= k n))
       (if (divides k n)
-	  k
-	(least-divisor (1+ k) n))
+          k
+        (least-divisor (1+ k) n))
     ()))
 
 (defnd primep (n)
