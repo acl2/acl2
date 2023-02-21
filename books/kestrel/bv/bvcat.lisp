@@ -26,8 +26,7 @@
 (local (include-book "../arithmetic-light/times-and-divide"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/minus"))
-(local (include-book "../arithmetic-light/floor")) ;drop?
-(local (include-book "../library-wrappers/ihs-logops-lemmas"))
+(local (include-book "../library-wrappers/ihs-logops-lemmas")) ; for logtail-logapp
 
 (defthm unsigned-byte-p-of-bvcat
   (implies (and (>= n (+ lowsize highsize))
@@ -60,7 +59,7 @@
                 (natp size2)
                 (natp x))
            (unsigned-byte-p (+ size size2) x))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p expt-of-+))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p expt-of-+ logtail))))
 
 (encapsulate
  ()
@@ -78,7 +77,7 @@
                                    (size lowsize)
                                    (size2 highsize)
                                    (x x))
-                   :in-theory (e/d (bvcat slice)
+                   :in-theory (e/d (bvcat slice equal-of-logtail-and-0)
                                    (bvchop-of-logtail-becomes-slice
                                     LOGTAIL-LESSP
                                     unsigned-byte-p-of-+-when-<-of-logtail-and-expt))))))
@@ -144,7 +143,8 @@
                           (and (not (integerp lowval)) (integerp highval))
                           (and (integerp lowval) (not (integerp highval)))
                           (and (not (integerp lowval)) (not (integerp highval))))
-           :in-theory (e/d (bvcat slice bvchop-when-i-is-not-an-integer logtail-logapp)
+           :in-theory (e/d (bvcat slice bvchop-when-i-is-not-an-integer
+                                  logtail-logapp)
                            (bvchop-of-logtail-becomes-slice)))))
 
 ;fixme rename?
@@ -1257,23 +1257,25 @@
            :use ((:instance equal-of-bvchop-and-bvchop-when-unsigned-byte-p-of-bvchop)
                  (:instance equal-of-bvchop-and-bvchop-when-unsigned-byte-p-of-bvchop (size1 size2) (size2 size1))))))
 
-(local (include-book "../../ihs/math-lemmas"))
-(local (in-theory (disable <-unary-/-positive-right ; looped on (< x '1/2) !
-                           <-unary-/-negative-right))) ;looped
-
 ;loops with LOGTAIL-EQUAL-0
 (defthmd unsigned-byte-p-of-bvchop-tighter
-  (implies (and (< size n) ;not putting <= here even though i perhaps could
+  (implies (and (< size n)  ;not putting <= here even though i perhaps could
                 (posp size) ;gen?
                 (natp n))
            (equal (unsigned-byte-p size (bvchop n x))
                   (equal 0 (slice (+ -1 n) size x))))
   :hints (("Goal"
-           :use (:instance split-bv (y (bvchop n x))
+           :use (:instance split-bv
+                           (y (bvchop n x))
                            (m size)
                            (n n))
-           :in-theory (disable bvcat-of-bvchop-low bvcat-equal-rewrite-alt bvcat-equal-rewrite
-                               bvcat-of-0-arg2))))
+           :in-theory (disable bvcat-of-bvchop-low
+                               bvcat-equal-rewrite-alt
+                               bvcat-equal-rewrite
+                               bvcat-of-0-arg2
+                               ;; These cause us to lose the (integerp size) fact:
+                               integerp-from-unsigned-byte-p-size-param
+                               unsigned-byte-p-forward-to-natp-arg1))))
 
 (defthmd bvcat-special-opener
   (implies (and (not (equal 0 (getbit 0 x)))
@@ -1317,9 +1319,7 @@
   :hints (("Goal"
            :in-theory (e/d (bvcat logapp posp bvchop getbit)
                            (SLICE-BECOMES-GETBIT
-                            BVCHOP-1-BECOMES-GETBIT
-                            <-unary-/-positive-right ; looped
-                            ))
+                            BVCHOP-1-BECOMES-GETBIT))
            :use ((:instance split-with-bvcat (x x) (hs 1) (ls (+ -1 size)))))))
 
 ;move?
