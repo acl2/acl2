@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; See tests in sublis-var-simple-tests.lisp.
+
 (include-book "kestrel/utilities/symbol-term-alistp" :dir :system)
 (include-book "tools/flag" :dir :system)
 
