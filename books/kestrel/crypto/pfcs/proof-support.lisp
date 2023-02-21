@@ -150,6 +150,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define constraint-equal-satp ((left expressionp)
+                               (right expressionp)
+                               (asg assignmentp)
+                               (p primep))
+  :guard (assignment-for-prime-p asg p)
+  :returns (yes/no booleanp)
+  :short "Satisfaction of an equality constraint,
+          expressed without proof trees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is an alternative definition of @(tsee constraint-satp)
+     for the case in which the constrains is an equality.
+     We prove in @(tsee constraint-satp-of-equal)
+     its equivalence to @(tsee constraint-satp).")
+   (xdoc::p
+    "This is a simpler definition,
+     because it does not directly involve the execution of proof trees.
+     It says that the equality is satisfied
+     exactly when the two expressions are equal and non-erroneous."))
+  (and (eval-expr left asg p)
+       (equal (eval-expr left asg p)
+              (eval-expr right asg p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled constraint-satp-of-equal
   :short "Proof rule for equality constraints."
   :long
@@ -159,45 +185,44 @@
      reduces to the two expressions being equal and non-erroneous.")
    (xdoc::p
     "This rule lets us dispense with the existentially quantified proof tree
-     for the common case of equality constraints."))
+     for the case of equality constraints."))
   (implies (and (assignment-for-prime-p asg p)
                 (constraint-case constr :equal))
-           (iff (constraint-satp constr defs asg p)
-                (b* ((left (constraint-equal->left constr))
-                     (right (constraint-equal->right constr)))
-                  (and (equal (eval-expr left asg p)
-                              (eval-expr right asg p))
-                       (eval-expr left asg p)))))
+           (equal (constraint-satp constr defs asg p)
+                  (constraint-equal-satp (constraint-equal->left constr)
+                                         (constraint-equal->right constr)
+                                         asg
+                                         p)))
   :use (only-if-direction if-direction)
 
   :prep-lemmas
   ((defruled only-if-direction
      (implies (constraint-case constr :equal)
-              (b* ((left (constraint-equal->left constr))
-                   (right (constraint-equal->right constr)))
-                (implies (constraint-satp constr defs asg p)
-                         (and (equal (eval-expr left asg p)
-                                     (eval-expr right asg p))
-                              (eval-expr left asg p)))))
-     :enable constraint-satp
+              (implies (constraint-satp constr defs asg p)
+                       (constraint-equal-satp (constraint-equal->left constr)
+                                              (constraint-equal->right constr)
+                                              asg
+                                              p)))
+     :enable (constraint-satp
+              constraint-equal-satp)
      :use (:instance exec-proof-tree-when-constraint-equal
-           (ptree (constraint-satp-witness constr defs asg p))))
+                     (ptree (constraint-satp-witness constr defs asg p))))
 
    (defruled if-direction
      (implies (and (assignment-for-prime-p asg p)
                    (constraint-case constr :equal))
-              (b* ((left (constraint-equal->left constr))
-                   (right (constraint-equal->right constr)))
-                (implies (and (equal (eval-expr left asg p)
-                                     (eval-expr right asg p))
-                              (eval-expr left asg p))
-                         (constraint-satp constr defs asg p))))
+              (implies (constraint-equal-satp (constraint-equal->left constr)
+                                              (constraint-equal->right constr)
+                                              asg
+                                              p)
+                       (constraint-satp constr defs asg p)))
+     :enable (exec-proof-tree
+              constraint-equal-satp)
      :use (:instance constraint-satp-suff
-           (ptree (make-proof-tree-equal
-                   :asg asg
-                   :left (constraint-equal->left constr)
-                   :right (constraint-equal->right constr))))
-     :enable exec-proof-tree)))
+                     (ptree (make-proof-tree-equal
+                             :asg asg
+                             :left (constraint-equal->left constr)
+                             :right (constraint-equal->right constr)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,7 +238,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like an alternative definition of @(tsee constraint-satp)
+    "This is an alternative definition of @(tsee constraint-satp)
      for the case in which the constraint is an application of a relation.
      We prove below its equivalence to @(tsee constraint-satp).")
    (xdoc::p
