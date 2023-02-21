@@ -60,6 +60,7 @@
                 (spec-boolean b p)))
   :enable (constraint-boolean
            constraint-satp-of-equal
+           constraint-equal-satp
            eval-expr
            expression-sub
            expression-neg

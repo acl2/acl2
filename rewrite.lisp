@@ -10664,7 +10664,7 @@
 ; rooted in a communication from Sol Swords that included the basic correctness
 ; argument.  That communication, on 1/5/2023, introduced the notion of
 ; "transparent" function.  For relevant background see the Essay above and see
-; :DOC evaluator-restrictions.
+; :DOC evaluator-restrictions and :DOC transparent-functions.
 
 ; Let ev be our evaluator and let meta-fn our meta function; a similar
 ; argument, omitted here, works for clause-processors.  As in the Essay above,

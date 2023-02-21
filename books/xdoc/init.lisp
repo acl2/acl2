@@ -21,7 +21,11 @@
 
 (include-book "xdoc/defxdoc-raw" :dir :system :ttags :all)
 (include-book "xdoc/topics" :dir :system)
-(include-book "system/doc/acl2-doc-wrap" :dir :system)
+; Matt K. commented out the next include-book 2/2023 because it didn't seem
+; necessary and it caused unnecessary recertification when
+; system/doc/acl2-doc.lisp changes.  If you restore this include-book, please
+; explain the purpose that it serves.
+; (include-book "system/doc/acl2-doc-wrap" :dir :system)
 (include-book "xdoc/display" :dir :system :ttags :all)
 
 (xdoc::colon-xdoc-init)
