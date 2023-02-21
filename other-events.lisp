@@ -6172,7 +6172,7 @@
                (er soft ctx
                    "A partial-encapsulate must not specify :transparent t in ~
                     its signature.  However, the signature with list of names ~
-                    ~x0 does just that.  See :DOC signature."
+                    ~x0 does just that.  See :DOC transparent-functions."
                    (strip-cars insigs)))
 
 ; At one time we added a case here to cause an error here when expansion-alist
@@ -6295,7 +6295,7 @@
                                 marked as transparent in ~#1~[its subsidiary ~
                                 encapsulate signature~/their subsidiary ~
                                 encapsulate signatures~].  This is illegal; ~
-                                see :DOC evaluator-restrictions."
+                                see :DOC transparent-functions."
                                sig-fns transparent-mismatch)
                          (er soft ctx
                              "The signature~#0~[~/s~] of the proposed ~
@@ -6305,7 +6305,7 @@
                               :transparent t in ~#1~[its subsidiary ~
                               encapsulate signature~/their subsidiary ~
                               encapsulate signatures~].  This is illegal; see ~
-                              :DOC evaluator-restrictions."
+                              :DOC transparent-functions."
                              sig-fns transparent-mismatch)))
                       (t
                        (let* ((wrld2
@@ -7168,19 +7168,20 @@
             state)
           (if infectious-fns
               (warning$ ctx "Infected"
-                        "Note that the definitional equation~#0~[~/s~] for ~
-                         ~&0 infect~#0~[s~/~] the constraint of this ~
+                        "Note that the defining event~#0~[~/s~] for ~&0 ~
+                         infect~#0~[s~/~] the constraint of this ~
                          en~-cap~-su~-la~-tion.  That can be caused because a ~
                          function ancestrally involves the constrained ~
                          functions of an encapsulate and is ancestrally ~
                          involved in the constraining theorems of those ~
-                         functions. In any case, if at all possible, you ~
-                         should move ~#0~[this definition~/these ~
-                         definitions~] out of the encapsulation.  A ~
-                         constraint containing a definitional equation is ~
-                         often hard to use in subsequent functional ~
-                         instantiations.  See :DOC subversive-recursions for ~
-                         a discussion of related issues."
+                         functions.  In any case, if at all possible, you ~
+                         should move ~#0~[this defining event~/these defining ~
+                         events~] out of the encapsulation.  A constraint ~
+                         containing the formula of such an event is often ~
+                         hard to use in subsequent functional instantiations. ~
+                         ~ See :DOC infected-constraints and perhaps :DOC ~
+                         subversive-recursions for discussion of related ~
+                         issues."
                         infectious-fns)
             state))))))
 
@@ -28693,7 +28694,8 @@
                            "It is illegal to attach to the function symbol ~
                             ~x0 because it is a common ancestor of the ~
                             evaluator and ~@1 functions of the ~x2 rule, ~x3. ~
-                            ~ See :DOC evaluator-restrictions."
+                            ~ See :DOC evaluator-restrictions and see :DOC ~
+                            transparent-functions."
                            f meta-fn rule-class rule-name)))
                     (t ; at-alist is a legitimate attachment alist
                      (let* ((erasures (cond ((consp at-alist)
