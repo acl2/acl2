@@ -1,4 +1,4 @@
-; Theormes about make-lambda-nest
+; Theorems about make-lambda-nest
 ;
 ; Copyright (C) 2023 Kestrel Institute
 ;
