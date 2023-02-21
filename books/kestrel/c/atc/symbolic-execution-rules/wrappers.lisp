@@ -37,4 +37,4 @@
     '(condexpr
       declar
       assign
-      pointer)))
+      star)))

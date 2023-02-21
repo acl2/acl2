@@ -35,8 +35,8 @@
      which are ACL2 variables.")
    (xdoc::p
     "This pointer term must be showed non-null,
-     which we do via @('value-pointer-nullp-of-value-pointer'),
-     which produced @('(not (objdesign-static ...))'),
+     which we do via @('value-pointer-validp-of-value-pointer'),
+     which produces @('(objdesign-static ...)'),
      which we resolve to @('t') via
      the type prescription rule of @(tsee objdesign-static).")
    (xdoc::p
@@ -60,7 +60,7 @@
      which is needed to discharge certain conditions."))
 
   (defval *atc-static-variable-pointer-rules*
-    '(value-pointer-nullp-of-value-pointer
+    '(value-pointer-validp-of-value-pointer
       (:t objdesign-static)
       value-pointer->reftype-of-value-pointer
       type-fix-when-typep

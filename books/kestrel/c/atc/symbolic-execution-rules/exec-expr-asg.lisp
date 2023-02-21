@@ -92,7 +92,7 @@
                  (equal ptr (read-var var compst))
                  (valuep ptr)
                  (value-case ptr :pointer)
-                 (not (value-pointer-nullp ptr))
+                 (value-pointer-validp ptr)
                  (equal (value-pointer->reftype ptr) (,constructor))
                  (equal val (exec-expr-pure right compst))
                  (,pred val))
@@ -193,7 +193,7 @@
                                            (value-array->elemtype arr-val))
                           arr-val))
                  (value-case ptr :pointer)
-                 (not (value-pointer-nullp ptr))
+                 (value-pointer-validp ptr)
                  (equal (value-pointer->reftype ptr)
                         ,(type-to-maker atype))
                  (equal array

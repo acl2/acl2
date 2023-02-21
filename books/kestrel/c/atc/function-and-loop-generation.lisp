@@ -122,25 +122,25 @@
      as explained in the user documentation.")
    (xdoc::p
     "The conjunct must have the form
-     @('(recognizer var)') or @('(pointer (recognizer var))'),
+     @('(recognizer var)') or @('(star (recognizer var))'),
      where @('recognizer') is a recognizer of a C type
      and @('var') is a variable.
      If the recognizer is a known one for integer array types,
-     the @(tsee pointer) wrapper is disallowed,
+     the @(tsee star) wrapper is disallowed,
      and the integer array type is readily determined.
      If the recognizer is a known one for integer types,
-     the @(tsee pointer) wrapper may be present or not,
+     the @(tsee star) wrapper may be present or not,
      and distinguishes between the integer type
      and the pointer type to the integer type.
      Otherwise, there are two possibilities.
      One is that the recognizer is the one of a @(tsee defstruct),
      of the form @('struct-<tag>-p'):
      in this case, the type is the structure type or a pointer type to it,
-     depending on the absence or presence of the @(tsee pointer) wrapper.
+     depending on the absence or presence of the @(tsee star) wrapper.
      The other possibility is that
      the recognizer is the one of a @(tsee defobject),
      of the form @('object-<name>-p'):
-     in this case, the @(tsee pointer) wrapper is disallowed,
+     in this case, the @(tsee star) wrapper is disallowed,
      and the type is the one of the object.
      In this last case,
      we return a flag indicating that the formal represents an external object;
@@ -164,7 +164,7 @@
        (fn (ffn-symb conjunct))
        (arg (fargn conjunct 1))
        ((mv okp pointerp recog arg)
-        (if (eq fn 'pointer)
+        (if (eq fn 'star)
             (if (or (variablep arg)
                     (fquotep arg)
                     (flambda-applicationp arg))
@@ -1258,7 +1258,7 @@
                       (list `(not (var-autop ,formal-id ,compst-var)))
                     (list `(valuep ,formal-ptr)
                           `(value-case ,formal-ptr :pointer)
-                          `(not (value-pointer-nullp ,formal-ptr))
+                          `(value-pointer-validp ,formal-ptr)
                           `(equal (objdesign-kind
                                    (value-pointer->designator ,formal-ptr))
                                   :address)

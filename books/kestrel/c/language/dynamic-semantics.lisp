@@ -179,7 +179,7 @@
   (xdoc::topstring
    (xdoc::p
     "The value must be a pointer.
-     If the pointer is null, it is an error.
+     If the pointer is not valid, it is an error.
      Otherwise, we read the object designated by the object designator,
      which is a value.
      Note that we do not return the object designator,
@@ -194,8 +194,8 @@
      we need to do array-to-pointer conversion [C:6.3.2.1/3]."))
   (b* (((unless (value-case val :pointer))
         (error (list :non-pointer-dereference (value-fix val))))
-       ((when (value-pointer-nullp val))
-        (error (list :null-pointer-dereference)))
+       ((unless (value-pointer-validp val))
+        (error (list :invalid-pointer-dereference (value-fix val))))
        (objdes (value-pointer->designator val))
        (resval (read-object objdes compst))
        ((when (errorp resval)) resval))
@@ -283,7 +283,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first operand must be a non-null pointer to an array;
+    "The first operand must be a valid pointer to an array;
      the pointer must have the element type of the array.
      The second operand must be an integer value (of any integer type).
      The resulting index must be in range for the array,
@@ -321,7 +321,8 @@
         (error (list :mistype-arrsub
                      :required :pointer
                      :supplied (type-of-value arr))))
-       ((when (value-pointer-nullp arr)) (error (list :null-pointer)))
+       ((unless (value-pointer-validp arr))
+        (error (list :invalid-pointer (value-fix arr))))
        (objdes (value-pointer->designator arr))
        (reftype (value-pointer->reftype arr))
        (array (read-object objdes compst))
@@ -383,7 +384,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is for the @('->') operator.
-     The operand must be a non-null pointer to a structure
+     The operand must be a valid pointer to a structure
      of type consistent with the structure.
      The named member must be in the structure.
      The value associated to the member is returned.")
@@ -395,7 +396,8 @@
         (error (list :mistype-memberp
                      :required :pointer
                      :supplied (type-of-value str))))
-       ((when (value-pointer-nullp str)) (error (list :null-pointer)))
+       ((unless (value-pointer-validp str))
+        (error (list :invalid-pointer (value-fix str))))
        (objdes (value-pointer->designator str))
        (reftype (value-pointer->reftype str))
        (struct (read-object objdes compst))
@@ -480,7 +482,8 @@
         (error (list :mistype-arrsub-of-memberp
                      :required :pointer
                      :supplied (type-of-value str))))
-       ((when (value-pointer-nullp str)) (error (list :null-pointer)))
+       ((unless (value-pointer-validp str))
+        (error (list :invalid-pointer (value-fix str))))
        (objdes (value-pointer->designator str))
        (reftype (value-pointer->reftype str))
        (struct (read-object objdes compst))
@@ -920,8 +923,8 @@
               ((when (errorp ptr)) ptr)
               ((unless (value-case ptr :pointer))
                (error (list :indir-not-pointer ptr)))
-              ((when (value-pointer-nullp ptr))
-               (error (list :indir-null-pointer)))
+              ((unless (value-pointer-validp ptr))
+               (error (list :indir-invalid-pointer ptr)))
               (objdes (value-pointer->designator ptr))
               (reftype (value-pointer->reftype ptr))
               ((unless (type-integerp reftype))
@@ -949,8 +952,8 @@
                         (error (list :mistype-array
                                      :required :pointer
                                      :supplied (type-of-value ptr))))
-                       ((when (value-pointer-nullp ptr))
-                        (error (list :null-pointer)))
+                       ((unless (value-pointer-validp ptr))
+                        (error (list :invalid-pointer ptr)))
                        (objdes (value-pointer->designator ptr))
                        (reftype (value-pointer->reftype ptr))
                        (array (read-object objdes compst))
@@ -1023,8 +1026,8 @@
                         (error (list :mistype-struct
                                      :required :pointer
                                      :supplied (type-of-value ptr))))
-                       ((when (value-pointer-nullp ptr))
-                        (error (list :null-pointer)))
+                       ((unless (value-pointer-validp ptr))
+                        (error (list :invalid-pointer ptr)))
                        (objdes (value-pointer->designator ptr))
                        (reftype (value-pointer->reftype ptr))
                        (struct (read-object objdes compst))
@@ -1086,7 +1089,8 @@
                (error (list :mistype-struct
                             :required :pointer
                             :supplied (type-of-value ptr))))
-              ((when (value-pointer-nullp ptr)) (error (list :null-pointer)))
+              ((unless (value-pointer-validp ptr))
+               (error (list :invalid-pointer ptr)))
               (objdes (value-pointer->designator ptr))
               (reftype (value-pointer->reftype ptr))
               (struct (read-object objdes compst))

@@ -1486,7 +1486,7 @@
   (cond ((variablep term) t)
         ((fquotep term) t)
         ((flambda-applicationp term)
-         (and (almost-quotep1 (lambda-body term))
+         (and (almost-quotep1 (lambda-body (ffn-symb term)))
               (almost-quotep1-listp (fargs term))))
         ((eq (ffn-symb term) 'cons)
          (and (almost-quotep1 (fargn term 1))
