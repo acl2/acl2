@@ -72,3 +72,8 @@
 (assert-equal (serialize-lets-in-term '(let ((a b) (b (cons a a-temp))) (< a b)) (w state))
               '(let* ((a-temp1 a) (a b) (b (cons a-temp1 a-temp)))
                  (< a b)))
+
+;; ;; fixme
+;; ;; Example that shows that we have to avoid bound vars when making new names:
+;; (assert-equal (serialize-lets-in-term '(let ((a (list x b)) (b (list x (let ((b (cons y y))) (< a b))))) (< a b)) (w state))
+;;               ..)
