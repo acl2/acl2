@@ -228,14 +228,21 @@
                      (+ 1 n))))
    :hints (("Goal" :in-theory (enable integer-length expt)))))
 
+;dup
+(defund power-of-2p (x)
+  (declare (xargs :guard t))
+  (and (natp x) ;otherwise, this would count 1/2 but not 1/4
+       (= x (expt 2 (+ -1 (integer-length x))))))
+
 ;; Solves for i.
+;; See also equal-of-expt2-and-constant-gen, but we need log2 to state that.
 (defthm equal-of-expt2-and-constant
   (implies (and (syntaxp (and (quotep k)
                               (not (quotep i)) ; avoids loops if (:e expt) is disabled
                               ))
-                (natp i) ; todo: gen
-                )
+                (natp i))
            (equal (equal (expt 2 i) k)
-                  (and (equal k (expt 2 (+ -1 (integer-length k)))) ;k must be a power of 2; this gets computed
+                  (and (power-of-2p k) ;k must be a power of 2; this gets computed
                        ;; the (+ -1 (integer-length k)) will be evaluated to a constant:
-                       (equal i (+ -1 (integer-length k)))))))
+                       (equal i (+ -1 (integer-length k))))))
+  :hints (("Goal" :in-theory (enable power-of-2p))))
