@@ -357,14 +357,14 @@
            assertion-list-from)
   :use (:instance constraint-list-satp-suff (ptrees nil)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled constraint-list-satp-of-nil
   :short "Proof rule for the empty list of constraint."
   (constraint-list-satp nil defs asg p)
   :enable constraint-list-satp-of-atom)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled constraint-list-satp-of-cons
   :short "Proof rule for a @(tsee cons) list of constraints."
@@ -419,7 +419,7 @@
      :enable (exec-proof-tree-list
               assertion-list-from))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled constraint-list-satp-of-append
   (equal (constraint-list-satp (append constrs1 constrs2) defs asg p)
@@ -427,3 +427,13 @@
               (constraint-list-satp constrs2 defs asg p)))
   :enable (constraint-list-satp-of-cons
            constraint-list-satp-of-atom))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled constraint-list-satp-of-rev
+  (equal (constraint-list-satp (rev constrs) defs asg p)
+         (constraint-list-satp constrs defs asg p))
+  :enable (rev
+           constraint-list-satp-of-atom
+           constraint-list-satp-of-cons
+           constraint-list-satp-of-append))
