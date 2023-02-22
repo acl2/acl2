@@ -19,6 +19,7 @@
 (include-book "make-lambda-term-simple")
 (include-book "no-nils-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
+(local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "kestrel/alists-light/alists-equiv-on" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
@@ -102,34 +103,13 @@
                   (if (equal var nil) ; gross exception in defevaluator
                       nil
                     (if (member-equal var lambda-formals)
-                        (empty-eval (cdr (assoc-equal var (pairlis$ lambda-formals args)))
+                        (empty-eval (cdr (assoc-equal var (pairlis$ lambda-formals args))) ; todo: use lookup-equal?
                                      a)
                       (empty-eval var a)))))
   :hints (("Goal" :in-theory (enable make-lambda-term-simple
                                      ;;assoc-equal-iff-member-equal-of-strip-cars
                                      empty-eval-of-cdr-of-assoc-equal
-                                     ))))
-
-;this holds for any evaluator?
-(local
- (defthm empty-eval-list-iff
-   (iff (empty-eval-list terms alist)
-        (consp terms))
-   ))
-
-;this holds for any evaluator?
-(local
- (defthm empty-eval-list-when-symbol-listp
-   (implies (and (symbol-listp vars)
-                 (not (member-equal nil vars)) ;evaluating nil just gives nil
-                 )
-            (equal (empty-eval-list vars a)
-                   (map-lookup-equal vars a)))
-   :hints (("Goal" :in-theory (enable ;empty-eval-list
-                               map-lookup-equal
-                               (:i len)
-                               LOOKUP-EQUAL)
-            :induct (len vars)))))
+                                     lookup-equal))))
 
 ;; true for any evaluator?
 

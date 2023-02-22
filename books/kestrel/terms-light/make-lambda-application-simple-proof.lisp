@@ -153,15 +153,6 @@
   :hints (("Goal" ;:induct (intersection-equal y x)
            :in-theory (enable intersection-equal))))
 
-;true for any evaluator
-(defthm empty-eval-list-when-symbol-listp
-  (implies (and (symbol-listp terms)
-                (no-nils-in-termsp terms))
-           (equal (empty-eval-list terms a)
-                  (map-lookup-equal terms a)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal
-                                     lookup-equal))))
-
 (defthm equal-of-cons-of-cdr-of-assoc-equal-and-assoc-equal-iff
   (implies (alistp a)
            (iff (equal (cons key (cdr (assoc-equal key a)))

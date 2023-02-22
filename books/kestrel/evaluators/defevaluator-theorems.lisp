@@ -21,10 +21,15 @@
   `(progn
      ;; Needed to state the theorems below:
      (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
+     (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
 
      (encapsulate ()
 
        (local (include-book "kestrel/lists-light/union-equal" :dir :system))
+
+       (defthm ,(add-suffix-to-fn eval-list-name "-IFF")
+         (iff (,eval-list-name terms alist)
+              (consp terms)))
 
        (defthm-flag-free-vars-in-term
          ;; Adding a pair to the alist has no effect if the key is not one of the free vars in the term.
@@ -59,7 +64,19 @@
                            (,eval-list-name terms a)))
            :flag free-vars-in-terms)
          :hints (("Goal" :in-theory (e/d (,(add-suffix-to-fn eval-name "-OF-FNCALL-ARGS"))
-                                         (,(add-suffix-to-fn eval-name "-OF-FNCALL-ARGS-BACK")))))))))
+                                         (,(add-suffix-to-fn eval-name "-OF-FNCALL-ARGS-BACK"))))))
+
+       (defthm ,(add-suffix-to-fn eval-list-name "-WHEN-SYMBOL-LISTP")
+         (implies (and (symbol-listp vars)
+                       (not (member-equal nil vars)) ;evaluating nil just gives nil;
+                       )
+                  (equal (,eval-list-name vars a)
+                         (map-lookup-equal vars a)))
+         :hints (("Goal" :in-theory (enable
+                                     map-lookup-equal
+                                     (:i len)
+                                     lookup-equal)
+                  :induct (len vars)))))))
 
 ;; For now, this assumes that defevaluator+ has been called to create the evaluator.
 (defmacro defevaluator-theorems (eval-name eval-list-name)
