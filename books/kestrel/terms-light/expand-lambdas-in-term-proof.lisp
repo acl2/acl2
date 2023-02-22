@@ -19,6 +19,7 @@
 (include-book "make-lambda-term-simple")
 (include-book "no-nils-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
+(local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "kestrel/alists-light/alists-equiv-on" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -48,14 +49,6 @@
          (expand-lambdas-in-terms (cdr terms)))
   :hints (("Goal" :induct (len terms)
            :in-theory (enable (:i len) expand-lambdas-in-terms))))
-
-;simplify?
-(defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs-gen
-  (implies (and (subsetp-equal (free-vars-in-term term) ; the alist binds all the vars, so any free vars in the result come from the alist
-                               (strip-cars alist))
-                (subsetp-equal (free-vars-in-terms (strip-cdrs alist)) free))
-           (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
-                          free)))
 
 ;this holds for any evaluator?
 ;term may often be a var
