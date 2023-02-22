@@ -77,7 +77,6 @@
       (cons (expand-lambdas-in-term-induct (first terms) a)
             (expand-lambdas-in-terms-induct (rest terms) a))))))
 
-
 ;; Expanding lambdas does not introduce any new free vars.
 (defthm-flag-expand-lambdas-in-term
   (defthm subsetp-equal-of-free-vars-in-term-of-expand-lambdas-in-term
@@ -114,9 +113,7 @@
                 (lambdas-closed-in-termp term))
            (not (member-equal var (free-vars-in-term (expand-lambdas-in-term term))))))
 
-
-(local
- (make-flag expand-lambdas-in-term-induct))
+(local (make-flag expand-lambdas-in-term-induct))
 
 (local
  (defthm-flag-expand-lambdas-in-term-induct
@@ -128,10 +125,10 @@
      (equal (expand-lambdas-in-terms-induct terms a)
             (expand-lambdas-in-terms terms))
      :flag expand-lambdas-in-terms-induct)
-   :hints (("Goal" :in-theory (enable EXPAND-LAMBDAS-IN-TERM
-                                      EXPAND-LAMBDAS-IN-TERMs
-                                      EXPAND-LAMBDAS-IN-TERM-induct
-                                      EXPAND-LAMBDAS-IN-TERMs-induct)))))
+   :hints (("Goal" :in-theory (enable expand-lambdas-in-term
+                                      expand-lambdas-in-terms
+                                      expand-lambdas-in-term-induct
+                                      expand-lambdas-in-terms-induct)))))
 
 ;; Correctness of expand-lambdas-in-term: The meaning of terms is preserved.
 ;; TODO: Can some assumptions be dropped?
