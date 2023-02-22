@@ -18,7 +18,7 @@
 (include-book "make-axe-rules2")
 (include-book "equivalence-checker-helpers") ; not strictly necessary; helpful functions and justifications of correctness
 (include-book "kestrel/alists-light/assoc-equal" :dir :system)
-(include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
+;(include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
