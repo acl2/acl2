@@ -30,7 +30,7 @@
 (define value-pointer-null ((reftype typep))
   :returns (ptr valuep)
   :short "Null pointer for a given referenced type."
-  (make-value-pointer :designator? nil :reftype reftype)
+  (make-value-pointer :core (pointer-null) :reftype reftype)
   :hooks (:fix)
   ///
   (defret value-kind-of-value-pointer-null
@@ -42,13 +42,38 @@
   :guard (value-case ptr :pointer)
   :returns (yes/no booleanp)
   :short "Check if a pointer is null."
-  (not (value-pointer->designator? ptr))
+  (pointer-case (value-pointer->core ptr) :null)
   :hooks (:fix)
   ///
 
   (defrule value-pointer-nullp-of-value-pointer
-    (equal (value-pointer-nullp (value-pointer objdes type))
-           (not objdes))))
+    (equal (value-pointer-nullp (value-pointer core type))
+           (pointer-case core :null))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-pointer-dangling ((reftype typep))
+  :returns (ptr valuep)
+  :short "Danling pointer for a given referenced type."
+  (make-value-pointer :core (pointer-dangling) :reftype reftype)
+  :hooks (:fix)
+  ///
+  (defret value-kind-of-value-pointer-dangling
+    (equal (value-kind ptr) :pointer)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-pointer-danglingp ((ptr valuep))
+  :guard (value-case ptr :pointer)
+  :returns (yes/no booleanp)
+  :short "Check if a pointer is dangling."
+  (pointer-case (value-pointer->core ptr) :dangling)
+  :hooks (:fix)
+  ///
+
+  (defrule value-pointer-danglingp-of-value-pointer
+    (equal (value-pointer-danglingp (value-pointer core type))
+           (pointer-case core :dangling))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -69,13 +94,13 @@
      usable in correct and well-written code),
      even though they cannot be dereferenced.
      Perhaps we might change the name of this predicate in the future."))
-  (not (value-pointer-nullp ptr))
+  (pointer-case (value-pointer->core ptr) :valid)
   :hooks (:fix)
   ///
 
   (defrule value-pointer-validp-of-value-pointer
-    (iff (value-pointer-validp (value-pointer objdes type))
-         objdes)))
+    (iff (value-pointer-validp (value-pointer core type))
+         (pointer-case core :valid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,15 +109,14 @@
               (value-pointer-validp ptr))
   :returns (design objdesignp)
   :short "Object designator of a valid pointer."
-  (objdesign-fix (value-pointer->designator? ptr))
-  :guard-hints (("Goal" :in-theory (enable value-pointer-validp
-                                           value-pointer-nullp)))
+  (pointer-valid->get (value-pointer->core ptr))
+  :guard-hints (("Goal" :in-theory (enable value-pointer-validp)))
   :hooks (:fix)
   ///
 
   (defrule value-pointer->designator-of-value-pointer
-    (equal (value-pointer->designator (value-pointer designator type))
-           (objdesign-fix designator))
+    (equal (value-pointer->designator (value-pointer core type))
+           (pointer-valid->get core))
     :enable value-pointer->designator))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

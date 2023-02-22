@@ -165,7 +165,7 @@
   (b* ((val (read-var id compst))
        ((when (errorp val)) val))
     (if (value-case val :array)
-        (make-value-pointer :designator? (objdesign-static id)
+        (make-value-pointer :core (pointer-valid (objdesign-static id))
                             :reftype (value-array->elemtype val))
       val))
   :hooks (:fix))
@@ -945,7 +945,7 @@
                        ((when (errorp val)) val)
                        (ptr (if (value-case val :array)
                                 (make-value-pointer
-                                 :designator? (objdesign-static var)
+                                 :core (pointer-valid (objdesign-static var))
                                  :reftype (value-array->elemtype val))
                               val))
                        ((unless (value-case ptr :pointer))

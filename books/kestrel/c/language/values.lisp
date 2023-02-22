@@ -38,6 +38,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum pointer
+  :short "Fixtype of pointers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Pointers are mentioned in several places in [C],
+     but there seems to be no specific place in [C] that defines them.
+     Nonetheless, we can get a precise picture from various places.
+     [C:6.2.5/20] says that pointer types describe objects
+     whose values provide references to entities.
+     [C:6.3.2.3] specifies several things about pointers;
+     in particular, it talks about null pointers.
+     Thus, the picture is the following:
+     a pointer is either an object designator or a null pointer
+     (see the discussion in @(see object-designators)
+     about lower-level addresses vs. higher-level object designators).
+     However, in our defensive semantics, we also distinguish between
+     non-null pointers that designate existing objects
+     and non-null pointers that designate non-existing objects:
+     the latter arise when such objects disappear,
+     e.g. because they are in allocated storage and @('free') is called,
+     or because they are in automatic storage
+     and their scope or frame that is popped.
+     If the object no longer exists in this sense,
+     the pointer is dangling.
+     A C implementation has no direct information about
+     whether a non-null pointer is valid or dangling,
+     but our C model, which includes metadata, does.")
+   (xdoc::p
+    "Thus, we formalize a pointer as being
+     either null
+     or dangling
+     or validly designating an object.
+     The term `valid' here is perhaps not ideal,
+     because in a sense a null pointer is a perfectly ``valid'' value,
+     which may be used in well-written C code,
+     so long as it is not deferenced.
+     We may find a better term in the future,
+     but for now here `valid' should be interpreted as
+     `valid for dereferencing'.")
+   (xdoc::p
+    "The notion of pointer defined here is slighly different from
+     the notion of pointer value defined in @(tsee value).
+     The latter consists of a pointer as defined here, plus a (referenced) type.
+     Nonetheless, the pointer as defined here is the core of a pointer value,
+     with the type being additional metadata.
+     Thus, when clear from context, sometimes we will call `pointers'
+     what are actually pointer values."))
+  (:null ())
+  (:dangling ())
+  (:valid ((get objdesign)))
+  :pred pointerp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes values/membervalues
   :short "Fixtypes of values and member values."
 
@@ -55,26 +110,10 @@
        standard unsigned or signed integer values [C:6.2.5/7];
        currently we do not cover plain @('char') values.")
      (xdoc::p
-      "Pointers are mentioned in several places in [C],
-       but there seems to be no specific place in [C] that defines them.
-       Nonetheless, we can get a precise picture from various places.
-       [C:6.2.5/20] says that pointer types describe objects
-       whose values provide references to entities.
-       [C:6.3.2.3] specifies several things about pointers;
-       in particular, it talks about null pointers.
-       Thus, the picture is the following:
-       a pointer is either an object designator or a null pointer
-       (see the discussion in @(see object-designators)
-       about lower-level addresses vs. higher-level object designators).
-       In our defensive dynamic semantics,
-       where values are tagged by their types,
-       we also include, as part of the pointer,
-       the type of its referenced value.")
-     (xdoc::p
-      "Thus, we define a pointer as consisting of
-       an optional object designator and a type.
-       The object designator is absent for a null pointer;
-       note that [C] does not prescribe 0 to represent a null pointer,
+      "As mentioned in @(tsee pointer),
+       we define a pointer value as consisting of
+       a pointer (as defined there) and a type.
+       Note that [C] does not prescribe 0 to represent a null pointer,
        even though 0 is used in null pointer constants [C:6.3.2.3/3].
        The type is not the pointer type, but the referenced type;
        this way, we avoid having to constrain the type to be a pointer type.")
@@ -127,7 +166,7 @@
     (:slong ((get slong-integer)))
     (:ullong ((get ullong-integer)))
     (:sllong ((get sllong-integer)))
-    (:pointer ((designator? objdesign-option)
+    (:pointer ((core pointer)
                (reftype type)))
     (:array ((elemtype type)
              (elements value-list
