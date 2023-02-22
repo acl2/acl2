@@ -40,3 +40,10 @@
            (equal (map-lookup-equal keys alist)
                   nil))
   :hints (("Goal" :in-theory (enable map-lookup-equal))))
+
+(defthm car-of-map-lookup-equal
+  (equal (car (map-lookup-equal keys alist))
+         (if (consp keys)
+             (lookup-equal (car keys) alist)
+           nil))
+  :hints (("Goal" :in-theory (enable map-lookup-equal))))
