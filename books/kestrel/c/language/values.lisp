@@ -360,7 +360,7 @@
      as it pertains to expressions,
      which includes values proper and object designators."))
   ((value value)
-   (obj objdesign-option))
+   (object objdesign-option))
   :pred expr-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
