@@ -1,7 +1,7 @@
 ; A utility to filter lambda formals that are not bound to themselves.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,7 +16,8 @@
 ;; Returns the members of FORMALS that don't correspond to themselves in the ARGS.
 (defund non-trivial-formals (formals args)
   (declare (xargs :guard (and (symbol-listp formals)
-                              (pseudo-term-listp args))))
+                              (true-listp args) ; often, but not necessarily, pseudo-terms
+                              )))
   (if (endp formals)
       nil
     (let* ((formal (first formals))

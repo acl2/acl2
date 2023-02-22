@@ -3969,7 +3969,8 @@
 
 ;; This supports the generation of training data to improve an existing ML model.
 ;; Returns (mv erp successful-actions state) where each successful-action is of the form (<action-type> <action-object> <symbol-table>).
-;; TODO: Also return unsuccessful actions
+;; TODO: Also return the source of each rec?
+;; TODO: Also return unsuccessful actions?
 ;; WARNING: This should not be used for evaluation of models/recommendations, as it allows the current-book to be used to prove checkpoints from its own theorems!
 (defun all-successful-actions-for-checkpoints (checkpoint-clauses
                                                theorem-body ; untranslated

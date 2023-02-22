@@ -1,6 +1,6 @@
 ; A lightwright library about lists whose elements have particular types
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -61,7 +61,11 @@
 (include-book "append-all-rules")
 
 ;; Stuff about lists of alists:
+(include-book "alist-listp")
 (include-book "all-alistp")
+(include-book "symbol-alist-listp")
+(include-book "symbol-term-alist-listp")
 (include-book "map-strip-cars")
+(include-book "map-strip-cdrs")
 
 (include-book "doc")
