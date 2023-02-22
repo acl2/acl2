@@ -424,6 +424,7 @@
      this will be properly generalized at some point."))
   (objdesign-case objdes
                   :static (address 0)
+                  :auto (address 0)
                   :address objdes.get
                   :element (objdesign->base-address objdes.super)
                   :member (objdesign->base-address objdes.super))
