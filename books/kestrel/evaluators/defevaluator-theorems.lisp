@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/utilities/pack" :dir :system)
+
 ;; Assumes defevaluator-plus has been run (for now -- perhaps move the theorems
 ;; from that to this, or call this from that?)
 
@@ -22,6 +24,7 @@
      ;; Needed to state the theorems below:
      (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
      (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
+     (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
 
      (encapsulate ()
 
@@ -86,7 +89,29 @@
                 (cdr (assoc-equal term (pairlis$ (strip-cars alist)
                                                  (,eval-list-name (strip-cdrs alist)
                                                                   a)))))
-         :hints (("Goal" :in-theory (enable pairlis$ assoc-equal)))))))
+         :hints (("Goal" :in-theory (enable pairlis$ assoc-equal))))
+
+       ;; The evaluator gives the same result if the alist is changed to one that is
+       ;; equivalent for the free vars of the term.
+       (defthm-flag-free-vars-in-term
+         (defthm ,(pack$ 'equal-of- eval-name '-and- eval-name '-when-alists-equiv-on)
+           (implies (and (alists-equiv-on (free-vars-in-term term) alist1 alist2)
+                         (pseudo-termp term))
+                    (equal (equal (,eval-name term alist1)
+                                  (,eval-name term alist2))
+                           t))
+           :flag free-vars-in-term)
+         (defthm ,(pack$ 'equal-of- eval-list-name '-and- eval-list-name '-when-alists-equiv-on)
+           (implies (and (alists-equiv-on (free-vars-in-terms terms) alist1 alist2)
+                         (pseudo-term-listp terms))
+                    (equal (equal (,eval-list-name terms alist1)
+                                  (,eval-list-name terms alist2))
+                           t))
+           :flag free-vars-in-terms)
+         :hints (("Goal" :expand (pseudo-termp term)
+                  :in-theory (e/d (free-vars-in-terms
+                                   ,(add-suffix-to-fn eval-name "-OF-FNCALL-ARGS"))
+                                  (,(add-suffix-to-fn eval-name "-OF-FNCALL-ARGS-BACK")))))))))
 
 ;; For now, this assumes that defevaluator+ has been called to create the evaluator.
 (defmacro defevaluator-theorems (eval-name eval-list-name)
