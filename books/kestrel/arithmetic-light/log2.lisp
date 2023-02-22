@@ -13,13 +13,22 @@
 
 ;; See also lg.lisp and ceiling-of-lg.lisp.
 
-;(include-book "power-of-2p")
-(include-book "integer-length")
 (local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "floor"))
 (local (include-book "divide"))
 (local (include-book "times"))
+(local (include-book "times-and-divide"))
+
+;; TODO: Without these, some things below are very slow
+(local (in-theory (disable <-of-*-and-*-same-linear-3
+                           <-of-*-and-*-same-linear-1
+                           <-of-*-and-*-same-linear-2
+                           ;floor-upper-bound-linear
+                           ;my-floor-lower-bound-linear
+                           <-of-*-same-linear-special
+                           <=-of-*-and-*-same-alt-linear
+                           <=-of-*-and-*-same-linear)))
 
 ;; Returns the floor of the base 2 logarithm of the positive rational x.  Not meaningful for 0.
 ;; TODO: Rename log2 to floor-of-log2 ?
@@ -58,6 +67,16 @@
            (posp (log2 x)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable log2))))
+
+(defthm negative-of-log2-type
+  (implies (and (< x 1)
+                (< 0 x)
+                (rationalp x))
+           (< (log2 x) 0))
+  :rule-classes :type-prescription
+  :hints (("Goal"; :expand (log2 x)
+           :induct (log2 x)
+           :in-theory (e/d (log2) ()))))
 
 ;; Could loop with the definition?
 (defthm log2-of-*-of-2
@@ -105,15 +124,6 @@
          ;; x is in [1,2), so it's log2 is 0:
          0)))))
 
-;; TODO: Without these, some things below are very slow
-(local (in-theory (disable <-of-*-and-*-same-linear-3
-                           <-of-*-and-*-same-linear-1
-                           <-of-*-and-*-same-linear-2
-                           ;floor-upper-bound-linear
-                           ;my-floor-lower-bound-linear
-                           <-of-*-same-linear-special
-                           <=-of-*-and-*-same-alt-linear
-                           <=-of-*-and-*-same-linear)))
 
 (defthm log2-monotonic-weak
   (implies (and (<= x y)
@@ -152,16 +162,6 @@
            (< (log2 x) (log2 y)))
   :hints (("Goal" :induct (log2-double-induct x y)
            :in-theory (enable log2 expt-of-+))))
-
-(defthm negative-of-log2-type
-  (implies (and (< x 1)
-                (< 0 x)
-                (rationalp x))
-           (< (log2 x) 0))
-  :rule-classes :type-prescription
-  :hints (("Goal"; :expand (log2 x)
-           :induct (log2 x)
-           :in-theory (e/d (log2) (log2-of-*-of-2)))))
 
 (defthm equal-of-0-and-log2
   (implies (and (< 0 x)
@@ -234,6 +234,7 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable log2))))
 
+;; todo: Gen to any constant
 (defthm <-of-log2-and-0
   (implies (and (rationalp x)
                 (< 0 x))
