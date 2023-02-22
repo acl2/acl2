@@ -149,11 +149,6 @@
 ;;       (list x y)
 ;;     (cdr-remove-caar-induct-2 (cdr x) (remove-equal (caar x) y))))
 
-(defthm assoc-equal-of-pairlis$-when-not-member-equal
-  (implies (not (member-equal key keys))
-           (equal (assoc-equal key (pairlis$ keys vals))
-                  nil)))
-
 (local
  (defthm assoc-equal-of-pairlis$-of-map-lookup-equal-same
   (implies (alistp alist)
