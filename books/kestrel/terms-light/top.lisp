@@ -17,6 +17,7 @@
 (include-book "let-vars-in-term")
 (include-book "free-vars-in-term")
 (include-book "sublis-var-simple")
+(include-book "sublis-var-simple-proofs")
 (include-book "sublis-var-and-magic-eval")
 (include-book "expr-calls-fn")
 (include-book "unary-lambdap")

@@ -1,7 +1,7 @@
 ; Utilities that perform substitution
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; See tests in sublis-var-simple-tests.lisp.
+;; See proofs in sublis-var-simple-proofs.lisp.
 
 (include-book "kestrel/utilities/symbol-term-alistp" :dir :system)
 (include-book "tools/flag" :dir :system)
@@ -72,6 +75,7 @@
          (len terms))
   :hints (("Goal" :in-theory (enable sublis-var-simple-lst))))
 
+;;sublis-var-simple preserves pseudo-termp.
 (defthm-flag-sublis-var-simple
   (defthm pseudo-termp-of-sublis-var-simple
     (implies (and (pseudo-termp term)
@@ -118,18 +122,6 @@
                   (sublis-var-simple alist (car terms))))
   :hints (("Goal" :expand (sublis-var-simple-lst alist terms)
            :in-theory (enable sublis-var-simple-lst))))
-
-(defthm-flag-sublis-var-simple
-  (defthm sublis-var-simple-of-nil
-    (implies (pseudo-termp term)
-             (equal (sublis-var-simple nil term)
-                    term))
-    :flag sublis-var-simple)
-  (defthm sublis-var-simple-lst-of-nil
-    (implies (pseudo-term-listp terms)
-             (equal (sublis-var-simple-lst nil terms)
-                    terms))
-    :flag sublis-var-simple-lst))
 
 (local
  (defthm symbolp-of-cdr-of-assoc-equal-when-symbol-listp-of-strip-cdrs

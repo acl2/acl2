@@ -1,6 +1,6 @@
-; Top book for evaluators library
+; Tests of defevaluator-theorems.
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,9 +12,7 @@
 
 (include-book "defevaluator-plus")
 (include-book "defevaluator-theorems")
-(include-book "empty-eval")
-(include-book "empty-eval-theorems")
-(include-book "not-eval")
-(include-book "if-eval")
-(include-book "if-and-not-eval")
-(include-book "equality-eval")
+
+(defevaluator+ myev binary-*)
+
+(defevaluator-theorems myev myev-list)

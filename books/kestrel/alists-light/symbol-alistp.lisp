@@ -93,6 +93,12 @@
   (implies (symbol-alistp x)
            (true-listp x)))
 
+;; Disabled by default for speed.
+;; Also exists elsewhere in the books.
+(defthmd alistp-when-symbol-alistp
+  (implies (symbol-alistp x)
+           (alistp x)))
+
 (defthm symbol-alistp-of-revappend
   (equal (symbol-alistp (revappend x y))
          (and (symbol-alistp (true-list-fix x))
