@@ -320,6 +320,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum expr-value
+  :short "Fixtype of expression values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An expression may yield a value or designate an object [C:6.5./1].
+     In our model, we regard the designation of an object by an expression
+     as the returning of an object designator (see @(tsee objdesign))
+     as a result of evaluating the expression.
+     Thus, in our model an expression returns
+     either a value or an object designator.
+     Expressions that are lvalues [C:6.3.2.1/1] return object designators,
+     while other expressions return value (or nothing, when @('void')).")
+   (xdoc::p
+    "[C] does not provide a specific term to denote
+     something returned by an expression,
+     i.e. something that is either a value or an object designator.
+     In our model, we formalize that as an expression value,
+     which is essentially an extended notion of value
+     as it pertains to expressions,
+     which includes values proper and object designators."))
+  (:value ((get value)))
+  (:obj ((get objdesign)))
+  :pred expr-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult expr-value "expression values"
+  :enable (errorp
+           expr-valuep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection bounds-of-integer-values
   :short "Linear rules about the bounds of the integer values."
 
