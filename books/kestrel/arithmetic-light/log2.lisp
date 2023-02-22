@@ -136,21 +136,22 @@
            :in-theory (enable log2))))
 
 ;; Unlike power-of-2p, this isn't restricted to integers.  Rename that one?
-(defun rat-power-of-2p (x)
+(defund rat-power-of-2p (x)
   (declare (xargs :guard (and (rationalp x)
                               (< 0 x))))
   (equal (expt 2 (log2 x))
          x))
 
-(defthm equal-of-expt-and-constant-gen
+(defthm equal-of-expt2-and-constant-gen
   (implies (and (syntaxp (and (quotep k)
-                              (not (quotep size)) ;avoid loops if (:e expt) is disabled
+                              (not (quotep i)) ; avoids loops if (:e expt) is disabled
                               ))
-                (integerp size))
-           (equal (equal (expt 2 size) k)
+                (integerp i))
+           (equal (equal (expt 2 i) k)
                   (and (rat-power-of-2p k) ; gets evaluated
-                       (equal size (log2 k)))))
-  :hints (("Goal" :use ((:instance log2-of-both-sides (x (expt 2 size)) (y k))))))
+                       (equal i (log2 k)))))
+  :hints (("Goal" :in-theory (enable rat-power-of-2p)
+           :use ((:instance log2-of-both-sides (x (expt 2 i)) (y k))))))
 
 (defthm log2-monotonic-strong-when-power-of-2p
   (implies (and (< x y)
@@ -161,7 +162,7 @@
                 (rationalp y))
            (< (log2 x) (log2 y)))
   :hints (("Goal" :induct (log2-double-induct x y)
-           :in-theory (enable log2 expt-of-+))))
+           :in-theory (enable log2 expt-of-+ rat-power-of-2p))))
 
 (defthm equal-of-0-and-log2
   (implies (and (< 0 x)
@@ -224,7 +225,7 @@
                 (< 0 x))
            (equal (< (expt 2 (log2 x)) x)
                   (not (rat-power-of-2p x))))
-  :hints (("Goal" :in-theory (enable log2))))
+  :hints (("Goal" :in-theory (enable log2 rat-power-of-2p))))
 
 (defthm <-of-expt-2-of-log2-same-linear
   (implies (and (not (rat-power-of-2p x))

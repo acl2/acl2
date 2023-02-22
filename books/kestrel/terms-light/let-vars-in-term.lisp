@@ -20,48 +20,6 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
-;; Returns (mv non-trivial-formals non-trivial-args).
-(defund non-trivial-formals-and-args (formals args)
-  (declare (xargs :guard (and (symbol-listp formals)
-                              (true-listp args) ;; not necessarily pseudo-terms
-                              )))
-  (if (endp formals)
-      (mv nil nil)
-    (b* ((formal (first formals))
-         (arg (first args))
-         ((mv cdr-formals cdr-args)
-          (non-trivial-formals-and-args (rest formals) (rest args))))
-      (if (equal formal arg)
-          ;; skip since trivial:
-          (mv cdr-formals cdr-args)
-        (mv (cons formal cdr-formals)
-            (cons arg cdr-args))))))
-
-(defthm symbol-listp-of-mv-nth-0-of-non-trivial-formals-and-args
-  (implies (symbol-listp formals)
-           (symbol-listp (mv-nth 0 (non-trivial-formals-and-args formals args))))
-  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
-
-(defthm true-listp-of-mv-nth-0-of-non-trivial-formals-and-args
-  (implies (symbol-listp formals)
-           (true-listp (mv-nth 0 (non-trivial-formals-and-args formals args))))
-  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
-
-(defthm true-listp-of-mv-nth-1-of-non-trivial-formals-and-args
-  (implies (true-listp args)
-           (true-listp (mv-nth 1 (non-trivial-formals-and-args formals args))))
-  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
-
-(defthm pseudo-term-listp-of-mv-nth-1-of-non-trivial-formals-and-args
-  (implies (pseudo-term-listp args)
-           (pseudo-term-listp (mv-nth 1 (non-trivial-formals-and-args formals args))))
-  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
-
-(defthm len-of-mv-nth-1-of-non-trivial-formals-and-args
-  (equal (len (mv-nth 1 (non-trivial-formals-and-args formals args)))
-         (len (mv-nth 0 (non-trivial-formals-and-args formals args))))
-  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
-
 (mutual-recursion
  ;; Gather all the vars that are bound in lambdas in TERM, except don't include
  ;; variable that ar simply bound to themselves.  Vars may appear only once in
@@ -91,7 +49,6 @@
      (union-eq (let-vars-in-term (first terms))
                (let-vars-in-terms (rest terms))))))
 
-;todo: make a variant of defthm-flag-xxx that puts in the guards as assumptions
 (make-flag let-vars-in-term)
 
 (defthm-flag-let-vars-in-term

@@ -13,6 +13,7 @@
 (include-book "all-quotep")
 (include-book "trivial-formals")
 (include-book "non-trivial-formals")
+(include-book "non-trivial-formals-and-args")
 (include-book "bound-vars-in-term")
 (include-book "let-vars-in-term")
 (include-book "free-vars-in-term")
