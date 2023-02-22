@@ -1,6 +1,6 @@
 ; Proof of correctness of expand-lambdas-in-term
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
 (include-book "make-lambda-term-simple")
 (include-book "no-nils-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
-(include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
+(local (include-book "kestrel/alists-light/alists-equiv-on" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
@@ -36,7 +36,7 @@
 (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
-(local (include-book "kestrel/alists-light/lookup-equal-lst" :dir :system))
+(local (include-book "kestrel/alists-light/map-lookup-equal" :dir :system))
 
 (local (in-theory (disable member-equal symbol-listp set-difference-equal pseudo-term-listp len strip-cadrs strip-cdrs)))
 
@@ -110,40 +110,51 @@
                                      empty-eval-of-cdr-of-assoc-equal
                                      ))))
 
+;this holds for any evaluator?
+(local
+ (defthm empty-eval-list-iff
+   (iff (empty-eval-list terms alist)
+        (consp terms))
+   ))
 
 ;this holds for any evaluator?
 (local
  (defthm empty-eval-list-when-symbol-listp
-  (implies (and (symbol-listp vars)
-                (not (member-equal nil vars)) ;evaluating nil just gives nil
-                )
-           (equal (empty-eval-list vars a)
-                  (lookup-equal-lst vars a)))
-  :hints (("Goal" :in-theory (enable ;empty-eval-list
-                              (:i len)
-                              LOOKUP-EQUAL)
-           :induct (len vars)))))
+   (implies (and (symbol-listp vars)
+                 (not (member-equal nil vars)) ;evaluating nil just gives nil
+                 )
+            (equal (empty-eval-list vars a)
+                   (map-lookup-equal vars a)))
+   :hints (("Goal" :in-theory (enable ;empty-eval-list
+                               map-lookup-equal
+                               (:i len)
+                               LOOKUP-EQUAL)
+            :induct (len vars)))))
 
-;; empty-eval gives the same result if the alist is changed to one that equivalent for the free vars of the term
-(defthm-flag-free-vars-in-term
-  (defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on
-    (implies (and (alists-equiv-on (free-vars-in-term term) alist1 alist2)
-                  (pseudo-termp term))
-             (equal (equal (empty-eval term alist1)
-                           (empty-eval term alist2))
-                    t))
-    :flag free-vars-in-term)
-  (defthm equal-of-empty-eval-list-and-empty-eval-list-when-alists-equiv-on
-    (implies (and (alists-equiv-on (free-vars-in-terms terms) alist1 alist2)
-                  (pseudo-term-listp terms))
-             (equal (equal (empty-eval-list terms alist1)
-                           (empty-eval-list terms alist2))
-                    t))
-    :flag free-vars-in-terms)
-  :hints (("Goal" :expand (PSEUDO-TERMP TERM)
-           :in-theory (e/d (free-vars-in-terms
-                            empty-eval-of-fncall-args)
-                           (empty-eval-of-fncall-args-back)))))
+;; true for any evaluator?
+
+;; empty-eval gives the same result if the alist is changed to one that is
+;; equivalent for the free vars of the term.
+(local
+ (defthm-flag-free-vars-in-term
+   (defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on
+     (implies (and (alists-equiv-on (free-vars-in-term term) alist1 alist2)
+                   (pseudo-termp term))
+              (equal (equal (empty-eval term alist1)
+                            (empty-eval term alist2))
+                     t))
+     :flag free-vars-in-term)
+   (defthm equal-of-empty-eval-list-and-empty-eval-list-when-alists-equiv-on
+     (implies (and (alists-equiv-on (free-vars-in-terms terms) alist1 alist2)
+                   (pseudo-term-listp terms))
+              (equal (equal (empty-eval-list terms alist1)
+                            (empty-eval-list terms alist2))
+                     t))
+     :flag free-vars-in-terms)
+   :hints (("Goal" :expand (PSEUDO-TERMP TERM)
+            :in-theory (e/d (free-vars-in-terms
+                             empty-eval-of-fncall-args)
+                            (empty-eval-of-fncall-args-back))))))
 
 ;; In case car-of-assoc-equal-strong is too strong?
 ;; (defthm equal-of-car-of-assoc-equal-same
@@ -164,36 +175,26 @@
                   nil)))
 
 (local
- (defthm assoc-equal-of-pairlis$-of-lookup-equal-lst-same
+ (defthm assoc-equal-of-pairlis$-of-map-lookup-equal-same
   (implies (alistp alist)
-           (equal (assoc-equal key (pairlis$ keys (lookup-equal-lst keys alist)))
+           (equal (assoc-equal key (pairlis$ keys (map-lookup-equal keys alist)))
                   (if (member-equal key keys)
                       (cons key (cdr (assoc-equal key alist)))
                     nil)))
-  :hints (("Goal" :in-theory (enable assoc-equal lookup-equal-lst pairlis$ LOOKUP-EQUAL)))))
+  :hints (("Goal" :in-theory (enable assoc-equal map-lookup-equal pairlis$ LOOKUP-EQUAL)))))
 
 (local
- ;;rename
- ;; move
- (defthm alists-equiv-on-of-cons-same
-   (implies (alists-equiv-on keys
-                             a2
-                             a)
-            (alists-equiv-on keys
-                             (cons (cons key (cdr (assoc-equal key a))) a2)
-                             a))
-   :hints (("Goal" :in-theory (enable alists-equiv-on)))))
-
-(local
- (defthm alists-equiv-on-of-pairlis$-of-lookup-equal-lst-same
+ (defthm alists-equiv-on-of-pairlis$-of-map-lookup-equal-same
   (alists-equiv-on keys
-                   (pairlis$ keys (lookup-equal-lst keys a))
+                   (pairlis$ keys (map-lookup-equal keys a))
                    a)
   :hints (("Goal" :expand (ALISTS-EQUIV-ON KEYS
-                                           (PAIRLIS$ KEYS (LOOKUP-EQUAL-LST KEYS A))
+                                           (PAIRLIS$ KEYS (MAP-LOOKUP-EQUAL KEYS A))
                                            A)
-;:induct (ALISTS-EQUIV-ON KEYS a a)
+           :induct t
+           ;;:induct (ALISTS-EQUIV-ON KEYS a a)
            :in-theory (enable pairlis$ lookup-equal
+                              map-lookup-equal
                               assoc-equal-iff-member-equal-of-strip-cars
                               (:I len))))))
 
@@ -243,7 +244,7 @@
                   (empty-eval-list terms
                                     (append (pairlis$ lambda-formals (empty-eval-list args a)) ; these pairs may shadow pairs in a
                                             a))))
-  :hints (("Goal" :in-theory (enable make-lambda-terms-simple))))
+  :hints (("Goal" :in-theory (enable make-lambda-terms-simple map-lookup-equal))))
 
 ;; The result of sublis-var-simple evaluates the same as if we had made a lambda.
 ;move
