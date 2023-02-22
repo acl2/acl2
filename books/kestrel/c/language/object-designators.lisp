@@ -111,7 +111,7 @@
      to be stable against frames and scopes being pushed and popped.")
    (xdoc::p
     "Also see @(see object-designators)."))
-  (:static ((get ident)))
+  (:static ((name ident)))
   (:auto ((name ident)
           (frame nat)
           (scope nat)))
