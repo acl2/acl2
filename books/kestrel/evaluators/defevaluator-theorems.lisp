@@ -76,7 +76,17 @@
                                      map-lookup-equal
                                      (:i len)
                                      lookup-equal)
-                  :induct (len vars)))))))
+                  :induct (len vars))))
+
+       ;; Pushes the evaluation into the alist.
+       ;;term may often be a var
+       (defthmd ,(add-suffix-to-fn eval-name "-OF-CDR-OF-ASSOC-EQUAL")
+         (equal (,eval-name (cdr (assoc-equal term alist)) a)
+                ;; evaluates all the terms in the alist wrt A and then looks up the term:
+                (cdr (assoc-equal term (pairlis$ (strip-cars alist)
+                                                 (,eval-list-name (strip-cdrs alist)
+                                                                  a)))))
+         :hints (("Goal" :in-theory (enable pairlis$ assoc-equal)))))))
 
 ;; For now, this assumes that defevaluator+ has been called to create the evaluator.
 (defmacro defevaluator-theorems (eval-name eval-list-name)

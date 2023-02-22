@@ -50,16 +50,6 @@
   :hints (("Goal" :induct (len terms)
            :in-theory (enable (:i len) expand-lambdas-in-terms))))
 
-;this holds for any evaluator?
-;term may often be a var
-(defthmd empty-eval-of-cdr-of-assoc-equal
-  (equal (empty-eval (cdr (assoc-equal term alist)) a)
-         ;; evaluates all the terms in the alist wrt a and then looks up the term:
-         (cdr (assoc-equal term (pairlis$ (strip-cars alist)
-                                          (empty-eval-list (strip-cdrs alist)
-                                                           a)))))
-  :hints (("Goal" :in-theory (enable pairlis$ assoc-equal))))
-
 (local
  (mutual-recursion
   ;; The whole point of this is to recur on a different alist in the lambda case
