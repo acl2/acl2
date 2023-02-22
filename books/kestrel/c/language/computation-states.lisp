@@ -795,8 +795,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the object designator is a variable,
+    "If the object designator is a static variable,
      we look it up in static storage.
+     If the object designator is an automatic variable,
+     we return an error for now, but we will add support for this.
      If the object designator is an address,
      we look up the object in the heap.
      Otherwise, first we recursively read the super-object,
@@ -806,6 +808,7 @@
   (objdesign-case
    objdes
    :static (read-static-var objdes.get compst)
+   :auto (error (list :read-auto-obj-not-supported))
    :address
    (b* ((addr objdes.get)
         (heap (compustate->heap compst))
@@ -843,8 +846,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the object designator is a variable,
+    "If the object designator is a static variable,
      we write it in static storage.
+     If the object designator is an automatic variable,
+     we return an error for now, but we will add support for this.
      If the object designator is an address,
      we check whether the heap has an object at the address,
      of the same type as the new object
@@ -865,6 +870,7 @@
   (objdesign-case
    objdes
    :static (write-static-var objdes.get val compst)
+   :auto (error (list :read-auto-obj-not-supported))
    :address
    (b* ((addr objdes.get)
         (heap (compustate->heap compst))
