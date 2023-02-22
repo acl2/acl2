@@ -15,7 +15,7 @@
 (include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
-(local (include-book "kestrel/evaluators/defevaluator-theorems" :dir :system))
+(local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
@@ -35,8 +35,6 @@
 ;; TODO: Clean up and harvest this file
 
 (local (in-theory (disable alistp no-duplicatesp-equal)))
-
-(local (defevaluator-theorems empty-eval empty-eval-list))
 
 (defthm empty-eval-of-append-of-pairlis$-of-EMPTY-EVAL-LIST-when-relevant-actuals-are-formals
   (IMPLIES  (and (pseudo-termp body)
