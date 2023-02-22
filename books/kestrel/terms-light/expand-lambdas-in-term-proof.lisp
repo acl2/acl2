@@ -48,8 +48,9 @@
   :hints (("Goal" :induct (len terms)
            :in-theory (enable (:i len) expand-lambdas-in-terms))))
 
+;simplify?
 (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs-gen
-  (implies (and (subsetp-equal (free-vars-in-term term) ; the alist binds all the vars, so any fee vars in the result come from the alist
+  (implies (and (subsetp-equal (free-vars-in-term term) ; the alist binds all the vars, so any free vars in the result come from the alist
                                (strip-cars alist))
                 (subsetp-equal (free-vars-in-terms (strip-cdrs alist)) free))
            (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
