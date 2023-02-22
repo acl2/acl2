@@ -27,6 +27,7 @@
 
 ;; Here, it's less clear that there is a nicer alternate result, due to
 ;; capture:
+;; Replaces x with (cons z z) in (let ((z 3)) (+ x z)).
 (assert-equal
  (sublis-var-simple (acons 'x '(cons z z) nil)
                     ;; :trans (let ((z 3)) (+ x z))
@@ -34,3 +35,5 @@
                     )
  ;; :trans (let ((z 3) (x (cons z z))) (+ x z))
  '((lambda (z x) (binary-+ x z)) '3 (cons z z)))
+
+;; Could produce (let ((x (cons z z))) (let ((z 3)) (+ x z)))

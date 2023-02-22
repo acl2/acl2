@@ -1,6 +1,6 @@
 ; Tests of serialize-lambdas.lisp
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -74,6 +74,16 @@
                  (< a b)))
 
 ;; ;; fixme
-;; ;; Example that shows that we have to avoid bound vars when making new names:
-;; (assert-equal (serialize-lets-in-term '(let ((a (list x b)) (b (list x (let ((b (cons y y))) (< a b))))) (< a b)) (w state))
-;;               ..)
+;; ;; Example that shows that using sublis-var can inroduce unserialized lambdas!
+(assert-equal (serialize-lets-in-term '(let ((a b) (b (let ((b y)) (< a b)))) (< a b)) (w state))
+              '(let* ((a-temp a)
+                      (a b)
+                      (b (let ((b y) (a a-temp)) (< a b)))) ; the let binds 2 vars!
+                 (< a b)))
+
+;; ;; proposed new behavior:
+;; (assert-equal (serialize-lets-in-term '(let ((a b) (b (let ((b y)) (< a b)))) (< a b)) (w state))
+;;               '(let* ((a-temp a)
+;;                       (a b)
+;;                       (b (let ((a a-temp)) (let ((b y)) (< a b)))))
+;;                  (< a b)))
