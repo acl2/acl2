@@ -320,19 +320,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum expr-value
+(fty::defprod expr-value
   :short "Fixtype of expression values."
   :long
   (xdoc::topstring
    (xdoc::p
-    "An expression may yield a value or designate an object [C:6.5./1].
-     In our model, we regard the designation of an object by an expression
-     as the returning of an object designator (see @(tsee objdesign))
-     as a result of evaluating the expression.
-     Thus, in our model an expression returns
-     either a value or an object designator.
-     Expressions that are lvalues [C:6.3.2.1/1] return object designators,
-     while other expressions return value (or nothing, when @('void')).")
+    "An expression may yield a value or designate an object [C:6.5/1]
+     (unless the expression has @('void') type).
+     In our model, we have object designators to designate objects;
+     see @(tsee objdesign).
+     When an expression designates an object, that object should exist:
+     in our defensive dynamic semantics of C,
+     we want in fact to ensure that that is the case:
+     thus, when we evaluate an expression that designates an object
+     (as opposed to an expression that just returns a value),
+     in our dynamic semantics we also retrieve the value,
+     to ensure that it exists,
+     and to ensure that any subsequent operation is type-safe.")
+   (xdoc::p
+    "Thus, we introduce a notion of expression value
+     as the things returned by evaluating an expression
+     in our dynamic semantics.
+     An expression value consists of a value
+     and an optional object designator:
+     an expression that returns just a value in C
+     returns an expression value without object designator in our model;
+     an expression that designates an object in C
+     returns an expression value with an object designator in our model,
+     along with the value of the object.
+     Having the value, in addition to the object designator,
+     makes it convenient to access the value,
+     without having to read it from the computation state.")
    (xdoc::p
     "[C] does not provide a specific term to denote
      something returned by an expression,
@@ -341,15 +359,13 @@
      which is essentially an extended notion of value
      as it pertains to expressions,
      which includes values proper and object designators."))
-  (:value ((get value)))
-  (:obj ((get objdesign)))
+  ((value value)
+   (obj objdesign-option))
   :pred expr-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult expr-value "expression values"
-  :enable (errorp
-           expr-valuep))
+(defresult expr-value "expression values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
