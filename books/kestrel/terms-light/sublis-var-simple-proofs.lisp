@@ -11,8 +11,25 @@
 (in-package "ACL2")
 
 (include-book "sublis-var-simple")
+(include-book "make-lambda-term-simple")
 (include-book "lambdas-closed-in-termp")
+(include-book "kestrel/evaluators/empty-eval" :dir :system)
+(local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "../lists-light/subsetp-equal"))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "kestrel/alists-light/alists-equiv-on" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
+(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
+;(local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;move?
 (local
@@ -64,7 +81,8 @@
   :hints (("Goal" :in-theory (enable sublis-var-simple
                                      sublis-var-simple-lst
                                      free-vars-in-term
-                                     free-vars-in-terms))))
+                                     free-vars-in-terms
+                                     assoc-equal))))
 
 ;; Simple consequence of the above.
 (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs-gen
@@ -73,3 +91,192 @@
                 (subsetp-equal (free-vars-in-terms (strip-cdrs alist)) free))
            (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
                           free)))
+
+
+;move?
+(defthm empty-eval-of-make-lambda-term-simple-when-symbolp
+  (implies (and (symbolp var)
+;                (symbol-listp lambda-formals)
+;                (pseudo-term-listp args)
+                (equal (len lambda-formals) (len args)))
+           (equal (empty-eval (make-lambda-term-simple lambda-formals args var) a)
+                  (if (equal var nil) ; gross exception in defevaluator
+                      nil
+                    (if (member-equal var lambda-formals)
+                        (empty-eval (cdr (assoc-equal var (pairlis$ lambda-formals args))) ; todo: use lookup-equal?
+                                     a)
+                      (empty-eval var a)))))
+  :hints (("Goal" :in-theory (enable make-lambda-term-simple
+                                     ;;assoc-equal-iff-member-equal-of-strip-cars
+                                     empty-eval-of-cdr-of-assoc-equal
+                                     lookup-equal))))
+
+(defthm empty-eval-of-make-lambda-term-simple-when-symbolp
+  (implies (and (symbolp var)
+;                (symbol-listp lambda-formals)
+;                (pseudo-term-listp args)
+                (equal (len lambda-formals) (len args)))
+           (equal (empty-eval (make-lambda-term-simple lambda-formals args var) a)
+                  (if (equal var nil) ; gross exception in defevaluator
+                      nil
+                    (if (member-equal var lambda-formals)
+                        (empty-eval (cdr (assoc-equal var (pairlis$ lambda-formals args))) ; todo: use lookup-equal?
+                                     a)
+                      (empty-eval var a)))))
+  :hints (("Goal" :in-theory (enable make-lambda-term-simple
+                                     ;;assoc-equal-iff-member-equal-of-strip-cars
+                                     empty-eval-of-cdr-of-assoc-equal
+                                     lookup-equal))))
+
+;; In case car-of-assoc-equal-strong is too strong?
+;; (defthm equal-of-car-of-assoc-equal-same
+;;   (implies (alistp alist)
+;;            (iff (equal key (car (assoc-equal key alist)))
+;;                 (or (equal key nil)
+;;                     (assoc-equal key alist)))))
+
+;; (defun cdr-remove-caar-induct-2 (x y)
+;;   (if (or (endp x)
+;;           (endp y))
+;;       (list x y)
+;;     (cdr-remove-caar-induct-2 (cdr x) (remove-equal (caar x) y))))
+
+(local
+ (defthm assoc-equal-of-pairlis$-of-map-lookup-equal-same
+  (implies (alistp alist)
+           (equal (assoc-equal key (pairlis$ keys (map-lookup-equal keys alist)))
+                  (if (member-equal key keys)
+                      (cons key (cdr (assoc-equal key alist)))
+                    nil)))
+  :hints (("Goal" :in-theory (enable assoc-equal map-lookup-equal pairlis$ LOOKUP-EQUAL)))))
+
+(local
+ (defthm alists-equiv-on-of-pairlis$-of-map-lookup-equal-same
+  (alists-equiv-on keys
+                   (pairlis$ keys (map-lookup-equal keys a))
+                   a)
+  :hints (("Goal" :expand (ALISTS-EQUIV-ON KEYS
+                                           (PAIRLIS$ KEYS (MAP-LOOKUP-EQUAL KEYS A))
+                                           A)
+           :induct t
+           ;;:induct (ALISTS-EQUIV-ON KEYS a a)
+           :in-theory (enable pairlis$ lookup-equal
+                              map-lookup-equal
+                              assoc-equal-iff-member-equal-of-strip-cars
+                              (:I len))))))
+
+;; term may have free vars not among the lambda formals
+(defthm empty-eval-of-make-lambda-term-simple
+  (implies (and (pseudo-termp term)
+                (not (member-equal nil (free-vars-in-term term))) ;drop? may need the notion of alists agreeing on a set of keys not involving nil
+                (equal (len lambda-formals) (len args)))
+           (equal (empty-eval (make-lambda-term-simple lambda-formals args term) a)
+                  (empty-eval term
+                               (append (pairlis$ lambda-formals (empty-eval-list args a)) ; these pairs may shadow pairs in a
+                                       a))))
+  :hints (("Goal" :in-theory (enable make-lambda-term-simple))))
+
+;; (thm
+;;  (implies (and (consp term)
+;;                (not (equal 'quote (car term)))
+;;                (symbolp (car term))
+;;                (symbol-alistp alist)
+;;                (pseudo-term-listp (strip-cdrs alist))
+;;                (pseudo-term-listp (cdr term))
+;;                (equal (len lambda-formals) (len args))
+;;                )
+;;           (equal (empty-eval (make-lambda-term-simple lambda-formals args term) a)
+;;                  (empty-eval (cons
+;;                                (car term) (KWOTE-LST (empty-eval-list (MAKE-LAMBDA-TERMS-SIMPLE lambda-formals args (cdr term)) a)))
+;;                               nil)))
+;;  :hints (("Goal" :in-theory (enable make-lambda-term-simple
+;;                                     EMPTY-EVAL-OF-FNCALL-ARGS))))
+
+;; For each of the TERMS, wraps it in a lambda that binds the formals to the args
+(defund make-lambda-terms-simple (lambda-formals args terms)
+  (if (endp terms)
+      nil
+    (cons (make-lambda-term-simple lambda-formals args (first terms))
+          (make-lambda-terms-simple lambda-formals args (rest terms)))))
+
+(defthm make-lambda-terms-simple-of-nil
+  (equal (make-lambda-terms-simple lambda-formals args nil)
+         nil)
+  :hints (("Goal" :in-theory (enable make-lambda-terms-simple))))
+
+(defthm empty-eval-list-of-make-lambda-terms-simple
+  (implies (and (pseudo-term-listp terms)
+                (not (member-equal nil (free-vars-in-terms terms))) ;drop?
+                (equal (len lambda-formals) (len args)))
+           (equal (empty-eval-list (make-lambda-terms-simple lambda-formals args terms) a)
+                  (empty-eval-list terms
+                                    (append (pairlis$ lambda-formals (empty-eval-list args a)) ; these pairs may shadow pairs in a
+                                            a))))
+  :hints (("Goal" :in-theory (enable make-lambda-terms-simple map-lookup-equal))))
+
+;; The result of sublis-var-simple evaluates the same as if we had made a lambda.
+;move
+(defthm-flag-sublis-var-simple
+  (defthm sublis-var-simple-correct
+    (implies (and (symbol-alistp alist) ; usually a symbol-term-alistp
+                  (pseudo-term-listp (strip-cdrs alist))
+                  (pseudo-termp term)
+                  ;; since defevaluator has gross behavior on nil:
+                  (not (member-equal nil (free-vars-in-term term))))
+             (equal (empty-eval (sublis-var-simple alist term) a)
+                    (empty-eval (make-lambda-term-simple (strip-cars alist) (strip-cdrs alist) term) a)))
+    :flag sublis-var-simple)
+  (defthm sublis-var-simple-lst-correct
+    (implies (and (symbol-alistp alist) ; usually a symbol-term-alistp
+                  (pseudo-term-listp (strip-cdrs alist))
+                  (pseudo-term-listp terms)
+                  (not (member-equal nil (free-vars-in-terms terms))))
+             (equal (empty-eval-list (sublis-var-simple-lst alist terms) a)
+                    (empty-eval-list (make-lambda-terms-simple (strip-cars alist) (strip-cdrs alist) terms) a)))
+    :flag sublis-var-simple-lst)
+  :hints (("Goal" :expand (PSEUDO-TERMP TERM)
+           :in-theory (e/d (sublis-var-simple
+                            sublis-var-simple-lst
+                            MEMBER-EQUAL-OF-STRIP-CARS-IFF
+                            make-lambda-terms-simple
+                            ;;make-lambda-term-simple
+                            empty-eval-of-fncall-args
+                            empty-eval-of-cdr-of-assoc-equal)
+                           (pairlis$
+                            set-difference-equal
+                            empty-eval-of-fncall-args-back)))))
+
+(defthm-flag-sublis-var-simple
+  (defthm sublis-var-simple-correct2
+    (implies (and (symbol-alistp alist) ; usually a symbol-term-alistp
+                  (pseudo-term-listp (strip-cdrs alist))
+                  (pseudo-termp term)
+                  (not (member-equal nil (free-vars-in-term term)))
+                  (subsetp-equal (free-vars-in-term term) (strip-cars alist))
+                  )
+             (equal (empty-eval (sublis-var-simple alist term) a)
+                    (empty-eval term (pairlis$ (strip-cars alist)
+                                                (empty-eval-list (strip-cdrs alist) a)))))
+    :flag sublis-var-simple)
+  (defthm sublis-var-simple-lst-correct2
+    (implies (and (symbol-alistp alist) ; usually a symbol-term-alistp
+                  (pseudo-term-listp (strip-cdrs alist))
+                  (pseudo-term-listp terms)
+                  (not (member-equal nil (free-vars-in-terms terms)))
+                  (subsetp-equal (free-vars-in-terms terms) (strip-cars alist)))
+             (equal (empty-eval-list (sublis-var-simple-lst alist terms) a)
+                    (empty-eval-list terms
+                                      (pairlis$ (strip-cars alist)
+                                                (empty-eval-list (strip-cdrs alist) a)))))
+    :flag sublis-var-simple-lst)
+  :hints (("Goal" :expand (PSEUDO-TERMP TERM)
+           :in-theory (e/d (sublis-var-simple
+                            sublis-var-simple-lst
+                            MEMBER-EQUAL-OF-STRIP-CARS-IFF
+                            make-lambda-terms-simple
+                            ;;make-lambda-term-simple
+                            empty-eval-of-fncall-args
+                            empty-eval-of-cdr-of-assoc-equal)
+                           (pairlis$
+                            set-difference-equal
+                            empty-eval-of-fncall-args-back)))))
