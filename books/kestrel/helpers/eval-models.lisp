@@ -611,6 +611,11 @@
     (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit server-url models 0 nil state)))
 
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
+;; TODO: Record the sources of recs that work (note that names may get combined with /)?
+;; TODO: Record how often any model works.
+;; TODO: Record the time taken to find the first result.
+;; TODO: Determine which models solve problems on which most or all other models fail.
+;; TODO: Delete only parts of hints, like Matt's tool does.
 ;; Rec names should not include slash or digits?
 (defmacro eval-models-on-books (tests ; pairs of the form (book-name . theorem-name) where book-names are relative to BASE-DIR and have the .lisp extension
                                 base-dir               ; no trailing slash
