@@ -123,13 +123,6 @@
   :pred objdesignp
   :prepwork ((local (in-theory (enable nfix)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption objdesign-option
-  objdesign
-  :short "Fixtype of optional object designators."
-  :pred objdesign-optionp)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define object-disjointp ((objdes1 objdesignp) (objdes2 objdesignp))
