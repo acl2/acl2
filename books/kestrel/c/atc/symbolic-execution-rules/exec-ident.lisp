@@ -34,7 +34,7 @@
     (implies (equal val (read-var id compst))
              (equal (exec-ident id compst)
                     (if (value-case val :array)
-                        (value-pointer (objdesign-static id)
+                        (value-pointer (pointer-valid (objdesign-static id))
                                        (value-array->elemtype val))
                       val)))
     :enable (exec-ident value-kind errorp))

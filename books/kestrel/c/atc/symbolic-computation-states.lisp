@@ -1691,6 +1691,7 @@
       read-object-of-update-object-same
       read-object-of-update-object-disjoint
       read-object-of-objdesign-static
+      pointer-valid->get-of-pointer-valid
       object-disjointp-commutative)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
