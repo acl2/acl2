@@ -4500,8 +4500,15 @@
                 oncep-override)
    (mv-let
     (contradictionp type-alist ttree1)
-    (type-alist-clause cl (pts-to-ttree-lst pts) nil nil ens wrld
-                       nil nil)
+    (mv-let (cl-sorted ttree-lst)
+      (if (eq caller 'simplify-clause-settled-down)
+
+; See the comment in sort-lits.  We are here because of "desperation
+; heuristics" implemented in simplify-clause1.
+
+          (sort-lits cl (pts-to-ttree-lst pts))
+        (mv cl (pts-to-ttree-lst pts)))
+      (type-alist-clause cl-sorted ttree-lst nil nil ens wrld nil nil))
 
 ; If a contradiction was found, type-alist is nil and ttree1 is an fcd-free
 ; tree explaining the contradiction.  Otherwise, type-alist is the type-alist
@@ -8004,7 +8011,15 @@
                 (current-clause-pts (enumerate-elements current-clause 0)))
             (mv-let
              (contradictionp type-alist fc-pair-lst)
-             (forward-chain-top 'simplify-clause
+             (forward-chain-top (if (eq (access rewrite-constant rcnst
+                                                :rewriter-state)
+                                        'settled-down)
+
+; "Desperation heuristics" here: see the comment in sort-lits, which is called
+; in forward-chain-top in this case of 'simplify-clause-settled-down.
+
+                                    'simplify-clause-settled-down
+                                  'simplify-clause)
                                 current-clause
                                 current-clause-pts
                                 (ok-to-force local-rcnst)
@@ -8513,11 +8528,12 @@
 ;          :disabled))
 
 ; But now, we always make the extra pass through the simplifier immediately
-; after settling down, in order to apply desperation heuristics.  At this time
-; the only such desperation heuristic is to arrange that add-linear-lemma
-; always linearizes the unrewritten conclusion, even when normally only the
-; rewritten conclusion would be linearized.  See add-linear-lemma, where
-; examples may be found that motivated this change.
+; after settling down, in order to apply so-called "desperation heuristics".
+; One desperation heuristic is to arrange that add-linear-lemma always
+; linearizes the unrewritten conclusion, even when normally only the rewritten
+; conclusion would be linearized.  See add-linear-lemma, where examples may be
+; found that motivated this change.  For another desperation heuristic see the
+; comment in sort-lits.
 
          (let* ((rcnst0 (access prove-spec-var pspv :rewrite-constant))
                 (local-rcnst (if (eq 'settled-down-clause

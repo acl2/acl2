@@ -424,6 +424,7 @@
      this will be properly generalized at some point."))
   (objdesign-case objdes
                   :static (address 0)
+                  :auto (address 0)
                   :address objdes.get
                   :element (objdesign->base-address objdes.super)
                   :member (objdesign->base-address objdes.super))
@@ -1691,6 +1692,7 @@
       read-object-of-update-object-same
       read-object-of-update-object-disjoint
       read-object-of-objdesign-static
+      pointer-valid->get-of-pointer-valid
       object-disjointp-commutative)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
