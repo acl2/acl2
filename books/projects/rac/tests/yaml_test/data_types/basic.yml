@@ -1,0 +1,120 @@
+- name: basic-types
+- name: literals
+- name: basic-types-upcast
+- name: basic-types-downcast
+  description: The cast are not translated.
+
+  bug: true
+- name: c-cast
+- name: functional-cast
+
+- name: pointers
+  has_failed: true
+  exit_code: 1
+
+- name: references
+  has_failed: true
+  exit_code: 1
+
+- name: c-array-local
+- name: c-array-as-parameter
+  has_failed: true
+  stderr_not_empty: true
+  exit_code: 1
+
+- name: std-array
+- name: std-array-neg-size
+  has_failed: true
+  exit_code: 1
+
+- name: std-tupple
+- name: std-tupple-big
+
+- name: std-tupple-too-big
+  has_failed: true
+  exit_code: 1
+
+- name: std-tupple-init-not-enought-args
+  description: >
+               Here the initialization is not valid: we should provide 2 values
+               for the two types given. For now, only an assert during code
+               generation is failing but we should have an error message earlier.
+  has_failed: true
+  exit_code: -6
+  disabled-checks:
+    - generated_code
+    - stderr
+    - stdout
+  bug: true
+
+- name: typedef-basic
+- name: typedef-ac
+- name: typedef-array
+
+- name: typedef-c-array
+- name: c-array-as-parameter-typedef
+  bug: true
+  description: >
+               This test should fails: the function is given a C-array (a
+               pointer hidden behind a typedef.
+
+- name: typedef-c-array-neg
+  exit_code: 1
+  has_failed: true
+
+
+- name: typedef-redeclaration
+  has_failed: true
+  exit_code: 1
+
+- name: enum 
+
+- name: enum-default-values
+
+- name: struct
+- name: annonymous-struct
+- name: annonymous-struct-in-array
+  bug: true
+  description: Anonymous struct cannot be defined in a type specifier.
+  disabled-checks:
+    - generated_code
+
+- name: annonymous-enum
+  bug: true
+  description: >
+               Uselless since we can't access the named value of the annonymous
+               (in this case, S::a)
+  disabled-checks:
+    - generated_code
+
+- name: global-constant
+- name: global-constant-enum
+- name: multiple-global-constant
+  exit_code: 1
+  has_failed: 1
+  bug: true
+  disabled-checks:
+    - stderr
+
+- name: global-constant-redeclaration
+  exit_code: 1
+  has_failed: true
+  disabled-checks:
+    - generated_code
+
+- name: global-mutable
+  has_failed: true
+  exit_code: 1
+
+- name: initializer-list
+
+- name: overflow
+  bug: true
+  description: C++ arithmetic can overflow but Lisp cannot. This can breaks the
+               equivalence between the two. Therefore, we should always be very
+               careful when doing operation that can overflow and for the C++
+               test we should compile with -fsanitize=undefined (for signed
+               overlow, invalid shift, out of bound access). Since the AC
+               headers has not been updated, this will produce some error at
+               runtime but we can ignore them, they will not influence the
+               C++/Lisp translation.
