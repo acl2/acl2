@@ -787,6 +787,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define objdesign-of-var ((var identp) (compst compustatep))
+  :returns (objdes? objdesign-optionp)
+  :short "Object designator of a variable."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Given the name of a variable in scope,
+     there is an object designator for the variable,
+     which can be found by looking up the variable,
+     as done in @(tsee read-var).
+     If there are frames, we look in the scopes of the top frame,
+     from innermost scope to outermost scope;
+     note that we pass the index of the top frame to the recursive function,
+     so it can be put into the object designator.
+     If there are no frames,
+     or the variable is not found in any scope of the top frame,
+     we look in static storage.
+     If the variable is not found anywhere, we return @('nil'),
+     which means that the variable is not in scope."))
+  (b* ((objdes?
+        (and (> (compustate-frames-number compst) 0)
+             (objdesign-of-var-aux var
+                                   (1- (len (compustate->frames compst)))
+                                   (frame->scopes (top-frame compst)))))
+       ((when objdes?) objdes?)
+       (var+val? (omap::in (ident-fix var) (compustate->static compst))))
+    (and (consp var+val?)
+         (objdesign-static var)))
+  :guard-hints (("Goal" :in-theory (enable natp compustate-frames-number)))
+  :hooks (:fix)
+
+  :prepwork
+  ((define objdesign-of-var-aux ((var identp) (frame natp) (scopes scope-listp))
+     :returns (objdes? objdesign-optionp)
+     :parents nil
+     (b* (((when (endp scopes)) nil)
+          (scope (car scopes))
+          (var+val? (omap::in (ident-fix var) (scope-fix scope)))
+          ((when (consp var+val?))
+           (make-objdesign-auto :name var
+                                :frame frame
+                                :scope (1- (len scopes)))))
+       (objdesign-of-var-aux var frame (cdr scopes)))
+     :guard-hints (("Goal" :in-theory (enable natp len)))
+     ///
+     (fty::deffixequiv objdesign-of-var-aux
+       :hints
+       (("Goal"
+         :expand (objdesign-of-var-aux var frame (scope-list-fix scopes))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define read-object ((objdes objdesignp) (compst compustatep))
   :returns (obj value-resultp)
   :short "Read an object in the computation state."
