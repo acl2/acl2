@@ -367,6 +367,16 @@
 
 (defresult expr-value "expression values")
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection expr-value-result-theorems
+  :extension expr-value-result
+
+  (defruled not-errorp-when-expr-valuep
+    (implies (expr-valuep x)
+             (not (errorp x)))
+    :enable (expr-valuep errorp)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection bounds-of-integer-values
