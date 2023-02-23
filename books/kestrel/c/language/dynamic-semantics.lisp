@@ -143,7 +143,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-ident ((id identp) (compst compustatep))
-  :returns (result value-resultp)
+  :returns (result expr-value-resultp)
   :short "Execute a variable."
   :long
   (xdoc::topstring
@@ -161,13 +161,27 @@
      currently @(tsee exec-block-item) prohibits local arrays,
      so a variable that contains an array can only be a global one.
      All of this will be properly generalized eventually,
-     to bring things more in line with full C."))
+     to bring things more in line with full C.")
+   (xdoc::p
+    "We actually an expression value.
+     If the variable's value is an array,
+     the expression value has no object designator:
+     this is because we are effectively returning a pointer value.
+     If the variable's value is not array,
+     the expression value has that variable's object designator.
+     Eventually the array case should be treated the same as the non-array case,
+     i.e. we should return an expression value with an object designator
+     in all cases, but see discussion above about arrays."))
   (b* ((val (read-var id compst))
        ((when (errorp val)) val))
     (if (value-case val :array)
-        (make-value-pointer :core (pointer-valid (objdesign-static id))
-                            :reftype (value-array->elemtype val))
-      val))
+        (make-expr-value
+         :value (make-value-pointer :core (pointer-valid (objdesign-static id))
+                                    :reftype (value-array->elemtype val))
+         :object nil)
+      (make-expr-value
+       :value val
+       :object (objdesign-of-var id compst))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -548,7 +562,9 @@
   (b* ((e (expr-fix e)))
     (expr-case
      e
-     :ident (exec-ident e.get compst)
+     :ident (b* ((eval (exec-ident e.get compst))
+                 ((when (errorp eval)) eval))
+              (expr-value->value eval))
      :const (exec-const e.get)
      :arrsub (case (expr-kind e.arr)
                (:member
