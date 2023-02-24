@@ -24,8 +24,10 @@
   :hints (("Goal" :in-theory (enable make-list-ac))))
 
 ;; Or this could go in typed-lists-light.
+;; Tweaked to match what's in std, despite the use of the param name X:
 (defthm character-listp-of-make-list-ac
-  (implies (and (character-listp acc)
-                (characterp val))
-           (character-listp (make-list-ac n val acc)))
+  (equal (character-listp (make-list-ac n x ac))
+         (and (character-listp ac)
+              (or (characterp x)
+                  (zp n))))
   :hints (("Goal" :in-theory (enable make-list-ac))))
