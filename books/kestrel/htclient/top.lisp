@@ -12,6 +12,8 @@
 
 (include-book "post-logic")
 (include-book "post")
+(include-book "post-light-logic")
+(include-book "post-light")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
