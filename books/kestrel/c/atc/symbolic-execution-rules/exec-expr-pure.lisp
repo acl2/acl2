@@ -139,9 +139,11 @@
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :unary)
                   (equal val (exec-expr-pure (expr-unary->arg e) compst))
-                  (valuep val))
+                  (valuep val)
+                  (equal eval (exec-unary (expr-unary->op e) val compst))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-unary (expr-unary->op e) val compst)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-cast

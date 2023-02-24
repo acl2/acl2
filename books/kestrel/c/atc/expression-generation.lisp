@@ -345,13 +345,18 @@
              (exec-unary-when-op-and-in-type-pred
               (pack op-name '-value-when- in-type-pred))
              (type-pred (type-to-recognizer out-type wrld))
+             (valuep-when-type-pred (pack 'valuep-when- type-pred))
              (type-pred-of-fn (pack type-pred '-of- fn)))
           `(("Goal" :in-theory '(exec-expr-pure-when-unary
+                                 expr-valuep-of-expr-value
+                                 expr-value->value-of-expr-value
                                  (:e expr-kind)
                                  (:e expr-unary->op)
                                  (:e expr-unary->arg)
                                  ,arg-thm
                                  ,valuep-when-in-type-pred
+                                 ,valuep-when-type-pred
+                                 value-fix-when-valuep
                                  ,exec-unary-when-op-and-in-type-pred
                                  (:e ,(pack 'unop- op-name))
                                  ,type-pred-of-fn

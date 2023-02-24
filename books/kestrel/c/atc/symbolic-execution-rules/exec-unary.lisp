@@ -74,7 +74,7 @@
                             `((,op-type-okp x)))))
          (formula `(implies ,hyps
                             (equal (exec-unary op x compst)
-                                   (,op-type x))))
+                                   (expr-value (,op-type x) nil))))
          (enables `(exec-unary
                     ,op-value
                     ,@(and op-scalar-value
@@ -211,12 +211,12 @@
                      (equal (value-pointer->reftype x)
                             ,(type-to-maker type))
                      (unop-case op :indir)
-                     (equal val
-                            (read-object (value-pointer->designator x) compst))
+                     (equal objdes (value-pointer->designator x))
+                     (equal val (read-object objdes compst))
                      (,pred val)))
          (formula `(implies ,hyps
                             (equal (exec-unary op x compst)
-                                   val)))
+                                   (expr-value val objdes))))
          (hints `(("Goal" :in-theory (enable exec-unary
                                              indir-value))))
          (event `(defruled ,name
