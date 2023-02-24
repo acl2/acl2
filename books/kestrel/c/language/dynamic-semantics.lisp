@@ -235,7 +235,7 @@
 (define exec-binary-strict-pure ((op binopp) (arg1 valuep) (arg2 valuep))
   :guard (and (binop-strictp op)
               (binop-purep op))
-  :returns (result value-resultp)
+  :returns (val value-resultp)
   :short "Execute a binary expression with a strict pure operator."
   :long
   (xdoc::topstring
@@ -266,7 +266,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-cast ((tyname tynamep) (arg valuep))
-  :returns (result value-resultp)
+  :returns (val value-resultp)
   :short "Execute a cast expression."
   :long
   (xdoc::topstring
