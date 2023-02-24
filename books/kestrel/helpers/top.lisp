@@ -21,3 +21,4 @@
 (include-book "replay-book")
 (include-book "replay-book-with-advice")
 (include-book "replay-books-with-advice")
+(include-book "eval-models")
