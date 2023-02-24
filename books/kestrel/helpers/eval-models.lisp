@@ -301,8 +301,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
-;; Returns (mv erp trivialp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
-(defun eval-models-and-submit-defthm-event (defthm num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models state)
+;; Returns (mv erp trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
+(defun eval-models-and-submit-defthm-event (defthm num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models rand state)
   (declare (xargs :guard (and (natp num-recs-per-model)
                               (or (null current-book-absolute-path)
                                   (stringp current-book-absolute-path))
@@ -328,6 +328,8 @@
        ;;                 '(:rewrite)))
        ;; (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
        (- (cw "(ADVICE: ~x0: " theorem-name))
+       (- (cw "rand is ~x0.~%" rand))
+       (rand (minstd-rand0-next rand))
        ;; Ignores any given hints (for now):
        (theorem-hints nil)
        ((mv erp provedp & checkpoint-clauses state)
@@ -339,15 +341,16 @@
                                                     step-limit time-limit
                                                     t ; suppress-trivial-warningp
                                                     state))
-       ((when erp) (mv erp nil nil state)))
+       ((when erp) (mv erp nil nil rand state)))
     (if provedp
         (b* ((- (cw "Trivial: no hints needed for ~x0)~%" theorem-name)) ;todo: tabulate these
              ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
               (submit-event-helper-core `(skip-proofs ,defthm) print state))
-             ((when erp) (mv erp nil nil state)))
+             ((when erp) (mv erp nil nil rand state)))
           (mv nil ; no error
               t   ; theorem was trivial (no hints needed)
               nil
+              rand
               state))
       (b* (((mv erp model-results state)
             (eval-models-on-checkpoints checkpoint-clauses
@@ -364,20 +367,21 @@
                                         '(:add-hyp)
                                         models
                                         state))
-           ((when erp) (mv erp nil nil state))
+           ((when erp) (mv erp nil nil rand state))
            ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
             (submit-event-helper-core `(skip-proofs ,defthm) print state))
-           ((when erp) (mv erp nil nil state))
+           ((when erp) (mv erp nil nil rand state))
            (- (cw ")~%")) ; todo: print which model(s) worked
            )
         (mv nil ; no error
             nil ; not trivial
             model-results
+            rand
             state)))))
 
-;; Returns (mv erp result-alist state).
+;; Returns (mv erp result-alist randstate).
 ;throws an error if any event fails
-(defun submit-events-and-eval-models (events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc state)
+(defun submit-events-and-eval-models (events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc rand state)
   (declare (xargs :guard (and (true-listp events)
                               (or (eq :all theorems-to-try)
                                   (symbol-listp theorems-to-try))
@@ -399,13 +403,14 @@
   (if (endp events)
       (mv nil ; no error
           result-alist-acc
+          rand
           state)
     (let ((event (first events)))
       (if (advice-eventp event theorems-to-try)
           ;; It's a theorem for which we are to try advice:
           (b* ( ;; Try to prove it using advice:
-               ((mv erp trivialp model-results state)
-                (eval-models-and-submit-defthm-event event num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models state))
+               ((mv erp trivialp model-results rand state)
+                (eval-models-and-submit-defthm-event event num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models rand state))
                (- (and erp
                        (cw "ERROR (~x0) with advice attempt for event ~X12 (continuing...).~%" erp event nil)
                        )))
@@ -417,8 +422,8 @@
                       (submit-event-helper-core `(skip-proofs ,event) print state))
                      ((when erp)
                       (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
-                      (mv erp nil state)))
-                  (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc state))
+                      (mv erp nil rand state)))
+                  (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc rand state))
               (if trivialp
                   ;; If the theorem is trivial, no useful information is returned.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
                   (b* (((mv erp state)
@@ -427,8 +432,8 @@
                         (submit-event-helper-core `(skip-proofs ,event) print state))
                        ((when erp)
                         (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
-                        (mv erp nil state)))
-                    (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc state))
+                        (mv erp nil rand state)))
+                    (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc rand state))
                 ;; No error, so count the result:
                 (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models
                                                (acons (list current-book-absolute-path ; todo: use a relative path?
@@ -437,6 +442,7 @@
                                                             )
                                                       model-results
                                                       result-alist-acc)
+                                               rand
                                                state))))
         ;; Not something for which we will try advice, so submit it and continue:
         (b* (((mv erp state)
@@ -445,14 +451,14 @@
              ;; FIXME: Anything that tries to read from a file will give an error since the current dir won't be right.
              ((when erp)
               (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
-              (mv erp nil state))
+              (mv erp nil rand state))
              (- (and (acl2::print-level-at-least-tp print) (cw "~x0~%" (shorten-event event)))))
-          (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc state))))))
+          (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc rand state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
-;; Returns (mv erp result-alist state), where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
+;; Returns (mv erp result-alist+rand state), where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 ;; Since this returns an error triple, it can be wrapped in revert-world.
 (defun eval-models-on-book (filename ; the book, with .lisp extension, we should have already checked that it exists
                             theorems-to-try
@@ -461,6 +467,7 @@
                             debug step-limit time-limit
                             server-url
                             models
+                            rand
                             state)
   (declare (xargs :guard (and (stringp filename)
                               (or (eq :all theorems-to-try)
@@ -482,7 +489,7 @@
        ((when (member-equal current-book-absolute-path
                             (included-books-in-world (w state))))
         (cw "WARNING: Can't replay ~s0 because it is already included in the world.~%" filename)
-        (mv nil nil state))
+        (mv nil (cons nil rand) state))
        ((mv dir &) (split-path filename))
        (- (cw "Evaluating advice on ~s0:~%" filename))
        ;; May be necessary for resolving #. constants in read-objects-from-book:
@@ -490,30 +497,30 @@
        ;; Read all the forms from the file:
        ((mv erp events state)
         (read-objects-from-book filename state))
-       ((when erp) (cw "Error: ~x0.~%" erp) (mv erp nil state))
+       ((when erp) (cw "Error: ~x0.~%" erp) (mv erp (cons nil rand) state))
        (len-all-events (len events))
        (events (discard-events-after-last-advice-event events theorems-to-try))
        (- (cw "(~x0 total events, ~x1 after discarding final events.)~%~%" len-all-events (len events)))
        ((when (null events))
         (cw "~%SUMMARY for book ~s0: NO EVENTS TO EVALUATE.  Theorems to try were ~X12.~%" filename theorems-to-try nil)
         (mv nil ; no error, but nothing to do for this book
-            nil state))
+            (cons nil rand) state))
        ;; Ensures we are working in the same dir as the book:
        ;; TODO: Ensure this gets reset upon failure, such as a package name clash.
        ((mv erp & state)
         (set-cbd-fn dir state))
-       ((when erp) (mv erp nil state))
+       ((when erp) (mv erp (cons nil rand) state))
        ;; Make margins wider for nicer printing:
        (state (widen-margins state))
        ;; Ensure proofs are done during make-event expansion, even if we use skip-proofs:
        ((mv erp state) (submit-event-helper-core '(defattach (acl2::always-do-proofs-during-make-event-expansion acl2::constant-t-function-arity-0) :system-ok t) nil state))
-       ((when erp) (mv erp nil state))
+       ((when erp) (mv erp (cons nil rand) state))
        ;; Submit all the events, trying advice for each defthm in theorems-to-try:
-       ((mv erp result-alist state)
-        (submit-events-and-eval-models events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models nil state))
+       ((mv erp result-alist rand state)
+        (submit-events-and-eval-models events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models nil rand state))
        ((when erp) ; I suppose we could return partial results from this book instead
         (cw "Error: ~x0.~%" erp)
-        (mv erp nil state))
+        (mv erp (cons nil rand) state))
        ;; Print stats:
        ;; TODO: Improve;
        (- (cw "Results for this book: ~X01" result-alist nil))
@@ -528,7 +535,7 @@
        ;; Undo margin widening:
        (state (unwiden-margins state)))
     (mv nil ; no error
-        result-alist
+        (cons result-alist rand)
         state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -544,6 +551,7 @@
                                     models
                                     done-book-count
                                     result-alist-acc ; a result-alist
+                                    rand
                                     state)
   (declare (xargs :guard (and (alistp book-to-theorems-alist)
                               (stringp base-dir)
@@ -571,7 +579,7 @@
          (entry (first book-to-theorems-alist))
          (book (car entry))
          (theorems-to-try (cdr entry))
-         ((mv erp result-alist-for-book state)
+         ((mv erp result-alist-for-book+rand state)
           (revert-world (eval-models-on-book (concatenate 'string base-dir "/" book)
                                              theorems-to-try
                                              num-recs-per-model
@@ -579,7 +587,10 @@
                                              debug step-limit time-limit
                                              server-url
                                              models
+                                             rand
                                              state)))
+         (result-alist-for-book (car result-alist-for-book+rand))
+         (rand (cdr result-alist-for-book+rand))
          (- (and erp (cw "WARNING: Error replaying ~x0.~%" book)))
          (done-book-count (+ 1 done-book-count))
          (result-alist-acc (append result-alist-for-book result-alist-acc))
@@ -595,6 +606,7 @@
       (eval-models-on-books-fn-aux (rest book-to-theorems-alist)
                                    base-dir num-recs-per-model print debug step-limit time-limit server-url models done-book-count
                                    result-alist-acc
+                                   rand
                                    state))))
 
 ;; Returns (mv erp event state).
@@ -628,27 +640,33 @@
                  (if (help::model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
-       ((mv seed state)
+       ;; Initialize the source of randomness:
+       ((mv rand state)
         (if (eq :random seed)
             (random$ *m31* state)
           (mv seed state)))
-       (- (cw "(Using random seed of ~x0.)~%" seed))
+       (- (cw "(Using random seed of ~x0.)~%" rand))
        (- (cw "(Trying ~x0 recommendations per model.)~%" num-recs-per-model))
        (tests (clear-keys-with-matching-prefixes tests excluded-prefixes nil))
        (len-tests (len tests))
        ((when (and (not (eq :all num-tests))
                    (> num-tests len-tests)))
         (mv :not-enough-tests nil state))
+       ;; Choose which
        (tests (if (eq :all num-tests)
                   (prog2$ (cw "Using all ~x0 tests.~%" len-tests)
                           tests)
                 (prog2$ (cw "Randomly choosing ~x0 from among the ~x1 tests.~%" num-tests len-tests)
-                        (take num-tests (shuffle-list2 tests seed)))))
+                        (take num-tests (shuffle-list2 tests rand)))))
+       (rand (minstd-rand0-next rand))
+       ;; Group tests by book:
        (tests-sorted (merge-sort-string<-of-cadr tests))
        (book-to-theorems-alist (group-pairs tests-sorted nil))
-       (book-to-theorems-alist (shuffle-list2 book-to-theorems-alist (minstd-rand0-next seed)))
+       ;; Randomize book order:
+       (book-to-theorems-alist (shuffle-list2 book-to-theorems-alist rand))
+       (rand (minstd-rand0-next rand))
        (- (cw "(Processing ~x0 tests in ~x1 books.)~%" num-tests (len book-to-theorems-alist))))
-    (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit server-url models 0 nil state)))
+    (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit server-url models 0 nil rand state)))
 
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
 ;; TODO: Record the sources of recs that work (note that names may get combined with /)?
