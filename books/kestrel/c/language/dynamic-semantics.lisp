@@ -312,16 +312,10 @@
      other than implicitly as array subscripting.
      So we have our own treatment of array subscipting,
      in which the pointer is assumed to be to the array (not the first element),
-     and the index is just used to obtain the element
-     (note also that we always return values when evaluating expressions,
-     we never return object designators for now).
-     This treatment is equivalent to the real one for our purposes.
-     Note also that, in full C, the type of the pointer to the array
-     should be the array type, not the element type.
-     But again, we are somewhat pretending that the pointer to the array
-     is a pointer to the first element,
-     which justifies the type of the pointer as the array element type.
-     Note that, in full C, pointers are almost never to arrays,
+     and the index is just used to obtain the element.
+     This treatment is equivalent to the real one for our purposes.")
+   (xdoc::p
+    "Note that, in full C, pointers are almost never to arrays,
      but rather they are to elements of arrays.
      The only way to get a pointer to an array as such is
      via @('&a') when @('a') is an array object name;
