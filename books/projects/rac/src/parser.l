@@ -26,8 +26,8 @@ char yyfilenm[1024];
 <INITIAL>.*\n               {}
 
 "/*"                        {comment();}
-\/\/{Rac}\:?.*             {yyless(6); return RAC;}
-\/\/\ {Rac}\:?.*           {yyless(7); return RAC;}
+\/\/{Rac}\:?.*              {yyless(6); return RAC;}
+\/\/\ {Rac}\:?.*            {yyless(7); return RAC;}
 "//".*                      {}
 "Hector::".*                {}
 "#pragma".*                 {}
@@ -39,20 +39,20 @@ char yyfilenm[1024];
 "struct"                    {return STRUCT;}
 "enum"                      {return ENUM;}
 "const"                     {return CONST;}
-"int"	                    {return INT;}
-"uint"	                    {return UINT;}
-"int64"	                    {return INT64;}
-"uint64"	            {return UINT64;}
-"bool"	                    {return BOOL;}
-"for"	                    {return FOR;}
-"if"	                    {return IF;}
-"else"	                    {return ELSE;}
-"while"	                    {return WHILE;}
-"do"	                    {return DO;}
-"switch"	            {return SWITCH;}
-"case"	                    {return CASE;}
+"int"                       {return INT;}
+"uint"                      {return UINT;}
+"int64"                     {return INT64;}
+"uint64"                    {return UINT64;}
+"bool"                      {return BOOL;}
+"for"                       {return FOR;}
+"if"                        {return IF;}
+"else"                      {return ELSE;}
+"while"                     {return WHILE;}
+"do"                        {return DO;}
+"switch"                    {return SWITCH;}
+"case"                      {return CASE;}
 "default"                   {return DEFAULT;}
-"break"	                    {return BREAK;}
+"break"                     {return BREAK;}
 "return"                    {return RETURN;}
 "assert"                    {return ASSERT;}
 "slc"                       {return SLC;}
@@ -73,28 +73,28 @@ char yyfilenm[1024];
 [0-9]+ |
 "0x"[a-fA-F_0-9]+           {yylval.s = tokstr(); return NAT;}
 
-">>="			    {yylval.s = tokstr(); return RSHFT_ASSIGN;}
-"<<="			    {yylval.s = tokstr(); return LSHFT_ASSIGN;}
-"+="			    {yylval.s = tokstr(); return ADD_ASSIGN;}
-"-="			    {yylval.s = tokstr(); return SUB_ASSIGN;}
-"*="			    {yylval.s = tokstr(); return MUL_ASSIGN;}
-"%="			    {yylval.s = tokstr(); return MOD_ASSIGN;}
-"&="			    {yylval.s = tokstr(); return AND_ASSIGN;}
-"^="			    {yylval.s = tokstr(); return XOR_ASSIGN;}
-"|="			    {yylval.s = tokstr(); return OR_ASSIGN;}
+">>="            {yylval.s = tokstr(); return RSHFT_ASSIGN;}
+"<<="            {yylval.s = tokstr(); return LSHFT_ASSIGN;}
+"+="             {yylval.s = tokstr(); return ADD_ASSIGN;}
+"-="             {yylval.s = tokstr(); return SUB_ASSIGN;}
+"*="             {yylval.s = tokstr(); return MUL_ASSIGN;}
+"%="             {yylval.s = tokstr(); return MOD_ASSIGN;}
+"&="             {yylval.s = tokstr(); return AND_ASSIGN;}
+"^="             {yylval.s = tokstr(); return XOR_ASSIGN;}
+"|="             {yylval.s = tokstr(); return OR_ASSIGN;}
 
-"++"			    {yylval.s = tokstr(); return INC_OP;}
-"--"			    {yylval.s = tokstr(); return DEC_OP;}
+"++"             {yylval.s = tokstr(); return INC_OP;}
+"--"             {yylval.s = tokstr(); return DEC_OP;}
 
-">>"			    {yylval.s = tokstr(); return RSHFT_OP;}
-"<<"			    {yylval.s = tokstr(); return LSHFT_OP;}
+">>"             {yylval.s = tokstr(); return RSHFT_OP;}
+"<<"             {yylval.s = tokstr(); return LSHFT_OP;}
 
-"&&"			    {yylval.s = tokstr(); return AND_OP;}
-"||"			    {yylval.s = tokstr(); return OR_OP;}
-"<="			    {yylval.s = tokstr(); return LE_OP;}
-">="			    {yylval.s = tokstr(); return GE_OP;}
-"=="			    {yylval.s = tokstr(); return EQ_OP;}
-"!="			    {yylval.s = tokstr(); return NE_OP;}
+"&&"             {yylval.s = tokstr(); return AND_OP;}
+"||"             {yylval.s = tokstr(); return OR_OP;}
+"<="             {yylval.s = tokstr(); return LE_OP;}
+">="             {yylval.s = tokstr(); return GE_OP;}
+"=="             {yylval.s = tokstr(); return EQ_OP;}
+"!="             {yylval.s = tokstr(); return NE_OP;}
 
 "=" |
 "+" |
@@ -108,7 +108,7 @@ char yyfilenm[1024];
 "<" |
 ">" |
 "|" |
-"^"                        {yylval.s = tokstr(); return yytext[0];}
+"^"              {yylval.s = tokstr(); return yytext[0];}
 
 "(" |
 ")" |
@@ -120,7 +120,7 @@ char yyfilenm[1024];
 ";" |
 ":" |
 "." |
-"?"                         {return yytext[0];}
+"?"              {return yytext[0];}
 
 %%
 
@@ -148,7 +148,7 @@ int yywrap(void) {  // called at end of input
 
 static void lineba() {
   char *i = strtok(yytext, "# \"");
-  char *f = strtok(NULL, "# \"");
+  char *f = strtok(nullptr, "# \"");
   sscanf(i, "%d", &yylineno);
   sscanf(f, "%s", yyfilenm);
 }

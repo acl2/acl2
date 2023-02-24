@@ -16,6 +16,9 @@
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/axe/merge-sort-less-than" :dir :system) ; todo: move
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "kestrel/lists-light/make-list-ac" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 ;; TODO: removing :add-hyp gets us less the requested number of recs sometimes!
 
@@ -67,25 +70,62 @@
                               percent-int-part)))
       (nat-to-string rounded-percent))))
 
+;; pads on the left!
+(defun symbol-to-left-padded-string-of-length (sym len)
+  (declare (xargs :guard (and (symbolp sym)
+                              (natp len))
+;                  :verify-guards nil ; todo
+                  ))
+  (let* ((str (symbol-name sym))
+         (chars (coerce str 'list))
+         (new-chars (if (<= len (len chars))
+                        (take len chars) ;may chop
+                      (append (make-list (- len (len chars)) :initial-element #\Space)
+                              chars))))
+    (coerce new-chars 'string)))
+
+;; Returns the successful-attempt-percentage.
 (defun show-model-evaluation (model result-alist)
   (declare (xargs :mode :program)) ;todo
   (b* (((mv attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums total-recs-produced)
         (tabulate-resuls-for-model model result-alist 0 0 0 0 nil 0))
+       (successful-attempt-percentage (quotient-to-percent-string successful-attempt-count attempt-count))
        (- (cw "Results for model ~x0 (~x1 theorem attempts, ~x2 total recs produced):~%" model attempt-count total-recs-produced))
-       (- (cw "Success: ~x0 (~s1%)~%" successful-attempt-count (quotient-to-percent-string successful-attempt-count attempt-count)))
+       (- (cw "Success: ~x0 (~s1%)~%" successful-attempt-count successful-attempt-percentage))
        (- (cw "Nums of first successful recs: ~X01~%" successful-rec-nums nil)) ; todo: summarize better
        (- (cw "Top-1: ~x0 (~s1%)~%" top-1-count (quotient-to-percent-string top-1-count attempt-count)))
        (- (cw "Top-10: ~x0 (~s1%)~%~%" top-10-count (quotient-to-percent-string top-10-count attempt-count)))
        )
-    nil))
+    successful-attempt-percentage))
+
+;; Prints and computes
+;; RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
+(defun show-model-evaluations-aux (models result-alist)
+  (declare (xargs :mode :program)) ;todo
+  (if (endp models)
+      nil
+    (let* ((model (first models))
+           (successful-attempt-percentage (show-model-evaluation model result-alist))) ; prints the info
+      (acons model
+             successful-attempt-percentage
+             (show-model-evaluations-aux (rest models) result-alist)))))
+
+(defun show-success-percentages (alist)
+  (declare (xargs :guard (symbol-alistp alist)))
+  (if (endp alist)
+      (cw "~%")
+    (let* ((pair (first alist))
+           (model (car pair))
+           (percent-string (cdr pair)))
+      (prog2$ (cw "~s0: ~s1%~%" (symbol-to-left-padded-string-of-length model 20) percent-string) ;todo: align better
+              (show-success-percentages (rest alist))))))
 
 ;; RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 (defun show-model-evaluations (models result-alist)
   (declare (xargs :mode :program)) ;todo
-  (if (endp models)
-      nil
-    (prog2$ (show-model-evaluation (first models) result-alist)
-            (show-model-evaluations (rest models) result-alist))))
+  (let ((alist (show-model-evaluations-aux models result-alist)))
+    (prog2$ (cw "~%Current success percentages:~%")
+            (show-success-percentages alist))))
 
 ;;Returns (mv erp first-working-rec-num-or-nil state).
 (defun try-recs-in-order (recs rec-num checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit state)
@@ -584,7 +624,7 @@
                   :stobjs state))
   (b* ( ;; Elaborate options:
        (models (if (eq models :all)
-                   help::*known-models*
+                   help::*ready-models* ; help::*known-models*
                  (if (help::model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
