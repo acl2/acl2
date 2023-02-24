@@ -189,7 +189,7 @@
                  (valuep arr-val)
                  (equal ptr
                         (if (value-case arr-val :array)
-                            (value-pointer (objdesign-static var)
+                            (value-pointer (pointer-valid (objdesign-static var))
                                            (value-array->elemtype arr-val))
                           arr-val))
                  (value-case ptr :pointer)

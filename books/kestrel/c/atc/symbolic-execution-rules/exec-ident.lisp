@@ -31,13 +31,19 @@
      based on whether the value is an array or not."))
 
   (defruled exec-ident-open
-    (implies (equal val (read-var id compst))
+    (implies (and (equal val (read-var id compst))
+                  (valuep val))
              (equal (exec-ident id compst)
                     (if (value-case val :array)
-                        (value-pointer (objdesign-static id)
-                                       (value-array->elemtype val))
-                      val)))
-    :enable (exec-ident value-kind errorp))
+                        (make-expr-value
+                         :value (make-value-pointer
+                                 :core (pointer-valid (objdesign-static id))
+                                 :reftype (value-array->elemtype val))
+                         :object nil)
+                      (make-expr-value
+                       :value val
+                       :object (objdesign-of-var id compst)))))
+    :enable exec-ident)
 
   (defval *atc-exec-ident-rules*
     '(exec-ident-open)))

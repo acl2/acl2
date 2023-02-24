@@ -123,9 +123,14 @@
          :proofs nil))
        (hints
         (b* ((type-pred (type-to-recognizer type wrld))
-             (value-kind-when-type-pred (pack 'value-kind-when- type-pred)))
+             (value-kind-when-type-pred (pack 'value-kind-when- type-pred))
+             (valuep-when-type-pred (pack 'valuep-when- type-pred)))
           `(("Goal" :in-theory '(,var-thm
                                  exec-expr-pure-when-ident
+                                 expr-valuep-of-expr-value
+                                 expr-value->value-of-expr-value
+                                 ,valuep-when-type-pred
+                                 value-fix-when-valuep
                                  (:e expr-kind)
                                  (:e expr-ident->get)
                                  exec-ident-open

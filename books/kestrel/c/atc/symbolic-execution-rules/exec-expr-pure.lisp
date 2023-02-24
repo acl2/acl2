@@ -53,10 +53,13 @@
 
   (defruled exec-expr-pure-when-ident
     (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :ident))
+                  (equal (expr-kind e) :ident)
+                  (equal eval (exec-ident (expr-ident->get e) compst))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-ident (expr-ident->get e) compst)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
+
 
   (defruled exec-expr-pure-when-const
     (implies (and (syntaxp (quotep e))
@@ -343,6 +346,8 @@
 
   (defval *atc-exec-expr-pure-rules*
     '(exec-expr-pure-when-ident
+      expr-valuep-of-expr-value
+      expr-value->value-of-expr-value
       exec-expr-pure-when-const
       exec-expr-pure-when-arrsub
       exec-expr-pure-when-member
