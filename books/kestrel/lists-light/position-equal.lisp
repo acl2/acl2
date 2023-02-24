@@ -19,20 +19,25 @@
 
 (in-theory (disable position-equal))
 
-(defthm integerp-of-position-equal-under-iff
-  (iff (integerp (position-equal item x))
-       (if (stringp x)
-           (member-equal item (coerce x 'list))
-         (member-equal item x)))
-  :hints (("Goal" :in-theory (enable member-equal position-equal))))
+(defthm integerp-of-position-equal
+  (equal (integerp (position-equal item x))
+         (if (position-equal item x) t nil))
+  :hints (("Goal" :in-theory (enable position-equal))))
 
-(defthm natp-of-position-equal-under-iff
-  (iff (natp (position-equal item x))
-       (if (stringp x)
-           (member-equal item (coerce x 'list))
-         (member-equal item x)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable member-equal position-equal))))
+(defthm natp-of-position-equal
+  (equal (natp (position-equal item x))
+         (if (position-equal item x) t nil))
+  :hints (("Goal" :in-theory (enable position-equal))))
+
+(defthm rationalp-of-position-equal
+  (equal (rationalp (position-equal item x))
+         (if (position-equal item x) t nil))
+  :hints (("Goal" :in-theory (enable position-equal))))
+
+(defthm acl2-numberp-of-position-equal
+  (equal (acl2-numberp (position-equal item x))
+         (if (position-equal item x) t nil))
+  :hints (("Goal" :in-theory (enable position-equal))))
 
 (defthm position-equal-under-iff
   (iff (position-equal item x)

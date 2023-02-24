@@ -13,16 +13,29 @@
 
 (in-theory (disable position-equal-ac))
 
+;; Note that natp-position-equal-ac is a built-in :type-prescription rule.
+
 (defthm natp-of-position-equal-ac
   (implies (natp acc)
            (equal (natp (position-equal-ac item lst acc))
-                  (if (member-equal item lst) t nil)))
+                  (if (position-equal-ac item lst acc) t nil)))
   :hints (("Goal" :in-theory (enable member-equal position-equal-ac))))
 
 (defthm integerp-of-position-equal-ac
   (implies (integerp acc)
            (equal (integerp (position-equal-ac item lst acc))
-                  (if (member-equal item lst) t nil)))
+                  (if (position-equal-ac item lst acc) t nil)))
+  :hints (("Goal" :in-theory (enable member-equal position-equal-ac))))
+
+(defthm rationalp-of-position-equal-ac
+  (implies (rationalp acc)
+           (equal (rationalp (position-equal-ac item lst acc))
+                  (if (position-equal-ac item lst acc) t nil)))
+  :hints (("Goal" :in-theory (enable member-equal position-equal-ac))))
+
+(defthm acl2-numberp-of-position-equal-ac
+  (equal (acl2-numberp (position-equal-ac item lst acc))
+         (if (position-equal-ac item lst acc) t nil))
   :hints (("Goal" :in-theory (enable member-equal position-equal-ac))))
 
 (defthm position-equal-ac-under-iff
