@@ -91,7 +91,7 @@
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/untranslated-terms/conjuncts-of-uterm" :dir :system)
 (include-book "kestrel/alists-light/string-string-alistp" :dir :system)
-(include-book "kestrel/htclient/post" :dir :system) ; todo: slow
+(include-book "kestrel/htclient/post-light" :dir :system) ; todo: slow
 (include-book "kestrel/json-parser/parse-json" :dir :system)
 (include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages that might arise are known ; todo: very slow
 (include-book "tools/prove-dollar" :dir :system)
@@ -2996,7 +2996,7 @@
                   :stobjs state))
   (b* ((- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
        ((mv erp post-response state)
-        (htclient::post server-url post-data state))
+        (htclient::post-light server-url post-data state))
        ((when erp)
         (cw "Error received from HTTP POST: ~x0.~%" erp)
         (mv erp nil state))
