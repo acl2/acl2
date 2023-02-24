@@ -290,7 +290,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-arrsub ((arr valuep) (sub valuep) (compst compustatep))
-  :returns (result value-resultp)
+  :returns (eval expr-value-resultp)
   :short "Execute an array subscripting expression."
   :long
   (xdoc::topstring
@@ -299,7 +299,8 @@
      the pointer must have the element type of the array.
      The second operand must be an integer value (of any integer type).
      The resulting index must be in range for the array,
-     and the indexed element is returned as result.")
+     and the indexed element is returned as result,
+     as an expression value whose object designator is for the array element.")
    (xdoc::p
     "This semantics is an approximation of the real one in C,
      but it is adequate to our C subset.
@@ -310,10 +311,10 @@
      In our C subset, we have limited support for pointers,
      in particular there is no explicit pointer arithmetic,
      other than implicitly as array subscripting.
-     So we have our own treatment of array subscipting,
+     So we have our own treatment of array subscipting here,
      in which the pointer is assumed to be to the array (not the first element),
      and the index is just used to obtain the element.
-     This treatment is equivalent to the real one for our purposes.")
+     This treatment is equivalent to the real one for our current purposes.")
    (xdoc::p
     "Note that, in full C, pointers are almost never to arrays,
      but rather they are to elements of arrays.
@@ -322,7 +323,10 @@
      except for this case, and for the case of an argument to @('sizeof'),
      as well as for string literals (currently not in our C subset),
      an array is always converted to a pointer to its first element
-     [C:6.3.2.1/3]."))
+     [C:6.3.2.1/3].")
+   (xdoc::p
+    "In any case, we plan to make our formal semantics
+     more consistent with full C in the treatment of arrays."))
   (b* (((unless (value-case arr :pointer))
         (error (list :mistype-arrsub
                      :required :pointer
@@ -348,8 +352,11 @@
        ((when (< index 0)) (error (list :negative-array-index
                                         :pointer (value-fix arr)
                                         :array array
-                                        :index (value-fix sub)))))
-    (value-array-read index array))
+                                        :index (value-fix sub))))
+       (val (value-array-read index array))
+       ((when (errorp val)) val)
+       (elem-objdes (make-objdesign-element :super objdes :index index)))
+    (make-expr-value :value val :object elem-objdes))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -576,8 +583,10 @@
                (t (b* ((arr (exec-expr-pure e.arr compst))
                        ((when (errorp arr)) arr)
                        (sub (exec-expr-pure e.sub compst))
-                       ((when (errorp sub)) sub))
-                    (exec-arrsub arr sub compst))))
+                       ((when (errorp sub)) sub)
+                       (eval (exec-arrsub arr sub compst))
+                       ((when (errorp eval)) eval))
+                    (expr-value->value eval))))
      :call (error (list :non-pure-expr e))
      :member (b* ((str (exec-expr-pure e.target compst))
                   ((when (errorp str)) str))
