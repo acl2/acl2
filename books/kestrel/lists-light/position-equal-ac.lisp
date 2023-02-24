@@ -13,16 +13,16 @@
 
 (in-theory (disable position-equal-ac))
 
-(defthm natp-of-position-equal-ac-under-iff
+(defthm natp-of-position-equal-ac
   (implies (natp acc)
-           (iff (natp (position-equal-ac item lst acc))
-                (member-equal item lst)))
+           (equal (natp (position-equal-ac item lst acc))
+                  (if (member-equal item lst) t nil)))
   :hints (("Goal" :in-theory (enable member-equal position-equal-ac))))
 
-(defthm integerp-of-position-equal-ac-under-iff
+(defthm integerp-of-position-equal-ac
   (implies (integerp acc)
-           (iff (integerp (position-equal-ac item lst acc))
-                (member-equal item lst)))
+           (equal (integerp (position-equal-ac item lst acc))
+                  (if (member-equal item lst) t nil)))
   :hints (("Goal" :in-theory (enable member-equal position-equal-ac))))
 
 (defthm position-equal-ac-under-iff
