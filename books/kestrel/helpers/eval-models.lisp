@@ -15,6 +15,7 @@
 (include-book "advice")
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/axe/merge-sort-less-than" :dir :system) ; todo: move
+(include-book "kestrel/strings-light/upcase" :dir :system)
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/make-list-ac" :dir :system))
@@ -300,8 +301,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun hint-settings-for-goal-spec (goal-spec hints)
+  (declare (xargs :guard (and (stringp goal-spec)
+                              (true-listp hints))))
+  (if (endp hints)
+      nil
+    (let ((hint (first hints)))
+      (if (and (consp hint)
+               (stringp (car hint))
+               (equal (string-upcase-gen goal-spec)
+                      (string-upcase-gen (car hint))))
+          (cdr hint)
+        (hint-settings-for-goal-spec goal-spec (rest hints))))))
+
 ;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
-;; Returns (mv erp trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
+;; Returns (mv erp breakage-type trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
+;; Here, trivialp means "no model was needed".
 (defun eval-models-and-submit-defthm-event (defthm num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models rand state)
   (declare (xargs :guard (and (natp num-recs-per-model)
                               (or (null current-book-absolute-path)
@@ -327,10 +342,19 @@
        ;;                 ;; this really means don't put in any :rule-classes arg at all:
        ;;                 '(:rewrite)))
        ;; (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
+       (theorem-hints (cadr (assoc-keyword :hints (cdddr defthm))))
+       ((when (or (null theorem-hints)
+                  (null (hint-settings-for-goal-spec "Goal" theorem-hints))))
+        (cw "Skipping ~x0 since it has no hints on Goal.~%" theorem-name)
+        (mv nil ; no error
+            :not-attempted ; no breakage of hints possible (unless we consider breaking subgoal hints or computed hints)
+            t ; either there were no hints (and we assumed it proves that way), or there were no Goal hints for us to try removing
+            nil rand state))
        (- (cw "(ADVICE: ~x0: " theorem-name))
        (- (cw "rand is ~x0.~%" rand))
        (rand (minstd-rand0-next rand))
        ;; Ignores any given hints (for now):
+       (breakage-type :all-hints-removed)
        (theorem-hints nil)
        ((mv erp provedp & checkpoint-clauses state)
         (help::try-proof-and-get-checkpoint-clauses theorem-name
@@ -341,13 +365,14 @@
                                                     step-limit time-limit
                                                     t ; suppress-trivial-warningp
                                                     state))
-       ((when erp) (mv erp nil nil rand state)))
+       ((when erp) (mv erp nil nil nil rand state)))
     (if provedp
         (b* ((- (cw "Trivial: no hints needed for ~x0)~%" theorem-name)) ;todo: tabulate these
              ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
               (submit-event-helper-core `(skip-proofs ,defthm) print state))
-             ((when erp) (mv erp nil nil rand state)))
+             ((when erp) (mv erp nil nil nil rand state)))
           (mv nil ; no error
+              breakage-type
               t   ; theorem was trivial (no hints needed)
               nil
               rand
@@ -367,19 +392,20 @@
                                         '(:add-hyp)
                                         models
                                         state))
-           ((when erp) (mv erp nil nil rand state))
+           ((when erp) (mv erp nil nil nil rand state))
            ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
             (submit-event-helper-core `(skip-proofs ,defthm) print state))
-           ((when erp) (mv erp nil nil rand state))
+           ((when erp) (mv erp nil nil nil rand state))
            (- (cw ")~%")) ; todo: print which model(s) worked
            )
         (mv nil ; no error
+            breakage-type
             nil ; not trivial
             model-results
             rand
             state)))))
 
-;; Returns (mv erp result-alist randstate).
+;; Returns (mv erp result-alist rand state), where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 ;throws an error if any event fails
 (defun submit-events-and-eval-models (events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc rand state)
   (declare (xargs :guard (and (true-listp events)
@@ -409,16 +435,12 @@
       (if (advice-eventp event theorems-to-try)
           ;; It's a theorem for which we are to try advice:
           (b* ( ;; Try to prove it using advice:
-               ((mv erp trivialp model-results rand state)
+               ((mv erp breakage-type trivialp model-results rand state)
                 (eval-models-and-submit-defthm-event event num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models rand state))
-               (- (and erp
-                       (cw "ERROR (~x0) with advice attempt for event ~X12 (continuing...).~%" erp event nil)
-                       )))
+               (- (and erp (cw "ERROR (~x0) with advice attempt for event ~X12 (continuing...).~%" erp event nil))))
             (if erp
                 ;; If there is an error, the result is meaningless.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
                 (b* (((mv erp state)
-                      ;; We use skip-proofs (but see the attachment to always-do-proofs-during-make-event-expansion below):
-                      ;; TODO: Don't wrap certain events in skip-proofs?
                       (submit-event-helper-core `(skip-proofs ,event) print state))
                      ((when erp)
                       (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
@@ -427,8 +449,6 @@
               (if trivialp
                   ;; If the theorem is trivial, no useful information is returned.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
                   (b* (((mv erp state)
-                        ;; We use skip-proofs (but see the attachment to always-do-proofs-during-make-event-expansion below):
-                        ;; TODO: Don't wrap certain events in skip-proofs?
                         (submit-event-helper-core `(skip-proofs ,event) print state))
                        ((when erp)
                         (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
@@ -438,8 +458,7 @@
                 (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models
                                                (acons (list current-book-absolute-path ; todo: use a relative path?
                                                             (cadr event) ; theorem-name
-                                                            :all-hints-removed ; breakage-type
-                                                            )
+                                                            breakage-type)
                                                       model-results
                                                       result-alist-acc)
                                                rand
@@ -524,7 +543,6 @@
        ;; Print stats:
        ;; TODO: Improve;
        (- (cw "Results for this book: ~X01" result-alist nil))
-
        ;; (- (progn$ (cw "~%SUMMARY for book ~s0:~%" filename)
        ;;            (cw "(Asked each model for ~x0 recommendations.)~%" num-recs-per-model)
        ;;            (cw "ADVICE FOUND    : ~x0~%" yes-count)
