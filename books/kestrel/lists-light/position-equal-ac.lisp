@@ -20,7 +20,7 @@
   :hints (("Goal" :in-theory (enable member-equal position-equal-ac))))
 
 (defthm integerp-of-position-equal-ac-under-iff
-  (implies (natp acc)
+  (implies (integerp acc)
            (iff (integerp (position-equal-ac item lst acc))
                 (member-equal item lst)))
   :hints (("Goal" :in-theory (enable member-equal position-equal-ac))))
@@ -31,18 +31,18 @@
   :hints (("Goal" :in-theory (enable position-equal-ac))))
 
 ;improve?
+;rename?
 (defthm position-equal-ac-bound
-  (implies (and (POSITION-EQUAL-ac item lst acc) ;item is present
-                )
-           (< (POSITION-EQUAL-ac item lst acc)
+  (implies (position-equal-ac item lst acc) ;item is present
+           (< (position-equal-ac item lst acc)
               (+ acc (len lst))))
   :hints (("Goal" :in-theory (enable position-equal-ac))))
 
 ;improve?
+;rename?
 (defthm position-equal-ac-bound-special
-  (implies (and (POSITION-EQUAL-ac item lst 0) ;item is present
-                )
-           (< (POSITION-EQUAL-ac item lst 0)
+  (implies (position-equal-ac item lst 0) ;item is present
+           (< (position-equal-ac item lst 0)
               (len lst)))
   :hints (("Goal" :use (:instance position-equal-ac-bound (acc 0)))))
 
