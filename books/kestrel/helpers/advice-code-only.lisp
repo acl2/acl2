@@ -1,6 +1,6 @@
 ; Use with-supporters to just get the code of the Proof Advice tool
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "std/io/read-string-light" :dir :system) ; avoids error below
-(include-book "kestrel/htclient/post" :dir :system) ; avoids error below
+(include-book "kestrel/htclient/post-light" :dir :system) ; avoids error below
 (include-book "tools/with-supporters" :dir :system)
 
 (with-supporters
