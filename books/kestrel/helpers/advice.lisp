@@ -345,6 +345,7 @@
 (defconst *ml-models-and-strings*
   '((:calpoly . "kestrel-calpoly")
     (:calpoly-run10.0 . "calpoly-run10.0")
+    (:leidos-run10.0 . "leidos-run10.0")
     ;; note the capital L:
     (:leidos . "Leidos")
     (:leidos-gpt . "leidos-gpt")
@@ -358,6 +359,10 @@
           *ml-models-and-strings*))
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
+
+;;TODO: Update when ready
+(defconst *ready-models*
+  (remove-eq :leidos-run10.0 *known-models*))
 
 (defconst *extra-rec-sources*
   '(:enable :history))
@@ -3644,7 +3649,7 @@
   (b* ((wrld (w state))
        ;; Elaborate options:
        (models (if (eq models :all)
-                   *known-models*
+                   *ready-models* ; *known-models*
                  (if (model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
@@ -3749,7 +3754,7 @@
   (b* ((wrld (w state))
        ;; Elaborate options:
        (models (if (eq models :all)
-                   *known-models*
+                   *ready-models* ; *known-models*
                  (if (model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
@@ -3850,7 +3855,7 @@
   (b* ((wrld (w state))
        ;; Elaborate options:
        (models (if (eq models :all)
-                   *known-models*
+                   *ready-models* ; *known-models*
                  (if (model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
