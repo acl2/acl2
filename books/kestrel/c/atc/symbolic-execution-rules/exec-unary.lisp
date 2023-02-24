@@ -203,7 +203,6 @@
     :parents nil
     (b* ((fixtype (integer-type-to-fixtype type))
          (pred (pack fixtype 'p))
-         (value-kind-when-pred (pack 'value-kind-when- pred))
          (name (pack 'exec-indir-when- pred))
          (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                      (valuep x)
@@ -218,9 +217,8 @@
          (formula `(implies ,hyps
                             (equal (exec-unary op x compst)
                                    val)))
-         (hints `(("Goal" :in-theory '(exec-unary
-                                       indir-value
-                                       ,value-kind-when-pred))))
+         (hints `(("Goal" :in-theory (enable exec-unary
+                                             indir-value))))
          (event `(defruled ,name
                    ,formula
                    :hints ,hints)))
