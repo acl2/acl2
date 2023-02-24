@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,9 +26,8 @@
   :hints (("Goal" :in-theory (enable member-equal position-equal-ac))))
 
 (defthm position-equal-ac-under-iff
-  (implies acc
-           (iff (position-equal-ac item lst acc)
-                (member-equal item lst)))
+  (iff (position-equal-ac item lst acc)
+       (member-equal item lst))
   :hints (("Goal" :in-theory (enable position-equal-ac))))
 
 ;improve?
