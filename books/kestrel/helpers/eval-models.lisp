@@ -10,8 +10,8 @@
 
 (in-package "ACL2") ; todo: change to HELP package
 
-(include-book "replay-book-with-advice") ; todo: factour out common stuff
-(include-book "replay-books-with-advice") ; todo: factour out common stuff: clear-keys-with-matching-prefixes
+(include-book "replay-book-with-advice") ; todo: factor out common stuff
+(include-book "replay-books-with-advice") ; todo: factor out common stuff: clear-keys-with-matching-prefixes
 (include-book "advice")
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/axe/merge-sort-less-than" :dir :system) ; todo: move
