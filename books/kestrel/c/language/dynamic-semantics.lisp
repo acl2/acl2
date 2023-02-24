@@ -187,7 +187,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define indir-value ((val valuep) (compst compustatep))
-  :returns (resval value-resultp)
+  :returns (eval expr-value-resultp)
   :short "Apply @('*') to a value [C:6.5.3.2/2] [C:6.5.3.2/4]."
   :long
   (xdoc::topstring
@@ -195,27 +195,17 @@
     "The value must be a pointer.
      If the pointer is not valid, it is an error.
      Otherwise, we read the object designated by the object designator,
-     which is a value.
-     Note that we do not return the object designator,
-     because for now we only use this operation to read pointed-to values,
-     not to assign to them;
-     so returning the value, as in an lvalue conversion,
-     is appropriate for now.
-     However, if the value is an array,
-     we return its first element instead of the whole array;
-     all the other types of values are returned unchanged.
-     The reason for this special treatment of arrays is that
-     we need to do array-to-pointer conversion [C:6.3.2.1/3]."))
+     which is a value,
+     and we return it as an expression value,
+     taking the object designator from the pointer value."))
   (b* (((unless (value-case val :pointer))
         (error (list :non-pointer-dereference (value-fix val))))
        ((unless (value-pointer-validp val))
         (error (list :invalid-pointer-dereference (value-fix val))))
        (objdes (value-pointer->designator val))
-       (resval (read-object objdes compst))
-       ((when (errorp resval)) resval))
-    (if (value-case resval :array)
-        (value-array-read 0 resval)
-      resval))
+       (*val (read-object objdes compst))
+       ((when (errorp *val)) *val))
+    (make-expr-value :value *val :object objdes))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -225,7 +215,9 @@
   :short "Execute a unary operation."
   (unop-case op
              :address (error :todo)
-             :indir (indir-value arg compst)
+             :indir (b* ((eval (indir-value arg compst))
+                         ((when (errorp eval)) eval))
+                      (expr-value->value eval))
              :plus (plus-value arg)
              :minus (minus-value arg)
              :bitnot (bitnot-value arg)
