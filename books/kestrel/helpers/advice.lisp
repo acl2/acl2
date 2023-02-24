@@ -1,6 +1,6 @@
 ; A tool to get proof advice from a server over the web
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -344,6 +344,8 @@
 
 (defconst *ml-models-and-strings*
   '((:calpoly . "kestrel-calpoly")
+    (:calpoly-run10.0 . "calpoly-run10.0")
+    (:leidos-run10.0 . "leidos-run10.0")
     ;; note the capital L:
     (:leidos . "Leidos")
     (:leidos-gpt . "leidos-gpt")
@@ -357,6 +359,10 @@
           *ml-models-and-strings*))
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
+
+;;TODO: Update when ready
+(defconst *ready-models*
+  (remove-eq :leidos-run10.0 *known-models*))
 
 (defconst *extra-rec-sources*
   '(:enable :history))
@@ -1207,7 +1213,7 @@
          ((when erp)
           (er hard? 'parse-recommendation "Error (~x0) parsing recommended action: ~x1." erp object)
           (mv :parse-error nil state))
-         (name (concatenate 'string (model-to-nice-string source) (acl2::nat-to-string rec-num)))
+         (name (concatenate 'string (model-to-nice-string source) "[" (acl2::nat-to-string rec-num) "]"))
          )
       (mv nil ; no error
           (make-rec name type-keyword parsed-object confidence-percent book-map)
@@ -3643,7 +3649,7 @@
   (b* ((wrld (w state))
        ;; Elaborate options:
        (models (if (eq models :all)
-                   *known-models*
+                   *ready-models* ; *known-models*
                  (if (model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
@@ -3748,7 +3754,7 @@
   (b* ((wrld (w state))
        ;; Elaborate options:
        (models (if (eq models :all)
-                   *known-models*
+                   *ready-models* ; *known-models*
                  (if (model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
@@ -3849,7 +3855,7 @@
   (b* ((wrld (w state))
        ;; Elaborate options:
        (models (if (eq models :all)
-                   *known-models*
+                   *ready-models* ; *known-models*
                  (if (model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
