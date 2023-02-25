@@ -77,9 +77,11 @@
                   (equal valarr (exec-expr-pure arr compst))
                   (valuep valarr)
                   (equal valsub (exec-expr-pure (expr-arrsub->sub e) compst))
-                  (valuep valsub))
+                  (valuep valsub)
+                  (equal eval (exec-arrsub valarr valsub compst))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub valarr valsub compst)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-member
@@ -139,9 +141,13 @@
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :unary)
                   (equal val (exec-expr-pure (expr-unary->arg e) compst))
-                  (valuep val))
+                  (valuep val)
+                  (equal eval (exec-unary (expr-unary->op e)
+                                          (expr-value val nil)
+                                          compst))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-unary (expr-unary->op e) val compst)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-cast
@@ -346,8 +352,6 @@
 
   (defval *atc-exec-expr-pure-rules*
     '(exec-expr-pure-when-ident
-      expr-valuep-of-expr-value
-      expr-value->value-of-expr-value
       exec-expr-pure-when-const
       exec-expr-pure-when-arrsub
       exec-expr-pure-when-member
@@ -361,6 +365,8 @@
       exec-expr-pure-when-binary-logor
       sint-from-boolean-with-error-when-booleanp
       exec-expr-pure-when-cond
+      expr-valuep-of-expr-value
+      expr-value->value-of-expr-value
       (:e member-equal)
       (:e expr-kind)
       (:e expr-ident->get)
