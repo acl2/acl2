@@ -62,8 +62,7 @@ std::deflist).</p>"
     ;; It is disabled by default because true-listp is a common match;
     ;; it can be enabled where needed.
     (implies (symbol-listp x)
-             (true-listp x))
-    :rule-classes ((:rewrite :backchain-limit-lst 1)))
+             (true-listp x)))
 
   (defthm symbol-listp-of-remove-equal
     ;; BOZO probably add to deflist
