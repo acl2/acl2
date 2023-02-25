@@ -1,6 +1,6 @@
 ; A tool to get proof advice from a server over the web
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -91,7 +91,7 @@
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/untranslated-terms/conjuncts-of-uterm" :dir :system)
 (include-book "kestrel/alists-light/string-string-alistp" :dir :system)
-(include-book "kestrel/htclient/post" :dir :system) ; todo: slow
+(include-book "kestrel/htclient/post-light" :dir :system) ; todo: slow
 (include-book "kestrel/json-parser/parse-json" :dir :system)
 (include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages that might arise are known ; todo: very slow
 (include-book "tools/prove-dollar" :dir :system)
@@ -344,6 +344,8 @@
 
 (defconst *ml-models-and-strings*
   '((:calpoly . "kestrel-calpoly")
+    (:calpoly-run10.0 . "calpoly-run10.0")
+    (:leidos-run10.0 . "leidos-run10.0")
     ;; note the capital L:
     (:leidos . "Leidos")
     (:leidos-gpt . "leidos-gpt")
@@ -357,6 +359,10 @@
           *ml-models-and-strings*))
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
+
+;;TODO: Update when ready
+(defconst *ready-models*
+  (remove-eq :leidos-run10.0 *known-models*))
 
 (defconst *extra-rec-sources*
   '(:enable :history))
@@ -1207,7 +1213,7 @@
          ((when erp)
           (er hard? 'parse-recommendation "Error (~x0) parsing recommended action: ~x1." erp object)
           (mv :parse-error nil state))
-         (name (concatenate 'string (model-to-nice-string source) (acl2::nat-to-string rec-num)))
+         (name (concatenate 'string (model-to-nice-string source) "[" (acl2::nat-to-string rec-num) "]"))
          )
       (mv nil ; no error
           (make-rec name type-keyword parsed-object confidence-percent book-map)
@@ -2990,7 +2996,7 @@
                   :stobjs state))
   (b* ((- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
        ((mv erp post-response state)
-        (htclient::post server-url post-data state))
+        (htclient::post-light server-url post-data state))
        ((when erp)
         (cw "Error received from HTTP POST: ~x0.~%" erp)
         (mv erp nil state))
@@ -3643,7 +3649,7 @@
   (b* ((wrld (w state))
        ;; Elaborate options:
        (models (if (eq models :all)
-                   *known-models*
+                   *ready-models* ; *known-models*
                  (if (model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
@@ -3748,7 +3754,7 @@
   (b* ((wrld (w state))
        ;; Elaborate options:
        (models (if (eq models :all)
-                   *known-models*
+                   *ready-models* ; *known-models*
                  (if (model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
@@ -3849,7 +3855,7 @@
   (b* ((wrld (w state))
        ;; Elaborate options:
        (models (if (eq models :all)
-                   *known-models*
+                   *ready-models* ; *known-models*
                  (if (model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
