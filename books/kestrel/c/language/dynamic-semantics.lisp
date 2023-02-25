@@ -186,6 +186,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-address ((eval expr-valuep))
+  :returns (val value-resultp)
+  :short "Apply @('&') to an expression value [C:6.5.3.2/1] [C:6.5.3.2/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expression that the operator @('&') is applied to
+     must be an lvalue [C:6.5.3.2/1],
+     which in our formalization means that
+     we apply this operator to an expression value (returned by the lvalue).
+     The expression value must contain an object designator,
+     because otherwise the argument expression was not an lvalue.
+     We extract the object designator and we return a pointer value,
+     whose type is determined by the value in the expression value.")
+   (xdoc::p
+    "Here we formalize the actual application of @('&')
+     to the expression value returned by an expression.
+     We do not formalize here the fact that @('&*E') is the same as @('E')
+     in the sense in that case neither @('*') nor @('&') are evaluated
+     [C:6.5.3.2/4], whether the @('*') is explicit or implied by @('[]');
+     we formalize that elsewhere,
+     while here we assume that the argument expression of @('&')
+     has been evaluated (because the special cases above do not hold),
+     and the resulting expression value is passed here."))
+  (b* ((objdes (expr-value->object eval))
+       ((unless objdes)
+        (error (list :not-lvalue-result (expr-value-fix eval))))
+       (type (type-of-value (expr-value->value eval))))
+    (make-value-pointer :core (pointer-valid objdes)
+                        :reftype type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-indir ((val valuep) (compst compustatep))
   :returns (eval expr-value-resultp)
   :short "Apply @('*') to a value [C:6.5.3.2/2] [C:6.5.3.2/4]."
@@ -217,16 +251,14 @@
   (xdoc::topstring
    (xdoc::p
     "This ACL2 function takes and return an expression value.
-     All the currently supported unary operations (i.e. all except @('&'))
-     take a value, which we extract from the expression value;
-     when we add support for @('&'),
-     we will operate on the expression value's object designator instead.
-     The only unary operation that returns an expression value
-     with an object designator is @('*');
-     the others just return a value
-     (i.e. an expression value without object designator, in our model)."))
+     The only unary operator that needs an expression value
+     (as opposed to just a value) is @('&').
+     The only unary operator that returns an expression value
+     (as opposed to just a value) is @('*')."))
   (unop-case op
-             :address (error :todo)
+             :address (b* ((val (exec-address arg))
+                           ((when (errorp val)) val))
+                        (make-expr-value :value val :object nil))
              :indir (exec-indir (expr-value->value arg) compst)
              :plus (b* ((val (plus-value (expr-value->value arg)))
                         ((when (errorp val)) val))
