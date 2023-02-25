@@ -66,7 +66,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-iconst ((ic iconstp))
-  :returns (result value-resultp)
+  :returns (val value-resultp)
   :short "Execute an integer constant."
   :long
   (xdoc::topstring
@@ -127,7 +127,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-const ((c constp))
-  :returns (result value-resultp)
+  :returns (val value-resultp)
   :short "Execute a constant."
   :long
   (xdoc::topstring
@@ -143,7 +143,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-ident ((id identp) (compst compustatep))
-  :returns (result expr-value-resultp)
+  :returns (eval expr-value-resultp)
   :short "Execute a variable."
   :long
   (xdoc::topstring
