@@ -186,7 +186,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define indir-value ((val valuep) (compst compustatep))
+(define exec-indir ((val valuep) (compst compustatep))
   :returns (eval expr-value-resultp)
   :short "Apply @('*') to a value [C:6.5.3.2/2] [C:6.5.3.2/4]."
   :long
@@ -215,7 +215,7 @@
   :short "Execute a unary operation."
   (unop-case op
              :address (error :todo)
-             :indir (indir-value arg compst)
+             :indir (exec-indir arg compst)
              :plus (b* ((val (plus-value arg))
                         ((when (errorp val)) val))
                      (make-expr-value :value val :object nil))

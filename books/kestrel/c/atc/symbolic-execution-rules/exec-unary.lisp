@@ -218,7 +218,7 @@
                             (equal (exec-unary op x compst)
                                    (expr-value val objdes))))
          (hints `(("Goal" :in-theory (enable exec-unary
-                                             indir-value))))
+                                             exec-indir))))
          (event `(defruled ,name
                    ,formula
                    :hints ,hints)))
