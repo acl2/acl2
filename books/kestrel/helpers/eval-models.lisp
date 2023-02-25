@@ -16,7 +16,9 @@
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/axe/merge-sort-less-than" :dir :system) ; todo: move
 (include-book "kestrel/strings-light/upcase" :dir :system)
+(include-book "kestrel/lists-light/remove-nth" :dir :system)
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/make-list-ac" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -314,6 +316,153 @@
           (cdr hint)
         (hint-settings-for-goal-spec goal-spec (rest hints))))))
 
+(defund remove-settings-for-goal-spec (goal-spec hints)
+  (declare (xargs :guard (and (stringp goal-spec)
+                              (true-listp hints))))
+  (if (endp hints)
+      nil
+    (let ((hint (first hints)))
+      (if (and (consp hint)
+               (stringp (car hint))
+               (equal (string-upcase-gen goal-spec)
+                      (string-upcase-gen (car hint))))
+          (remove-settings-for-goal-spec goal-spec (rest hints))
+        (cons hint (remove-settings-for-goal-spec goal-spec (rest hints)))))))
+
+(defun num-ways-to-break-hint-setting (keyword val)
+  (declare (xargs :guard (keywordp keyword)))
+  (case keyword
+    (:by 1) ; can only remove the whole thing
+    (:cases 1) ; can only remove the whole thing
+    (:induct 1) ; can only remove the whole thing
+    (:nonlinearp 1) ; can only remove the whole thing
+    (:do-not (if (and (quotep val)
+                      (consp (cdr val)))
+                 ;; can remove each thing in the list:
+                 (len (unquote val))
+               1 ; can only remove the whole thing
+               ))
+    (:expand (len (acl2::desugar-expand-hint val)))
+    (:use (len (acl2::desugar-use-hint val)))
+    (:in-theory (if (or (call-of 'acl2::enable val)
+                        (call-of 'acl2::disable val))
+                    (len (fargs val))
+                  (if (call-of 'acl2::e/d val)
+                      (let ((lists (fargs val)))
+                        ;; Only mess with the first 2:
+                        (+ (if (< 0 (len lists)) (len (first lists)) 0)
+                           (if (< 1 (len lists)) (len (second lists)) 0)))
+                    ;; TODO: Handle enable*, disable*, and e/d*:
+                    1 ; can only remove the whole thing
+                    )))
+    (otherwise 0)))
+
+(defun num-ways-to-break-hint-settings (hint-settings)
+  (declare (xargs :guard (keyword-value-listp hint-settings)))
+  (if (endp hint-settings)
+      0
+    (let ((keyword (car hint-settings))
+          (val (cadr hint-settings)))
+      (+ (num-ways-to-break-hint-setting keyword val)
+         (num-ways-to-break-hint-settings (cddr hint-settings))))))
+
+;; n is 0-based and is known to be less than the number of ways to break the hint-setting.
+;; Returns (mv breakage-type result), where RESULT is a list (possibly nil) to be spliced into the hint settings, replacing the KEYWORD and VAL.
+(defun break-hint-setting-in-nth-way (n keyword val)
+  (declare (xargs :guard (and (natp n)
+                              (keywordp keyword)
+                              (< n (num-ways-to-break-hint-setting keyword val)))))
+  (case keyword
+    (:by (mv :remove-by nil))                 ; can only remove the whole thing
+    (:cases (mv :remove-cases nil))           ; can only remove the whole thing
+    (:induct (mv :remove-induct nil))         ; can only remove the whole thing
+    (:nonlinearp (mv :remove-nonlinearp nil)) ; can only remove the whole thing
+    (:do-not (if (and (quotep val)
+                      (consp (cdr val)))
+                 ;; remove one thing in the list:
+                 (mv :remove-do-not-item
+                     (list :do-not (kwote (remove-nth n (unquote val)))))
+               (mv :remove-do-not nil) ; can only remove the whole thing
+               ))
+    (:expand (mv :remove-expand-item
+                 (list :expand (remove-nth n (acl2::desugar-expand-hint val)))))
+    (:use (mv :remove-use-item
+              (list :use (remove-nth n (acl2::desugar-use-hint val)))))
+    (:in-theory (if (call-of 'acl2::enable val)
+                    (mv :remove-enable-item
+                        (list :in-theory `(,(ffn-symb val) ,@(remove-nth n (fargs val)))))
+                  (if (call-of 'acl2::disable val)
+                      (mv :remove-disable-item
+                          (list :in-theory `(,(ffn-symb val) ,@(remove-nth n (fargs val)))))
+                    (if (call-of 'acl2::e/d val)
+                        (let ((lists (fargs val)))
+                          (if (< n (len (first lists)))
+                              (mv :remove-enable-item ; or we could indicate it was in an e/d
+                                  (list :in-theory `(e/d ,(remove-nth n (first lists)) ,@(rest lists))))
+                            ;; Only mess with the first 2, so it must be in the second one:
+                            (mv :remove-disable-item ; or we could indicate it was in an e/d
+                                (list :in-theory `(e/d ,(first lists)
+                                                       ,(remove-nth (- n (len (first lists))) (second lists))
+                                                       ,@(rest (rest lists)))))))
+                      ;; TODO: Handle enable*, disable*, and e/d*:
+                      (mv :remove-in-theory
+                          nil) ; can only remove the whole thing
+                      ))))
+    (otherwise (mv :error (er hard 'break-hint-setting-in-nth-way "Unhandled case")))))
+
+;; Returns (mv breakage-type hint-settings).
+; n is 0-based
+(defun break-hint-settings-in-nth-way (n hint-settings)
+  (declare (xargs :guard (and (natp n)
+                              (keyword-value-listp hint-settings)
+                              (< n (num-ways-to-break-hint-settings hint-settings)))
+                  :measure (len hint-settings)))
+  (if (endp hint-settings)
+      (mv :error (er hard? 'break-hint-settings-in-nth-way "Ran out of hint settings!"))
+    (let ((keyword (car hint-settings))
+          (val (cadr hint-settings)))
+      (let ((ways (num-ways-to-break-hint-setting keyword val)))
+        (if (< n ways)
+            (mv-let (breakage-type result)
+              (break-hint-setting-in-nth-way n keyword val)
+              (mv breakage-type
+                  (append result (cddr hint-settings))))
+          (mv-let (breakage-type new-cddr)
+            (break-hint-settings-in-nth-way (- n ways) (cddr hint-settings))
+            (mv breakage-type
+                (cons keyword (cons val new-cddr)))))))))
+
+;; Returns (mv breakage-type hint-settings rand).
+(defun randomly-break-hint-settings (hint-settings rand)
+  (declare (xargs :guard (and (keyword-value-listp hint-settings)
+                              (minstd-rand0p rand))))
+  (let* ((total-ways (num-ways-to-break-hint-settings hint-settings)))
+    (if (not (posp total-ways))
+        (mv :none nil rand)
+      (let* ((breakage-num (mod rand total-ways))
+             (rand (minstd-rand0-next rand)))
+        (mv-let (breakage-type hint-settings)
+          (break-hint-settings-in-nth-way breakage-num hint-settings)
+          (mv breakage-type hint-settings rand))))))
+
+;; Returns (mv breakage-type hints rand).
+(defun randomly-break-hints (hints rand)
+  (declare (xargs :guard (and (true-listp hints)
+                              (minstd-rand0p rand))))
+  (let ((goal-hint-settings (hint-settings-for-goal-spec "Goal" hints)))
+    (if (not (keyword-value-listp goal-hint-settings))
+        (prog2$ (er hard? 'randomly-break-hints "Bad hint for Goal: ~x0" hints)
+                (mv :none nil rand))
+      (mv-let (breakage-type broken-hint-settings rand)
+        (randomly-break-hint-settings goal-hint-settings rand)
+        (if (eq :none breakage-type)
+            (mv :none nil rand)
+          (mv breakage-type
+              (cons (cons "Goal" broken-hint-settings)
+                    (remove-settings-for-goal-spec "Goal" hints) ; removal might not be necessary, due to shadowing
+                    )
+              rand))))))
+
 ;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
 ;; Returns (mv erp breakage-type trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
 ;; Here, trivialp means "no model was needed".
@@ -353,21 +502,27 @@
        (- (cw "(ADVICE: ~x0: " theorem-name))
        (- (cw "rand is ~x0.~%" rand))
        (rand (minstd-rand0-next rand))
-       ;; Ignores any given hints (for now):
-       (breakage-type :all-hints-removed)
-       (theorem-hints nil)
+       ;; Break the hints:
+       ((mv breakage-type broken-theorem-hints rand)
+        (randomly-break-hints theorem-hints rand))
+       ((when (eq :none breakage-type))
+        (cw "NOTE: No way to break hints: ~x0.~%" theorem-hints)
+        (mv nil ; no error
+            :not-attempted ; no breakage of hints possible (unless we consider breaking subgoal hints or computed hints)
+            t ; there were no Goal hints for us to try removing
+            nil rand state))
        ((mv erp provedp & checkpoint-clauses state)
         (help::try-proof-and-get-checkpoint-clauses theorem-name
                                                     theorem-body
                                                     (acl2::translate-term theorem-body 'eval-models-and-submit-defthm-event (w state))
-                                                    theorem-hints
+                                                    broken-theorem-hints
                                                     theorem-otf-flg ; or use nil ?
                                                     step-limit time-limit
                                                     t ; suppress-trivial-warningp
                                                     state))
        ((when erp) (mv erp nil nil nil rand state)))
     (if provedp
-        (b* ((- (cw "Trivial: no hints needed for ~x0)~%" theorem-name)) ;todo: tabulate these
+        (b* ((- (cw "Trivial: Broken hints worked for ~x0)~%" theorem-name)) ;todo: tabulate these
              ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
               (submit-event-helper-core `(skip-proofs ,defthm) print state))
              ((when erp) (mv erp nil nil nil rand state)))
@@ -377,11 +532,12 @@
               nil
               rand
               state))
+      ;; Breaking the hints did break he theorem, yielding checkpoints:
       (b* (((mv erp model-results state)
             (eval-models-on-checkpoints checkpoint-clauses
                                         theorem-name
                                         theorem-body
-                                        theorem-hints
+                                        broken-theorem-hints
                                         theorem-otf-flg
                                         num-recs-per-model
                                         current-book-absolute-path
