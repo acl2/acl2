@@ -210,22 +210,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-unary ((op unopp) (arg valuep) (compst compustatep))
+(define exec-unary ((op unopp) (arg expr-valuep) (compst compustatep))
   :returns (eval expr-value-resultp)
   :short "Execute a unary operation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This ACL2 function takes and return an expression value.
+     All the currently supported unary operations (i.e. all except @('&'))
+     take a value, which we extract from the expression value;
+     when we add support for @('&'),
+     we will operate on the expression value's object designator instead.
+     The only unary operation that returns an expression value
+     with an object designator is @('*');
+     the others just return a value
+     (i.e. an expression value without object designator, in our model)."))
   (unop-case op
              :address (error :todo)
-             :indir (exec-indir arg compst)
-             :plus (b* ((val (plus-value arg))
+             :indir (exec-indir (expr-value->value arg) compst)
+             :plus (b* ((val (plus-value (expr-value->value arg)))
                         ((when (errorp val)) val))
                      (make-expr-value :value val :object nil))
-             :minus (b* ((val (minus-value arg))
+             :minus (b* ((val (minus-value (expr-value->value arg)))
                          ((when (errorp val)) val))
                       (make-expr-value :value val :object nil))
-             :bitnot (b* ((val (bitnot-value arg))
+             :bitnot (b* ((val (bitnot-value (expr-value->value arg)))
                           ((when (errorp val)) val))
                        (make-expr-value :value val :object nil))
-             :lognot (b* ((val (lognot-value arg))
+             :lognot (b* ((val (lognot-value (expr-value->value arg)))
                           ((when (errorp val)) val))
                        (make-expr-value :value val :object nil)))
   :hooks (:fix))
@@ -600,7 +612,7 @@
      :predec (error (list :non-pure-expr e))
      :unary (b* ((arg (exec-expr-pure e.arg compst))
                  ((when (errorp arg)) arg)
-                 (eval (exec-unary e.op arg compst))
+                 (eval (exec-unary e.op (expr-value arg nil) compst))
                  ((when (errorp eval)) eval))
               (expr-value->value eval))
      :cast (b* ((arg (exec-expr-pure e.arg compst))
