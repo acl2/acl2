@@ -466,7 +466,10 @@
 ;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
 ;; Returns (mv erp breakage-type trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
 ;; Here, trivialp means "no model was needed".
-(defun eval-models-and-submit-defthm-event (defthm num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models rand state)
+(defun eval-models-and-submit-defthm-event (defthm num-recs-per-model current-book-absolute-path print debug step-limit time-limit
+                                             server-url
+                                             breakage-plan ; :all means remove all hints, :goal-partial means remove part of the "Goal" hint -- todo: add more options
+                                             models rand state)
   (declare (xargs :guard (and (natp num-recs-per-model)
                               (or (null current-book-absolute-path)
                                   (stringp current-book-absolute-path))
@@ -478,6 +481,7 @@
                                   (rationalp time-limit))
                               (or (null server-url)
                                   (stringp server-url))
+                              (member-eq breakage-plan '(:all :goal-partial))
                               (help::model-namesp models))
                   :mode :program
                   :stobjs state))
@@ -492,25 +496,40 @@
        ;;                 '(:rewrite)))
        ;; (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
        (theorem-hints (cadr (assoc-keyword :hints (cdddr defthm))))
-       ((when (or (null theorem-hints)
-                  (null (hint-settings-for-goal-spec "Goal" theorem-hints))))
+
+       ((when (null theorem-hints))
+        (cw "Skipping ~x0 since it has no hints to remove.~%" theorem-name)
+        (mv nil ; no error
+            :not-attempted ; no breakage of hints possible
+            t ; there were no hints (and we assume it proves without them)
+            nil rand state))
+
+       ((when (and (eq breakage-plan :goal-partial)
+                   (null (hint-settings-for-goal-spec "Goal" theorem-hints))))
         (cw "Skipping ~x0 since it has no hints on Goal.~%" theorem-name)
         (mv nil ; no error
-            :not-attempted ; no breakage of hints possible (unless we consider breaking subgoal hints or computed hints)
-            t ; either there were no hints (and we assumed it proves that way), or there were no Goal hints for us to try removing
+            :not-attempted ; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints)
+            t ; there were no Goal hints for us to try removing
             nil rand state))
-       (- (cw "(ADVICE: ~x0: " theorem-name))
-       (- (cw "rand is ~x0.~%" rand))
-       (rand (minstd-rand0-next rand))
+
        ;; Break the hints:
        ((mv breakage-type broken-theorem-hints rand)
-        (randomly-break-hints theorem-hints rand))
+        (if (eq breakage-plan :goal-partial)
+            (b* ((- (cw "Removing part of the Goal hint.~%"))
+                 ;; (- (cw "rand is ~x0.~%" rand))
+                 ((mv breakage-type broken-theorem-hints rand) (randomly-break-hints theorem-hints rand))
+                 (rand (minstd-rand0-next rand)))
+              (prog2$ (cw "Removing all the :hints.~%")
+                      (mv breakage-type broken-theorem-hints rand)))
+          (mv :all nil rand)))
+
        ((when (eq :none breakage-type))
         (cw "NOTE: No way to break hints: ~x0.~%" theorem-hints)
         (mv nil ; no error
             :not-attempted ; no breakage of hints possible (unless we consider breaking subgoal hints or computed hints)
-            t ; there were no Goal hints for us to try removing
+            t ; we found no way to break the hints, for some reason (maybe only an empty enable, or something like that)
             nil rand state))
+       (- (cw "(ADVICE: ~x0: " theorem-name))
        ((mv erp provedp & checkpoint-clauses state)
         (help::try-proof-and-get-checkpoint-clauses theorem-name
                                                     theorem-body
@@ -532,7 +551,7 @@
               nil
               rand
               state))
-      ;; Breaking the hints did break he theorem, yielding checkpoints:
+      ;; Breaking the hints did break the theorem, yielding checkpoints:
       (b* (((mv erp model-results state)
             (eval-models-on-checkpoints checkpoint-clauses
                                         theorem-name
@@ -563,7 +582,7 @@
 
 ;; Returns (mv erp result-alist rand state), where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 ;throws an error if any event fails
-(defun submit-events-and-eval-models (events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc rand state)
+(defun submit-events-and-eval-models (events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url breakage-plan models result-alist-acc rand state)
   (declare (xargs :guard (and (true-listp events)
                               (or (eq :all theorems-to-try)
                                   (symbol-listp theorems-to-try))
@@ -578,6 +597,7 @@
                                   (rationalp time-limit))
                               (or (null server-url)
                                   (stringp server-url))
+                              (member-eq breakage-plan '(:all :goal-partial))
                               (help::model-namesp models)
                               (alistp result-alist-acc))
                   :mode :program
@@ -592,7 +612,7 @@
           ;; It's a theorem for which we are to try advice:
           (b* ( ;; Try to prove it using advice:
                ((mv erp breakage-type trivialp model-results rand state)
-                (eval-models-and-submit-defthm-event event num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models rand state))
+                (eval-models-and-submit-defthm-event event num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url breakage-plan models rand state))
                (- (and erp (cw "ERROR (~x0) with advice attempt for event ~X12 (continuing...).~%" erp event nil))))
             (if erp
                 ;; If there is an error, the result is meaningless.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
@@ -601,7 +621,7 @@
                      ((when erp)
                       (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
                       (mv erp nil rand state)))
-                  (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc rand state))
+                  (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url breakage-plan models result-alist-acc rand state))
               (if trivialp
                   ;; If the theorem is trivial, no useful information is returned.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
                   (b* (((mv erp state)
@@ -609,9 +629,9 @@
                        ((when erp)
                         (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
                         (mv erp nil rand state)))
-                    (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc rand state))
+                    (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url breakage-plan models result-alist-acc rand state))
                 ;; No error, so count the result:
-                (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models
+                (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url breakage-plan models
                                                (acons (list current-book-absolute-path ; todo: use a relative path?
                                                             (cadr event) ; theorem-name
                                                             breakage-type)
@@ -628,7 +648,7 @@
               (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
               (mv erp nil rand state))
              (- (and (acl2::print-level-at-least-tp print) (cw "~x0~%" (shorten-event event)))))
-          (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models result-alist-acc rand state))))))
+          (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url breakage-plan models result-alist-acc rand state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -640,7 +660,7 @@
                             num-recs-per-model
                             print
                             debug step-limit time-limit
-                            server-url
+                            server-url breakage-plan
                             models
                             rand
                             state)
@@ -656,6 +676,7 @@
                                   (rationalp time-limit))
                               (or (null server-url)
                                   (stringp server-url))
+                              (member-eq breakage-plan '(:all :goal-partial))
                               (help::model-namesp models))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
@@ -692,7 +713,7 @@
        ((when erp) (mv erp (cons nil rand) state))
        ;; Submit all the events, trying advice for each defthm in theorems-to-try:
        ((mv erp result-alist rand state)
-        (submit-events-and-eval-models events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url models nil rand state))
+        (submit-events-and-eval-models events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url breakage-plan models nil rand state))
        ((when erp) ; I suppose we could return partial results from this book instead
         (cw "Error: ~x0.~%" erp)
         (mv erp (cons nil rand) state))
@@ -721,7 +742,7 @@
                                     num-recs-per-model
                                     print
                                     debug step-limit time-limit
-                                    server-url
+                                    server-url breakage-plan
                                     models
                                     done-book-count
                                     result-alist-acc ; a result-alist
@@ -738,6 +759,7 @@
                                   (rationalp time-limit))
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
+                              (member-eq breakage-plan '(:all :goal-partial))
                               (help::model-namesp models)
                               (alistp result-alist-acc)
                               (natp done-book-count))
@@ -759,7 +781,7 @@
                                              num-recs-per-model
                                              print
                                              debug step-limit time-limit
-                                             server-url
+                                             server-url breakage-plan
                                              models
                                              rand
                                              state)))
@@ -778,13 +800,13 @@
          ;;            (cw "ERROR           : ~x0~%~%" error-count)))
          )
       (eval-models-on-books-fn-aux (rest book-to-theorems-alist)
-                                   base-dir num-recs-per-model print debug step-limit time-limit server-url models done-book-count
+                                   base-dir num-recs-per-model print debug step-limit time-limit server-url breakage-plan models done-book-count
                                    result-alist-acc
                                    rand
                                    state))))
 
 ;; Returns (mv erp event state).
-(defun eval-models-on-books-fn (tests base-dir num-recs-per-model excluded-prefixes seed print debug step-limit time-limit server-url models num-tests state)
+(defun eval-models-on-books-fn (tests base-dir num-recs-per-model excluded-prefixes seed print debug step-limit time-limit server-url breakage-plan models num-tests state)
   (declare (xargs :guard (and (alistp tests)
                               (string-listp (strip-cars tests))
                               (symbol-listp (strip-cdrs tests))
@@ -801,6 +823,7 @@
                                   (rationalp time-limit))
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
+                              (member-eq breakage-plan '(:all :goal-partial))
                               (or (eq :all models)
                                   (help::model-namep models) ; special case for a single model
                                   (help::model-namesp models))
@@ -840,7 +863,7 @@
        (book-to-theorems-alist (shuffle-list2 book-to-theorems-alist rand))
        (rand (minstd-rand0-next rand))
        (- (cw "(Processing ~x0 tests in ~x1 books.)~%" num-tests (len book-to-theorems-alist))))
-    (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit server-url models 0 nil rand state)))
+    (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit server-url breakage-plan models 0 nil rand state)))
 
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
 ;; TODO: Record the sources of recs that work (note that names may get combined with /)?
@@ -855,6 +878,7 @@
                                 (excluded-prefixes 'nil) ; relative to BASE-DIR
                                 (seed ':random)
                                 (server-url 'nil) ; nil means get from environment var
+                                (breakage-plan ':goal-partial)
                                 (models ':all)    ; which ML models to use
                                 (num-tests ':all) ; how many books to evaluate (TODO: Better to chose a random subset of theorems, rather than books?)
                                 (print 'nil)
@@ -862,4 +886,4 @@
                                 (step-limit '10000)
                                 (time-limit '5)
                                 (num-recs-per-model '20))
-  `(make-event (eval-models-on-books-fn ,tests ,base-dir ,num-recs-per-model ,excluded-prefixes ,seed ,print ,debug ,step-limit ,time-limit ,server-url ,models ,num-tests state)))
+  `(make-event (eval-models-on-books-fn ,tests ,base-dir ,num-recs-per-model ,excluded-prefixes ,seed ,print ,debug ,step-limit ,time-limit ,server-url ,breakage-plan ,models ,num-tests state)))
