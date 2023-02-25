@@ -101,7 +101,7 @@
        )
     successful-attempt-percentage))
 
-;; Prints and computes
+;; Prints result and computes a success percentage alist.
 ;; RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 (defun show-model-evaluations-aux (models result-alist)
   (declare (xargs :mode :program)) ;todo
@@ -129,6 +129,8 @@
   (let ((alist (show-model-evaluations-aux models result-alist)))
     (prog2$ (cw "~%Current success percentages:~%")
             (show-success-percentages alist))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;Returns (mv erp first-working-rec-num-or-nil state).
 (defun try-recs-in-order (recs rec-num checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit state)
@@ -652,8 +654,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
-;; Returns (mv erp result-alist+rand state), where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
+;; Reads and then submits all the events in FILENAME, trying advice for the theorems indicated by THEOREMS-TO-TRY.
+;; Returns (mv erp result-alist+rand state), where RESULT-ALIST+RAND is a cons of RESULT-ALIST and RAND, and where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 ;; Since this returns an error triple, it can be wrapped in revert-world.
 (defun eval-models-on-book (filename ; the book, with .lisp extension, we should have already checked that it exists
                             theorems-to-try
