@@ -2818,7 +2818,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           (str (if (consp str) (cdr str) str)))
       (cond
        (*hard-error-is-error*
-        (hard-error-is-error ctx str alist))
+        (if (fboundp 'hard-error-is-error) ; for early in boot-strap
+            (hard-error-is-error ctx str alist)
+          (error "Error during ACL2 build in ctx ~s with string~%~s~%and ~
+                  alist~%~s"
+                 ctx str alist)))
        (t
         (when (not (and (f-get-global 'inhibit-er-hard state)
                         (member 'error
@@ -16083,6 +16087,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (cond
    ((null bindings) body)
+   ((not (symbol-doublet-listp bindings))
+
+; This this is a raw Lisp Function, it is reasonable to call error here rather
+; than to use (er hard ...).  This way we avoid depending on the value of
+; global *hard-error-is-error* for an error to be signaled.
+
+    (error "The first argument of state-free-global-let* must be a true ~%~
+            list of entries of the form (sym val) where sym is a symbol.~%~
+            The argument ~s is thus illegal."
+           bindings))
    (t (let (bs syms)
         (dolist (binding bindings)
           (let ((sym (global-symbol (car binding))))
@@ -16107,13 +16121,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the ACL2 loop; that's unimportant of course if this function is called only
 ; for side-effect or if body returns only one value.
 
-  `(if #-acl2-par *acl2-unwind-protect-stack* #+acl2-par nil
-       (with-live-state
-        (mv-let (erp val state)
-          (state-global-let* ,bindings (value ,body))
-          (declare (ignore erp state))
-          val))
-       (state-free-global-let* ,bindings ,body)))
+  (cond
+   ((not (symbol-doublet-listp bindings))
+; See comment at error call in state-free-global-let*.
+    (error "The first argument of state-free-global-let*-safe must be a ~%~
+            true list of entries of the form (sym val) where sym is a ~%~
+            symbol.  The argument ~s is thus illegal."
+           bindings))
+   (t `(if #-acl2-par *acl2-unwind-protect-stack* #+acl2-par nil
+           (with-live-state
+            (mv-let (erp val state)
+              (state-global-let* ,bindings (value ,body))
+              (declare (ignore erp state))
+              val))
+           (state-free-global-let* ,bindings ,body)))))
 
 ; With state-global-let* defined, we may now define a few more primitives and
 ; finish some unfinished business.

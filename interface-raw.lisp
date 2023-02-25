@@ -1198,24 +1198,31 @@
 
 (defun-one-output oneify-flet-bindings (alist fns w program-p)
 
-; We throw away all type declarations.  If we were to keep a type declaration
-; (satisfies fn), we would have to find it and convert it (at least in general)
-; to (satisfies *1*fn).  By ignoring such declarations, we may allow a function
-; to avoid a guard violation that we might have expected, for example:
-
-; (flet ((foo (x) (declare (type integer x)) x)) 'a)
-
-; This is however perfectly OK, provided we are clear that flet type
-; declarations are only relevant for guard verification, not guard checking.
+; We convert type declarations to THE forms, where the type (satisfies fn) is
+; converted to the type (satisfies *1*fn).
 
   (cond ((endp alist) nil)
         (t (cons (let* ((def (car alist))
-                        (dcls (append-lst
-                               (strip-cdrs (remove-strings (butlast (cddr def)
-                                                                    1)))))
+                        (dcls ; without the leading DECLARE
+                         (append-lst (strip-cdrs (remove-strings
+                                                  (butlast (cddr def) 1)))))
                         (ignore-vars (ignore-vars dcls))
+                        (guardian
+                         (conjoin-untranslated-terms
+                          (loop for dcl in dcls
+                                when (eq (car dcl) 'type)
+                                append
+                                (loop for var in (cddr dcl)
+                                      with pred = (cadr dcl)
+                                      collect
+                                      (oneify `(the ,pred ,var)
+                                              fns w program-p)))))
+                        (oneified-body0
+                         (oneify (car (last def)) fns w program-p))
                         (oneified-body
-                         (oneify (car (last def)) fns w program-p)))
+                         (if (eq guardian t)
+                             oneified-body0
+                           `(progn ,guardian ,oneified-body0))))
                    (list* (*1*-symbol (car def))
                           (cadr def)
                           (if ignore-vars
@@ -1967,6 +1974,15 @@
 
                 (eq (symbol-class fn wrld) :common-lisp-compliant)))
           (formals (cadr def))
+          (optimize-dcls (loop for tail on (cddr def)
+                               with tmp = nil
+                               do
+                               (if (null (cdr tail)) ; avoid the body
+                                   (return (reverse tmp))
+                                 (and (consp (car tail)) ; not a string
+                                      (loop for pair in (cdr (car tail))
+                                            when (eq (car pair) 'optimize)
+                                            do (push pair tmp))))))
           (boot-strap-p (f-get-global 'boot-strap-flg *the-live-state*)))
      (cond
       ((or (and guard-is-t cl-compliant-p-optimization)
@@ -2613,7 +2629,8 @@
 ;                 `((macrolet ((,*1*body-macro () ',*1*body))
 ;                     ,@*1*-body-forms))
 ;               *1*-body-forms)
-
+           ,@(and optimize-dcls
+                  `((declare ,@optimize-dcls)))
            ,@*1*-body-forms)))))))
 
 

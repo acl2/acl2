@@ -3486,6 +3486,8 @@
 
 (defun cltl-def-from-name2 (fn stobj-function axiomatic-p wrld)
 
+; Wrld is the event-index world for fn, a function symbol.
+
 ; Normally we expect to find the cltl definition of fn at the first
 ; 'cltl-command 'global-value triple.  But if fn is introduced by encapsulate
 ; then we may have to search further.  Try this, for example:
@@ -3493,7 +3495,7 @@
 ; (encapsulate ((f (x) x))
 ;              (local (defun f (x) x))
 ;              (defun g (x) (f x)))
-; (cltl-def-from-name 'f nil (w state))
+; (cltl-def-from-name 'f (w state))
 
   (cond ((endp wrld)
          nil)
