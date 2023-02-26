@@ -405,8 +405,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-member ((str valuep) (mem identp))
-  :returns (result value-resultp)
+(define exec-member ((str expr-valuep) (mem identp))
+  :returns (eval expr-value-resultp)
   :short "Execute a structure member expression."
   :long
   (xdoc::topstring
@@ -416,20 +416,22 @@
      The named member must be in the structure.
      The value associated to the member is returned.")
    (xdoc::p
-    "We ensure that the value is not an array.
-     In our current C model, we only use this ACL2 function
-     when executing pure expressions, where we return values.
-     In full C, expressions that evaluate to arrays
-     undergo array-pointer conversion,
-     but currently out model is not limited."))
-  (b* (((unless (value-case str :struct))
+    "If the structure expression value has an object designator,
+     we return an expression value with the object designator
+     obtained by adding the member to the one for the structure.
+     If there is no object designator in the input,
+     there is none in the output."))
+  (b* ((val-str (expr-value->value str))
+       ((unless (value-case val-str :struct))
         (error (list :mistype-member
                      :required :struct
-                     :supplied (type-of-value str))))
-       (val (value-struct-read mem str))
-       ((when (errorp val)) val)
-       ((when (value-case val :array)) (error :member-array-whole-read)))
-    val)
+                     :supplied (type-of-value val-str))))
+       (val-mem (value-struct-read mem val-str))
+       ((when (errorp val-mem)) val-mem)
+       (objdes-str (expr-value->object str))
+       (objdes-mem (and objdes-str
+                        (make-objdesign-member :super objdes-str :name mem))))
+    (make-expr-value :value val-mem :object objdes-mem))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -633,8 +635,10 @@
                     (expr-value->value eval))))
      :call (error (list :non-pure-expr e))
      :member (b* ((str (exec-expr-pure e.target compst))
-                  ((when (errorp str)) str))
-               (exec-member str e.name))
+                  ((when (errorp str)) str)
+                  (eval (exec-member (expr-value str nil) e.name))
+                  ((when (errorp eval)) eval))
+               (expr-value->value eval))
      :memberp (b* ((str (exec-expr-pure e.target compst))
                    ((when (errorp str)) str))
                 (exec-memberp str e.name compst))
