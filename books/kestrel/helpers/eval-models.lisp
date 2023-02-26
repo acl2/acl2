@@ -25,9 +25,60 @@
 
 ;; TODO: removing :add-hyp gets us less the requested number of recs sometimes!
 
+;; An indicator for a test, of the form (book-name theorem-name breakage-type).
+(defun test-infop (x)
+  (declare (xargs :guard t))
+  (and (true-listp x)
+       (= 3 (len x))
+       (stringp (first x))     ; book-name
+       (symbolp (second x))    ; theorem-name
+       (keywordp (third x)) ; breakage-type
+       ))
+
+(defun model-resultp (x)
+  (declare (xargs :guard t))
+  (and (true-listp x)
+       (= 4 (len x))
+       (member-eq (first x) help::*known-models*) ; model
+       (natp (second x)) ; total-num-recs
+       (or (null (third x)) ; first-working-rec-num-or-nil
+           (posp x))
+       (rationalp (fourth x)) ; time-to-find-first-working-rec
+       ))
+
+;; can be treated like an alist
+(defun model-result-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (null x)
+    (and (model-resultp (first x))
+         (model-result-listp (rest x)))))
+
+(defun result-alistp (alist)
+  (declare (xargs :guard t))
+  (if (atom alist)
+      (null alist)
+    (let ((entry (first alist)))
+      (and (consp entry)
+           (test-infop (car entry))
+           (model-result-listp (cdr entry))
+           (result-alistp (rest alist))))))
+
+(local (in-theory (disable natp)))
+(local (defthm natp-of-+ (implies (and (natp x) (natp y)) (natp (+ x y)))))
+
 ;;Returns (mv attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums total-recs-produced).
 (defun tabulate-resuls-for-model (model result-alist attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums-acc total-recs-produced)
-  (declare (xargs :mode :program)) ;todo
+  (declare (xargs :guard (and (keywordp model) ; todo: improve?
+                              (result-alistp result-alist)
+                              (natp attempt-count)
+                              (natp successful-attempt-count)
+                              (natp top-1-count)
+                              (natp top-10-count)
+                              (nat-listp successful-rec-nums-acc)
+                              (natp total-recs-produced))
+                  :verify-guards nil ; todo
+                  :guard-hints (("Goal" :expand (result-alistp result-alist)))))
   (if (endp result-alist)
       (mv attempt-count successful-attempt-count top-1-count top-10-count
           (merge-sort-< successful-rec-nums-acc)
@@ -54,6 +105,51 @@
                                      (+ total-recs total-recs-produced)
                                      ))))))
 
+;; Returns (mv successp num-recs-produced).
+(defun union-model-results (model-results successp num-recs-produced)
+  (declare (xargs :guard (and (model-result-listp model-results)
+                              (booleanp successp)
+                              (natp num-recs-produced))))
+  (if (endp model-results)
+      (mv successp num-recs-produced)
+    (let* ((model-result (first model-results))
+           (model-num-recs (second model-result))
+           (first-working-rec-num-or-nil (third model-result)))
+      (union-model-results (rest model-results)
+                           (or successp first-working-rec-num-or-nil)
+                           (+ num-recs-produced model-num-recs)))))
+
+(defthm natp-of-mv-nth-1-of-union-model-results
+  (implies (and (natp num-recs-produced)
+                (model-result-listp model-results))
+           (natp (mv-nth 1 (union-model-results model-results successp num-recs-produced))))
+  :hints (("Goal" :in-theory (enable union-model-results))))
+
+;; Tabulates results for a hypothetical model that combines all the models (if any can prove something, the union model can prove it).
+;;Returns (mv attempt-count successful-attempt-count total-recs-produced).
+(defun tabulate-resuls-for-union-model (result-alist
+                                        attempt-count
+                                        successful-attempt-count
+                                        ;; top-1-count top-10-count successful-rec-nums-acc
+                                        total-recs-produced)
+  (declare (xargs :guard (and (result-alistp result-alist)
+                              (natp attempt-count)
+                              (natp successful-attempt-count)
+                              (natp total-recs-produced))))
+;  (declare (xargs :mode :program)) ;todo
+  (if (endp result-alist)
+      (mv attempt-count successful-attempt-count total-recs-produced)
+    (b* ((result-entry (first result-alist))
+         (model-results (cdr result-entry))
+         ((when (not model-results))
+          (er hard? 'tabulate-resuls-for-union-model "No model results for test.")
+          (mv nil nil nil))
+         ((mv this-successp this-recs-produced) (union-model-results model-results nil 0)))
+      (tabulate-resuls-for-union-model (rest result-alist)
+                                       (+ 1 attempt-count)
+                                       (if this-successp (+ 1 successful-attempt-count) successful-attempt-count)
+                                       (+ total-recs-produced this-recs-produced)))))
+
 ;; todo: support rounding to hundredths
 (defun quotient-to-percent-string (numerator denominator)
   (declare (xargs :guard (and (rationalp numerator)
@@ -76,9 +172,7 @@
 ;; pads on the left!
 (defun symbol-to-left-padded-string-of-length (sym len)
   (declare (xargs :guard (and (symbolp sym)
-                              (natp len))
-;                  :verify-guards nil ; todo
-                  ))
+                              (natp len))))
   (let* ((str (symbol-name sym))
          (chars (coerce str 'list))
          (new-chars (if (<= len (len chars))
@@ -116,7 +210,7 @@
 (defun show-success-percentages (alist)
   (declare (xargs :guard (symbol-alistp alist)))
   (if (endp alist)
-      (cw "~%")
+      nil
     (let* ((pair (first alist))
            (model (car pair))
            (percent-string (cdr pair)))
@@ -126,9 +220,18 @@
 ;; RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 (defun show-model-evaluations (models result-alist)
   (declare (xargs :mode :program)) ;todo
-  (let ((alist (show-model-evaluations-aux models result-alist)))
-    (prog2$ (cw "~%Current success percentages:~%")
-            (show-success-percentages alist))))
+  (b* ((alist (show-model-evaluations-aux models result-alist)) ; print a lot
+       (- (cw "~%Current success percentages:~%"))
+       (- (show-success-percentages alist)) ; for each model
+       ;; Now the combined results:
+       (- (cw "~%Combined results:~%"))
+       ((mv combined-attempt-count combined-successful-attempt-count combined-total-recs-produced) (tabulate-resuls-for-union-model result-alist 0 0 0))
+       (combined-successful-attempt-percentage (quotient-to-percent-string combined-successful-attempt-count combined-attempt-count))
+       (- (cw " Attempts: ~x0~%" combined-attempt-count))
+       (- (cw " Successes: ~x0 (~s1%)~%" combined-successful-attempt-count combined-successful-attempt-percentage))
+       (- (cw " Total recs procued: ~x0~%" combined-total-recs-produced))
+       (- (cw "~%")))
+    nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -368,12 +471,15 @@
       (+ (num-ways-to-break-hint-setting keyword val)
          (num-ways-to-break-hint-settings (cddr hint-settings))))))
 
+(local (in-theory (enable natp))) ;todo
+
 ;; n is 0-based and is known to be less than the number of ways to break the hint-setting.
 ;; Returns (mv breakage-type result), where RESULT is a list (possibly nil) to be spliced into the hint settings, replacing the KEYWORD and VAL.
 (defun break-hint-setting-in-nth-way (n keyword val)
   (declare (xargs :guard (and (natp n)
                               (keywordp keyword)
-                              (< n (num-ways-to-break-hint-setting keyword val)))))
+                              (< n (num-ways-to-break-hint-setting keyword val)))
+                  :guard-hints (("Goal" :in-theory (enable natp)))))
   (case keyword
     (:by (mv :remove-by nil))                 ; can only remove the whole thing
     (:cases (mv :remove-cases nil))           ; can only remove the whole thing
@@ -521,9 +627,10 @@
                  ;; (- (cw "rand is ~x0.~%" rand))
                  ((mv breakage-type broken-theorem-hints rand) (randomly-break-hints theorem-hints rand))
                  (rand (minstd-rand0-next rand)))
-              (prog2$ (cw "Removing all the :hints.~%")
-                      (mv breakage-type broken-theorem-hints rand)))
-          (mv :all nil rand)))
+              (mv breakage-type broken-theorem-hints rand))
+          ;; breakage-plan must be :all:
+          (prog2$ (cw "Removing all the :hints.~%")
+                  (mv :all nil rand))))
 
        ((when (eq :none breakage-type))
         (cw "NOTE: No way to break hints: ~x0.~%" theorem-hints)
