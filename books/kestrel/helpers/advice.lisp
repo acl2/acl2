@@ -3000,7 +3000,7 @@
        ((mv erp post-response state)
         (htclient::post-light server-url post-data state))
        ((when erp)
-        (cw "Error received from HTTP POST: ~x0.~%" erp)
+        (cw "~%Error received from HTTP POST:~%~@0.~%" erp)
         (mv erp nil state))
        (- (and debug (cw "Raw POST response: ~X01~%" post-response nil)))
        ;; Parse the JSON:
