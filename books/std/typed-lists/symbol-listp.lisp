@@ -49,12 +49,20 @@ std::deflist).</p>"
     ;; Set :parents to nil to avoid overwriting the built-in ACL2 documentation
     :parents nil)
 
-  (defthm true-listp-when-symbol-listp-rewrite
+  (defthm true-listp-when-symbol-listp-rewrite-backchain-1
     ;; The deflist gives us a compound-recognizer, but in this case having a
     ;; rewrite rule seems worth it.
+    ;; We limit backchaining, because true-listp is a common match.
     (implies (symbol-listp x)
              (true-listp x))
     :rule-classes ((:rewrite :backchain-limit-lst 1)))
+
+  (defthmd true-listp-when-symbol-listp-rewrite
+    ;; This is a rewrite rule without backchaining limit, unlike the one above.
+    ;; It is disabled by default because true-listp is a common match;
+    ;; it can be enabled where needed.
+    (implies (symbol-listp x)
+             (true-listp x)))
 
   (defthm symbol-listp-of-remove-equal
     ;; BOZO probably add to deflist

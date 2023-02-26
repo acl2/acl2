@@ -16293,9 +16293,7 @@
 ; First, let's give some names here to the relevant worlds.
 
 ;   cert-wrld: the certification world, which includes local portcullis events
-;     (i.e., they were actually executed).  [I've added a to-do item near the
-;     top of patch.lsp to consider the case that ld-skip-proofsp was used
-;     during construction of cert-wrld.]
+;     (i.e., they were actually executed).
 
 ;   rollback-wrld: the world immediately after rollback, which will be a proper
 ;     initial segment of cert-wrld when there are any local portcullis events,
@@ -30882,6 +30880,12 @@
 ; the macro channel-to-string.  The values for the margins are simply
 ; convenient large values.
 
+; Warning: If any supplied third component must be what is called during
+; cleanup for state-global-let*, think about the effect of not using it when
+; calling state-free-global-let* instead, as is done in channel-to-string.  As
+; of this writing in Feb. 2023, that can only matter for iprint-ar, but
+; channel-to-string disables iprinting so that doesn't matter after all.
+
   (append *print-control-defaults*
           `((write-for-read t)
             (fmt-hard-right-margin ,*fmt-hard-right-margin-default*
@@ -30908,10 +30912,13 @@
   '(iprint-ar
     evisc-hitp-without-iprint))
 
-(defun fmt-control-bindings1 (alist fmt-control-defaults-tail)
+(defun fmt-control-bindings1 (alist fmt-control-defaults-tail rawp)
 
 ; Alist is a variable whose value is an alist used to modify
 ; fmt-control-defaults-tail, which is a tail of *fmt-control-defaults*.
+
+; Rawp is true when we are to construct doublets only, typically for a call of
+; state-free-global-let* instead of a call of state-global-let*.
 
   (cond ((endp fmt-control-defaults-tail) nil)
         (t
@@ -30928,14 +30935,30 @@
                                           ',var))
                                     (t '(cdr pair))))
                                  (t ,(cadr trip))))
-                        (cddr trip)))
+                        (and (null rawp)
+                             (cddr trip))))
                (fmt-control-bindings1 alist
-                                      (cdr fmt-control-defaults-tail))))))
+                                      (cdr fmt-control-defaults-tail)
+                                      rawp)))))
 
-(defun fmt-control-bindings (alist)
-  (cond (alist (fmt-control-bindings1 alist *fmt-control-defaults*))
-        (t ; optimization
-         *fmt-control-defaults*)))
+(defun drop-cddrs (lst)
+  (declare (xargs :guard (true-list-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (list (caar lst) (cadar lst))
+                 (drop-cddrs (cdr lst))))))
+
+(defconst *fmt-control-defaults-raw*
+  (drop-cddrs *fmt-control-defaults*))
+
+(defun fmt-control-bindings (alist rawp)
+
+; Rawp is true when we are to construct doublets only, typically for a call of
+; state-free-global-let* instead of a call of state-global-let*.
+
+  (cond (alist (fmt-control-bindings1 alist *fmt-control-defaults* rawp))
+; optimizations:
+        (rawp *fmt-control-defaults-raw*)
+        (t *fmt-control-defaults*)))
 
 (defun set-iprint-ar (iprint-ar state)
 
@@ -31057,13 +31080,15 @@
 ; We disable iprinting because the iprint index values won't be available to
 ; the user anyhow when exiting the state-(free-)global-let* forms below.  And
 ; indeed they should not be available, since the state being modified here is
-; supposed to be a local state.
+; supposed to be a local state.  A nice consequence of disabling iprinting is
+; that it supports our use here of state-free-global-let*, as discussed in a
+; comment in *fmt-control-defaults*.
 
           (cond
            (outside-loop-p
             `(unwind-protect
                  (state-free-global-let*
-                  ,(fmt-control-bindings fmt-controls)
+                  ,(fmt-control-bindings fmt-controls t)
                   (progn (disable-iprint-ar state)
                          ,body0))
                (when (open-output-channel-p ,channel-var :character state)
@@ -31076,7 +31101,7 @@
 
               "channel-to-string"
               (state-global-let*
-               ,(fmt-control-bindings fmt-controls)
+               ,(fmt-control-bindings fmt-controls nil)
                (pprogn (mv-let (result state)
                          (disable-iprint-ar state)
                          (declare (ignore result))

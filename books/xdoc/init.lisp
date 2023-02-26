@@ -19,13 +19,13 @@
 ; We could use "depends-on", but we might as well simply include the books that
 ; xdoc::colon-xdoc-init will be including.
 
+; WARNING: Do not comment out any of these include-book forms!  It is important
+; that these books be certified before the call of xdoc::colon-xdoc-init is
+; made below during certification of the present book.
+
 (include-book "xdoc/defxdoc-raw" :dir :system :ttags :all)
 (include-book "xdoc/topics" :dir :system)
-; Matt K. commented out the next include-book 2/2023 because it didn't seem
-; necessary and it caused unnecessary recertification when
-; system/doc/acl2-doc.lisp changes.  If you restore this include-book, please
-; explain the purpose that it serves.
-; (include-book "system/doc/acl2-doc-wrap" :dir :system)
+(include-book "system/doc/acl2-doc-wrap" :dir :system)
 (include-book "xdoc/display" :dir :system :ttags :all)
 
 (xdoc::colon-xdoc-init)
