@@ -116,9 +116,9 @@
              (formula-member
               `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
                              (,recognizer struct))
-                        (equal (exec-member struct
+                        (equal (exec-member (expr-value struct nil)
                                             (ident ,(ident->name memname)))
-                               (,reader struct))))
+                               (expr-value (,reader struct) nil))))
              (formula-memberp
               `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                              (valuep ptr)
@@ -137,6 +137,9 @@
              (value-kind-when-typep (pack 'value-kind-when-
                                           (integer-type-to-fixtype type)
                                           'p))
+             (valuep-when-typep (pack 'valuep-when-
+                                      (integer-type-to-fixtype type)
+                                      'p))
              (hints `(("Goal"
                        :in-theory
                        '(exec-member
@@ -150,7 +153,13 @@
                          ,fixer-recognizer-thm
                          value-struct-read
                          ,value-kind-when-typep
-                         (:e ident)))))
+                         (:e ident)
+                         expr-value->value-of-expr-value
+                         expr-value->object-of-expr-value
+                         value-fix-when-valuep
+                         not-errorp-when-valuep
+                         ,valuep-when-typep
+                         (:e c::objdesign-option-fix)))))
              ((mv event-member &)
               (evmac-generate-defthm thm-member-name
                                      :formula formula-member

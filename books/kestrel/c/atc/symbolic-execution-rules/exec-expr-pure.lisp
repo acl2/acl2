@@ -60,7 +60,6 @@
                     (expr-value->value eval)))
     :enable exec-expr-pure)
 
-
   (defruled exec-expr-pure-when-const
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :const))
@@ -88,9 +87,12 @@
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :member)
                   (equal val (exec-expr-pure (expr-member->target e) compst))
-                  (valuep val))
+                  (valuep val)
+                  (equal eval (exec-member (expr-value val nil)
+                                           (expr-member->name e)))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-member val (expr-member->name e))))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-memberp
