@@ -425,7 +425,7 @@
   (objdesign-case objdes
                   :static (address 0)
                   :auto (address 0)
-                  :address objdes.get
+                  :alloc objdes.get
                   :element (objdesign->base-address objdes.super)
                   :member (objdesign->base-address objdes.super))
   :measure (objdesign-count objdes)
@@ -1482,8 +1482,8 @@
                             (compst compustatep))
     :returns (yes/no booleanp)
     :parents nil
-    (b* (((unless (objdesign-case objdes :address)) nil)
-         (addr (objdesign-address->get objdes))
+    (b* (((unless (objdesign-case objdes :alloc)) nil)
+         (addr (objdesign-alloc->get objdes))
          (heap (compustate->heap compst))
          (addr+obj (omap::in addr heap))
          ((unless (consp addr+obj)) nil)
@@ -1527,7 +1527,7 @@
 
   (defruled write-object-okp-of-update-object-same
     (implies
-     (equal (objdesign-kind objdes) :address)
+     (equal (objdesign-kind objdes) :alloc)
      (equal (write-object-okp objdes val (update-object objdes val2 compst))
             (equal (type-of-value val)
                    (type-of-value val2))))
@@ -1547,7 +1547,7 @@
 
   (defruled write-object-okp-when-valuep-of-read-object
     (implies (and (syntaxp (symbolp compst))
-                  (equal (objdesign-kind objdes) :address)
+                  (equal (objdesign-kind objdes) :alloc)
                   (equal old-val (read-object objdes compst))
                   (valuep old-val))
              (equal (write-object-okp objdes val compst)
@@ -1653,7 +1653,7 @@
              read-static-var))
 
   (defruled read-object-of-update-var
-    (implies (objdesign-case objdes :address)
+    (implies (objdesign-case objdes :alloc)
              (equal (read-object objdes (update-var var val compst))
                     (read-object objdes compst)))
     :enable (update-var
@@ -1663,7 +1663,7 @@
              read-static-var))
 
   (defruled read-object-of-update-object-same
-    (implies (equal (objdesign-kind objdes) :address)
+    (implies (equal (objdesign-kind objdes) :alloc)
              (equal (read-object objdes (update-object objdes val compst))
                     (value-fix val)))
     :enable (read-object
@@ -1819,7 +1819,7 @@
   (defruled update-object-of-read-object-same
     (implies (and (syntaxp (symbolp compst))
                   (compustatep compst1)
-                  (equal (objdesign-kind objdes) :address)
+                  (equal (objdesign-kind objdes) :alloc)
                   (valuep (read-object objdes compst))
                   (equal (read-object objdes compst)
                          (read-object objdes compst1)))

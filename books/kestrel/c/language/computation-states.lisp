@@ -859,7 +859,7 @@
    objdes
    :static (read-static-var objdes.name compst)
    :auto (error (list :read-auto-obj-not-supported))
-   :address
+   :alloc
    (b* ((addr objdes.get)
         (heap (compustate->heap compst))
         (addr+obj (omap::in addr heap))
@@ -921,7 +921,7 @@
    objdes
    :static (write-static-var objdes.name val compst)
    :auto (error (list :read-auto-obj-not-supported))
-   :address
+   :alloc
    (b* ((addr objdes.get)
         (heap (compustate->heap compst))
         (addr+obj (omap::in addr heap))
