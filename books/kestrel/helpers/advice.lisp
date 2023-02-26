@@ -345,7 +345,8 @@
 (defconst *ml-models-and-strings*
   '((:calpoly . "kestrel-calpoly")
     (:calpoly-run10.0 . "calpoly-run10.0")
-    (:leidos-run10.0 . "leidos-run10.0")
+    ;; note the capital L and underscores:
+    (:leidos-run10.0 . "Leidos_run10_0")
     ;; note the capital L:
     (:leidos . "Leidos")
     (:leidos-gpt . "leidos-gpt")
@@ -360,9 +361,10 @@
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
 
-;;TODO: Update when ready
+;;TODO: Ask the server for the list?
 (defconst *ready-models*
-  (remove-eq :leidos-run10.0 *known-models*))
+  *known-models* ; (remove-eq :leidos-run10.0 *known-models*)
+  )
 
 (defconst *extra-rec-sources*
   '(:enable :history))
@@ -2188,7 +2190,10 @@
                   :stobjs state
                   :mode :program)
            (ignore theorem-name))
-  (b* ((translatablep (acl2::translatable-termp hyp (w state)))
+  (b* (((when (eq hyp 'acl2::unknown/untrained)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not adding hyp: ~x0)~%" hyp))
+        (mv nil nil state))
+       (translatablep (acl2::translatable-termp hyp (w state)))
        ((when (not translatablep))
         (and (acl2::print-level-at-least-tp print) (cw "fail (hyp not translatable: ~x0)~%" hyp)) ;; TTODO: Include any necessary books first
         (mv nil nil state))
@@ -2265,7 +2270,10 @@
                               )
                   :stobjs state :mode :program))
   (b* (((when (eq rule 'acl2::other)) ;; "Other" is a catch-all for low-frequency classes
-        (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling catch-all: ~x0)~%" rule))
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not enabling catch-all: ~x0)~%" rule))
+        (mv nil nil state))
+       ((when (eq rule 'acl2::unknown/untrained)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not enabling: ~x0)~%" rule))
         (mv nil nil state))
        ((when (keywordp rule))
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not enabling unsupported item: ~x0)~%" rule)) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
@@ -2408,6 +2416,9 @@
   (b* (((when (eq rule 'acl2::other)) ;; "Other" is a catch-all for low-frequency classes
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling catch-all: ~x0)~%" rule))
         (mv nil nil state))
+       ((when (eq rule 'acl2::unknown/untrained)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling: ~x0)~%" rule))
+        (mv nil nil state))
        ((when (keywordp rule))
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling unsupported item: ~x0)~%" rule)) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
         (mv nil nil state))
@@ -2461,6 +2472,9 @@
                   :mode :program))
   (b* (((when (eq item 'acl2::other))
         (and (acl2::print-level-at-least-tp print) (cw "skip (skipping catch-all: ~x0)~%" item))
+        (mv nil nil state))
+       ((when (eq item 'acl2::unknown/untrained)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not :use-ing ~x0)~%" item))
         (mv nil nil state))
        ((when (not (symbolp item))) ; for now
         (and (acl2::print-level-at-least-tp print) (cw "skip (unexpected object for :add-use-hint: ~x0)~%" item)) ; todo: add support for other lemma-instances
@@ -2550,12 +2564,15 @@
   (b* (((when (eq 'acl2::other item))
         (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring recommendation to expand \"Other\")~%"))
         (mv nil nil state))
+       ((when (eq 'acl2::unknown/untrained item)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not :expand-ing ~x0)~%" item))
+        (mv nil nil state))
        ((when (symbolp item)) ; todo: eventually remove this case
         (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring illegal recommendation to expand a symbol)~%"))
         (mv nil nil state))
        ;; todo: can it be a single term?:
        ((when (not (acl2::translatable-term-listp item (w state))))
-        (and (acl2::print-level-at-least-tp print) (cw "fail (term not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
+        (and (acl2::print-level-at-least-tp print) (cw "fail (terms not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; todo: ensure this is nice:
        (new-hints (acl2::merge-hint-setting-into-goal-hint :expand item theorem-hints))
@@ -2601,6 +2618,9 @@
   (b* (((when (eq 'acl2::other item))
         (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :by hint with catch-all \"Other\")~%"))
         (mv nil nil state))
+       ((when (eq 'acl2::unknown/untrained item)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :by hint with ~x0)~%" item))
+        (mv nil nil state))
        ((when (not (symbolp item)))
         (and (acl2::print-level-at-least-tp print) (cw "fail (unexpected :by hint: ~x0)~%" item))
         (mv nil nil state))
@@ -2645,8 +2665,14 @@
                   :stobjs state
                   :mode :program)
            (ignore theorem-name))
-  (b* (((when (not (acl2::translatable-term-listp item (w state))))
-        (and (acl2::print-level-at-least-tp print) (cw "fail (terms not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
+  (b* (((when (eq 'acl2::unknown/untrained item))
+        (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :cases hint with ~x0)~%" item))
+        (mv nil nil state))
+       ((when (not (true-listp item)))
+        (and (acl2::print-level-at-least-tp print) (cw "fail (:cases not a true list: ~x0)~%" item))
+        (mv nil nil state))
+       ((when (not (acl2::translatable-term-listp item (w state))))
+        (and (acl2::print-level-at-least-tp print) (cw "fail (:cases not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; todo: ensure this is nice:
        (new-hints (acl2::merge-hint-setting-into-goal-hint :cases item theorem-hints))
@@ -2689,7 +2715,10 @@
                           )
                   :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (((when (not (booleanp item)))
+  (b* (((when (eq item 'acl2::unknown/untrained)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not adding :nonlinearp hint of ~x0)~%" item))
+        (mv nil nil state))
+       ((when (not (booleanp item)))
         (and print (cw "WARNING: Invalid value for :nonlinearp: ~x0.~%" item))
         (mv nil nil state) ; or we could return erp=t here
         )
@@ -2726,7 +2755,10 @@
                           )
                   :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* ( ;; Can't easily check the :do-not hint syntactically...
+  (b* (((when (eq 'acl2::unknown/untrained item)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :do-not hint with ~x0)~%" item))
+        (mv nil nil state))
+       ;; Can't easily check the :do-not hint syntactically...
        ;; todo: ensure this is nice:
        (new-hints (acl2::merge-hint-setting-into-goal-hint :do-not item theorem-hints))
        ((mv provedp state) (prove$-no-error 'try-add-do-not-hint
@@ -2761,12 +2793,15 @@
                           )
                   :stobjs state :mode :program)
            (ignore theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec))
-  (if (symbolp item)
-      ;; TODO: Try looking for calls of the given symbol in the theorem (maybe just with arguments that are vars?):
-      (prog2$ (and (acl2::print-level-at-least-tp print) (cw "skip (need arguments of ~x0 to create :induct hint)~%" item))
-              (mv nil nil state))
-    ;; TODO: Flesh this out when ready:
-    (mv :unsupported-induct-hint nil state)))
+  (b* (((when (eq 'acl2::unknown/untrained item)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :induct hint with ~x0)~%" item))
+        (mv nil nil state)))
+    (if (symbolp item)
+        ;; TODO: Try looking for calls of the given symbol in the theorem (maybe just with arguments that are vars?):
+        (prog2$ (and (acl2::print-level-at-least-tp print) (cw "skip (need arguments of ~x0 to create :induct hint)~%" item))
+                (mv nil nil state))
+      ;; TODO: Flesh this out when ready:
+      (mv :unsupported-induct-hint nil state))))
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-exact-hints (hints theorem-body theorem-otf-flg step-limit time-limit rec print state)
@@ -2998,7 +3033,7 @@
        ((mv erp post-response state)
         (htclient::post-light server-url post-data state))
        ((when erp)
-        (cw "Error received from HTTP POST: ~x0.~%" erp)
+        (cw "~%Error received from HTTP POST:~%~@0.~%" erp)
         (mv erp nil state))
        (- (and debug (cw "Raw POST response: ~X01~%" post-response nil)))
        ;; Parse the JSON:
@@ -3263,10 +3298,11 @@
                 (mv :bad-server-response nil state)))
             (mv nil (acl2::parsed-json-array->values parsed-response) state))))
        ((when erp) (mv erp nil state))
-       (- (and (not (consp semi-parsed-recommendations))
-               (cw "~% WARNING: No recommendations returned from server.~%")))
-       (- (and (not (equal num-recs (len semi-parsed-recommendations)))
-               (cw "~% WARNING: Number of recs returned from server is ~x0 but we requested ~x1.~%" (len semi-parsed-recommendations) num-recs)))
+       (- (if (not (consp semi-parsed-recommendations))
+              (cw "~% WARNING: No recommendations returned from server for ~x0.~%" model)
+            (if (not (equal num-recs (len semi-parsed-recommendations)))
+                (cw "~% WARNING: Number of recs returned from server for ~x0 is ~x1 but we requested ~x2.~%" model (len semi-parsed-recommendations) num-recs)
+              nil)))
        ;; Parse the individual strings in the recs:
        ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
        ((when erp)
