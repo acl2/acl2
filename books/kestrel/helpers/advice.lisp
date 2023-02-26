@@ -345,7 +345,8 @@
 (defconst *ml-models-and-strings*
   '((:calpoly . "kestrel-calpoly")
     (:calpoly-run10.0 . "calpoly-run10.0")
-    (:leidos-run10.0 . "leidos-run10.0")
+    ;; note the capital L and underscores:
+    (:leidos-run10.0 . "Leidos_run10_0")
     ;; note the capital L:
     (:leidos . "Leidos")
     (:leidos-gpt . "leidos-gpt")
@@ -360,9 +361,10 @@
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
 
-;;TODO: Update when ready
+;;TODO: Ask the server for the list?
 (defconst *ready-models*
-  (remove-eq :leidos-run10.0 *known-models*))
+  *known-models* ; (remove-eq :leidos-run10.0 *known-models*)
+  )
 
 (defconst *extra-rec-sources*
   '(:enable :history))
@@ -2998,7 +3000,7 @@
        ((mv erp post-response state)
         (htclient::post-light server-url post-data state))
        ((when erp)
-        (cw "Error received from HTTP POST: ~x0.~%" erp)
+        (cw "~%Error received from HTTP POST:~%~@0.~%" erp)
         (mv erp nil state))
        (- (and debug (cw "Raw POST response: ~X01~%" post-response nil)))
        ;; Parse the JSON:
@@ -3263,10 +3265,11 @@
                 (mv :bad-server-response nil state)))
             (mv nil (acl2::parsed-json-array->values parsed-response) state))))
        ((when erp) (mv erp nil state))
-       (- (and (not (consp semi-parsed-recommendations))
-               (cw "~% WARNING: No recommendations returned from server.~%")))
-       (- (and (not (equal num-recs (len semi-parsed-recommendations)))
-               (cw "~% WARNING: Number of recs returned from server is ~x0 but we requested ~x1.~%" (len semi-parsed-recommendations) num-recs)))
+       (- (if (not (consp semi-parsed-recommendations))
+              (cw "~% WARNING: No recommendations returned from server for ~x0.~%" model)
+            (if (not (equal num-recs (len semi-parsed-recommendations)))
+                (cw "~% WARNING: Number of recs returned from server for ~x0 is ~x1 but we requested ~x2.~%" model (len semi-parsed-recommendations) num-recs)
+              nil)))
        ;; Parse the individual strings in the recs:
        ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
        ((when erp)
