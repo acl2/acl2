@@ -2647,8 +2647,11 @@
                   :stobjs state
                   :mode :program)
            (ignore theorem-name))
-  (b* (((when (not (acl2::translatable-term-listp item (w state))))
-        (and (acl2::print-level-at-least-tp print) (cw "fail (terms not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
+  (b* (((when (not (true-listp item)))
+        (and (acl2::print-level-at-least-tp print) (cw "fail (:cases not a true list: ~x0)~%" item))
+        (mv nil nil state))
+       ((when (not (acl2::translatable-term-listp item (w state))))
+        (and (acl2::print-level-at-least-tp print) (cw "fail (:cases not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; todo: ensure this is nice:
        (new-hints (acl2::merge-hint-setting-into-goal-hint :cases item theorem-hints))
