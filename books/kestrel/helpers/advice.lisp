@@ -2557,7 +2557,7 @@
         (mv nil nil state))
        ;; todo: can it be a single term?:
        ((when (not (acl2::translatable-term-listp item (w state))))
-        (and (acl2::print-level-at-least-tp print) (cw "fail (term not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
+        (and (acl2::print-level-at-least-tp print) (cw "fail (terms not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; todo: ensure this is nice:
        (new-hints (acl2::merge-hint-setting-into-goal-hint :expand item theorem-hints))
