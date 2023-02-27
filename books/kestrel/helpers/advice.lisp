@@ -345,19 +345,19 @@
 (defconst *ml-models-and-strings*
   '((:calpoly . "kestrel-calpoly")
     (:calpoly-run10.0 . "calpoly-run10.0")
-    ;; note the capital L and underscores:
-    (:leidos-run10.0 . "Leidos_run10_0")
     ;; note the capital L:
     (:leidos . "Leidos")
     (:leidos-gpt . "leidos-gpt")
+    ;; note the capital L and underscores:
+    (:leidos-run10.0 . "Leidos_run10_0")
     ))
 
 (defconst *ml-models*
   (strip-cars *ml-models-and-strings*))
 
 (defconst *known-models-and-strings*
-  (append *non-ml-models-and-strings*
-          *ml-models-and-strings*))
+  (append *ml-models-and-strings*
+          *non-ml-models-and-strings*))
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
 
