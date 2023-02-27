@@ -437,7 +437,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-memberp ((str valuep) (mem identp) (compst compustatep))
-  :returns (result value-resultp)
+  :returns (eval expr-value-resultp)
   :short "Execute a structure pointer member expression."
   :long
   (xdoc::topstring
@@ -448,9 +448,8 @@
      The named member must be in the structure.
      The value associated to the member is returned.")
    (xdoc::p
-    "Similarly to @(tsee exec-memberp),
-     we ensure that the value is not an array,
-     for the same reason explained there."))
+    "We return an expression value whose object designator is obtained
+     by adding the member to the object designator in the pointer."))
   (b* (((unless (value-case str :pointer))
         (error (list :mistype-memberp
                      :required :pointer
@@ -472,8 +471,8 @@
                      :array (type-struct (value-struct->tag struct)))))
        (val (value-struct-read mem struct))
        ((when (errorp val)) val)
-       ((when (value-case val :array)) (error :member-array-whole-read)))
-    val)
+       (objdes-mem (make-objdesign-member :super objdes :name mem)))
+    (make-expr-value :value val :object objdes-mem))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -640,8 +639,10 @@
                   ((when (errorp eval)) eval))
                (expr-value->value eval))
      :memberp (b* ((str (exec-expr-pure e.target compst))
-                   ((when (errorp str)) str))
-                (exec-memberp str e.name compst))
+                   ((when (errorp str)) str)
+                   (eval (exec-memberp str e.name compst))
+                   ((when (errorp eval)) eval))
+                (expr-value->value eval))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))

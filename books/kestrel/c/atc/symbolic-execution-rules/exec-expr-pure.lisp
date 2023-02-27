@@ -99,9 +99,11 @@
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :memberp)
                   (equal val (exec-expr-pure (expr-memberp->target e) compst))
-                  (valuep val))
+                  (valuep val)
+                  (equal eval (exec-memberp val (expr-memberp->name e) compst))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-memberp val (expr-memberp->name e) compst)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-arrsub-of-member

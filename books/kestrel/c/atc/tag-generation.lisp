@@ -133,7 +133,10 @@
                         (equal (exec-memberp ptr
                                              (ident ,(ident->name memname))
                                              compst)
-                               (,reader struct))))
+                               (expr-value (,reader struct)
+                                           (objdesign-member
+                                            (value-pointer->designator ptr)
+                                            (ident ,(ident->name memname)))))))
              (value-kind-when-typep (pack 'value-kind-when-
                                           (integer-type-to-fixtype type)
                                           'p))
