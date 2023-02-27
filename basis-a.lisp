@@ -6260,8 +6260,21 @@
     ((parallel-execution-enabled . in-macrolet-def) . do-expressionp)))
   nil)
 
+(defconst *default-state-vars*
+
+; Warning: if you change this definition, then change the defaults for the &key
+; parameters accordingly in the definition of macro default-state-vars.
+
+  (make state-vars
+        :guard-checking-on t))
+
 (defmacro default-state-vars
-  (state-p &key
+
+; Warning: if you change the defaults for the &key parameters below, change the
+; definition of *default-state-vars* accordingly.
+
+  (state-p &rest args
+           &key
            (safe-mode 'nil safe-mode-p)
            (boot-strap-flg 'nil boot-strap-flg-p)
            (temp-touchable-vars 'nil temp-touchable-vars-p)
@@ -6315,6 +6328,8 @@
                 ,in-macrolet-def
                 :do-expressionp
                 ,do-expressionp))
+        ((null args)
+         '*default-state-vars*)
         (t ; state-p is not t
          `(make state-vars
                 :safe-mode ,safe-mode
@@ -6323,8 +6338,6 @@
                 :ld-skip-proofsp ,ld-skip-proofsp
                 :temp-touchable-fns ,temp-touchable-fns
                 :parallel-execution-enabled ,parallel-execution-enabled))))
-
-(defconst *default-state-vars* (default-state-vars nil))
 
 (defun warning1-body (ctx summary str+ alist state)
 
