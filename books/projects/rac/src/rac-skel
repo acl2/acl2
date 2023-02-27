@@ -131,4 +131,11 @@ then
       (certify-book "$basename" 1)
 EOF
 
+cat $basename.acl2.log | grep 'ACL2 Error' &> /dev/null
+if [[ $? == "0" ]]
+then
+  echo "Certification failed ! Please check $basename.acl2.log for more details."
+  exit 1
+fi 
+
 fi

@@ -684,30 +684,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define definition-satp ((def definitionp)
+(define definition-satp ((name symbolp)
                          (defs definition-listp)
                          (vals (fe-listp vals p))
                          (p primep))
-  :guard (equal (len vals)
-                (len (definition->para def)))
   :returns (yes/no booleanp)
   :short "Check if a sequence of prime field elements
-          satisfies a PFCS definition."
+          satisfies a named PFCS definition."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We form an assignment of the prime field elements to the parameters,
+    "We find the definition with the given name,
+     to obtain its parameters.
+     We form an assignment of the prime field elements to the parameters,
      in order, and we check if this assignment satisfies
      the constraint consisting of
      a call of the definition on its parameters.")
    (xdoc::p
     "This is a convenient abbreviation
      for expressing the satisfiability of a definition."))
-  (b* (((definition def) def)
-       (asg (omap::from-lists def.para vals))
+  (b* ((def (lookup-definition name defs))
+       ((unless def) nil)
+       (para (definition->para def))
+       ((unless (= (len vals) (len para))) nil)
+       (asg (omap::from-lists para vals))
        (constr (make-constraint-relation
-                :name def.name
-                :args (expression-var-list def.para))))
+                :name name
+                :args (expression-var-list para))))
     (constraint-satp constr defs asg p))
   :guard-hints (("Goal" :in-theory (enable true-listp-when-fe-listp
                                            nat-listp-when-fe-listp))))

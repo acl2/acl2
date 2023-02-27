@@ -2688,13 +2688,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (strip-cdrs (cdr x))))))
 
 #-acl2-loop-only
+(progn
+
 (defvar *hard-error-returns-nilp*
 
 ; For an explanation of this defvar, see the comment in hard-error, below.
 
   nil)
 
-#-acl2-loop-only
 (defparameter *ld-level*
 
 ; This parameter will always be equal to the number of recursive calls of LD
@@ -2724,7 +2725,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   0)
 
-#-acl2-loop-only
 (defun-one-output throw-raw-ev-fncall (val)
 
 ; This function just throws to raw-ev-fncall (or causes an
@@ -2746,8 +2746,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t
          (throw 'raw-ev-fncall val))))
 
-#-acl2-loop-only
 (defvar *hard-error-is-error* t) ; set to nil at the end of the boot-strap
+
+(defvar *raw-ev-fncall-catchable* nil)
+
+(defmacro catch-raw-ev-fncall (&rest forms)
+  `(let ((*raw-ev-fncall-catchable* t))
+     (catch 'raw-ev-fncall
+       ,@forms)))
+)
+
+(defun abort! ()
+  (declare (xargs :guard t))
+  #-acl2-loop-only
+  (throw 'local-top-level :abort)
+  nil)
 
 (defun hard-error (ctx str alist)
 
@@ -2818,7 +2831,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           (str (if (consp str) (cdr str) str)))
       (cond
        (*hard-error-is-error*
-        (hard-error-is-error ctx str alist))
+        (if (fboundp 'hard-error-is-error) ; for early in boot-strap
+            (hard-error-is-error ctx str alist)
+          (error "Error during ACL2 build in ctx ~s with string~%~s~%and ~
+                  alist~%~s"
+                 ctx str alist)))
        (t
         (when (not (and (f-get-global 'inhibit-er-hard state)
                         (member 'error
@@ -2828,14 +2845,27 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (*wormholep* nil))
             (error-fms t ctx summary str alist state)))
 
-; Once upon a time hard-error took a throw-flg argument and did the
-; following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
-; it signaled an interface-er.  Note that in either case it behaved like
-; an error -- interface-er's are rougher because they do not leave you in
-; the ACL2 command loop.  I think this aspect of the old code was a vestige
-; of the pre-*ld-level* days when we didn't know if we could throw or not.
+; Here is a historical comment, perhaps no longer directly relevant.
 
-        (throw-raw-ev-fncall 'illegal)))))
+;   Once upon a time hard-error took a throw-flg argument and did the
+;   following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
+;   it signaled an interface-er.  Note that in either case it behaved like
+;   an error -- interface-er's are rougher because they do not leave you in
+;   the ACL2 command loop.  I think this aspect of the old code was a vestige
+;   of the pre-*ld-level* days when we didn't know if we could throw or not.
+
+        (if *raw-ev-fncall-catchable*
+            (throw-raw-ev-fncall 'illegal)
+
+; Before we introduced catch-raw-ev-fncall, it was possible to get a raw Lisp
+; error at the top level from a hard error during translate, because there was
+; no catcher for the tag thrown to by the call just above of
+; throw-raw-ev-fncall, which is 'raw-ev-fncall.  Now we abort cleanly.  It's a
+; bit unfortunate perhaps that we abort all the way to the top level, so
+; hard-error should be used sparingly when not in the scope of
+; catch-raw-ev-fncall.
+
+          (abort!))))))
   #+acl2-loop-only
   (declare (ignore ctx str alist))
   nil)
@@ -16083,6 +16113,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (cond
    ((null bindings) body)
+   ((not (symbol-doublet-listp bindings))
+
+; This this is a raw Lisp Function, it is reasonable to call error here rather
+; than to use (er hard ...).  This way we avoid depending on the value of
+; global *hard-error-is-error* for an error to be signaled.
+
+    (error "The first argument of state-free-global-let* must be a true ~%~
+            list of entries of the form (sym val) where sym is a symbol.~%~
+            The argument ~s is thus illegal."
+           bindings))
    (t (let (bs syms)
         (dolist (binding bindings)
           (let ((sym (global-symbol (car binding))))
@@ -16107,13 +16147,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the ACL2 loop; that's unimportant of course if this function is called only
 ; for side-effect or if body returns only one value.
 
-  `(if #-acl2-par *acl2-unwind-protect-stack* #+acl2-par nil
-       (with-live-state
-        (mv-let (erp val state)
-          (state-global-let* ,bindings (value ,body))
-          (declare (ignore erp state))
-          val))
-       (state-free-global-let* ,bindings ,body)))
+  (cond
+   ((not (symbol-doublet-listp bindings))
+; See comment at error call in state-free-global-let*.
+    (error "The first argument of state-free-global-let*-safe must be a ~%~
+            true list of entries of the form (sym val) where sym is a ~%~
+            symbol.  The argument ~s is thus illegal."
+           bindings))
+   (t `(if #-acl2-par *acl2-unwind-protect-stack* #+acl2-par nil
+           (with-live-state
+            (mv-let (erp val state)
+              (state-global-let* ,bindings (value ,body))
+              (declare (ignore erp state))
+              val))
+           (state-free-global-let* ,bindings ,body)))))
 
 ; With state-global-let* defined, we may now define a few more primitives and
 ; finish some unfinished business.
@@ -18098,7 +18145,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; In this alist, each key is a filename (in the native OS, as discussed further
 ; below) whose value is a triple (str fwd . fc): str is initially a character
-; stream str for that file ut may be replaced by nil, fwd is the
+; stream str for that file but may be replaced by nil, fwd is the
 ; file-write-date at the time the stream was created, and fc is the file-clock
 ; of the state at the time the stream was opened.  If str is nil, then the
 ; entry may be deleted (essentially, garbage collected) when the file-clock
@@ -18129,7 +18176,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; updates the file-clock.)  Note that a key in *read-file-into-string-alist* is
 ; based on fc, not fc+1.
 
-; Recall that we key on the filename in the native OS?  It would also be fine
+; Recall that we key on the filename in the native OS.  It would also be fine
 ; to key on the Unix filename, but our code just developed this way.  It's fine
 ; though: if we encounter the same Unix filename twice, then of course we'd
 ; encouter the same OS filename twice, which would catch the problem we're
@@ -25042,12 +25089,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro with-guard-checking-event (val form)
   (declare (ignore val))
   form)
-
-(defun abort! ()
-  (declare (xargs :guard t))
-  #-acl2-loop-only
-  (throw 'local-top-level :abort)
-  nil)
 
 (defmacro a! ()
   (declare (xargs :guard t))

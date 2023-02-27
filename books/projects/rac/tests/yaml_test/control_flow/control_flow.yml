@@ -1,0 +1,46 @@
+- name: assert
+
+- name: if
+- name: if-else
+- name: if-else-return
+
+- name: if-return
+  has_failed: true
+  exit_code: 1
+
+- name: if-else-return-not-complete-1
+  has_failed: true
+  exit_code: 1
+
+- name: if-else-return-not-complete-2
+  has_failed: true
+  exit_code: 1
+ 
+- name: switch
+- name: switch-enum
+- name: switch-fall-through
+  bug: true
+
+- name: switch-no-default
+- name: switch-return
+  description: Not implemented yet !
+  has_failed: true
+  exit_code: 1
+  disabled-checks:
+    - stderr
+
+- name: switch-invalid-label
+  has_failed: true
+  exit_code: 1
+  disabled-checks:
+    - generated_code
+  
+- name: for-loop
+- name: for-loop-init-from-const
+- name: for-loop-invalid
+  bug: true
+  description: This loop is invalid since init does not define an int/uint but
+               this does not generate any errors or warning. For now the parser
+               expect that init is either a assignement or a variable
+               declaration without checking the type of init. I think the cond
+               and increment may have the same issue.

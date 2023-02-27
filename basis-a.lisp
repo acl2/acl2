@@ -1482,6 +1482,90 @@
                                       (f-get-global 'iprint-ar state))
                            state)))))))
 
+#-acl2-loop-only
+(defvar *iprint-read-state*
+
+; Possible values are:
+
+; nil      - no requirement on current iprint index
+; t        - either all indices must exceed iprint-last-index, or none does
+; (n . <=) - n, already read, is <= iprint-last-index; index must be too
+; (n .  >) - n, already read, is  > iprint-last-index; index must be too
+
+; The value is initially nil.  At a top-level read, it is set to nil if
+; iprint-fal is nil, else to t.  For the first index i that is read when the
+; value is t, we set the value to <= if (<= i iprint-last-index) and to >
+; otherwise.
+
+  nil)
+
+#-acl2-loop-only
+(defun iprint-oracle-updates-raw (state)
+
+; Warning: Keep in sync with iprint-oracle-updates.
+
+  (let* ((ar *wormhole-iprint-ar*))
+    (when ar
+      (f-put-global 'iprint-ar (compress1 'iprint-ar ar) state)
+      (f-put-global 'iprint-fal *wormhole-iprint-fal* state)
+      (f-put-global 'iprint-hard-bound *wormhole-iprint-hard-bound* state)
+      (f-put-global 'iprint-soft-bound *wormhole-iprint-soft-bound* state)
+      (setq *wormhole-iprint-ar* nil))
+    (setq *iprint-read-state*
+          (if (f-get-global 'iprint-fal state)
+              t
+            nil)))
+  state)
+
+(defun iprint-oracle-updates (state)
+
+; Warning: Keep in sync with iprint-oracle-updates-raw.
+
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from iprint-oracle-updates
+                 (iprint-oracle-updates-raw state)))
+  (mv-let (erp val state)
+    (read-acl2-oracle state)
+    (declare (ignore erp))
+
+; If we intend to reason about this function, then we might want to check that
+; val is a reasonable value.  But that seems not to be important, since very
+; little reasoning would be possible anyhow for this function.
+
+    (let ((val (fix-true-list val)))
+      (pprogn (f-put-global 'iprint-ar
+                            (nth 0 val)
+                            state)
+              (f-put-global 'iprint-hard-bound
+                            (nfix (nth 1 val))
+                            state)
+              (f-put-global 'iprint-soft-bound
+                            (nfix (nth 2 val))
+                            state)
+              (f-put-global 'iprint-fal
+                            (nth 3 val)
+                            state)
+              state))))
+
+(defun iprint-oracle-updates@par ()
+  #-acl2-loop-only
+  (iprint-oracle-updates-raw *the-live-state*)
+  nil)
+
+(defun iprint-oracle-updates? (state)
+
+; This is like iprint-oracle-updates, except that it returns state unchanged if
+; iprinting is off.  Since iprinting isn't turned on in the middle of
+; eviscerate-top or eviscerate-stobjs-top, we can use it there and thus avoid
+; calling iprint-oracle-updates from fmt-to-string etc.  That, in turn, let us
+; use fmt-to-string etc. in safe-mode, hence in defconst forms, without getting
+; a program-only error.
+
+  (cond ((iprint-enabledp state)
+         (iprint-oracle-updates state))
+        (t state)))
+
 (defun eviscerate-top (x print-level print-length alist evisc-table hiding-cars
                          state)
 
@@ -1489,24 +1573,29 @@
 ; in addition to returning the evisceration of x.  See eviscerate and the Essay
 ; on Iprinting for more details.
 
-  (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
-    (mv-let (result iprint-alist iprint-fal-new)
-      (eviscerate x print-level print-length alist evisc-table hiding-cars
-                  (and (iprint-enabledp state)
-                       (iprint-last-index state))
-                  nil iprint-fal-old (iprint-eager-p iprint-fal-old))
-      (fast-alist-free-on-exit
-       iprint-fal-new
-       (let ((state
-              (cond
-               ((eq iprint-alist t)
-                (f-put-global 'evisc-hitp-without-iprint t state))
-               ((atom iprint-alist) state)
-               (t (update-iprint-ar-fal iprint-alist
-                                        iprint-fal-new
-                                        iprint-fal-old
-                                        state)))))
-         (mv result state))))))
+  (pprogn
+
+; First we ensure that any iprinting will reflect iprint updates made during brr.
+
+   (iprint-oracle-updates? state)
+   (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
+     (mv-let (result iprint-alist iprint-fal-new)
+       (eviscerate x print-level print-length alist evisc-table hiding-cars
+                   (and (iprint-enabledp state)
+                        (iprint-last-index state))
+                   nil iprint-fal-old (iprint-eager-p iprint-fal-old))
+       (fast-alist-free-on-exit
+        iprint-fal-new
+        (let ((state
+               (cond
+                ((eq iprint-alist t)
+                 (f-put-global 'evisc-hitp-without-iprint t state))
+                ((atom iprint-alist) state)
+                (t (update-iprint-ar-fal iprint-alist
+                                         iprint-fal-new
+                                         iprint-fal-old
+                                         state)))))
+          (mv result state)))))))
 
 ; Essay on the ACL2 Prettyprinter
 
@@ -6171,8 +6260,21 @@
     ((parallel-execution-enabled . in-macrolet-def) . do-expressionp)))
   nil)
 
+(defconst *default-state-vars*
+
+; Warning: if you change this definition, then change the defaults for the &key
+; parameters accordingly in the definition of macro default-state-vars.
+
+  (make state-vars
+        :guard-checking-on t))
+
 (defmacro default-state-vars
-  (state-p &key
+
+; Warning: if you change the defaults for the &key parameters below, change the
+; definition of *default-state-vars* accordingly.
+
+  (state-p &rest args
+           &key
            (safe-mode 'nil safe-mode-p)
            (boot-strap-flg 'nil boot-strap-flg-p)
            (temp-touchable-vars 'nil temp-touchable-vars-p)
@@ -6226,6 +6328,8 @@
                 ,in-macrolet-def
                 :do-expressionp
                 ,do-expressionp))
+        ((null args)
+         '*default-state-vars*)
         (t ; state-p is not t
          `(make state-vars
                 :safe-mode ,safe-mode
@@ -6234,8 +6338,6 @@
                 :ld-skip-proofsp ,ld-skip-proofsp
                 :temp-touchable-fns ,temp-touchable-fns
                 :parallel-execution-enabled ,parallel-execution-enabled))))
-
-(defconst *default-state-vars* (default-state-vars nil))
 
 (defun warning1-body (ctx summary str+ alist state)
 
