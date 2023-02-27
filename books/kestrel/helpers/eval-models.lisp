@@ -229,7 +229,7 @@
        (combined-successful-attempt-percentage (quotient-to-percent-string combined-successful-attempt-count combined-attempt-count))
        (- (cw " Attempts: ~x0~%" combined-attempt-count))
        (- (cw " Successes: ~x0 (~s1%)~%" combined-successful-attempt-count combined-successful-attempt-percentage))
-       (- (cw " Total recs procued: ~x0~%" combined-total-recs-produced))
+       (- (cw " Total recs produced: ~x0~%" combined-total-recs-produced))
        (- (cw "~%")))
     nil))
 
