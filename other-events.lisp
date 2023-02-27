@@ -951,7 +951,6 @@
                     (pcert-books nil)
                     (include-book-path nil)
                     (certification-tuple nil)
-                    (documentation-alist nil)
                     (proved-functional-instances-alist nil)
                     (nonconstructive-axiom-names nil)
                     (standard-theories (nil nil nil nil))
@@ -32098,19 +32097,19 @@
                    **1*-as-raw*
                  nil))
               (applied-fn (*1*-symbol fn))
-              (val (catch 'raw-ev-fncall
+              (val (catch-raw-ev-fncall
 
 ; Since w = (w *the-live-state*), we can avoid calling (chk-raw-ev-fncall fn w
 ; aok) or checking (fboundp fn).
 
-                     (prog1
-                         (let ((*hard-error-returns-nilp*
-                                hard-error-returns-nilp))
-                           (cond ((null (cdr stobjs-out))
-                                  (apply applied-fn args))
-                                 (t (multiple-value-list
-                                     (apply applied-fn args)))))
-                       (setq throw-raw-ev-fncall-flg nil)))))
+                    (prog1
+                        (let ((*hard-error-returns-nilp*
+                               hard-error-returns-nilp))
+                          (cond ((null (cdr stobjs-out))
+                                 (apply applied-fn args))
+                                (t (multiple-value-list
+                                    (apply applied-fn args)))))
+                      (setq throw-raw-ev-fncall-flg nil)))))
 
 ; Observe that if a throw to 'raw-ev-fncall occurred during the
 ; (apply fn args) then the local variable throw-raw-ev-fncall-flg

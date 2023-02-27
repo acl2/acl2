@@ -6765,13 +6765,11 @@
           (pe-fn2 logical-name wrld channel new-ev-wrld
                   state)))))))
 
-(defun print-undefined-primitive-msg (name channel wrld state)
+(defun print-undefined-primitive-msg (name channel state)
   (fms "~x0 is built into ACL2 without a defining event.~#1~[  See :DOC ~
         ~x0.~/~]~|"
        (list (cons #\0 name)
-             (cons #\1 (if (assoc-eq name
-                                     (global-val 'documentation-alist
-                                                 wrld))
+             (cons #\1 (if (assoc-eq name *acl2-system-documentation*)
                            0
                          1)))
        channel state nil))
@@ -6805,7 +6803,7 @@
 ; asking for the full command, so we give it to them.
 
            (pprogn
-            (print-undefined-primitive-msg logical-name channel wrld state)
+            (print-undefined-primitive-msg logical-name channel state)
             (value :invisible)))
           (t
            (let ((fn (deref-macro-name logical-name (macro-aliases wrld))))
@@ -7909,9 +7907,9 @@
 
 (defun find-likely-near-misses (pat-lst alist)
 
-; Alist is the documentation-alist.  Pat-lst is a normalized string
-; (with hyphen-is-space nil).  We collect the cars of the pairs in
-; alist that have a degree of match of more than one half.  Again, an
+; Alist is an alist whose keys are documentation topics.  Pat-lst is a
+; normalized string (with hyphen-is-space nil).  We collect the cars of the
+; pairs in alist that have a degree of match of more than one half.  Again, an
 ; utter kludge.
 
   (cond ((null alist) nil)

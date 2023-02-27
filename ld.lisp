@@ -1922,21 +1922,21 @@
 
 ; At *LD-LEVEL* = 1 we know *standard-co* is *STANDARD-OUTPUT*.
 
-                                       (PRINC "Abort to ACL2 top-level"
+                                       (PRINC "Abort to ACL2 top-level."
                                               *STANDARD-OUTPUT*)
                                        (TERPRI *STANDARD-OUTPUT*))
                                       (T
                                        (THROW 'LOCAL-TOP-LEVEL :ABORT))))
                                ((EQ THROWN-VAL :POP)
                                 (COND ((= *LD-LEVEL* 1)
-                                       (PRINC "Currently at ACL2 top-level"
+                                       (PRINC "Currently at ACL2 top-level."
                                               *STANDARD-OUTPUT*))
                                       (t
                                        (COND ((= *LD-LEVEL* 2)
-                                              (PRINC "Pop up to ACL2 top-level"
+                                              (PRINC "Pop up to ACL2 top-level."
                                                      *STANDARD-OUTPUT*))
                                              (t
-                                              (PRINC "Pop up one LD level"
+                                              (PRINC "Pop up one LD level."
                                                      *STANDARD-OUTPUT*)))
                                        (WHEN (NOT (EQ (LD-ERROR-ACTION STATE)
                                                       :ERROR))
