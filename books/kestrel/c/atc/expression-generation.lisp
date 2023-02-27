@@ -206,6 +206,7 @@
              (exec-const-to-fixtype (pack 'exec-const-to- fixtype))
              (fixtype-integerp (pack fixtype '-integerp))
              (recognizer (type-to-recognizer type (w state)))
+             (valuep-when-recognizer (pack 'valuep-when- recognizer))
              (recognizer-of-fixtype-from-integer
               (pack recognizer '-of- fixtype '-from-integer)))
           `(("Goal" :in-theory '(exec-expr-pure-when-const
@@ -222,7 +223,11 @@
                                  (:e iconst-base-kind)
                                  (:e ,fixtype-integerp)
                                  ,type-base-const
-                                 ,recognizer-of-fixtype-from-integer)))))
+                                 ,recognizer-of-fixtype-from-integer
+                                 expr-valuep-of-expr-value
+                                 expr-value->value-of-expr-value
+                                 value-fix-when-valuep
+                                 ,valuep-when-recognizer)))))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
                                        gin.fn-guard

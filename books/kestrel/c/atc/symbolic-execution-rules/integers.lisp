@@ -833,11 +833,11 @@
      The reason is that functions like @(tsee sint-dec-const)
      are used to represent C constants in ACL2 functions,
      but in the dynamic semantics,
-     @(tsee exec-iconst) (which we expand, obviously)
+     @(tsee exec-const) (which we expand, obviously)
      produces terms of the form @('(sint <quoted-integer>)').
      By expanding @(tsee sint-dec-const) in the ACL2 functions,
      we produce terms of the form @('(sint <quoted-integer>)'),
-     which therefore match the ones from @(tsee exec-iconst)."))
+     which therefore match the ones from @(tsee exec-const)."))
 
   (defval *atc-integer-const-rules*
     '(sint-dec-const

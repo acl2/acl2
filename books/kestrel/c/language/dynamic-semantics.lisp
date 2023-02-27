@@ -65,9 +65,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-iconst ((ic iconstp))
+(define eval-iconst ((ic iconstp))
   :returns (val value-resultp)
-  :short "Execute an integer constant."
+  :short "Evaluate an integer constant."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -126,18 +126,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-const ((c constp))
+(define eval-const ((c constp))
   :returns (val value-resultp)
+  :short "Evaluate a constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We only support the evaluation of integer constants for now."))
+  (const-case c
+              :int (eval-iconst c.get)
+              :float (error :exec-const-float)
+              :enum (error :exec-const-enum)
+              :char (error :exec-const-char))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-const ((c constp))
+  :returns (eval expr-value-resultp)
   :short "Execute a constant."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We only support the execution of integer constants for now."))
-  (const-case c
-              :int (exec-iconst c.get)
-              :float (error :exec-const-float)
-              :enum (error :exec-const-enum)
-              :char (error :exec-const-char))
+    "This is just a wrapper of @(tsee eval-const)
+     that returns an expression value (with no object designator),
+     to formalize the execution of the constant as an expression."))
+  (b* ((val (eval-const c))
+       ((when (errorp val)) val))
+    (make-expr-value :value val :object nil))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -609,7 +625,9 @@
      :ident (b* ((eval (exec-ident e.get compst))
                  ((when (errorp eval)) eval))
               (expr-value->value eval))
-     :const (exec-const e.get)
+     :const (b* ((eval (exec-const e.get))
+                 ((when (errorp eval)) eval))
+              (expr-value->value eval))
      :arrsub (case (expr-kind e.arr)
                (:member
                 (b* (((expr-member e.arr) e.arr)

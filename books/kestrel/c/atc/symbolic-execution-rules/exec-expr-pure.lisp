@@ -62,9 +62,11 @@
 
   (defruled exec-expr-pure-when-const
     (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :const))
+                  (equal (expr-kind e) :const)
+                  (equal eval (exec-const (expr-const->get e)))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-const (expr-const->get e))))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-arrsub
