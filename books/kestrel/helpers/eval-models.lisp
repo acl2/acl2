@@ -854,6 +854,7 @@
                                     server-url breakage-plan
                                     models
                                     done-book-count
+                                    total-book-count
                                     result-alist-acc ; a result-alist
                                     rand
                                     state)
@@ -871,7 +872,8 @@
                               (member-eq breakage-plan '(:all :goal-partial))
                               (help::model-namesp models)
                               (alistp result-alist-acc)
-                              (natp done-book-count))
+                              (natp done-book-count)
+                              (natp total-book-count))
                   :mode :program
                   :stobjs state))
   (if (endp book-to-theorems-alist)
@@ -880,7 +882,7 @@
               (show-model-evaluations models result-alist-acc)
               (mv nil '(value-triple :invisible) state))
     (b* ((- (cw "~%======================================================================~%"))
-         (- (cw "Processing book #~x0.~%" (+ 1 done-book-count)))
+         (- (cw "Processing book #~x0 of ~x1.~%" (+ 1 done-book-count) total-book-count))
          (entry (first book-to-theorems-alist))
          (book (car entry))
          (theorems-to-try (cdr entry))
@@ -909,7 +911,7 @@
          ;;            (cw "ERROR           : ~x0~%~%" error-count)))
          )
       (eval-models-on-books-fn-aux (rest book-to-theorems-alist)
-                                   base-dir num-recs-per-model print debug step-limit time-limit server-url breakage-plan models done-book-count
+                                   base-dir num-recs-per-model print debug step-limit time-limit server-url breakage-plan models done-book-count total-book-count
                                    result-alist-acc
                                    rand
                                    state))))
@@ -972,7 +974,9 @@
        (book-to-theorems-alist (shuffle-list2 book-to-theorems-alist rand))
        (rand (minstd-rand0-next rand))
        (- (cw "(Processing ~x0 tests in ~x1 books.)~%" num-tests (len book-to-theorems-alist))))
-    (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit server-url breakage-plan models 0 nil rand state)))
+    (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit server-url breakage-plan models 0
+                                 (len book-to-theorems-alist)
+                                 nil rand state)))
 
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
 ;; TODO: Record the sources of recs that work (note that names may get combined with /)?
