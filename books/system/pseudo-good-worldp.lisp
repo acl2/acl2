@@ -749,27 +749,6 @@
       (pseudo-include-book-alist-entryp val)))
 
 ; -----------------------------------------------------------------
-; DOCUMENTATION-ALIST [GLOBAL-VALUE]
-
-(defun documentation-tuplep (x)
-  (case-match x
-    ((topic section citations doc-string)
-     (and (or (symbolp topic)
-              (stringp topic))
-          (or (symbolp section)
-              (stringp section))
-          (string-or-symbol-listp citations)
-          (stringp doc-string)))
-    (& nil)))
-
-
-(defun documentation-alistp (val)
-  (if (atom val)
-      (eq val nil)
-      (and (documentation-tuplep (car val))
-           (documentation-alistp (cdr val)))))
-
-; -----------------------------------------------------------------
 ; PROVED-FUNCTIONAL-INSTANCES-ALIST [GLOBAL-VALUE]
 
 ; The following code will convert termp as a :logic mode function:
@@ -1842,7 +1821,6 @@
     (PCERT-BOOKS (pseudo-pcert-booksp val))
     (INCLUDE-BOOK-PATH (pseudo-include-book-pathp val))
     (CERTIFICATION-TUPLE (certification-tuplep val))
-    (DOCUMENTATION-ALIST (documentation-alistp val))
     (PROVED-FUNCTIONAL-INSTANCES-ALIST (proved-functional-instances-alistp val))
     (NONCONSTRUCTIVE-AXIOM-NAMES (nonconstructive-axiom-namesp val))
     (STANDARD-THEORIES (pseudo-standard-theoriesp val))

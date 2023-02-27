@@ -10837,9 +10837,7 @@
                      (list (cons #\0 name0)
                            (cons #\1 name))
                      (standard-co state) state nil))
-              (print-undefined-primitive-msg name
-                                             (standard-co state)
-                                             wrld state)
+              (print-undefined-primitive-msg name (standard-co state) state)
               (value :invisible)))
             (t (let* ((numes (strip-cars
                               (getpropc name 'runic-mapping-pairs nil wrld)))

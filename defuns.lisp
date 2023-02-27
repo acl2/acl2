@@ -8710,7 +8710,7 @@
                                      key
                                      ctx
                                      wrld
-                                     *default-state-vars*
+                                     (default-state-vars t)
                                      nil)
           (declare (ignore bindings))
           (cond
@@ -9155,7 +9155,7 @@
                              key
                              ctx
                              wrld
-                             *default-state-vars*)
+                             (default-state-vars t))
           (declare (ignore bindings))
           (cond
            (erp (er soft ctx

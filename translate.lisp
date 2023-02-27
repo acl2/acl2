@@ -3420,20 +3420,20 @@
                      (latches (actual-stobjs-out fn arg-exprs w))
                      ((eq fn 'do$) 'ignore) ; special handling below
                      (t (stobjs-out fn w))))
-              (val (catch 'raw-ev-fncall
-                     (chk-raw-ev-fncall fn w aok)
-                     (cond ((not (fboundp fn))
-                            (er hard 'raw-ev-fncall
-                                "A function, ~x0, that was supposed to be ~
-                                 defined is not.  Supposedly, this can only ~
-                                 arise because of aborts during undoing.  ~
-                                 There is no recovery from this erroneous ~
-                                 state."
-                                fn)))
-                     (prog1
-                         (let ((*hard-error-returns-nilp*
-                                hard-error-returns-nilp))
-                           (cond ((eq fn 'do$)
+              (val (catch-raw-ev-fncall
+                    (chk-raw-ev-fncall fn w aok)
+                    (cond ((not (fboundp fn))
+                           (er hard 'raw-ev-fncall
+                               "A function, ~x0, that was supposed to be ~
+                                defined is not.  Supposedly, this can only ~
+                                arise because of aborts during undoing.  ~
+                                There is no recovery from this erroneous ~
+                                state."
+                               fn)))
+                    (prog1
+                        (let ((*hard-error-returns-nilp*
+                               hard-error-returns-nilp))
+                          (cond ((eq fn 'do$)
 
 ; With the advent of do$ that doesn't have a well-defined stobjs-out, we avoid
 ; considering the stobjs-out for do4 and instead, we run its *1* function and
@@ -3442,13 +3442,13 @@
 ; that we consult stobjs-out in those cases, which might be more efficient
 ; anyhow than forming the multiple-value-list when not necessary.
 
-                                  (multiple-value-list?
-                                   (apply applied-fn arg-values)))
-                                 ((null (cdr stobjs-out))
-                                  (apply applied-fn arg-values))
-                                 (t (multiple-value-list
-                                     (apply applied-fn arg-values)))))
-                       (setq throw-raw-ev-fncall-flg nil))))
+                                 (multiple-value-list?
+                                  (apply applied-fn arg-values)))
+                                ((null (cdr stobjs-out))
+                                 (apply applied-fn arg-values))
+                                (t (multiple-value-list
+                                    (apply applied-fn arg-values)))))
+                      (setq throw-raw-ev-fncall-flg nil))))
 
 ; It is important to rebind w here, since we may have updated state since the
 ; last binding of w.
@@ -20240,6 +20240,15 @@
                    (fboundp name))
                (not (getpropc name 'macro-body nil wrld))
                (eq (getpropc name 'formals t wrld) t)))
+
+; The natural return here would be a suitable call of trns-er+, in analogy to
+; the cases above.  But such a return is not logically explainable, because of
+; the use of raw Lisp code.  So we abort with (er hard ...), i.e., a call of
+; hard-error.  If we are not in the scope of catch-raw-ev-fncall (typically
+; during evaluation of raw-ev-fncall or raw-ev-fncall-simple), this will cause
+; an abort all the way to the top level, which is unfortunate.  However, this
+; error is probably quite rare.
+
       (prog2$ (er hard ctx
                   "It is illegal to ~@0-bind ~x1, because it is defined as a ~
                    ~s2 in raw Lisp~#3~[~/ but not in the ACL2 loop~]."
@@ -21965,7 +21974,7 @@
                                         nil ; cform
                                         'translate11-lambda-object
                                         wrld
-                                        *default-state-vars*
+                                        state-vars
                                         nil)
                                        (declare (ignore bindings))
                                        (and (null erp)
