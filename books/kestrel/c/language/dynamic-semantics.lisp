@@ -391,7 +391,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-arrsub ((arr valuep) (sub valuep) (compst compustatep))
+(define exec-arrsub ((arr expr-valuep) (sub expr-valuep) (compst compustatep))
   :returns (eval expr-value-resultp)
   :short "Execute an array subscripting expression."
   :long
@@ -429,32 +429,34 @@
    (xdoc::p
     "In any case, we plan to make our formal semantics
      more consistent with full C in the treatment of arrays."))
-  (b* (((unless (value-case arr :pointer))
+  (b* ((arr (expr-value->value arr))
+       ((unless (value-case arr :pointer))
         (error (list :mistype-arrsub
                      :required :pointer
                      :supplied (type-of-value arr))))
        ((unless (value-pointer-validp arr))
-        (error (list :invalid-pointer (value-fix arr))))
+        (error (list :invalid-pointer arr)))
        (objdes (value-pointer->designator arr))
        (reftype (value-pointer->reftype arr))
        (array (read-object objdes compst))
        ((when (errorp array))
-        (error (list :array-not-found (value-fix arr) (compustate-fix compst))))
+        (error (list :array-not-found arr (compustate-fix compst))))
        ((unless (value-case array :array))
-        (error (list :not-array (value-fix arr) (compustate-fix compst))))
+        (error (list :not-array arr (compustate-fix compst))))
        ((unless (equal reftype (value-array->elemtype array)))
         (error (list :mistype-array-read
                      :pointer reftype
                      :array (value-array->elemtype array))))
+       (sub (expr-value->value sub))
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
                                              :required :integer
                                              :supplied (type-of-value sub))))
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
-                                        :pointer (value-fix arr)
+                                        :pointer arr
                                         :array array
-                                        :index (value-fix sub))))
+                                        :index sub)))
        (val (value-array-read index array))
        ((when (errorp val)) val)
        (elem-objdes (make-objdesign-element :super objdes :index index)))
@@ -689,7 +691,9 @@
                        ((when (errorp arr)) arr)
                        (sub (exec-expr-pure e.sub compst))
                        ((when (errorp sub)) sub)
-                       (eval (exec-arrsub arr sub compst))
+                       (eval (exec-arrsub (expr-value arr nil)
+                                          (expr-value sub nil)
+                                          compst))
                        ((when (errorp eval)) eval))
                     (expr-value->value eval))))
      :call (error (list :non-pure-expr e))
