@@ -496,7 +496,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-memberp ((str valuep) (mem identp) (compst compustatep))
+(define exec-memberp ((str expr-valuep) (mem identp) (compst compustatep))
   :returns (eval expr-value-resultp)
   :short "Execute a structure pointer member expression."
   :long
@@ -510,20 +510,21 @@
    (xdoc::p
     "We return an expression value whose object designator is obtained
      by adding the member to the object designator in the pointer."))
-  (b* (((unless (value-case str :pointer))
+  (b* ((str (expr-value->value str))
+       ((unless (value-case str :pointer))
         (error (list :mistype-memberp
                      :required :pointer
                      :supplied (type-of-value str))))
        ((unless (value-pointer-validp str))
-        (error (list :invalid-pointer (value-fix str))))
+        (error (list :invalid-pointer str)))
        (objdes (value-pointer->designator str))
        (reftype (value-pointer->reftype str))
        (struct (read-object objdes compst))
        ((when (errorp struct))
         (error
-         (list :struct-not-found (value-fix str) (compustate-fix compst))))
+         (list :struct-not-found str (compustate-fix compst))))
        ((unless (value-case struct :struct))
-        (error (list :not-struct (value-fix str) (compustate-fix compst))))
+        (error (list :not-struct str (compustate-fix compst))))
        ((unless (equal reftype
                        (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
@@ -704,7 +705,7 @@
                (expr-value->value eval))
      :memberp (b* ((str (exec-expr-pure e.target compst))
                    ((when (errorp str)) str)
-                   (eval (exec-memberp str e.name compst))
+                   (eval (exec-memberp (expr-value str nil) e.name compst))
                    ((when (errorp eval)) eval))
                 (expr-value->value eval))
      :postinc (error (list :non-pure-expr e))

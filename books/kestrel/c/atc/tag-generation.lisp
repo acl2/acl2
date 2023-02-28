@@ -130,7 +130,7 @@
                                     (read-object (value-pointer->designator ptr)
                                                  compst))
                              (,recognizer struct))
-                        (equal (exec-memberp ptr
+                        (equal (exec-memberp (expr-value ptr nil)
                                              (ident ,(ident->name memname))
                                              compst)
                                (expr-value (,reader struct)
