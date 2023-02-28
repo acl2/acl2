@@ -265,32 +265,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define eval-unary ((op unopp) (arg valuep))
+  :guard (unop-nonpointerp op)
+  :returns (val value-resultp)
+  :short "Evaluate a unary operation that does not involve pointers
+          on a value."
+  (case (unop-kind op)
+    (::plus (plus-value arg))
+    (:minus (minus-value arg))
+    (:bitnot (bitnot-value arg))
+    (:lognot (lognot-value arg))
+    (t (error (impossible))))
+  :guard-hints (("Goal" :in-theory (enable unop-nonpointerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-unary ((op unopp) (arg expr-valuep) (compst compustatep))
   :returns (eval expr-value-resultp)
   :short "Execute a unary operation."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This ACL2 function takes and return an expression value.
-     The only unary operator that needs an expression value
-     (as opposed to just a value) is @('&').
-     The only unary operator that returns an expression value
-     (as opposed to just a value) is @('*')."))
-  (unop-case op
-             :address (exec-address arg)
-             :indir (exec-indir arg compst)
-             :plus (b* ((val (plus-value (expr-value->value arg)))
-                        ((when (errorp val)) val))
-                     (make-expr-value :value val :object nil))
-             :minus (b* ((val (minus-value (expr-value->value arg)))
-                         ((when (errorp val)) val))
-                      (make-expr-value :value val :object nil))
-             :bitnot (b* ((val (bitnot-value (expr-value->value arg)))
-                          ((when (errorp val)) val))
-                       (make-expr-value :value val :object nil))
-             :lognot (b* ((val (lognot-value (expr-value->value arg)))
-                          ((when (errorp val)) val))
-                       (make-expr-value :value val :object nil)))
+    "This ACL2 function
+     wraps @(tsee eval-unary) to take and return expression values,
+     and covers the remaining two unary operators @('&') and @('*').
+     Note that the only unary operator that needs an expression value
+     (as opposed to just a value) is @('&'),
+     and that only unary operator that returns an expression value
+     (as opposed to just a value) is @('*').
+     The other four unary operators only operate on values,
+     as factored in @(tsee eval-unary)."))
+  (case (unop-kind op)
+    (:address (exec-address arg))
+    (:indir (exec-indir arg compst))
+    (t (b* ((val (eval-unary op (expr-value->value arg)))
+            ((when (errorp val)) val))
+         (make-expr-value :value val :object nil))))
+  :guard-hints (("Goal" :in-theory (enable unop-nonpointerp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
