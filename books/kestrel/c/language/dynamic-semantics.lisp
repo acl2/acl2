@@ -268,8 +268,8 @@
 (define eval-unary ((op unopp) (arg valuep))
   :guard (unop-nonpointerp op)
   :returns (val value-resultp)
-  :short "Evaluate a unary operation that does not involve pointers
-          on a value."
+  :short "Evaluate a unary operation that does not involve pointers,
+          on a value, returning a value."
   (case (unop-kind op)
     (::plus (plus-value arg))
     (:minus (minus-value arg))
@@ -307,16 +307,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-binary-strict-pure ((op binopp) (arg1 valuep) (arg2 valuep))
+(define eval-binary-strict-pure ((op binopp) (arg1 valuep) (arg2 valuep))
   :guard (and (binop-strictp op)
               (binop-purep op))
   :returns (val value-resultp)
-  :short "Execute a binary expression with a strict pure operator."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These operators are pure,
-     so we just return a value as result (if there is no error)."))
+  :short "Evaluate a binary expression with a strict pure operator,
+          on two values, returning a value."
   (case (binop-kind op)
     (:mul (mul-values arg1 arg2))
     (:div (div-values arg1 arg2))
@@ -336,6 +332,27 @@
     (:bitior (bitior-values arg1 arg2))
     (t (error (impossible))))
   :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-binary-strict-pure ((op binopp)
+                                 (arg1 expr-valuep)
+                                 (arg2 expr-valuep))
+  :guard (and (binop-strictp op)
+              (binop-purep op))
+  :returns (dval expr-value-resultp)
+  :short "Execute a binary expression with a strict pure operator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This ACL2 function wraps @(tsee eval-binary-strict-pure)
+     to take and return expression values."))
+  (b* ((val1 (expr-value->value arg1))
+       (val2 (expr-value->value arg2))
+       (val (eval-binary-strict-pure op val1 val2))
+       ((when (errorp val)) val))
+    (make-expr-value :value val :object nil))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -715,8 +732,12 @@
                  (t (b* ((arg1 (exec-expr-pure e.arg1 compst))
                          ((when (errorp arg1)) arg1)
                          (arg2 (exec-expr-pure e.arg2 compst))
-                         ((when (errorp arg2)) arg2))
-                      (exec-binary-strict-pure e.op arg1 arg2)))))
+                         ((when (errorp arg2)) arg2)
+                         (eval (exec-binary-strict-pure e.op
+                                                        (expr-value arg1 nil)
+                                                        (expr-value arg2 nil)))
+                         ((when (errorp eval)) eval))
+                      (expr-value->value eval)))))
      :cond (b* ((test (exec-expr-pure e.test compst))
                 ((when (errorp test)) test)
                 (test (test-value test))

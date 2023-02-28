@@ -176,9 +176,13 @@
                   (equal val1 (exec-expr-pure (expr-binary->arg1 e) compst))
                   (equal val2 (exec-expr-pure (expr-binary->arg2 e) compst))
                   (valuep val1)
-                  (valuep val2))
+                  (valuep val2)
+                  (equal eval (exec-binary-strict-pure op
+                                                       (expr-value val1 nil)
+                                                       (expr-value val2 nil)))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-binary-strict-pure op val1 val2)))
+                    (expr-value->value eval)))
     :enable (exec-expr-pure binop-purep))
 
   (defund sint-from-boolean-with-error (test)

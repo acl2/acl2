@@ -304,10 +304,15 @@
           (pack 'exec-binary-strict-pure-when- op-kind))
          (thm-event
           `(defruled ,exec-binary-strict-pure-when-op
-             (implies (and (equal op (,(pack 'binop- op-kind))))
-                      (equal (exec-binary-strict-pure op x y)
-                             (,op-values x y)))
-             :enable (exec-binary-strict-pure)))
+             (implies (and (equal op (,(pack 'binop- op-kind)))
+                           (equal val (,op-values x y))
+                           (valuep val))
+                      (equal (exec-binary-strict-pure op
+                                                      (expr-value x nil)
+                                                      (expr-value y ni))
+                             (expr-value val nil)))
+             :enable (exec-binary-strict-pure
+                      eval-binary-strict-pure)))
          ((mv names events)
           (atc-exec-binary-rules-gen-op op ltypes rtypes))
          ((mv more-names more-events)

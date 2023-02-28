@@ -512,7 +512,8 @@
              (op-arg1-type-and-value-when-arg2-type
               (pack op-name '- arg1-fixtype '-and-value-when- arg2-fixtype))
              (type-pred-of-op-arg1-type-arg2-type
-              (pack type-pred '-of- op-arg1-type-arg2-type)))
+              (pack type-pred '-of- op-arg1-type-arg2-type))
+             (valuep-when-type-pred (pack 'valuep-when- type-pred)))
           `(("Goal" :in-theory '(exec-expr-pure-when-strict-pure-binary
                                  (:e expr-kind)
                                  (:e expr-binary->op)
@@ -530,7 +531,11 @@
                                  ,op-arg1-type-and-value-when-arg2-type
                                  ,type-pred-of-op-arg1-type-arg2-type
                                  ,@(and op-arg1-type-arg2-type-okp
-                                        (list okp-lemma-name)))))))
+                                        (list okp-lemma-name))
+                                 expr-valuep-of-expr-value
+                                 expr-value->value-of-expr-value
+                                 value-fix-when-valuep
+                                 ,valuep-when-type-pred)))))
        ((when (eq op-arg1-type-arg2-type 'quote))
         (reterr (raise "Internal error: function symbol is QUOTE.")))
        ((mv thm-event thm-name thm-index names-to-avoid)
