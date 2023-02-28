@@ -556,6 +556,25 @@
                     )
               rand))))))
 
+(defun breakable-eventp (event breakage-plan)
+  (declare (xargs :guard (member-eq breakage-plan '(:all :goal-partial))))
+  (if (not (and (consp event) ; must be defthm, etc.
+                (<= 3 (len event))
+                (keyword-value-listp (cdddr event))))
+      (er hard? 'breakable-eventp "Bad advice event in ~x0." event)
+    (let ((theorem-hints (cadr (assoc-keyword :hints (cdddr event)))))
+      (if (not (true-listp theorem-hints))
+          (er hard? 'breakable-eventp "Bad hints in ~x0: ~x1." (cadr event) theorem-hints)
+        (if (null theorem-hints)
+            (prog2$ (cw "Skipping ~x0 since it has no hints to remove.~%" (cadr event))
+                    nil)
+          (if (and (eq breakage-plan :goal-partial)
+                   (null (hint-settings-for-goal-spec "Goal" theorem-hints)))
+              ;; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints):
+              (prog2$ (cw "Skipping ~x0 since it has no hints on Goal.~%" (cadr event))
+                      nil)
+            t))))))
+
 ;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
 ;; Returns (mv erp breakage-type trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
 ;; Here, trivialp means "no model was needed".
@@ -589,21 +608,26 @@
        ;;                 '(:rewrite)))
        ;; (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
        (theorem-hints (cadr (assoc-keyword :hints (cdddr defthm))))
-
-       ((when (null theorem-hints))
-        (cw "Skipping ~x0 since it has no hints to remove.~%" theorem-name)
+       ((when (not (breakable-eventp defthm breakage-plan)))
         (mv nil ; no error
             :not-attempted ; no breakage of hints possible
-            t ; there were no hints (and we assume it proves without them)
+            t
             nil rand state))
 
-       ((when (and (eq breakage-plan :goal-partial)
-                   (null (hint-settings-for-goal-spec "Goal" theorem-hints))))
-        (cw "Skipping ~x0 since it has no hints on Goal.~%" theorem-name)
-        (mv nil ; no error
-            :not-attempted ; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints)
-            t ; there were no Goal hints for us to try removing
-            nil rand state))
+       ;; ((when (null theorem-hints))
+       ;;  (cw "Skipping ~x0 since it has no hints to remove.~%" theorem-name)
+       ;;  (mv nil ; no error
+       ;;      :not-attempted ; no breakage of hints possible
+       ;;      t ; there were no hints (and we assume it proves without them)
+       ;;      nil rand state))
+
+       ;; ((when (and (eq breakage-plan :goal-partial)
+       ;;             (null (hint-settings-for-goal-spec "Goal" theorem-hints))))
+       ;;  (cw "Skipping ~x0 since it has no hints on Goal.~%" theorem-name)
+       ;;  (mv nil ; no error
+       ;;      :not-attempted ; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints)
+       ;;      t ; there were no Goal hints for us to try removing
+       ;;      nil rand state))
 
        ;; Break the hints:
        ((mv breakage-type broken-theorem-hints rand)
@@ -746,6 +770,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns a list of defthm/defthmd names.
+(defun breakable-theorems-to-try (events theorems-to-try breakage-plan acc)
+  (declare (xargs :guard (and (true-listp events)
+                              (or (eq :all theorems-to-try)
+                                  (symbol-listp theorems-to-try))
+                              (member-eq breakage-plan '(:all :goal-partial))
+                              (true-listp acc))))
+  (if (endp events)
+      (reverse acc)
+    (let ((event (first events)))
+      (breakable-theorems-to-try (rest events)
+                                 theorems-to-try
+                                 breakage-plan
+                                 (if (and (advice-eventp event theorems-to-try)
+                                          (breakable-eventp event breakage-plan))
+                                     (cons (cadr event) acc)
+                                   acc)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems indicated by THEOREMS-TO-TRY.
 ;; Returns (mv erp result-alist+rand state), where RESULT-ALIST+RAND is a cons of RESULT-ALIST and RAND, and where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 ;; Since this returns an error triple, it can be wrapped in revert-world.
@@ -783,18 +827,22 @@
        ((mv dir &) (split-path filename))
        (- (cw "Evaluating advice on ~s0:~%" filename))
        ;; May be necessary for resolving #. constants in read-objects-from-book:
-       (state (load-port-file-if-exists (remove-lisp-suffix filename t) state))
+       (state (load-port-file-if-exists (remove-lisp-suffix filename t) state)) ; this can change the current package
        ;; Read all the forms from the file:
        ((mv erp events state)
         (read-objects-from-book filename state))
        ((when erp) (cw "Error: ~x0.~%" erp) (mv erp (cons nil rand) state))
        (len-all-events (len events))
-       (events (discard-events-after-last-advice-event events theorems-to-try))
-       (- (cw "(~x0 total events, ~x1 after discarding final events.)~%~%" len-all-events (len events)))
-       ((when (null events))
-        (cw "~%SUMMARY for book ~s0: NO EVENTS TO EVALUATE.  Theorems to try were ~X12.~%" filename theorems-to-try nil)
+       ;; (- (cw "Theorems to try: ~X01~%" theorems-to-try nil))
+       (breakable-theorems-to-try (breakable-theorems-to-try events theorems-to-try breakage-plan nil))
+       ((when (null breakable-theorems-to-try))
+        (cw "~%SUMMARY for book ~s0: NO EVENTS TO EVALUATE.~%" filename)
+        ;; (cw "Theorems to try were ~X01.~%" theorems-to-try nil)
         (mv nil ; no error, but nothing to do for this book
             (cons nil rand) state))
+       ;; There is at least one breakable defthm event to try:
+       (events (discard-events-after-last-advice-event events breakable-theorems-to-try)) ; todo: what if more than one theorem with the same name?  can't happen at top-level
+       (- (cw "(~x0 total events, ~x1 to try, ~x2 breakable, ~x3 after discarding final events.)~%~%" len-all-events (len theorems-to-try) (len breakable-theorems-to-try) (len events)))
        ;; Ensures we are working in the same dir as the book:
        ;; TODO: Ensure this gets reset upon failure, such as a package name clash.
        ((mv erp & state)
@@ -805,9 +853,9 @@
        ;; Ensure proofs are done during make-event expansion, even if we use skip-proofs:
        ((mv erp state) (submit-event-helper-core '(defattach (acl2::always-do-proofs-during-make-event-expansion acl2::constant-t-function-arity-0) :system-ok t) nil state))
        ((when erp) (mv erp (cons nil rand) state))
-       ;; Submit all the events, trying advice for each defthm in theorems-to-try:
+       ;; Submit all the events, trying advice for each defthm in breakable-theorems-to-try:
        ((mv erp result-alist rand state)
-        (submit-events-and-eval-models events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url breakage-plan models nil rand state))
+        (submit-events-and-eval-models events breakable-theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url breakage-plan models nil rand state))
        ((when erp) ; I suppose we could return partial results from this book instead
         (cw "Error: ~x0.~%" erp)
         (mv erp (cons nil rand) state))
