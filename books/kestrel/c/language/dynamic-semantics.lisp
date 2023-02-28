@@ -240,7 +240,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-indir ((val valuep) (compst compustatep))
+(define exec-indir ((arg expr-valuep) (compst compustatep))
   :returns (eval expr-value-resultp)
   :short "Apply @('*') to a value [C:6.5.3.2/2] [C:6.5.3.2/4]."
   :long
@@ -252,10 +252,11 @@
      which is a value,
      and we return it as an expression value,
      taking the object designator from the pointer value."))
-  (b* (((unless (value-case val :pointer))
-        (error (list :non-pointer-dereference (value-fix val))))
+  (b* ((val (expr-value->value arg))
+       ((unless (value-case val :pointer))
+        (error (list :non-pointer-dereference (expr-value-fix arg))))
        ((unless (value-pointer-validp val))
-        (error (list :invalid-pointer-dereference (value-fix val))))
+        (error (list :invalid-pointer-dereference (expr-value-fix arg))))
        (objdes (value-pointer->designator val))
        (*val (read-object objdes compst))
        ((when (errorp *val)) *val))
@@ -277,7 +278,7 @@
      (as opposed to just a value) is @('*')."))
   (unop-case op
              :address (exec-address arg)
-             :indir (exec-indir (expr-value->value arg) compst)
+             :indir (exec-indir arg compst)
              :plus (b* ((val (plus-value (expr-value->value arg)))
                         ((when (errorp val)) val))
                      (make-expr-value :value val :object nil))
