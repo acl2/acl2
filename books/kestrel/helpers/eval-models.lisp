@@ -15,7 +15,6 @@
 (include-book "advice")
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/axe/merge-sort-less-than" :dir :system) ; todo: move
-(include-book "kestrel/strings-light/upcase" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -407,19 +406,6 @@
                                     state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun hint-settings-for-goal-spec (goal-spec hints)
-  (declare (xargs :guard (and (stringp goal-spec)
-                              (true-listp hints))))
-  (if (endp hints)
-      nil
-    (let ((hint (first hints)))
-      (if (and (consp hint)
-               (stringp (car hint))
-               (equal (string-upcase-gen goal-spec)
-                      (string-upcase-gen (car hint))))
-          (cdr hint)
-        (hint-settings-for-goal-spec goal-spec (rest hints))))))
 
 (defund remove-settings-for-goal-spec (goal-spec hints)
   (declare (xargs :guard (and (stringp goal-spec)
