@@ -18,6 +18,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atj-pre-translation-var-reuse
@@ -568,9 +570,7 @@
 
   :prepwork
 
-  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
-
-   (define atj-mark-lambda-formals ((formals symbol-listp)
+  ((define atj-mark-lambda-formals ((formals symbol-listp)
                                     (actuals pseudo-term-listp)
                                     (vars-in-scope symbol-listp)
                                     (vars-used-after symbol-listp)
@@ -615,9 +615,7 @@
               (len formals)))))
 
   :verify-guards nil ; done below
-
   ///
-
   (verify-guards atj-mark-term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
