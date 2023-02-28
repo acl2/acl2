@@ -134,7 +134,7 @@
                               (true-listp disable-runes))))
   (if (endp hints)                      ; No hints given
       `(("Goal" :in-theory (e/d ,@enable-runes ,@disable-runes)))
-    (e/d-runes-in-hints-aux hints () disable-runes)))
+    (e/d-runes-in-hints-aux hints enable-runes disable-runes)))
 
 (defun parse-enable-disable-e/d (e/d-term)
   (declare (xargs :guard (true-listp e/d-term)))
