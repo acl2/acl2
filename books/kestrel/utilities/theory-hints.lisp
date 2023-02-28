@@ -1,6 +1,6 @@
 ; A library about manipulating theory :hints
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,8 @@
 (in-package "ACL2")
 
 (include-book "std/util/bstar" :dir :system) ; todo: maybe drop?
+(include-book "kestrel/strings-light/upcase" :dir :system) ; for string-upcase-gen
+; (include-book "tools/rulesets" :dir :system) ; not strictly needed
 
 (defun e/d-runes-in-theory-hint (val enable-runes disable-runes)
   (declare (xargs :guard (and (true-listp val)
@@ -160,3 +162,116 @@
                                       '(("Goal" :in-theory (enable))))
                                   enable-runes disable-runes)
         (er hard? 'e/d-term "Illegal enabling/disabling term: ~x0" e/d-term)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move?
+(defun hint-settings-for-goal-spec (goal-spec hints)
+  (declare (xargs :guard (and (stringp goal-spec)
+                              (true-listp hints))))
+  (if (endp hints)
+      nil
+    (let ((hint (first hints)))
+      (if (and (consp hint)
+               (stringp (car hint))
+               (equal (string-upcase-gen goal-spec)
+                      (string-upcase-gen (car hint))))
+          (cdr hint)
+        (hint-settings-for-goal-spec goal-spec (rest hints))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Changes EXPR, which is a theory-expression suitable for use with :in-theory,
+;; to enable/disable the ENABLE*-ITEMS/DISABLE*-ITEMS, which are suitable for
+;; passing to enable*/disable*.
+;; Note that the enabling is done first, then the disabling.
+;;TODO: Do better in common cases (calls to enable, enable*, disable, disable*,
+;; e/d, e/d*)!
+(defund add-enable*/disable*-to-theory-expression (expr enable*-items disable*-items)
+  (declare (xargs :guard (and ;; expr
+                          (true-listp enable*-items)
+                          (true-listp disable*-items))))
+  `(set-difference-theories
+    (union-theories (expand-ruleset ',enable*-items world)
+                    ,expr)
+    (expand-ruleset ',disable*-items world)))
+
+;; Ensures that the ENABLE*-ITEMS/DISABLE*-ITEMS, which are suitable for
+;; passing to ENABLE*/DISABLE*, are enabled/disabled in the KEYWORD-VALUE-LIST.
+;; Note that the enabling is done first, then the disabling.
+(defund add-enable*/disable*-to-hint-settings (keyword-value-list enable*-items disable*-items)
+  (declare (xargs :guard (and (keyword-value-listp keyword-value-list)
+                              (true-listp enable*-items)
+                              (true-listp disable*-items))
+                  :guard-hints (("Goal" :in-theory (enable keyword-value-listp)))))
+  (if (endp keyword-value-list)
+      nil
+    (let* ((key (first keyword-value-list))
+           (val (second keyword-value-list)))
+      (if (not (eq :in-theory key))
+          (cons key (cons val (add-enable*/disable*-to-hint-settings (rest (rest keyword-value-list)) enable*-items disable*-items)))
+        (cons key
+              (cons (add-enable*/disable*-to-theory-expression val enable*-items disable*-items)
+                    (rest (rest keyword-value-list)) ; don't recur, since duplicate hint keywords are prohibited
+                    ))))))
+
+;; Ensures that the ENABLE*-ITEMS/DISABLE*-ITEMS, which are suitable for
+;; passing to ENABLE*/DISABLE*, are enabled/disabled in the HINT (TODO: except
+;; for computed hints?).  Note that the enabling is done first, then the
+;; disabling.
+(defun add-enable*/disable*-to-hint (hint enable*-items disable*-items)
+  (declare (xargs :guard (and ;; (true-listp hint)
+                          (true-listp enable*-items)
+                          (true-listp disable*-items))))
+  (if (and (consp hint)
+           (stringp (first hint)))
+      ;; common hint:
+      (let ((goal-spec (first hint))
+            (keyword-value-list (rest hint)))
+        (if (not (keyword-value-listp (rest hint)))
+            (er hard? 'add-enable*/disable*-to-hint "Bad hint: ~x0." hint)
+          (cons goal-spec (add-enable*/disable*-to-hint-settings keyword-value-list enable*-items disable*-items))))
+    ;; computed hint:
+    hint ; todo
+    ))
+
+;; Ensures that the ENABLE*-ITEMS/DISABLE*-ITEMS, which are suitable for
+;; passing to ENABLE*/DISABLE*, are enabled/disabled in the HINTS (TODO: except
+;; for computed hints?).
+(defun add-enable*/disable*-to-all-hints (hints enable*-items disable*-items)
+  (declare (xargs :guard (and (true-listp hints)
+                              (true-listp enable*-items)
+                              (true-listp disable*-items))))
+  (if (endp hints)
+      nil
+    (cons (add-enable*/disable*-to-hint (first hints) enable*-items disable*-items)
+          (add-enable*/disable*-to-all-hints (rest hints) enable*-items disable*-items))))
+
+;; Ensures that the ENABLE*-ITEMS/DISABLE*-ITEMS, which are suitable for
+;; passing to ENABLE*/DISABLE*, are enabled/disabled in the HINTS (TODO: except
+;; for computed hints?).
+(defun add-enable*/disable*-to-hints (hints enable*-items disable*-items)
+  (declare (xargs :guard (and (true-listp hints)
+                              (true-listp enable*-items)
+                              (true-listp disable*-items))))
+  (let ((new-hints (add-enable*/disable*-to-all-hints hints enable*-items disable*-items)))
+    (if (hint-settings-for-goal-spec "Goal" new-hints)
+        ;; usual case (hints for "Goal" were present):
+        new-hints
+      ;; no hint on Goal, so make one:
+      (cons `("Goal" :in-theory (e/d* (,@enable*-items) (,@disable*-items))) ; todo: make nicer
+            new-hints))))
+
+;; Ensures that the ENABLE*-ITEMS, which are suitable for passing to
+;; ENABLE*, are enabled in the HINTS (TODO: except for computed hints?).
+(defun add-enable*-to-hints (hints enable*-items)
+  (declare (xargs :guard (and (true-listp hints)
+                              (true-listp enable*-items))))
+  (add-enable*/disable*-to-hints hints enable*-items nil))
+
+;; Ensures that the DISABLE*-ITEMS, which are suitable for passing to
+;; DISABLE*, are disabled in the HINTS (TODO: except for computed hints?).
+(defun add-disable*-to-hints (hints disable*-items)
+  (declare (xargs :guard (and (true-listp hints)
+                              (true-listp disable*-items))))
+  (add-enable*/disable*-to-hints hints nil disable*-items))
