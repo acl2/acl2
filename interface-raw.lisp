@@ -1291,6 +1291,17 @@
                                ,(cdar type-to-var-alist) )
                  (alist-to-the-for-*1*-lst (cdr type-to-var-alist))))))
 
+(defconst *touchable-state-vars*
+
+; We don't want oneify to complain about untouchables -- that's the job of
+; translate.  It seems reasonable then to use this in oneify in place of
+; *default-state-vars*, even though as of this writing (late February 2023) we
+; haven't seen a need to do so.
+
+  (default-state-vars nil
+    :temp-touchable-vars t
+    :temp-touchable-fns t))
+
 (defun-one-output oneify (x fns w program-p)
 
 ; Keep this function in sync with translate11.  Errors have generally been
@@ -1352,7 +1363,7 @@
                                  x
                                  'oneify
                                  w
-                                 *default-state-vars*
+                                 *touchable-state-vars*
                                  nil)
       (declare (ignore bindings))
       (if flg
@@ -1374,7 +1385,7 @@
        x
        'oneify
        w
-       *default-state-vars*)
+       *touchable-state-vars*)
       (declare (ignore bindings))
       (if flg
           `(interface-er "Implementation error: translate11-loop$ in oneify ~
@@ -1400,7 +1411,7 @@
                   (body (caddr pair))
                   (alist
                    (mv-let (erp alist)
-                     (bind-macro-args args x w *default-state-vars*)
+                     (bind-macro-args args x w *touchable-state-vars*)
                      (cond (erp
 
 ; Macroexpansion succeeded during translate.  So it is unexpected for it to
