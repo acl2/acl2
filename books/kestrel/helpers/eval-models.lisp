@@ -407,18 +407,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund remove-settings-for-goal-spec (goal-spec hints)
+(defund remove-hints-for-goal-spec (goal-spec hints)
   (declare (xargs :guard (and (stringp goal-spec)
+                              (standard-string-p goal-spec)
                               (true-listp hints))))
   (if (endp hints)
       nil
     (let ((hint (first hints)))
-      (if (and (consp hint)
-               (stringp (car hint))
-               (equal (string-upcase-gen goal-spec)
-                      (string-upcase-gen (car hint))))
-          (remove-settings-for-goal-spec goal-spec (rest hints))
-        (cons hint (remove-settings-for-goal-spec goal-spec (rest hints)))))))
+      (if (hint-has-goal-specp hint goal-spec)
+          ;; Keep going, as there may be more matches:
+          (remove-hints-for-goal-spec goal-spec (rest hints))
+        (cons hint (remove-hints-for-goal-spec goal-spec (rest hints)))))))
 
 (defun num-ways-to-break-hint-setting (keyword val)
   (declare (xargs :guard (keywordp keyword)))
@@ -553,7 +552,7 @@
             (mv :none nil rand)
           (mv breakage-type
               (cons (cons "Goal" broken-hint-settings)
-                    (remove-settings-for-goal-spec "Goal" hints) ; removal might not be necessary, due to shadowing
+                    (remove-hints-for-goal-spec "Goal" hints) ; removal might not be necessary, due to shadowing
                     )
               rand))))))
 
@@ -940,7 +939,7 @@
             (random$ *m31* state)
           (mv seed state)))
        (- (cw "(Using random seed of ~x0.)~%" rand))
-       (- (cw "(Trying ~x0 recommendations per model.)~%" num-recs-per-model))
+       (- (cw "(Trying ~x0 ~s1 per model.)~%" num-recs-per-model (if (= 1 num-recs-per-model) "recommendation" "recommendations")))
        (tests (clear-keys-with-matching-prefixes tests excluded-prefixes nil))
        (len-tests (len tests))
        ((when (and (not (eq :all num-tests))
