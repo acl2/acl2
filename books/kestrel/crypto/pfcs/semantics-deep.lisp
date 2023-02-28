@@ -175,6 +175,26 @@
                 omap::tail)
        :expand ((assignment-wfp (cons pair asg) p)))))
 
+  (defrule assignment-wfp-of-update*
+    (implies (and (assignmentp asg-new)
+                  (assignmentp asg-old)
+                  (assignment-wfp asg-new p)
+                  (assignment-wfp asg-old p))
+             (assignment-wfp (omap::update* asg-new asg-old) p))
+    :enable omap::update*)
+
+  (defrule assignment-wfp-of-delete
+    (implies (and (assignmentp asg)
+                  (assignment-wfp asg p))
+             (assignment-wfp (omap::delete var asg) p))
+    :enable omap::delete)
+
+  (defrule assignment-wfp-of-delete*
+    (implies (and (assignmentp asg)
+                  (assignment-wfp asg p))
+             (assignment-wfp (omap::delete* vars asg) p))
+    :enable omap::delete*)
+
   (defrule assignment-wfp-of-from-lists
     (implies (and (symbol-listp keys)
                   (fe-listp vals p)
