@@ -204,7 +204,7 @@
 
 (define exec-address ((arg expr-valuep))
   :returns (eval expr-value-resultp)
-  :short "Apply @('&') to an expression value [C:6.5.3.2/1] [C:6.5.3.2/3]."
+  :short "Execute @('&') on an expression value [C:6.5.3.2/1] [C:6.5.3.2/3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -242,7 +242,7 @@
 
 (define exec-indir ((arg expr-valuep) (compst compustatep))
   :returns (eval expr-value-resultp)
-  :short "Apply @('*') to a value [C:6.5.3.2/2] [C:6.5.3.2/4]."
+  :short "Execute @('*') on an expression value [C:6.5.3.2/2] [C:6.5.3.2/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -283,7 +283,7 @@
 
 (define exec-unary ((op unopp) (arg expr-valuep) (compst compustatep))
   :returns (eval expr-value-resultp)
-  :short "Execute a unary operation."
+  :short "Execute a unary operation on an expression value."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -342,7 +342,7 @@
   :guard (and (binop-strictp op)
               (binop-purep op))
   :returns (dval expr-value-resultp)
-  :short "Execute a binary expression with a strict pure operator."
+  :short "Execute a strict pure binary operation on expression values."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -357,9 +357,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-cast ((tyname tynamep) (arg valuep))
+(define eval-cast ((tyname tynamep) (arg valuep))
   :returns (val value-resultp)
-  :short "Execute a cast expression."
+  :short "Evaluate a type cast on a value."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -377,6 +377,16 @@
        (val (convert-integer-value arg type))
        ((when (errorp val)) err))
     val)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-cast ((tyname tynamep) (arg expr-valuep))
+  :returns (eval expr-value-resultp)
+  :short "Execute a type cast on an expression value."
+  (b* ((val (eval-cast tyname (expr-value->value arg)))
+       ((when (errorp val)) val))
+    (make-expr-value :value val :object nil))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -703,8 +713,10 @@
                  ((when (errorp eval)) eval))
               (expr-value->value eval))
      :cast (b* ((arg (exec-expr-pure e.arg compst))
-                ((when (errorp arg)) arg))
-             (exec-cast e.type arg))
+                ((when (errorp arg)) arg)
+                (eval (exec-cast e.type (expr-value arg nil)))
+                ((when (errorp eval)) eval))
+             (expr-value->value eval))
      :binary (b* (((unless (binop-purep e.op)) (error (list :non-pure-expr e))))
                (case (binop-kind e.op)
                  (:logand

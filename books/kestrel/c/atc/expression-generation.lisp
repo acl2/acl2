@@ -677,7 +677,8 @@
              (exec-cast-of-out-fixtype-when-arg-type-pred
               (pack 'exec-cast-of- out-fixtype '-when- arg-type-pred))
              (type-pred (type-to-recognizer out-type wrld))
-             (type-pred-of-op-name (pack type-pred '-of- op-name)))
+             (type-pred-of-op-name (pack type-pred '-of- op-name))
+             (valuep-when-type-pred (pack 'valuep-when- type-pred)))
           `(("Goal" :in-theory '(exec-expr-pure-when-cast
                                  (:e expr-kind)
                                  (:e expr-cast->type)
@@ -687,7 +688,11 @@
                                  ,exec-cast-of-out-fixtype-when-arg-type-pred
                                  ,type-pred-of-op-name
                                  ,@(and op-name-okp
-                                        (list okp-lemma-name)))))))
+                                        (list okp-lemma-name))
+                                 expr-valuep-of-expr-value
+                                 expr-value->value-of-expr-value
+                                 value-fix-when-valuep
+                                 ,valuep-when-type-pred)))))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
                                        gin.fn-guard
