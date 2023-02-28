@@ -202,8 +202,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-address ((eval expr-valuep))
-  :returns (val value-resultp)
+(define exec-address ((arg expr-valuep))
+  :returns (eval expr-value-resultp)
   :short "Apply @('&') to an expression value [C:6.5.3.2/1] [C:6.5.3.2/3]."
   :long
   (xdoc::topstring
@@ -215,7 +215,9 @@
      The expression value must contain an object designator,
      because otherwise the argument expression was not an lvalue.
      We extract the object designator and we return a pointer value,
-     whose type is determined by the value in the expression value.")
+     whose type is determined by the value in the expression value.
+     We return the value as an expression value without object designator,
+     for uniformity with other ACL2 functions for expression execution.")
    (xdoc::p
     "Here we formalize the actual application of @('&')
      to the expression value returned by an expression.
@@ -226,12 +228,14 @@
      while here we assume that the argument expression of @('&')
      has been evaluated (because the special cases above do not hold),
      and the resulting expression value is passed here."))
-  (b* ((objdes (expr-value->object eval))
+  (b* ((objdes (expr-value->object arg))
        ((unless objdes)
-        (error (list :not-lvalue-result (expr-value-fix eval))))
-       (type (type-of-value (expr-value->value eval))))
-    (make-value-pointer :core (pointer-valid objdes)
-                        :reftype type))
+        (error (list :not-lvalue-result (expr-value-fix arg))))
+       (type (type-of-value (expr-value->value arg))))
+    (make-expr-value
+     :value (make-value-pointer :core (pointer-valid objdes)
+                                :reftype type)
+     :object nil))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -272,9 +276,7 @@
      The only unary operator that returns an expression value
      (as opposed to just a value) is @('*')."))
   (unop-case op
-             :address (b* ((val (exec-address arg))
-                           ((when (errorp val)) val))
-                        (make-expr-value :value val :object nil))
+             :address (exec-address arg)
              :indir (exec-indir (expr-value->value arg) compst)
              :plus (b* ((val (plus-value (expr-value->value arg)))
                         ((when (errorp val)) val))
