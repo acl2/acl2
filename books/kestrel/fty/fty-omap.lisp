@@ -14,7 +14,6 @@
 (include-book "centaur/fty/database" :dir :system)
 (include-book "centaur/fty/fty-parseutils" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
-;(include-book "std/osets/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 (include-book "kestrel/utilities/omaps/core" :dir :system)
