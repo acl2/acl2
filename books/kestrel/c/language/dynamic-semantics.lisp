@@ -393,7 +393,7 @@
 
 (define exec-arrsub ((arr expr-valuep) (sub expr-valuep) (compst compustatep))
   :returns (eval expr-value-resultp)
-  :short "Execute an array subscripting expression."
+  :short "Execute the array subscripting operation on expression values."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -467,7 +467,7 @@
 
 (define exec-member ((str expr-valuep) (mem identp))
   :returns (eval expr-value-resultp)
-  :short "Execute a structure member expression."
+  :short "Execute a structure member operation on an expression value."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -498,7 +498,8 @@
 
 (define exec-memberp ((str expr-valuep) (mem identp) (compst compustatep))
   :returns (eval expr-value-resultp)
-  :short "Execute a structure pointer member expression."
+  :short "Execute a structure pointer member operation
+          on an expression value."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -538,10 +539,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-arrsub-of-member ((str valuep) (mem identp) (sub valuep))
-  :returns (result value-resultp)
-  :short "Execute an array subscripting expression
-          of a structure member expression."
+(define exec-arrsub-of-member ((str expr-valuep) (mem identp) (sub expr-valuep))
+  :returns (eval expr-value-resultp)
+  :short "Execute the array subscripting operation on
+          the result of a structure member operation,
+          starting with expression values for structure and index."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -556,12 +558,21 @@
     "So here we formalize the execution of expressions of the form @('s.m[i]'),
      where @('s') is a structure,
      @('m') is the name of a member of the structure of array type,
-     and @('i') is an index into the array."))
-  (b* (((unless (value-case str :struct))
-        (error (list :not-struct (value-fix str))))
+     and @('i') is an index into the array.")
+   (xdoc::p
+    "We plan to remove this function
+     once @(tsee exec-arrsub) and @(tsee exec-member)
+     can be used compositionally.
+     For this reason, we do not bother
+     returning an appropriate object designator when applicable,
+     instead always returning no object designator in the result."))
+  (b* ((str (expr-value->value str))
+       ((unless (value-case str :struct))
+        (error (list :not-struct str)))
        (arr (value-struct-read mem str))
        ((when (errorp arr)) arr)
        ((unless (value-case arr :array)) (error (list :not-array arr)))
+       (sub (expr-value->value sub))
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
                                              :required :integer
@@ -569,8 +580,10 @@
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
                                         :array arr
-                                        :index (value-fix sub)))))
-    (value-array-read index arr))
+                                        :index sub)))
+       (val (value-array-read index arr))
+       ((when (errorp val)) val))
+    (make-expr-value :value val :object nil))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -679,8 +692,12 @@
                      (str (exec-expr-pure e.arr.target compst))
                      ((when (errorp str)) str)
                      (sub (exec-expr-pure e.sub compst))
-                     ((when (errorp sub)) sub))
-                  (exec-arrsub-of-member str e.arr.name sub)))
+                     ((when (errorp sub)) sub)
+                     (eval (exec-arrsub-of-member (expr-value str nil)
+                                                  e.arr.name
+                                                  (expr-value sub nil)))
+                     ((when (errorp eval)) eval))
+                  (expr-value->value eval)))
                (:memberp
                 (b* (((expr-memberp e.arr) e.arr)
                      (str (exec-expr-pure e.arr.target compst))

@@ -261,17 +261,13 @@
           (formula-member
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
                           (,recognizer struct)
-                          (equal array
-                                 (value-struct-read (ident
-                                                     ,(ident->name memname))
-                                                    struct))
                           (,indextypep index)
                           ,check-hyp)
-                     (equal (exec-arrsub-of-member struct
+                     (equal (exec-arrsub-of-member (expr-value struct nil)
                                                    (ident
                                                     ,(ident->name memname))
-                                                   index)
-                            (,reader index struct))))
+                                                   (expr-value index nil))
+                            (expr-value (,reader index struct) nil))))
           (formula-memberp
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                           (valuep ptr)
@@ -346,7 +342,9 @@
                       (:t ,type-thm)
                       ,@(and length
                              (list length
-                                   'value-struct-read))))))
+                                   'value-struct-read))
+                      expr-value->value-of-expr-value
+                      ,@*atc-array-read-rules*))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member
