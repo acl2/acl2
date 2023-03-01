@@ -11,7 +11,11 @@
 
 (in-package "C")
 
-(include-book "std/util/defrule" :dir :system)
+(include-book "../../language/dynamic-semantics")
+
+(include-book "../../representation/integer-operations")
+
+(include-book "integers")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -36,6 +40,8 @@
                   x))
   :enable ifix)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule truncate-lemma
   (implies (and (natp a)
                 (natp b))
@@ -44,6 +50,96 @@
                 (<= (truncate a (expt 2 b))
                     a)))
   :rule-classes :linear)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled shl-values-to-shl-integer-values
+  (implies (and (value-integerp x)
+                (value-integerp y))
+           (equal (shl-values x y)
+                  (shl-integer-values (promote-value x)
+                                      (promote-value y))))
+  :enable shl-values)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled value-integerp-when-scharp
+  (implies (scharp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-ucharp
+  (implies (ucharp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-sshortp
+  (implies (sshortp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-ushortp
+  (implies (ushortp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-sintp
+  (implies (sintp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-uintp
+  (implies (uintp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-slongp
+  (implies (slongp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-ulongp
+  (implies (ulongp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-sllongp
+  (implies (sllongp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-ullongp
+  (implies (ullongp x)
+           (value-integerp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled integer-type-bits-when-type-sint
+  (implies (equal type (type-sint))
+           (equal (integer-type-bits type)
+                  (int-bits)))
+  :enable integer-type-bits)
+
+(defruled integer-type-bits-when-type-uint
+  (implies (equal type (type-uint))
+           (equal (integer-type-bits type)
+                  (int-bits)))
+  :enable integer-type-bits)
+
+(defruled integer-type-bits-when-type-slong
+  (implies (equal type (type-slong))
+           (equal (integer-type-bits type)
+                  (long-bits)))
+  :enable integer-type-bits)
+
+(defruled integer-type-bits-when-type-ulong
+  (implies (equal type (type-ulong))
+           (equal (integer-type-bits type)
+                  (long-bits)))
+  :enable integer-type-bits)
+
+(defruled integer-type-bits-when-type-sllong
+  (implies (equal type (type-sllong))
+           (equal (integer-type-bits type)
+                  (llong-bits)))
+  :enable integer-type-bits)
+
+(defruled integer-type-bits-when-type-ullong
+  (implies (equal type (type-ullong))
+           (equal (integer-type-bits type)
+                  (llong-bits)))
+  :enable integer-type-bits)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
