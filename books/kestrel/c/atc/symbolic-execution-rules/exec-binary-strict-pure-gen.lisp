@@ -240,12 +240,7 @@
          (event `(defruled ,name
                    ,formula
                    :enable ,enables
-                   :disable (truncate
-                             rem
-                             floor
-                             mod
-                             ifix
-                             ,@(and (member-eq op-kind '(:shl :shr))
+                   :disable (,@(and (member-eq op-kind '(:shl :shr))
                                     '((:e int-bits)
                                       (:e integer-type-bits)
                                       (:e integer-type-min)
