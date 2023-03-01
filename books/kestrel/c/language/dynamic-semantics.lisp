@@ -588,13 +588,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-arrsub-of-memberp ((str valuep)
+(define exec-arrsub-of-memberp ((str expr-valuep)
                                 (mem identp)
-                                (sub valuep)
+                                (sub expr-valuep)
                                 (compst compustatep))
-  :returns (result value-resultp)
-  :short "Execute an array subscripting expression
-          of a structure pointer member expression."
+  :returns (result expr-value-resultp)
+  :short "Execute the array subscripting operation on
+          the result of a structure pointer member operation,
+          starting with expression values for structure pointer and index."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -609,23 +610,31 @@
     "So here we formalize the execution of expressions of the form @('s->m[i]'),
      where @('s') is a pointer to a structure,
      @('m') is the name of a member of the structure of array type,
-     and @('i') is an index into the array."))
-  (b* (((unless (value-case str :pointer))
+     and @('i') is an index into the array.")
+   (xdoc::p
+    "We plan to remove this function
+     once @(tsee exec-arrsub) and @(tsee exec-memberp)
+     can be used compositionally.
+     For this reason, we do not bother
+     returning an appropriate object designator when applicable,
+     instead always returning no object designator in the result."))
+  (b* ((str (expr-value->value str))
+       ((unless (value-case str :pointer))
         (error (list :mistype-arrsub-of-memberp
                      :required :pointer
                      :supplied (type-of-value str))))
        ((unless (value-pointer-validp str))
-        (error (list :invalid-pointer (value-fix str))))
+        (error (list :invalid-pointer str)))
        (objdes (value-pointer->designator str))
        (reftype (value-pointer->reftype str))
        (struct (read-object objdes compst))
        ((when (errorp struct))
         (error (list :struct-not-found
-                     (value-fix str)
+                     str
                      (compustate-fix compst))))
        ((unless (value-case struct :struct))
         (error (list :not-struct
-                     (value-fix str)
+                     str
                      (compustate-fix compst))))
        ((unless (equal reftype
                        (type-struct (value-struct->tag struct))))
@@ -636,6 +645,7 @@
        ((when (errorp arr)) arr)
        ((unless (value-case arr :array))
         (error (list :not-array arr)))
+       (sub (expr-value->value sub))
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
                                              :required :integer
@@ -643,8 +653,10 @@
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
                                         :array arr
-                                        :index (value-fix sub)))))
-    (value-array-read index arr))
+                                        :index sub)))
+       (val (value-array-read index arr))
+       ((when (errorp val)) val))
+    (make-expr-value :value val :object nil))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -703,8 +715,13 @@
                      (str (exec-expr-pure e.arr.target compst))
                      ((when (errorp str)) str)
                      (sub (exec-expr-pure e.sub compst))
-                     ((when (errorp sub)) sub))
-                  (exec-arrsub-of-memberp str e.arr.name sub compst)))
+                     ((when (errorp sub)) sub)
+                     (eval (exec-arrsub-of-memberp (expr-value str nil)
+                                                   e.arr.name
+                                                   (expr-value sub nil)
+                                                   compst))
+                     ((when (errorp eval)) eval))
+                  (expr-value->value eval)))
                (t (b* ((arr (exec-expr-pure e.arr compst))
                        ((when (errorp arr)) arr)
                        (sub (exec-expr-pure e.sub compst))

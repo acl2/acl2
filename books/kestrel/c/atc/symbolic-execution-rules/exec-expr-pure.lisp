@@ -141,12 +141,14 @@
                   (valuep valstr)
                   (equal valsub
                          (exec-expr-pure (expr-arrsub->sub e) compst))
-                  (valuep valsub))
+                  (valuep valsub)
+                  (equal eval (exec-arrsub-of-memberp (expr-value valstr nil)
+                                                      (expr-memberp->name arr)
+                                                      (expr-value valsub nil)
+                                                      compst))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub-of-memberp valstr
-                                            (expr-memberp->name arr)
-                                            valsub
-                                            compst)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-unary

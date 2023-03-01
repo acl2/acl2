@@ -279,18 +279,14 @@
                                  (read-object (value-pointer->designator ptr)
                                               compst))
                           (,recognizer struct)
-                          (equal array
-                                 (value-struct-read (ident
-                                                     ,(ident->name memname))
-                                                    struct))
                           (,indextypep index)
                           ,check-hyp)
-                     (equal (exec-arrsub-of-memberp ptr
+                     (equal (exec-arrsub-of-memberp (expr-value ptr nil)
                                                     (ident
                                                      ,(ident->name memname))
-                                                    index
+                                                    (expr-value index nil)
                                                     compst)
-                            (,reader index struct))))
+                            (expr-value (,reader index struct) nil))))
           (hints `(("Goal"
                     :in-theory
                     '(exec-arrsub-of-member
