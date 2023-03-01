@@ -592,7 +592,7 @@
                                 (mem identp)
                                 (sub expr-valuep)
                                 (compst compustatep))
-  :returns (result expr-value-resultp)
+  :returns (eval expr-value-resultp)
   :short "Execute the array subscripting operation on
           the result of a structure pointer member operation,
           starting with expression values for structure pointer and index."
