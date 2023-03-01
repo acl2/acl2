@@ -61,6 +61,14 @@
                                       (promote-value y))))
   :enable shl-values)
 
+(defruled shr-values-to-shr-integer-values
+  (implies (and (value-integerp x)
+                (value-integerp y))
+           (equal (shr-values x y)
+                  (shr-integer-values (promote-value x)
+                                      (promote-value y))))
+  :enable shr-values)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled value-integerp-when-scharp
