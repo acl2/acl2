@@ -447,14 +447,14 @@
                     )))
     (otherwise 0)))
 
-(defun num-ways-to-break-hint-settings (hint-settings)
-  (declare (xargs :guard (keyword-value-listp hint-settings)))
-  (if (endp hint-settings)
+(defun num-ways-to-break-hint-keyword-value-list (hint-keyword-value-list)
+  (declare (xargs :guard (keyword-value-listp hint-keyword-value-list)))
+  (if (endp hint-keyword-value-list)
       0
-    (let ((keyword (car hint-settings))
-          (val (cadr hint-settings)))
+    (let ((keyword (car hint-keyword-value-list))
+          (val (cadr hint-keyword-value-list)))
       (+ (num-ways-to-break-hint-setting keyword val)
-         (num-ways-to-break-hint-settings (cddr hint-settings))))))
+         (num-ways-to-break-hint-keyword-value-list (cddr hint-keyword-value-list))))))
 
 (local (in-theory (enable natp))) ;todo
 
@@ -503,55 +503,55 @@
                       ))))
     (otherwise (mv :error (er hard 'break-hint-setting-in-nth-way "Unhandled case")))))
 
-;; Returns (mv breakage-type hint-settings).
+;; Returns (mv breakage-type hint-keyword-value-list).
 ; n is 0-based
-(defun break-hint-settings-in-nth-way (n hint-settings)
+(defun break-hint-keyword-value-list-in-nth-way (n hint-keyword-value-list)
   (declare (xargs :guard (and (natp n)
-                              (keyword-value-listp hint-settings)
-                              (< n (num-ways-to-break-hint-settings hint-settings)))
-                  :measure (len hint-settings)))
-  (if (endp hint-settings)
-      (mv :error (er hard? 'break-hint-settings-in-nth-way "Ran out of hint settings!"))
-    (let ((keyword (car hint-settings))
-          (val (cadr hint-settings)))
+                              (keyword-value-listp hint-keyword-value-list)
+                              (< n (num-ways-to-break-hint-keyword-value-list hint-keyword-value-list)))
+                  :measure (len hint-keyword-value-list)))
+  (if (endp hint-keyword-value-list)
+      (mv :error (er hard? 'break-hint-keyword-value-list-in-nth-way "Ran out of hint settings!"))
+    (let ((keyword (car hint-keyword-value-list))
+          (val (cadr hint-keyword-value-list)))
       (let ((ways (num-ways-to-break-hint-setting keyword val)))
         (if (< n ways)
             (mv-let (breakage-type result)
               (break-hint-setting-in-nth-way n keyword val)
               (mv breakage-type
-                  (append result (cddr hint-settings))))
+                  (append result (cddr hint-keyword-value-list))))
           (mv-let (breakage-type new-cddr)
-            (break-hint-settings-in-nth-way (- n ways) (cddr hint-settings))
+            (break-hint-keyword-value-list-in-nth-way (- n ways) (cddr hint-keyword-value-list))
             (mv breakage-type
                 (cons keyword (cons val new-cddr)))))))))
 
-;; Returns (mv breakage-type hint-settings rand).
-(defun randomly-break-hint-settings (hint-settings rand)
-  (declare (xargs :guard (and (keyword-value-listp hint-settings)
+;; Returns (mv breakage-type hint-keyword-value-list rand).
+(defun randomly-break-hint-keyword-value-list (hint-keyword-value-list rand)
+  (declare (xargs :guard (and (keyword-value-listp hint-keyword-value-list)
                               (minstd-rand0p rand))))
-  (let* ((total-ways (num-ways-to-break-hint-settings hint-settings)))
+  (let* ((total-ways (num-ways-to-break-hint-keyword-value-list hint-keyword-value-list)))
     (if (not (posp total-ways))
         (mv :none nil rand)
       (let* ((breakage-num (mod rand total-ways))
              (rand (minstd-rand0-next rand)))
-        (mv-let (breakage-type hint-settings)
-          (break-hint-settings-in-nth-way breakage-num hint-settings)
-          (mv breakage-type hint-settings rand))))))
+        (mv-let (breakage-type hint-keyword-value-list)
+          (break-hint-keyword-value-list-in-nth-way breakage-num hint-keyword-value-list)
+          (mv breakage-type hint-keyword-value-list rand))))))
 
 ;; Returns (mv breakage-type hints rand).
 (defun randomly-break-hints (hints rand)
   (declare (xargs :guard (and (true-listp hints)
                               (minstd-rand0p rand))))
-  (let ((goal-hint-settings (hint-settings-for-goal-spec "Goal" hints)))
-    (if (not (keyword-value-listp goal-hint-settings))
+  (let ((goal-hint-keyword-value-list (hint-keyword-value-list-for-goal-spec "Goal" hints)))
+    (if (not (keyword-value-listp goal-hint-keyword-value-list))
         (prog2$ (er hard? 'randomly-break-hints "Bad hint for Goal: ~x0" hints)
                 (mv :none nil rand))
-      (mv-let (breakage-type broken-hint-settings rand)
-        (randomly-break-hint-settings goal-hint-settings rand)
+      (mv-let (breakage-type broken-hint-keyword-value-list rand)
+        (randomly-break-hint-keyword-value-list goal-hint-keyword-value-list rand)
         (if (eq :none breakage-type)
             (mv :none nil rand)
           (mv breakage-type
-              (cons (cons "Goal" broken-hint-settings)
+              (cons (cons "Goal" broken-hint-keyword-value-list)
                     (remove-hints-for-goal-spec "Goal" hints) ; removal might not be necessary, due to shadowing
                     )
               rand))))))
@@ -569,7 +569,7 @@
             (prog2$ (cw "Skipping ~x0 since it has no hints to remove.~%" (cadr event))
                     nil)
           (if (and (eq breakage-plan :goal-partial)
-                   (null (hint-settings-for-goal-spec "Goal" theorem-hints)))
+                   (null (hint-keyword-value-list-for-goal-spec "Goal" theorem-hints)))
               ;; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints):
               (prog2$ (cw "Skipping ~x0 since it has no hints on Goal.~%" (cadr event))
                       nil)
@@ -622,7 +622,7 @@
        ;;      nil rand state))
 
        ;; ((when (and (eq breakage-plan :goal-partial)
-       ;;             (null (hint-settings-for-goal-spec "Goal" theorem-hints))))
+       ;;             (null (hint-keyword-value-list-for-goal-spec "Goal" theorem-hints))))
        ;;  (cw "Skipping ~x0 since it has no hints on Goal.~%" theorem-name)
        ;;  (mv nil ; no error
        ;;      :not-attempted ; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints)

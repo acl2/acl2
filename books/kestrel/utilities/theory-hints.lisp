@@ -184,8 +184,9 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable hint-has-goal-specp))))
 
-;; Gets the hint settings (a keyword-value-list) for the given goal-spec (e.g., "Goal").
-(defund hint-settings-for-goal-spec (goal-spec hints)
+;; Gets the hint-keyword-value-list (e.g., (:use XXX :in-theory YYY)) for the
+;; given goal-spec (e.g., "Goal").
+(defund hint-keyword-value-list-for-goal-spec (goal-spec hints)
   (declare (xargs :guard (and (stringp goal-spec)
                               (standard-string-p goal-spec)
                               (true-listp hints))))
@@ -194,7 +195,7 @@
     (let ((hint (first hints)))
       (if (hint-has-goal-specp hint goal-spec)
           (cdr hint) ; everything but the goal-spec
-        (hint-settings-for-goal-spec goal-spec (rest hints))))))
+        (hint-keyword-value-list-for-goal-spec goal-spec (rest hints))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -216,7 +217,7 @@
 ;; Ensures that the ENABLE*-ITEMS/DISABLE*-ITEMS, which are suitable for
 ;; passing to ENABLE*/DISABLE*, are enabled/disabled in the KEYWORD-VALUE-LIST.
 ;; Note that the enabling is done first, then the disabling.
-(defund add-enable*/disable*-to-hint-settings (keyword-value-list enable*-items disable*-items)
+(defund add-enable*/disable*-to-hint-keyword-value-list (keyword-value-list enable*-items disable*-items)
   (declare (xargs :guard (and (keyword-value-listp keyword-value-list)
                               (true-listp enable*-items)
                               (true-listp disable*-items))
@@ -226,7 +227,7 @@
     (let* ((key (first keyword-value-list))
            (val (second keyword-value-list)))
       (if (not (eq :in-theory key))
-          (cons key (cons val (add-enable*/disable*-to-hint-settings (rest (rest keyword-value-list)) enable*-items disable*-items)))
+          (cons key (cons val (add-enable*/disable*-to-hint-keyword-value-list (rest (rest keyword-value-list)) enable*-items disable*-items)))
         (cons key
               (cons (add-enable*/disable*-to-theory-expression val enable*-items disable*-items)
                     (rest (rest keyword-value-list)) ; don't recur, since duplicate hint keywords are prohibited
@@ -247,7 +248,7 @@
             (keyword-value-list (rest hint)))
         (if (not (keyword-value-listp (rest hint)))
             (er hard? 'add-enable*/disable*-to-hint "Bad hint: ~x0." hint)
-          (cons goal-spec (add-enable*/disable*-to-hint-settings keyword-value-list enable*-items disable*-items))))
+          (cons goal-spec (add-enable*/disable*-to-hint-keyword-value-list keyword-value-list enable*-items disable*-items))))
     ;; computed hint:
     hint ; todo
     ))
@@ -272,7 +273,7 @@
                               (true-listp enable*-items)
                               (true-listp disable*-items))))
   (let ((new-hints (add-enable*/disable*-to-all-hints hints enable*-items disable*-items)))
-    (if (hint-settings-for-goal-spec "Goal" new-hints)
+    (if (hint-keyword-value-list-for-goal-spec "Goal" new-hints)
         ;; usual case (hints for "Goal" were present):
         new-hints
       ;; no hint on Goal, so make one:
