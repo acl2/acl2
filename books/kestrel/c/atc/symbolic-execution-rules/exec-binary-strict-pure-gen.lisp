@@ -154,7 +154,20 @@
                             (equal (,op-ltype-and-value x y)
                                    (,op-ltype-rtype x y))))
          (enables `(,op-ltype-and-value
-                    ,op-values
+                    ,@(if (member-eq op-kind '(:shl :shr))
+                          '(shl-values-to-shl-integer-values
+                            shr-values-to-shr-integer-values
+                            value-integerp-when-scharp
+                            value-integerp-when-ucharp
+                            value-integerp-when-sshortp
+                            value-integerp-when-ushortp
+                            value-integerp-when-sintp
+                            value-integerp-when-uintp
+                            value-integerp-when-slongp
+                            value-integerp-when-ulongp
+                            value-integerp-when-sllongp
+                            value-integerp-when-ullongp)
+                        (list op-values))
                     ,@(and op-arithmetic-values
                            (list op-arithmetic-values))
                     ,@(and op-real-values
@@ -190,7 +203,18 @@
                     ,@(and (member-eq op-kind '(:shl :shr))
                            *atc-sint-get-rules*)
                     ,@(and (member-eq op-kind '(:shl :shr))
-                           (list 'integer-type-bits))
+                           '(integer-type-bits-when-type-sint
+                             integer-type-bits-when-type-uint
+                             integer-type-bits-when-type-slong
+                             integer-type-bits-when-type-ulong
+                             integer-type-bits-when-type-sllong
+                             integer-type-bits-when-type-ullong
+                             type-of-value-when-sintp
+                             type-of-value-when-uintp
+                             type-of-value-when-slongp
+                             type-of-value-when-ulongp
+                             type-of-value-when-sllongp
+                             type-of-value-when-ullongp))
                     value-integer
                     value-sint-to-sint
                     value-uint-to-uint
@@ -220,6 +244,11 @@
                              floor
                              mod
                              ifix
+                             ,@(and (member-eq op-kind '(:shl :shr))
+                                    '((:e int-bits)
+                                      (:e integer-type-bits)
+                                      (:e integer-type-min)
+                                      (:e integer-type-max)))
                              ;; the following are disabled for speed:
                              equal-of-error
                              equal-of-value-schar
