@@ -15,7 +15,6 @@
 (include-book "advice")
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/axe/merge-sort-less-than" :dir :system) ; todo: move
-(include-book "kestrel/strings-light/upcase" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -229,7 +228,7 @@
        (combined-successful-attempt-percentage (quotient-to-percent-string combined-successful-attempt-count combined-attempt-count))
        (- (cw " Attempts: ~x0~%" combined-attempt-count))
        (- (cw " Successes: ~x0 (~s1%)~%" combined-successful-attempt-count combined-successful-attempt-percentage))
-       (- (cw " Total recs procued: ~x0~%" combined-total-recs-produced))
+       (- (cw " Total recs produced: ~x0~%" combined-total-recs-produced))
        (- (cw "~%")))
     nil))
 
@@ -408,31 +407,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun hint-settings-for-goal-spec (goal-spec hints)
+(defund remove-hints-for-goal-spec (goal-spec hints)
   (declare (xargs :guard (and (stringp goal-spec)
+                              (standard-string-p goal-spec)
                               (true-listp hints))))
   (if (endp hints)
       nil
     (let ((hint (first hints)))
-      (if (and (consp hint)
-               (stringp (car hint))
-               (equal (string-upcase-gen goal-spec)
-                      (string-upcase-gen (car hint))))
-          (cdr hint)
-        (hint-settings-for-goal-spec goal-spec (rest hints))))))
-
-(defund remove-settings-for-goal-spec (goal-spec hints)
-  (declare (xargs :guard (and (stringp goal-spec)
-                              (true-listp hints))))
-  (if (endp hints)
-      nil
-    (let ((hint (first hints)))
-      (if (and (consp hint)
-               (stringp (car hint))
-               (equal (string-upcase-gen goal-spec)
-                      (string-upcase-gen (car hint))))
-          (remove-settings-for-goal-spec goal-spec (rest hints))
-        (cons hint (remove-settings-for-goal-spec goal-spec (rest hints)))))))
+      (if (hint-has-goal-specp hint goal-spec)
+          ;; Keep going, as there may be more matches:
+          (remove-hints-for-goal-spec goal-spec (rest hints))
+        (cons hint (remove-hints-for-goal-spec goal-spec (rest hints)))))))
 
 (defun num-ways-to-break-hint-setting (keyword val)
   (declare (xargs :guard (keywordp keyword)))
@@ -567,9 +552,28 @@
             (mv :none nil rand)
           (mv breakage-type
               (cons (cons "Goal" broken-hint-settings)
-                    (remove-settings-for-goal-spec "Goal" hints) ; removal might not be necessary, due to shadowing
+                    (remove-hints-for-goal-spec "Goal" hints) ; removal might not be necessary, due to shadowing
                     )
               rand))))))
+
+(defun breakable-eventp (event breakage-plan)
+  (declare (xargs :guard (member-eq breakage-plan '(:all :goal-partial))))
+  (if (not (and (consp event) ; must be defthm, etc.
+                (<= 3 (len event))
+                (keyword-value-listp (cdddr event))))
+      (er hard? 'breakable-eventp "Bad advice event in ~x0." event)
+    (let ((theorem-hints (cadr (assoc-keyword :hints (cdddr event)))))
+      (if (not (true-listp theorem-hints))
+          (er hard? 'breakable-eventp "Bad hints in ~x0: ~x1." (cadr event) theorem-hints)
+        (if (null theorem-hints)
+            (prog2$ (cw "Skipping ~x0 since it has no hints to remove.~%" (cadr event))
+                    nil)
+          (if (and (eq breakage-plan :goal-partial)
+                   (null (hint-settings-for-goal-spec "Goal" theorem-hints)))
+              ;; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints):
+              (prog2$ (cw "Skipping ~x0 since it has no hints on Goal.~%" (cadr event))
+                      nil)
+            t))))))
 
 ;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
 ;; Returns (mv erp breakage-type trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
@@ -604,21 +608,26 @@
        ;;                 '(:rewrite)))
        ;; (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
        (theorem-hints (cadr (assoc-keyword :hints (cdddr defthm))))
-
-       ((when (null theorem-hints))
-        (cw "Skipping ~x0 since it has no hints to remove.~%" theorem-name)
+       ((when (not (breakable-eventp defthm breakage-plan)))
         (mv nil ; no error
             :not-attempted ; no breakage of hints possible
-            t ; there were no hints (and we assume it proves without them)
+            t
             nil rand state))
 
-       ((when (and (eq breakage-plan :goal-partial)
-                   (null (hint-settings-for-goal-spec "Goal" theorem-hints))))
-        (cw "Skipping ~x0 since it has no hints on Goal.~%" theorem-name)
-        (mv nil ; no error
-            :not-attempted ; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints)
-            t ; there were no Goal hints for us to try removing
-            nil rand state))
+       ;; ((when (null theorem-hints))
+       ;;  (cw "Skipping ~x0 since it has no hints to remove.~%" theorem-name)
+       ;;  (mv nil ; no error
+       ;;      :not-attempted ; no breakage of hints possible
+       ;;      t ; there were no hints (and we assume it proves without them)
+       ;;      nil rand state))
+
+       ;; ((when (and (eq breakage-plan :goal-partial)
+       ;;             (null (hint-settings-for-goal-spec "Goal" theorem-hints))))
+       ;;  (cw "Skipping ~x0 since it has no hints on Goal.~%" theorem-name)
+       ;;  (mv nil ; no error
+       ;;      :not-attempted ; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints)
+       ;;      t ; there were no Goal hints for us to try removing
+       ;;      nil rand state))
 
        ;; Break the hints:
        ((mv breakage-type broken-theorem-hints rand)
@@ -761,6 +770,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns a list of defthm/defthmd names.
+(defun breakable-theorems-to-try (events theorems-to-try breakage-plan acc)
+  (declare (xargs :guard (and (true-listp events)
+                              (or (eq :all theorems-to-try)
+                                  (symbol-listp theorems-to-try))
+                              (member-eq breakage-plan '(:all :goal-partial))
+                              (true-listp acc))))
+  (if (endp events)
+      (reverse acc)
+    (let ((event (first events)))
+      (breakable-theorems-to-try (rest events)
+                                 theorems-to-try
+                                 breakage-plan
+                                 (if (and (advice-eventp event theorems-to-try)
+                                          (breakable-eventp event breakage-plan))
+                                     (cons (cadr event) acc)
+                                   acc)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems indicated by THEOREMS-TO-TRY.
 ;; Returns (mv erp result-alist+rand state), where RESULT-ALIST+RAND is a cons of RESULT-ALIST and RAND, and where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 ;; Since this returns an error triple, it can be wrapped in revert-world.
@@ -798,18 +827,22 @@
        ((mv dir &) (split-path filename))
        (- (cw "Evaluating advice on ~s0:~%" filename))
        ;; May be necessary for resolving #. constants in read-objects-from-book:
-       (state (load-port-file-if-exists (remove-lisp-suffix filename t) state))
+       (state (load-port-file-if-exists (remove-lisp-suffix filename t) state)) ; this can change the current package
        ;; Read all the forms from the file:
        ((mv erp events state)
         (read-objects-from-book filename state))
        ((when erp) (cw "Error: ~x0.~%" erp) (mv erp (cons nil rand) state))
        (len-all-events (len events))
-       (events (discard-events-after-last-advice-event events theorems-to-try))
-       (- (cw "(~x0 total events, ~x1 after discarding final events.)~%~%" len-all-events (len events)))
-       ((when (null events))
-        (cw "~%SUMMARY for book ~s0: NO EVENTS TO EVALUATE.  Theorems to try were ~X12.~%" filename theorems-to-try nil)
+       ;; (- (cw "Theorems to try: ~X01~%" theorems-to-try nil))
+       (breakable-theorems-to-try (breakable-theorems-to-try events theorems-to-try breakage-plan nil))
+       ((when (null breakable-theorems-to-try))
+        (cw "~%SUMMARY for book ~s0: NO EVENTS TO EVALUATE.~%" filename)
+        ;; (cw "Theorems to try were ~X01.~%" theorems-to-try nil)
         (mv nil ; no error, but nothing to do for this book
             (cons nil rand) state))
+       ;; There is at least one breakable defthm event to try:
+       (events (discard-events-after-last-advice-event events breakable-theorems-to-try)) ; todo: what if more than one theorem with the same name?  can't happen at top-level
+       (- (cw "(~x0 total events, ~x1 to try, ~x2 breakable, ~x3 after discarding final events.)~%~%" len-all-events (len theorems-to-try) (len breakable-theorems-to-try) (len events)))
        ;; Ensures we are working in the same dir as the book:
        ;; TODO: Ensure this gets reset upon failure, such as a package name clash.
        ((mv erp & state)
@@ -820,9 +853,9 @@
        ;; Ensure proofs are done during make-event expansion, even if we use skip-proofs:
        ((mv erp state) (submit-event-helper-core '(defattach (acl2::always-do-proofs-during-make-event-expansion acl2::constant-t-function-arity-0) :system-ok t) nil state))
        ((when erp) (mv erp (cons nil rand) state))
-       ;; Submit all the events, trying advice for each defthm in theorems-to-try:
+       ;; Submit all the events, trying advice for each defthm in breakable-theorems-to-try:
        ((mv erp result-alist rand state)
-        (submit-events-and-eval-models events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url breakage-plan models nil rand state))
+        (submit-events-and-eval-models events breakable-theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit server-url breakage-plan models nil rand state))
        ((when erp) ; I suppose we could return partial results from this book instead
         (cw "Error: ~x0.~%" erp)
         (mv erp (cons nil rand) state))
@@ -854,6 +887,7 @@
                                     server-url breakage-plan
                                     models
                                     done-book-count
+                                    total-book-count
                                     result-alist-acc ; a result-alist
                                     rand
                                     state)
@@ -871,7 +905,8 @@
                               (member-eq breakage-plan '(:all :goal-partial))
                               (help::model-namesp models)
                               (alistp result-alist-acc)
-                              (natp done-book-count))
+                              (natp done-book-count)
+                              (natp total-book-count))
                   :mode :program
                   :stobjs state))
   (if (endp book-to-theorems-alist)
@@ -880,7 +915,7 @@
               (show-model-evaluations models result-alist-acc)
               (mv nil '(value-triple :invisible) state))
     (b* ((- (cw "~%======================================================================~%"))
-         (- (cw "Processing book #~x0.~%" (+ 1 done-book-count)))
+         (- (cw "Processing book #~x0 of ~x1.~%" (+ 1 done-book-count) total-book-count))
          (entry (first book-to-theorems-alist))
          (book (car entry))
          (theorems-to-try (cdr entry))
@@ -909,7 +944,7 @@
          ;;            (cw "ERROR           : ~x0~%~%" error-count)))
          )
       (eval-models-on-books-fn-aux (rest book-to-theorems-alist)
-                                   base-dir num-recs-per-model print debug step-limit time-limit server-url breakage-plan models done-book-count
+                                   base-dir num-recs-per-model print debug step-limit time-limit server-url breakage-plan models done-book-count total-book-count
                                    result-alist-acc
                                    rand
                                    state))))
@@ -952,7 +987,7 @@
             (random$ *m31* state)
           (mv seed state)))
        (- (cw "(Using random seed of ~x0.)~%" rand))
-       (- (cw "(Trying ~x0 recommendations per model.)~%" num-recs-per-model))
+       (- (cw "(Trying ~x0 ~s1 per model.)~%" num-recs-per-model (if (= 1 num-recs-per-model) "recommendation" "recommendations")))
        (tests (clear-keys-with-matching-prefixes tests excluded-prefixes nil))
        (len-tests (len tests))
        ((when (and (not (eq :all num-tests))
@@ -972,7 +1007,9 @@
        (book-to-theorems-alist (shuffle-list2 book-to-theorems-alist rand))
        (rand (minstd-rand0-next rand))
        (- (cw "(Processing ~x0 tests in ~x1 books.)~%" num-tests (len book-to-theorems-alist))))
-    (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit server-url breakage-plan models 0 nil rand state)))
+    (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit server-url breakage-plan models 0
+                                 (len book-to-theorems-alist)
+                                 nil rand state)))
 
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
 ;; TODO: Record the sources of recs that work (note that names may get combined with /)?
