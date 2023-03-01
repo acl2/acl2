@@ -196,8 +196,9 @@
                            (list op-type-type-okp))
                     ,@(and promotedp
                            (list (pack op-kind '-sint-okp)))
-                    ,@*atc-uaconvert-values-rules*
-                    ,@*atc-promote-value-rules*
+                    ,@(if (member-eq op-kind '(:shl :shr))
+                          *atc-promote-value-rules*
+                        *atc-uaconvert-values-rules*)
                     result-integer-value
                     ,@*atc-value-integer->get-rules*
                     ,@(and (member-eq op-kind '(:shl :shr))
