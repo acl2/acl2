@@ -96,10 +96,10 @@
     "An object designator is
      a named variable in static storage,
      or a named variable in automatic storage,
-     or an address in the heap,
+     or an address in allocated storage (i.e. the heap),
      or a (structure) member of an object designator,
      or an (array) element of an object designator.
-     For an automatic variable in static storage,
+     For a variable in automatic storage,
      we need not only the name,
      but also an indication of which scope in which frame the variable is:
      we use natural numbers for this purpose,
@@ -115,7 +115,7 @@
   (:auto ((name ident)
           (frame nat)
           (scope nat)))
-  (:address ((get address)))
+  (:alloc ((get address)))
   (:element ((super objdesign)
              (index nat)))
   (:member ((super objdesign)
@@ -143,15 +143,15 @@
      that is, it can be a conservative definition,
      because it is only used to express when
      object updates are independent.
-     For now, we require the two object designators to be addresses
-     (i.e. top-level objects in the heap)
+     For now, we require the two object designators
+     to be top-level designators in allocated storage
      and to be distinct.
      We may relax this notion in the future,
      but for now this suffices for our needs."))
-  (and (objdesign-case objdes1 :address)
-       (objdesign-case objdes2 :address)
-       (not (equal (objdesign-address->get objdes1)
-                   (objdesign-address->get objdes2))))
+  (and (objdesign-case objdes1 :alloc)
+       (objdesign-case objdes2 :alloc)
+       (not (equal (objdesign-alloc->get objdes1)
+                   (objdesign-alloc->get objdes2))))
   :hooks (:fix)
   ///
 

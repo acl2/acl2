@@ -554,3 +554,91 @@
   (defval *atc-array-length-write-rules*
     (atc-array-length-write-rules-loop-atypes *nonchar-integer-types*
                                               *nonchar-integer-types*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-array-read-rules
+  :short "Rules about array reads
+          not retuning errors under suitable conditions."
+
+  (defruled not-errorp-of-value-array-read-when-uchar-array-and-in-range
+    (implies (and (c::uchar-arrayp array)
+                  (integerp index)
+                  (c::uchar-array-index-okp array index))
+             (not (c::errorp (c::value-array-read index array))))
+    :use (:instance c::uchar-array-read-alt-def (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-schar-array-and-in-range
+    (implies (and (c::schar-arrayp array)
+                  (integerp index)
+                  (c::schar-array-index-okp array index))
+             (not (c::errorp (c::value-array-read index array))))
+    :use (:instance c::schar-array-read-alt-def (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-ushort-array-and-in-range
+    (implies (and (c::ushort-arrayp array)
+                  (integerp index)
+                  (c::ushort-array-index-okp array index))
+             (not (c::errorp (c::value-array-read index array))))
+    :use (:instance c::ushort-array-read-alt-def (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-sshort-array-and-in-range
+    (implies (and (c::sshort-arrayp array)
+                  (integerp index)
+                  (c::sshort-array-index-okp array index))
+             (not (c::errorp (c::value-array-read index array))))
+    :use (:instance c::sshort-array-read-alt-def (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-uint-array-and-in-range
+    (implies (and (c::uint-arrayp array)
+                  (integerp index)
+                  (c::uint-array-index-okp array index))
+             (not (c::errorp (c::value-array-read index array))))
+    :use (:instance c::uint-array-read-alt-def (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-sint-array-and-in-range
+    (implies (and (c::sint-arrayp array)
+                  (integerp index)
+                  (c::sint-array-index-okp array index))
+             (not (c::errorp (c::value-array-read index array))))
+    :use (:instance c::sint-array-read-alt-def (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-ulong-array-and-in-range
+    (implies (and (c::ulong-arrayp array)
+                  (integerp index)
+                  (c::ulong-array-index-okp array index))
+             (not (c::errorp (c::value-array-read index array))))
+    :use (:instance c::ulong-array-read-alt-def (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-slong-array-and-in-range
+    (implies (and (c::slong-arrayp array)
+                  (integerp index)
+                  (c::slong-array-index-okp array index))
+             (not (c::errorp (c::value-array-read index array))))
+    :use (:instance c::slong-array-read-alt-def (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-ullong-array-and-in-range
+    (implies (and (c::ullong-arrayp array)
+                  (integerp index)
+                  (c::ullong-array-index-okp array index))
+             (not (c::errorp (c::value-array-read index array))))
+    :use (:instance c::ullong-array-read-alt-def (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-sllong-array-and-in-range
+    (implies (and (c::sllong-arrayp array)
+                  (integerp index)
+                  (c::sllong-array-index-okp array index))
+             (not (c::errorp (c::value-array-read index array))))
+    :use (:instance c::sllong-array-read-alt-def (index index) (array array)))
+
+  (defval *atc-array-read-rules*
+    '(not-errorp-of-value-array-read-when-uchar-array-and-in-range
+      not-errorp-of-value-array-read-when-schar-array-and-in-range
+      not-errorp-of-value-array-read-when-ushort-array-and-in-range
+      not-errorp-of-value-array-read-when-sshort-array-and-in-range
+      not-errorp-of-value-array-read-when-uint-array-and-in-range
+      not-errorp-of-value-array-read-when-sint-array-and-in-range
+      not-errorp-of-value-array-read-when-ulong-array-and-in-range
+      not-errorp-of-value-array-read-when-slong-array-and-in-range
+      not-errorp-of-value-array-read-when-ullong-array-and-in-range
+      not-errorp-of-value-array-read-when-sllong-array-and-in-range)))

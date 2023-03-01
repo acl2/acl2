@@ -95,10 +95,11 @@
                   'x
                 `(,dtype-from-stype x)))
          (formula `(implies ,hyps
-                            (equal (exec-cast ',dtyname x)
-                                   ,rhs)))
+                            (equal (exec-cast ',dtyname (expr-value x nil))
+                                   (expr-value ,rhs nil))))
          (hints `(:enable
                   (exec-cast
+                   eval-cast
                    convert-integer-value
                    value-integer
                    ,@*atc-value-integer->get-rules*

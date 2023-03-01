@@ -76,6 +76,7 @@
                             (equal (exec-unary op (expr-value x nil) compst)
                                    (expr-value (,op-type x) nil))))
          (enables `(exec-unary
+                    eval-unary
                     ,op-value
                     ,@(and op-scalar-value
                            (list op-scalar-value))
