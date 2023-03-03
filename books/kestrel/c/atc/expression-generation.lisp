@@ -206,6 +206,7 @@
              (exec-const-to-fixtype (pack 'exec-const-to- fixtype))
              (fixtype-integerp (pack fixtype '-integerp))
              (recognizer (type-to-recognizer type (w state)))
+             (valuep-when-recognizer (pack 'valuep-when- recognizer))
              (recognizer-of-fixtype-from-integer
               (pack recognizer '-of- fixtype '-from-integer)))
           `(("Goal" :in-theory '(exec-expr-pure-when-const
@@ -222,7 +223,11 @@
                                  (:e iconst-base-kind)
                                  (:e ,fixtype-integerp)
                                  ,type-base-const
-                                 ,recognizer-of-fixtype-from-integer)))))
+                                 ,recognizer-of-fixtype-from-integer
+                                 expr-valuep-of-expr-value
+                                 expr-value->value-of-expr-value
+                                 value-fix-when-valuep
+                                 ,valuep-when-recognizer)))))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
                                        gin.fn-guard
@@ -507,7 +512,8 @@
              (op-arg1-type-and-value-when-arg2-type
               (pack op-name '- arg1-fixtype '-and-value-when- arg2-fixtype))
              (type-pred-of-op-arg1-type-arg2-type
-              (pack type-pred '-of- op-arg1-type-arg2-type)))
+              (pack type-pred '-of- op-arg1-type-arg2-type))
+             (valuep-when-type-pred (pack 'valuep-when- type-pred)))
           `(("Goal" :in-theory '(exec-expr-pure-when-strict-pure-binary
                                  (:e expr-kind)
                                  (:e expr-binary->op)
@@ -525,7 +531,11 @@
                                  ,op-arg1-type-and-value-when-arg2-type
                                  ,type-pred-of-op-arg1-type-arg2-type
                                  ,@(and op-arg1-type-arg2-type-okp
-                                        (list okp-lemma-name)))))))
+                                        (list okp-lemma-name))
+                                 expr-valuep-of-expr-value
+                                 expr-value->value-of-expr-value
+                                 value-fix-when-valuep
+                                 ,valuep-when-type-pred)))))
        ((when (eq op-arg1-type-arg2-type 'quote))
         (reterr (raise "Internal error: function symbol is QUOTE.")))
        ((mv thm-event thm-name thm-index names-to-avoid)
@@ -667,7 +677,8 @@
              (exec-cast-of-out-fixtype-when-arg-type-pred
               (pack 'exec-cast-of- out-fixtype '-when- arg-type-pred))
              (type-pred (type-to-recognizer out-type wrld))
-             (type-pred-of-op-name (pack type-pred '-of- op-name)))
+             (type-pred-of-op-name (pack type-pred '-of- op-name))
+             (valuep-when-type-pred (pack 'valuep-when- type-pred)))
           `(("Goal" :in-theory '(exec-expr-pure-when-cast
                                  (:e expr-kind)
                                  (:e expr-cast->type)
@@ -677,7 +688,11 @@
                                  ,exec-cast-of-out-fixtype-when-arg-type-pred
                                  ,type-pred-of-op-name
                                  ,@(and op-name-okp
-                                        (list okp-lemma-name)))))))
+                                        (list okp-lemma-name))
+                                 expr-valuep-of-expr-value
+                                 expr-value->value-of-expr-value
+                                 value-fix-when-valuep
+                                 ,valuep-when-type-pred)))))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
                                        gin.fn-guard

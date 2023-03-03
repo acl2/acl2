@@ -127,9 +127,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define assignment-for-prime-p ((asg assignmentp) (p primep))
+(define assignment-wfp ((asg assignmentp) (p primep))
   :returns (yes/no booleanp)
-  :short "Check if an assignment is for a prime field."
+  :short "Check if an assignment is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -142,51 +142,71 @@
     (or (omap::empty asg)
         (b* (((mv & nat) (omap::head asg)))
           (and (fep nat p)
-               (assignment-for-prime-p (omap::tail asg) p)))))
+               (assignment-wfp (omap::tail asg) p)))))
   :hooks (:fix)
   ///
 
-  (defruled fep-of-cdr-of-in-when-assignment-for-prime-p
+  (defruled fep-of-cdr-of-in-when-assignment-wfp
     (implies (and (assignmentp asg)
-                  (assignment-for-prime-p asg p)
+                  (assignment-wfp asg p)
                   (consp (omap::in var asg)))
              (fep (cdr (omap::in var asg)) p)))
 
-  (defrule assignment-for-prime-p-of-tail
+  (defrule assignment-wfp-of-tail
     (implies (and (assignmentp asg)
-                  (assignment-for-prime-p asg p))
-             (assignment-for-prime-p (omap::tail asg) p)))
+                  (assignment-wfp asg p))
+             (assignment-wfp (omap::tail asg) p)))
 
-  (defrule assignment-for-prime-p-of-nil
-    (assignment-for-prime-p nil p))
+  (defrule assignment-wfp-of-nil
+    (assignment-wfp nil p))
 
-  (defrule assignment-for-prime-p-of-update
+  (defrule assignment-wfp-of-update
     (implies (and (assignmentp asg)
-                  (assignment-for-prime-p asg p)
+                  (assignment-wfp asg p)
                   (fep nat p))
-             (assignment-for-prime-p (omap::update var nat asg) p))
+             (assignment-wfp (omap::update var nat asg) p))
     :enable omap::update
     :prep-lemmas
     ((defrule lemma
        (implies (and (fep (cdr pair) p)
-                     (assignment-for-prime-p asg p))
-                (assignment-for-prime-p (cons pair asg) p))
+                     (assignment-wfp asg p))
+                (assignment-wfp (cons pair asg) p))
        :enable (omap::head
                 omap::tail)
-       :expand ((assignment-for-prime-p (cons pair asg) p)))))
+       :expand ((assignment-wfp (cons pair asg) p)))))
 
-  (defrule assignment-for-prime-p-of-from-lists
+  (defrule assignment-wfp-of-update*
+    (implies (and (assignmentp asg-new)
+                  (assignmentp asg-old)
+                  (assignment-wfp asg-new p)
+                  (assignment-wfp asg-old p))
+             (assignment-wfp (omap::update* asg-new asg-old) p))
+    :enable omap::update*)
+
+  (defrule assignment-wfp-of-delete
+    (implies (and (assignmentp asg)
+                  (assignment-wfp asg p))
+             (assignment-wfp (omap::delete var asg) p))
+    :enable omap::delete)
+
+  (defrule assignment-wfp-of-delete*
+    (implies (and (assignmentp asg)
+                  (assignment-wfp asg p))
+             (assignment-wfp (omap::delete* vars asg) p))
+    :enable omap::delete*)
+
+  (defrule assignment-wfp-of-from-lists
     (implies (and (symbol-listp keys)
                   (fe-listp vals p)
                   (equal (len keys) (len vals)))
-             (assignment-for-prime-p (omap::from-lists keys vals) p))
+             (assignment-wfp (omap::from-lists keys vals) p))
     :enable (omap::from-lists
              nat-listp-when-fe-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-expr ((expr expressionp) (asg assignmentp) (p primep))
-  :guard (assignment-for-prime-p asg p)
+  :guard (assignment-wfp asg p)
   :returns (nat? maybe-natp :hyp (primep p))
   :short "Evaluate an expression, given an assignment and a prime field."
   :long
@@ -235,10 +255,10 @@
   (defrule fep-of-eval-expr
     (implies (and (primep p)
                   (assignmentp asg)
-                  (assignment-for-prime-p asg p)
+                  (assignment-wfp asg p)
                   (eval-expr expr asg p))
              (fep (eval-expr expr asg p) p))
-    :enable fep-of-cdr-of-in-when-assignment-for-prime-p)
+    :enable fep-of-cdr-of-in-when-assignment-wfp)
 
   (verify-guards eval-expr))
 
@@ -247,7 +267,7 @@
 (define eval-expr-list ((exprs expression-listp)
                         (asg assignmentp)
                         (p primep))
-  :guard (assignment-for-prime-p asg p)
+  :guard (assignment-wfp asg p)
   :returns (mv (okp booleanp)
                (nats nat-listp
                      :hyp (and (primep p)
@@ -273,7 +293,7 @@
   (defrule fe-listp-of-eval-expr-list
     (implies (and (primep p)
                   (assignmentp asg)
-                  (assignment-for-prime-p asg p)
+                  (assignment-wfp asg p)
                   (mv-nth 0 (eval-expr-list exprs asg p)))
              (fe-listp (mv-nth 1 (eval-expr-list exprs asg p)) p)))
 
@@ -524,7 +544,7 @@
     (proof-tree-case
      ptree
      :equal
-     (b* (((unless (assignment-for-prime-p ptree.asg p)) (proof-outcome-error))
+     (b* (((unless (assignment-wfp ptree.asg p)) (proof-outcome-error))
           (left (eval-expr ptree.left ptree.asg p))
           ((unless left) (proof-outcome-error))
           (right (eval-expr ptree.right ptree.asg p))
@@ -536,9 +556,9 @@
                                                            :right ptree.right)))
          (proof-outcome-fail)))
      :relation
-     (b* (((unless (assignment-for-prime-p ptree.asg p))
+     (b* (((unless (assignment-wfp ptree.asg p))
            (proof-outcome-error))
-          ((unless (assignment-for-prime-p ptree.asgext p))
+          ((unless (assignment-wfp ptree.asgext p))
            (proof-outcome-error))
           ((mv okp vals) (eval-expr-list ptree.args ptree.asg p))
           ((unless okp) (proof-outcome-error))
@@ -622,7 +642,7 @@
                             (defs definition-listp)
                             (asg assignmentp)
                             (p primep))
-  :guard (assignment-for-prime-p asg p)
+  :guard (assignment-wfp asg p)
   :returns (yes/no booleanp)
   :short "Semantic function checking if a constaint is satisfied,
           given a list of definitions, an assignment, and a prime field."
@@ -649,7 +669,7 @@
                                  (defs definition-listp)
                                  (asg assignmentp)
                                  (p primep))
-  :guard (assignment-for-prime-p asg p)
+  :guard (assignment-wfp asg p)
   :returns (yes/no booleanp)
   :short "Semantic function saying if an assignment
           satisfies a list of constraints,
@@ -669,7 +689,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define system-satp ((sys systemp) (asg assignmentp) (p primep))
-  :guard (assignment-for-prime-p asg p)
+  :guard (assignment-wfp asg p)
   :returns (yes/no booleanp)
   :short "Check if an assignment satisfies a system."
   :long

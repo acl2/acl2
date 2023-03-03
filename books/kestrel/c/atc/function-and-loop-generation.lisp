@@ -1261,7 +1261,7 @@
                           `(value-pointer-validp ,formal-ptr)
                           `(equal (objdesign-kind
                                    (value-pointer->designator ,formal-ptr))
-                                  :address)
+                                  :alloc)
                           (if (type-case type :pointer)
                               `(equal (value-pointer->reftype ,formal-ptr)
                                       ,(type-to-maker

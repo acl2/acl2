@@ -177,7 +177,7 @@
                   def
                   okp
                   (equal (len para) (len vals))
-                  (assignment-for-prime-p asgext p)
+                  (assignment-wfp asgext p)
                   (omap::submap (omap::from-lists para vals) asgext)
                   (proof-list-outcome-case outcome-sub :assertions)
                   (equal (assertion-list->asg-list asser-sub)
@@ -192,7 +192,7 @@
                                (right expressionp)
                                (asg assignmentp)
                                (p primep))
-  :guard (assignment-for-prime-p asg p)
+  :guard (assignment-wfp asg p)
   :returns (yes/no booleanp)
   :short "Satisfaction of an equality constraint,
           expressed without proof trees."
@@ -224,7 +224,7 @@
    (xdoc::p
     "This rule lets us dispense with the existentially quantified proof tree
      for the case of equality constraints."))
-  (implies (and (assignment-for-prime-p asg p)
+  (implies (and (assignment-wfp asg p)
                 (constraint-case constr :equal))
            (equal (constraint-satp constr defs asg p)
                   (constraint-equal-satp (constraint-equal->left constr)
@@ -247,7 +247,7 @@
                      (ptree (constraint-satp-witness constr defs asg p))))
 
    (defruled if-direction
-     (implies (and (assignment-for-prime-p asg p)
+     (implies (and (assignment-wfp asg p)
                    (constraint-case constr :equal))
               (implies (constraint-equal-satp (constraint-equal->left constr)
                                               (constraint-equal->right constr)
@@ -269,7 +269,7 @@
                                      (defs definition-listp)
                                      (asg assignmentp)
                                      (p primep))
-  :guard (assignment-for-prime-p asg p)
+  :guard (assignment-wfp asg p)
   :returns (yes/no booleanp)
   :short "Satisfaction of a relation constraint,
           expressed without proof trees."
@@ -290,7 +290,7 @@
   (exists
    (asgext)
    (and (assignmentp asgext)
-        (assignment-for-prime-p asgext p)
+        (assignment-wfp asgext p)
         (b* ((def (lookup-definition name defs)))
           (and def
                (b* (((definition def) def))
@@ -321,7 +321,7 @@
      but the one for the extended assignment
      is simpler to handle than the one for the whole proof tree."))
   (implies (and (assignmentp asg)
-                (assignment-for-prime-p asg p)
+                (assignment-wfp asg p)
                 (constraint-case constr :relation))
            (equal (constraint-satp constr defs asg p)
                   (constraint-relation-satp (constraint-relation->name constr)
@@ -335,7 +335,7 @@
 
   ((defruled only-if-direction
      (implies (and (assignmentp asg)
-                   (assignment-for-prime-p asg p)
+                   (assignment-wfp asg p)
                    (constraint-case constr :relation))
               (implies (constraint-satp constr defs asg p)
                        (constraint-relation-satp
@@ -365,7 +365,7 @@
 
    (defruled if-direction
      (implies (and (assignmentp asg)
-                   (assignment-for-prime-p asg p)
+                   (assignment-wfp asg p)
                    (constraint-case constr :relation))
               (implies (constraint-relation-satp
                         (constraint-relation->name constr)

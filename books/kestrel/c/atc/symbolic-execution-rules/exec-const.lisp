@@ -51,9 +51,10 @@
                   (equal value (iconst->value iconst))
                   (sint-integerp value))
              (equal (exec-const const)
-                    (sint-from-integer value)))
+                    (expr-value (sint-from-integer value) nil)))
     :enable (exec-const
-             exec-iconst
+             eval-const
+             eval-iconst
              value-sint->get
              sint-from-integer
              value-kind
@@ -74,9 +75,10 @@
                                (not (uint-integerp value))))
                       (iconst-length-case length :long)))
              (equal (exec-const const)
-                    (slong-from-integer value)))
+                    (expr-value (slong-from-integer value) nil)))
     :enable (exec-const
-             exec-iconst
+             eval-const
+             eval-iconst
              value-slong->get
              slong-from-integer
              value-kind
@@ -101,9 +103,10 @@
                                (not (ulong-integerp value))))
                       (iconst-length-case length :llong)))
              (equal (exec-const const)
-                    (sllong-from-integer value)))
+                    (expr-value (sllong-from-integer value) nil)))
     :enable (exec-const
-             exec-iconst
+             eval-const
+             eval-iconst
              slong-integerp-alt-def
              sint-integerp-alt-def
              ulong-integerp-alt-def
@@ -124,9 +127,10 @@
                       (and (not (iconst-base-case (iconst->base iconst) :dec))
                            (not (sint-integerp value)))))
              (equal (exec-const const)
-                    (uint-from-integer value)))
+                    (expr-value (uint-from-integer value) nil)))
     :enable (exec-const
-             exec-iconst
+             eval-const
+             eval-iconst
              value-uint->get
              uint-from-integer
              value-kind
@@ -150,9 +154,10 @@
                                     (not (uint-integerp value)))
                                (iconst-length-case length :long)))))
              (equal (exec-const const)
-                    (ulong-from-integer value)))
+                    (expr-value (ulong-from-integer value) nil)))
     :enable (exec-const
-             exec-iconst
+             eval-const
+             eval-iconst
              sint-integerp-alt-def
              slong-integerp-alt-def
              value-ulong->get
@@ -176,9 +181,10 @@
                            (or (iconst-length-case length :llong)
                                (not (ulong-integerp value))))))
              (equal (exec-const const)
-                    (ullong-from-integer value)))
+                    (expr-value (ullong-from-integer value) nil)))
     :enable (exec-const
-             exec-iconst
+             eval-const
+             eval-iconst
              sint-integerp-alt-def
              slong-integerp-alt-def
              sllong-integerp-alt-def

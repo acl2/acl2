@@ -343,21 +343,25 @@
   (strip-cars *non-ml-models-and-strings*))
 
 (defconst *ml-models-and-strings*
-  '((:calpoly . "kestrel-calpoly")
+  '(;; Calpoly models:
+    (:calpoly . "kestrel-calpoly")
     (:calpoly-run10.0 . "calpoly-run10.0")
-    ;; note the capital L and underscores:
-    (:leidos-run10.0 . "Leidos_run10_0")
+    (:calpoly-run10.1 . "calpoly-run10.1")
+    ;; Leidos models:
+    (:leidos-gpt . "leidos-gpt")
     ;; note the capital L:
     (:leidos . "Leidos")
-    (:leidos-gpt . "leidos-gpt")
+    ;; note the capital L and underscores:
+    (:leidos-run10.0 . "Leidos_run10_0")
+    (:leidos-run10.1 . "Leidos_run10_1")
     ))
 
 (defconst *ml-models*
   (strip-cars *ml-models-and-strings*))
 
 (defconst *known-models-and-strings*
-  (append *non-ml-models-and-strings*
-          *ml-models-and-strings*))
+  (append *ml-models-and-strings*
+          *non-ml-models-and-strings*))
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
 
@@ -1694,7 +1698,7 @@
              ;; The include-book brought in the desired name (and that thing can be enabled), so now try the proof, enabling the item:
              ;; TTODO: Check if already enabled!
              (b* ( ; todo: ensure this is nice:
-                  (hints-with-enable (acl2::enable-runes-in-hints hints (list item-to-enable)))
+                  (hints-with-enable (acl2::add-enable*-to-hints hints (list item-to-enable)))
                   ((mv provedp state) (prove$-no-error 'try-enable-with-include-book formula hints-with-enable otf-flg step-limit time-limit state)))
                (if provedp
                    ;; We proved it with the enable hint.  Now, try again without the enable (just the include-book):
@@ -2304,7 +2308,7 @@
               (and (acl2::print-level-at-least-tp print) (cw "skip (~x0 is already enabled.)~%" fn))
               (mv nil nil state))
              ;; FN exists and just needs to be enabled:
-             (new-hints (acl2::enable-runes-in-hints theorem-hints (list fn))) ;; todo: ensure this is nice
+             (new-hints (acl2::add-enable*-to-hints theorem-hints (list fn))) ;; todo: ensure this is nice
              ((mv provedp state)
               (prove$-no-error 'try-add-enable-hint
                                theorem-body
@@ -2430,7 +2434,7 @@
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling since already disabled: ~x0)~%" rule))
         (mv nil nil state))
        ;; todo: ensure this is nice:
-       (new-hints (acl2::disable-runes-in-hints theorem-hints (list rule)))
+       (new-hints (acl2::add-disable*-to-hints theorem-hints (list rule)))
        ((mv provedp state) (prove$-no-error 'try-add-disable-hint
                                             theorem-body
                                             new-hints
