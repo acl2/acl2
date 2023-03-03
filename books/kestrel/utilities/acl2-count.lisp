@@ -62,7 +62,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm <=-of-acl2-count-of-nthcdr
+;; Disabled since we have the :linear rule just below
+(defthmd <=-of-acl2-count-of-nthcdr
   (<= (acl2-count (nthcdr n lst))
       (acl2-count lst))
   :hints (("Goal" :induct (nthcdr n lst)
@@ -83,6 +84,13 @@
   :hints (("Goal" :induct (nthcdr n lst) :in-theory (enable nthcdr))
           ("subgoal *1/1" :cases ((< 0 n)))
           ("subgoal *1/2" :cases ((< 0 n)))))
+
+(defthm <-of-acl2-count-of-nthcdr-linear
+  (implies (and (posp n)
+                (consp lst))
+           (< (acl2-count (nthcdr n lst))
+              (acl2-count lst)))
+  :rule-classes ((:linear :trigger-terms ((acl2-count (nthcdr n lst))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
