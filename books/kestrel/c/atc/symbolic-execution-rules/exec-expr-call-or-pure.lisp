@@ -28,9 +28,11 @@
     (implies (and (syntaxp (quotep e))
                   (not (equal (expr-kind e) :call))
                   (not (zp limit))
-                  (compustatep compst))
+                  (compustatep compst)
+                  (equal eval (exec-expr-pure e compst))
+                  (expr-valuep eval))
              (equal (exec-expr-call-or-pure e compst fenv limit)
-                    (mv (exec-expr-pure e compst)
+                    (mv (expr-value->value eval)
                         compst)))
     :enable exec-expr-call-or-pure)
 

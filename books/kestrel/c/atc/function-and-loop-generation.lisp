@@ -1711,7 +1711,8 @@
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
-                             '(,@not-error-thms
+                             '(not-errorp-when-expr-valuep
+                               ,@not-error-thms
                                ,@valuep-thms
                                ,@value-kind-thms
                                not
@@ -1735,6 +1736,7 @@
                      '(:in-theory (union-theories
                                    (theory 'atc-all-rules)
                                    '(,fn
+                                     not-errorp-when-expr-valuep
                                      ,@not-error-thms
                                      ,@valuep-thms
                                      ,@value-kind-thms
@@ -3089,9 +3091,10 @@
        (exec-stmt-while-for-fn-body
         `(b* ((fenv (init-fun-env (preprocess ,prog-const)))
               ((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-              (test (exec-expr-pure ',loop-test compst))
-              ((when (errorp test)) (mv test (compustate-fix compst)))
-              (continuep (test-value test))
+              (test-eval (exec-expr-pure ',loop-test compst))
+              ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
+              (test-val (expr-value->value test-eval))
+              (continuep (test-value test-val))
               ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
               ((when (not continuep)) (mv nil (compustate-fix compst)))
               ((mv val? compst) (exec-stmt ',loop-body compst fenv (1- limit)))
@@ -3399,7 +3402,9 @@
                    ,@hyps
                    ,(untranslate$ (uguard+ fn wrld) nil state)))
        (concl `(and (not (errorp (exec-expr-pure ',loop-test ,compst-var)))
-                    (equal (test-value (exec-expr-pure ',loop-test ,compst-var))
+                    (equal (test-value
+                            (expr-value->value
+                             (exec-expr-pure ',loop-test ,compst-var)))
                            ,test-term)))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
@@ -3415,6 +3420,7 @@
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
                              '(not
+                               not-errorp-when-expr-valuep
                                ,@not-error-thms
                                ,@valuep-thms
                                ,@value-kind-thms

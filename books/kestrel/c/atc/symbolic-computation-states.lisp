@@ -1627,16 +1627,18 @@
      (i.e. commutativity normalizes them, via its loop stopper)."))
 
   (defruled read-object-of-add-frame
-    (equal (read-object objdes (add-frame fun compst))
-           (read-object objdes compst))
+    (implies (equal (objdesign-kind objdes) :alloc)
+             (equal (read-object objdes (add-frame fun compst))
+                    (read-object objdes compst)))
     :enable (add-frame
              push-frame
              read-object
              read-static-var))
 
   (defruled read-object-of-enter-scope
-    (equal (read-object objdes (enter-scope compst))
-           (read-object objdes compst))
+    (implies (equal (objdesign-kind objdes) :alloc)
+             (equal (read-object objdes (enter-scope compst))
+                    (read-object objdes compst)))
     :enable (enter-scope
              push-frame
              pop-frame
@@ -1644,8 +1646,9 @@
              read-static-var))
 
   (defruled read-object-of-add-var
-    (equal (read-object objdes (add-var var val compst))
-           (read-object objdes compst))
+    (implies (equal (objdesign-kind objdes) :alloc)
+             (equal (read-object objdes (add-var var val compst))
+                    (read-object objdes compst)))
     :enable (add-var
              push-frame
              pop-frame
@@ -1653,7 +1656,7 @@
              read-static-var))
 
   (defruled read-object-of-update-var
-    (implies (objdesign-case objdes :alloc)
+    (implies (equal (objdesign-kind objdes) :alloc)
              (equal (read-object objdes (update-var var val compst))
                     (read-object objdes compst)))
     :enable (update-var

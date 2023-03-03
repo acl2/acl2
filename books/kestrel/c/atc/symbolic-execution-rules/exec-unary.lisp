@@ -73,7 +73,7 @@
                      ,@(and op-type-okp
                             `((,op-type-okp x)))))
          (formula `(implies ,hyps
-                            (equal (exec-unary op (expr-value x nil) compst)
+                            (equal (exec-unary op (expr-value x objdes) compst)
                                    (expr-value (,op-type x) nil))))
          (enables `(exec-unary
                     eval-unary
@@ -216,7 +216,9 @@
                      (equal val (read-object objdes compst))
                      (,pred val)))
          (formula `(implies ,hyps
-                            (equal (exec-unary op (expr-value x nil) compst)
+                            (equal (exec-unary op
+                                               (expr-value x objdes-x)
+                                               compst)
                                    (expr-value val objdes))))
          (hints `(("Goal" :in-theory (enable exec-unary
                                              exec-indir))))

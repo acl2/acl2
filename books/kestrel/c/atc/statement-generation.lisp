@@ -1172,7 +1172,11 @@
                                    (:e stmt-ifelse->else)
                                    ,else-stmt-thm
                                    ,valuep-when-test-type-pred
-                                   booleanp-compound-recognizer)))
+                                   booleanp-compound-recognizer
+                                   expr-valuep-of-expr-value
+                                   expr-value->value-of-expr-value
+                                   value-fix-when-valuep
+                                   ,valuep-when-test-type-pred)))
           `(("Goal" :in-theory '(exec-stmt-when-ifelse-and-true
                                  exec-stmt-when-ifelse-and-false
                                  (:e stmt-kind)
@@ -1183,7 +1187,11 @@
                                  (:e stmt-if->then)
                                  ,then-stmt-thm
                                  ,valuep-when-test-type-pred
-                                 booleanp-compound-recognizer)))))
+                                 booleanp-compound-recognizer
+                                 expr-valuep-of-expr-value
+                                 expr-value->value-of-expr-value
+                                 value-fix-when-valuep
+                                 ,valuep-when-test-type-pred)))))
        (if-stmt-instructions
         `((casesplit ,(atc-contextualize test-term
                                          gin.context nil nil nil nil nil wrld))
