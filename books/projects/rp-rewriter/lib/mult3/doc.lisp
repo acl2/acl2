@@ -154,7 +154,7 @@ have some  significant improvements but  the methods are essentially  the same.
  time. </p>
 
 
-<p> UNPACK-BOOTH-LATER </p>
+<p> UNPACK-BOOTH-LATER <i>(disabled by default)</i> </p>
 
 <p>In  Booth encoded multipliers,  partial products are generated  with basic
 logical gates. We perform algebraic rewriting on these gates when rewriting the
@@ -167,45 +167,30 @@ heuristic is not expected to be necessary for the majority of designs and it is
 disabled by default. If a proof attempt of a Booth encoded design is failing,
 we recommend that you enable this heuristic: </p>
 
-<code> @('(rp::enable-unpack-booth-later <t-or-nil>)') </code>
+<code> @('(rp:: enable-unpack-booth-later <t-or-nil>)') </code>
 
 
-<p> STINGY-PP-CLEAN </p>
-<p>  Booth Encoded  designs produce  a  lot of  terms  as part  of the  partial
-product  (pp) logic.   These  terms eventually  cancel out  each  other as  the
-multiplier  designs are  expanded and  simplified.  This  happens through  some
-\"pp-clean\"  operations. By  default,  \"pp-clean\" is  rather aggressive  and
-creates a lot of copies of the same terms. When \"stingy-pp-clean\" is enabled,
-this  operation  is  done  more   selectively  which  can  deliver  performance
-improvements.  That  can range  from a  10% improvement to  2-3x or  even more,
-depending on  many different  factors.  This heuristic  might cause  some proof
-attempts to fail and it is disabled by default, and its setting is ignored when
-unpack-booth-later is enabled.  </p>
-
-<code> @('(rp::enable-stingy-pp-clean <t-or-nil>)') </code>
-
-
-<p>S-PATTERN1-REDUCE</p>
+<p>S-PATTERN1-REDUCE <i>(enabled by default)</i></p>
 
 <p> Enabled by default, this heuristic can cover some corner
 cases  that emerge  especially in  merged  multipliers. This  usually does  not
 affect the proof-time performance, but in some cases (e.g., constant propagated
 designs), it can have a negative  impact. We have never observed this heuristic
 to cause a proof to fail, therefore it is enabled by default. To disable it
-(rp::enable-c-pattern1-reduce         nil),         or        to         enable
-it (rp::enable-c-pattern1-reduce t).
+(rp::enable-s-pattern1-reduce         nil),         or        to         enable
+it (rp::enable-s-pattern1-reduce t).
 </p>
 
 <code> @('(rp::enable-s-pattern1-reduce <t-or-nil>)') </code>
 
-<p>PATTERN2-REDUCE</p>
+<p>PATTERN2-REDUCE <i>(enabled by default)</i></p>
 <p>            Similar       to     
 S-PATTERN1-REDUCE. Enabled  by default. To  disable (rp::enable-pattern2-reduce
 nil), to enable (rp::enable-pattern2-reduce t) </p>
 
 <code> @('(rp::enable-pattern2-reduce <t-or-nil>)') </code>
 
-<p>PATTERN3-REDUCE</p>
+<p>PATTERN3-REDUCE <i>(disabled by default)</i></p>
 
 <p>  Similar  to other \"pattern-reduce\" heuristics  but it is
  too  aggressive  and  disabled by  default.  It  removes \"1\"
@@ -218,31 +203,7 @@ default. </p>
 <code> @('(rp::enable-pattern3-reduce <t-or-nil>)') </code>
 
 
-<p>C-OF-S-FIX-MODE</p>
-<p>   We have  found mainly three  different efficient  ways to
-merge sum of two instances of \"c\" terms. The first method is described in our
-CAV2020 paper (see @(see Multiplier-Verification) for the link) and it pertains
-to converting \"c\" terms to \"d\"  terms. We discontinued this support in this
-new  library but  instead started  experimenting with  easier-to-debug methods.
-You can  switch between these  two methods by  (rp::enable-c-of-s-fix-mode nil)
-and
-(rp::enable-c-of-s-fix-mode t). When disabled, two c terms are tried to be
-merged using the lemma: (+ (c (s x) y) (c x)) = (c x y). The program searches
-for this pattern. When enabled, the program applies this lemma: (c (s x) y) =
-(+ (c x y) (- (c x))). By default, c-of-s-fix-mode is enabled because it is
-easier to manage in the program, and changes are made more easiler. We have
-seen   that  the   performance  between   two  methods   is  very   similar  in
-general. However, if c-of-s-fix-mode and stingy-pp-clean are both disabled, you
-may  observe  a  significant  reduction in  proof-time  performance  for  large
-Booth-Encoded designs. Disabling c-of-s-fix-mode may cause problems with the
-unpack-booth-later and maybe some new heuristics. We recommend that users not
-modify this mode and leave
-it enabled.
-</p >
-
-<code> @('(rp::enable-c-of-s-fix-mode <t-or-nil>)') </code>
-
-<p>RECOLLECT-PP</p>
+<p>RECOLLECT-PP <i>(disabled by default)</i></p>
 <p> We have discovered that after partial products are flatten (i.e., rewritten
  in algebraic form), the result can be shrunk by rewriting (collecting) some
 terms into c and s terms. When enabled, this heuristic tries to perform such
@@ -257,16 +218,60 @@ by default.
 <code> @('(rp::enable-recollect-pp <t-or-nil>)') </code>
 
 
-<p>UNPACK-BOOTH-LATER-HONS-COPY</p>
+<p>UNPACK-BOOTH-LATER-HONS-COPY <i>(disabled by default)</i></p>
 <p> When enabled, this causes terms to be hons-copied in the meta function that
 performs the second pass when unpack-booth-later is enabled. This can help
 prevent some repeated work for some memoized functions but we have seen so far
 that cost of hons-copy mostly overwhelms the benefits it brings. So  we leave
-this heuristic disabled. It might be worth a short if you see that a certain
+this heuristic disabled. It might be worth a shot if you think that a
 proof is too slow. This setting has no effect if unpack-booth-later is
 disabled.</p>
 
 <code> @('(rp::enable-unpack-booth-later-hons-copy <t-or-nil>)') </code>
+
+<p>CROSS-PRODUCT-TWO-LARGES <i>(disabled by default)</i></p>
+<p>Another experimental feature that may or may not ever find its
+usefulness. When enabled, ANDed two s/c/s-c-res terms will be dissolved into a
+large list of terms. This will likely slow down in some cases (e.g.,
+saturated multipliers) but won't affect much else. </p>
+<code> @('(rp::enable-cross-product-two-larges <t-or-nil>)') </code>
+
+<p>PP-LISTS-LIMIT <i>(set to 16000 by default)</i></p>
+<p>We don't want terms to blow up when doing algebraic rewriting of logical
+gates. We call this function in this library pp-flatten, as we use it to
+flatten out partial product logic. Since there could be other terms
+representing logical gates in given conjectures, and they may cause blow-up if
+this rewriting is performed on them, we set a limit to how large a term can
+grow during the pp-flatten stage. This limit can be changed by the user byt
+defining a funciton that returns a certain number, and calling defattach. For
+example:
+</p>
+
+<code> @('(define return-16000 () 16000)')</code>
+<code> @('(defattach pp-lists-limit return-16000)')</code>
+
+<p> If this limit is set too low, then some proofs may fail - likely Booth encoded multipliers
+with large radices, such as, radix-16. On the other hand, if this limit is set
+ too high, the program may try to flatten parts of the design that is not
+needed (parts that would be simplified away through other means), or in case
+something goes wrong in adder identification and you end up with a large tree
+of logical gates. In such a case,
+you'd likely not want to flatten those gates, which might eventually help prove
+the conjecture but it can also cause a blow up. If  you are tring to prove
+something and it
+ is stalling, then it may be a good idea to decrease this number to see
+what is going on. </p>
+
+
+<p> UNDO-RW-AND-OPEN-UP-ADDERS <i>(enabled by default)</i> </p> 
+<p> In some cases, our program might mistakenly mark some parts of a
+multiplier design as half-adder. If we proceed to keep assuming that this was
+correct, our proofs may fail. We implemented a system to undo some
+rewriting and open up the definition of some adder instances when it
+seems appropriate. If the proof-time performance is too slow,  disabling this
+heuristic may help:</p>
+
+<code> @('(rp::enable-undo-rw-and-open-up-adders <t-or-nil>)') </code>
 
 ")
 

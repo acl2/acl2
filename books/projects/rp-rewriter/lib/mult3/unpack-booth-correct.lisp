@@ -89,11 +89,35 @@
                      (:REWRITE
                       ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1))))
 
+(local
+ (defthm is-equals-of-same-car-and-length
+   (implies (and (not (is-equals term))
+                 (true-listp term)
+                 (equal (len (cdr term))
+                        (len args)))
+            (not (is-equals (cons (car term)
+                                  args))))
+   :hints (("Goal"
+            :expand ((len (cdddr term))
+                     (len (cddr term))
+                     (len (cdr term))
+                     (len term))
+            :in-theory (e/d (is-equals)
+                            (+-is-sum))))))
+
+(local
+ (defthm is-equals-of-others
+   (implies (not (equal (car term) 'equals))
+            (not (is-equals term )))
+   :hints (("Goal"
+            :in-theory (e/d (is-equals) ())))))
+
 (defret unpack-booth-for-pp-lst-correct
   (implies (and
             (rp-evl-meta-extract-global-facts :state state)
             (mult-formula-checks state)
-            (valid-sc-subterms pp-lst a))
+            (valid-sc-subterms pp-lst a)
+            (rp-term-listp pp-lst))
            (and (equal (sum-list-eval res-pp-lst a)
                        (sum-list-eval pp-lst a))
                 (valid-sc-subterms res-pp-lst a)))
@@ -104,10 +128,10 @@
            :in-theory (e/d (unpack-booth-for-pp-lst) ()))))
 
 #|(defthmd rp-evlt-of-ex-from-rp-reverse
-  (implies (syntaxp (or (atom term)
-                        (not (include-fnc term 'ex-from-rp))))
-           (equal (rp-evlt term a)
-                  (rp-evlt (ex-from-rp term) a))))||#
+(implies (syntaxp (or (atom term)
+(not (include-fnc term 'ex-from-rp))))
+(equal (rp-evlt term a)
+(rp-evlt (ex-from-rp term) a))))||#
 
 (local
  (defthmd ex-from-rp-when---
@@ -166,7 +190,7 @@
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
            (b* (((mv coughed result)
-                 (c-fix-arg-aux pp-lst neg-flag)))
+                 (c-fix-arg-aux pp-lst)))
              (equal
               (sum-list-eval result a)
               (sum (sum-list-eval pp-lst a)
@@ -181,7 +205,10 @@
                 (mult-formula-checks state)
                 (valid-sc-subterms s-lst a)
                 (valid-sc-subterms pp-lst a)
-                (valid-sc-subterms c-lst a))
+                (valid-sc-subterms c-lst a)
+                (rp-term-listp s-lst)
+                (rp-term-listp pp-lst)
+                (rp-term-listp c-lst))
            (and (equal (sum-list-eval res-c-lst a)
                        (sum (-- (sum-list-eval res-s-lst a))
                             (-- (sum-list-eval res-pp-lst a))
@@ -305,6 +332,13 @@
                (sum y))
         (equal (sum x y (-- x))
                (sum y)))))
+
+
+(local
+ (defthm rp-evlt-ex-from-rp-of-list
+   (equal (rp-evlt (ex-from-rp (cons 'list x)) a)
+          (rp-evlt-lst x a))))
+
 
 (defret-mutual
   unpack-booth-for-s-correct
@@ -462,34 +496,34 @@
                              rp-trans)))))
 
 #|(defret unpack-booth-for-c-lst-correct-with-other
-    (implies (and
-              (rp-evl-meta-extract-global-facts :state state)
-              (mult-formula-checks state)
-              (valid-sc-subterms  c-lst a)
-              (rp-term-listp c-lst))
-             (and (equal (sum (sum-list-eval s-res-lst a)
-                              (sum-list-eval pp-res-lst a)
-                              (sum-list-eval c-res-lst a)
-                              other)
-                         (sum (sum-list-eval c-lst a)
-                              other))
-                  ))
-    :fn unpack-booth-for-c-lst)
+(implies (and
+(rp-evl-meta-extract-global-facts :state state)
+(mult-formula-checks state)
+(valid-sc-subterms  c-lst a)
+(rp-term-listp c-lst))
+(and (equal (sum (sum-list-eval s-res-lst a)
+(sum-list-eval pp-res-lst a)
+(sum-list-eval c-res-lst a)
+other)
+(sum (sum-list-eval c-lst a)
+other))
+))
+:fn unpack-booth-for-c-lst)
 
 (defret unpack-booth-for-s-lst-correct-with-other
-    (implies (and
-              (rp-evl-meta-extract-global-facts :state state)
-              (mult-formula-checks state)
-              (valid-sc-subterms  s-lst a)
-              (rp-term-listp s-lst))
-             (and (equal (sum (sum-list-eval s-res-lst a)
-                              (sum-list-eval pp-res-lst a)
-                              (sum-list-eval c-res-lst a)
-                              other)
-                         (sum (sum-list-eval s-lst a)
-                              other)
-                  )))
-    :fn unpack-booth-for-s-lst)|#
+(implies (and
+(rp-evl-meta-extract-global-facts :state state)
+(mult-formula-checks state)
+(valid-sc-subterms  s-lst a)
+(rp-term-listp s-lst))
+(and (equal (sum (sum-list-eval s-res-lst a)
+(sum-list-eval pp-res-lst a)
+(sum-list-eval c-res-lst a)
+other)
+(sum (sum-list-eval s-lst a)
+other)
+)))
+:fn unpack-booth-for-s-lst)|#
 
 (local
  (defthm single-c-p-implies-integerp
@@ -549,7 +583,6 @@
    :hints (("Goal"
             :in-theory (e/d (rp-termp) ())))))
 
-
 (local
  (defthm unpack-booth-meta-correct-bitp-lemma
    (implies (and (or (OR* (BINARY-FNC-P term)
@@ -586,13 +619,9 @@
   :fn unpack-booth-meta
   ;;:otf-flg t
   :hints (("goal"
-           :do-not-induct t
-           :use ((:instance pp-has-bitp-rp-implies
-                            (term (cadr term)))
-                 (:instance pp-has-bitp-rp-implies
-                            (term (cadr (cadr term)))))
-           :expand ((sum-list-eval (list (cadr term)) a)
-
+           :do-not-induct t 
+           :expand ((:free (x) (sum-list-eval (list x) a))
+                    (SUM-LIST-EVAL NIL A)
                     (sum-list-eval (list (cadr (cadr term)))
                                    a))
            :in-theory (e/d* (or*
@@ -605,19 +634,25 @@
                              regular-rp-evl-of_unpack-booth_when_mult-formula-checks
                              regular-rp-evl-of_s-c-res_when_mult-formula-checks_with-ex-from-rp
                              regular-rp-evl-of_s-c-res_when_mult-formula-checks
-                             regular-rp-evl-of_bit-of_when_mult-formula-checks_with-ex-from-rp
-                             regular-rp-evl-of_bit-of_when_mult-formula-checks
+                             regular-rp-evl-of_logbit$inline_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_logbit$inline_when_mult-formula-checks
                              (:rewrite regular-rp-evl-of_--_when_mult-formula-checks)
                              )
-                            (rp-termp
+                            (;;(:REWRITE ACL2::EQUAL-LEN-1)
+                             ACL2::EQUAL-LEN-1
+                             (:REWRITE BINARY-FNC-P-RELIEVE)
+                             (:TYPE-PRESCRIPTION SINGLE-C-P$INLINE)
+                             (:TYPE-PRESCRIPTION ACL2::BINARY-OR*)
+                             (:DEFINITION LOGBIT$INLINE)
+                             rp-termp
                              (:REWRITE DUMMY-SUM-CANCEL-LEMMA1)
                              (:REWRITE PP-TERM-P-IS-BITP)
                              PP-TERM-P
                              (:TYPE-PRESCRIPTION VALID-SC)
                              pp-has-bitp-rp-implies
                              bitp
-                             rp-trans-opener-when-list
-                             rp-trans-opener
+                             ;;rp-trans-opener-when-list
+                             ;;rp-trans-opener
                              eval-and-all
                              valid-sc
                              ex-from-rp
@@ -635,14 +670,18 @@
                              is-falist
                              rp-trans
                              rp-trans-lst
-                             valid-sc)))))
-
-
+                             valid-sc)))
+          (and stable-under-simplificationp
+               '(:use ((:instance pp-has-bitp-rp-implies
+                                  (term (cadr term)))
+                       (:instance pp-has-bitp-rp-implies
+                                  (term (cadr (cadr term)))))))))
 
 (local
  (defthm valid-sc-of-cons
    (implies (and (NOT (EQUAL x 'IF))
                  (NOT (EQUAL x 'RP))
+                 (NOT (EQUAL x 'equals))
                  (NOT (EQUAL x 'QUOTE)))
             (equal (valid-sc (cons x other) a)
                    (valid-sc-subterms other a)))
@@ -695,19 +734,19 @@
                             ())))))
 
 #|(local
- (defthm rp-evlt-cons-equivalance
-   (implies (and (AND (SYMBOLP TYPE)
-                      (NOT (BOOLEANP TYPE))
-                      (NOT (EQUAL TYPE 'QUOTE))
-                      (NOT (EQUAL TYPE 'RP))
-                      (NOT (EQUAL TYPE 'LIST))
-                      (NOT (EQUAL TYPE 'FALIST)))
-                 (equal (rp-evlt x a)
-                        (rp-evlt y a)))
-            (equal (rp-evlt (list type x) a)
-                   (rp-evlt (list type y) a)))
-   :hints (("Goal"
-            :in-theory (e/d (rp-evl-of-fncall-args) ())))))|#
+(defthm rp-evlt-cons-equivalance
+(implies (and (AND (SYMBOLP TYPE)
+(NOT (BOOLEANP TYPE))
+(NOT (EQUAL TYPE 'QUOTE))
+(NOT (EQUAL TYPE 'RP))
+(NOT (EQUAL TYPE 'LIST))
+(NOT (EQUAL TYPE 'FALIST)))
+(equal (rp-evlt x a)
+(rp-evlt y a)))
+(equal (rp-evlt (list type x) a)
+(rp-evlt (list type y) a)))
+:hints (("Goal"
+:in-theory (e/d (rp-evl-of-fncall-args) ())))))|#
 
 (local
  (defthm is-if-lemma
@@ -770,6 +809,14 @@
 (local
  (create-regular-eval-lemma if 3 MULT-FORMULA-CHECKS))
 
+#|(local
+(defthm len-of-unpack-booth-general-meta-lst
+(equal (len (unpack-booth-general-meta-lst lst))
+(len lst))
+:hints (("Goal"
+:induct (len lst)
+:in-theory (e/d (unpack-booth-general-meta-lst) ())))))|#
+
 (defret-mutual unpack-booth-general-meta-correct
 
   (defret unpack-booth-general-meta-correct
@@ -819,7 +866,7 @@
                              INCLUDE-FNC
                              rp-trans-is-term-when-list-is-absent
                              rp-trans
-                             RP-TRANS-OPENER
+                             ;;RP-TRANS-OPENER
                              RP-TRANS-LST
                              is-rp-of-cons
                              rp-termp

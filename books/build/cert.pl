@@ -220,10 +220,16 @@ Depends-on is intended for non-book dependencies, so cert.pl won\'t
 scan the target for its dependencies.
 
  - (loads "<filename>" [:dir :<dirname>])
-     Adds the named file as a dependency of the current book, and also
-recursively scans that file for dependencies as if it were part of the
-current file.  May occur in a comment, since it is not defined in
-ACL2.
+ - (include-src-events "<filename>" [:dir :<dirname>])
+ - (include-events "<bookname>" [:dir :<dirname])
+     Adds the named source file as a dependency of the current book,
+and also recursively scans that file for dependencies as if it were
+part of the current file. Include-events and include-src-events are
+defined in build/include-events.lisp. They differ in that
+include-events appends ".lisp" to the bookname argument.  The LOADS
+form is not defined in ACL2 and may occur in a comment; it can be used
+to mark other occurrences where the contents of a source file are
+included in a book.
 
  - (ld "<filename>" [:dir :<dirname>])
      Ignored when it occurs while scanning the main book, as opposed

@@ -62,6 +62,7 @@
 	    acl2::logapp
 	    acl2::loghead
 	    acl2::logbit
+	    acl2::logbit$inline
 	    acl2::logtail
 
             acl2::Defines
@@ -69,7 +70,7 @@
             ;;acl2::in
             acl2::for
             acl2::collect
-            acl2::sum
+	    ;;             acl2::sum
             acl2::when
             acl2::until
             acl2::by

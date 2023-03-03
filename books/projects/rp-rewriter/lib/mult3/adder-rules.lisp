@@ -312,16 +312,16 @@
 (def-rp-rule :disabled t
   equal-of-adder-and-f2
   (implies (bitp other)
-           (equal (equal (adder-and (bit-of x y)
+           (equal (equal (adder-and (logbit x y)
                                     other)
-                         (f2 (adder-sum (bit-of x y)
+                         (f2 (adder-sum (logbit x y)
                                         other)))
                   t))
   :hints (("Goal"
-           :cases ((bitp (bit-of x y)))
+           :cases ((bitp (logbit x y)))
            :in-theory (e/d ()
-                           ((:TYPE-PRESCRIPTION BIT-OF)
-                            (:REWRITE BITP-OF-BIT-OF))))))
+                           ((:TYPE-PRESCRIPTION LOGBIT$INLINE)
+                            (:REWRITE BITP-OF-LOGBIT))))))
 
 (local
  (defthm merge-adder-sum-is-adder-sum
@@ -924,15 +924,15 @@
                 adder-or-of-and-and-nots-with-m2-side-cond))
 
 (def-rp-rule :disabled t
-  bit-of-adder-fncs
-  (and (equal (bit-of (adder-and a b) 0)
+  logbit-adder-fncs
+  (and (equal (logbit 0 (adder-and a b))
               (adder-and a b))
-       (equal (bit-of (adder-or a b) 0)
+       (equal (logbit 0 (adder-or a b))
               (adder-or a b)))
   :hints (("Goal"
            :in-theory (e/d (adder-and
                             adder-or
-                            bit-of) ()))))
+                            logbit) ()))))
 
 (encapsulate
   nil
@@ -964,17 +964,17 @@
        (bitp (binary-or x y))
        (bitp (binary-xor x y))
        (bitp (binary-? x y z))
-       (bitp (bit-of x y))))
+       (bitp (logbit x y))))
 
-(def-rp-rule bit-of-adder-mux
+(def-rp-rule logbit-adder-mux
   (and (implies (posp position)
-                (equal (bit-of (adder-mux s i0 i1) position)
+                (equal (logbit position (adder-mux s i0 i1))
                        0))
-       (equal (bit-of (adder-mux s i0 i1) 0)
+       (equal (logbit 0 (adder-mux s i0 i1))
               (adder-mux s i0 i1)))
   :hints (("goal"
            :cases ((equal (adder-mux s i0 i1) 0))
-           :in-theory (e/d (adder-mux bit-fix bit-of)
+           :in-theory (e/d (adder-mux bit-fix logbit)
                            (bitp)))))
 
 (def-rp-rule adder-fncs-to-adder-mux
@@ -1150,7 +1150,7 @@
 
 (progn
   (defconst *adder-rules*
-    '(bits-is-bit-of
+    '(bits-is-logbit
 
       m2-of-adder-sum-m2
       bin-or-p2a
@@ -1228,7 +1228,7 @@
       adder-or-of-the-same
       adder-and-of-the-same
 
-      bit-of-adder-fncs
+      logbit-adder-fncs
 
       merge-adder-or-is-adder-or$
 

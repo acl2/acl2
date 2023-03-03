@@ -1462,3 +1462,49 @@ setting also happens when the book in which this form occurs is included in
 another book.  The build system attempts to accurately track which variables
 are defined where, for use by @(see ifdef) and @(see ifndef).</p>"
   :pkg "ACL2")
+
+
+(defxdoc acl2::include-events
+  :parents (cert.pl)
+  :short "A build-system-supported mechanism to include the events from a
+book as a @('progn') or @('encapsulate')."
+  :long "<p>Include-events reads the forms from a source file, which must begin
+with an @(see in-package) form, and submits those forms as a @('progn') or
+@('encapsulate').</p>
+
+<p>Usage:</p>
+@({
+ (include-book \"build/include-events\" :dir :system) ;; prerequisite
+
+ (include-events \"book-name\" :dir :system :encapsulate nil)
+ })
+
+<p>The @(':dir') argument works just like it does in @(see include-book).  The
+@(':encapsulate') argument says whether to submit the forms contained in the
+book as a @('progn') (if nil) or @('encapsulate nil') (if t).</p>
+
+<p>The name of the actual file to be loaded will be the filename argument with
+\".lisp\" appended. The related @(see include-src-events) does the same thing
+without adding the extension.</p>
+
+<p>The events read from the file are run in the current book's context. Among
+other things, this means that the connected book directory (see @(see cbd))
+remains the directory of the current book, not that of the loaded file, unless
+it is the same directory.  Include-event tries to compensate for this by
+rewriting @('include-book'), @('include-event'), and @('include-src-events')
+forms to correct the filenames.</p>
+
+<p>The cert.pl build system supports this in that if this form is in a book, it
+creates dependencies from that book on the source file that is included as well
+as any additional dependencies found in that source file.</p>
+
+<p>If a library has a book \"top\" that only includes other books, then \"top\"
+ could be included via @('include-events') rather than @('include-book') to
+save certification time.</p>"
+  :pkg "ACL2")
+
+(defxdoc acl2::include-src-events
+  :parents (cert.pl)
+  :short "Like @(see include-events) but allows an arbitrary file extension."
+  :pkg "ACL2")
+

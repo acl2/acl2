@@ -37,28 +37,6 @@
 (local (in-theory (disable pseudo-termp pseudo-term-listp)))
 ;; (include-book "primitives")
 
-(define variable-g-bindings ((vars pseudo-var-list-p))
-  :returns (bindings fgl-object-bindings-p)
-  (if (atom vars)
-      nil
-    (cons (cons (pseudo-var-fix (car vars))
-                (g-var (car vars)))
-          (variable-g-bindings (cdr vars))))
-  ///
-  (defret fgl-object-bindings-bfrlist-of-<fn>
-    (equal (fgl-object-bindings-bfrlist bindings) nil))
-
-  (defret alist-keys-of-<fn>
-    (equal (alist-keys bindings)
-           (pseudo-var-list-fix vars))
-    :hints(("Goal" :in-theory (enable alist-keys))))
-
-  (defret lookup-in-<fn>
-    (equal (hons-assoc-equal k bindings)
-           (and (member k (pseudo-var-list-fix vars))
-                (cons k (g-var k))))
-    :hints(("Goal" :in-theory (enable pseudo-var-list-fix)))))
-
 
 (defun def-cons-opener-fn (accessor wrld)
   (Declare (Xargs :mode :program))

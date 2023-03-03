@@ -114,8 +114,8 @@
      (ex-from-rp/m2/f2/adder-sum/and/or x))
     ((fnc x s rest)
      `(,fnc ,s ,rest ,x))
-    ((fnc x s)
-     `(,fnc ,s ,x))
+    #|((fnc x s)
+     `(,fnc ,s ,x))|#
     (&
      term)))
 
@@ -124,14 +124,14 @@
        (y (ex-from-rp y))
        (x-is-and (case-match x (('adder-and & &) t)))
        (y-is-and (case-match y (('adder-and & &) t)))
-       (?x-is-bit-of (case-match x (('bit-of a &) (atom (ex-from-rp a)))))
-       (?y-is-bit-of (case-match y (('bit-of a &) (atom (ex-from-rp a)))))
+       (?x-is-logbit (case-match x (('logbit$inline & a) (atom (ex-from-rp a)))))
+       (?y-is-logbit (case-match y (('logbit$inline & a) (atom (ex-from-rp a)))))
        (x (ex-from-rp/m2/f2/adder-sum/and/or x))
        (y (ex-from-rp/m2/f2/adder-sum/and/or y)))
     (cond ((or x-is-and
                y-is-and)
            nil)
-          
+
           (t (b* (((mv res &)
                    (lexorder2 y x)))
                res)))))
@@ -148,8 +148,8 @@
        (y (ex-from-rp y))
        (x-is-or (case-match x (('adder-or & &) t)))
        (y-is-or (case-match y (('adder-or & &) t)))
-       (?x-is-bit-of (case-match x (('bit-of a &) (atom (ex-from-rp a)))))
-       (?y-is-bit-of (case-match y (('bit-of a &) (atom (ex-from-rp a)))))
+       (?x-is-logbit (case-match x (('logbit$inline & a) (atom (ex-from-rp a)))))
+       (?y-is-logbit (case-match y (('logbit$inline & a) (atom (ex-from-rp a)))))
        (x (ex-from-rp/m2/f2/adder-sum/and/or x))
        (y (ex-from-rp/m2/f2/adder-sum/and/or y)))
     (cond ((or x-is-or
@@ -179,13 +179,16 @@
        (y-is-f2 (case-match y (('f2 &) t)))
        (x-is-adder (case-match x (('adder-b+ & &) t)))
        (y-is-adder (case-match y (('adder-b+ & &) t)))
-       (?x-is-bit-of (case-match x (('bit-of a &) (atom (ex-from-rp a)))))
-       (?y-is-bit-of (case-match y (('bit-of a &) (atom (ex-from-rp a)))))
+       (?x-is-logbit (case-match x (('logbit$inline & &) t)))
+       (?y-is-logbit (case-match y (('logbit$inline & &) t)))
        (x (ex-from-rp/m2/f2/adder-sum/and/or x))
        (y (ex-from-rp/m2/f2/adder-sum/and/or y)))
     (cond ((or x-is-adder
                y-is-adder)
            nil)
+          #|((or (and x-is-logbit y-is-f2)
+               (and y-is-logbit x-is-f2))
+           (not y-is-logbit))|#
           ((or x-is-const
                y-is-const)
            (not y-is-const))
@@ -202,13 +205,7 @@
           ((or x-is-f2
                y-is-f2)
            (not x-is-f2))
-          #|((and x-is-bit-of
-          y-is-bit-of
-          (equal (caddr x) (caddr y))
-          )
-          (b* (((mv res &)
-          (lexorder2 x y)))
-          res))||#
+          
           (t (b* (((mv res &)
                    (lexorder2 y x)))
                res)))))
@@ -354,7 +351,7 @@
      adder-and
      adder-b+
      bitp
-     bit-of)))
+     logbit$inline)))
 
 (local
  (in-theory (disable rp-trans
@@ -375,7 +372,7 @@
               (valid-sc (mv-nth 0 (resolve-adder-and-order-rec x y)) a))
      :hints (("Goal"
               :in-theory (e/d (resolve-adder-and-order-rec
-                               is-if
+                               is-if is-equals
                                is-rp) ()))))))
 
 (local
@@ -393,12 +390,11 @@
               (valid-sc (mv-nth 0 (resolve-adder-sum-order-rec x y)) a))
      :hints (("Goal"
               :in-theory (e/d (resolve-adder-sum-order-rec
-                               is-if
+                               is-if is-equals
                                is-rp) ()))))))
 
 (local
  (progn
-   
 
    (defthm rp-termp-resolve-adder-and-order
      (implies (and (rp-termp x))
@@ -411,12 +407,11 @@
               (valid-sc (mv-nth 0 (resolve-adder-and-order x)) a))
      :hints (("Goal"
               :in-theory (e/d (resolve-adder-and-order
-                               is-if
+                               is-if is-equals
                                is-rp) ()))))))
 
 (local
  (progn
-   
 
    (defthm rp-termp-resolve-adder-sum-order
      (implies (and (rp-termp x))
@@ -429,7 +424,7 @@
               (valid-sc (mv-nth 0 (resolve-adder-sum-order x)) a))
      :hints (("Goal"
               :in-theory (e/d (resolve-adder-sum-order
-                               is-if
+                               is-if is-equals
                                is-rp) ()))))))
 
 (encapsulate
@@ -623,10 +618,10 @@
 
 ;; adder-mux-meta
 
-(define is-bit-of (x)
+(define is-logbit (x)
   (b* ((x (ex-from-rp x)))
     (case-match x
-      (('bit-of & &)
+      (('logbit$inline & &)
        t))))
 
 (define insert-select-from-adder-mux (s i0 i1)
@@ -652,13 +647,13 @@
           (& (mv nil  nil nil)))))
     (cond ((and i1-is-adder-or
                 i0-is-f2
-                (or (is-bit-of i0-arg1)
+                (or (is-logbit i0-arg1)
                     (is-rp-bitp i0-arg1))
-                (or (is-bit-of i1-arg1)
+                (or (is-logbit i1-arg1)
                     (is-rp-bitp i1-arg1))
-                (or (is-bit-of i0-arg2)
+                (or (is-logbit i0-arg2)
                     (is-rp-bitp i0-arg2))
-                (or (is-bit-of i1-arg2)
+                (or (is-logbit i1-arg2)
                     (is-rp-bitp i1-arg2))
                 (or (and (rp-equal i1-arg1 i0-arg1)
                          (rp-equal i1-arg2 i0-arg2))
@@ -671,68 +666,69 @@
                t))
           (t (mv ''nil nil nil)))))
 
-
 (acl2::defines
- adder-mux-meta-aux
- :flag-defthm-macro defthm-adder-mux-meta-aux
- :flag-local nil
+  adder-mux-meta-aux
+  :flag-defthm-macro defthm-adder-mux-meta-aux
+  :flag-local nil
 
- :hints (("Goal"
-          :in-theory (e/d (measure-lemmas)
-                          ())))
- :guard-hints (("Goal"
-                :in-theory (e/d (is-rp) ())))
+  :hints (("Goal"
+           :in-theory (e/d (measure-lemmas)
+                           ())))
+  :guard-hints (("Goal"
+                 :in-theory (e/d (is-rp) ())))
 
- (define adder-mux-meta-aux (s i0 i1)
-   :returns (mv res-term
-                dont-rw
-                (success booleanp))
-   :measure (cons-count i0)
-   (b* (;;(i0-side-cond  (get-first-side-cond i0))
-        (i0 (ex-from-rp i0))
-        (i1 (ex-from-rp i1)))
-     (cond ((or (atom i0)
-                (quotep i0)
-                (atom i1)
-                (quotep i1)
-                (eq (car i0) 'falist) ;; just to make the proofs easy
-                (eq (car i1) 'falist)
-                (is-if i0) ;; just to make the proofs easy
-                (is-if i1)
-                )
-            (if (equal i0 i1)
-                (mv i0 t t)
-              (mv ''nil t nil)))
-           ((equal (car i0) (car i1))
-            (b* (((mv args args-dont-rw args-success)
-                  (adder-mux-meta-aux-lst s (cdr i0) (cdr i1)))
-                 ((unless args-success)
-                  (mv ''nil t nil)))
-              (mv `(,(car i0) . ,args)
-                  `(nil . ,args-dont-rw)
-                  t)))
-           ;;)
-           (t (insert-select-from-adder-mux s i0 i1)))))
+  (define adder-mux-meta-aux (s i0 i1)
+    :returns (mv res-term
+                 dont-rw
+                 (success booleanp))
+    :measure (cons-count i0)
+    (b* (;;(i0-side-cond  (get-first-side-cond i0))
+         (i0 (ex-from-rp i0))
+         (i1 (ex-from-rp i1)))
+      (cond ((or (atom i0)
+                 (quotep i0)
+                 (atom i1)
+                 (quotep i1)
+                 (eq (car i0) 'falist) ;; just to make the proofs easy
+                 (eq (car i1) 'falist)
+                 (is-if i0) ;; just to make the proofs easy
+                 (is-if i1)
+                 (is-equals i0) ;; just to make the proofs easy
+                 (is-equals i1)
+                 )
+             (if (equal i0 i1)
+                 (mv i0 t t)
+               (mv ''nil t nil)))
+            ((equal (car i0) (car i1))
+             (b* (((mv args args-dont-rw args-success)
+                   (adder-mux-meta-aux-lst s (cdr i0) (cdr i1)))
+                  ((unless args-success)
+                   (mv ''nil t nil)))
+               (mv `(,(car i0) . ,args)
+                   `(nil . ,args-dont-rw)
+                   t)))
+            ;;)
+            (t (insert-select-from-adder-mux s i0 i1)))))
 
- (define adder-mux-meta-aux-lst (s i0-lst i1-lst)
-   :returns (mv res-term-lst
-                dont-rw-lst
-                (success booleanp))
-   :measure (cons-count i0-lst)
-   (if (or (atom i0-lst)
-           (atom i1-lst))
-       (mv i0-lst nil (equal i0-lst i1-lst))
-     (b* (((mv cur-term cur-dont-rw cur-success)
-           (adder-mux-meta-aux s (car i0-lst) (car i1-lst)))
-          ((unless cur-success)
-           (mv nil nil nil))
-          ((mv rest-lst rest-dont-rw rest-success)
-           (adder-mux-meta-aux-lst s (cdr i0-lst) (cdr i1-lst)))
-          ((unless rest-success)
-           (mv nil nil nil)))
-       (mv (cons-with-hint cur-term rest-lst i0-lst)
-           (cons cur-dont-rw rest-dont-rw)
-           t)))))
+  (define adder-mux-meta-aux-lst (s i0-lst i1-lst)
+    :returns (mv res-term-lst
+                 dont-rw-lst
+                 (success booleanp))
+    :measure (cons-count i0-lst)
+    (if (or (atom i0-lst)
+            (atom i1-lst))
+        (mv i0-lst nil (equal i0-lst i1-lst))
+      (b* (((mv cur-term cur-dont-rw cur-success)
+            (adder-mux-meta-aux s (car i0-lst) (car i1-lst)))
+           ((unless cur-success)
+            (mv nil nil nil))
+           ((mv rest-lst rest-dont-rw rest-success)
+            (adder-mux-meta-aux-lst s (cdr i0-lst) (cdr i1-lst)))
+           ((unless rest-success)
+            (mv nil nil nil)))
+        (mv (cons-with-hint cur-term rest-lst i0-lst)
+            (cons cur-dont-rw rest-dont-rw)
+            t)))))
 
 (define adder-mux-meta (term)
   :returns (mv res-term
@@ -740,13 +736,13 @@
   (case-match term
     (('adder-mux s i0 i1)
      (b* (((unless (and (or (is-rp-bitp s)
-                            (is-bit-of s)
+                            (is-logbit s)
                             (m2-p s))
                         (or (is-rp-bitp i0)
-                            (is-bit-of i0)
+                            (is-logbit i0)
                             (m2-p i0))
                         (or (is-rp-bitp i1)
-                            (is-bit-of i1)
+                            (is-logbit i1)
                             (m2-p i1))))
            (mv term nil))
           ((mv res-term dont-rw success)
@@ -808,7 +804,7 @@
 
    (create-regular-eval-lemma bitp 1 adder-rule-formula-checks)
    (create-regular-eval-lemma rp 2 adder-rule-formula-checks)
-   (create-regular-eval-lemma bit-of 2 adder-rule-formula-checks)
+   (create-regular-eval-lemma logbit$inline 2 adder-rule-formula-checks)
    (create-regular-eval-lemma f2 1 adder-rule-formula-checks)
    (create-regular-eval-lemma m2 1 adder-rule-formula-checks)
    (create-regular-eval-lemma adder-mux 3 adder-rule-formula-checks)
@@ -842,13 +838,13 @@
             :in-theory (e/d (ex-from-rp) ())))))
 
 (local
- (defthm is-bit-of-implies-bitp
+ (defthm is-logbit-implies-bitp
    (implies (and (adder-rule-formula-checks state)
                  (rp-evl-meta-extract-global-facts :state state)
-                 (is-bit-of term))
+                 (is-logbit term))
             (bitp (rp-evlt term a)))
    :hints (("Goal"
-            :in-theory (e/d* (is-bit-of
+            :in-theory (e/d* (is-logbit
                               regular-eval-lemmas
                               regular-eval-lemmas-with-ex-from-rp)
                              (bitp))))))
@@ -882,14 +878,31 @@
   :hints (("goal"
            :do-not-induct t
            :in-theory (e/d* (insert-select-from-adder-mux
-                             is-if
+                             is-if is-equals
                              bitp-of-f2-with-merge-adder-sum
                              regular-eval-lemmas
                              regular-eval-lemmas-with-ex-from-rp
                              context-from-rp
                              is-rp)
-                            (bitp)))))
-
+                            (bitp
+                             (:rewrite default-car)
+                             (:rewrite not-include-rp)
+                             (:definition include-fnc-fn)
+                             (:definition rp-equal)
+                             (:meta binary-or**/and**-guard-meta-correct)
+                             (:linear acl2::apply$-badgep-properties . 1)
+                             (:rewrite evl-of-extract-from-rp-2)
+                             (:rewrite valid-sc-subterms-of-cdr)
+                             (:rewrite rp-evl-of-rp-equal)
+                             (:definition include-fnc-subterms-fn)
+                             (:rewrite valid-sc-cadr)
+                             (:definition rp-termp)
+                             (:rewrite rp-evl-of-rp-equal2)
+                             (:rewrite rp-termp-of-rp-trans)
+                             (:rewrite is-if-rp-termp)
+                             (:definition rp-term-listp)
+                             (:rewrite default-cdr)
+                             (:definition falist-consistent))))))
 
 (local
  (defthm adder-mux-meta-aux-returns-valid-sc-lemma1
@@ -902,7 +915,6 @@
             :in-theory (e/d (rp-termp is-rp) ())))))
 
 (local
-
  (defthm is-rp-of-cons-ex-from-rp
    (implies (and (rp-termp i0))
             (not (is-rp (cons (car (ex-from-rp i0)) other))))
@@ -911,6 +923,34 @@
                              is-rp)
                             ())))))
 
+(local
+ (defthm is-equals-of-same-car-and-length
+   (implies (and (not (is-equals term))
+                 (true-listp term)
+                 (equal (len (cdr term))
+                        (len args)))
+            (not (is-equals (cons (car term)
+                                  args))))
+   :hints (("Goal"
+            :expand ((len (cdddr term))
+                     (len (cddr term))
+                     (len (cdr term))
+                     (len term))
+            :in-theory (e/d (is-equals) ())))))
+
+(local
+ (include-book "std/basic/inductions" :dir :system))
+
+(Local
+ (defthm len-of-ADDER-MUX-META-AUX-LST
+   (implies (MV-NTH 2 (ADDER-MUX-META-AUX-LST S l0 l1))
+            (equal (len (MV-NTH 0 (ADDER-MUX-META-AUX-LST S l0 l1)))
+                   (len l0)))
+   :hints (("Goal"
+            :induct (acl2::cdr-cdr-induct l0 l1)
+            :do-not-induct t
+            :expand ((ADDER-MUX-META-AUX-LST S L0 L1))
+            :in-theory (e/d (ADDER-MUX-META-AUX-LST) ())))))
 
 (defret-mutual
   adder-mux-meta-aux-returns-valid-sc
@@ -955,8 +995,13 @@
                              regular-eval-lemmas-with-ex-from-rp
                              ;;is-rp
                              ;;is-if
+                             
                              )
-                            (bitp
+                            ((:REWRITE NOT-INCLUDE-RP)
+                             (:DEFINITION EX-FROM-RP)
+                             (:DEFINITION INCLUDE-FNC-FN)
+                             (:DEFINITION EVAL-AND-ALL)
+                             bitp
                              ;;rp-term-listp
                              rp-termp)))))
 
@@ -1033,7 +1078,6 @@
                              valid-sc
                              (:definition eval-and-all)
                              rp-termp)))))
-
 
 (defun two-list-induct (lst1 lst2)
   (cond ((atom lst1)
@@ -1117,13 +1161,12 @@
                              ;;rp-term-listp
                              rp-termp)))))
 
-
 (local
  (encapsulate
    nil
    (local
     (include-book "lemmas"))
-   
+
    (defthm m2-p-implies-bitp
      (implies (and (adder-rule-formula-checks state)
                    (rp-evl-meta-extract-global-facts :state state)
@@ -1136,7 +1179,7 @@
 
    (defthm bit-m2-local
      (bitp (m2 x)))
-   
+
    ))
 
 (defret adder-mux-meta-returns-valid-sc
@@ -1162,7 +1205,7 @@
                              (:rewrite valid-sc-caddr)
                              (:rewrite valid-sc-cadddr)
                              (:rewrite default-car)
-;;                             (:rewrite acl2::o-p-o-infp-car)
+                             ;;                             (:rewrite acl2::o-p-o-infp-car)
                              rp-termp)))))
 
 (defret adder-mux-meta-is-correct
@@ -1179,7 +1222,6 @@
                              adder-mux
                              regular-eval-lemmas)
                             ()))))
-
 
 (rp::add-meta-rule
  :meta-fnc adder-mux-meta
