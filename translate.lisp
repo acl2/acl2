@@ -10933,8 +10933,12 @@
 ; wormhole and hence doesn't modify state.
 
   (declare (xargs :guard (and (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary)))
+                                  (let ((summary ; could be ("Use"), e.g.
+                                         (if (consp summary)
+                                             (car summary)
+                                           summary)))
+                                    (and (stringp summary)
+                                         (standard-string-p summary))))
                               (alistp alist)
                               (plist-worldp wrld)
                               (standard-string-alistp
@@ -10967,18 +10971,20 @@
         'wrld
         'state-vars))
 
-(defmacro warning$-cw (ctx &rest args)
+(defmacro warning$-cw0 (ctx summary state-vars &rest args)
 
 ; This differs from warning$-cw1 in that state-vars and wrld are bound here for
-; the user, warnings are not suppressed based on the value of state global
-; 'ld-skip-proofsp, and there is no summary string.  A typical use of this
-; macro might be as follows.
+; the user.
 
-; (warning$-cw ctx name)
-
-  `(let ((state-vars (default-state-vars nil))
+  `(let ((state-vars ,state-vars)
          (wrld nil))
-     (warning$-cw1 ,ctx nil ,@args)))
+     (warning$-cw1 ,ctx ,summary ,@args)))
+
+(defmacro warning$-cw (ctx &rest args)
+  (prog2$
+   (cw "~|***NOTE***: Warning$-cw is deprecated.  Use warning$-cw0 or ~
+        warning$-cw1.")
+   `(warning$-cw0 ,ctx nil *default-state-vars* ,@args)))
 
 (defun chk-length-and-keys (actuals form wrld)
   (declare (xargs :guard (and (true-listp actuals)
