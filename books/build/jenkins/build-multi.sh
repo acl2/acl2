@@ -19,6 +19,11 @@ echo " -- Running in `pwd`"
 echo " -- Running on `hostname`"
 echo " -- PATH is $PATH"
 
+# Print some vars that should be set for retried builds:
+echo "NAGINATOR_COUNT is $NAGINATOR_COUNT" # How many times the build was rescheduled.
+echo "NAGINATOR_MAXCOUNT is $NAGINATOR_MAXCOUNT" # How many times the build can be rescheduled. This can be 0 if manually rescheduled.
+echo "NAGINATOR_BUILD_NUMBER is $NAGINATOR_BUILD_NUMBER" # The build number of the failed build causing the reschedule.
+
 source $JENKINS_HOME/env.sh
 
 ACL2DIR=`pwd`
