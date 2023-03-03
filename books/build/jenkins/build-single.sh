@@ -62,6 +62,7 @@ cd books
 # subshell.
 NICENESS=13
 OOM_KILLER_ADJUSTMENT=500 # medium value for the build-single case
+# We don't use --keep-going here, so that emails about failures get sent ASAP:
 CMD="nice -n $NICENESS make $TARGET ACL2=$WORKSPACE/saved_acl2 -j $BOOK_PARALLELISM_LEVEL -l $BOOK_PARALLELISM_LEVEL $MAKEOPTS USE_QUICKLISP=1"
 CMD_WITH_OOM_KILLER_ADJUSTMENT="(echo ${OOM_KILLER_ADJUSTMENT} > /proc/self/oom_score_adj && exec ${CMD})"
 $STARTJOB -c "${CMD_WITH_OOM_KILLER_ADJUSTMENT}"
