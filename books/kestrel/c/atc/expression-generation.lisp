@@ -137,7 +137,9 @@
                                  read-var-of-const-identifier
                                  (:e identp)
                                  (:e ident->name)
-                                 ,value-kind-when-type-pred)))))
+                                 ,value-kind-when-type-pred
+                                 objdesign-of-var-of-const-identifier)))))
+       (objdes `(objdesign-of-var (ident ',(symbol-name var)) ,gin.compst-var))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
                                        gin.fn-guard
@@ -145,6 +147,7 @@
                                        expr
                                        type
                                        var
+                                       objdes
                                        gin.compst-var
                                        hints
                                        nil
@@ -235,6 +238,7 @@
                                        expr
                                        type
                                        term
+                                       acl2::*nil*
                                        gin.compst-var
                                        hints
                                        nil
@@ -374,6 +378,7 @@
                                        expr
                                        out-type
                                        term
+                                       acl2::*nil*
                                        gin.compst-var
                                        hints
                                        nil
@@ -546,6 +551,7 @@
                                        out-type
                                        `(,op-arg1-type-arg2-type ,arg1-term
                                                                  ,arg2-term)
+                                       acl2::*nil*
                                        gin.compst-var
                                        hints
                                        nil
@@ -700,6 +706,7 @@
                                        expr
                                        out-type
                                        `(,op-name ,arg-term)
+                                       acl2::*nil*
                                        gin.compst-var
                                        hints
                                        nil
@@ -790,6 +797,11 @@
                                      ,test-value-when-type-pred
                                      ,booleanp-of-boolean-from-fixtype
                                      booleanp-compound-recognizer))))
+       (objdes (if (expr-case expr :ident)
+                   `(objdesign-of-var
+                     (ident ',(ident->name (expr-ident->get expr)))
+                     ,gin.compst-var)
+                 acl2::*nil*))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-bool-correct-thm gin.fn
                                        gin.fn-guard
@@ -798,6 +810,7 @@
                                        type
                                        aterm
                                        cterm
+                                       objdes
                                        gin.compst-var
                                        hints
                                        nil
@@ -866,6 +879,8 @@
           :proofs nil)))
        (test-type-pred (type-to-recognizer test-type wrld))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
+       (type-pred (type-to-recognizer type wrld))
+       (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (term* `(condexpr (if* ,test-term ,then-term ,else-term)))
        (hints-then `(("Goal" :in-theory '(exec-expr-pure-when-cond-and-true
                                           (:e expr-kind)
@@ -876,7 +891,11 @@
                                           (:e expr-cond->else)
                                           ,else-thm
                                           booleanp-compound-recognizer
-                                          ,valuep-when-test-type-pred))))
+                                          ,valuep-when-test-type-pred
+                                          expr-valuep-of-expr-value
+                                          expr-value->value-of-expr-value
+                                          value-fix-when-valuep
+                                          ,valuep-when-type-pred))))
        (hints-else `(("Goal" :in-theory '(exec-expr-pure-when-cond-and-false
                                           (:e expr-kind)
                                           (:e expr-cond->test)
@@ -886,7 +905,11 @@
                                           (:e expr-cond->else)
                                           ,else-thm
                                           booleanp-compound-recognizer
-                                          ,valuep-when-test-type-pred))))
+                                          ,valuep-when-test-type-pred
+                                          expr-valuep-of-expr-value
+                                          expr-value->value-of-expr-value
+                                          value-fix-when-valuep
+                                          ,valuep-when-type-pred))))
        (instructions
         `((casesplit
            ,(atc-contextualize test-term gin.context nil nil nil nil nil wrld))
@@ -923,6 +946,7 @@
                                        expr
                                        type
                                        term*
+                                       acl2::*nil*
                                        gin.compst-var
                                        nil
                                        instructions
@@ -1006,7 +1030,10 @@
                         ,valuep-when-arg2-type-pred
                         sintp-of-sint-from-boolean
                         test-value-when-sintp
-                        boolean-from-sint-of-sint-from-boolean))))
+                        boolean-from-sint-of-sint-from-boolean
+                        expr-valuep-of-expr-value
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep))))
        (hints-else
         `(("Goal"
            :in-theory '(exec-expr-pure-when-binary-logand-and-false
@@ -1020,7 +1047,10 @@
                         sint-from-boolean-when-false
                         booleanp-compound-recognizer
                         sintp-of-sint-from-integer
-                        boolean-from-sint-of-0))))
+                        boolean-from-sint-of-0
+                        expr-valuep-of-expr-value
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep))))
        (instructions
         `((casesplit ,(atc-contextualize arg1-term
                                          gin.context nil nil nil nil nil wrld))
@@ -1050,6 +1080,7 @@
                                        type
                                        term
                                        cterm
+                                       acl2::*nil*
                                        gin.compst-var
                                        nil
                                        instructions
@@ -1135,7 +1166,10 @@
                         sint-from-boolean-when-true-test*
                         equal-to-t-when-holds-and-boolean
                         booleanp-compound-recognizer
-                        test*-of-t))))
+                        test*-of-t
+                        expr-valuep-of-expr-value
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep))))
        (hints-else
         `(("Goal"
            :in-theory '(exec-expr-pure-when-binary-logor-and-false
@@ -1150,7 +1184,10 @@
                         ,valuep-when-arg2-type-pred
                         test-value-when-sintp
                         sintp-of-sint-from-boolean
-                        boolean-from-sint-of-sint-from-boolean))))
+                        boolean-from-sint-of-sint-from-boolean
+                        expr-valuep-of-expr-value
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep))))
        (instructions
         `((casesplit ,(atc-contextualize arg1-term
                                          gin.context nil nil nil nil nil wrld))
@@ -1180,6 +1217,7 @@
                                        type
                                        term
                                        cterm
+                                       acl2::*nil*
                                        gin.compst-var
                                        nil
                                        instructions
@@ -1257,6 +1295,7 @@
                                        expr
                                        type
                                        term
+                                       acl2::*nil*
                                        gin.compst-var
                                        hints
                                        nil
@@ -2055,6 +2094,7 @@
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil pure.names-to-avoid wrld))
        (type-pred (type-to-recognizer pure.type wrld))
+       (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (uterm* (untranslate$ pure.term nil state))
        (formula1 `(equal (exec-expr-call-or-pure ',pure.expr
                                                  ,gin.compst-var
@@ -2085,7 +2125,11 @@
                                      exec-expr-call-or-pure-when-pure
                                      (:e expr-kind)
                                      not-zp-of-limit-variable
-                                     ,pure.thm-name))))
+                                     ,pure.thm-name
+                                     expr-valuep-of-expr-value
+                                     expr-value->value-of-expr-value
+                                     value-fix-when-valuep
+                                     ,valuep-when-type-pred))))
        ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints

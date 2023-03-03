@@ -95,7 +95,7 @@
                   'x
                 `(,dtype-from-stype x)))
          (formula `(implies ,hyps
-                            (equal (exec-cast ',dtyname (expr-value x nil))
+                            (equal (exec-cast ',dtyname (expr-value x objdes))
                                    (expr-value ,rhs nil))))
          (hints `(:enable
                   (exec-cast

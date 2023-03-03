@@ -662,7 +662,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-expr-pure ((e exprp) (compst compustatep))
-  :returns (result value-resultp)
+  :returns (eval expr-value-resultp)
   :short "Execute a pure expression."
   :long
   (xdoc::topstring
@@ -676,10 +676,11 @@
     "We also reject pre/post-increment/decrement expressions,
      which are obviously non-pure.")
    (xdoc::p
-    "We use a specialized ACL2 function for the case of
-     an array subscript expression
-     whose array is a structure read expression by pointer.
-     See @(tsee exec-arrsub-of-memberp) for motivation.")
+    "When executing a ternary expression,
+     we drop any object designators
+     from the second or third expression's execution,
+     because ternary expressions are not lvalues
+     [C:6.5.15/4, footnote 113].")
    (xdoc::p
     "Recall that our C abstract syntax does not cover
      all the possible C expressions yet.
@@ -692,118 +693,99 @@
   (b* ((e (expr-fix e)))
     (expr-case
      e
-     :ident (b* ((eval (exec-ident e.get compst))
-                 ((when (errorp eval)) eval))
-              (expr-value->value eval))
-     :const (b* ((eval (exec-const e.get))
-                 ((when (errorp eval)) eval))
-              (expr-value->value eval))
+     :ident (exec-ident e.get compst)
+     :const (exec-const e.get)
      :arrsub (case (expr-kind e.arr)
                (:member
                 (b* (((expr-member e.arr) e.arr)
                      (str (exec-expr-pure e.arr.target compst))
                      ((when (errorp str)) str)
                      (sub (exec-expr-pure e.sub compst))
-                     ((when (errorp sub)) sub)
-                     (eval (exec-arrsub-of-member (expr-value str nil)
-                                                  e.arr.name
-                                                  (expr-value sub nil)))
-                     ((when (errorp eval)) eval))
-                  (expr-value->value eval)))
+                     ((when (errorp sub)) sub))
+                  (exec-arrsub-of-member str e.arr.name sub)))
                (:memberp
                 (b* (((expr-memberp e.arr) e.arr)
                      (str (exec-expr-pure e.arr.target compst))
                      ((when (errorp str)) str)
                      (sub (exec-expr-pure e.sub compst))
-                     ((when (errorp sub)) sub)
-                     (eval (exec-arrsub-of-memberp (expr-value str nil)
-                                                   e.arr.name
-                                                   (expr-value sub nil)
-                                                   compst))
-                     ((when (errorp eval)) eval))
-                  (expr-value->value eval)))
+                     ((when (errorp sub)) sub))
+                  (exec-arrsub-of-memberp str e.arr.name sub compst)))
                (t (b* ((arr (exec-expr-pure e.arr compst))
                        ((when (errorp arr)) arr)
                        (sub (exec-expr-pure e.sub compst))
-                       ((when (errorp sub)) sub)
-                       (eval (exec-arrsub (expr-value arr nil)
-                                          (expr-value sub nil)
-                                          compst))
-                       ((when (errorp eval)) eval))
-                    (expr-value->value eval))))
+                       ((when (errorp sub)) sub))
+                    (exec-arrsub arr sub compst))))
      :call (error (list :non-pure-expr e))
      :member (b* ((str (exec-expr-pure e.target compst))
-                  ((when (errorp str)) str)
-                  (eval (exec-member (expr-value str nil) e.name))
-                  ((when (errorp eval)) eval))
-               (expr-value->value eval))
+                  ((when (errorp str)) str))
+               (exec-member str e.name))
      :memberp (b* ((str (exec-expr-pure e.target compst))
-                   ((when (errorp str)) str)
-                   (eval (exec-memberp (expr-value str nil) e.name compst))
-                   ((when (errorp eval)) eval))
-                (expr-value->value eval))
+                   ((when (errorp str)) str))
+                (exec-memberp str e.name compst))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))
      :predec (error (list :non-pure-expr e))
      :unary (b* ((arg (exec-expr-pure e.arg compst))
-                 ((when (errorp arg)) arg)
-                 (eval (exec-unary e.op (expr-value arg nil) compst))
-                 ((when (errorp eval)) eval))
-              (expr-value->value eval))
+                 ((when (errorp arg)) arg))
+              (exec-unary e.op arg compst))
      :cast (b* ((arg (exec-expr-pure e.arg compst))
-                ((when (errorp arg)) arg)
-                (eval (exec-cast e.type (expr-value arg nil)))
-                ((when (errorp eval)) eval))
-             (expr-value->value eval))
+                ((when (errorp arg)) arg))
+             (exec-cast e.type arg))
      :binary (b* (((unless (binop-purep e.op)) (error (list :non-pure-expr e))))
                (case (binop-kind e.op)
                  (:logand
                   (b* ((arg1 (exec-expr-pure e.arg1 compst))
                        ((when (errorp arg1)) arg1)
-                       (test1 (test-value arg1))
+                       (test1 (test-value (expr-value->value arg1)))
                        ((when (errorp test1)) test1)
-                       ((when (not test1)) (value-sint 0))
+                       ((when (not test1))
+                        (make-expr-value :value (value-sint 0) :object nil))
                        (arg2 (exec-expr-pure e.arg2 compst))
                        ((when (errorp arg2)) arg2)
-                       (test2 (test-value arg2))
+                       (test2 (test-value (expr-value->value arg2)))
                        ((when (errorp test2)) test2))
-                    (if test2 (value-sint 1) (value-sint 0))))
+                    (if test2
+                        (make-expr-value :value (value-sint 1) :object nil)
+                      (make-expr-value :value (value-sint 0) :object nil))))
                  (:logor
                   (b* ((arg1 (exec-expr-pure e.arg1 compst))
                        ((when (errorp arg1)) arg1)
-                       (test1 (test-value arg1))
+                       (test1 (test-value (expr-value->value arg1)))
                        ((when (errorp test1)) test1)
-                       ((when test1) (value-sint 1))
+                       ((when test1)
+                        (make-expr-value :value (value-sint 1) :object nil))
                        (arg2 (exec-expr-pure e.arg2 compst))
                        ((when (errorp arg2)) arg2)
-                       (test2 (test-value arg2))
+                       (test2 (test-value (expr-value->value arg2)))
                        ((when (errorp test2)) test2))
-                    (if test2 (value-sint 1) (value-sint 0))))
+                    (if test2
+                        (make-expr-value :value (value-sint 1) :object nil)
+                      (make-expr-value :value (value-sint 0) :object nil))))
                  (t (b* ((arg1 (exec-expr-pure e.arg1 compst))
                          ((when (errorp arg1)) arg1)
                          (arg2 (exec-expr-pure e.arg2 compst))
-                         ((when (errorp arg2)) arg2)
-                         (eval (exec-binary-strict-pure e.op
-                                                        (expr-value arg1 nil)
-                                                        (expr-value arg2 nil)))
-                         ((when (errorp eval)) eval))
-                      (expr-value->value eval)))))
+                         ((when (errorp arg2)) arg2))
+                      (exec-binary-strict-pure e.op arg1 arg2)))))
      :cond (b* ((test (exec-expr-pure e.test compst))
                 ((when (errorp test)) test)
-                (test (test-value test))
+                (test (test-value (expr-value->value test)))
                 ((when (errorp test)) test))
              (if test
-                 (exec-expr-pure e.then compst)
-               (exec-expr-pure e.else compst)))))
+                 (b* ((eval (exec-expr-pure e.then compst))
+                      ((when (errorp eval)) eval))
+                   (change-expr-value eval :object nil))
+               (b* ((eval (exec-expr-pure e.else compst))
+                    ((when (errorp eval)) eval))
+                 (change-expr-value eval :object nil))))))
   :measure (expr-count e)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix)
   :verify-guards nil ; done below
   ///
 
-  (defret value-resultp-of-exec-expr-pure-forward
-    (value-resultp result)
+  (defret expr-value-resultp-of-exec-expr-pure-forward
+    (expr-value-resultp eval)
     :rule-classes ((:forward-chaining
                     :trigger-terms ((exec-expr-pure e compst)))))
 
@@ -829,10 +811,16 @@
    (xdoc::p
     "Given that the expression have no side effects (if there is no error),
      the order of evaluation does not matter.
-     Thus, we proceed left to right."))
+     Thus, we proceed left to right.")
+   (xdoc::p
+    "This ACL2 function is only used in situations
+     in which we are interested in the values of the expressions,
+     not their expression values (i.e. object designators, if any).
+     Thus, we just return lists of values here."))
   (b* (((when (endp es)) nil)
-       (val (exec-expr-pure (car es) compst))
-       ((when (errorp val)) val)
+       (eval (exec-expr-pure (car es) compst))
+       ((when (errorp eval)) eval)
+       (val (expr-value->value eval))
        (vals (exec-expr-pure-list (cdr es) compst))
        ((when (errorp vals)) vals))
     (cons val vals))
@@ -994,7 +982,7 @@
        If the expression is a call, we use @(tsee exec-expr-call).
        Otherwise, we resort to @(tsee exec-expr-pure).")
      (xdoc::p
-      "We return an optional value,
+      "We return an optional value (if there is no error),
        which is @('nil') for a function that returns @('void')."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (e (expr-fix e)))
@@ -1004,8 +992,10 @@
                           compst
                           fenv
                           (1- limit))
-        (mv (exec-expr-pure e compst)
-            (compustate-fix compst))))
+        (b* ((eval (exec-expr-pure e compst))
+             ((when (errorp eval)) (mv eval (compustate-fix compst))))
+          (mv (expr-value->value eval)
+              (compustate-fix compst)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1102,8 +1092,9 @@
               (reftype (value-pointer->reftype ptr))
               ((unless (type-integerp reftype))
                (error (list :non-integer-pointer-type (expr-fix e))))
-              (val (exec-expr-pure right compst))
-              ((when (errorp val)) val)
+              (eval (exec-expr-pure right compst))
+              ((when (errorp eval)) eval)
+              (val (expr-value->value eval))
               ((unless (equal reftype (type-of-value val)))
                (error (list :mistype-apointer
                             :required reftype
@@ -1139,6 +1130,7 @@
                                      :array (value-array->elemtype array))))
                        (index (exec-expr-pure sub compst))
                        ((when (errorp index)) index)
+                       (index (expr-value->value index))
                        ((unless (value-integerp index))
                         (error (list :mistype-array-index
                                      :required :integer
@@ -1148,8 +1140,9 @@
                                                         :pointer ptr
                                                         :array array
                                                         :index index)))
-                       (val (exec-expr-pure right compst))
-                       ((when (errorp val)) val)
+                       (eval (exec-expr-pure right compst))
+                       ((when (errorp eval)) eval)
+                       (val (expr-value->value eval))
                        (new-array (value-array-write index val array))
                        ((when (errorp new-array)) new-array))
                     (write-object objdes new-array compst)))
@@ -1170,6 +1163,7 @@
                         (error (list :not-array array)))
                        (index (exec-expr-pure sub compst))
                        ((when (errorp index)) index)
+                       (index (expr-value->value index))
                        ((unless (value-integerp index))
                         (error (list :mistype-struct-array-read
                                      :required :integer
@@ -1179,8 +1173,9 @@
                                                         :struct struct
                                                         :array array
                                                         :index index)))
-                       (val (exec-expr-pure right compst))
-                       ((when (errorp val)) val)
+                       (eval (exec-expr-pure right compst))
+                       ((when (errorp eval)) eval)
+                       (val (expr-value->value eval))
                        (new-array (value-array-write index val array))
                        ((when (errorp new-array)) new-array)
                        (new-struct (value-struct-write mem new-array struct))
@@ -1218,6 +1213,7 @@
                         (error (list :not-array array)))
                        (index (exec-expr-pure sub compst))
                        ((when (errorp index)) index)
+                       (index (expr-value->value index))
                        ((unless (value-integerp index))
                         (error (list :mistype-struct-array-read
                                      :required :integer
@@ -1227,8 +1223,9 @@
                                                         :pointer ptr
                                                         :array array
                                                         :index index)))
-                       (val (exec-expr-pure right compst))
-                       ((when (errorp val)) val)
+                       (eval (exec-expr-pure right compst))
+                       ((when (errorp eval)) eval)
+                       (val (expr-value->value eval))
                        (new-array (value-array-write index val array))
                        ((when (errorp new-array)) new-array)
                        (new-struct (value-struct-write mem new-array struct))
@@ -1245,8 +1242,9 @@
               ((when (errorp struct)) struct)
               ((unless (value-case struct :struct))
                (error (list :not-struct struct (compustate-fix compst))))
-              (val (exec-expr-pure right compst))
-              ((when (errorp val)) val)
+              (eval (exec-expr-pure right compst))
+              ((when (errorp eval)) eval)
+              (val (expr-value->value eval))
               (new-struct (value-struct-write mem val struct))
               ((when (errorp new-struct)) new-struct))
            (write-var var new-struct compst)))
@@ -1275,8 +1273,9 @@
                (error (list :mistype-struct-read
                             :pointer reftype
                             :struct (type-of-value struct))))
-              (val (exec-expr-pure right compst))
-              ((when (errorp val)) val)
+              (eval (exec-expr-pure right compst))
+              ((when (errorp eval)) eval)
+              (val (expr-value->value eval))
               (new-struct (value-struct-write mem val struct))
               ((when (errorp new-struct)) new-struct))
            (write-object objdes new-struct compst)))
@@ -1397,6 +1396,7 @@
        :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :if (b* ((test (exec-expr-pure s.test compst))
                 ((when (errorp test)) (mv test (compustate-fix compst)))
+                (test (expr-value->value test))
                 (test (test-value test))
                 ((when (errorp test)) (mv test (compustate-fix compst))))
              (if test
@@ -1404,6 +1404,7 @@
                (mv nil (compustate-fix compst))))
        :ifelse (b* ((test (exec-expr-pure s.test compst))
                     ((when (errorp test)) (mv test (compustate-fix compst)))
+                    (test (expr-value->value test))
                     (test (test-value test))
                     ((when (errorp test)) (mv test (compustate-fix compst))))
                  (if test
@@ -1456,8 +1457,9 @@
        we re-execute the loop,
        by calling this ACL2 function recursively."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-         (test-val (exec-expr-pure test compst))
-         ((when (errorp test-val)) (mv test-val (compustate-fix compst)))
+         (test-eval (exec-expr-pure test compst))
+         ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
+         (test-val (expr-value->value test-eval))
          (continuep (test-value test-val))
          ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
          ((when (not continuep)) (mv nil (compustate-fix compst)))
