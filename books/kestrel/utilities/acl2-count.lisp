@@ -53,6 +53,15 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable acl2-count))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm acl2-count-of-cons
+  (equal (acl2-count (cons x y))
+         (+ 1 (acl2-count x)
+            (acl2-count y))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm <=-of-acl2-count-of-nthcdr
   (<= (acl2-count (nthcdr n lst))
       (acl2-count lst))
@@ -75,10 +84,7 @@
           ("subgoal *1/1" :cases ((< 0 n)))
           ("subgoal *1/2" :cases ((< 0 n)))))
 
-(defthm acl2-count-of-cons
-  (equal (acl2-count (cons x y))
-         (+ 1 (acl2-count x)
-            (acl2-count y))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm <-of-acl2-count-of-remove1-equal
   (implies (member-equal a x)
@@ -103,6 +109,8 @@
   :hints (("Goal" :use (:instance <-of-acl2-count-of-remove1-equal)
            :in-theory (disable <-of-acl2-count-of-remove1-equal))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm <=-of-acl2-count-of-nth
   (<= (acl2-count (nth n lst))
       (acl2-count lst))
@@ -110,11 +118,15 @@
   :hints (("Goal" :induct (NTH N LST)
            :in-theory (enable nth))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm <-of-acl2-count-of-one-less
   (implies (posp x)
            (< (acl2-count (+ -1 x))
               (acl2-count x)))
   :hints (("Goal" :in-theory (enable acl2-count))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: use polarities?
 ;drop?
