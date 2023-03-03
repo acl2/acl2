@@ -3917,7 +3917,8 @@
             compiler-enabled           ;;; allow user to modify this in a book
             port-file-enabled          ;;; allow user to modify this in a book
             parallel-execution-enabled ;;; allow user to modify this in a book
-            waterfall-parallelism      ;;; allow user to modify this in a book
+            waterfall-parallelism
+            warnings-as-errors         ;;; allow user to modify this in a book
             waterfall-parallelism-timing-threshold ;;; see just above
             waterfall-printing ;;; allow user to modify this in a book
             waterfall-printing-when-finished ;;; see just above
@@ -16543,7 +16544,10 @@
 
 ; Thus, following the :HINTS keyword to defthm, the user types "hints" (in
 ; untranslated form).  This function takes a lst, which is supposed be some
-; hints, and translates it or else causes an error.
+; hints, and translates it or else causes an error.  Each of the untranslated
+; "hints" is a "hint", which may be a computed hint or a pair associating a
+; goal name with a "hint keyword value list", for example, ("Goal" :in-theory
+; (enable foo) :use bar).
 
 ; Seen is the list of goal names (each a string) that have been encountered.
 

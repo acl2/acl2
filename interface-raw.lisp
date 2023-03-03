@@ -7208,6 +7208,8 @@
            *the-live-state*))
 
 ; Inhibit proof-tree output during the build, including pass-2 if present.
+; Warning: If you change this, make the corresponding change in
+; default-state-vars.
 
   (f-put-global 'inhibit-output-lst '(proof-tree) *the-live-state*)
 
