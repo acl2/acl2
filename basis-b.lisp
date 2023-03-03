@@ -871,26 +871,31 @@
 
 ; See eviscerate-stobjs.
 
-  (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
-    (mv-let (result iprint-alist iprint-fal-new)
-      (eviscerate-stobjs estobjs-out lst print-level print-length alist
-                         evisc-table hiding-cars
-                         (and (iprint-enabledp state)
-                              (iprint-last-index state))
-                         iprint-fal-old
-                         (iprint-eager-p iprint-fal-old))
-      (fast-alist-free-on-exit
-       iprint-fal-new
-       (let ((state
-              (cond
-               ((eq iprint-alist t)
-                (f-put-global 'evisc-hitp-without-iprint t state))
-               ((atom iprint-alist) state)
-               (t (update-iprint-ar-fal iprint-alist
-                                        iprint-fal-new
-                                        iprint-fal-old
-                                        state)))))
-         (mv result state))))))
+  (pprogn
+
+; First we ensure that any iprinting will reflect iprint updates made during brr.
+
+   (iprint-oracle-updates? state)
+   (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
+     (mv-let (result iprint-alist iprint-fal-new)
+       (eviscerate-stobjs estobjs-out lst print-level print-length alist
+                          evisc-table hiding-cars
+                          (and (iprint-enabledp state)
+                               (iprint-last-index state))
+                          iprint-fal-old
+                          (iprint-eager-p iprint-fal-old))
+       (fast-alist-free-on-exit
+        iprint-fal-new
+        (let ((state
+               (cond
+                ((eq iprint-alist t)
+                 (f-put-global 'evisc-hitp-without-iprint t state))
+                ((atom iprint-alist) state)
+                (t (update-iprint-ar-fal iprint-alist
+                                         iprint-fal-new
+                                         iprint-fal-old
+                                         state)))))
+          (mv result state)))))))
 
 ; Essay on Abbreviating Live Stobjs
 

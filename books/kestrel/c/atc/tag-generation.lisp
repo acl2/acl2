@@ -24,6 +24,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,27 +116,33 @@
              (formula-member
               `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
                              (,recognizer struct))
-                        (equal (exec-member struct
+                        (equal (exec-member (expr-value struct nil)
                                             (ident ,(ident->name memname)))
-                               (,reader struct))))
+                               (expr-value (,reader struct) nil))))
              (formula-memberp
               `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                              (valuep ptr)
                              (value-case ptr :pointer)
-                             (not (value-pointer-nullp ptr))
+                             (value-pointer-validp ptr)
                              (equal (value-pointer->reftype ptr)
                                     (type-struct (ident ,(ident->name tag))))
                              (equal struct
                                     (read-object (value-pointer->designator ptr)
                                                  compst))
                              (,recognizer struct))
-                        (equal (exec-memberp ptr
+                        (equal (exec-memberp (expr-value ptr nil)
                                              (ident ,(ident->name memname))
                                              compst)
-                               (,reader struct))))
+                               (expr-value (,reader struct)
+                                           (objdesign-member
+                                            (value-pointer->designator ptr)
+                                            (ident ,(ident->name memname)))))))
              (value-kind-when-typep (pack 'value-kind-when-
                                           (integer-type-to-fixtype type)
                                           'p))
+             (valuep-when-typep (pack 'valuep-when-
+                                      (integer-type-to-fixtype type)
+                                      'p))
              (hints `(("Goal"
                        :in-theory
                        '(exec-member
@@ -149,7 +156,13 @@
                          ,fixer-recognizer-thm
                          value-struct-read
                          ,value-kind-when-typep
-                         (:e ident)))))
+                         (:e ident)
+                         expr-value->value-of-expr-value
+                         expr-value->object-of-expr-value
+                         value-fix-when-valuep
+                         not-errorp-when-valuep
+                         ,valuep-when-typep
+                         (:e c::objdesign-option-fix)))))
              ((mv event-member &)
               (evmac-generate-defthm thm-member-name
                                      :formula formula-member
@@ -248,40 +261,32 @@
           (formula-member
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
                           (,recognizer struct)
-                          (equal array
-                                 (value-struct-read (ident
-                                                     ,(ident->name memname))
-                                                    struct))
                           (,indextypep index)
                           ,check-hyp)
-                     (equal (exec-arrsub-of-member struct
+                     (equal (exec-arrsub-of-member (expr-value struct nil)
                                                    (ident
                                                     ,(ident->name memname))
-                                                   index)
-                            (,reader index struct))))
+                                                   (expr-value index nil))
+                            (expr-value (,reader index struct) nil))))
           (formula-memberp
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                           (valuep ptr)
                           (value-case ptr :pointer)
-                          (not (value-pointer-nullp ptr))
+                          (value-pointer-validp ptr)
                           (equal (value-pointer->reftype ptr)
                                  (type-struct (ident ,(ident->name tag))))
                           (equal struct
                                  (read-object (value-pointer->designator ptr)
                                               compst))
                           (,recognizer struct)
-                          (equal array
-                                 (value-struct-read (ident
-                                                     ,(ident->name memname))
-                                                    struct))
                           (,indextypep index)
                           ,check-hyp)
-                     (equal (exec-arrsub-of-memberp ptr
+                     (equal (exec-arrsub-of-memberp (expr-value ptr nil)
                                                     (ident
                                                      ,(ident->name memname))
-                                                    index
+                                                    (expr-value index nil)
                                                     compst)
-                            (,reader index struct))))
+                            (expr-value (,reader index struct) nil))))
           (hints `(("Goal"
                     :in-theory
                     '(exec-arrsub-of-member
@@ -333,7 +338,9 @@
                       (:t ,type-thm)
                       ,@(and length
                              (list length
-                                   'value-struct-read))))))
+                                   'value-struct-read))
+                      expr-value->value-of-expr-value
+                      ,@*atc-array-read-rules*))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member
@@ -532,7 +539,7 @@
                                                   compst))
                              (valuep ptr)
                              (value-case ptr :pointer)
-                             (not (value-pointer-nullp ptr))
+                             (value-pointer-validp ptr)
                              (equal (value-pointer->reftype ptr)
                                     (type-struct (ident ,(ident->name tag))))
                              (equal struct
@@ -800,7 +807,7 @@
                                                compst))
                           (valuep ptr)
                           (value-case ptr :pointer)
-                          (not (value-pointer-nullp ptr))
+                          (value-pointer-validp ptr)
                           (equal (value-pointer->reftype ptr)
                                  (type-struct (ident ,(ident->name tag))))
                           (equal struct

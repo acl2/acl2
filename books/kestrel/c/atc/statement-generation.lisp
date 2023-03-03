@@ -25,8 +25,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
-
-(local (in-theory (disable default-car default-cdr)))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,6 +141,7 @@
     "If the body of a non-recursive function @('fn')
      includes an @(tsee mv-let)s or a @(tsee let)
      that affects a formal of @('fn') of pointer or array type,
+     or a formal of integer type that represents an external object,
      that formal must be among the variables affected by ('fn').
      If the body of a recursive function @('fn')
      includes an @(tsee mv-let)s or a @(tsee let)
@@ -150,6 +150,8 @@
      In other words, no modification of formals must be ``lost''.
      The case of formals of pointer or array types is clear,
      because it means that objects in the heap are affected.
+     The case of formals of integer type that represent external objects
+     is also clear, as that object is globally accessible.
      The case of formals of non-pointer non-array types
      applies to recursive functions
      because they represent loops,
@@ -162,7 +164,8 @@
      the variables purported to be affected by @('fn').
      We go through the elements of @('bind-affect')
      and check each one against the formals of @('fn'),
-     taking into account the types and whether @('fn') is recursive."))
+     taking into account the information about the formals
+     and whether @('fn') is recursive."))
   (b* (((reterr))
        ((when (endp bind-affect)) (retok))
        (var (car bind-affect))
@@ -170,7 +173,8 @@
        ((when (and info
                    (or (irecursivep+ fn wrld)
                        (type-case (atc-var-info->type info) :pointer)
-                       (type-case (atc-var-info->type info) :array))
+                       (type-case (atc-var-info->type info) :array)
+                       (atc-var-info->externalp info))
                    (not (member-eq var fn-affect))))
         (reterr
          (msg "When generating C code for the function ~x0, ~
@@ -392,7 +396,7 @@
                                 :init? initer))
        (item (block-item-declon declon))
        (item-limit `(binary-+ '1 ,initer-limit))
-       (varinfo (make-atc-var-info :type type :thm nil))
+       (varinfo (make-atc-var-info :type type :thm nil :externalp nil))
        ((when (not proofs))
         (mv item
             item-limit
@@ -1671,7 +1675,9 @@
                                             :declor declor
                                             :init? (initer-single init.expr)))
                    (item (block-item-declon declon))
-                   (varinfo (make-atc-var-info :type init.type :thm nil))
+                   (varinfo (make-atc-var-info :type init.type
+                                               :thm nil
+                                               :externalp nil))
                    (inscope-body (atc-add-var var varinfo gin.inscope))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term

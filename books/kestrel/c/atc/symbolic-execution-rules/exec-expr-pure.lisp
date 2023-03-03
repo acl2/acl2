@@ -23,6 +23,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,16 +53,20 @@
 
   (defruled exec-expr-pure-when-ident
     (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :ident))
+                  (equal (expr-kind e) :ident)
+                  (equal eval (exec-ident (expr-ident->get e) compst))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-ident (expr-ident->get e) compst)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-const
     (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :const))
+                  (equal (expr-kind e) :const)
+                  (equal eval (exec-const (expr-const->get e)))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-const (expr-const->get e))))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-arrsub
@@ -73,27 +78,38 @@
                   (equal valarr (exec-expr-pure arr compst))
                   (valuep valarr)
                   (equal valsub (exec-expr-pure (expr-arrsub->sub e) compst))
-                  (valuep valsub))
+                  (valuep valsub)
+                  (equal eval (exec-arrsub (expr-value valarr nil)
+                                           (expr-value valsub nil)
+                                           compst))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub valarr valsub compst)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-member
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :member)
                   (equal val (exec-expr-pure (expr-member->target e) compst))
-                  (valuep val))
+                  (valuep val)
+                  (equal eval (exec-member (expr-value val nil)
+                                           (expr-member->name e)))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-member val (expr-member->name e))))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-memberp
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :memberp)
                   (equal val (exec-expr-pure (expr-memberp->target e) compst))
-                  (valuep val))
+                  (valuep val)
+                  (equal eval (exec-memberp (expr-value val nil)
+                                            (expr-memberp->name e)
+                                            compst))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-memberp val (expr-memberp->name e) compst)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-arrsub-of-member
@@ -106,11 +122,13 @@
                   (valuep valstr)
                   (equal valsub
                          (exec-expr-pure (expr-arrsub->sub e) compst))
-                  (valuep valsub))
+                  (valuep valsub)
+                  (equal eval (exec-arrsub-of-member (expr-value valstr nil)
+                                                     (expr-member->name arr)
+                                                     (expr-value valsub nil)))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub-of-member valstr
-                                           (expr-member->name arr)
-                                           valsub)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-arrsub-of-memberp
@@ -123,30 +141,39 @@
                   (valuep valstr)
                   (equal valsub
                          (exec-expr-pure (expr-arrsub->sub e) compst))
-                  (valuep valsub))
+                  (valuep valsub)
+                  (equal eval (exec-arrsub-of-memberp (expr-value valstr nil)
+                                                      (expr-memberp->name arr)
+                                                      (expr-value valsub nil)
+                                                      compst))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-arrsub-of-memberp valstr
-                                            (expr-memberp->name arr)
-                                            valsub
-                                            compst)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-unary
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :unary)
                   (equal val (exec-expr-pure (expr-unary->arg e) compst))
-                  (valuep val))
+                  (valuep val)
+                  (equal eval (exec-unary (expr-unary->op e)
+                                          (expr-value val nil)
+                                          compst))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-unary (expr-unary->op e) val compst)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-cast
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :cast)
                   (equal val (exec-expr-pure (expr-cast->arg e) compst))
-                  (valuep val))
+                  (valuep val)
+                  (equal eval (exec-cast (expr-cast->type e)
+                                         (expr-value val nil)))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-cast (expr-cast->type e) val)))
+                    (expr-value->value eval)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-strict-pure-binary
@@ -160,9 +187,13 @@
                   (equal val1 (exec-expr-pure (expr-binary->arg1 e) compst))
                   (equal val2 (exec-expr-pure (expr-binary->arg2 e) compst))
                   (valuep val1)
-                  (valuep val2))
+                  (valuep val2)
+                  (equal eval (exec-binary-strict-pure op
+                                                       (expr-value val1 nil)
+                                                       (expr-value val2 nil)))
+                  (expr-valuep eval))
              (equal (exec-expr-pure e compst)
-                    (exec-binary-strict-pure op val1 val2)))
+                    (expr-value->value eval)))
     :enable (exec-expr-pure binop-purep))
 
   (defund sint-from-boolean-with-error (test)
@@ -355,6 +386,8 @@
       exec-expr-pure-when-binary-logor
       sint-from-boolean-with-error-when-booleanp
       exec-expr-pure-when-cond
+      expr-valuep-of-expr-value
+      expr-value->value-of-expr-value
       (:e member-equal)
       (:e expr-kind)
       (:e expr-ident->get)

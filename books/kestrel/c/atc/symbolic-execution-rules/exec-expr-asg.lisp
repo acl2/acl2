@@ -25,6 +25,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,7 +92,7 @@
                  (equal ptr (read-var var compst))
                  (valuep ptr)
                  (value-case ptr :pointer)
-                 (not (value-pointer-nullp ptr))
+                 (value-pointer-validp ptr)
                  (equal (value-pointer->reftype ptr) (,constructor))
                  (equal val (exec-expr-pure right compst))
                  (,pred val))
@@ -188,11 +189,11 @@
                  (valuep arr-val)
                  (equal ptr
                         (if (value-case arr-val :array)
-                            (value-pointer (objdesign-variable var)
+                            (value-pointer (pointer-valid (objdesign-static var))
                                            (value-array->elemtype arr-val))
                           arr-val))
                  (value-case ptr :pointer)
-                 (not (value-pointer-nullp ptr))
+                 (value-pointer-validp ptr)
                  (equal (value-pointer->reftype ptr)
                         ,(type-to-maker atype))
                  (equal array

@@ -159,24 +159,64 @@
    (set-timer 'proof-tree-time '(0) state)
    (set-timer 'other-time '(0) state)))
 
+(defun world-extended-p (old-wrld wrld)
+
+; This function returns nil if wrld = old-wrld; :trivial if wrld extends
+; old-wrld only with essentially no-op tuples; and t otherwise.  Note that it
+; would be extremely rare to be inside certify-book here, since we are doing
+; this in support of adding a command-landmark.
+
+; We considered asserting that old-wrld starts with (command-landmark
+; global-value . _), at least if we're not in the boot-strap.  But we have seen
+; that fail when make-event calls ld, as in
+; books/kestrel/utilities/verify-guards-program-tests.lisp.
+
+  (cond ((endp wrld)
+         (er hard 'world-extended-p1
+             "Implementation error: Unexpected empty world!"))
+        ((eq old-wrld wrld)
+
+; The EQ call just above is of course a guard violation.  We probably could use
+; equal without much loss of efficiency.
+
+         :trivial)
+        (t
+
+; See the Essay on Fast-cert for discussion of this case.
+
+         (let ((trip2 (car wrld)))
+           (case-match trip2
+             (('ACL2-SYSTEM-TABLE 'TABLE-ALIST ('EMPTY-EVENT-KEY . &))
+; Added by maybe-add-event-landmark.
+              (world-extended-p old-wrld (cdr wrld)))
+             (('EVENT-LANDMARK 'GLOBAL-VALUE . &)
+              (world-extended-p old-wrld (cdr wrld)))
+             (('EVENT-INDEX 'GLOBAL-VALUE . &)
+              (world-extended-p old-wrld (cdr wrld)))
+             (('TOP-LEVEL-CLTL-COMMAND-STACK 'GLOBAL-VALUE . &)
+              (world-extended-p old-wrld (cdr wrld)))
+             (& t))))))
+
 (defun maybe-add-command-landmark (old-wrld old-default-defun-mode form
                                             trans-ans state)
 
 ; Old-wrld is the world before the trans-evaluation of form.  That
 ; trans-evaluation returned trans-ans, which is thus of the form (stobjs-out
-; . valx).  If valx contains a state (then it must in fact contain the state
-; state), and the current world of that state is different from old-wrld and
-; does not end with a command landmark, we add a command landmark for form.
+; . valx).  If stobjs-out suggests that valx contains a state (so, it must in
+; fact contain the ACL2 state), and the current world of that state does not
+; end with a command landmark and is essentially different from old-wrld, we
+; add a command landmark for form.
 
 ; We pass in old-default-defun-mode as the default-defun-mode of old-wrld.
 ; This way, we can compute that value at a time that old-wrld is still
 ; installed, so that the corresponding getprop will be fast.
 
-  (let ((wrld (w state)))
-    (cond ((and (member-eq 'state (car trans-ans))
-                (not (and (eq (caar wrld) 'command-landmark)
-                          (eq (cadar wrld) 'global-value)))
-                (not (equal old-wrld wrld)))
+  (let* ((wrld (w state))
+         (ext (and (member-eq 'state (car trans-ans))
+                   (not (and (eq (caar wrld) 'command-landmark)
+                             (eq (cadar wrld) 'global-value)))
+                   (world-extended-p old-wrld wrld))))
+    (cond ((eq ext t)
            (er-progn
             (get-and-chk-last-make-event-expansion
 
@@ -215,6 +255,18 @@
                      wrld)
                     state)
              (value nil))))
+          ((eq ext :trivial)
+
+; See the Essay on Fast-cert; but here is a summary of the current situation.
+; In this case, the world was extended only to support the possibility that we
+; are constructing the certification world for the later use of fast-cert, by
+; extending the top-level-cltl-command-stack when encountering redundant events
+; within a progn or the second pass of an encapsulate.  But there were no
+; actual events added to the world, so there's no such information that is
+; appropriate to record.
+
+           (pprogn (set-w! old-wrld state)
+                   (value nil)))
           (t (value nil)))))
 
 (defun replace-last-cdr (x val)
@@ -1854,7 +1906,7 @@
 ; SETQ THROWN-VAL).  We make the convention that we always throw non-nil
 ; values to the tag so as to distinguish these two cases.
 
-                         #+akcl (si::RESET-STACK-LIMITS)
+                         #+gcl (si::RESET-STACK-LIMITS)
                          (COND ((EQ THROWN-VAL :ABORT)
 
 ; THROWN-VAL is always either NIL (meaning no throw occurred) or else the
@@ -1870,21 +1922,21 @@
 
 ; At *LD-LEVEL* = 1 we know *standard-co* is *STANDARD-OUTPUT*.
 
-                                       (PRINC "Abort to ACL2 top-level"
+                                       (PRINC "Abort to ACL2 top-level."
                                               *STANDARD-OUTPUT*)
                                        (TERPRI *STANDARD-OUTPUT*))
                                       (T
                                        (THROW 'LOCAL-TOP-LEVEL :ABORT))))
                                ((EQ THROWN-VAL :POP)
                                 (COND ((= *LD-LEVEL* 1)
-                                       (PRINC "Currently at ACL2 top-level"
+                                       (PRINC "Currently at ACL2 top-level."
                                               *STANDARD-OUTPUT*))
                                       (t
                                        (COND ((= *LD-LEVEL* 2)
-                                              (PRINC "Pop up to ACL2 top-level"
+                                              (PRINC "Pop up to ACL2 top-level."
                                                      *STANDARD-OUTPUT*))
                                              (t
-                                              (PRINC "Pop up one LD level"
+                                              (PRINC "Pop up one LD level."
                                                      *STANDARD-OUTPUT*)))
                                        (WHEN (NOT (EQ (LD-ERROR-ACTION STATE)
                                                       :ERROR))

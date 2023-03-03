@@ -15,6 +15,10 @@
 (include-book "computation-states")
 (include-book "function-environments")
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ dynamic-semantics
@@ -61,9 +65,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-iconst ((ic iconstp))
-  :returns (result value-resultp)
-  :short "Execute an integer constant."
+(define eval-iconst ((ic iconstp))
+  :returns (val value-resultp)
+  :short "Evaluate an integer constant."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -122,24 +126,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-const ((c constp))
-  :returns (result value-resultp)
-  :short "Execute a constant."
+(define eval-const ((c constp))
+  :returns (val value-resultp)
+  :short "Evaluate a constant."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We only support the execution of integer constants for now."))
+    "We only support the evaluation of integer constants for now."))
   (const-case c
-              :int (exec-iconst c.get)
+              :int (eval-iconst c.get)
               :float (error :exec-const-float)
               :enum (error :exec-const-enum)
               :char (error :exec-const-char))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-const ((c constp))
+  :returns (eval expr-value-resultp)
+  :short "Execute a constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is just a wrapper of @(tsee eval-const)
+     that returns an expression value (with no object designator),
+     to formalize the execution of the constant as an expression."))
+  (b* ((val (eval-const c))
+       ((when (errorp val)) val))
+    (make-expr-value :value val :object nil))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-ident ((id identp) (compst compustatep))
-  :returns (result value-resultp)
+  :returns (eval expr-value-resultp)
   :short "Execute a variable."
   :long
   (xdoc::topstring
@@ -157,75 +177,142 @@
      currently @(tsee exec-block-item) prohibits local arrays,
      so a variable that contains an array can only be a global one.
      All of this will be properly generalized eventually,
-     to bring things more in line with full C."))
+     to bring things more in line with full C.")
+   (xdoc::p
+    "We actually an expression value.
+     If the variable's value is an array,
+     the expression value has no object designator:
+     this is because we are effectively returning a pointer value.
+     If the variable's value is not array,
+     the expression value has that variable's object designator.
+     Eventually the array case should be treated the same as the non-array case,
+     i.e. we should return an expression value with an object designator
+     in all cases, but see discussion above about arrays."))
   (b* ((val (read-var id compst))
        ((when (errorp val)) val))
     (if (value-case val :array)
-        (make-value-pointer :designator? (objdesign-variable id)
-                            :reftype (value-array->elemtype val))
-      val))
+        (make-expr-value
+         :value (make-value-pointer :core (pointer-valid (objdesign-static id))
+                                    :reftype (value-array->elemtype val))
+         :object nil)
+      (make-expr-value
+       :value val
+       :object (objdesign-of-var id compst))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define indir-value ((val valuep) (compst compustatep))
-  :returns (resval value-resultp)
-  :short "Apply @('*') to a value [C:6.5.3.2/2] [C:6.5.3.2/4]."
+(define exec-address ((arg expr-valuep))
+  :returns (eval expr-value-resultp)
+  :short "Execute @('&') on an expression value [C:6.5.3.2/1] [C:6.5.3.2/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expression that the operator @('&') is applied to
+     must be an lvalue [C:6.5.3.2/1],
+     which in our formalization means that
+     we apply this operator to an expression value (returned by the lvalue).
+     The expression value must contain an object designator,
+     because otherwise the argument expression was not an lvalue.
+     We extract the object designator and we return a pointer value,
+     whose type is determined by the value in the expression value.
+     We return the value as an expression value without object designator,
+     for uniformity with other ACL2 functions for expression execution.")
+   (xdoc::p
+    "Here we formalize the actual application of @('&')
+     to the expression value returned by an expression.
+     We do not formalize here the fact that @('&*E') is the same as @('E')
+     in the sense in that case neither @('*') nor @('&') are evaluated
+     [C:6.5.3.2/4], whether the @('*') is explicit or implied by @('[]');
+     we formalize that elsewhere,
+     while here we assume that the argument expression of @('&')
+     has been evaluated (because the special cases above do not hold),
+     and the resulting expression value is passed here."))
+  (b* ((objdes (expr-value->object arg))
+       ((unless objdes)
+        (error (list :not-lvalue-result (expr-value-fix arg))))
+       (type (type-of-value (expr-value->value arg))))
+    (make-expr-value
+     :value (make-value-pointer :core (pointer-valid objdes)
+                                :reftype type)
+     :object nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-indir ((arg expr-valuep) (compst compustatep))
+  :returns (eval expr-value-resultp)
+  :short "Execute @('*') on an expression value [C:6.5.3.2/2] [C:6.5.3.2/4]."
   :long
   (xdoc::topstring
    (xdoc::p
     "The value must be a pointer.
-     If the pointer is null, it is an error.
+     If the pointer is not valid, it is an error.
      Otherwise, we read the object designated by the object designator,
-     which is a value.
-     Note that we do not return the object designator,
-     because for now we only use this operation to read pointed-to values,
-     not to assign to them;
-     so returning the value, as in an lvalue conversion,
-     is appropriate for now.
-     However, if the value is an array,
-     we return its first element instead of the whole array;
-     all the other types of values are returned unchanged.
-     The reason for this special treatment of arrays is that
-     we need to do array-to-pointer conversion [C:6.3.2.1/3]."))
-  (b* (((unless (value-case val :pointer))
-        (error (list :non-pointer-dereference (value-fix val))))
-       ((when (value-pointer-nullp val))
-        (error (list :null-pointer-dereference)))
+     which is a value,
+     and we return it as an expression value,
+     taking the object designator from the pointer value."))
+  (b* ((val (expr-value->value arg))
+       ((unless (value-case val :pointer))
+        (error (list :non-pointer-dereference (expr-value-fix arg))))
+       ((unless (value-pointer-validp val))
+        (error (list :invalid-pointer-dereference (expr-value-fix arg))))
        (objdes (value-pointer->designator val))
-       (resval (read-object objdes compst))
-       ((when (errorp resval)) resval))
-    (if (value-case resval :array)
-        (value-array-read 0 resval)
-      resval))
+       (*val (read-object objdes compst))
+       ((when (errorp *val)) *val))
+    (make-expr-value :value *val :object objdes))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-unary ((op unopp) (arg valuep) (compst compustatep))
-  :returns (result value-resultp)
-  :short "Execute a unary operation."
-  (unop-case op
-             :address (error :todo)
-             :indir (indir-value arg compst)
-             :plus (plus-value arg)
-             :minus (minus-value arg)
-             :bitnot (bitnot-value arg)
-             :lognot (lognot-value arg))
+(define eval-unary ((op unopp) (arg valuep))
+  :guard (unop-nonpointerp op)
+  :returns (val value-resultp)
+  :short "Evaluate a unary operation that does not involve pointers,
+          on a value, returning a value."
+  (case (unop-kind op)
+    (::plus (plus-value arg))
+    (:minus (minus-value arg))
+    (:bitnot (bitnot-value arg))
+    (:lognot (lognot-value arg))
+    (t (error (impossible))))
+  :guard-hints (("Goal" :in-theory (enable unop-nonpointerp)))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-binary-strict-pure ((op binopp) (arg1 valuep) (arg2 valuep))
-  :guard (and (binop-strictp op)
-              (binop-purep op))
-  :returns (result value-resultp)
-  :short "Execute a binary expression with a strict pure operator."
+(define exec-unary ((op unopp) (arg expr-valuep) (compst compustatep))
+  :returns (eval expr-value-resultp)
+  :short "Execute a unary operation on an expression value."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These operators are pure,
-     so we just return a value as result (if there is no error)."))
+    "This ACL2 function
+     wraps @(tsee eval-unary) to take and return expression values,
+     and covers the remaining two unary operators @('&') and @('*').
+     Note that the only unary operator that needs an expression value
+     (as opposed to just a value) is @('&'),
+     and that only unary operator that returns an expression value
+     (as opposed to just a value) is @('*').
+     The other four unary operators only operate on values,
+     as factored in @(tsee eval-unary)."))
+  (case (unop-kind op)
+    (:address (exec-address arg))
+    (:indir (exec-indir arg compst))
+    (t (b* ((val (eval-unary op (expr-value->value arg)))
+            ((when (errorp val)) val))
+         (make-expr-value :value val :object nil))))
+  :guard-hints (("Goal" :in-theory (enable unop-nonpointerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-binary-strict-pure ((op binopp) (arg1 valuep) (arg2 valuep))
+  :guard (and (binop-strictp op)
+              (binop-purep op))
+  :returns (val value-resultp)
+  :short "Evaluate a binary expression with a strict pure operator,
+          on two values, returning a value."
   (case (binop-kind op)
     (:mul (mul-values arg1 arg2))
     (:div (div-values arg1 arg2))
@@ -247,11 +334,32 @@
   :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-binary-strict-pure ((op binopp)
+                                 (arg1 expr-valuep)
+                                 (arg2 expr-valuep))
+  :guard (and (binop-strictp op)
+              (binop-purep op))
+  :returns (dval expr-value-resultp)
+  :short "Execute a strict pure binary operation on expression values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This ACL2 function wraps @(tsee eval-binary-strict-pure)
+     to take and return expression values."))
+  (b* ((val1 (expr-value->value arg1))
+       (val2 (expr-value->value arg2))
+       (val (eval-binary-strict-pure op val1 val2))
+       ((when (errorp val)) val))
+    (make-expr-value :value val :object nil))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-cast ((tyname tynamep) (arg valuep))
-  :returns (result value-resultp)
-  :short "Execute a cast expression."
+(define eval-cast ((tyname tynamep) (arg valuep))
+  :returns (val value-resultp)
+  :short "Evaluate a type cast on a value."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -271,19 +379,30 @@
     val)
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-cast ((tyname tynamep) (arg expr-valuep))
+  :returns (eval expr-value-resultp)
+  :short "Execute a type cast on an expression value."
+  (b* ((val (eval-cast tyname (expr-value->value arg)))
+       ((when (errorp val)) val))
+    (make-expr-value :value val :object nil))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-arrsub ((arr valuep) (sub valuep) (compst compustatep))
-  :returns (result value-resultp)
-  :short "Execute an array subscripting expression."
+(define exec-arrsub ((arr expr-valuep) (sub expr-valuep) (compst compustatep))
+  :returns (eval expr-value-resultp)
+  :short "Execute the array subscripting operation on expression values."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first operand must be a non-null pointer to an array;
+    "The first operand must be a valid pointer to an array;
      the pointer must have the element type of the array.
      The second operand must be an integer value (of any integer type).
      The resulting index must be in range for the array,
-     and the indexed element is returned as result.")
+     and the indexed element is returned as result,
+     as an expression value whose object designator is for the array element.")
    (xdoc::p
     "This semantics is an approximation of the real one in C,
      but it is adequate to our C subset.
@@ -294,58 +413,61 @@
      In our C subset, we have limited support for pointers,
      in particular there is no explicit pointer arithmetic,
      other than implicitly as array subscripting.
-     So we have our own treatment of array subscipting,
+     So we have our own treatment of array subscipting here,
      in which the pointer is assumed to be to the array (not the first element),
-     and the index is just used to obtain the element
-     (note also that we always return values when evaluating expressions,
-     we never return object designators for now).
-     This treatment is equivalent to the real one for our purposes.
-     Note also that, in full C, the type of the pointer to the array
-     should be the array type, not the element type.
-     But again, we are somewhat pretending that the pointer to the array
-     is a pointer to the first element,
-     which justifies the type of the pointer as the array element type.
-     Note that, in full C, pointers are almost never to arrays,
+     and the index is just used to obtain the element.
+     This treatment is equivalent to the real one for our current purposes.")
+   (xdoc::p
+    "Note that, in full C, pointers are almost never to arrays,
      but rather they are to elements of arrays.
      The only way to get a pointer to an array as such is
      via @('&a') when @('a') is an array object name;
      except for this case, and for the case of an argument to @('sizeof'),
      as well as for string literals (currently not in our C subset),
      an array is always converted to a pointer to its first element
-     [C:6.3.2.1/3]."))
-  (b* (((unless (value-case arr :pointer))
+     [C:6.3.2.1/3].")
+   (xdoc::p
+    "In any case, we plan to make our formal semantics
+     more consistent with full C in the treatment of arrays."))
+  (b* ((arr (expr-value->value arr))
+       ((unless (value-case arr :pointer))
         (error (list :mistype-arrsub
                      :required :pointer
                      :supplied (type-of-value arr))))
-       ((when (value-pointer-nullp arr)) (error (list :null-pointer)))
+       ((unless (value-pointer-validp arr))
+        (error (list :invalid-pointer arr)))
        (objdes (value-pointer->designator arr))
        (reftype (value-pointer->reftype arr))
        (array (read-object objdes compst))
        ((when (errorp array))
-        (error (list :array-not-found (value-fix arr) (compustate-fix compst))))
+        (error (list :array-not-found arr (compustate-fix compst))))
        ((unless (value-case array :array))
-        (error (list :not-array (value-fix arr) (compustate-fix compst))))
+        (error (list :not-array arr (compustate-fix compst))))
        ((unless (equal reftype (value-array->elemtype array)))
         (error (list :mistype-array-read
                      :pointer reftype
                      :array (value-array->elemtype array))))
+       (sub (expr-value->value sub))
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
                                              :required :integer
                                              :supplied (type-of-value sub))))
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
-                                        :pointer (value-fix arr)
+                                        :pointer arr
                                         :array array
-                                        :index (value-fix sub)))))
-    (value-array-read index array))
+                                        :index sub)))
+       (val (value-array-read index array))
+       ((when (errorp val)) val)
+       (elem-objdes (make-objdesign-element :super objdes :index index)))
+    (make-expr-value :value val :object elem-objdes))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-member ((str valuep) (mem identp))
-  :returns (result value-resultp)
-  :short "Execute a structure member expression."
+(define exec-member ((str expr-valuep) (mem identp))
+  :returns (eval expr-value-resultp)
+  :short "Execute a structure member operation on an expression value."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -354,52 +476,56 @@
      The named member must be in the structure.
      The value associated to the member is returned.")
    (xdoc::p
-    "We ensure that the value is not an array.
-     In our current C model, we only use this ACL2 function
-     when executing pure expressions, where we return values.
-     In full C, expressions that evaluate to arrays
-     undergo array-pointer conversion,
-     but currently out model is not limited."))
-  (b* (((unless (value-case str :struct))
+    "If the structure expression value has an object designator,
+     we return an expression value with the object designator
+     obtained by adding the member to the one for the structure.
+     If there is no object designator in the input,
+     there is none in the output."))
+  (b* ((val-str (expr-value->value str))
+       ((unless (value-case val-str :struct))
         (error (list :mistype-member
                      :required :struct
-                     :supplied (type-of-value str))))
-       (val (value-struct-read mem str))
-       ((when (errorp val)) val)
-       ((when (value-case val :array)) (error :member-array-whole-read)))
-    val)
+                     :supplied (type-of-value val-str))))
+       (val-mem (value-struct-read mem val-str))
+       ((when (errorp val-mem)) val-mem)
+       (objdes-str (expr-value->object str))
+       (objdes-mem (and objdes-str
+                        (make-objdesign-member :super objdes-str :name mem))))
+    (make-expr-value :value val-mem :object objdes-mem))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-memberp ((str valuep) (mem identp) (compst compustatep))
-  :returns (result value-resultp)
-  :short "Execute a structure pointer member expression."
+(define exec-memberp ((str expr-valuep) (mem identp) (compst compustatep))
+  :returns (eval expr-value-resultp)
+  :short "Execute a structure pointer member operation
+          on an expression value."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is for the @('->') operator.
-     The operand must be a non-null pointer to a structure
+     The operand must be a valid pointer to a structure
      of type consistent with the structure.
      The named member must be in the structure.
      The value associated to the member is returned.")
    (xdoc::p
-    "Similarly to @(tsee exec-memberp),
-     we ensure that the value is not an array,
-     for the same reason explained there."))
-  (b* (((unless (value-case str :pointer))
+    "We return an expression value whose object designator is obtained
+     by adding the member to the object designator in the pointer."))
+  (b* ((str (expr-value->value str))
+       ((unless (value-case str :pointer))
         (error (list :mistype-memberp
                      :required :pointer
                      :supplied (type-of-value str))))
-       ((when (value-pointer-nullp str)) (error (list :null-pointer)))
+       ((unless (value-pointer-validp str))
+        (error (list :invalid-pointer str)))
        (objdes (value-pointer->designator str))
        (reftype (value-pointer->reftype str))
        (struct (read-object objdes compst))
        ((when (errorp struct))
         (error
-         (list :struct-not-found (value-fix str) (compustate-fix compst))))
+         (list :struct-not-found str (compustate-fix compst))))
        ((unless (value-case struct :struct))
-        (error (list :not-struct (value-fix str) (compustate-fix compst))))
+        (error (list :not-struct str (compustate-fix compst))))
        ((unless (equal reftype
                        (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
@@ -407,16 +533,17 @@
                      :array (type-struct (value-struct->tag struct)))))
        (val (value-struct-read mem struct))
        ((when (errorp val)) val)
-       ((when (value-case val :array)) (error :member-array-whole-read)))
-    val)
+       (objdes-mem (make-objdesign-member :super objdes :name mem)))
+    (make-expr-value :value val :object objdes-mem))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-arrsub-of-member ((str valuep) (mem identp) (sub valuep))
-  :returns (result value-resultp)
-  :short "Execute an array subscripting expression
-          of a structure member expression."
+(define exec-arrsub-of-member ((str expr-valuep) (mem identp) (sub expr-valuep))
+  :returns (eval expr-value-resultp)
+  :short "Execute the array subscripting operation on
+          the result of a structure member operation,
+          starting with expression values for structure and index."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -431,12 +558,21 @@
     "So here we formalize the execution of expressions of the form @('s.m[i]'),
      where @('s') is a structure,
      @('m') is the name of a member of the structure of array type,
-     and @('i') is an index into the array."))
-  (b* (((unless (value-case str :struct))
-        (error (list :not-struct (value-fix str))))
+     and @('i') is an index into the array.")
+   (xdoc::p
+    "We plan to remove this function
+     once @(tsee exec-arrsub) and @(tsee exec-member)
+     can be used compositionally.
+     For this reason, we do not bother
+     returning an appropriate object designator when applicable,
+     instead always returning no object designator in the result."))
+  (b* ((str (expr-value->value str))
+       ((unless (value-case str :struct))
+        (error (list :not-struct str)))
        (arr (value-struct-read mem str))
        ((when (errorp arr)) arr)
        ((unless (value-case arr :array)) (error (list :not-array arr)))
+       (sub (expr-value->value sub))
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
                                              :required :integer
@@ -444,19 +580,22 @@
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
                                         :array arr
-                                        :index (value-fix sub)))))
-    (value-array-read index arr))
+                                        :index sub)))
+       (val (value-array-read index arr))
+       ((when (errorp val)) val))
+    (make-expr-value :value val :object nil))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-arrsub-of-memberp ((str valuep)
+(define exec-arrsub-of-memberp ((str expr-valuep)
                                 (mem identp)
-                                (sub valuep)
+                                (sub expr-valuep)
                                 (compst compustatep))
-  :returns (result value-resultp)
-  :short "Execute an array subscripting expression
-          of a structure pointer member expression."
+  :returns (result expr-value-resultp)
+  :short "Execute the array subscripting operation on
+          the result of a structure pointer member operation,
+          starting with expression values for structure pointer and index."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -471,22 +610,31 @@
     "So here we formalize the execution of expressions of the form @('s->m[i]'),
      where @('s') is a pointer to a structure,
      @('m') is the name of a member of the structure of array type,
-     and @('i') is an index into the array."))
-  (b* (((unless (value-case str :pointer))
+     and @('i') is an index into the array.")
+   (xdoc::p
+    "We plan to remove this function
+     once @(tsee exec-arrsub) and @(tsee exec-memberp)
+     can be used compositionally.
+     For this reason, we do not bother
+     returning an appropriate object designator when applicable,
+     instead always returning no object designator in the result."))
+  (b* ((str (expr-value->value str))
+       ((unless (value-case str :pointer))
         (error (list :mistype-arrsub-of-memberp
                      :required :pointer
                      :supplied (type-of-value str))))
-       ((when (value-pointer-nullp str)) (error (list :null-pointer)))
+       ((unless (value-pointer-validp str))
+        (error (list :invalid-pointer str)))
        (objdes (value-pointer->designator str))
        (reftype (value-pointer->reftype str))
        (struct (read-object objdes compst))
        ((when (errorp struct))
         (error (list :struct-not-found
-                     (value-fix str)
+                     str
                      (compustate-fix compst))))
        ((unless (value-case struct :struct))
         (error (list :not-struct
-                     (value-fix str)
+                     str
                      (compustate-fix compst))))
        ((unless (equal reftype
                        (type-struct (value-struct->tag struct))))
@@ -497,6 +645,7 @@
        ((when (errorp arr)) arr)
        ((unless (value-case arr :array))
         (error (list :not-array arr)))
+       (sub (expr-value->value sub))
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
                                              :required :integer
@@ -504,8 +653,10 @@
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
                                         :array arr
-                                        :index (value-fix sub)))))
-    (value-array-read index arr))
+                                        :index sub)))
+       (val (value-array-read index arr))
+       ((when (errorp val)) val))
+    (make-expr-value :value val :object nil))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -541,45 +692,70 @@
   (b* ((e (expr-fix e)))
     (expr-case
      e
-     :ident (exec-ident e.get compst)
-     :const (exec-const e.get)
+     :ident (b* ((eval (exec-ident e.get compst))
+                 ((when (errorp eval)) eval))
+              (expr-value->value eval))
+     :const (b* ((eval (exec-const e.get))
+                 ((when (errorp eval)) eval))
+              (expr-value->value eval))
      :arrsub (case (expr-kind e.arr)
                (:member
                 (b* (((expr-member e.arr) e.arr)
                      (str (exec-expr-pure e.arr.target compst))
                      ((when (errorp str)) str)
                      (sub (exec-expr-pure e.sub compst))
-                     ((when (errorp sub)) sub))
-                  (exec-arrsub-of-member str e.arr.name sub)))
+                     ((when (errorp sub)) sub)
+                     (eval (exec-arrsub-of-member (expr-value str nil)
+                                                  e.arr.name
+                                                  (expr-value sub nil)))
+                     ((when (errorp eval)) eval))
+                  (expr-value->value eval)))
                (:memberp
                 (b* (((expr-memberp e.arr) e.arr)
                      (str (exec-expr-pure e.arr.target compst))
                      ((when (errorp str)) str)
                      (sub (exec-expr-pure e.sub compst))
-                     ((when (errorp sub)) sub))
-                  (exec-arrsub-of-memberp str e.arr.name sub compst)))
+                     ((when (errorp sub)) sub)
+                     (eval (exec-arrsub-of-memberp (expr-value str nil)
+                                                   e.arr.name
+                                                   (expr-value sub nil)
+                                                   compst))
+                     ((when (errorp eval)) eval))
+                  (expr-value->value eval)))
                (t (b* ((arr (exec-expr-pure e.arr compst))
                        ((when (errorp arr)) arr)
                        (sub (exec-expr-pure e.sub compst))
-                       ((when (errorp sub)) sub))
-                    (exec-arrsub arr sub compst))))
+                       ((when (errorp sub)) sub)
+                       (eval (exec-arrsub (expr-value arr nil)
+                                          (expr-value sub nil)
+                                          compst))
+                       ((when (errorp eval)) eval))
+                    (expr-value->value eval))))
      :call (error (list :non-pure-expr e))
      :member (b* ((str (exec-expr-pure e.target compst))
-                  ((when (errorp str)) str))
-               (exec-member str e.name))
+                  ((when (errorp str)) str)
+                  (eval (exec-member (expr-value str nil) e.name))
+                  ((when (errorp eval)) eval))
+               (expr-value->value eval))
      :memberp (b* ((str (exec-expr-pure e.target compst))
-                   ((when (errorp str)) str))
-                (exec-memberp str e.name compst))
+                   ((when (errorp str)) str)
+                   (eval (exec-memberp (expr-value str nil) e.name compst))
+                   ((when (errorp eval)) eval))
+                (expr-value->value eval))
      :postinc (error (list :non-pure-expr e))
      :postdec (error (list :non-pure-expr e))
      :preinc (error (list :non-pure-expr e))
      :predec (error (list :non-pure-expr e))
      :unary (b* ((arg (exec-expr-pure e.arg compst))
-                 ((when (errorp arg)) arg))
-              (exec-unary e.op arg compst))
+                 ((when (errorp arg)) arg)
+                 (eval (exec-unary e.op (expr-value arg nil) compst))
+                 ((when (errorp eval)) eval))
+              (expr-value->value eval))
      :cast (b* ((arg (exec-expr-pure e.arg compst))
-                ((when (errorp arg)) arg))
-             (exec-cast e.type arg))
+                ((when (errorp arg)) arg)
+                (eval (exec-cast e.type (expr-value arg nil)))
+                ((when (errorp eval)) eval))
+             (expr-value->value eval))
      :binary (b* (((unless (binop-purep e.op)) (error (list :non-pure-expr e))))
                (case (binop-kind e.op)
                  (:logand
@@ -607,8 +783,12 @@
                  (t (b* ((arg1 (exec-expr-pure e.arg1 compst))
                          ((when (errorp arg1)) arg1)
                          (arg2 (exec-expr-pure e.arg2 compst))
-                         ((when (errorp arg2)) arg2))
-                      (exec-binary-strict-pure e.op arg1 arg2)))))
+                         ((when (errorp arg2)) arg2)
+                         (eval (exec-binary-strict-pure e.op
+                                                        (expr-value arg1 nil)
+                                                        (expr-value arg2 nil)))
+                         ((when (errorp eval)) eval))
+                      (expr-value->value eval)))))
      :cond (b* ((test (exec-expr-pure e.test compst))
                 ((when (errorp test)) test)
                 (test (test-value test))
@@ -617,6 +797,7 @@
                  (exec-expr-pure e.then compst)
                (exec-expr-pure e.else compst)))))
   :measure (expr-count e)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix)
   :verify-guards nil ; done below
   ///
@@ -703,6 +884,11 @@
       (omap::update name (remove-flexible-array-member actual) scope)))
   :hooks (:fix)
   :measure (len formals)
+  :hints (("Goal" :in-theory (enable o<
+                                     o-finp
+                                     endp
+                                     cdr-of-param-declon-list-fix
+                                     len)))
   :verify-guards nil ; done below
   ///
   (verify-guards init-scope))
@@ -910,8 +1096,8 @@
               ((when (errorp ptr)) ptr)
               ((unless (value-case ptr :pointer))
                (error (list :indir-not-pointer ptr)))
-              ((when (value-pointer-nullp ptr))
-               (error (list :indir-null-pointer)))
+              ((unless (value-pointer-validp ptr))
+               (error (list :indir-invalid-pointer ptr)))
               (objdes (value-pointer->designator ptr))
               (reftype (value-pointer->reftype ptr))
               ((unless (type-integerp reftype))
@@ -932,15 +1118,15 @@
                        ((when (errorp val)) val)
                        (ptr (if (value-case val :array)
                                 (make-value-pointer
-                                 :designator? (objdesign-variable var)
+                                 :core (pointer-valid (objdesign-static var))
                                  :reftype (value-array->elemtype val))
                               val))
                        ((unless (value-case ptr :pointer))
                         (error (list :mistype-array
                                      :required :pointer
                                      :supplied (type-of-value ptr))))
-                       ((when (value-pointer-nullp ptr))
-                        (error (list :null-pointer)))
+                       ((unless (value-pointer-validp ptr))
+                        (error (list :invalid-pointer ptr)))
                        (objdes (value-pointer->designator ptr))
                        (reftype (value-pointer->reftype ptr))
                        (array (read-object objdes compst))
@@ -1013,8 +1199,8 @@
                         (error (list :mistype-struct
                                      :required :pointer
                                      :supplied (type-of-value ptr))))
-                       ((when (value-pointer-nullp ptr))
-                        (error (list :null-pointer)))
+                       ((unless (value-pointer-validp ptr))
+                        (error (list :invalid-pointer ptr)))
                        (objdes (value-pointer->designator ptr))
                        (reftype (value-pointer->reftype ptr))
                        (struct (read-object objdes compst))
@@ -1076,7 +1262,8 @@
                (error (list :mistype-struct
                             :required :pointer
                             :supplied (type-of-value ptr))))
-              ((when (value-pointer-nullp ptr)) (error (list :null-pointer)))
+              ((unless (value-pointer-validp ptr))
+               (error (list :invalid-pointer ptr)))
               (objdes (value-pointer->designator ptr))
               (reftype (value-pointer->reftype ptr))
               (struct (read-object objdes compst))
@@ -1409,7 +1596,12 @@
               (in-theory
                (enable
                 value-optionp-when-value-option-resultp-and-not-errorp
-                compustatep-when-compustate-resultp-and-not-errorp))))
+                compustatep-when-compustate-resultp-and-not-errorp
+                fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :hints (("Goal" :in-theory (enable o< o-finp nfix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1466,15 +1658,17 @@
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item-list)
-    :hints (("Goal" :expand ((exec-expr-call fun args compst fenv limit)
-                             (exec-expr-call-or-pure e compst fenv limit)
-                             (exec-expr-asg e compst fenv limit)
-                             (exec-expr-call-or-asg e compst fenv limit)
-                             (exec-fun fun args compst fenv limit)
-                             (exec-stmt s compst fenv limit)
-                             (exec-initer initer compst fenv limit)
-                             (exec-block-item item compst fenv limit)
-                             (exec-block-item-list items compst fenv limit)))))
+    :hints (("Goal"
+             :in-theory (enable len)
+             :expand ((exec-expr-call fun args compst fenv limit)
+                      (exec-expr-call-or-pure e compst fenv limit)
+                      (exec-expr-asg e compst fenv limit)
+                      (exec-expr-call-or-asg e compst fenv limit)
+                      (exec-fun fun args compst fenv limit)
+                      (exec-stmt s compst fenv limit)
+                      (exec-initer initer compst fenv limit)
+                      (exec-block-item item compst fenv limit)
+                      (exec-block-item-list items compst fenv limit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1530,21 +1724,24 @@
       :hyp (and (> (compustate-frames-number compst) 0)
                 (> (compustate-top-frame-scopes-number compst) 0))
       :fn exec-block-item-list)
-    :hints (("Goal" :expand ((exec-expr-call fun args compst fenv limit)
-                             (exec-expr-call-or-pure e compst fenv limit)
-                             (exec-expr-asg e compst fenv limit)
-                             (exec-expr-call-or-asg e compst fenv limit)
-                             (exec-fun fun args compst fenv limit)
-                             (exec-stmt s compst fenv limit)
-                             (exec-stmt-while test body compst fenv limit)
-                             (exec-initer initer compst fenv limit)
-                             (exec-block-item item compst fenv limit)
-                             (exec-block-item-list items compst fenv limit)))))
+    :hints (("Goal"
+             :in-theory (enable len)
+             :expand ((exec-expr-call fun args compst fenv limit)
+                      (exec-expr-call-or-pure e compst fenv limit)
+                      (exec-expr-asg e compst fenv limit)
+                      (exec-expr-call-or-asg e compst fenv limit)
+                      (exec-fun fun args compst fenv limit)
+                      (exec-stmt s compst fenv limit)
+                      (exec-stmt-while test body compst fenv limit)
+                      (exec-initer initer compst fenv limit)
+                      (exec-block-item item compst fenv limit)
+                      (exec-block-item-list items compst fenv limit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards exec-stmt)
+  (verify-guards exec-stmt :hints (("Goal" :in-theory (enable len))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deffixequiv-mutual exec))
+  (fty::deffixequiv-mutual exec
+    :hints (("Goal" :in-theory (enable nfix)))))

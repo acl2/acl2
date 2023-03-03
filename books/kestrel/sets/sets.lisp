@@ -370,7 +370,7 @@
   (declare (type (satisfies set::setp) set))
   (if (set::empty set) nil
     (cons (set::head set)
-	  (set::2list (set::tail set)))))
+          (set::2list (set::tail set)))))
 
 (defthm true-listp-2list
   (true-listp (set::2list set)))

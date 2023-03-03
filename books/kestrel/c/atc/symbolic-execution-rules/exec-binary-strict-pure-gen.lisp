@@ -28,6 +28,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,7 +154,20 @@
                             (equal (,op-ltype-and-value x y)
                                    (,op-ltype-rtype x y))))
          (enables `(,op-ltype-and-value
-                    ,op-values
+                    ,@(if (member-eq op-kind '(:shl :shr))
+                          '(shl-values-to-shl-integer-values
+                            shr-values-to-shr-integer-values
+                            value-integerp-when-scharp
+                            value-integerp-when-ucharp
+                            value-integerp-when-sshortp
+                            value-integerp-when-ushortp
+                            value-integerp-when-sintp
+                            value-integerp-when-uintp
+                            value-integerp-when-slongp
+                            value-integerp-when-ulongp
+                            value-integerp-when-sllongp
+                            value-integerp-when-ullongp)
+                        (list op-values))
                     ,@(and op-arithmetic-values
                            (list op-arithmetic-values))
                     ,@(and op-real-values
@@ -182,14 +196,26 @@
                            (list op-type-type-okp))
                     ,@(and promotedp
                            (list (pack op-kind '-sint-okp)))
-                    ,@*atc-uaconvert-values-rules*
-                    ,@*atc-promote-value-rules*
+                    ,@(if (member-eq op-kind '(:shl :shr))
+                          *atc-promote-value-rules*
+                        *atc-uaconvert-values-rules*)
                     result-integer-value
                     ,@*atc-value-integer->get-rules*
                     ,@(and (member-eq op-kind '(:shl :shr))
                            *atc-sint-get-rules*)
                     ,@(and (member-eq op-kind '(:shl :shr))
-                           (list 'integer-type-bits))
+                           '(integer-type-bits-when-type-sint
+                             integer-type-bits-when-type-uint
+                             integer-type-bits-when-type-slong
+                             integer-type-bits-when-type-ulong
+                             integer-type-bits-when-type-sllong
+                             integer-type-bits-when-type-ullong
+                             type-of-value-when-sintp
+                             type-of-value-when-uintp
+                             type-of-value-when-slongp
+                             type-of-value-when-ulongp
+                             type-of-value-when-sllongp
+                             type-of-value-when-ullongp))
                     value-integer
                     value-sint-to-sint
                     value-uint-to-uint
@@ -214,11 +240,11 @@
          (event `(defruled ,name
                    ,formula
                    :enable ,enables
-                   :disable (truncate
-                             rem
-                             floor
-                             mod
-                             ifix
+                   :disable (,@(and (member-eq op-kind '(:shl :shr))
+                                    '((:e int-bits)
+                                      (:e integer-type-bits)
+                                      (:e integer-type-min)
+                                      (:e integer-type-max)))
                              ;; the following are disabled for speed:
                              equal-of-error
                              equal-of-value-schar
@@ -303,10 +329,15 @@
           (pack 'exec-binary-strict-pure-when- op-kind))
          (thm-event
           `(defruled ,exec-binary-strict-pure-when-op
-             (implies (and (equal op (,(pack 'binop- op-kind))))
-                      (equal (exec-binary-strict-pure op x y)
-                             (,op-values x y)))
-             :enable (exec-binary-strict-pure)))
+             (implies (and (equal op (,(pack 'binop- op-kind)))
+                           (equal val (,op-values x y))
+                           (valuep val))
+                      (equal (exec-binary-strict-pure op
+                                                      (expr-value x nil)
+                                                      (expr-value y ni))
+                             (expr-value val nil)))
+             :enable (exec-binary-strict-pure
+                      eval-binary-strict-pure)))
          ((mv names events)
           (atc-exec-binary-rules-gen-op op ltypes rtypes))
          ((mv more-names more-events)

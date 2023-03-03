@@ -24,6 +24,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1021,7 +1022,7 @@
      and we return that type.
      If the value is too large, the integer constant is illegal.")
    (xdoc::p
-    "This is the static counterpart of @(tsee exec-iconst)."))
+    "This is the static counterpart of @(tsee eval-iconst)."))
   (b* ((ic (iconst-fix ic))
        ((iconst ic) ic))
     (if ic.unsignedp

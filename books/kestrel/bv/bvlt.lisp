@@ -241,7 +241,7 @@
                 (not (bvlt size x (+ -1 free)))
                 (integerp free)
                 (natp size)
-		)
+                )
            (not (bvlt size x y)))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases))))
 
@@ -264,7 +264,7 @@
                 (bvle size k free) ;gets computed
                 (integerp free)
                 (natp size)
-		)
+                )
            (not (bvlt size x k)))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases)  :use (:instance bvlt-transitive-core-4 (free (+ 1 free)) (y k)))))
 

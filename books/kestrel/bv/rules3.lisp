@@ -571,7 +571,7 @@
                                    expt-of-+
                                    mod-expt-split)
                            (;hack-6                     ;ffixme
-                            ;EQUAL-OF-EXPT-AND-CONSTANT ;fixme
+                            ;EQUAL-OF-EXPT2-AND-CONSTANT ;fixme
                             )))))
 
 (defthm logand-of-minus-of-expt-alt

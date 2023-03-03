@@ -6227,7 +6227,7 @@ e2-e1+1.
                    (ld-skip-proofsp state) lst wrld))) ;ccg rewrite - CHECK - harshrc
           (cond
            ((eq rc 'redundant)
-            (chk-acceptable-defuns-redundancy names ctx wrld state))
+            (chk-acceptable-defuns-redundancy names defun-mode ctx wrld state))
            ((eq rc 'verify-guards)
 
 ; We avoid needless complication by simply causing a polite error in this
@@ -7476,8 +7476,11 @@ e2-e1+1.
 ; All other properties are put by the defuns-fn0 call below.
 
        (cond
-        ((eq tuple 'redundant)
-         (stop-redundant-event ctx state))
+        ((eq (car tuple) 'redundant)
+         (stop-redundant-event ctx state
+                               :name (caar def-lst)
+                               :defun-mode (cdr tuple)
+                               :def-lst def-lst0))
         (t
          (enforce-redundancy
           event-form ctx wrld

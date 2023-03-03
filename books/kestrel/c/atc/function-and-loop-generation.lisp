@@ -45,8 +45,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
-
-(local (in-theory (disable default-car default-cdr)))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -111,7 +110,9 @@
 (define atc-check-guard-conjunct ((conjunct pseudo-termp)
                                   (prec-tags atc-string-taginfo-alistp)
                                   (prec-objs atc-string-objinfo-alistp))
-  :returns (mv (type type-optionp) (arg symbolp))
+  :returns (mv (type type-optionp)
+               (externalp booleanp)
+               (arg symbolp))
   :short "C type and argument derived from a guard conjunct, if any."
   :long
   (xdoc::topstring
@@ -121,32 +122,34 @@
      as explained in the user documentation.")
    (xdoc::p
     "The conjunct must have the form
-     @('(recognizer var)') or @('(pointer (recognizer var))'),
+     @('(recognizer var)') or @('(star (recognizer var))'),
      where @('recognizer') is a recognizer of a C type
      and @('var') is a variable.
      If the recognizer is a known one for integer array types,
-     the @(tsee pointer) wrapper is disallowed,
+     the @(tsee star) wrapper is disallowed,
      and the integer array type is readily determined.
      If the recognizer is a known one for integer types,
-     the @(tsee pointer) wrapper may be present or not,
+     the @(tsee star) wrapper may be present or not,
      and distinguishes between the integer type
      and the pointer type to the integer type.
      Otherwise, there are two possibilities.
      One is that the recognizer is the one of a @(tsee defstruct),
      of the form @('struct-<tag>-p'):
      in this case, the type is the structure type or a pointer type to it,
-     depending on the absence or presence of the @(tsee pointer) wrapper.
+     depending on the absence or presence of the @(tsee star) wrapper.
      The other possibility is that
      the recognizer is the one of a @(tsee defobject),
      of the form @('object-<name>-p'):
-     in this case, the @(tsee pointer) wrapper is disallowed,
-     and the type is a pointer to the integer type
-     that is the element type of the array type of the object.")
+     in this case, the @(tsee star) wrapper is disallowed,
+     and the type is the one of the object.
+     In this last case,
+     we return a flag indicating that the formal represents an external object;
+     in all other cases, the flag is @('nil').")
    (xdoc::p
     "If the recognizer does not have any of the above forms,
-     we return @('nil') as both results.
+     we return @('nil') as all results.
      If the argument is not a variable,
-     we also return @('nil') as both results.")
+     we also return @('nil') as all results.")
    (xdoc::p
     "As explained in the user documentation,
      we also allow the conjuncts to be wrapped with @(tsee mbt).
@@ -157,78 +160,98 @@
        ((when (or (variablep conjunct)
                   (fquotep conjunct)
                   (flambda-applicationp conjunct)))
-        (mv nil nil))
+        (mv nil nil nil))
        (fn (ffn-symb conjunct))
        (arg (fargn conjunct 1))
        ((mv okp pointerp recog arg)
-        (if (eq fn 'pointer)
+        (if (eq fn 'star)
             (if (or (variablep arg)
                     (fquotep arg)
                     (flambda-applicationp arg))
                 (mv nil nil nil nil)
               (mv t t (ffn-symb arg) (fargn arg 1)))
           (mv t nil fn arg)))
-       ((when (not okp)) (mv nil nil))
-       ((unless (symbolp arg)) (mv nil nil))
-       (type
-        (b* (((when (eq recog 'scharp)) (type-schar))
-             ((when (eq recog 'ucharp)) (type-uchar))
-             ((when (eq recog 'sshortp)) (type-sshort))
-             ((when (eq recog 'ushortp)) (type-ushort))
-             ((when (eq recog 'sintp)) (type-sint))
-             ((when (eq recog 'uintp)) (type-uint))
-             ((when (eq recog 'slongp)) (type-slong))
-             ((when (eq recog 'ulongp)) (type-ulong))
-             ((when (eq recog 'sllongp)) (type-sllong))
-             ((when (eq recog 'ullongp)) (type-ullong))
-             ((when (eq recog 'schar-arrayp)) (type-array (type-schar) nil))
-             ((when (eq recog 'uchar-arrayp)) (type-array (type-uchar) nil))
-             ((when (eq recog 'sshort-arrayp)) (type-array (type-sshort) nil))
-             ((when (eq recog 'ushort-arrayp)) (type-array (type-ushort) nil))
-             ((when (eq recog 'sint-arrayp)) (type-array (type-sint) nil))
-             ((when (eq recog 'uint-arrayp)) (type-array (type-uint) nil))
-             ((when (eq recog 'slong-arrayp)) (type-array (type-slong) nil))
-             ((when (eq recog 'ulong-arrayp)) (type-array (type-ulong) nil))
-             ((when (eq recog 'sllong-arrayp)) (type-array (type-sllong) nil))
-             ((when (eq recog 'ullong-arrayp)) (type-array (type-ullong) nil))
+       ((when (not okp)) (mv nil nil nil))
+       ((unless (symbolp arg)) (mv nil nil nil))
+       ((mv type externalp)
+        (b* (((when (eq recog 'scharp)) (mv (type-schar) nil))
+             ((when (eq recog 'ucharp)) (mv (type-uchar) nil))
+             ((when (eq recog 'sshortp)) (mv (type-sshort) nil))
+             ((when (eq recog 'ushortp)) (mv (type-ushort) nil))
+             ((when (eq recog 'sintp)) (mv (type-sint) nil))
+             ((when (eq recog 'uintp)) (mv (type-uint) nil))
+             ((when (eq recog 'slongp)) (mv (type-slong) nil))
+             ((when (eq recog 'ulongp)) (mv (type-ulong) nil))
+             ((when (eq recog 'sllongp)) (mv (type-sllong) nil))
+             ((when (eq recog 'ullongp)) (mv (type-ullong) nil))
+             ((when (eq recog 'schar-arrayp)) (mv (type-array (type-schar)
+                                                              nil)
+                                                  nil))
+             ((when (eq recog 'uchar-arrayp)) (mv (type-array (type-uchar)
+                                                              nil)
+                                                  nil))
+             ((when (eq recog 'sshort-arrayp)) (mv (type-array (type-sshort)
+                                                               nil)
+                                                   nil))
+             ((when (eq recog 'ushort-arrayp)) (mv (type-array (type-ushort)
+                                                               nil)
+                                                   nil))
+             ((when (eq recog 'sint-arrayp)) (mv (type-array (type-sint)
+                                                             nil)
+                                                 nil))
+             ((when (eq recog 'uint-arrayp)) (mv (type-array (type-uint)
+                                                             nil)
+                                                 nil))
+             ((when (eq recog 'slong-arrayp)) (mv (type-array (type-slong)
+                                                              nil)
+                                                  nil))
+             ((when (eq recog 'ulong-arrayp)) (mv (type-array (type-ulong)
+                                                              nil)
+                                                  nil))
+             ((when (eq recog 'sllong-arrayp)) (mv (type-array (type-sllong)
+                                                               nil)
+                                                   nil))
+             ((when (eq recog 'ullong-arrayp)) (mv (type-array (type-ullong)
+                                                               nil)
+                                                   nil))
              ((mv okp struct/object tag/name p) (atc-check-symbol-3part recog))
              ((unless (and okp
                            (equal (symbol-name p) "P")))
-              nil)
+              (mv nil nil))
              ((when (equal (symbol-name struct/object) "STRUCT"))
               (b* ((tag (symbol-name tag/name))
                    (info (cdr (assoc-equal tag prec-tags)))
-                   ((unless info) nil)
+                   ((unless info) (mv nil nil))
                    ((unless (atc-tag-infop info))
-                    (raise "Internal error: malformed ATC-TAG-INFO ~x0." info))
+                    (raise "Internal error: malformed ATC-TAG-INFO ~x0." info)
+                    (mv nil nil))
                    (info (atc-tag-info->defstruct info))
-                   ((unless (eq recog (defstruct-info->recognizer info))) nil)
+                   ((unless (eq recog (defstruct-info->recognizer info)))
+                    (mv nil nil))
                    ((when (and (defstruct-info->flexiblep info)
                                (not pointerp)))
-                    nil))
-                (type-struct (defstruct-info->tag info))))
+                    (mv nil nil)))
+                (mv (type-struct (defstruct-info->tag info)) nil)))
              ((when (equal (symbol-name struct/object) "OBJECT"))
               (b* ((name (symbol-name tag/name))
                    (info (cdr (assoc-equal name prec-objs)))
-                   ((unless info) nil)
+                   ((unless info) (mv nil nil))
                    ((unless (atc-obj-infop info))
-                    (raise "Internal error: malformed ATC-OBJ-INFO ~x0." info))
+                    (raise "Internal error: malformed ATC-OBJ-INFO ~x0." info)
+                    (mv nil nil))
                    (info (atc-obj-info->defobject info))
-                   ((unless (eq recog (defobject-info->recognizer info))) nil)
-                   (arrtype (defobject-info->type info))
-                   ((unless (type-case arrtype :array))
-                    (raise "Internal error: object ~s0 has type ~x1."
-                           name arrtype)))
-                arrtype)))
-          nil))
-       ((unless type) (mv nil nil))
+                   ((unless (eq recog (defobject-info->recognizer info)))
+                    (mv nil nil)))
+                (mv (defobject-info->type info) t))))
+          (mv nil nil)))
+       ((unless type) (mv nil nil nil))
        ((when (and pointerp
                    (type-case type :array)))
-        (mv nil nil))
+        (mv nil nil nil))
        (type (if pointerp
                  (type-pointer type)
                type)))
-    (mv type arg))
+    (mv type externalp arg))
   :guard-hints
   (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-rewrite
                               iff-consp-when-true-listp
@@ -242,6 +265,7 @@
                             (fn-formals symbol-listp)
                             (formal symbolp)
                             (type typep)
+                            (externalp booleanp)
                             (names-to-avoid symbol-listp)
                             (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
@@ -256,12 +280,15 @@
      the type recognizer from the shallow embedding (e.g. @(tsee sintp)).
      This property is used in proofs that build on this theorem.")
    (xdoc::p
-    "For now we only support integer types.
+    "For now we only support integer types
+     for formals that are not external objects.
      If we encounter a different kind of type,
      we return @('nil') as the name and a dummy event;
      the caller checks that the returned name is not @('nil')
      before using the event."))
-  (b* (((unless (type-integerp type)) (mv '(_) nil names-to-avoid))
+  (b* (((unless (and (type-integerp type)
+                     (not externalp)))
+        (mv '(_) nil names-to-avoid))
        (name (pack fn '- formal))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
@@ -319,7 +346,10 @@
      rejecting them even if they are identical.
      Then we construct the final alist by going through the formals in order,
      and looking up their types in the preliminary alist;
-     here we detect when a formal has no corresponding conjunct in the guard."))
+     here we detect when a formal has no corresponding conjunct in the guard.")
+   (xdoc::p
+    "We also consult the @(tsee defobject) alist
+     to set the @('externalp') flag of the information about the formal."))
   (b* (((reterr) nil nil nil nil)
        (formals (formals+ fn wrld))
        (guard (uguard+ fn wrld))
@@ -363,9 +393,9 @@
      (b* (((reterr) nil nil nil nil)
           ((when (endp guard-conjuncts)) (retok nil nil proofs names-to-avoid))
           (conjunct (car guard-conjuncts))
-          ((mv type arg) (atc-check-guard-conjunct conjunct
-                                                   prec-tags
-                                                   prec-objs))
+          ((mv type externalp arg) (atc-check-guard-conjunct conjunct
+                                                             prec-tags
+                                                             prec-objs))
           ((unless type)
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
@@ -409,14 +439,17 @@
                         guard fn arg)))
           ((mv event name names-to-avoid)
            (if proofs
-               (atc-gen-formal-thm fn fn-guard formals arg type
+               (atc-gen-formal-thm fn fn-guard formals arg type externalp
                                    names-to-avoid wrld)
              (mv '(_) nil names-to-avoid)))
           (events (if name
                       (cons event events)
                     events))
           (proofs (and name proofs))
-          (info (make-atc-var-info :type type :thm name))
+          (externalp
+           (b* ((info? (cdr (assoc-equal (symbol-name arg) prec-objs))))
+             (and info? t)))
+          (info (make-atc-var-info :type type :thm name :externalp externalp))
           (prelim-alist (acons arg info prelim-alist)))
        (retok prelim-alist events proofs names-to-avoid))
      :prepwork ((local (in-theory (enable acons))))
@@ -792,9 +825,7 @@
   (b* ((wrld (w state))
        (results1 (and type?
                       (not (type-case type? :void))
-                      (list (cons nil
-                                  (make-atc-var-info :type type?
-                                                     :thm nil)))))
+                      (list (cons nil type?))))
        (results2 (atc-gen-fn-result-thm-aux1 affect typed-formals))
        (results (append results1 results2))
        ((unless (consp results))
@@ -945,14 +976,14 @@
 
   ((define atc-gen-fn-result-thm-aux1 ((affect symbol-listp)
                                        (typed-formals atc-symbol-varinfo-alistp))
-     :returns (results atc-symbol-varinfo-alistp :hyp (symbol-listp affect))
+     :returns (results symbol-type-alistp :hyp (symbol-listp affect))
      :parents nil
      (cond ((endp affect) nil)
            (t (b* ((info (cdr (assoc-eq (car affect)
                                         typed-formals))))
                 (if (atc-var-infop info)
                     (acons (car affect)
-                           info
+                           (atc-var-info->type info)
                            (atc-gen-fn-result-thm-aux1 (cdr affect)
                                                        typed-formals))
                   (raise "Internal error: variable ~x0 not found in ~x1."
@@ -961,9 +992,10 @@
      :prepwork
      ((local
        (in-theory (enable alistp-when-atc-symbol-varinfo-alistp-rewrite
+                          alistp-when-symbol-type-alistp-rewrite
                           acons)))))
 
-   (define atc-gen-fn-result-thm-aux2 ((results atc-symbol-varinfo-alistp)
+   (define atc-gen-fn-result-thm-aux2 ((results symbol-type-alistp)
                                        (index? maybe-natp)
                                        (fn-call pseudo-termp)
                                        (wrld plist-worldp))
@@ -973,8 +1005,7 @@
           (theresult (if index?
                          `(mv-nth ,index? ,fn-call)
                        fn-call))
-          ((cons name info) (car results))
-          (type (atc-var-info->type info))
+          ((cons name type) (car results))
           (type-conjunct `(,(type-to-recognizer type wrld) ,theresult))
           (nonnil-conjunct? (and index? (list theresult)))
           (arraylength-conjunct?
@@ -1092,6 +1123,10 @@
      Finally, we generate an instantiation pair consisting of
      the formal and the @('(read-static-var (ident ...) compst)') call.")
    (xdoc::p
+    "For a non-array that is an external object,
+     the situation is similar to the external object array case,
+     but we do not introduce any pointer variable.")
+   (xdoc::p
     "The non-array non-structure formals of a non-recursive @('fn')
      do not cause any bindings, hypotheses, or substitutions to be generated.
      They are passed to both @(tsee exec-fun) and @('fn') in the theorem,
@@ -1196,15 +1231,25 @@
                 (if extobjp
                     (list `(,formal
                             (read-static-var ,formal-id ,compst-var)))
-                  (list `(,formal-ptr (read-var ,formal-id ,compst-var))
-                        `(,formal (read-object ,formal-objdes ,compst-var))))
-              (list `(,formal (read-var ,formal-id ,compst-var))))
+                  (list `(,formal-ptr
+                          (read-var ,formal-id ,compst-var))
+                        `(,formal
+                          (read-object ,formal-objdes ,compst-var))))
+              (if extobjp
+                  (list `(,formal
+                          (read-static-var ,formal-id ,compst-var)))
+                (list `(,formal
+                        (read-var ,formal-id ,compst-var)))))
           (if pointerp
               (if extobjp
                   (list `(,formal
                           (read-static-var ,formal-id ,compst-var)))
-                (list `(,formal (read-object ,formal-objdes ,compst-var))))
-            nil)))
+                (list `(,formal
+                        (read-object ,formal-objdes ,compst-var))))
+            (if extobjp
+                (list `(,formal
+                        (read-static-var ,formal-id ,compst-var)))
+              nil))))
        (subst (and pointerp
                    (not extobjp)
                    (list (cons formal formal-ptr))))
@@ -1213,10 +1258,10 @@
                       (list `(not (var-autop ,formal-id ,compst-var)))
                     (list `(valuep ,formal-ptr)
                           `(value-case ,formal-ptr :pointer)
-                          `(not (value-pointer-nullp ,formal-ptr))
+                          `(value-pointer-validp ,formal-ptr)
                           `(equal (objdesign-kind
                                    (value-pointer->designator ,formal-ptr))
-                                  :address)
+                                  :alloc)
                           (if (type-case type :pointer)
                               `(equal (value-pointer->reftype ,formal-ptr)
                                       ,(type-to-maker
@@ -1235,9 +1280,12 @@
                               `(read-object (value-pointer->designator
                                              (read-var ,formal-id ,compst-var))
                                             ,compst-var))))
-                   (list
-                    (cons formal
-                          `(read-var ,formal-id ,compst-var))))
+                   (if extobjp
+                       (list (cons formal
+                                   `(read-static-var ,formal-id ,compst-var)))
+                     (list
+                      (cons formal
+                            `(read-var ,formal-id ,compst-var)))))
                (if pointerp
                    (if extobjp
                        (list
@@ -1246,7 +1294,10 @@
                      (list
                       (cons formal
                             `(read-object ,formal-objdes ,compst-var))))
-                 nil)))
+                 (if extobjp
+                     (list (cons formal
+                                 `(read-static-var ,formal-id ,compst-var)))
+                   nil))))
        ((mv more-bindings more-hyps more-subst more-inst)
         (atc-gen-outer-bindings-and-hyps (cdr typed-formals)
                                          compst-var
@@ -1387,8 +1438,10 @@
         (raise "Internal error: formal ~x0 not found." formal))
        (type (atc-var-info->type info))
        ((unless (or (type-case type :pointer)
-                    (type-case type :array)))
-        (raise "Internal error: affected formal ~x0 has type ~x1."
+                    (type-case type :array)
+                    (atc-var-info->externalp info)))
+        (raise "Internal error:
+                affected formal ~x0 has type ~x1 and is not an external object."
                formal type)))
     (if (consp (assoc-equal (symbol-name formal) prec-objs))
         `(write-static-var (ident ,(symbol-name formal))
@@ -1713,25 +1766,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-formal-pointerp ((formal symbolp)
-                             (typed-formals atc-symbol-varinfo-alistp))
+(define atc-formal-affectablep ((formal symbolp)
+                                (typed-formals atc-symbol-varinfo-alistp))
   :returns (yes/no booleanp)
-  :short "Check if a formal parameter is a C pointer value."
+  :short "Check if a formal parameter is a affectable."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By this we mean that the formal parameter
+     either has pointer or array type or refers to an external object.
+     That is, it is the kind of parameter that may be affected in a function,
+     and that therefore must be returned by the function if affected."))
   (b* ((pair (assoc-eq (symbol-fix formal)
                        (atc-symbol-varinfo-alist-fix typed-formals))))
     (and (consp pair)
-         (b* ((type (atc-var-info->type (cdr pair))))
+         (b* ((info (cdr pair))
+              (type (atc-var-info->type info)))
            (or (type-case type :pointer)
-               (type-case type :array)))))
+               (type-case type :array)
+               (atc-var-info->externalp info)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist atc-formal-pointer-listp (x typed-formals)
+(std::deflist atc-formal-affectable-listp (x typed-formals)
   :guard (and (symbol-listp x)
               (atc-symbol-varinfo-alistp typed-formals))
-  :short "Lift @(tsee atc-formal-pointerp) to lists."
-  (atc-formal-pointerp x typed-formals)
+  :short "Lift @(tsee atc-formal-affectablep) to lists."
+  (atc-formal-affectablep x typed-formals)
   :true-listp t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1768,20 +1830,24 @@
       which is the only thing we care about here,
       ignoring all the other results.")
     (xdoc::li
-     "A formal parameter @('var') of @('fn') with pointer or array type.
+     "A formal parameter @('var') of @('fn') that
+      either has pointer or array type or refers to an external object.
       In this case, @('term') affects the list of variables @('(var)').")
     (xdoc::li
      "A term @('ret') that is not a call of @('fn0') as above
-      and is not a formal parameter of @('fn') of pointer or array type.
+      and is not a formal parameter of @('fn') that
+      either has pointer or array type or refers to an external object.
       In this case, @('term') affects no variables.")
     (xdoc::li
      "A term @('(mv var1 ... varn)') where each @('vari') is
-      a formal parameter of the function that has pointer or array type.
+      a formal parameter of the function that
+      either has pointer or array type or refers to an external object.
       In this case, @('term') affects
       the list of variables @('(var1 ... varn)').")
     (xdoc::li
      "A term @('(mv ret var1 ... varn)') where each @('vari') is
-      a formal parameter of the function that has pointer or array type
+      a formal parameter of the function that
+      either has pointer or array type or refers to an external object,
       and @('ret') is not.
       In this case, @('term') affects
       the list of variables @('(var1 ... varn)')."))
@@ -1839,16 +1905,16 @@
        ((when okp) (retok affected))
        ((when (pseudo-term-case term :var))
         (b* ((var (pseudo-term-var->name term)))
-          (if (atc-formal-pointerp var typed-formals)
+          (if (atc-formal-affectablep var typed-formals)
               (retok (list var))
             (retok nil))))
        ((mv okp terms) (fty-check-list-call term))
        ((when okp)
         (cond ((and (symbol-listp terms)
-                    (atc-formal-pointer-listp terms typed-formals))
+                    (atc-formal-affectable-listp terms typed-formals))
                (retok terms))
               ((and (symbol-listp (cdr terms))
-                    (atc-formal-pointer-listp (cdr terms) typed-formals))
+                    (atc-formal-affectable-listp (cdr terms) typed-formals))
                (retok (cdr terms)))
               (t (reterr
                   (msg "When generating code for function ~x0, ~
@@ -2247,6 +2313,7 @@
           ((cons var info) (car typed-formals))
           (type (atc-var-info->type info))
           (var-thm (atc-var-info->thm info))
+          (externalp (atc-var-info->externalp info))
           (type-pred (type-to-recognizer type wrld))
           (name (pack fn '- var '-in-scope-0))
           ((mv name names-to-avoid)
@@ -2295,7 +2362,9 @@
                                      (cdr typed-formals)
                                      compst-var context names-to-avoid wrld)))
        (mv (cons (cons var
-                       (make-atc-var-info :type type :thm name))
+                       (make-atc-var-info :type type
+                                          :thm name
+                                          :externalp externalp))
                  inscope-rest)
            (cons event events-rest)
            names-to-avoid)))))
@@ -2597,13 +2666,15 @@
        (body (ubody+ fn wrld))
        ((erp affect)
         (atc-find-affected fn body typed-formals prec-fns wrld))
-       ((unless (atc-formal-pointer-listp affect typed-formals))
+       ((unless (atc-formal-affectable-listp affect typed-formals))
         (reterr
          (msg "At least one of the formals of ~x0 ~
-               that are affected by its body has a non-pointer non-array type. ~
+               that are affected by its body has a non-pointer non-array type, ~
+               or does not refer to an external object. ~
                This is currently disallowed: ~
-               only pointer variables may be affected ~
-               by a non-recursive target function."
+               only pointer or array variables,
+               or variables that refer to external objects, ~
+               may be affected by a non-recursive target function."
               fn)))
        ((erp (stmt-gout body))
         (atc-gen-stmt body

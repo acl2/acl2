@@ -1,0 +1,6 @@
+Usage:
+  parse file           check that file.cpp is well formed
+  parse file -rac      convert to RAC pseudocode and write to file.pc
+
+  parse file -acl2     write ACL2 translation to output.lisp
+

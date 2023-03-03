@@ -12024,6 +12024,70 @@
 ; than 1 second greater than in the naive approach (and overall, it is about 30
 ; seconds faster).
 
+(mutual-recursion
+
+(defun sort-lits-heavy-p (term)
+
+; This function, which is used heuristically, returns t if the given term
+; contains a lambda application or at least two different free variables.
+; Otherwise, it returns the unique free variable unless there are no free
+; variables, in which case it returns nil.
+
+  (declare (xargs :guard (pseudo-termp term)))
+  (cond ((variablep term) term)
+        ((fquotep term) nil)
+        ((flambda-applicationp term) t)
+        (t (sort-lits-heavy-listp (fargs term) nil))))
+
+(defun sort-lits-heavy-listp (lst var)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (symbolp var))))
+  (cond ((endp lst) var)
+        (t (let ((x1 (sort-lits-heavy-p (car lst))))
+             (or (eq x1 t)
+                 (and x1 var (not (eq x1 var)))
+                 (sort-lits-heavy-listp (cdr lst)
+                                        (or x1 var)))))))
+)
+
+(defun sort-lits1 (cl ttree-lst)
+
+; See sort-lits.
+
+  (cond ((endp cl)
+         (mv nil nil nil nil))
+        (t (mv-let (cl-pre ttree-lst-pre cl-post ttree-lst-post)
+             (sort-lits1 (cdr cl) (cdr ttree-lst))
+             (cond ((eq (sort-lits-heavy-p (car cl))
+                        t)
+                    (mv cl-pre
+                        ttree-lst-pre
+                        (cons (car cl) cl-post)
+                        (cons (car ttree-lst) ttree-lst-post)))
+                   (t
+                    (mv (cons (car cl) cl-pre)
+                        (cons (car ttree-lst) ttree-lst-pre)
+                        cl-post
+                        ttree-lst-post)))))))
+
+(defun sort-lits (cl ttree-lst)
+
+; Cl is a list of literals and ttree-lst is a corresponding list of tag trees.
+; We sort cl by putting all the "heavy" literals at the end, in the sense of
+; sort-lits-heavy-p.  The intuition is that we want type-like predicates to
+; appear first in certain cases when we build a type-alist with
+; type-alist-clause.  As of this writing, those "certain cases" take place only
+; as part of our "desperation heuristics", which take place when we are calling
+; simplify-clause just after the clause has just settled down.  We restrict to
+; that case because it suffices for the example that motivated this change in
+; Feb. 2023, while being backward compatible at that time in the sense that all
+; the community books certified without change.
+
+  (mv-let (cl-pre tree-lst-pre cl-post ttree-lst-post)
+    (sort-lits1 cl ttree-lst)
+    (mv (append? cl-pre cl-post)
+        (append? tree-lst-pre ttree-lst-post))))
+
 (defun type-alist-clause (cl ttree-lst force-flg type-alist ens wrld
                           pot-lst pt)
 

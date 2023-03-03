@@ -14912,7 +14912,7 @@
 
 
 ;gen!
-(defthm	bvplus-of-bvuminus-of-bvcat-and-bvcat
+(defthm         bvplus-of-bvuminus-of-bvcat-and-bvcat
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
                 (bvle 4 k1 k2)

@@ -28,6 +28,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -72,9 +73,10 @@
                      ,@(and op-type-okp
                             `((,op-type-okp x)))))
          (formula `(implies ,hyps
-                            (equal (exec-unary op x compst)
-                                   (,op-type x))))
+                            (equal (exec-unary op (expr-value x nil) compst)
+                                   (expr-value (,op-type x) nil))))
          (enables `(exec-unary
+                    eval-unary
                     ,op-value
                     ,@(and op-scalar-value
                            (list op-scalar-value))
@@ -202,24 +204,22 @@
     :parents nil
     (b* ((fixtype (integer-type-to-fixtype type))
          (pred (pack fixtype 'p))
-         (value-kind-when-pred (pack 'value-kind-when- pred))
          (name (pack 'exec-indir-when- pred))
          (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                      (valuep x)
                      (value-case x :pointer)
-                     (not (value-pointer-nullp x))
+                     (value-pointer-validp x)
                      (equal (value-pointer->reftype x)
                             ,(type-to-maker type))
                      (unop-case op :indir)
-                     (equal val
-                            (read-object (value-pointer->designator x) compst))
+                     (equal objdes (value-pointer->designator x))
+                     (equal val (read-object objdes compst))
                      (,pred val)))
          (formula `(implies ,hyps
-                            (equal (exec-unary op x compst)
-                                   val)))
-         (hints `(("Goal" :in-theory '(exec-unary
-                                       indir-value
-                                       ,value-kind-when-pred))))
+                            (equal (exec-unary op (expr-value x nil) compst)
+                                   (expr-value val objdes))))
+         (hints `(("Goal" :in-theory (enable exec-unary
+                                             exec-indir))))
          (event `(defruled ,name
                    ,formula
                    :hints ,hints)))

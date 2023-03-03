@@ -15,6 +15,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -422,8 +423,9 @@
      so this is adequate;
      this will be properly generalized at some point."))
   (objdesign-case objdes
-                  :variable (address 0)
-                  :address objdes.get
+                  :static (address 0)
+                  :auto (address 0)
+                  :alloc objdes.get
                   :element (objdesign->base-address objdes.super)
                   :member (objdesign->base-address objdes.super))
   :measure (objdesign-count objdes)
@@ -708,7 +710,10 @@
      We may arrange things in the future so that
      these quoted constants do not arise
      and thus there is no need for the executable counterpart of @(tsee typep)
-     to be included in the list of rules here."))
+     to be included in the list of rules here.")
+   (xdoc::p
+    "Also see @(tsee atc-write-static-var-rules)
+     for a rule that relates @('write-var-okp') and @(tsee add-frame)."))
 
   (define write-var-okp ((var identp) (val valuep) (compst compustatep))
     :guard (> (compustate-frames-number compst) 0)
@@ -1074,7 +1079,17 @@
      We introduce a predicate saying when @(tsee write-static-var)
      is equivalent to @(tsee update-static-var),
      and rules to show that the predicate holds.
-     The final rule states the equivalence."))
+     The second-to-last rule states the equivalence.")
+   (xdoc::p
+    "The last rule is more about @('write-var-okp')
+     than about @('write-static-var-okp'),
+     but we put it here because
+     the definition and rules for @('write-var-okp')
+     come before the ones for @('write-static-var-okp')
+     (we could reorder things at some point).
+     This rule serves to reduce
+     @('write-var-ok') to @('write-static-var-okp')
+     when we have a frame with no variables."))
 
   (define write-static-var-okp ((var identp) (val valuep) (compst compustatep))
     :returns (yes/no booleanp)
@@ -1153,6 +1168,14 @@
              write-static-var-okp
              update-static-var))
 
+  (defruled write-var-okp-of-add-frame
+    (equal (write-var-okp var val (add-frame fun compst))
+           (write-static-var-okp var val (add-frame fun compst)))
+    :enable (write-var-okp
+             write-static-var-okp
+             add-frame
+             var-in-scopes-p))
+
   (defval *atc-write-static-var-rules*
     '(write-static-var-okp-of-add-frame
       write-static-var-okp-of-enter-scope
@@ -1161,7 +1184,8 @@
       write-static-var-okp-of-update-static-var
       write-static-var-okp-of-update-object
       write-static-var-okp-when-valuep-of-read-static-var
-      write-static-var-to-update-static-var)))
+      write-static-var-to-update-static-var
+      write-var-okp-of-add-frame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1458,8 +1482,8 @@
                             (compst compustatep))
     :returns (yes/no booleanp)
     :parents nil
-    (b* (((unless (objdesign-case objdes :address)) nil)
-         (addr (objdesign-address->get objdes))
+    (b* (((unless (objdesign-case objdes :alloc)) nil)
+         (addr (objdesign-alloc->get objdes))
          (heap (compustate->heap compst))
          (addr+obj (omap::in addr heap))
          ((unless (consp addr+obj)) nil)
@@ -1503,7 +1527,7 @@
 
   (defruled write-object-okp-of-update-object-same
     (implies
-     (equal (objdesign-kind objdes) :address)
+     (equal (objdesign-kind objdes) :alloc)
      (equal (write-object-okp objdes val (update-object objdes val2 compst))
             (equal (type-of-value val)
                    (type-of-value val2))))
@@ -1523,7 +1547,7 @@
 
   (defruled write-object-okp-when-valuep-of-read-object
     (implies (and (syntaxp (symbolp compst))
-                  (equal (objdesign-kind objdes) :address)
+                  (equal (objdesign-kind objdes) :alloc)
                   (equal old-val (read-object objdes compst))
                   (valuep old-val))
              (equal (write-object-okp objdes val compst)
@@ -1541,8 +1565,8 @@
              update-object
              objdesign->base-address))
 
-  (defruled write-object-of-objdesign-variable
-    (equal (write-object (objdesign-variable var) val compst)
+  (defruled write-object-of-objdesign-static
+    (equal (write-object (objdesign-static var) val compst)
            (write-static-var var val compst))
     :enable write-object)
 
@@ -1555,7 +1579,7 @@
       write-object-okp-of-update-object-same
       write-object-okp-of-update-object-disjoint
       write-object-okp-when-valuep-of-read-object
-      write-object-of-objdesign-variable
+      write-object-of-objdesign-static
       object-disjointp-commutative
       valuep-when-uchar-arrayp
       valuep-when-schar-arrayp
@@ -1629,7 +1653,7 @@
              read-static-var))
 
   (defruled read-object-of-update-var
-    (implies (objdesign-case objdes :address)
+    (implies (objdesign-case objdes :alloc)
              (equal (read-object objdes (update-var var val compst))
                     (read-object objdes compst)))
     :enable (update-var
@@ -1639,7 +1663,7 @@
              read-static-var))
 
   (defruled read-object-of-update-object-same
-    (implies (equal (objdesign-kind objdes) :address)
+    (implies (equal (objdesign-kind objdes) :alloc)
              (equal (read-object objdes (update-object objdes val compst))
                     (value-fix val)))
     :enable (read-object
@@ -1655,8 +1679,8 @@
              object-disjointp
              objdesign->base-address))
 
-  (defruled read-object-of-objdesign-variable
-    (equal (read-object (objdesign-variable var) compst)
+  (defruled read-object-of-objdesign-static
+    (equal (read-object (objdesign-static var) compst)
            (read-static-var var compst))
     :enable read-object)
 
@@ -1667,7 +1691,8 @@
       read-object-of-update-var
       read-object-of-update-object-same
       read-object-of-update-object-disjoint
-      read-object-of-objdesign-variable
+      read-object-of-objdesign-static
+      pointer-valid->get-of-pointer-valid
       object-disjointp-commutative)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1794,7 +1819,7 @@
   (defruled update-object-of-read-object-same
     (implies (and (syntaxp (symbolp compst))
                   (compustatep compst1)
-                  (equal (objdesign-kind objdes) :address)
+                  (equal (objdesign-kind objdes) :alloc)
                   (valuep (read-object objdes compst))
                   (equal (read-object objdes compst)
                          (read-object objdes compst1)))

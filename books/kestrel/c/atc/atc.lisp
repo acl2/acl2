@@ -19,6 +19,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -179,26 +180,24 @@
                state)
   :parents (atc-implementation)
   :short "Process the inputs and generate the events and code."
-  (b* (((acl2::fun (reterr erp state)) (mv erp '(_) state))
+  (b* (((reterr) '(_) state)
        ((when (atc-table-lookup call (w state)))
         (retok '(value-triple :redundant) state))
-       ((mv erp
-            targets
-            file-name
-            path-wo-ext
-            header
-            pretty-printing
-            proofs
-            prog-const
-            wf-thm
-            fn-thms
-            & ; fn-limits
-            & ; fn-body-limits
-            print
-            state)
+       ((erp targets
+             file-name
+             path-wo-ext
+             header
+             pretty-printing
+             proofs
+             prog-const
+             wf-thm
+             fn-thms
+             & ; fn-limits
+             & ; fn-body-limits
+             print
+             state)
         (atc-process-inputs args state))
-       ((when erp) (reterr erp state))
-       ((mv erp event)
+       ((erp event)
         (atc-gen-everything targets
                             file-name
                             path-wo-ext
@@ -210,8 +209,7 @@
                             fn-thms
                             print
                             call
-                            state))
-       ((when erp) (reterr erp state)))
+                            state)))
     (retok event state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
