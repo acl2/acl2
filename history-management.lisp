@@ -3917,7 +3917,7 @@
             compiler-enabled           ;;; allow user to modify this in a book
             port-file-enabled          ;;; allow user to modify this in a book
             parallel-execution-enabled ;;; allow user to modify this in a book
-            waterfall-parallelism
+            waterfall-parallelism      ;;; allow user to modify this in a book
             warnings-as-errors         ;;; allow user to modify this in a book
             waterfall-parallelism-timing-threshold ;;; see just above
             waterfall-printing ;;; allow user to modify this in a book
@@ -17876,15 +17876,15 @@
 
 ;   Then we see that the expansion file treats BAR as a function defined at the
 ;   top level.
- 
+
 ;     ACL2 !>(set-raw-mode-on!)
-;     
+;
 ;     TTAG NOTE: Adding ttag :RAW-MODE-HACK from the top level loop.
 ;     ACL2 P>(with-open-file (str "problem@expansion.lsp" :direction :input)
 ;         (loop as val = (read str nil :eof nil)
 ;               until (eq val :eof)
 ;               do (pprint val)))
-;     
+;
 ;     (IN-PACKAGE "ACL2")
 ;     (SETQ *HCOMP-FN-ALIST* '((ACL2_*1*_ACL2::BAR . T) (BAR . T)))
 ;     (SETQ *HCOMP-CONST-ALIST* 'NIL)
@@ -17900,7 +17900,7 @@
 ;              (LABELS ((ACL2_*1*_ACL2::BAR (X) X))
 ;                (ACL2_*1*_ACL2::BAR X))))NIL
 ;     ACL2 P>
-;     
+;
 ;   This isn't really right, because when problem.lisp is included, bar is
 ;   defined by inclusion of problem-sub.lisp, not at the top level of
 ;   problem.lisp.  In fact, if you certify the books without fast-cert mode

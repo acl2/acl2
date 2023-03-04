@@ -16690,7 +16690,7 @@
                            (fast-cert-p
 
 ; Maybe later we'll support fast-cert for pcert, but not now.
-                                        
+
                             (and (not pcert)
                                  fast-cert-p0)))
                       (pprogn
