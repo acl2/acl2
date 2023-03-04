@@ -26,7 +26,7 @@
 (in-package "FGL")
 
 
-(include-book "top-bare")
+(include-book "helper-utils")
 (include-book "std/strings/hexify" :dir :system)
 (include-book "std/util/defconsts" :dir :system)       
 (include-book "checks")
@@ -62,8 +62,6 @@
     `(b* (((acl2::assocs . ,(prefix-qmark-to-syms (strip-cars *incremental-extremize-config-fields*))) . ,acl2::forms))
        ,acl2::rest-expr)))
 
-(fgl::def-fgl-program get-counterexample (config)
-  (fgl::syntax-interp (fgl::show-counterexample-bind config fgl::interp-st state)))
 
 
 (def-fgl-program incremental-extremize-iter
@@ -162,22 +160,6 @@
              "Error translating default terms: ~@0~%" err))
     (mv alist state)))
 
-
-(fgl::def-fgl-program find-evaluation (obj sat-config)
-  ;; important for this that fgl::fgl-sat-check's execution is disabled
-  (b* ((sat-res (fgl::fgl-sat-check sat-config t))
-       (unsat (syntax-interp (not sat-res)))
-       ((when unsat)
-        (syntax-interp (cw "Path condition is unsatisfiable!~%")))
-       ((list (list error bindings ?vars) &) (get-counterexample sat-config))
-       ;; (syntax-interp (show-counterexample-bind first-sat-config interp-st state)))
-       ((when error)
-        (syntax-interp (cw
-                        "Failed to find satisfying assignment for path condition: ~x0~%" error)))
-       (obj-val (cdr (assoc 'obj bindings)))
-       (?ign (syntax-interp (cw "Evaluation: ~x0~%" obj-val))))
-    obj-val))
-    
 
 
                                

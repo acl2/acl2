@@ -42,6 +42,7 @@
    output-part-vars
    hyp
    concl
+   run-before-concl
    svtv
    ideal
    enable
@@ -102,31 +103,52 @@
   (svtv-genthm-integerp-conclusions-aux
    (svtv-genthm-output-expressions x)))
 
+(define svex-env-extract-non-2vecs ((vars svarlist-p)
+                                    (env svex-env-p))
+  :mode :logic
+  :returns (non-2vecs svex-env-p)
+  (if (atom vars)
+      nil
+    (b* ((look (sv::svex-env-lookup (car vars) env))
+         ((when (sv::2vec-p look))
+          (svex-env-extract-non-2vecs (cdr vars) env)))
+      (cons (cons (svar-fix (car vars)) look)
+            (svex-env-extract-non-2vecs (cdr vars) env)))))
+
 (defun svtv-genthm-initial-override-lemma (x)
   (declare (Xargs :mode :program))
   (b* (((svtv-generalized-thm x))
        (template '(<defthm> <name>-override-lemma
                     (implies <hyp>
                              (b* ((run (:@ (not :use-ideal)
-                                        (svtv-run (<svtv>)
-                                                  (append <input-bindings>
-                                                         <input-vars>
-                                                         <override-tests>
-                                                         <override-bindings>
-                                                         <override-vals>)
-                                                 (:@ (not :use-ideal) :include)
-                                                 '<outputs-list>))
+                                           (svtv-run (<svtv>)
+                                                     (append <input-bindings>
+                                                             <input-vars>
+                                                             <override-tests>
+                                                             <override-bindings>
+                                                             <override-vals>)
+                                                     :include
+                                                     '<outputs-list>))
                                        (:@ :use-ideal
-                                        (svex-env-reduce '<outputs-list>
-                                                         (svtv-spec-run (<ideal>)
-                                                                        (append <input-bindings>
-                                                                                <input-vars>
-                                                                                <override-tests>
-                                                                                <override-bindings>
-                                                                                <override-vals>)))))
+                                           (svex-env-reduce '<outputs-list>
+                                                            (svtv-spec-run (<ideal>)
+                                                                           (append <input-bindings>
+                                                                                   <input-vars>
+                                                                                   <override-tests>
+                                                                                   <override-bindings>
+                                                                                   <override-vals>)))))
                                   ((svassocs <outputs>) run))
-                               (and <integerp-concls>
-                                    <concl>)))
+                               (progn$
+                                <run-before-concl>
+                                (and (:@ (not :no-integerp)
+                                      (or (and <integerp-concls>)
+                                          (progn$
+                                           (cw "*** Failed: Some output variables contained Xes/Zs:~%")
+                                           (svtv-print-alist-readable
+                                            (svex-env-extract-non-2vecs
+                                             '<outputs-list> run))
+                                           nil)))
+                                     <concl>))))
                     <args>)))
     (acl2::template-subst
      template
@@ -148,11 +170,13 @@
                                                             x.override-var-bindings))))
                    (<override-vals> . (list . ,(svtv-genthm-var-alist-termlist (append x.spec-override-vars x.override-vars))))
                    (<outputs-list> . ,x.output-vars))
-     :splice-alist `((<outputs> . ,x.output-vars)
+     :splice-alist `((<run-before-concl> . ,(and x.run-before-concl (list x.run-before-concl)))
+                     (<outputs> . ,x.output-vars)
                      (<integerp-concls> . ,(if x.no-integerp nil (svtv-genthm-integerp-conclusions x)))
                      (<args> . ,x.lemma-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
-     :features (and x.lemma-use-ideal '(:use-ideal))
+     :features (append (and x.lemma-use-ideal '(:use-ideal))
+                       (and x.no-integerp '(:no-integerp)))
      :pkg-sym x.pkg-sym)))
 
 

@@ -220,7 +220,7 @@
           :expand ((:free (x) (rp-trans (cons 'list x)))
                    (:free (x) (rp-termp (cons 'list x))))
           :in-theory (e/d* (cons-to-list-meta
-                            is-rp
+                            is-rp is-equals
                             valid-sc
                             is-if
                             regular-eval-lemmas)
@@ -243,7 +243,7 @@
           :expand ((:free (x) (rp-trans (cons 'list x)))
                    (:free (x) (rp-termp (cons 'list x))))
           :in-theory (e/d* (list-to-cons-meta
-                            is-rp
+                            is-rp is-equals
                             valid-sc
                             is-if
                             regular-eval-lemmas)

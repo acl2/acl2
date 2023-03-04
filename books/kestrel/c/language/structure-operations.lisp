@@ -17,6 +17,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -72,6 +73,7 @@
                      (and (valuep val)
                           (equal (type-of-value val)
                                  type))))
+          :induct t
           :enable (value-struct-read-aux
                    member-type-lookup
                    member-types-of-member-values
@@ -108,6 +110,7 @@
       member-value-list-resultp
       :hints
       (("Goal"
+        :induct t
         :in-theory
         (enable
          member-value-listp-when-member-value-list-resultp-and-not-errorp))))
@@ -140,6 +143,7 @@
                        (equal (type-of-value new)
                               (type-of-value old)))
                   (member-value-listp memvals1)))
+       :induct t
        :enable value-struct-read-aux)
 
      (defruled member-value-list->name-list-of-struct-write-aux
@@ -150,6 +154,7 @@
                               (type-of-value old)))
                   (equal (member-value-list->name-list memvals1)
                          (member-value-list->name-list memvals))))
+       :induct t
        :enable value-struct-read-aux)
 
      (defruled value-struct-read-aux-of-value-struct-write-aux
@@ -162,6 +167,7 @@
                          (if (ident-equiv name1 name)
                              (remove-flexible-array-member new)
                            (value-struct-read-aux name1 memvals)))))
+       :induct t
        :enable value-struct-read-aux)
 
      (defruled value-struct-write-aux-when-member-type-lookup
@@ -187,6 +193,7 @@
                      (and (member-value-listp new-memvals)
                           (equal (member-types-of-member-values new-memvals)
                                  (member-types-of-member-values memvals)))))
+          :induct t
           :enable (value-struct-write-aux
                    member-type-lookup
                    member-types-of-member-values

@@ -74,8 +74,8 @@
                          (,apred array)
                          (,ipred y)
                          (,atype-array-itype-index-okp array y))
-                    (equal (exec-arrsub (expr-value x nil)
-                                        (expr-value y nil)
+                    (equal (exec-arrsub (expr-value x objdes-x)
+                                        (expr-value y objdex-y)
                                         compst)
                            (expr-value (,atype-array-read-itype array y)
                                        (objdesign-element

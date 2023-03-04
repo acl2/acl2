@@ -306,7 +306,7 @@
        ((mv errs rest) (svtv-concat->lhs (cdr x) modidx moddb aliases)))
     (if err1
         (mv (cons err1 errs) nil)
-      (mv nil (append first rest)))))
+      (mv errs (append first rest)))))
 
 (define svtv-wire->lhs! ((x stringp)
                          (modidx natp)

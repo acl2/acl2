@@ -1412,6 +1412,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
     ;; (:rewrite SVTV-OVERRIDE-TRIPLELIST-MUXES-<<=-OF-nil)
 
     (:rewrite 4VEC-OVERRIDE-MUX-<<=-OF-SAME-TEST/VAL)
+    (:rewrite 4VEC-OVERRIDE-MUX-<<=-OF-4vec-fix-impl-val)
     (:rewrite 4vec-override-mux-<<=-when-no-spec-override-and-impl-val-same-as-ref)
 
     (:rewrite svex-env-lookup-of-svex-env-reduce)
@@ -1534,7 +1535,8 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                       :in-theory (acl2::e/d**
                                   (;; (:EXECUTABLE-COUNTERPART <SVTV>-TRIPLEMAPLIST)
                                    (:REWRITE SVARLIST-P-OF-<SVTV>-INPUT-VARS)
-                                   (:ruleset svtv-idealized-thm-rules))
+                                   (:ruleset svtv-idealized-thm-rules)
+                                   <enable>)
                                   )
                       :do-not '(generalize fertilize eliminate-destructors)
                       :do-not-induct t
@@ -1631,6 +1633,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
          unsigned-byte-hyps
          (hyp 't)
          concl
+         (run-before-concl 'nil)
          (lemma-defthm 'fgl::def-fgl-thm)
          lemma-args
          lemma-nonlocal
@@ -1702,6 +1705,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
        :enable enable
        :hyp hyp
        :concl concl
+       :run-before-concl run-before-concl
        :svtv svtv
        :ideal ideal
        :lemma-nonlocal lemma-nonlocal

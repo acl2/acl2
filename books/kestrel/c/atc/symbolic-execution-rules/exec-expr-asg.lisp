@@ -94,7 +94,9 @@
                  (value-case ptr :pointer)
                  (value-pointer-validp ptr)
                  (equal (value-pointer->reftype ptr) (,constructor))
-                 (equal val (exec-expr-pure right compst))
+                 (equal eval (exec-expr-pure right compst))
+                 (expr-valuep eval)
+                 (equal val (expr-value->value eval))
                  (,pred val))
             (equal (exec-expr-asg e compst fenv limit)
                    (write-object (value-pointer->designator ptr)
@@ -102,8 +104,7 @@
                                  compst))))
          (event `(defruled ,name
                    ,formula
-                   :enable (exec-expr-asg
-                            ,type-of-value-when-pred))))
+                   :enable (exec-expr-asg ,type-of-value-when-pred))))
       (mv name event)))
 
   (define atc-exec-expr-asg-indir-rules-gen-loop ((types type-listp))
@@ -199,10 +200,14 @@
                  (equal array
                         (read-object (value-pointer->designator ptr) compst))
                  (,apred array)
-                 (equal index (exec-expr-pure sub compst))
+                 (equal eindex (exec-expr-pure sub compst))
+                 (expr-valuep eindex)
+                 (equal index (expr-value->value eindex))
                  (,ipred index)
                  (,atype-array-itype-index-okp array index)
-                 (equal val (exec-expr-pure right compst))
+                 (equal eval (exec-expr-pure right compst))
+                 (expr-valuep eval)
+                 (equal val (expr-value->value eval))
                  (,epred val))
             (equal (exec-expr-asg e compst fenv limit)
                    (write-object (value-pointer->designator ptr)

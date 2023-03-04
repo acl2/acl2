@@ -44,7 +44,12 @@
  in some cases there is a note of the following form, for use in the
  workshop:</p>
 
- <color rgb='#800080'><p>[...SOME NOTE FOR THE WORKSHOP...]</p></color>
+ <p>Prospective ACL2 developers are advised to read the paper, <a
+ href='https://www.cs.utexas.edu/users/moore/acl2/workshop-2009/final/10/10.pdf'>&ldquo;Abbreviated
+ Output for Input in ACL2&rdquo;</a>, which has a lot of discussion about ACL2
+ development.</p>
+
+ <color rgb='#800080'><p>[...SOME NOTES FOR THE WORKSHOP...]</p></color>
 
  <color rgb='#c00000'>
  <p>For a small list of potential ACL2 development tasks, see community books

@@ -236,7 +236,7 @@
             (equal term ''0))
         (mv (hons-copy term) pp-binds index t))
 
-       ((or (bit-of-p term)
+       ((or (logbit-p term)
             (has-bitp-rp orig))
         (b* ((entry (rp-assoc-w/-orig-term term pp-binds))
              ((when entry)
@@ -291,7 +291,7 @@
                                has-bitp-rp
                                is-rp
                                ex-from-rp
-                               bit-of-p
+                               logbit-p
                                pp-p
                                binary-or-p
                                binary-and-p
@@ -310,11 +310,11 @@
      :rule-classes :forward-chaining))
 
   (local
-   (defthm pp-term-p-of-bit-of-lemma
-     (pp-term-p (list 'bit-of x y)
+   (defthm pp-term-p-of-logbit-lemma
+     (pp-term-p (list 'logbit$inline x y)
                 :strict nil)
      :hints (("goal"
-              :expand (pp-term-p (list 'bit-of x y)
+              :expand (pp-term-p (list 'logbit$inline x y)
                                  :strict nil)
               :in-theory (e/d (binary-xor-p
                                binary-or-p
@@ -322,7 +322,7 @@
                                pp-term-p pp-p
                                is-rp
                                has-bitp-rp
-                               bit-of-p
+                               logbit-p
                                ex-from-rp
                                binary-?-p)
                               ())))))
@@ -479,7 +479,7 @@
          (not (binary-xor-p (intern-in-package-of-symbol string in-pkg)))
          (not (binary-?-p (intern-in-package-of-symbol string in-pkg)))
          (not (binary-not-p (intern-in-package-of-symbol string in-pkg)))
-         (not (bit-of-p (intern-in-package-of-symbol string in-pkg)))
+         (not (logbit-p (intern-in-package-of-symbol string in-pkg)))
          (not (pp-p (intern-in-package-of-symbol string in-pkg)))
          (not (bit-fix-p (intern-in-package-of-symbol string in-pkg))))
     :hints (("goal"
@@ -491,7 +491,7 @@
                               binary-or-p
                               binary-?-p
                               binary-not-p
-                              bit-of-p
+                              logbit-p
                               pp-p
                               binary-xor-p)
                              ()))))
@@ -578,7 +578,9 @@
     :hints (("goal"
              :in-theory (e/d (pp-term-bind
                               len)
-                             ((:rewrite default-+-2)
+                             (rp-termp
+                              ;;rp-term-listp
+                              (:rewrite default-+-2)
                               (:rewrite acl2::and*-rem-first)
                               (:rewrite
                                acl2::default-intern-in-package-of-symbol)
@@ -619,7 +621,7 @@
          (term (ex-from-rp$ term)))
       (or (binary-fnc-p term)
           (single-s-p term)
-          (bit-of-p term)
+          (logbit-p term)
           (has-bitp-rp orig))))
 
   (define pp-apply-bindings-and-arg-lst ((and-arg-lst rp-term-listp)
@@ -660,9 +662,9 @@
     (if (atom pp-lst)
         (mv nil t)
       (b* (((mv rest valid1) (pp-apply-bindings (cdr pp-lst) pp-binds))
-           (cur (car pp-lst))
-           ((mv cur negated)
-            (case-match cur (('-- x) (mv x t)) (& (mv cur nil)))))
+           ((mv coef cur) (get-pp-and-coef (car pp-lst)))
+           ((unless (integerp coef))
+            (mv nil nil)))
         (case-match cur
           (('and-list & ('list . and-arg-lst))
            (b* (((mv and-arg-lst valid2)
@@ -671,14 +673,14 @@
                                  and-arg-lst
                                (sort-and$-list and-arg-lst (len and-arg-lst))))
                 (cur (create-and-list-instance and-arg-lst)))
-             (mv (cons (if negated `(-- ,cur) cur) rest)
+             (mv (cons (create-times-instance coef cur) rest)
                  (and* valid1 valid2))))
           (''1
-           (mv (cons (if negated `(-- ,cur) cur) rest) valid1))
+           (mv (cons (create-times-instance coef cur) rest) valid1))
           (& (b* ((entry (rp-assoc-w/-tmp-var cur pp-binds))
                   ((unless entry) (mv nil nil))
                   (cur (pp-remove-extraneous-sc (pp-entry->orig-term entry))))
-               (mv (cons (if negated `(-- ,cur) cur)  rest)
+               (mv (cons (create-times-instance coef cur)  rest)
                    valid1))))))
     ///
     (defret return-vals-of-<fn>
@@ -688,8 +690,8 @@
 
 (define pp-flatten-with-binds ((term (and (pp-term-p term)
                                           (rp-termp term)))
-                               (signed booleanp)
                                &key
+                               ((coef integerp) '1)
                                (disabled 'nil))
   :returns (pp-lst)
   (b* (((when (or disabled
@@ -698,14 +700,14 @@
                   (not (mbt (and (pp-term-p term)
                                  (rp-termp term)
                                  t)))))
-        (pp-flatten term signed :disabled disabled))
+        (pp-flatten term :coef coef :disabled disabled))
        ((mv honsed-pp-term pp-binds & valid)
         (pp-term-bind term nil 0))
        ((unless valid)
         (cwe "In pp-flatten-with-binds, pp-term-bind returned invalid bindings. ~
               for incoming term: ~p0 ~%" term)
-        (pp-flatten term signed))
-       (pp-lst (pp-flatten-memoized honsed-pp-term signed))
+        (pp-flatten term :coef coef))
+       (pp-lst (pp-flatten-memoized honsed-pp-term :coef coef))
        ((mv res-pp-lst valid) (pp-apply-bindings pp-lst pp-binds))
        ((unless valid)
         (fmt-to-comment-window
@@ -715,7 +717,7 @@
                                           any warning above. ~%"
          (pairlis2 acl2::*base-10-chars* (list term pp-binds pp-lst))
          0 '(nil 3 4 nil)  nil)
-        (pp-flatten term signed))
+        (pp-flatten term :coef coef))
        (res-pp-lst (if (pp-lst-orderedp res-pp-lst)
                        res-pp-lst
                      (pp-sum-sort-lst res-pp-lst))))
@@ -726,7 +728,8 @@
   (profile 'pp-term-bind)
 
   (defret rp-term-listp-of-<fn>
-    (implies (rp-termp term)
+    (implies (and (rp-termp term)
+                  (integerp coef))
              (rp-term-listp pp-lst))))
 
 (local
@@ -777,14 +780,14 @@
             :in-theory (e/d (ex-from-rp is-rp) ())))))
 
 (local
- (defthmd eval-of-RP-APPLY-BINDINGS-ex-from-rp
+ (defthmd eval-of-rp-apply-bindings-ex-from-rp
    (implies (and (rp-termp term)
                  (bindings-alistp bindings))
             (equal (rp-evlt (rp-apply-bindings (ex-from-rp term) bindings) a)
                    (rp-evlt (rp-apply-bindings term bindings) a)))))
 
 (local
- (defthmd eval-of-RP-APPLY-BINDINGS-ex-from-rp-reverse
+ (defthmd eval-of-rp-apply-bindings-ex-from-rp-reverse
    (implies (and (syntaxp (or (atom term)
                               (not (equal (car term) 'ex-from-rp))))
                  (rp-termp term)
@@ -801,20 +804,28 @@
                              PP-ENTRY->ORIG-TERM)
                             ())))))
 
-(local
- (create-regular-eval-lemma bit-fix 1 mult-formula-checks))
-(local
- (create-regular-eval-lemma binary-not 1 mult-formula-checks))
-(local
- (create-regular-eval-lemma binary-or 2 mult-formula-checks))
-(local
- (create-regular-eval-lemma binary-xor 2 mult-formula-checks))
-(local
- (create-regular-eval-lemma binary-and 2 mult-formula-checks))
-(local
- (create-regular-eval-lemma binary-? 3 mult-formula-checks))
-(local
- (create-regular-eval-lemma s 3 mult-formula-checks))
+(with-output
+  :off :all
+  (progn
+    (local
+     (create-regular-eval-lemma bit-fix 1 mult-formula-checks))
+    (local
+     (create-regular-eval-lemma binary-not 1 mult-formula-checks))
+    (local
+     (create-regular-eval-lemma binary-or 2 mult-formula-checks))
+    (local
+     (create-regular-eval-lemma binary-xor 2 mult-formula-checks))
+    (local
+     (create-regular-eval-lemma binary-and 2 mult-formula-checks))
+    (local
+     (create-regular-eval-lemma binary-? 3 mult-formula-checks))
+    (local
+     (create-regular-eval-lemma s 3 mult-formula-checks))
+
+    (local
+     (create-regular-eval-lemma and-list 2 mult-formula-checks))
+    (local
+     (create-regular-eval-lemma -- 1 mult-formula-checks))))
 
 (local
  (defthmd CAN-BE-REMOVED-FROM-BIT-FIX-implies
@@ -899,6 +910,13 @@
                       A))))
 
 (local
+ (defthm is-equals-of-others
+   (implies (not (equal (car term) 'equals))
+            (not (is-equals term )))
+   :hints (("Goal"
+            :in-theory (e/d (is-equals) ())))))
+
+(local
  (defret valid-sc-subterms-of-PP-APPLY-BINDINGS-AND-ARG-LST
    (implies (and valid
                  (valid-sc-bindings PP-BINDS a))
@@ -911,34 +929,68 @@
                             ())))))
 
 (local
- (create-regular-eval-lemma and-list 2 mult-formula-checks))
-(local
- (create-regular-eval-lemma -- 1 mult-formula-checks))
-
-(local
  (defthm car-of-assoc-equal
    (implies (ASSOC-EQUAL VAR PP-BINDS)
             (equal (car (ASSOC-EQUAL VAR PP-BINDS)) var))))
 
 (local
- (defthm RP-APPLY-BINDINGS-lemma-when-var-is-present-in-pp-binds
-   (implies (and (ASSOC-EQUAL var PP-BINDS)
-                 (PP-BINDS-P PP-BINDS))
+ (defthm rp-apply-bindings-lemma-when-var-is-present-in-pp-binds
+   (implies (and (assoc-equal var pp-binds)
+                 (pp-binds-p pp-binds))
             (equal (rp-apply-bindings var pp-binds)
-                   (CDR (ASSOC-EQUAL var PP-BINDS))))
-   :hints (("Goal"
+                   (cdr (assoc-equal var pp-binds))))
+   :hints (("goal"
             :do-not-induct t
             :use ((:instance rp-termp/symbolp-of-rp-assoc-w/-tmp-var
                              (x var)
                              (alist pp-binds)))
-            :expand (RP-APPLY-BINDINGS var pp-BINDS)
-            :in-theory (e/d (;;PP-BINDS-P
+            :expand (rp-apply-bindings var pp-binds)
+            :in-theory (e/d (;;pp-binds-p
                              assoc-equal
-                             RP-ASSOC-W/-ORIG-TERM
-                             RP-ASSOC-W/-TMP-VAR
-                             PP-ENTRY->TMP-VAR
-                             PP-ENTRY->ORIG-TERM)
+                             rp-assoc-w/-orig-term
+                             rp-assoc-w/-tmp-var
+                             pp-entry->tmp-var
+                             pp-entry->orig-term)
                             ())))))
+
+(defthmd rp-evlt-when-quoted
+  (implies (equal (car x) 'quote)
+           (equal (rp-evlt x a)
+                  (cadr x))))
+
+(defthm times-of-ifix
+  (and (equal (times (ifix x) y)
+              (times x y))
+       (equal (times x (ifix y))
+              (times x y)))
+  :hints (("Goal"
+           :in-theory (e/d (times) ()))))
+
+(local
+ (defthm pp-binds-p-implies-integerp
+   (implies (and (assoc-equal key pp-binds)
+                 (mult-formula-checks state)
+                 (rp-evl-meta-extract-global-facts)
+                 (pp-binds-p pp-binds)
+                 (valid-sc-bindings pp-binds a))
+            (integerp (rp-evlt (cdr (assoc-equal key pp-binds)) a)))
+   :hints (("Goal"
+            :do-not-induct t
+            :expand (PP-BINDS-P PP-BINDS)
+            :induct (assoc-equal key pp-binds)
+            :in-theory (e/d (pp-binds-p
+                             PP-ENTRY->ORIG-TERM)
+                            (len explode
+                                 SUBSEQ
+                                 SUBSEQ-LIST
+                                 NTHCDR
+                                 LENGTH
+                                 FIX))))))
+
+(local
+ (in-theory (disable (:DEFINITION ACL2::APPLY$-BADGEP)
+                     subsetp-equal
+                     (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1) )))
 
 (local
  (defret pp-apply-bindings-is-rp-apply-bindings-subterms-when-valid
@@ -953,7 +1005,11 @@
                    (rp-evlt-lst (rp-apply-bindings-subterms pp-lst pp-binds) a)))
    :fn pp-apply-bindings
    :hints (("goal"
-            :expand ((rp-apply-bindings (car pp-lst) pp-binds)
+            :do-not-induct t
+            :induct (pp-apply-bindings pp-lst pp-binds)
+            :expand ((RP-APPLY-BINDINGS (CADDR (CADDR (CAR PP-LST)))
+                                        PP-BINDS)
+                     (rp-apply-bindings (car pp-lst) pp-binds)
                      (rp-apply-bindings-subterms pp-lst pp-binds)
                      (rp-apply-bindings (caddr (car pp-lst))
                                         pp-binds)
@@ -962,6 +1018,10 @@
                      (rp-apply-bindings (caddr (cadr (car pp-lst)))
                                         pp-binds))
             :in-theory (e/d* (;;create-and-list-instance
+                              rp-evlt-when-quoted
+                              ifix
+                              GET-PP-AND-COEF
+                              ;;CREATE-TIMES-INSTANCE
                               and-list
                               existing-rp-assoc-w/-tmp-var-pp-binds-implies
                               rp-apply-bindings
@@ -970,7 +1030,13 @@
                               ;;create-and-list-instance
                               pp-entry->orig-term
                               regular-eval-lemmas)
-                             (RP-TRANS-OPENER
+                             (rp-termp
+                              (:DEFINITION VALID-SC)
+                              (:DEFINITION EX-FROM-RP)
+                              (:REWRITE EX-FROM-RP-OF-BINARY-FNC)
+                              (:REWRITE BINARY-FNC-P-RELIEVE)
+
+                              ;;RP-TRANS-OPENER
                               rp-evlt-lst-of-apply-bindings-to-evl-lst
                               rp-evlt-of-apply-bindings-to-evl
                               rp-apply-bindings-subterms-to-evlt-lst
@@ -1037,32 +1103,32 @@
           (STRIP-CARS PP-BINDS))))
 
 #|(local
- (defthm assoc-equal-of-rp-assoc-w/-orig-term-lemma
-   (implies (equal (strip-cars pp-binds)
-                   (strip-cars pp-binds-2))
-            (equal (ASSOC-EQUAL (CAR (RP-ASSOC-W/-ORIG-TERM term PP-BINDS))
-                                PP-BINDS-2)
-                   (RP-ASSOC-W/-ORIG-TERM term PP-BINDS-2)))
-   :hints (("Goal"
-            :in-theory (e/d (RP-ASSOC-W/-ORIG-TERM) ())))))|#
+(defthm assoc-equal-of-rp-assoc-w/-orig-term-lemma
+(implies (equal (strip-cars pp-binds)
+(strip-cars pp-binds-2))
+(equal (ASSOC-EQUAL (CAR (RP-ASSOC-W/-ORIG-TERM term PP-BINDS))
+PP-BINDS-2)
+(RP-ASSOC-W/-ORIG-TERM term PP-BINDS-2)))
+:hints (("Goal"
+:in-theory (e/d (RP-ASSOC-W/-ORIG-TERM) ())))))|#
 
 #|(local
- (defthm valid-sc-of-pp-term-bind-lemma
-   (implies (and (pp-binds-p pp-binds)
-                 (RP-ASSOC-W/-ORIG-TERM (EX-FROM-RP TERM)
-                                        PP-BINDS))
-            (equal
-             (CDR
-              (ASSOC-EQUAL (PP-ENTRY->TMP-VAR (RP-ASSOC-W/-ORIG-TERM (EX-FROM-RP TERM) PP-BINDS))
-                           (BIND-BINDINGS-AUX (RP-TRANS-BINDINGS PP-BINDS)
-                                              A)))
-             (rp-evlt term a)))
-   :hints (("Goal"
-            :do-not-induct t
-            :in-theory (e/d (PP-ENTRY->TMP-VAR
-                             RP-ASSOC-W/-ORIG-TERM
-                             PP-ENTRY->ORIG-TERM)
-                            ())))))|#
+(defthm valid-sc-of-pp-term-bind-lemma
+(implies (and (pp-binds-p pp-binds)
+(RP-ASSOC-W/-ORIG-TERM (EX-FROM-RP TERM)
+PP-BINDS))
+(equal
+(CDR
+(ASSOC-EQUAL (PP-ENTRY->TMP-VAR (RP-ASSOC-W/-ORIG-TERM (EX-FROM-RP TERM) PP-BINDS))
+(BIND-BINDINGS-AUX (RP-TRANS-BINDINGS PP-BINDS)
+A)))
+(rp-evlt term a)))
+:hints (("Goal"
+:do-not-induct t
+:in-theory (e/d (PP-ENTRY->TMP-VAR
+RP-ASSOC-W/-ORIG-TERM
+PP-ENTRY->ORIG-TERM)
+())))))|#
 
 (local
  (defthm HAS-BITP-RP-implies
@@ -1117,8 +1183,23 @@
                  (pp-binds-p pp-binds)
                  (rp-termp term)
                  (pp-term-p term)
-                 (EQUAL (LEN PP-BINDS) INDEX))
+                 (equal (len pp-binds) index))
             (not (include-fnc res 'rp)))
+   :fn pp-term-bind
+   :hints (("Goal"
+            :in-theory (e/d (include-fnc-of-symbol
+                             INCLUDE-FNC
+                             pp-term-bind)
+                            ())))))
+
+(local
+ (defret not-include-fnc-of-pp-term-bind-2
+   (implies (and valid
+                 (pp-binds-p pp-binds)
+                 (rp-termp term)
+                 (pp-term-p term)
+                 (equal (len pp-binds) index))
+            (not (include-fnc res 'equals)))
    :fn pp-term-bind
    :hints (("Goal"
             :in-theory (e/d (include-fnc-of-symbol
@@ -1132,11 +1213,11 @@
                  (pp-binds-p pp-binds)
                  (rp-termp term)
                  (pp-term-p term)
-                 (EQUAL (LEN PP-BINDS) INDEX))
+                 (equal (len pp-binds) index))
             (valid-sc res a))
    :fn pp-term-bind
    :hints (("Goal"
-            :in-theory (e/d (NOT-INCLUDE-RP-MEANS-VALID-SC
+            :in-theory (e/d (not-include-rp-means-valid-sc
                              pp-term-bind)
                             ())))))
 
@@ -1944,7 +2025,7 @@
                (pp-termp-of-rp-trans-induct (cadr term)))
               ((pp-p TERM)
                (pp-termp-of-rp-trans-induct (cadr term)))
-              ((OR (BIT-OF-P TERM)
+              ((OR (LOGBIT-P TERM)
                    (HAS-BITP-RP ORIG)
                    (BIT-FIX-P TERM)
                    (EQUAL TERM ''1)
@@ -1963,13 +2044,13 @@
 
    (local
     (defthm pp-termp-of-rp-trans-lemma2
-      (and (implies (bit-of-p (EX-FROM-RP TERM))
-                    (bit-of-p (EX-FROM-RP (RP-TRANS TERM))))
+      (and (implies (logbit-p (EX-FROM-RP TERM))
+                    (logbit-p (EX-FROM-RP (RP-TRANS TERM))))
            (implies (bit-fix-p (EX-FROM-RP TERM))
                     (bit-fix-p (EX-FROM-RP (RP-TRANS TERM)))))
       :rule-classes :rewrite
       :hints (("Goal"
-               :in-theory (e/d (bit-fix-p bit-of-p is-rp ex-from-rp pp-p rp-trans)
+               :in-theory (e/d (bit-fix-p logbit-p is-rp ex-from-rp pp-p rp-trans)
                                ())))))
    (local
     (defthm pp-p-implies-not-others
@@ -1982,8 +2063,8 @@
       :rule-classes (:rewrite :forward-chaining)))
 
    (local
-    (defthm bit-of-p-implies-not-others
-      (implies (bit-of-p term)
+    (defthm logbit-p-implies-not-others
+      (implies (logbit-p term)
                (and (not (binary-and-p term))
                     (not (binary-xor-p term))
                     (not (binary-or-p term))
@@ -2318,7 +2399,7 @@
 
    (local
     (defthm rp-trans-when-known-fncs
-      (and (implies (or (BIT-OF-P term)
+      (and (implies (or (LOGBIT-P term)
                         (binary-fnc-p term)
                         (pp-p term))
                     (equal (RP-TRANS term)
@@ -2338,7 +2419,7 @@
       (and (not (binary-?-p (trans-list lst)))
            (not (binary-or-p (trans-list lst)))
            (not (binary-not-p (trans-list lst)))
-           (not (bit-of-p (trans-list lst)))
+           (not (logbit-p (trans-list lst)))
            (not (binary-xor-p (trans-list lst)))
            (not (binary-and-p (trans-list lst)))
            (not (pp-p (trans-list lst))))
@@ -2410,19 +2491,31 @@
              :use ((:instance ex-from-rp-of-rp-trans-when-car-is-falist-2 ;
              (term (EX-FROM-RP TERM)))))|#
              ("Goal"
+              :do-not-induct t
               :induct (pp-termp-of-rp-trans-induct term)
               ;;:induct (pp-term-p term)
-              :expand ((PP-TERM-P TERM :STRICT NIL)
+              :expand ((PP-TERM-P (LIST (CAR TERM)) :STRICT NIL)
+                       (EX-FROM-RP (LIST (CAR TERM)))
+                       (PP-TERM-P TERM :STRICT NIL)
+                       (RP-TRANS-LST (CDR TERM))
+                       (RP-TRANS-LST (CDdR TERM))
+                       (RP-TRANS-LST (CDddR TERM))
                        (RP-TRANS-LST (CDR (EX-FROM-RP TERM)))
                        (RP-TRANS-LST (CDDR (EX-FROM-RP TERM)))
                        (RP-TRANS-LST (CDDDR (EX-FROM-RP TERM)))
+                       (:free (x y) (LOGBIT-P (cons x y)))
+                       (:free (x y) (BIT-FIX-P (cons x y)))
+                       (:free (x y) (is-rp (cons x y)))
+                       (:free (x y) (HAS-BITP-RP (cons x y)))
                        (:free (x y) (BINARY-?-P (CONS x y)))
+                       (:free (x y) (pp-p (CONS x y)))
                        (:free (x y) (BINARY-not-P (CONS x y)))
                        (:free (x y) (BINARY-and-P (CONS x y)))
                        (:free (x y) (BINARY-or-P (CONS x y)))
                        (:free (x y) (BINARY-xor-P (CONS x y)))
                        (PP-TERM-P (RP-TRANS TERM) :STRICT NIL))
-              :in-theory (e/d (ex-from-rp-of-rp-trans-when-car-is-list
+              :in-theory (e/d (rp-trans
+                               ex-from-rp-of-rp-trans-when-car-is-list
                                binary-fnc-p
                                pp-term-p
                                ex-from-rp-of-rp-trans-3
@@ -2432,7 +2525,11 @@
                                ex-from-rp-of-rp-trans-when-car-is-falist-4
                                ex-from-rp-of-rp-trans-when-car-is-falist-5
                                )
-                              ((:REWRITE EX-FROM-RP-OF-BINARY-FNC)
+                              ((:REWRITE PP-TERM-P-OF-EX-FROM-RP-3)
+
+                               ;;(:DEFINITION RP-TERMP)
+
+                               (:REWRITE EX-FROM-RP-OF-BINARY-FNC)
                                (:DEFINITION BINARY-FNC-P$INLINE)
                                (:REWRITE PP-TERM-P-OF-EX-FROM-RP)
                                PP-TERMP-OF-RP-TRANS-LEMMA2
@@ -2466,9 +2563,7 @@
    :hints (("Goal"
             :in-theory (e/d (RP-TRANS-BINDINGS) ())))))
 
-
-
-(local 
+(local
  (defthm rp-evlt-of-pp-term-bind-dummy-lemma
    (implies (and (MV-NTH 3
                          (PP-TERM-BIND (CADR (EX-FROM-RP TERM))
@@ -2494,7 +2589,7 @@
                  (pp-term-p (CADR (EX-FROM-RP TERM)))
                  (pp-term-p (CAdDR (EX-FROM-RP TERM)))
                  (pp-term-p (CAddDR (EX-FROM-RP TERM)))
-                 
+
                  )
             (ALL-VARS-BOUND-P
              (MV-NTH 0
@@ -2531,6 +2626,51 @@
                             (ex-from-rp))))))
 
 (local
+ (progn
+   (defthm rp-trans-opener
+     (implies (and (not (equal x 'quote))
+                   (not (equal x 'list))
+                   (not (equal x 'falist)))
+              (equal (rp-trans (cons x rest))
+                     (cons x (rp-trans-lst rest))))
+     :hints (("Goal"
+              :in-theory (e/d (rp-trans) ()))))
+
+   (defthm rp-trans-opener-when-list
+     (implies t
+              (equal (rp-trans (cons 'list rest))
+                     (TRANS-LIST (RP-TRANS-LST rest))))
+     :hints (("Goal"
+              :in-theory (e/d (rp-trans) ()))))
+
+   (defthm rp-trans-opener-when-falist
+     (implies (is-falist (cons 'falist rest))
+              (equal (rp-trans (cons 'falist rest))
+                     (RP-TRANS (CADDR (cons 'falist rest)))))
+     :hints (("Goal"
+              :in-theory (e/d (rp-trans) ()))))
+
+   (defthm rp-trans-opener-when-quotep
+     (implies (rp-trans (cons 'quote rest))
+              (cons 'quote rest)))
+
+   (local
+    (defthm RP-EVL-OF-TRANS-LIST-opener
+      (equal (RP-EVL-LST (cons x y) a)
+             (cons (rp-evl x a)
+                   (RP-EVL-LST y a)))
+      :hints (("Goal"
+               :in-theory (e/d () ())))))
+   (local
+    (defthm RP-EVL-OF-TRANS-LIST-opener-when-nil
+      (equal (RP-EVL-LST nil a)
+             nil)
+      :hints (("Goal"
+               :in-theory (e/d () ())))))
+
+   (in-theory (disable rp-trans))))
+
+(local
  (defret rp-evlt-of-pp-term-bind
    (implies (and valid
                  (pp-binds-p pp-binds)
@@ -2547,165 +2687,170 @@
                    (rp-evlt term a)))
 
    :fn pp-term-bind
-   :otf-flg t
-   :hints (("subgoal *1/2"
-            :use ((:instance rp-evlt-of-big-pp-binds-to-small-binds
-                             (term (mv-nth 0
-                                           (pp-term-bind (cadr (ex-from-rp term))
-                                                         pp-binds (len pp-binds))))
-                             (bindings (rp-trans-bindings
-                                        (mv-nth
-                                         1
-                                         (pp-term-bind (caddr (ex-from-rp term))
-                                                       (mv-nth 1
-                                                               (pp-term-bind (cadr (ex-from-rp term))
-                                                                             pp-binds (len pp-binds)))
-                                                       (mv-nth 2
-                                                               (pp-term-bind (cadr (ex-from-rp term))
-                                                                             pp-binds
-                                                                             (len pp-binds)))))))
-                             (bindings-small (rp-trans-bindings (mv-nth 1
-                                                                        (pp-term-bind (cadr (ex-from-rp term))
-                                                                                      pp-binds
-                                                                                      (len pp-binds))))))))
-
-           ("subgoal *1/1"
-            :use ((:instance rp-evlt-of-big-pp-binds-to-small-binds
-                             (term (mv-nth 0
-                                           (pp-term-bind (cadr (ex-from-rp term))
-                                                         pp-binds (len pp-binds))))
-                             (bindings (rp-trans-bindings
-                                        (mv-nth
-                                         1
-                                         (pp-term-bind (caddr (ex-from-rp term))
-                                                       (mv-nth 1
-                                                               (pp-term-bind (cadr (ex-from-rp term))
-                                                                             pp-binds (len pp-binds)))
-                                                       (mv-nth 2
-                                                               (pp-term-bind (cadr (ex-from-rp term))
-                                                                             pp-binds
-                                                                             (len pp-binds)))))))
-                             (bindings-small (rp-trans-bindings (mv-nth 1
-                                                                        (pp-term-bind (cadr (ex-from-rp term))
-                                                                                      pp-binds
-                                                                                      (len
-                                                                                       pp-binds))))))
-                  (:instance rp-evlt-of-big-pp-binds-to-small-binds
-                             (term (MV-NTH 0
-                                           (PP-TERM-BIND (CADR (EX-FROM-RP TERM))
-                                                         PP-BINDS (LEN PP-BINDS))))
-                             (bindings (RP-TRANS-BINDINGS
-                                        (MV-NTH
-                                         1
-                                         (PP-TERM-BIND
-                                          (CADDDR (EX-FROM-RP TERM))
-                                          (MV-NTH
-                                           1
-                                           (PP-TERM-BIND (CADDR (EX-FROM-RP TERM))
-                                                         (MV-NTH 1
-                                                                 (PP-TERM-BIND (CADR (EX-FROM-RP TERM))
-                                                                               PP-BINDS (LEN PP-BINDS)))
-                                                         (MV-NTH 2
-                                                                 (PP-TERM-BIND (CADR (EX-FROM-RP TERM))
-                                                                               PP-BINDS (LEN PP-BINDS)))))
-                                          (MV-NTH
-                                           2
-                                           (PP-TERM-BIND (CADDR (EX-FROM-RP TERM))
-                                                         (MV-NTH 1
-                                                                 (PP-TERM-BIND (CADR (EX-FROM-RP TERM))
-                                                                               PP-BINDS (LEN PP-BINDS)))
-                                                         (MV-NTH 2
-                                                                 (PP-TERM-BIND (CADR (EX-FROM-RP TERM))
-                                                                               PP-BINDS (LEN PP-BINDS)))))))))
-                             (bindings-small (rp-trans-bindings (mv-nth 1
-                                                                        (pp-term-bind (caddr (ex-from-rp term))
-                                                                                      (mv-nth 1
-                                                                                              (pp-term-bind (cadr (ex-from-rp term))
-                                                                                                            pp-binds (len pp-binds)))
-                                                                                      (mv-nth 2
-                                                                                              (pp-term-bind (cadr (ex-from-rp term))
-                                                                                                            pp-binds (len
-                                                                                                                      pp-binds))))))))
-                  (:instance rp-evlt-of-big-pp-binds-to-small-binds
-                             (term (MV-NTH 0
-                                           (PP-TERM-BIND (CADDR (EX-FROM-RP TERM))
-                                                         (MV-NTH 1
-                                                                 (PP-TERM-BIND (CADR (EX-FROM-RP TERM))
-                                                                               PP-BINDS (LEN PP-BINDS)))
-                                                         (MV-NTH 2
-                                                                 (PP-TERM-BIND (CADR (EX-FROM-RP TERM))
-                                                                               PP-BINDS (LEN PP-BINDS))))))
-                             (bindings (RP-TRANS-BINDINGS
-                                        (mv-nth
-                                         1
-                                         (pp-term-bind
-                                          (cadddr (ex-from-rp term))
-                                          (mv-nth 1
-                                                  (pp-term-bind (caddr (ex-from-rp term))
-                                                                (mv-nth 1
-                                                                        (pp-term-bind (cadr (ex-from-rp term))
-                                                                                      pp-binds (len pp-binds)))
-                                                                (mv-nth 2
-                                                                        (pp-term-bind (cadr (ex-from-rp term))
-                                                                                      pp-binds (len pp-binds)))))
-                                          (mv-nth
-                                           2
-                                           (pp-term-bind (caddr (ex-from-rp term))
-                                                         (mv-nth 1
-                                                                 (pp-term-bind (cadr (ex-from-rp term))
-                                                                               pp-binds (len pp-binds)))
-                                                         (mv-nth 2
-                                                                 (pp-term-bind (cadr (ex-from-rp term))
-                                                                               pp-binds (len pp-binds)))))))))
-                             (bindings-small (rp-trans-bindings
-                                              (mv-nth 1
-                                                      (pp-term-bind (caddr (ex-from-rp term))
-                                                                    (mv-nth 1
-                                                                            (pp-term-bind (cadr (ex-from-rp term))
-                                                                                          pp-binds (len pp-binds)))
-                                                                    (mv-nth 2
-                                                                            (pp-term-bind (cadr (ex-from-rp term))
-                                                                                          pp-binds (len pp-binds))))))))))
-
-           ("goal"
+   ;;:otf-flg t
+   :hints (("goal"
+            :do-not-induct t
+            :induct (pp-term-bind term pp-binds index)
+            :expand ((PP-TERM-BIND TERM PP-BINDS (LEN PP-BINDS)))
             :in-theory (e/d* (regular-eval-lemmas
                               implode-equivalance-with-string
                               make-pp-entry
-                              pp-term-bind)
-                             ((:DEFINITION EQ)
+                              (:induction pp-term-bind)
+                              ;;rp-trans
+                              ;;get-pp-and-coef
+                              )
+                             (GET-PP-AND-COEF-CORRECT-WHEN-COEF-IS-0
+                              VALID-SC-CONS
+                              ;;(:TYPE-PRESCRIPTION PP-TERM-P-FN)
+
+                              (:REWRITE DEFAULT-+-1)
+                              (:DEFINITION EVAL-AND-ALL)
+                              ;;(:DEFINITION RP-TRANS-LST)
+                              (:DEFINITION RP-TERMP)
+                              (:REWRITE IS-IF-RP-TERMP)
+                              ;;(:REWRITE IMPLODE-EQUIVALANCE-WITH-STRING)
+
+                              (:REWRITE RP-ASSOC-W/-ORIG-TERM-OF-EX-FROM-RP)
+                              (:DEFINITION BIND-BINDINGS-AUX)
+
+                              logbit
+                              (:DEFINITION EQ)
+                              floor
                               (:REWRITE
                                ACL2::INTERN-IN-PACKAGE-OF-SYMBOL-IS-IDENTITY)
-                              ;;;;(:REWRITE DUMMY-LEMMA-STRINGS)
                               (:REWRITE DEFAULT-+-2)
                               (:REWRITE ACL2::AND*-REM-FIRST)
                               (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP)
                               ;;(:REWRITE IMPLODE-EQUIVALANCE-WITH-STRING)
                               ;;(:REWRITE IMPLODE-EQUIVALANCE-WITH-STRING)
                               (:META BINARY-OR**/AND**-GUARD-META-CORRECT)
-
+                              len
+                              (:REWRITE STR::DEC-DIGIT-CHAR-LISTP-OF-CONS)
+                              (:REWRITE
+                               ACL2::DEFAULT-INTERN-IN-PACKAGE-OF-SYMBOL)
+                              (:DEFINITION SUBSEQ)
                               EX-FROM-RP
                               VALID-SC
                               EX-FROM-RP-OF-BINARY-FNC
-                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)))))))
+                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1))))
+           (and stable-under-simplificationp
+                '(:use
+                  ((:instance rp-evlt-of-big-pp-binds-to-small-binds
+                              (term (mv-nth 0
+                                            (pp-term-bind (cadr (ex-from-rp term))
+                                                          pp-binds (len pp-binds))))
+                              (bindings (rp-trans-bindings
+                                         (mv-nth
+                                          1
+                                          (pp-term-bind (caddr (ex-from-rp term))
+                                                        (mv-nth 1
+                                                                (pp-term-bind (cadr (ex-from-rp term))
+                                                                              pp-binds (len pp-binds)))
+                                                        (mv-nth 2
+                                                                (pp-term-bind (cadr (ex-from-rp term))
+                                                                              pp-binds
+                                                                              (len pp-binds)))))))
+                              (bindings-small (rp-trans-bindings (mv-nth 1
+                                                                         (pp-term-bind (cadr (ex-from-rp term))
+                                                                                       pp-binds
+                                                                                       (len
+                                                                                        pp-binds))))))
+                   (:instance rp-evlt-of-big-pp-binds-to-small-binds
+                              (term (mv-nth 0
+                                            (pp-term-bind (cadr (ex-from-rp term))
+                                                          pp-binds (len pp-binds))))
+                              (bindings (rp-trans-bindings
+                                         (mv-nth
+                                          1
+                                          (pp-term-bind
+                                           (cadddr (ex-from-rp term))
+                                           (mv-nth
+                                            1
+                                            (pp-term-bind (caddr (ex-from-rp term))
+                                                          (mv-nth 1
+                                                                  (pp-term-bind (cadr (ex-from-rp term))
+                                                                                pp-binds (len pp-binds)))
+                                                          (mv-nth 2
+                                                                  (pp-term-bind (cadr (ex-from-rp term))
+                                                                                pp-binds (len pp-binds)))))
+                                           (mv-nth
+                                            2
+                                            (pp-term-bind (caddr (ex-from-rp term))
+                                                          (mv-nth 1
+                                                                  (pp-term-bind (cadr (ex-from-rp term))
+                                                                                pp-binds (len pp-binds)))
+                                                          (mv-nth 2
+                                                                  (pp-term-bind (cadr (ex-from-rp term))
+                                                                                pp-binds (len pp-binds)))))))))
+                              (bindings-small (rp-trans-bindings
+                                               (mv-nth 1
+                                                       (pp-term-bind (caddr (ex-from-rp term))
+                                                                     (mv-nth 1
+                                                                             (pp-term-bind (cadr (ex-from-rp term))
+                                                                                           pp-binds (len pp-binds)))
+                                                                     (mv-nth 2
+                                                                             (pp-term-bind (cadr (ex-from-rp term))
+                                                                                           pp-binds (len
+                                                                                                     pp-binds))))))))
+                   (:instance rp-evlt-of-big-pp-binds-to-small-binds
+                              (term (mv-nth 0
+                                            (pp-term-bind (caddr (ex-from-rp term))
+                                                          (mv-nth 1
+                                                                  (pp-term-bind (cadr (ex-from-rp term))
+                                                                                pp-binds (len pp-binds)))
+                                                          (mv-nth 2
+                                                                  (pp-term-bind (cadr (ex-from-rp term))
+                                                                                pp-binds (len pp-binds))))))
+                              (bindings (rp-trans-bindings
+                                         (mv-nth
+                                          1
+                                          (pp-term-bind
+                                           (cadddr (ex-from-rp term))
+                                           (mv-nth 1
+                                                   (pp-term-bind (caddr (ex-from-rp term))
+                                                                 (mv-nth 1
+                                                                         (pp-term-bind (cadr (ex-from-rp term))
+                                                                                       pp-binds (len pp-binds)))
+                                                                 (mv-nth 2
+                                                                         (pp-term-bind (cadr (ex-from-rp term))
+                                                                                       pp-binds (len pp-binds)))))
+                                           (mv-nth
+                                            2
+                                            (pp-term-bind (caddr (ex-from-rp term))
+                                                          (mv-nth 1
+                                                                  (pp-term-bind (cadr (ex-from-rp term))
+                                                                                pp-binds (len pp-binds)))
+                                                          (mv-nth 2
+                                                                  (pp-term-bind (cadr (ex-from-rp term))
+                                                                                pp-binds (len pp-binds)))))))))
+                              (bindings-small (rp-trans-bindings
+                                               (mv-nth 1
+                                                       (pp-term-bind (caddr (ex-from-rp term))
+                                                                     (mv-nth 1
+                                                                             (pp-term-bind (cadr (ex-from-rp term))
+                                                                                           pp-binds (len pp-binds)))
+                                                                     (mv-nth 2
+                                                                             (pp-term-bind (cadr (ex-from-rp term))
+                                                                                           pp-binds (len pp-binds))))))))))))))
 
 ;;; MAIN LEMMA
 
 (defret pp-flatten-with-binds-correct
   (implies (and (mult-formula-checks state)
                 (pp-term-p term)
-                (booleanp signed)
+                (rp-termp term)
+                (or (= coef 1)
+                    (= coef -1))
                 (valid-sc term a)
                 (rp-evl-meta-extract-global-facts))
            (equal (sum-list (rp-evlt-lst pp-lst a))
-                  (if signed
-                      (-- (rp-evlt term a))
-                    (rp-evlt term a))))
+                  (times coef (rp-evlt term a))))
   :fn pp-flatten-with-binds
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d* (pp-flatten-with-binds
                              regular-eval-lemmas)
-                            ()))))
+                            (rp-termp)))))
 
 (local
  (defret valid-sc-PP-APPLY-BINDINGS-AND-ARG-LST
@@ -2714,9 +2859,9 @@
             (valid-sc-subterms res a))
    :fn pp-apply-bindings-and-arg-lst
    :hints (("Goal"
-            :in-theory (e/d (PP-ENTRY->ORIG-TERM
-                             RP-ASSOC-W/-TMP-VAR
-                             PP-APPLY-BINDINGS-AND-ARG-LST)
+            :in-theory (e/d (pp-entry->orig-term
+                             rp-assoc-w/-tmp-var
+                             pp-apply-bindings-and-arg-lst)
                             ())))))
 
 (local
@@ -2742,7 +2887,6 @@
 (defret pp-flatten-with-binds-valid-sc
   (implies (and (mult-formula-checks state)
                 (pp-term-p term)
-                (booleanp signed)
                 (valid-sc term a)
                 (rp-evl-meta-extract-global-facts))
            (valid-sc-subterms pp-lst a))

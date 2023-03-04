@@ -140,6 +140,7 @@
    (defthm guard-lemma7
        (implies (and (consp term)
                      (not (equal (car term) 'rp))
+                     (not (equal (car term) 'equals))
                      (not (equal (car term) 'quote))
                      (not (equal (car term) 'falist))
                      (rp-termp term))
@@ -693,7 +694,7 @@
                         (:DEFINITION EX-FROM-RP)
                         (:REWRITE NOT-INCLUDE-RP)
                         (:REWRITE NOT-QUOTEP-IMPLIES)
-                        (:DEFINITION INCLUDE-FNC)
+                        (:DEFINITION INCLUDE-FNC-fn)
                         (:REWRITE RP-EVL-OF-RP-EQUAL2)
                         (:DEFINITION RP-EQUAL2)
 ;;                        (:REWRITE ACL2::O-P-O-INFP-CAR)
@@ -701,7 +702,7 @@
                         (:REWRITE RP-EQUAL-IMPLIES-RP-EQUAL2)
                         (:REWRITE LEMMA11)
                         (:DEFINITION EVAL-AND-ALL)
-                        (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                        (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
                         (:REWRITE LEMMA6)
                         FALIST-CONSISTENT
                         is-if
@@ -823,10 +824,10 @@
                  (:definition rp-equal)
                  (:rewrite rp-equal-implies-rp-equal2)
                  (:rewrite not-include-rp)
-                 (:definition include-fnc)
+                 (:definition include-fnc-fn)
                  (:linear acl2::apply$-badgep-properties . 1)
                  (:definition acl2::apply$-badgep)
-                 (:definition include-fnc-subterms)
+                 (:definition include-fnc-subterms-fn)
                  (:definition subsetp-equal)
                  (:definition member-equal)
                  (:definition falist-consistent)

@@ -22,8 +22,6 @@
      (include-book "sat/dimacs-reader/reader")
      (include-book "irv/top")
      (include-book "rp-rewriter/top")
-     (include-book "rp-rewriter/lib/mult/doc")
-     (include-book "rp-rewriter/lib/mult2/doc")
      (include-book "rp-rewriter/lib/mult3/doc")
 
      (include-book "smtlink/doc")

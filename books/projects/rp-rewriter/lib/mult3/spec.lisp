@@ -1252,11 +1252,11 @@
   (local
    (defthmd equal-of-loghead-logapp-1-lemma
      (implies (not (zp size))
-              (equal (logapp 1 (bit-of x 0) (loghead (1- size) (ash x -1)))
+              (equal (logapp 1 (logbit 0 x) (loghead (1- size) (ash x -1)))
                      (loghead size x)))
      :hints (("Goal"
               :in-theory (e/d* (bitops::ihsext-inductions
-                                bit-of
+                                logbit
                                 bitops::ihsext-recursive-redefs)
                                ())))))
 
@@ -1265,7 +1265,7 @@
      (implies (not (zp size))
               (equal (equal (loghead size x)
                             (logapp 1 a b))
-                     (equal (logapp 1 (bit-of x 0) (loghead (1- size) (ash x -1)))
+                     (equal (logapp 1 (logbit 0 x) (loghead (1- size) (ash x -1)))
                             (logapp 1 a b))))
      :hints (("Goal"
               :use ((:instance equal-of-loghead-logapp-1-lemma))
@@ -1411,7 +1411,7 @@
                                 s-spec
                                 BITOPS::LOGCDR-OF-LOGHEAD
                                 sum-list
-                                BIT-OF
+                                LOGBIT
                                 c-spec
                                 bit-concat)
                                (D2-OF-MINUS
