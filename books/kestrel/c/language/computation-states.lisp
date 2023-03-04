@@ -1080,8 +1080,7 @@
                               fix
                               max
                               acl2::nth-of-rev
-                              update-nth-of-rev
-                              )
+                              update-nth-of-rev)
                              (compustate-scopes-numbers-of-write-static-var)))
             '(:use (:instance compustate-scopes-numbers-of-write-static-var
                               (var (objdesign-static->name objdes)))))))
