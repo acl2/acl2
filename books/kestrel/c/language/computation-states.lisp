@@ -16,6 +16,7 @@
 
 (include-book "kestrel/fty/defomap" :dir :system)
 
+(local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
 
@@ -917,8 +918,7 @@
                 len
                 nfix
                 fix
-                nth-of-minus1-and-cdr)
-       :prep-books ((include-book "arithmetic/top" :dir :system))))))
+                nth-of-minus1-and-cdr)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
