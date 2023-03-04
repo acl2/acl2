@@ -34,7 +34,7 @@
 
 ;; uchar.lisp
 ;;
-;; This file introduces the our representation for Unicode characters and
+;; This file introduces our representation for Unicode characters and
 ;; strings.  We simply use integers to represent each code point atomically.
 
 (in-package "ACL2")
@@ -390,7 +390,7 @@
 ;
 ; =============================================================================
 
-; What does all this mean to us.  Basically, Unicode encoding forms are just
+; What does all this mean to us?  Basically, Unicode encoding forms are just
 ; concerned with how we represent Unicode strings in memory.
 
 ; This is all well and good, but in ACL2 we don't really have much ability to
