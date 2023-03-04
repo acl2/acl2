@@ -1092,6 +1092,7 @@ nil
     :guard (natp (len old-val))
     :measure (len all-string)
     (if (or (atom all-string)
+            (not old-val)
             (not (mbt (natp (len old-val)))))
         nil
       (b* ((i (search old-val all-string))
@@ -1152,6 +1153,7 @@ nil
                    (mv (change-vl-location loc :col 0) nil)))
                 (t (mv (raise "Unexpected vl-type for x: ~p0" x) nil))))
 
+         
          ((mv okp result & state) (vl-read-file (vl-location->filename minloc)))
          ((unless okp)
           (progn$ (cw "Couldn't read file ~p0 for ~p1 ~%"
@@ -1176,9 +1178,10 @@ nil
                                                   :col 0)))))
                    (subseq string start (min (length string) end))))))
 
+         
+
          ;; insert xdoc hyperlinks to quickly navigate children types.
          (string (extract-vl-types-insert-xdoc-links string all-vl-type-names))
-
          (string (str::strsubst ">" "@('>')" string))
          (string (str::strsubst "<" "@('<')" string))
 

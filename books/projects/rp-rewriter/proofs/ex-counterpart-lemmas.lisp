@@ -41,8 +41,10 @@
 
 (include-book "../rp-rewriter")
 (include-book "aux-function-lemmas")
-
 (include-book "rp-state-functions-lemmas")
+
+(local
+ (in-theory (disable equal-of-len-with-constant)))
 
 (defthm pseudo-termp-rp-ex-counterpart
   (implies (rp-termp term)

@@ -35,7 +35,7 @@
  (include-book "projects/rp-rewriter/proofs/rp-equal-lemmas" :dir :system))
 
 #|(local
- (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system))|#
+(include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system))|#
 
 (local
  (fetch-new-events
@@ -62,19 +62,26 @@
 
 #|
 (BINARY-* (ACL2::RP 'INTEGERP
-                    (SVL::4VEC-CONCAT$ '23
-                                       (SVL::BITS (ACL2::RP 'INTEGERP SRC1)
-                                                  '0
-                                                  '23)
-                                       '1))
-          (ACL2::RP 'INTEGERP
-                    (SVL::4VEC-CONCAT$ '23
-                                       (SVL::BITS (ACL2::RP 'INTEGERP SRC2)
-                                                  '0
-                                                  '23)
+(SVL::4VEC-CONCAT$ '23
+(SVL::BITS (ACL2::RP 'INTEGERP SRC1)
+'0
+'23)
+'1))
+(ACL2::RP 'INTEGERP
+(SVL::4VEC-CONCAT$ '23
+(SVL::BITS (ACL2::RP 'INTEGERP SRC2)
+'0
+'23)
 '1)))
 
 |#
+
+(local
+ (defthm is-equals-of-others
+   (implies (not (equal (car term) 'equals))
+            (not (is-equals term )))
+   :hints (("Goal"
+            :in-theory (e/d (is-equals) ())))))
 
 (define check-context-for-integerp (term context)
   (if (atom context)
@@ -139,7 +146,7 @@
       (&
        (cond ((atom x)
               (mv -1 (check-context-for-integerp x context)))
-             ((or* (bit-of-p x)
+             ((or* (logbit-p x)
                    (binary-fnc-p x)
                    (has-bitp-rp x-orig))
               (mv 1 t))
@@ -147,13 +154,12 @@
               (mv -1 nil)))))))
 
 #|(calculate-vec-size '(ACL2::RP 'INTEGERP
-                               (SVL::4VEC-CONCAT$ '23
-                                                  (SVL::BITS (ACL2::RP 'INTEGERP SRC1)
-                                                             '0
-                                                             '23)
-                                                  '1))
-                    '((integerp src1)))|#
-
+(SVL::4VEC-CONCAT$ '23
+(SVL::BITS (ACL2::RP 'INTEGERP SRC1)
+'0
+'23)
+'1))
+'((integerp src1)))|#
 
 (define binary-*-p (term)
   (case-match term
@@ -190,7 +196,6 @@
                (('binary-+ & ('unary-- &))
                 t)))
     :rule-classes :forward-chaining))
-
 
 (define */+-to-mult-spec-meta ((term rp-termp)
                                (context rp-term-listp))
@@ -259,23 +264,23 @@
           (mv term nil)))
       (mv `(2vec-adder ,x ,y '0 ',(1+ (max size-x size-y)))
           `(nil t t t t))))
-    
+
    (t (mv term nil))))
 
 #|(*-to-mult-spec-meta  '(BINARY-* (ACL2::RP 'INTEGERP
-                                           (SVL::4VEC-CONCAT$ '23
-                                                              (SVL::BITS (ACL2::RP 'INTEGERP SRC1)
-                                                                         '0
-                                                                         '23)
-                                                              '1))
-                                 (ACL2::RP 'INTEGERP
-                                           (SVL::4VEC-CONCAT$ '23
-                                                              (SVL::BITS (ACL2::RP 'INTEGERP SRC2)
-                                                                         '0
-                                                                         '23)
-                                                              '1)))
-                      '((integerp src1)
-                        (integerp src2)))|#
+(SVL::4VEC-CONCAT$ '23
+(SVL::BITS (ACL2::RP 'INTEGERP SRC1)
+'0
+'23)
+'1))
+(ACL2::RP 'INTEGERP
+(SVL::4VEC-CONCAT$ '23
+(SVL::BITS (ACL2::RP 'INTEGERP SRC2)
+'0
+'23)
+'1)))
+'((integerp src1)
+(integerp src2)))|#
 
 (encapsulate
   nil
@@ -299,20 +304,21 @@
                  unary--
                  SVL-MULT-FINAL-SPEC
                  binary-or binary-xor binary-and binary-?
-                 bit-of binary-not))))
+                 logbit$inline binary-not))))
 
 (with-output
   :off :all
   :gag-mode nil
   (local
    (progn
+     (in-theory (disable logbit))
      (rp::create-regular-eval-lemma svl::4VEC-CONCAT$ 3
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma SVL-MULT-FINAL-SPEC 3
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma 2VEC-SUBTRACT 4
                                     */+-to-mult/adder-spec-meta-fchecks)
-     (rp::create-regular-eval-lemma unary-- 1 
+     (rp::create-regular-eval-lemma unary-- 1
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma 2vec-adder 4  */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma svl::Bits 3  */+-to-mult/adder-spec-meta-fchecks)
@@ -326,7 +332,7 @@
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma binary-xor 2
                                     */+-to-mult/adder-spec-meta-fchecks)
-     (rp::create-regular-eval-lemma bit-of 2
+     (rp::create-regular-eval-lemma logbit$inline 2
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma binary-not 1
                                     */+-to-mult/adder-spec-meta-fchecks)
@@ -468,7 +474,10 @@
  (defthmd rp-trans-when-is-rp
    (implies (is-rp term)
             (equal (rp-evlt term a)
-                   (rp-evlt (caddr term) a)))))
+                   (rp-evlt (caddr term) a)))
+   :hints (("Goal"
+            :expand (RP-TRANS-LST (CDR TERM))
+            :in-theory (e/d () ())))))
 
 (defthm has-bitp-rp-lemma
   (implies (and (valid-sc term a)
@@ -478,14 +487,17 @@
   :hints (("Goal"
            :induct (HAS-BITP-RP term)
            :do-not-induct t
-           :in-theory (e/d (valid-sc-single-step
+           :expand ((RP-TRANS-LST (CDDR TERM))
+                    (RP-TRANS-LST (CDR TERM)))
+           :in-theory (e/d (
+                            valid-sc-single-step
                             rp-trans-when-is-rp
                             HAS-BITP-RP)
                            ()))))
 
 (local
  (defthm calculate-vec-size-correct-lemma
-   (implies (and (OR* (BIT-OF-P (EX-FROM-RP X))
+   (implies (and (OR* (LOGBIT-P (EX-FROM-RP X))
                       (BINARY-FNC-P (EX-FROM-RP X))
                       (HAS-BITP-RP X))
                  (valid-sc x a)
@@ -601,7 +613,7 @@
                              rw-dir1
                              natp
                              UNSIGNED-BYTE-P
-                             RP-TRANS-OPENER
+                             ;;RP-TRANS-OPENER
                              INCLUDE-FNC)))))
 
 (defret */+-to-mult-spec-meta-valid-sc

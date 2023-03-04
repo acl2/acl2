@@ -93,12 +93,6 @@
   (fgl::def-fgl-rewrite floor-2-is-logcdr
                         (implies (integerp x)
                                  (equal (floor x 2) (acl2::logcdr x))))
-  (fgl::def-fgl-rewrite
-   bit-of-is-logbit
-   (implies (integerp x)
-            (equal (rp::bit-of x index) (logbit index x)))
-   :hints (("Goal"                             ;
-            :in-theory (e/d (rp::bit-of) ()))) ;
-   ))
+  )
 
    

@@ -34,7 +34,7 @@
 
 (include-book "svex-eval-wog-meta")
 
-(include-book "svex-eval-dollar-wog-meta")
+;;(include-book "svex-eval-dollar-wog-meta")
 
 (include-book "4vec-rsh-meta")
 

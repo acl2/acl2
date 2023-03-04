@@ -78,10 +78,10 @@
     (pp-sum-merge-aux (cond ((pp-term-p (car pp-lst))
                              (pp-flatten-with-binds
                               (car pp-lst)
-                              nil))
+                              ))
                             ((or (and-list-p (car pp-lst))
                                  (--.p (car pp-lst))
-                                 (bit-of-p (car pp-lst)))
+                                 (logbit-p (car pp-lst)))
                              (list (car pp-lst)))
                             ((binary-fnc-p (ex-from-rp (car pp-lst)))
                              (list (car pp-lst)))
@@ -91,7 +91,6 @@
                                                  (list (cons #\0 (car pp-lst))))
                                      (list (car pp-lst)))))
                       (unpack-booth-for-pp-lst (cdr pp-lst)))))
-
 
 (define include-binary-fnc-p (term)
   (or (include-fnc term 'binary-not)
@@ -159,7 +158,7 @@
       0
     (if (atom (cdr lst))
         1
-      (if (rp-equal-cnt (ex-from-rp/-- (car lst)) (ex-from-rp/-- (cadr lst)) 3)
+      (if (rp-equal-cnt (ex-from-rp/times (car lst)) (ex-from-rp/times (cadr lst)) 3)
           (unique-e-count (cdr lst))
         (1+ (unique-e-count (cdr lst)))))))
 
@@ -473,7 +472,7 @@ input:~p0~%output:~p1~%" (list (cons #\0 s-term)
                    (s-of-s-fix-lst (s-fix-pp-args-aux s-arg-lst)
                                    (s-fix-pp-args-aux pp-arg-lst)
                                    (s-fix-pp-args-aux c-arg-lst)
-                                   :clean-args t))
+                                  ))
 
                   (& (cw "after s-of-s-fix-lst len of pp-arg-lst  ~p0, c-arg-lst ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
                          (len pp-arg-lst) (len c-arg-lst)
@@ -617,7 +616,7 @@ c-arg-lst  ~p1. Unique: pp-arg-lst ~p2 c-arg-lst ~p3 ~%"
 
                   ;; cough out s-args
                   ((mv coughed-s-lst s-arg-lst)
-                   (c-fix-arg-aux s-arg-lst nil))
+                   (c-fix-arg-aux s-arg-lst ))
 
                   ((mv pp-arg-lst c-arg-lst
                        coughed-s-lst2 coughed-pp-lst2 coughed-c-lst2)
@@ -633,10 +632,10 @@ coughed-s-lst2 ~p2, coughed-pp-lst2 ~p3, coughed-c-lst2 ~p4. Unique pp-arg-lst ~
 
                   ;; cough out pp-args
                   ((mv coughed-pp-lst pp-arg-lst)
-                   (c-fix-arg-aux pp-arg-lst t))
+                   (c-fix-arg-aux pp-arg-lst ))
 
                   ((mv coughed-c-lst c-arg-lst)
-                   (c-fix-arg-aux c-arg-lst t))
+                   (c-fix-arg-aux c-arg-lst ))
 
                   (& (cw "after c-fix-arg-aux len of pp-arg-lst  ~p0, c-arg-lst ~p1~
 , coughed-pp-lst ~p2, coughed-c-lst ~p3. Unique coughed-pp-lst ~p4~%" (len pp-arg-lst)
@@ -782,7 +781,6 @@ t)
   (enable-unpack-booth-later-hons-copy nil))
 
 
-
 (local
  (defthm binary-fnc-p-implies
    (implies (BINARY-FNC-P x)
@@ -832,7 +830,7 @@ t)
 
        #|((when (binary-fnc-p subterm))
        (mv term nil))|#
-       ((when (or (bit-of-p subterm)
+       ((when (or (logbit-p subterm)
                   (and (has-bitp-rp subterm-orig)
                        (atom subterm))))
         (b* ((res (create-and-list-instance (list subterm-orig))))
@@ -871,7 +869,20 @@ t)
                (c-res-lst (s-sum-merge-aux c-res-lst0 (s-sum-merge-aux c-res-lst1 c-res-lst2))))
             (mv s-res-lst pp-res-lst c-res-lst)))
          ((binary-fnc-p subterm)
-          (unpack-booth-process-pp-arg* `(list ,subterm)))
+          (b* (;; THIS CASE LIKELY HAPPENS FOR FLAGS OR SATURATION CASES. it's
+               ;; possible that the user might set the term-size-limit to a
+               ;; large number. We don't want a large number to be applied to
+               ;; the pp-flatten that will take place here. So calling
+               ;; pp-flatten ahead of time to see if the term can be simplified
+               ;; with a small limit. If so, all is good. Otherwise, it's
+               ;; probably best to rely on the SAT solver to deal with this
+               ;; case. 
+               (flatten-res (and (pp-term-p subterm)
+                                 (pp-flatten subterm :term-size-limit 100)))
+               ;; try with a small limit before going crazy over it. 
+               ((when (equal (len flatten-res) 1))
+                (mv nil (list subterm) nil)))
+            (unpack-booth-process-pp-arg* `(list ,subterm))))
          (t
           (progn$ (hard-error 'unpack-booth-meta
                               "Unrecognized term ~p0 ~%"
@@ -980,6 +991,20 @@ t)
              (changed (mv `(rp ,(cadr term) ,res) `(nil t ,dont-rw) t))
              (t (mv term t nil)))))
 
+         ((when (equal (car term) 'equals))
+          (b* (((unless (is-equals term))
+                (progn$
+                 (acl2::raise "Term function is equals but does not satisfy is-equals: ~p0 ~%" term)
+                 (mv term t nil)))
+               ((mv res dont-rw changed)
+                (unpack-booth-general-meta (cadr term)))
+               ((mv res2 dont-rw2 changed2)
+                (unpack-booth-general-meta (cadr term))))
+            (cond
+             ;;((quotep res) (mv res t changed))
+             ((or changed changed2) (mv `(equals ,res ,res2) `(nil ,dont-rw ,dont-rw2) t))
+             (t (mv term t nil)))))
+
          ((mv args args-dont-rw changed)
           (unpack-booth-general-meta-lst (cdr term)))
          ((unless changed)
@@ -1032,7 +1057,8 @@ t)
 
 (define unpack-booth-general-meta$ ((term rp-termp))
   ;;:enabled t
-  (b* (((mv term dont-rw &)
+  (b* ((- (cw "Starting unpack-booth-general-meta$ ~%"))
+       ((mv term dont-rw &)
         (unpack-booth-general-meta term)))
     (mv term dont-rw)))
 
@@ -1051,7 +1077,8 @@ t)
                                    (valid-rp-state-syntaxp rp-state)))
                (res-rp-state (valid-rp-state-syntaxp res-rp-state)
                              :hyp (valid-rp-state-syntaxp rp-state)))
-  (b* (((mv term dont-rw changed)
+  (b* ((- (cw "Starting unpack-booth-general-postprocessor~%"))
+       ((mv term dont-rw changed)
         (unpack-booth-general-meta term)))
     (if (and changed
              (or (rp-meta-fnc-formula-checks state) ;; expected to return t

@@ -226,6 +226,7 @@
 
 
 (define svtv-override-triplelist-val-alist ((x svtv-override-triplelist-p))
+  :returns (triplemap svtv-override-triplemap-p) ;; but not the regular kind!
   (b* (((when (atom x)) nil)
        ((svtv-override-triple x1) (car x))
        ((unless (svex-case x1.val :var))

@@ -1,6 +1,6 @@
 ; A tool to evaluate the proof-advice-generating models
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,13 +16,20 @@
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/axe/merge-sort-less-than" :dir :system) ; todo: move
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
+(local (include-book "kestrel/axe/merge-sort-less-than-rules" :dir :system)) ; todo: move
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/make-list-ac" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 
 ;; TODO: removing :add-hyp gets us less the requested number of recs sometimes!
+
+(local (in-theory (disable assoc-equal natp)))
+
+(local (in-theory (enable rationalp-when-natp acl2-numberp-when-natp integerp-when-natp <=-of-0-when-0-natp)))
 
 ;; An indicator for a test, of the form (book-name theorem-name breakage-type).
 (defun test-infop (x)
@@ -34,7 +41,7 @@
        (keywordp (third x)) ; breakage-type
        ))
 
-(defun model-resultp (x)
+(defund model-resultp (x)
   (declare (xargs :guard t))
   (and (true-listp x)
        (= 4 (len x))
@@ -45,7 +52,57 @@
        (rationalp (fourth x)) ; time-to-find-first-working-rec
        ))
 
-;; can be treated like an alist
+(local
+ (defthm consp-when-model-resultp
+   (implies (model-resultp x)
+            (consp x))
+   :hints (("Goal" :in-theory (enable model-resultp)))))
+
+(local
+ (defthm natp-of-cadr-when-model-resultp
+   (implies (model-resultp x)
+            (natp (cadr x)))
+   :hints (("Goal" :in-theory (enable model-resultp)))))
+
+(local
+ (defthm cddr-when-model-resultp
+   (implies (model-resultp x)
+            (cddr x))
+   :hints (("Goal" :in-theory (enable model-resultp)))))
+
+(local
+ (defthm consp-of-cddr-when-model-resultp
+   (implies (model-resultp x)
+            (consp (cddr x)))
+   :hints (("Goal" :in-theory (enable model-resultp)))))
+
+(local
+ (defthm cdr-when-model-resultp
+   (implies (model-resultp x)
+            (cdr x))
+   :hints (("Goal" :in-theory (enable model-resultp)))))
+
+(local
+ (defthm consp-of-cdr-when-model-resultp
+   (implies (model-resultp x)
+            (consp (cdr x)))
+   :hints (("Goal" :in-theory (enable model-resultp)))))
+
+(local
+ (defthm natp-of-caddr-when-model-resultp
+   (implies (model-resultp x)
+            (iff (natp (caddr x))
+                 (caddr x)))
+   :hints (("Goal" :in-theory (enable model-resultp)))))
+
+(local
+ (defthm <-of-0-of-caddr-when-model-resultp
+   (implies (model-resultp x)
+            (iff (< 0 (caddr x))
+                 (caddr x)))
+   :hints (("Goal" :in-theory (enable model-resultp)))))
+
+;; can be treated like an alibst
 (defun model-result-listp (x)
   (declare (xargs :guard t))
   (if (atom x)
@@ -53,6 +110,26 @@
     (and (model-resultp (first x))
          (model-result-listp (rest x)))))
 
+(local
+ (defthm alistp-when-model-result-listp
+   (implies (model-result-listp x)
+            (alistp x))))
+
+(local
+ (defthm model-resultp-of-assoc-equal-when-model-result-listp
+   (implies (model-result-listp x)
+            (iff (model-resultp (assoc-equal key x))
+                 (assoc-equal key x)))
+   :hints (("Goal" :in-theory (enable assoc-equal)))))
+
+(local
+ (defthm model-resultp-of-car
+   (implies (model-result-listp x)
+            (iff (model-resultp (car x))
+                 (consp x)))
+   :hints (("Goal" :in-theory (enable model-result-listp)))))
+
+;; Maps test-infos to model-result-lists.
 (defun result-alistp (alist)
   (declare (xargs :guard t))
   (if (atom alist)
@@ -63,8 +140,17 @@
            (model-result-listp (cdr entry))
            (result-alistp (rest alist))))))
 
-(local (in-theory (disable natp)))
-(local (defthm natp-of-+ (implies (and (natp x) (natp y)) (natp (+ x y)))))
+(local
+ (defthm natp-of-+
+   (implies (and (natp x) (natp y))
+            (natp (+ x y)))))
+
+;; todo: have defmergesort use rational-listp instead
+(local
+ (defthm all-rationalp-when-nat-listp
+   (implies (nat-listp x)
+            (all-rationalp x))
+   :hints (("Goal" :in-theory (enable all-rationalp)))))
 
 ;;Returns (mv attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums total-recs-produced).
 (defun tabulate-resuls-for-model (model result-alist attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums-acc total-recs-produced)
@@ -76,7 +162,6 @@
                               (natp top-10-count)
                               (nat-listp successful-rec-nums-acc)
                               (natp total-recs-produced))
-                  :verify-guards nil ; todo
                   :guard-hints (("Goal" :expand (result-alistp result-alist)))))
   (if (endp result-alist)
       (mv attempt-count successful-attempt-count top-1-count top-10-count
@@ -104,58 +189,96 @@
                                      (+ total-recs total-recs-produced)
                                      ))))))
 
-;; Returns (mv successp num-recs-produced).
-(defun union-model-results (model-results successp num-recs-produced)
+(local
+ (defthm tabulate-resuls-for-model-type
+   (implies (and (keywordp model) ; todo: improve?
+                 (result-alistp result-alist)
+                 (natp attempt-count)
+                 (natp successful-attempt-count)
+                 (natp top-1-count)
+                 (natp top-10-count)
+                 (nat-listp successful-rec-nums-acc)
+                 (natp total-recs-produced))
+            (mv-let (attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums total-recs-produced)
+              (tabulate-resuls-for-model model result-alist attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums-acc total-recs-produced)
+              (and (natp attempt-count)
+                   (natp successful-attempt-count)
+                   (natp top-1-count)
+                   (natp top-10-count)
+                   (nat-listp successful-rec-nums)
+                   (natp total-recs-produced))))
+   :hints (("Goal" :in-theory (enable tabulate-resuls-for-model)))))
+
+;; Returns (mv successful-rec-num num-recs-produced).
+(defun union-model-results (model-results
+                            successful-rec-num ; best so far, or nil
+                            num-recs-produced)
   (declare (xargs :guard (and (model-result-listp model-results)
-                              (booleanp successp)
+                              (or (null successful-rec-num)
+                                  (posp successful-rec-num))
                               (natp num-recs-produced))))
   (if (endp model-results)
-      (mv successp num-recs-produced)
+      (mv successful-rec-num num-recs-produced)
     (let* ((model-result (first model-results))
            (model-num-recs (second model-result))
            (first-working-rec-num-or-nil (third model-result)))
       (union-model-results (rest model-results)
-                           (or successp first-working-rec-num-or-nil)
+                           (if (and first-working-rec-num-or-nil
+                                    (or (null successful-rec-num)
+                                        (< first-working-rec-num-or-nil
+                                           successful-rec-num)))
+                               first-working-rec-num-or-nil
+                             successful-rec-num)
                            (+ num-recs-produced model-num-recs)))))
 
-(defthm natp-of-mv-nth-1-of-union-model-results
-  (implies (and (natp num-recs-produced)
-                (model-result-listp model-results))
-           (natp (mv-nth 1 (union-model-results model-results successp num-recs-produced))))
-  :hints (("Goal" :in-theory (enable union-model-results))))
+(local
+ (defthm natp-of-mv-nth-0-of-union-model-results
+   (implies (and (mv-nth 0 (union-model-results model-results successful-rec-num num-recs-produced)) ; not nill
+                 (or (null successful-rec-num) (natp successful-rec-num))
+                 (model-result-listp model-results))
+            (natp (mv-nth 0 (union-model-results model-results successful-rec-num num-recs-produced))))
+   :hints (("Goal" :in-theory (enable union-model-results model-resultp)))))
+
+(local
+ (defthm natp-of-mv-nth-1-of-union-model-results
+   (implies (and (natp num-recs-produced)
+                 (model-result-listp model-results))
+            (natp (mv-nth 1 (union-model-results model-results successful-rec-num num-recs-produced))))
+   :hints (("Goal" :in-theory (enable union-model-results)))))
 
 ;; Tabulates results for a hypothetical model that combines all the models (if any can prove something, the union model can prove it).
-;;Returns (mv attempt-count successful-attempt-count total-recs-produced).
+;; Returns (mv attempt-count successful-attempt-count successful-rec-nums total-recs-produced).
 (defun tabulate-resuls-for-union-model (result-alist
                                         attempt-count
                                         successful-attempt-count
-                                        ;; top-1-count top-10-count successful-rec-nums-acc
+                                        ;; top-1-count top-10-count
+                                        successful-rec-nums-acc ; the lowest successful rec from any model (if any) on each test
                                         total-recs-produced)
   (declare (xargs :guard (and (result-alistp result-alist)
                               (natp attempt-count)
                               (natp successful-attempt-count)
+                              (nat-listp successful-rec-nums-acc)
                               (natp total-recs-produced))))
-;  (declare (xargs :mode :program)) ;todo
   (if (endp result-alist)
-      (mv attempt-count successful-attempt-count total-recs-produced)
+      (mv attempt-count successful-attempt-count (merge-sort-< successful-rec-nums-acc) total-recs-produced)
     (b* ((result-entry (first result-alist))
          (model-results (cdr result-entry))
          ((when (not model-results))
           (er hard? 'tabulate-resuls-for-union-model "No model results for test.")
-          (mv nil nil nil))
-         ((mv this-successp this-recs-produced) (union-model-results model-results nil 0)))
+          (mv nil nil nil nil))
+         ((mv this-successful-rec-num this-recs-produced) (union-model-results model-results nil 0)))
       (tabulate-resuls-for-union-model (rest result-alist)
                                        (+ 1 attempt-count)
-                                       (if this-successp (+ 1 successful-attempt-count) successful-attempt-count)
+                                       (if this-successful-rec-num (+ 1 successful-attempt-count) successful-attempt-count)
+                                       (if this-successful-rec-num (cons this-successful-rec-num successful-rec-nums-acc) successful-rec-nums-acc)
                                        (+ total-recs-produced this-recs-produced)))))
 
 ;; todo: support rounding to hundredths
-(defun quotient-to-percent-string (numerator denominator)
+(defund quotient-as-percent-string (numerator denominator)
   (declare (xargs :guard (and (rationalp numerator)
                               (<= 0 numerator) ; todo gen
-                              (rationalp denominator))
-                  :mode :program ; todo
-                  ))
+                              (rationalp denominator)
+                              (<= 0 denominator))))
   (if (= 0 denominator)
       (if (= 0 numerator)
           "undefined"
@@ -180,31 +303,105 @@
                               chars))))
     (coerce new-chars 'string)))
 
+(defun count-items-<= (items num acc)
+  (declare (xargs :guard (and (nat-listp items)
+                              (natp num)
+                              (natp acc))))
+  (if (endp items)
+      acc
+    (count-items-<= (rest items)
+                    num
+                    (if (<= (first items) num)
+                        (+ 1 acc)
+                      acc))))
+
+(local
+ (defthm natp-of-count-items-<=
+   (implies (natp acc)
+            (natp (count-items-<= items num acc)))))
+
+;; inefficient but simple
+(defun top-n-counts-aux (curr max successful-rec-nums)
+  (declare (xargs :guard (and (posp curr)
+                              (posp max)
+                              (nat-listp successful-rec-nums))
+                  :measure (nfix (+ 1 (- max curr)))))
+  (if (or (not (mbt (and (posp curr)
+                         (posp max))))
+          (< max curr))
+      nil
+    (cons (count-items-<= successful-rec-nums curr 0)
+          (top-n-counts-aux (+ 1 curr) max successful-rec-nums))))
+
+(local
+ (defthm nat-listp-of-top-n-counts-aux
+   (nat-listp (top-n-counts-aux curr max successful-rec-nums))))
+
+;; Returns a list (c1 c2 ... cmax) where ci indicates the number elements <= i.
+(defun top-n-counts (successful-rec-nums max)
+  (declare (xargs :guard (and (nat-listp successful-rec-nums) ; all positive, sorted
+                              (posp max))))
+  (top-n-counts-aux 1 max successful-rec-nums))
+
+;; does not include the percent signs
+(defun quotients-as-percent-strings (vals denominator)
+  (declare (xargs :guard (and (nat-listp vals) ; gen
+                              (rationalp denominator) ; 0 leads to a result of "undefined"
+                              (<= 0 denominator))))
+  (if (endp vals)
+      nil
+    (cons (quotient-as-percent-string (first vals) denominator)
+          (quotients-as-percent-strings (rest vals) denominator))))
+
+(local
+ (defthm string-listp-of-quotients-as-percent-strings
+   (string-listp (quotients-as-percent-strings vals denominator))
+   :hints (("Goal" :in-theory (enable quotients-as-percent-strings)))))
+
+(defun print-separated-strings (strings sep)
+  (declare (xargs :guard (and (string-listp strings)
+                              (stringp sep))))
+  (if (endp strings)
+      nil
+    (if (endp (rest strings))
+        (cw "~s0" (first strings)) ; avoids trailing separator
+      (prog2$ (cw "~s0~s1" (first strings) sep)
+              (print-separated-strings (rest strings) sep)))))
+
 ;; Returns the successful-attempt-percentage.
-(defun show-model-evaluation (model result-alist)
-  (declare (xargs :mode :program)) ;todo
-  (b* (((mv attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums total-recs-produced)
+(defun show-model-evaluation (model result-alist num-recs-per-model)
+  (declare (xargs :guard (and (keywordp model) ; tweak?
+                              (result-alistp result-alist)
+                              (posp num-recs-per-model))))
+  (b* (((mv attempt-count successful-attempt-count
+            & & ; top-1-count top-10-count
+            successful-rec-nums
+            total-recs-produced)
         (tabulate-resuls-for-model model result-alist 0 0 0 0 nil 0))
-       (successful-attempt-percentage (quotient-to-percent-string successful-attempt-count attempt-count))
+       (successful-attempt-percentage (quotient-as-percent-string successful-attempt-count attempt-count))
        (- (cw "Results for model ~x0 (~x1 theorem attempts, ~x2 total recs produced):~%" model attempt-count total-recs-produced))
        (- (cw "Success: ~x0 (~s1%)~%" successful-attempt-count successful-attempt-percentage))
-       (- (cw "Nums of first successful recs: ~X01~%" successful-rec-nums nil)) ; todo: summarize better
-       (- (cw "Top-1: ~x0 (~s1%)~%" top-1-count (quotient-to-percent-string top-1-count attempt-count)))
-       (- (cw "Top-10: ~x0 (~s1%)~%~%" top-10-count (quotient-to-percent-string top-10-count attempt-count)))
+       ;; (- (cw "Nums of first successful recs: ~X01~%" successful-rec-nums nil))
+       ;; (- (cw "Top-1 through top-10 counts: ~X01~%" (top-n-counts successful-rec-nums) nil))
+;todo: print total recs produced?
+       (- (cw "Top-1 through top-~x0 percentages: [" num-recs-per-model))
+       (- (print-separated-strings (quotients-as-percent-strings (top-n-counts successful-rec-nums num-recs-per-model) attempt-count) ", "))
+       (- (cw "]~%"))
+       ;; (- (cw "Top-1: ~x0 (~s1%)~%" top-1-count (quotient-as-percent-string top-1-count attempt-count)))
+       ;; (- (cw "Top-10: ~x0 (~s1%)~%~%" top-10-count (quotient-as-percent-string top-10-count attempt-count)))
        )
     successful-attempt-percentage))
 
 ;; Prints result and computes a success percentage alist.
 ;; RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
-(defun show-model-evaluations-aux (models result-alist)
-  (declare (xargs :mode :program)) ;todo
+(defun show-model-evaluations-aux (models result-alist num-recs-per-model)
   (if (endp models)
       nil
     (let* ((model (first models))
-           (successful-attempt-percentage (show-model-evaluation model result-alist))) ; prints the info
+           (successful-attempt-percentage (show-model-evaluation model result-alist num-recs-per-model))) ; prints the info
       (acons model
              successful-attempt-percentage
-             (show-model-evaluations-aux (rest models) result-alist)))))
+             (show-model-evaluations-aux (rest models) result-alist num-recs-per-model)))))
 
 (defun show-success-percentages (alist)
   (declare (xargs :guard (symbol-alistp alist)))
@@ -217,18 +414,20 @@
               (show-success-percentages (rest alist))))))
 
 ;; RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
-(defun show-model-evaluations (models result-alist)
-  (declare (xargs :mode :program)) ;todo
-  (b* ((alist (show-model-evaluations-aux models result-alist)) ; print a lot
-       (- (cw "~%Current success percentages:~%"))
+(defun show-model-evaluations (models result-alist num-recs-per-model)
+  (b* ((alist (show-model-evaluations-aux models result-alist num-recs-per-model)) ; prints a lot
+       (- (cw "~%Current top-~x0 success percentages:~%" num-recs-per-model))
        (- (show-success-percentages alist)) ; for each model
        ;; Now the combined results:
        (- (cw "~%Combined results:~%"))
-       ((mv combined-attempt-count combined-successful-attempt-count combined-total-recs-produced) (tabulate-resuls-for-union-model result-alist 0 0 0))
-       (combined-successful-attempt-percentage (quotient-to-percent-string combined-successful-attempt-count combined-attempt-count))
+       ((mv combined-attempt-count combined-successful-attempt-count combined-successful-rec-nums combined-total-recs-produced) (tabulate-resuls-for-union-model result-alist 0 0 nil 0))
+       (combined-successful-attempt-percentage (quotient-as-percent-string combined-successful-attempt-count combined-attempt-count))
        (- (cw " Attempts: ~x0~%" combined-attempt-count))
        (- (cw " Successes: ~x0 (~s1%)~%" combined-successful-attempt-count combined-successful-attempt-percentage))
        (- (cw " Total recs produced: ~x0~%" combined-total-recs-produced))
+       (- (cw "Top-1 through top-10 percentages: ["))
+       (- (print-separated-strings (quotients-as-percent-strings (top-n-counts combined-successful-rec-nums num-recs-per-model) combined-attempt-count) ", "))
+       (- (cw "]~%"))
        (- (cw "~%")))
     nil))
 
@@ -251,8 +450,8 @@
                                   (natp step-limit))
                               (or (null time-limit)
                                   (rationalp time-limit)))
-                  :stobjs state
-                  :mode :program))
+                  :mode :program ; because of help::try-recommendation
+                  :stobjs state))
   (if (endp recs)
       (prog2$ (and (acl2::print-level-at-least-tp print)
                    (cw "No working rec found.~%") ; todo: print the model name.
@@ -912,7 +1111,7 @@
   (if (endp book-to-theorems-alist)
       (progn$ (cw "~%======================================================================~%")
               (cw "~%OVERALL RESULTS (~x0 total theorems):~%" (len result-alist-acc))
-              (show-model-evaluations models result-alist-acc)
+              (show-model-evaluations models result-alist-acc num-recs-per-model)
               (mv nil '(value-triple :invisible) state))
     (b* ((- (cw "~%======================================================================~%"))
          (- (cw "Processing book #~x0 of ~x1.~%" (+ 1 done-book-count) total-book-count))
@@ -935,7 +1134,7 @@
          (done-book-count (+ 1 done-book-count))
          (result-alist-acc (append result-alist-for-book result-alist-acc))
          (- (progn$ (cw "~%~%Results after ~x0 books:~%" done-book-count)
-                    (show-model-evaluations models result-alist-acc) ; todo: optimize?
+                    (show-model-evaluations models result-alist-acc num-recs-per-model) ; todo: optimize?
                     ))
          ;;            (cw "ADVICE FOUND    : ~x0~%" yes-count)
          ;;            (cw "NO ADVICE FOUND : ~x0~%" no-count)

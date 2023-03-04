@@ -858,6 +858,7 @@
       :hints (("Goal"
                :in-theory (e/d (resolve-assoc-eq-val-rec
                                 is-rp
+                                is-equals
                                 is-if)
                                ())))))
    (local
@@ -868,6 +869,7 @@
       :hints (("Goal"
                :in-theory (e/d (resolve-assoc-eq-vals-rec
                                 is-rp
+                                is-equals
                                 is-if)
                                ())))))
 
@@ -878,7 +880,7 @@
                (valid-sc (caddr (caddr term)) a))
       :hints (("goal"
 ; :expand ((valid-sc term a))
-               :in-theory (e/d (is-if is-rp is-falist)
+               :in-theory (e/d (is-if is-equals is-rp is-falist)
                                ())))))
 
    (local
@@ -888,7 +890,7 @@
                (valid-sc (caddr term) a))
       :hints (("Goal"
                :expand (valid-sc (caddr term) a)
-               :in-theory (e/d (is-if is-rp) (ex-from-rp))))))
+               :in-theory (e/d (is-if is-equals is-rp) (ex-from-rp))))))
 
    (local
     (defthm lemma3
@@ -904,6 +906,7 @@
       (valid-sc (resolve-assoc-eq-val-rec key term-alist) a))
      :hints (("Goal"
               :in-theory (e/d (is-if
+                               is-equals
                                is-rp) ()))))
 
    (local
@@ -914,7 +917,7 @@
       :hints (("Goal"
                :cases ((hons-get key falist))
                :use ((:instance hons-get-is-resolve-assoc-eq-value-rec))
-               :in-theory (e/d (is-rp is-if)
+               :in-theory (e/d (is-rp is-equals is-if)
                                (hons-get
                                 hons-get-is-resolve-assoc-eq-value-rec))))))
 
@@ -927,7 +930,7 @@
                                (falist (CADR (CADR (EX-FROM-RP (CADDR TERM)))))
                                (key (CADR (CADR TERM)))
                                (term  (CAdDR (EX-FROM-RP (CADDR TERM))))))
-              :in-theory (e/d (hons-get-meta is-rp is-if)
+              :in-theory (e/d (hons-get-meta is-equals is-rp is-if)
                               (hons-get
                                valid-sc-hons-get-rp-meta-lemma)))))
 
@@ -938,7 +941,7 @@
                (valid-sc (hons-get-list-values-term keys falist)
                          a))
       :hints (("Goal"
-               :in-theory (e/d (is-rp is-if) (hons-get))))))
+               :in-theory (e/d (is-equals is-rp is-if) (hons-get))))))
 
    (defthm valid-sc-assoc-eq-vals-meta
      (implies (and (valid-sc term a)
@@ -949,7 +952,7 @@
                                (keys (CADR (CADR TERM)))
                                (falist (CADR (CADR (EX-FROM-RP (CADDR TERM)))))
                                (term-alist (CAdDR (EX-FROM-RP (CADDR TERM))))))
-              :in-theory (e/d (assoc-eq-vals-meta is-if is-rp) ()))))))
+              :in-theory (e/d (assoc-eq-vals-meta is-equals is-if is-rp) ()))))))
 
 #|(local
  (encapsulate
