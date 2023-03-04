@@ -13,6 +13,8 @@
 
 ;; TODO: Consider disabling acl2-count here.
 
+;; TODO: Consider moving rules about take, nthcdr, etc. to the individual books.
+
 ;; Note that ACL2 now includes a pretty strong linear rule about acl2-count,
 ;; acl2-count-car-cdr-linear, though it does require consp.
 
@@ -91,6 +93,27 @@
            (< (acl2-count (nthcdr n lst))
               (acl2-count lst)))
   :rule-classes ((:linear :trigger-terms ((acl2-count (nthcdr n lst))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Characterizes the unusual situation when take makes the list longer
+(defthm <-of-acl2-count-of-take
+  (implies (true-listp l) ; not easy to drop
+           (equal (< (acl2-count l) (acl2-count (take n l)))
+                  (and (< (len l) n)
+                       (natp n))))
+  :hints (("Goal" :in-theory (enable take))
+          ("subgoal *1/1" :cases ((< (+ 1 (len (cdr l))) n)))))
+
+(defthm <=-of-acl2-count-of-take-linear
+  (implies (<= n (len l))
+           (<= (acl2-count (take n l)) (acl2-count l)))
+  :rule-classes (:rewrite (:linear :trigger-terms ((acl2-count (take n l))))))
+
+(defthm <-of-acl2-count-of-take-linear
+  (implies (< (nfix n) (len l))
+           (< (acl2-count (take n l)) (acl2-count l)))
+  :rule-classes (:rewrite (:linear :trigger-terms ((acl2-count (take n l))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
