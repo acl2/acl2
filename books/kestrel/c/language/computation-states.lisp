@@ -872,7 +872,7 @@
   (b* ((objdes?
         (and (> (compustate-frames-number compst) 0)
              (objdesign-of-var-aux var
-                                   (1- (len (compustate->frames compst)))
+                                   (1- (compustate-frames-number compst))
                                    (frame->scopes (top-frame compst)))))
        ((when objdes?) objdes?)
        (var+val? (omap::in (ident-fix var) (compustate->static compst))))
@@ -1158,7 +1158,8 @@
              write-static-var
              read-object
              read-static-var
-             top-frame)
+             top-frame
+             compustate-frames-number)
     :use
     (valuep-of-read-object-of-objdesign-of-var
      (:instance objdesign-of-var-aux-lemma
