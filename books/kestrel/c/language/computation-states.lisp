@@ -17,6 +17,7 @@
 (include-book "kestrel/fty/defomap" :dir :system)
 
 (local (include-book "arithmetic/top" :dir :system))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/nth" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
 
@@ -368,7 +369,7 @@
                        (update-nth i
                                    (len (frame->scopes frame))
                                    (compustate-scopes-numbers-aux frames))))
-       :enable (update-nth len nfix))
+       :enable (update-nth len))
 
      (defrule update-nth-of-nth-and-compustate-scopes-numbers-aux
        (implies (< (nfix i) (len (compustate->frames compst)))
@@ -382,8 +383,7 @@
        :use (:instance compustate-scopes-numbers-aux-of-update-nth
                        (frame (nth i (compustate->frames compst)))
                        (frames (compustate->frames compst)))
-       :disable compustate-scopes-numbers-aux-of-update-nth
-       :enable nfix)))
+       :disable compustate-scopes-numbers-aux-of-update-nth)))
 
   :hooks (:fix)
 
@@ -924,7 +924,6 @@
        :induct t
        :enable (objdesign-of-var-aux
                 len
-                nfix
                 fix
                 nth-of-minus1-and-cdr)))))
 
@@ -998,8 +997,7 @@
 
   :verify-guards nil ; done below
   ///
-  (verify-guards read-object
-    :hints (("Goal" :in-theory (enable nfix))))
+  (verify-guards read-object)
 
   (defruled valuep-of-read-object-of-objdesign-of-var
     (b* ((objdes (objdesign-of-var var compst)))
@@ -1007,7 +1005,6 @@
                (valuep (read-object objdes compst))))
     :enable (objdesign-of-var
              read-object
-             nfix
              fix
              compustate-frames-number
              top-frame
@@ -1118,7 +1115,6 @@
      (write-object objdes.super new-super compst)))
   :measure (objdesign-count objdes)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
-  :guard-hints (("Goal" :in-theory (enable nfix)))
   :hooks (:fix)
   ///
 
@@ -1138,7 +1134,6 @@
                     (compustate-scopes-numbers compst)))
     :hints (("Goal"
              :in-theory (e/d (compustate-scopes-numbers
-                              nfix
                               fix
                               max
                               acl2::nth-of-rev
@@ -1194,7 +1189,6 @@
      :enable (read-auto-var-aux
               objdesign-of-var-aux
               len
-              nfix
               fix
               nth-of-minus1-and-cdr
               natp))
@@ -1214,7 +1208,6 @@
               read-auto-var-aux-to-nth-of-objdesign
               top-frame
               compustate-frames-number
-              nfix
               fix
               cdr-of-in-when-scopep)
      :use
