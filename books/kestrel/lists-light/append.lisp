@@ -170,3 +170,19 @@
          (equal (true-list-fix x1)
                 (true-list-fix x2)))
   :hints (("Goal" :in-theory (enable equal-of-append equal-of-true-list-fix-and-true-list-fix-forward))))
+
+(defthm <=-of-acl2-count-of-append-linear
+  (<= (acl2-count (append x y))
+      (+ (acl2-count x)
+         (acl2-count y)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable append))))
+
+(defthm acl2-count-of-append-of-cons
+  (equal (acl2-count (append (cons x y) z))
+         (acl2-count (cons x (append y z)))))
+
+(defthm acl2-count-of-append-of-cons-linear
+  (equal (acl2-count (append (cons x y) z))
+         (acl2-count (cons x (append y z))))
+  :rule-classes :linear)
