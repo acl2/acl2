@@ -6352,7 +6352,7 @@
                 :ld-skip-proofsp ,ld-skip-proofsp
                 :temp-touchable-fns ,temp-touchable-fns
                 :parallel-execution-enabled ,parallel-execution-enabled
-                :warnings-as-errors ,warnings-as-errors 
+                :warnings-as-errors ,warnings-as-errors
                 :inhibit-output-lst ,inhibit-output-lst))))
 
 (defrec warnings-as-errors
@@ -6368,22 +6368,37 @@
        (access warnings-as-errors x :alist)))
 
 
-(defun set-warnings-as-errors-alist (strings flg alist)
-  (cond
-   ((endp strings) alist)
-   (t (set-warnings-as-errors-alist
-       (cdr strings)
-       flg
-       (let ((pair (assoc-string-equal (car strings) alist)))
-         (cond ((and (consp pair)
-                     (eq (cdr pair) flg))
-                alist)
-               ((null pair)
-                (acons (car strings) flg alist))
-               (t
-                (acons (car strings)
-                       flg
-                       (remove1-assoc-string-equal (car strings) alist)))))))))
+(defun set-warnings-as-errors-alist (strings flg alist
+                                     uninhibited-warning-summaries)
+
+; Note that this code is fine even in the presence of duplicates (up to case)
+; in strings, or even a member of strings that is a key (up to case) in alist.
+; We simply update the alist with the new, duplicate string while deleting the
+; corresponding old key; so the final alist has keys that are duplicate-free up
+; to case.
+
+  (cond ((endp strings) alist)
+        ((member-string-equal (car strings) uninhibited-warning-summaries)
+         (er hard 'set-warnings-as-errors
+             "It is illegal to specify that warnings of type ~x0 are to be ~
+              converted to errors, because ~x0 is a member (up to case) of ~x1"
+             (car strings)
+             '*uninhibited-warning-summaries*))
+        (t (set-warnings-as-errors-alist
+            (cdr strings)
+            flg
+            (let ((pair (assoc-string-equal (car strings) alist)))
+              (cond ((and (consp pair)
+                          (eq (cdr pair) flg))
+                     alist)
+                    ((null pair)
+                     (acons (car strings) flg alist))
+                    (t
+                     (acons (car strings)
+                            flg
+                            (remove1-assoc-string-equal (car strings)
+                                                        alist)))))
+            uninhibited-warning-summaries))))
 
 (defun set-warnings-as-errors (flg strings state)
 
@@ -6408,12 +6423,14 @@
                                          old
                                          :alist
                                          (set-warnings-as-errors-alist
-                                          strings flg alist))
+                                          strings flg alist
+                                          *uninhibited-warning-summaries*))
                                (make warnings-as-errors
                                      :default nil
                                      :alist
                                      (set-warnings-as-errors-alist
-                                      strings flg alist)))
+                                      strings flg alist
+                                      *uninhibited-warning-summaries*)))
                              state)))))
    (t (prog2$ (er hard 'set-warnings-as-errors
                   "Illegal second argument of ~x0, ~x1: must be :ALL or a ~
@@ -6478,7 +6495,6 @@
 (defun warnings-as-errors-val (summary warnings-as-errors)
   (declare (xargs :guard
                   (warnings-as-errors-val-guard summary warnings-as-errors)))
-                              
   (let* ((pair
           (and summary
                (assoc-string-equal summary (warnings-as-errors-alist
@@ -6512,7 +6528,9 @@
                  summary
                  (f-get-global 'warnings-as-errors state)))))
        (cond
-        ((eq warnings-as-errors-val :always)
+        ((and (eq warnings-as-errors-val :always)
+              (not (member-string-equal summary
+                                        *uninhibited-warning-summaries*)))
          (let ((str (cond ((consp str) ; see handling of str+ in warning1-body
                            (car str))
                           (t str))))
@@ -6535,6 +6553,8 @@
                        (hard-error ctx (cons summary str) alist))
                   state)))))
         ((and check-warning-off
+              (not (member-string-equal summary
+                                        *uninhibited-warning-summaries*))
               ,(if commentp
                    '(or (ec-call ; for guard verification of warning1-cw
                          (member-equal 'warning
@@ -6548,7 +6568,9 @@
                                  (f-get-global 'inhibit-output-lst state))
                       (warning-off-p summary state))))
          ,(if commentp nil 'state))
-        (warnings-as-errors-val
+        ((and warnings-as-errors-val
+              (not (member-string-equal summary
+                                        *uninhibited-warning-summaries*)))
          (let ((str (cond ((consp str) ; see handling of str+ in warning1-body
                            (car str))
                           (t str))))
