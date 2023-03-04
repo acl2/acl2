@@ -18,6 +18,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -798,6 +799,7 @@
   :returns (result
             value-list-resultp
             :hints (("Goal"
+                     :induct t
                      :in-theory
                      (enable
                       valuep-when-value-resultp-and-not-errorp
@@ -831,6 +833,7 @@
 (define init-scope ((formals param-declon-listp) (actuals value-listp))
   :returns (result scope-resultp
                    :hints (("Goal"
+                            :induct t
                             :in-theory
                             (enable scopep-when-scope-resultp-and-not-errorp))))
   :short "Initialize the variable scope for a function call."
