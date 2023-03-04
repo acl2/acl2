@@ -65,7 +65,15 @@
      This may be a block scope or a file scope."))
   :key-type ident
   :val-type value
-  :pred scopep)
+  :pred scopep
+  ///
+
+  (defruled cdr-of-in-when-scopep
+    (implies (scopep scope)
+             (iff (cdr (omap::in id scope))
+                  (omap::in id scope)))
+    :induct t
+    :enable omap::in))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1156,3 +1164,86 @@
      (:instance objdesign-of-var-aux-lemma
                 (frame (+ -1 (len (compustate->frames compst))))
                 (scopes (frame->scopes (car (compustate->frames compst))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule read-object-of-objdesign-of-var-to-read-var
+  :short "Equivalence of @(tsee read-object) and @(tsee read-var)
+          for object designators of variables."
+  (b* ((objdes (objdesign-of-var var compst)))
+    (implies objdes
+             (equal (read-object objdes compst)
+                    (read-var var compst))))
+  :enable (objdesign-of-var
+           compustate-frames-number
+           read-var-to-read-object-when-auto
+           read-var-to-read-object-when-static)
+
+  :prep-lemmas
+
+  ((defruled read-auto-var-aux-to-nth-of-objdesign
+     (implies (scope-listp scopes)
+              (b* ((objdes (objdesign-of-var-aux var frame scopes)))
+                (implies objdes
+                         (equal (read-auto-var-aux var scopes)
+                                (cdr (omap::in (ident-fix var)
+                                               (nth (objdesign-auto->scope objdes)
+                                                    (rev scopes))))))))
+     :induct t
+     :enable (read-auto-var-aux
+              objdesign-of-var-aux
+              len
+              nfix
+              fix
+              nth-of-minus1-and-cdr
+              natp))
+
+   (defruled read-var-to-read-object-when-auto
+     (implies (> (compustate-frames-number compst) 0)
+              (b* ((objdes (objdesign-of-var-aux
+                            var
+                            (1- (compustate-frames-number compst))
+                            (frame->scopes (top-frame compst)))))
+                (implies objdes
+                         (equal (read-var var compst)
+                                (read-object objdes compst)))))
+     :enable (read-object
+              read-var
+              read-auto-var
+              read-auto-var-aux-to-nth-of-objdesign
+              top-frame
+              compustate-frames-number
+              nfix
+              fix
+              cdr-of-in-when-scopep)
+     :use
+     ((:instance objdesign-of-var-aux-lemma
+                 (frame (+ -1 (len (compustate->frames compst))))
+                 (scopes (frame->scopes (car (compustate->frames compst)))))))
+
+   (defruled objdesign-of-var-aux-iff-read-auto-var-aux
+     (iff (objdesign-of-var-aux var frame scopes)
+          (read-auto-var-aux var scopes))
+     :induct t
+     :enable (objdesign-of-var-aux
+              read-auto-var-aux
+              cdr-of-in-when-scopep))
+
+   (defruled read-var-to-read-object-when-static
+     (b* ((objdes (objdesign-of-var var compst))
+          (objdes0 (objdesign-of-var-aux var
+                                         (1- (compustate-frames-number compst))
+                                         (frame->scopes (top-frame compst)))))
+       (implies (and objdes
+                     (or (equal (compustate-frames-number compst) 0)
+                         (not objdes0)))
+                (and (equal (objdesign-kind objdes) :static)
+                     (equal (objdesign-static->name objdes) (ident-fix var))
+                     (equal (read-var var compst)
+                            (read-object objdes compst)))))
+     :enable (objdesign-of-var
+              compustate-frames-number
+              read-object
+              read-var
+              read-auto-var
+              objdesign-of-var-aux-iff-read-auto-var-aux))))
