@@ -1182,13 +1182,13 @@
   :prep-lemmas
 
   ((defruled read-auto-var-aux-to-nth-of-objdesign
-     (implies (scope-listp scopes)
-              (b* ((objdes (objdesign-of-var-aux var frame scopes)))
-                (implies objdes
-                         (equal (read-auto-var-aux var scopes)
-                                (cdr (omap::in (ident-fix var)
-                                               (nth (objdesign-auto->scope objdes)
-                                                    (rev scopes))))))))
+     (b* ((objdes (objdesign-of-var-aux var frame scopes)))
+       (implies objdes
+                (equal (read-auto-var-aux var scopes)
+                       (cdr (omap::in (ident-fix var)
+                                      (scope-fix
+                                       (nth (objdesign-auto->scope objdes)
+                                            (rev scopes))))))))
      :induct t
      :enable (read-auto-var-aux
               objdesign-of-var-aux
