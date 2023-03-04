@@ -31,6 +31,14 @@
                   (rev (update-nth (- (1- (len x)) (nfix i)) a x))))
   :enable (update-nth len rev fix nfix))
 
+(defruledl nth-of-minus1-and-cdr
+  (implies (and (natp i)
+                (< 0 i)
+                (< i (len x)))
+           (equal (nth (1- i) (cdr x))
+                  (nth i x)))
+  :enable nth)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ computation-states
@@ -878,10 +886,39 @@
        (objdesign-of-var-aux var frame (cdr scopes)))
      :guard-hints (("Goal" :in-theory (enable natp len)))
      ///
+
      (fty::deffixequiv objdesign-of-var-aux
        :hints
        (("Goal"
-         :expand (objdesign-of-var-aux var frame (scope-list-fix scopes))))))))
+         :expand (objdesign-of-var-aux var frame (scope-list-fix scopes)))))
+
+     (defruled objdesign-of-var-aux-lemma
+       (b* ((objdes (objdesign-of-var-aux var frame scopes))
+            (pair (omap::in (objdesign-auto->name objdes)
+                            (scope-fix
+                             (nth (- (1- (len scopes))
+                                     (objdesign-auto->scope objdes))
+                                  scopes)))))
+         (implies objdes
+                  (and (objdesign-case objdes :auto)
+                       (equal (objdesign-auto->name objdes)
+                              (ident-fix var))
+                       (equal (objdesign-auto->frame objdes)
+                              (nfix frame))
+                       (< (objdesign-auto->scope objdes)
+                          (len scopes))
+                       (< (- (1- (len scopes))
+                             (objdesign-auto->scope objdes))
+                          (len scopes))
+                       (consp pair)
+                       (valuep (cdr pair)))))
+       :induct t
+       :enable (objdesign-of-var-aux
+                len
+                nfix
+                fix
+                nth-of-minus1-and-cdr)
+       :prep-books ((include-book "arithmetic/top" :dir :system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -950,10 +987,27 @@
   :measure (objdesign-count objdes)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :hooks (:fix)
+
   :verify-guards nil ; done below
   ///
   (verify-guards read-object
-    :hints (("Goal" :in-theory (enable nfix)))))
+    :hints (("Goal" :in-theory (enable nfix))))
+
+  (defruled valuep-of-read-object-of-objdesign-of-var
+    (b* ((objdes (objdesign-of-var var compst)))
+      (implies objdes
+               (valuep (read-object objdes compst))))
+    :enable (objdesign-of-var
+             read-object
+             nfix
+             fix
+             compustate-frames-number
+             top-frame
+             read-static-var)
+    :use
+    (:instance objdesign-of-var-aux-lemma
+               (frame (+ -1 (len (compustate->frames compst))))
+               (scopes (frame->scopes (car (compustate->frames compst)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1083,4 +1137,22 @@
                               update-nth-of-rev)
                              (compustate-scopes-numbers-of-write-static-var)))
             '(:use (:instance compustate-scopes-numbers-of-write-static-var
-                              (var (objdesign-static->name objdes)))))))
+                              (var (objdesign-static->name objdes))))))
+
+  (defruled compustatep-of-write-object-of-objdesign-of-var
+    (b* ((objdes (objdesign-of-var var compst)))
+      (implies objdes
+               (equal (compustatep (write-object objdes val compst))
+                      (equal (type-of-value (read-object objdes compst))
+                             (type-of-value val)))))
+    :enable (objdesign-of-var
+             write-object
+             write-static-var
+             read-object
+             read-static-var
+             top-frame)
+    :use
+    (valuep-of-read-object-of-objdesign-of-var
+     (:instance objdesign-of-var-aux-lemma
+                (frame (+ -1 (len (compustate->frames compst))))
+                (scopes (frame->scopes (car (compustate->frames compst))))))))
