@@ -319,6 +319,11 @@
     (equal (lendian=>nat base (nat-list-fix digits))
            (lendian=>nat base digits)))
 
+  (defruled lendian=>nat-of-cons
+    (equal (lendian=>nat base (cons lodigit hidigits))
+           (+ (dab-digit-fix base lodigit)
+              (* (dab-base-fix base) (lendian=>nat base hidigits)))))
+
   (defruled lendian=>nat-of-append
     (equal (lendian=>nat base (append lodigits hidigits))
            (+ (lendian=>nat base lodigits)
@@ -629,6 +634,14 @@
   (defrule bendian=>nat-of-nat-list-fix
     (equal (bendian=>nat base (nat-list-fix digits))
            (bendian=>nat base digits)))
+
+  (defruled bendian=>nat-of-cons
+    (equal (bendian=>nat base (cons hidigit lodigits))
+           (+ (* (dab-digit-fix base hidigit)
+                 (expt (dab-base-fix base) (len lodigits)))
+              (bendian=>nat base lodigits)))
+    :enable (lendian=>nat-of-append
+             lendian=>nat-of-cons))
 
   (defruled bendian=>nat-of-append
     (equal (bendian=>nat base (append hidigits lodigits))
