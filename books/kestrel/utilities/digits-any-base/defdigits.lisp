@@ -29,7 +29,7 @@
    (xdoc::seetopic
     "digits-any-base"
     "the operations to convert between natural numbers and digits")
-   ", using specified recognizers and fixers for the digits.")
+   ", using specified existing recognizers and fixers for the digits.")
 
   :long
 
@@ -199,8 +199,9 @@
       The names of the first four are as specified by the respective inputs;
       the names for the second four are obtained by adding @('*') or @('+')
       after the names of the third and fourth function.
-      These new functions are accompanied by theorems corresponding to
-      the ones that accompany the original functions.
+      These new functions are accompanied by several theorems
+      corresponding to ones that accompany the original functions,
+      i.e. they are specialized versions of the general theorems.
       These theorems, and the guards, use @('digits-pred') and @('digits-fix')
       instead of @(tsee dab-digit-listp) and @(tsee dab-digit-list-fix)."))
 
