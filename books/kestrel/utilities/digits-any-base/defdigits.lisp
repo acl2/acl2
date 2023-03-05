@@ -177,8 +177,8 @@
 
    (xdoc::desc
     (list
-     "@('nat-to-bendian')"
-     "@('nat-to-lendian')"
+     "@('bendian-to-nat')"
+     "@('lendian-to-nat')"
      "@('nat-to-bendian')"
      "@('nat-to-lendian')"
      "@('nat-to-bendian*')"
