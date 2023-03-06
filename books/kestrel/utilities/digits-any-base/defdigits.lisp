@@ -546,6 +546,8 @@
        (trim-lendian*-of-nat-to-lendian* (packn-pos (list 'trim-lendian*-of
                                                           nat-to-lendian*)
                                                     name))
+       (bendian-to-nat-of-cons (add-suffix-to-fn bendian-to-nat "-OF-CONS"))
+       (lendian-to-nat-of-cons (add-suffix-to-fn lendian-to-nat "-OF-CONS"))
        (bendian-to-nat-of-append (add-suffix-to-fn bendian-to-nat "-OF-APPEND"))
        (lendian-to-nat-of-append (add-suffix-to-fn lendian-to-nat "-OF-APPEND"))
        (bendian-to-nat-of-all-zeros (packn-pos (list bendian-to-nat
@@ -563,6 +565,8 @@
        (digits (packn-pos (list "DIGITS") name))
        (digits1 (packn-pos (list "DIGITS1") name))
        (digits2 (packn-pos (list "DIGITS2") name))
+       (hidigit (packn-pos (list "HIDIGIT") name))
+       (lodigit (packn-pos (list "LODIGIT") name))
        (hidigits (packn-pos (list "HIDIGITS") name))
        (lodigits (packn-pos (list "LODIGITS") name))
        (nat (packn-pos (list "NAT") name))
@@ -1148,6 +1152,21 @@
                   (,nat-to-lendian* ,nat))
            :enable ,nat-to-lendian*
            :use (:instance trim-lendian*-of-nat=>lendian* (base ,base))))
+       (bendian-to-nat-of-cons-event
+        `(defruled ,bendian-to-nat-of-cons
+           (equal (,bendian-to-nat (cons ,hidigit ,lodigits))
+                  (+ (* (,digit-fix ,hidigit)
+                        (expt ,base (len ,lodigits)))
+                     (,bendian-to-nat ,lodigits)))
+           :enable (,bendian-to-nat ,digit-fix-correct)
+           :use (:instance bendian=>nat-of-cons (base ,base))))
+       (lendian-to-nat-of-cons-event
+        `(defruled ,lendian-to-nat-of-cons
+           (equal (,lendian-to-nat (cons ,lodigit ,hidigits))
+                  (+ (,digit-fix ,lodigit)
+                     (* ,base (,lendian-to-nat ,hidigits))))
+           :enable (,lendian-to-nat ,digit-fix-correct)
+           :use (:instance lendian=>nat-of-cons (base ,base))))
        (bendian-to-nat-of-append-event
         `(defruled ,bendian-to-nat-of-append
            (equal (,bendian-to-nat (append ,hidigits ,lodigits))
@@ -1261,6 +1280,8 @@
        ,consp-pf-nat-to-lendian*-iff-not-zp-event
        ,trim-bendian*-of-nat-to-bendian*-event
        ,trim-lendian*-of-nat-to-lendian*-event
+       ,bendian-to-nat-of-cons-event
+       ,lendian-to-nat-of-cons-event
        ,bendian-to-nat-of-append-event
        ,lendian-to-nat-of-append-event
        ,bendian-to-nat-of-all-zeros-event
