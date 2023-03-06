@@ -1163,7 +1163,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule read-object-of-objdesign-of-var-to-read-var
+(defruled read-object-of-objdesign-of-var-to-read-var
   :short "Equivalence of @(tsee read-object) and @(tsee read-var)
           for object designators of variables."
   (b* ((objdes (objdesign-of-var var compst)))
