@@ -3918,6 +3918,7 @@
             port-file-enabled          ;;; allow user to modify this in a book
             parallel-execution-enabled ;;; allow user to modify this in a book
             waterfall-parallelism      ;;; allow user to modify this in a book
+            warnings-as-errors         ;;; allow user to modify this in a book
             waterfall-parallelism-timing-threshold ;;; see just above
             waterfall-printing ;;; allow user to modify this in a book
             waterfall-printing-when-finished ;;; see just above
@@ -16543,7 +16544,10 @@
 
 ; Thus, following the :HINTS keyword to defthm, the user types "hints" (in
 ; untranslated form).  This function takes a lst, which is supposed be some
-; hints, and translates it or else causes an error.
+; hints, and translates it or else causes an error.  Each of the untranslated
+; "hints" is a "hint", which may be a computed hint or a pair associating a
+; goal name with a "hint keyword value list", for example, ("Goal" :in-theory
+; (enable foo) :use bar).
 
 ; Seen is the list of goal names (each a string) that have been encountered.
 
@@ -17872,15 +17876,15 @@
 
 ;   Then we see that the expansion file treats BAR as a function defined at the
 ;   top level.
- 
+
 ;     ACL2 !>(set-raw-mode-on!)
-;     
+;
 ;     TTAG NOTE: Adding ttag :RAW-MODE-HACK from the top level loop.
 ;     ACL2 P>(with-open-file (str "problem@expansion.lsp" :direction :input)
 ;         (loop as val = (read str nil :eof nil)
 ;               until (eq val :eof)
 ;               do (pprint val)))
-;     
+;
 ;     (IN-PACKAGE "ACL2")
 ;     (SETQ *HCOMP-FN-ALIST* '((ACL2_*1*_ACL2::BAR . T) (BAR . T)))
 ;     (SETQ *HCOMP-CONST-ALIST* 'NIL)
@@ -17896,7 +17900,7 @@
 ;              (LABELS ((ACL2_*1*_ACL2::BAR (X) X))
 ;                (ACL2_*1*_ACL2::BAR X))))NIL
 ;     ACL2 P>
-;     
+;
 ;   This isn't really right, because when problem.lisp is included, bar is
 ;   defined by inclusion of problem-sub.lisp, not at the top level of
 ;   problem.lisp.  In fact, if you certify the books without fast-cert mode

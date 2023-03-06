@@ -4,10 +4,13 @@
 
 ;; (ld "projects/rp-rewriter/lib/mult3/tracers.lsp" :dir :system)
 
+(include-book "projects/rp-rewriter/lib/mult3/svtv-top" :dir :system)
 
 (clear-memoize-tables)
 
 (clear-memoize-statistics)
+
+(hons-clear t)
 
 (trace$
  (s-c-spec-meta
@@ -191,7 +194,9 @@
           (b* (((list s-res-lst pp-res-lst c-res-lst)
                 acl2::values))
             (if (and (ordered-s/c-p-lst s-res-lst)
+                     (list-of-only-s/c-p s-res-lst 's)
                      (ordered-s/c-p-lst c-res-lst)
+                     (list-of-only-s/c-p c-res-lst 'c)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
               (msg "Not ordered from ex-from-pp-lst Input:
@@ -209,7 +214,9 @@
           (b* (((list s-res-lst pp-res-lst c-res-lst)
                 acl2::values))
             (if (and (ordered-s/c-p-lst s-res-lst)
+                     (list-of-only-s/c-p s-res-lst 's)
                      (ordered-s/c-p-lst c-res-lst)
+                     (list-of-only-s/c-p c-res-lst 'c)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
               (msg "Not ordered from pp-radix8+-fix:
@@ -233,7 +240,9 @@ c-res-lst:~%~x6 (ordered: ~x7)~%~%"
           (b* (((list s-res-lst pp-res-lst c-res-lst ?valid)
                 acl2::values))
             (if (and (ordered-s/c-p-lst s-res-lst)
+                     (list-of-only-s/c-p s-res-lst 's)
                      (ordered-s/c-p-lst c-res-lst)
+                     (list-of-only-s/c-p c-res-lst 's)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
               (msg "Not ordered from pp-radix8+-fix-aux-for-s/c
@@ -258,7 +267,9 @@ Valid:~x8~%~%"
           (b* (((list s-res-lst pp-res-lst c-res-lst ?valid)
                 acl2::values))
             (if (and (ordered-s/c-p-lst s-res-lst)
+                     (list-of-only-s/c-p s-res-lst 's)
                      (ordered-s/c-p-lst c-res-lst)
+                     (list-of-only-s/c-p c-res-lst 'c)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
               (msg "Not ordered from pp-radix8+-fix-aux-for-s/c
@@ -284,8 +295,15 @@ Valid:~x8~%~%"
   (profile 'rp::create-c-instance)
   (profile 'rp::create-s-instance)
   (profile 'rp::create-s-c-res-instance)
-  (profile 'rp::c-sum-merge-main-fn)
+  
   (profile 'rp::sum-merge-lst-for-s)
+  (profile 'rp::pp-sum-merge-aux)
+
+  (profile 'rp::extract-equals-from-pp-lst)
+
+  (profile 'rp::cross-product-pp-aux-for-pp-lst)
+
+  (profile 'rp::extract-equals-from-pp-lst-aux)
   
   (profile 'SVL::CONCAT-META)
   (profile 'SVL::BITS-OF-META-FN)
@@ -311,7 +329,7 @@ Valid:~x8~%~%"
 
   (profile 'rp::4vec-branch-drop-r-case)
 
-  (profile 'rp-equal-iter-pp+-meta)
+  (profile 'rp::rp-equal-iter-pp+-meta)
 
   (profile 'rp::pp-lst-orderedp)
   (profile 'rp::pp-sum-sort-lst)
@@ -320,5 +338,24 @@ Valid:~x8~%~%"
 
   (profile 'rp::calculate-c-hash)
 
+  (profile 'rp::sort-sum-meta)
+
+  ;;(profile 'rp::sort-pp-lists)
+
+  (profile 'rp::sort-sum-meta-aux2)
+
+  (profile 'rp::pp-term-to-pp-e-list)
+  (profile 'rp::merge-sorted-pp-e-lists)
+
+  (profile 'rp::s-c-spec-meta)
   
+  )
+
+
+(progn
+  (profile 'rp::pp-flatten-fn)
+  
+  
+  ;;(profile 'and$-pp-lists)
+  ;;(profile 'and$-pp-lists-aux)
   )

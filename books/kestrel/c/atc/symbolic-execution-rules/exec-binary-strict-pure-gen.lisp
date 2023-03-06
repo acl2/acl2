@@ -333,8 +333,8 @@
                            (equal val (,op-values x y))
                            (valuep val))
                       (equal (exec-binary-strict-pure op
-                                                      (expr-value x nil)
-                                                      (expr-value y ni))
+                                                      (expr-value x objdes-x)
+                                                      (expr-value y objdes-y))
                              (expr-value val nil)))
              :enable (exec-binary-strict-pure
                       eval-binary-strict-pure)))

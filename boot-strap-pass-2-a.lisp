@@ -207,6 +207,8 @@
 (verify-termination-boot-strap book-name-to-filename-1) ; and guards
 (verify-termination-boot-strap book-name-to-filename) ; and guards
 (verify-termination-boot-strap book-name-lst-to-filename-lst) ; and guards
+(verify-termination-boot-strap warnings-as-errors-val-guard) ; and guards
+(verify-termination-boot-strap warnings-as-errors-val) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite

@@ -886,3 +886,13 @@
                               svex-eval$-is-svex-eval$-wog)))))
 
   (rp::add-rp-rule svexl-alist-eval$-correct :disabled t))
+
+
+(defthmd svexl-alist-eval$-correct-reverse
+  (implies (and (force (sv::svex-alist-p alist))
+                ;;(force (svex-env-p env))
+                )
+           (equal (svexl-alist-eval$ (svex-alist-to-svexl-alist alist) env)
+                  (sv::svex-alist-eval$ alist env)))
+  :hints (("Goal"
+           :in-theory (e/d (svexl-alist-eval$-correct) ()))))

@@ -237,11 +237,40 @@ sub scan_depends_rec {
 
 sub scan_loads {
     my ($base,$the_line) = @_;
+    my @res = $the_line =~
+	m/ # may be commented -- no ^ directive
+          \(\s*
+            (?:[^\s():]*::)?   # package prefix
+            loads
+            \s+
+	    "(?<fname>[^"]*)"
+            (?:          # optional :dir argument
+              [^;]* :dir \s*
+              :(?<dirname>[^\s()]*))?
+         /xi;
 
-    my $regexp = "\\([\\s]*loads[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
-    my @res = $the_line =~ m/$regexp/i;
     if (@res) {
-	my $ans = [loads_event, $res[0], uc($res[1] || "")];
+	my $ans = [loads_event, $+{fname}, uc($+{dirname} || "")];
+	debug_print_event($base, $ans);
+	return $ans;
+    }
+
+    # Add support for include-events macro
+    @res = $the_line =~
+	m/^[^;]*?   # not commented
+          \(\s*
+            (?:[^\s():]*::)?   # package prefix
+            (?<cmd>include-events|include-src-events)
+            \s+
+	    "(?<fname>[^"]*)"
+            (?:          # optional :dir argument
+              [^;]* :dir \s*
+              :(?<dirname>[^\s()]*))?
+         /xi;
+    if (@res) {
+	my $book = "$+{cmd}" eq "include-events";
+	my $fname = $book ? "$+{fname}.lisp" : $+{fname};
+	my $ans = [loads_event, "$fname", uc($+{dirname} || "")];
 	debug_print_event($base, $ans);
 	return $ans;
     }

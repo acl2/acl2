@@ -1258,11 +1258,6 @@
     (equal (stobjs::2darr->ncols new-s32v)
            (stobjs::2darr->ncols s32v))))
 
-(local (defthm w-state-of-s32v-randomize-iter
-         (equal (w (mv-nth 1 (s32v-randomize-iter n out-id s32v state)))
-                (w state))
-         :hints(("Goal" :in-theory (enable s32v-randomize-iter)))))
-
 (define s32v-randomize-rows ((row natp) s32v state)
   :guard (<= row (s32v-nrows s32v))
   :measure (nfix (- (s32v-nrows s32v) (nfix row)))
@@ -1284,15 +1279,6 @@
   (defret w-state-of-<fn>
     (equal (w new-state) (w state))))
 
-(local (defthm w-state-of-s32v-randomize-regs
-         (equal (w (mv-nth 1 (s32v-randomize-regs n s32v aignet state)))
-                (w state))
-         :hints(("Goal" :in-theory (enable s32v-randomize-regs)))))
-
-(local (defthm w-state-of-s32v-randomize-inputs
-         (equal (w (mv-nth 1 (s32v-randomize-inputs n s32v aignet state)))
-                (w state))
-         :hints(("Goal" :in-theory (enable s32v-randomize-inputs)))))
 
 
 (define fraig-ctrexes-init ((ncols posp)

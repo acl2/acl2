@@ -59,8 +59,9 @@
 
 (program)
 
-(defun svtv-equiv-thm-suffix-index-to-var (var pkg-sym index)
-  (intern-in-package-of-symbol (str::cat (symbol-name var)
+(define svtv-equiv-thm-suffix-index-to-var (var pkg-sym index &key (ignorable 'nil))
+  (intern-in-package-of-symbol (str::cat (if ignorable "?" "")
+                                         (symbol-name var)
                                          "-"
                                          (str::int-to-dec-string index))
                                pkg-sym))
@@ -68,7 +69,7 @@
 (defun svtv-equiv-thm-suffix-index-to-vars-for-svassocs (vars pkg-sym index)
   (if (atom vars)
       nil
-    (cons `(,(svtv-equiv-thm-suffix-index-to-var (car vars) pkg-sym index)
+    (cons `(,(svtv-equiv-thm-suffix-index-to-var (car vars) pkg-sym index :ignorable t)
             ',(car vars))
           (svtv-equiv-thm-suffix-index-to-vars-for-svassocs (cdr vars) pkg-sym index))))
 
@@ -78,7 +79,7 @@
        ((unless trip) (er hard? 'def-svtv-generalized-thm "Override name not present in triples ~x0: ~x1~%"
                           (list triples-name) (car override-valnames)))
        ((svar-override-triple trip)))
-    (cons `(,(svtv-equiv-thm-suffix-index-to-var trip.valvar pkg-sym index) ',trip.refvar)
+    (cons `(,(svtv-equiv-thm-suffix-index-to-var trip.valvar pkg-sym index :ignorable t) ',trip.refvar)
           (svtv-equiv-thm-override-svassocs (cdr override-valnames) triples triples-name pkg-sym index))))
 
 (defun svtv-equiv-thm-override-test-alist (override-valnames triples triples-name)
@@ -306,7 +307,10 @@
        (template '(defthm <name>-<<=-lemma-<i>
                     (b* (((svassocs <input-var-svassocs>
                                     <input-unbound-svassocs>)
-                          <env>))
+                          <env>)
+                         ((svassocs <input-var-svassocs-other>
+                                    <input-unbound-svassocs-other>)
+                          <env-other>))
                       (implies (and <input-binding-hyp>
                                     (svex-env-keys-no-1s-p
                                      (svar-override-triplelist->testvars (<triples>)) <env>))
@@ -324,7 +328,10 @@
                                                      (lemma-env
                                                       (b* ((?run (svtv-run (<svtv>) <env>))
                                                            ((svassocs <override-svassocs>) run)
-                                                           ((svassocs <input-unbound-svassocs>) <env>))
+                                                           ((svassocs <input-unbound-svassocs>) <env>)
+                                                           ((svassocs <input-var-svassocs-other>
+                                                                      <input-unbound-svassocs-other>)
+                                                            <env-other>))
                                                         <fixed-env>
                                                         #|(append <input-bindings>
                                                                 <input-vars>
@@ -409,6 +416,7 @@
                   (list . ,(svtv-equiv-thm-input-vars-to-alist x.override-vars-1 x.pkg-sym 1)))))
            
            (<env> . env-1)
+           (<env-other> . env-2)
            (<svtv> . ,x.svtv-1)
            (<triples> . ,x.triples-name-1)
            ;; (<input-bindings> . (list ,@(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-1)
@@ -434,6 +442,7 @@
                 ;; <override-vals-2>
                 (list . ,(svtv-equiv-thm-input-vars-to-alist x.override-vars-2 x.pkg-sym 2)))))
          (<env> . env-2)
+         (<env-other> . env-1)
          (<svtv> . ,x.svtv-2)
          (<triples> . ,x.triples-name-2)
          ;; (<input-bindings> . (list ,@(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-2)
@@ -450,8 +459,14 @@
                                      (append (strip-cars x.input-var-bindings-1)
                                              (strip-cars x.override-var-bindings-1))
                                      x.pkg-sym 1))
+           (<input-var-svassocs-other> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
+                                           (append (strip-cars x.input-var-bindings-2)
+                                                   (strip-cars x.override-var-bindings-2))
+                                           x.pkg-sym 2))
            (<input-unbound-svassocs> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
                                          x.input-vars-1 x.pkg-sym 1))
+           (<input-unbound-svassocs-other> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
+                                               x.input-vars-2 x.pkg-sym 2))
            (<input-binding-hyp> .  ,(svtv-equiv-thm-input-binding-hyp-termlist
                                      (append x.input-var-bindings-1 x.override-var-bindings-1)
                                      x.pkg-sym 1))
@@ -460,8 +475,14 @@
                                    (append (strip-cars x.input-var-bindings-2)
                                            (strip-cars x.override-var-bindings-2))
                                    x.pkg-sym 2))
+         (<input-var-svassocs-other> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
+                                         (append (strip-cars x.input-var-bindings-1)
+                                                 (strip-cars x.override-var-bindings-1))
+                                         x.pkg-sym 1))
          (<input-unbound-svassocs> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
                                        x.input-vars-2 x.pkg-sym 2))
+         (<input-unbound-svassocs-other> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
+                                             x.input-vars-1 x.pkg-sym 1))
          (<input-binding-hyp> .  ,(svtv-equiv-thm-input-binding-hyp-termlist
                                    (append x.input-var-bindings-2 x.override-var-bindings-2)
                                    x.pkg-sym 2))

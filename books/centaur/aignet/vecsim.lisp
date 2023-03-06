@@ -165,6 +165,17 @@ evaluations of an AIG very quickly. See subtopics for various utilities.</p>")
   ;;   :hints (("goal" :induct (vecsim-to-eval-iter n slot bit s32v vals aignet)
   ;;            :expand ((:free (vals)
   ;;                      (vecsim-to-eval-iter n slot bit s32v vals aignet))))))
+
+  (defthm len-of-vecsim-to-eval-iter
+    (implies (and (<= (num-fanins aignet) (len vals))
+                  (<= (nfix n) (num-fanins aignet)))
+             (equal (len (vecsim-to-eval-iter n slot bit s32v vals aignet))
+                    (len vals))))
+
+  (defthm len-of-vecsim-to-eval
+    (implies (and (<= (num-fanins aignet) (len vals)))
+             (equal (len (vecsim-to-eval slot bit s32v vals aignet))
+                    (len vals))))
   )
 
 
@@ -494,6 +505,12 @@ evaluations of an AIG very quickly. See subtopics for various utilities.</p>")
                        (vecsim-to-eval-iter n slot bit s32v vals
                                             aignet)))))))
 
+(local (in-theory (disable w)))
+
+(defthm w-state-of-random$
+  (equal (w (mv-nth 1 (random$ n state)))
+         (w state))
+  :hints(("Goal" :in-theory (enable random$ w read-acl2-oracle update-acl2-oracle get-global))))
 
 (defsection s32v-randomize
   (local (defthm random$-bound
@@ -542,7 +559,15 @@ evaluations of an AIG very quickly. See subtopics for various utilities.</p>")
   (defthm lookup-prev-in-s32v-randomize-iter
     (implies (<= (nfix m) (nfix slot))
              (equal (nth slot (nth n (stobjs::2darr->rows (mv-nth 0 (s32v-randomize-iter m id s32v state)))))
-                    (nth slot (nth n (stobjs::2darr->rows s32v)))))))
+                    (nth slot (nth n (stobjs::2darr->rows s32v))))))
+
+  (defthm w-state-of-s32v-randomize-iter
+    (equal (w (mv-nth 1 (s32v-randomize-iter m id s32v state)))
+           (w state)))
+
+  (defthm w-state-of-s32v-randomize
+    (equal (w (mv-nth 1 (s32v-randomize id s32v state)))
+           (w state))))
 
 
 (defsection aignet-vecsim
@@ -977,7 +1002,11 @@ output producing 1; i.e. whether the 0th output is satisfiable.</p>"
   (defret nrows-of-s32v-randomize-inputs
     (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
              (equal (len (stobjs::2darr->rows new-s32v))
-                    (len (stobjs::2darr->rows s32v))))))
+                    (len (stobjs::2darr->rows s32v)))))
+
+  (defret w-state-of-s32v-randomize-inputs
+    (equal (w new-state)
+           (w state))))
 
 (define s32v-randomize-regs ((n natp "start at 0")
                              (s32v)
@@ -1002,7 +1031,12 @@ output producing 1; i.e. whether the 0th output is satisfiable.</p>"
   (defret nrows-of-s32v-randomize-regs
     (implies (< (fanin-count aignet) (len (stobjs::2darr->rows s32v)))
              (equal (len (stobjs::2darr->rows new-s32v))
-                    (len (stobjs::2darr->rows s32v))))))
+                    (len (stobjs::2darr->rows s32v)))))
+
+  (defthm w-state-of-s32v-randomize-regs
+    (equal (w (mv-nth 1 (s32v-randomize-regs n s32v aignet state)))
+           (w state))
+    :hints(("Goal" :in-theory (enable s32v-randomize-regs)))))
   
   
 
@@ -1525,6 +1559,64 @@ result)') gives the assignment for input n.</p>"
     (implies (and (equal (output-eval 0 invals regvals aignet) 1)
                   (equal (num-regs aignet) 0))
              ctrex)))
+
+
+(define random-sim-aux ((num-sims natp)
+                        invals
+                        s32v aignet state)
+  :guard (and ;; (<= (num-ins aignet) 32)
+          (equal (s32v-ncols s32v) 1)
+          (<= 1 (num-outs aignet))
+          (<= (num-fanins aignet) (s32v-nrows s32v))
+          (< (num-fanins aignet) (expt 2 32)))
+  :guard-debug t
+  :measure (nfix num-sims)
+  :returns (mv ctrexp
+               new-invals
+               new-s32v new-state)
+  (b* (((when (zp num-sims)) (mv nil invals s32v state))
+       ((mv s32v state) (s32v-randomize-inputs 0 s32v aignet state))
+       (s32v (aignet-vecsim-top s32v aignet))
+       (output-lit (outnum->fanin 0 aignet))
+       (output-val (logxor (bit-extend (lit->neg output-lit))
+                           (s32v-get (lit->var output-lit) s32v)))
+       ((unless (eql output-val 0))
+        (b* (((acl2::local-stobjs vals)
+              (mv ctrexp invals s32v state vals))
+             (vals (resize-bits (num-fanins aignet) vals))
+             (vals (vecsim-to-eval 0 (logbitp-witness output-val) s32v vals aignet))
+             (invals (resize-bits (num-ins aignet) invals))
+             (invals (aignet-vals->invals invals vals aignet)))
+          (mv t invals s32v state vals))))
+    (random-sim-aux (1- num-sims) invals s32v aignet state))
+  ///
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
+
+
+
+(define random-sim ((num-sims natp)
+                    (invals "counterexample written here")
+                    aignet state)
+  :returns (mv ctrexp invals
+               new-state)
+  :guard (<= 1 (num-outs aignet))
+  :parents (vector-simulation)
+  :short "Exhaustively simulate an AIG with one output node to determine if it is satisfiable"
+  :long "<p>Given a combinational AIG with 37 or fewer inputs and no registers,
+this uses @(see aignet-vecsim) to run through all combinations of inputs to
+check the satisfiability of the 0th output of the AIG.  This function returns
+NIL if that output is unsatisfiable (always 0), and otherwise returns a natural
+number giving the satisfying assignment for the PIs; i.e. @('(logbitp n
+result)') gives the assignment for input n.</p>"
+  (b* (((acl2::local-stobjs s32v)
+        (mv ctrexp invals s32v state))
+       (s32v (s32v-resize-cols 1 s32v))
+       (s32v (s32v-resize-rows (num-fanins aignet) s32v)))
+    (random-sim-aux num-sims invals s32v aignet state))
+  ///
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 

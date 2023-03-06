@@ -58,6 +58,13 @@
 (local
  (include-book "lemmas-2"))
 
+(local
+   (defthm is-equals-of-others
+     (implies (not (equal (car term) 'equals))
+              (not (is-equals term )))
+     :hints (("Goal"
+              :in-theory (e/d (is-equals) ())))))
+
 (define 4vec-branch-drop-r-case-pattern-check ((term rp-termp))
   :Returns (pass booleanp)
   :measure (cons-count term)
@@ -70,7 +77,7 @@
               (or (binary-fnc-p x)
                   (equal x ''0)
                   (equal x ''1)
-                  (bit-of-p x)))
+                  (logbit-p x)))
             (4vec-branch-drop-r-case-pattern-check else)))
       (('quote x)
        (and (sv::4vec-p x)
@@ -103,7 +110,7 @@
                           (not (integerp x))))
              (mv ''nil nil nil))
             (met-cases (pp-flatten-with-binds
-                        met-cases nil)))
+                        met-cases )))
          (if (equal met-cases (list ''1))
              (mv ''0 t t)
            (mv ''nil nil nil))))
@@ -169,9 +176,10 @@
        
        acl2::logcar$inline
        acl2::logcdr$inline
-       acl2::logbit
+       acl2::logbit$inline
        unpack-booth
        --
+       times
        sum-list
        binary-and
        and-list
@@ -180,7 +188,7 @@
        rp::s-c-spec
        rp::c-spec
        rp::s-spec
-       bit-of
+       
        ;; svl::bits
        ;; svl::4vec-bitand
        ;; svl::4vec-bitor
@@ -235,12 +243,13 @@
   (implies (and (mult-formula-checks state)
                 (pp-term-p term)
                 (booleanp sign)
+                (rp-termp term)
                 (valid-sc term a)
+                (or (= coef 1)
+                    (= coef -1))
                 (rp-evl-meta-extract-global-facts))
            (equal (sum-list-eval pp-lst a)
-                  (if sign
-                      (-- (rp-evlt term a))
-                    (rp-evlt term a))))
+                  (times coef (rp-evlt term a))))
   :fn pp-flatten
   :hints (("Goal"
            :use ((:instance pp-flatten-correct))
@@ -250,13 +259,14 @@
  (defret pp-flatten-with-binds-correct-with-sum-list-eval
   (implies (and (mult-formula-checks state)
                 (pp-term-p term)
+                (rp-termp term)
                 (booleanp signed)
                 (valid-sc term a)
+                (or (= coef 1)
+                    (= coef -1))
                 (rp-evl-meta-extract-global-facts))
            (equal (sum-list-eval pp-lst a)
-                  (if signed
-                      (-- (rp-evlt term a))
-                    (rp-evlt term a))))
+                  (times coef (rp-evlt term a))))
   :fn pp-flatten-with-binds
   :hints (("Goal"
            :use ((:instance pp-flatten-with-binds-correct))
@@ -308,34 +318,37 @@
  (defthmd when-pp-flatten-is-1
    (implies (and (valid-sc term a)
                  (pp-term-p term)
+                 (rp-termp term)
                  (rp-evl-meta-extract-global-facts :state state)
                  (4vec-branch-formula-checks state)
-                 (EQUAL (PP-FLATTEN term NIL :DISABLED nil)
+                 (EQUAL (pp-flatten term :DISABLED nil)
                         (list ''1)))
             (equal (rp-evlt term a)
                    1))
    :hints (("Goal"
             :use ((:instance pp-flatten-correct
-                             (sign nil)
-                             (disabled nil)))
-            :in-theory (e/d ()
+                             (coef 1)
+                             (disabled nil)
+                             (term-size-limit nil)))
+            :in-theory (e/d (ifix)
                             (pp-flatten-correct))))))
 
 (local
  (defthmd when-pp-flatten-with-binds-is-1
    (implies (and (valid-sc term a)
                  (pp-term-p term)
+                 (rp-termp term)
                  (rp-evl-meta-extract-global-facts :state state)
                  (4vec-branch-formula-checks state)
-                 (EQUAL (PP-FLATTEN-WITH-BINDS term NIL :DISABLED nil)
+                 (EQUAL (PP-FLATTEN-WITH-BINDS term :DISABLED nil)
                         (list ''1)))
             (equal (rp-evlt term a)
                    1))
    :hints (("Goal"
             :use ((:instance pp-flatten-with-binds-correct
-                             (signed nil)
+                             (coef 1)
                              (disabled nil)))
-            :in-theory (e/d ()
+            :in-theory (e/d (ifix)
                             (pp-flatten-with-binds-correct))))))
 
 
@@ -360,25 +373,16 @@
                 (mult-formula-checks state)
                 valid
                 (valid-sc term a)
+                (rp-termp term)
                 (valid-sc met-cases a)
                 (bitp (rp-evlt met-cases a))
                 (equal (rp-evlt met-cases a) 0)
+                (rp-termp met-cases)
                 (pp-term-p met-cases))
            (equal (rp-evlt new-term a)
                   (rp-evlt term a)))
   :fn 4vec-branch-drop-r-case-aux
-  :hints (("subgoal *1/7"
-           :use ((:instance when-pp-flatten-is-1
-                            (term met-cases))
-                 (:instance when-pp-flatten-with-binds-is-1
-                            (term met-cases))))
-          ("subgoal *1/8"
-           :use ((:instance when-pp-flatten-is-1
-                            (term met-cases))
-                 (:instance when-pp-flatten-with-binds-is-1
-                            (term met-cases))))
-          
-          ("goal"
+  :hints (("goal"
            :expand ((:free (x y) (pp-term-p `(binary-or ,x ,y)))
                     (:free (x y) (valid-sc `(binary-or ,x ,y) a)))
            :in-theory (e/d
@@ -391,7 +395,12 @@
                         binary-or-p)
                        (4vec-branch-formula-checks-implies-mult-formula-checks
                         pp-term-p
-                        valid-sc)))))
+                        valid-sc)))
+          (and stable-under-simplificationp
+               '(:use ((:instance when-pp-flatten-is-1
+                                  (term met-cases))
+                       (:instance when-pp-flatten-with-binds-is-1
+                                  (term met-cases)))))))
 
 
 (defret 4vec-branch-drop-r-case-aux-valid-sc

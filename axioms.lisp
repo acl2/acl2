@@ -3799,7 +3799,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         acl2_*1*_acl2::linear-lemma-term-exec
         acl2_*1*_acl2::conjoin
         acl2_*1*_acl2::pairlis$
-        acl2_*1*_acl2::close-input-channel))
+        acl2_*1*_acl2::close-input-channel
+        acl2_*1*_acl2::warnings-as-errors-val
+        acl2_*1*_acl2::member-equal))
 
 #-acl2-loop-only
 (defmacro ec-call1-raw (ign x)
@@ -8629,9 +8631,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; (warning$ ctx nil "The :REWRITE rule ~x0 loops forever." name).
 ; If the second argument is wrapped in a one-element list, as in
 ; (warning$ ctx ("Loops") "The :REWRITE rule ~x0 loops forever." name),
-; then that argument is quoted, and no check will be made for whether the
-; warning is disabled, presumably because we are in a context where we know the
-; warning is enabled.
+; then no check will be made for whether the warning is disabled, presumably
+; because we are in a context where we know the warning is enabled.
 
   (list 'warning1
         ctx
@@ -14778,6 +14779,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      .
      (apply$-lambda apply$-prim plist-worldp-with-formals ilks-plist-worldp))
     (walkabout-alist . nil)
+    (warnings-as-errors . nil) ; nil or a warnings-as-errors record
     (waterfall-parallelism . nil) ; for #+acl2-par
     (waterfall-parallelism-timing-threshold
      . 10000) ; #+acl2-par -- microsec limit for resource-and-timing-based mode
@@ -21858,6 +21860,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     system-attachments-cache
     fast-cert-status
     inside-progn-fn1
+    warnings-as-errors
     ))
 
 ; There is a variety of state global variables, 'ld-skip-proofsp among them,
