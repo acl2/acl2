@@ -507,6 +507,9 @@
                          (ld-redefinition-action 'save ld-redefinition-actionp)
                          (ld-prompt ''wormhole-prompt)
                          (ld-missing-input-ok 'same ld-missing-input-okp)
+                         (ld-always-skip-top-level-locals
+                          'same
+                          ld-always-skip-top-level-localsp)
                          (ld-pre-eval-filter 'same ld-pre-eval-filterp)
                          (ld-pre-eval-print 'same ld-pre-eval-printp)
                          (ld-post-eval-print 'same ld-post-eval-printp)
@@ -551,6 +554,10 @@
           (list `(cons 'ld-prompt ,ld-prompt))
           (if ld-missing-input-okp
               (list `(cons 'ld-missing-input-ok ,ld-missing-input-ok))
+            nil)
+          (if ld-always-skip-top-level-localsp
+              (list `(cons 'ld-always-skip-top-level-locals
+                           ,ld-always-skip-top-level-locals))
             nil)
           (if ld-pre-eval-filterp
               (list `(cons 'ld-pre-eval-filter ,ld-pre-eval-filter))

@@ -9,6 +9,10 @@
 (make-event `(defconst *standard-co* ',(standard-co state)))
 (redef-)
 
+; Undo possible skipping of locals, e.g., by the build system (note that
+; set-inhibit-warnings is really a local event, for example):
+(set-ld-always-skip-top-level-locals nil state)
+
 (defthm foo (equal (car (cons x x)) x)) ; warning
 
 (u)

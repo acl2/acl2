@@ -10502,14 +10502,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; there, we should skip evaluation of x here.
 
   (list 'if
-        '(equal (ld-skip-proofsp state) 'include-book)
+        '(or (member-eq (ld-skip-proofsp state)
+                        '(include-book initialize-acl2))
+             (f-get-global 'ld-always-skip-top-level-locals state))
         '(mv nil nil state)
-        (list 'if
-              '(equal (ld-skip-proofsp state) 'initialize-acl2)
-              '(mv nil nil state)
-              (list 'state-global-let*
-                    '((in-local-flg t))
-                    (list 'when-logic "LOCAL" x)))))
+        (list 'state-global-let*
+              '((in-local-flg t))
+              (list 'when-logic "LOCAL" x))))
 
 #+acl2-loop-only
 (defmacro defchoose (&whole event-form &rest def)
@@ -15601,6 +15600,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (ld-redefinition-action . nil)
     (ld-prompt . t)
     (ld-missing-input-ok . nil)
+    (ld-always-skip-top-level-locals . nil)
     (ld-pre-eval-filter . :all)
     (ld-pre-eval-print . nil)
     (ld-post-eval-print . :command-conventions)
@@ -21787,6 +21787,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     proofs-co
     ld-prompt
     ld-missing-input-ok
+    ld-always-skip-top-level-locals
     ld-pre-eval-filter
     ld-pre-eval-print
     ld-post-eval-print
@@ -27511,7 +27512,10 @@ Lisp definition."
   (declare (xargs :guard (and (state-p state)
                               (member-eq val '(t nil :never :break :bt
                                                  :break-bt :bt-break)))
-                  :guard-hints (("Goal" :in-theory (enable state-p1)))))
+                  :guard-hints (("Goal" :in-theory (e/d (state-p1)
+                                                        ()
+                                                        ;;(all-boundp)
+                                                        )))))
   #+(and (not acl2-loop-only)
          (and gcl (not cltl2)))
   (when (live-state-p state)
