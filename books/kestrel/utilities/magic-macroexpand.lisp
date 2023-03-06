@@ -4,6 +4,8 @@
 
 ; Thanks to Eric Smith for the idea leading to this tool.
 
+; (depends-on "build/defrec-certdeps/STATE-VARS.certdep" :dir :system)
+
 (in-package "ACL2")
 
 ; For magic-ev:
