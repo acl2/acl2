@@ -134,7 +134,7 @@
       when their base argument is @('base').
       Besides the equalities of the functions,
       the guard of the recognizer must be @('t'),
-      and the guard of the fixer must be the recognizer."))
+      and the guard of the fixer must include the recognizer."))
 
    (xdoc::desc
     "@(':digits-description')"
@@ -512,8 +512,8 @@
                      digits-fix
                    (add-suffix-to-fn digits-fix "$INLINE"))))
           `(defrule ,digits-fix-guard-correct
-             (iff ,(guard fn nil wrld)
-                  (,digits-pred ,(car (formals fn wrld))))
+             (implies (,digits-pred ,(car (formals fn wrld)))
+                      ,(guard fn nil wrld))
              :rule-classes nil
              ,@(and digits-fix-guard-hints
                     (list :hints digits-fix-guard-hints)))))
