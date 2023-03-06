@@ -15,6 +15,8 @@
 
 ; - Perhaps preserve type declarations.
 
+; (depends-on "build/defrec-certdeps/STATE-VARS.certdep" :dir :system)
+
 (in-package "ACL2")
 
 (include-book "make-executable")

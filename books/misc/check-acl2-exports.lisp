@@ -211,8 +211,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    LD-ALWAYS-SKIP-TOP-LEVEL-LOCALS
-    SET-WARNINGS-AS-ERRORS
   ))
 
 (defconst *special-ops*

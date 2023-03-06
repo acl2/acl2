@@ -6536,8 +6536,10 @@
                  (f-get-global 'warnings-as-errors state)))))
        (cond
         ((and (eq warnings-as-errors-val :always)
-              (not (member-string-equal summary
-                                        *uninhibited-warning-summaries*)))
+              (not (and summary
+                        (member-string-equal
+                         summary
+                         *uninhibited-warning-summaries*))))
          (let ((str (cond ((consp str) ; see handling of str+ in warning1-body
                            (car str))
                           (t str))))
@@ -6560,8 +6562,10 @@
                        (hard-error ctx (cons summary str) alist))
                   state)))))
         ((and check-warning-off
-              (not (member-string-equal summary
-                                        *uninhibited-warning-summaries*))
+              (not (and summary
+                        (member-string-equal
+                         summary
+                         *uninhibited-warning-summaries*)))
               ,(if commentp
                    '(or (ec-call ; for guard verification of warning1-cw
                          (member-equal 'warning
@@ -6576,8 +6580,10 @@
                       (warning-off-p summary state))))
          ,(if commentp nil 'state))
         ((and warnings-as-errors-val
-              (not (member-string-equal summary
-                                        *uninhibited-warning-summaries*)))
+              (not (and summary
+                        (member-string-equal
+                         summary
+                         *uninhibited-warning-summaries*))))
          (let ((str (cond ((consp str) ; see handling of str+ in warning1-body
                            (car str))
                           (t str))))
