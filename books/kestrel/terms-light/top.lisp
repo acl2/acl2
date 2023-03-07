@@ -53,6 +53,7 @@
 (include-book "restore-mv-lets-in-term")
 (include-book "substitute-unnecessary-lambda-vars")
 (include-book "make-lambda-term-simple")
+(include-book "make-lambda-terms-simple")
 (include-book "make-lambda-application-simple")
 (include-book "make-lambda-application-simple-proof")
 (include-book "function-call-subterms")
