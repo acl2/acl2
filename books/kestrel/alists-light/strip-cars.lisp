@@ -74,7 +74,8 @@
 (theory-invariant (incompatible (:rewrite strip-cars-of-cdr) (:definition strip-cars)))
 
 (defthmd member-equal-of-strip-cars-iff
-  (implies (alistp alist)
+  (implies (or (alistp alist)
+               key)
            (iff (member-equal key (strip-cars alist))
                 (assoc-equal key alist)))
   :hints (("Goal" :in-theory (enable assoc-equal member-equal strip-cars))))
@@ -95,3 +96,8 @@
   (equal (strip-cars (reverse x))
          (reverse (strip-cars x)))
   :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm strip-cars-iff
+  (iff (strip-cars alist)
+       (consp alist))
+  :hints (("Goal" :in-theory (enable strip-cars))))

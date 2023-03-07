@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "sublis-var-simple")
+(include-book "subst-var-alt")
 (include-book "make-lambda-nest")
 ;; (include-book "trivial-formals")
 (include-book "kestrel/utilities/pack" :dir :system)
@@ -20,6 +21,7 @@
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
@@ -134,8 +136,7 @@
                ;; TODO: Make the suffix customizable?  Just add a numeric suffix?
                (first-var-temp (fresh-symbol (pack$ first-var '-temp) (union-eq rest-binding-free-vars names-to-avoid)))
                ;;now fix up the values in later bindings to use first-var-temp instead of first-var:
-               (new-rest-binding-vals (sublis-var-simple-lst (acons first-var first-var-temp nil)
-                                                             rest-binding-vals))
+               (new-rest-binding-vals (subst-var-alt-lst first-var first-var-temp rest-binding-vals))
                (new-rest-bindings (pairlis$ rest-binding-vars new-rest-binding-vals)))
           (acons first-var-temp ; bind the temp var to the original value of the var
                  first-var
