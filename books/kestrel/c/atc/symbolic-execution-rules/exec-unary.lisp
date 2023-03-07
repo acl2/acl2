@@ -20,6 +20,7 @@
 (include-book "syntaxp")
 (include-book "promote-value")
 (include-book "value-integer-get")
+(include-book "apconvert")
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -220,8 +221,11 @@
                                                (expr-value x objdes-x)
                                                compst)
                                    (expr-value val objdes))))
-         (hints `(("Goal" :in-theory (enable exec-unary
-                                             exec-indir))))
+         (hints
+          `(("Goal"
+             :in-theory (enable exec-unary
+                                exec-indir
+                                apconvert-expr-value-when-value-pointer))))
          (event `(defruled ,name
                    ,formula
                    :hints ,hints)))

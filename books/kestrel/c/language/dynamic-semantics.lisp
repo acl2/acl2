@@ -294,13 +294,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The value must be a pointer.
+    "First we perform array-to-pointer conversion [C:5.3.2.1/3].
+     The value must be a pointer.
      If the pointer is not valid, it is an error.
      Otherwise, we read the object designated by the object designator,
      which is a value,
      and we return it as an expression value,
      taking the object designator from the pointer value."))
-  (b* ((val (expr-value->value arg))
+  (b* ((arg (apconvert-expr-value arg))
+       ((when (errorp arg)) arg)
+       (val (expr-value->value arg))
        ((unless (value-case val :pointer))
         (error (list :non-pointer-dereference (expr-value-fix arg))))
        ((unless (value-pointer-validp val))
