@@ -16,6 +16,7 @@
 (include-book "no-nils-in-termp")
 ;(include-book "make-lambda-application-simple") ;rename, since make-lambda-term-simple is even simpler
 (include-book "make-lambda-term-simple")
+(include-book "all-lambdas-serialized-in-termp")
 (include-book "replace-corresponding-arg")
 (include-book "kestrel/evaluators/empty-eval" :dir :system) ; move to a proofs book
 ;(include-book "kestrel/alists-light/lookup-equal" :dir :system)
@@ -85,9 +86,6 @@
            :in-theory (enable subst-var-alt
                               subst-var-alt-lst
                               lambdas-closed-in-termp))))
-
-;todo: split out all-lambdas-serialized-in-termp
-(include-book "serialize-lambdas-in-term-proofs")
 
 (defthm subst-var-alt-when-symbolp
   (implies (symbolp term)
@@ -400,6 +398,7 @@
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+
 (defthm-flag-subst-var-alt
   (defthm no-nils-in-termp-of-subst-var-alt
     (implies (and (symbolp var)
@@ -431,8 +430,6 @@
                            (pseudo-termp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;(include-book "sublis-var-simple-proofs") ;todo
 
 (local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
