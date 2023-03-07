@@ -7359,6 +7359,7 @@
     (ld-redefinition-action . nil)
     (ld-prompt . ,(if ld-skip-proofsp nil t))
     (ld-missing-input-ok . nil)
+    (ld-always-skip-top-level-locals . nil)
     (ld-pre-eval-filter . :all)
     (ld-pre-eval-print . ,(if ld-skip-proofsp nil t))
     (ld-post-eval-print . :command-conventions)

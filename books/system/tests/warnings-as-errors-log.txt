@@ -36,6 +36,8 @@ Warnings:  Redef
  *STANDARD-CO*
 ACL2 p!>>(REDEF-)
  NIL
+ACL2 !>>(SET-LD-ALWAYS-SKIP-TOP-LEVEL-LOCALS NIL STATE)
+ NIL
 ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
 
 ACL2 Warning [Subsume] in ( DEFTHM FOO ...):  The previously added

@@ -14,6 +14,9 @@
 
 (set-fast-cert t state)
 
+; Undo possible skipping of locals, e.g., by the build system:
+(set-ld-always-skip-top-level-locals nil state)
+
 (table my-top-level-cltl-command-stack t nil)
 
 (defmacro extend-stack (entries)
