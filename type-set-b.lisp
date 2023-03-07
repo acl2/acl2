@@ -6939,6 +6939,7 @@
                 (value :q)))
              :ld-prompt  nil
              :ld-missing-input-ok nil
+             :ld-always-skip-top-level-locals nil
              :ld-pre-eval-filter :all
              :ld-pre-eval-print nil
              :ld-post-eval-print :command-conventions

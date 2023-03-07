@@ -507,6 +507,9 @@
                          (ld-redefinition-action 'save ld-redefinition-actionp)
                          (ld-prompt ''wormhole-prompt)
                          (ld-missing-input-ok 'same ld-missing-input-okp)
+                         (ld-always-skip-top-level-locals
+                          'same
+                          ld-always-skip-top-level-localsp)
                          (ld-pre-eval-filter 'same ld-pre-eval-filterp)
                          (ld-pre-eval-print 'same ld-pre-eval-printp)
                          (ld-post-eval-print 'same ld-post-eval-printp)
@@ -551,6 +554,10 @@
           (list `(cons 'ld-prompt ,ld-prompt))
           (if ld-missing-input-okp
               (list `(cons 'ld-missing-input-ok ,ld-missing-input-ok))
+            nil)
+          (if ld-always-skip-top-level-localsp
+              (list `(cons 'ld-always-skip-top-level-locals
+                           ,ld-always-skip-top-level-locals))
             nil)
           (if ld-pre-eval-filterp
               (list `(cons 'ld-pre-eval-filter ,ld-pre-eval-filter))
@@ -6529,8 +6536,10 @@
                  (f-get-global 'warnings-as-errors state)))))
        (cond
         ((and (eq warnings-as-errors-val :always)
-              (not (member-string-equal summary
-                                        *uninhibited-warning-summaries*)))
+              (not (and summary
+                        (member-string-equal
+                         summary
+                         *uninhibited-warning-summaries*))))
          (let ((str (cond ((consp str) ; see handling of str+ in warning1-body
                            (car str))
                           (t str))))
@@ -6553,8 +6562,10 @@
                        (hard-error ctx (cons summary str) alist))
                   state)))))
         ((and check-warning-off
-              (not (member-string-equal summary
-                                        *uninhibited-warning-summaries*))
+              (not (and summary
+                        (member-string-equal
+                         summary
+                         *uninhibited-warning-summaries*)))
               ,(if commentp
                    '(or (ec-call ; for guard verification of warning1-cw
                          (member-equal 'warning
@@ -6569,8 +6580,10 @@
                       (warning-off-p summary state))))
          ,(if commentp nil 'state))
         ((and warnings-as-errors-val
-              (not (member-string-equal summary
-                                        *uninhibited-warning-summaries*)))
+              (not (and summary
+                        (member-string-equal
+                         summary
+                         *uninhibited-warning-summaries*))))
          (let ((str (cond ((consp str) ; see handling of str+ in warning1-body
                            (car str))
                           (t str))))
