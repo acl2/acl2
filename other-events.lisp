@@ -624,14 +624,13 @@
             (list 'quote event-form)))
     (defmacro local (x)
       (list 'if
-            '(equal (ld-skip-proofsp state) 'include-book)
+            '(or (member-eq (ld-skip-proofsp state)
+                            '(include-book initialize-acl2))
+                 (f-get-global 'ld-always-skip-top-level-locals state))
             '(mv nil nil state)
-            (list 'if
-                  '(equal (ld-skip-proofsp state) 'initialize-acl2)
-                  '(mv nil nil state)
-                  (list 'state-global-let*
-                        '((in-local-flg t))
-                        (list 'when-logic "LOCAL" x)))))
+            (list 'state-global-let*
+                  '((in-local-flg t))
+                  (list 'when-logic "LOCAL" x))))
     (defmacro defattach (&whole event-form &rest args)
       (list 'defattach-fn
             (list 'quote args)
@@ -5580,7 +5579,8 @@
                       (not (f-get-global 'skip-proofs-by-system state)))))
             (and (not user-skip-proofsp)
                  skip-proofsp)))
-         (ld-skip-proofsp skip-proofsp))
+         (ld-skip-proofsp skip-proofsp)
+         (ld-always-skip-top-level-locals nil))
         (er-progn
 
 ; Once upon a time, under the same conditions on caller as shown below, we
@@ -8723,7 +8723,24 @@
      ctx
      (revert-world-on-error
       (state-global-let*
-       ((inside-progn-fn1 t))
+       ((inside-progn-fn1 t)
+
+; It is tempting to bind ld-always-skip-top-level-locals to nil here, as we do
+; in process-embedded-events.  A reason might seem to be that we don't want bad
+; local events in the certification world, for example as follows.  However,
+; that's not necessary, because local events are skipped
+
+; (set-ld-always-skip-top-level-locals t state)
+; (defun f (x) x)
+; (progn
+;   (defun g (x) x)
+;   (local (defun f (x) (cons x x))))
+
+; But it isn't actually a problem for the conflicting defuns of f to wind up in
+; the portcullis commands of a .cert file, because the local one will be
+; ignored when including the book.
+
+        )
        (mv-let
          (erp val expansion-alist ignore-kpa state)
          (pprogn
@@ -13764,9 +13781,8 @@
                                                       ctx
                                                       ("Provisionally certified")
                                                       "The book ~s0 was only ~
-                                                        provisionally ~
-                                                        certified (proofs ~
-                                                        ~s1)."
+                                                       provisionally ~
+                                                       certified (proofs ~s1)."
                                                       full-book-string
                                                       (if (eq (access
                                                                cert-obj
@@ -13877,7 +13893,19 @@
                                                     (list :include-book
                                                           full-book-name)
                                                     wrld6)
-                                                 wrld6)))))
+                                                 (if (global-val
+                                                      'skip-proofs-seen
+                                                      wrld3) ; installed world
+
+; In this case, the included book is certified and also, since
+; old-skip-proofs-seen = nil, no proofs had been skipped at the time execution
+; began for this include-book.  So if the world after including the book has
+; skip-proofs-seen set, we restore the value to nil.
+
+                                                     (global-set
+                                                      'skip-proofs-seen
+                                                      nil wrld6)
+                                                   wrld6))))))
                                           (wrld8
 
 ; Various events need the answer to the question: have the apply$ books been
@@ -27185,6 +27213,7 @@
                (value :q))
              :ld-prompt  nil
              :ld-missing-input-ok nil
+             :ld-always-skip-top-level-locals nil
              :ld-pre-eval-filter :all
              :ld-pre-eval-print  nil
              :ld-post-eval-print :command-conventions
@@ -32215,7 +32244,8 @@
 ; During make-event expansion, there is no reason to prohibit local events
 ; (unless we move to inside an encapsulate or include-book, of course).
 
-       nil))
+       nil)
+      (ld-always-skip-top-level-locals nil))
      (protect-system-state-globals
       (er-let* ((result
 

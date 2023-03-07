@@ -4862,7 +4862,7 @@
 ; This utility returns true when we are skipping proofs because the system
 ; insists on that, but not because of any user action that is taken to skip
 ; proofs.  Normally we can just check state global 'skip-proofs-by-system.
-; However, without the first disjunct below, we fail to pick up a skip-proofs
+; However, without the first conjunct below, we fail to pick up a skip-proofs
 ; during the Pcertify step of provisional certification.
 
   (and (not (f-get-global 'inside-skip-proofs state))

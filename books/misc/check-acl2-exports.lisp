@@ -211,7 +211,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    SET-WARNINGS-AS-ERRORS
   ))
 
 (defconst *special-ops*
