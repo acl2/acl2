@@ -398,8 +398,15 @@
   (xdoc::topstring
    (xdoc::p
     "This ACL2 function wraps @(tsee eval-binary-strict-pure)
-     to take and return expression values."))
-  (b* ((val1 (expr-value->value arg1))
+     to take and return expression values.")
+   (xdoc::p
+    "First we perform array-to-pointer conversion [C:5.3.2.1/3],
+     on both operands."))
+  (b* ((arg1 (apconvert-expr-value arg1))
+       ((when (errorp arg1)) arg1)
+       (arg2 (apconvert-expr-value arg2))
+       ((when (errorp arg2)) arg2)
+       (val1 (expr-value->value arg1))
        (val2 (expr-value->value arg2))
        (val (eval-binary-strict-pure op val1 val2))
        ((when (errorp val)) val))
