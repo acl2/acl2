@@ -1,6 +1,6 @@
 ; A simple utility to make a lambda application (drops ignored vars)
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -63,6 +63,7 @@
 
 ;; Make a term that wraps BODY in a binding of the FORMALS to the ACTUALS, but make a LAMBDA instead of a LET.
 ;; Similar to make-lambda-application, but make-lambda-application is worse because of the accumulator in all-vars1.
+;; Similar to make-lambda-term-simple, but this avoids adding unnecessary bindings.
 (defund make-lambda-application-simple (formals actuals body)
   (declare (xargs :guard (and (pseudo-termp body)
                               (symbol-listp formals)
@@ -78,7 +79,7 @@
       ;; Binds the formals to their actuals and all other vars to themselves:
       (let ((new-formals (append reduced-formals extra-vars))
             (new-actuals (append reduced-actuals extra-vars)))
-        (if (equal new-formals new-actuals) ; also handles the case where new-formals is empty
+        (if (equal new-formals new-actuals) ; also handles the case where new-formals is empty, todo: just compare the reduced lists
             body ; no need to make a lambda at all (it would be trivial)
           `((lambda ,new-formals ,body) ,@new-actuals))))))
 

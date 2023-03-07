@@ -31,3 +31,15 @@
   (implies (symbol-listp formals)
            (symbol-listp (non-trivial-formals formals args)))
   :hints (("Goal" :in-theory (enable non-trivial-formals))))
+
+(defthm non-trivial-formals-of-cons-and-cons
+  (equal (non-trivial-formals (cons formal formals) (cons arg args))
+         (if (equal formal arg)
+             (non-trivial-formals formals args)
+           (cons formal (non-trivial-formals formals args))))
+  :hints (("Goal" :in-theory (enable non-trivial-formals))))
+
+(defthm non-trivial-formals-same
+  (equal (non-trivial-formals formals formals)
+         nil)
+  :hints (("Goal" :induct t :in-theory (enable non-trivial-formals))))

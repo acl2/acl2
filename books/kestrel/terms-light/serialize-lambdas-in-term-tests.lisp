@@ -73,15 +73,20 @@
               '(let* ((a-temp1 a) (a b) (b (cons a-temp1 a-temp)))
                  (< a b)))
 
-;; ;; fixme
-;; ;; Example that shows that using sublis-var can inroduce unserialized lambdas!
+;; Old behavior, that shows that using sublis-var can inroduce unserialized lambdas!
+;; (assert-equal (serialize-lets-in-term '(let ((a b) (b (let ((b y)) (< a b)))) (< a b)) (w state))
+;;               '(let* ((a-temp a)
+;;                       (a b)
+;;                       (b (let ((b y) (a a-temp)) (< a b)))) ; the let binds 2 vars!
+;;                  (< a b)))
+
 (assert-equal (serialize-lets-in-term '(let ((a b) (b (let ((b y)) (< a b)))) (< a b)) (w state))
               '(let* ((a-temp a)
                       (a b)
-                      (b (let ((b y) (a a-temp)) (< a b)))) ; the let binds 2 vars!
+                      (b (let ((b y)) (< a-temp b))))
                  (< a b)))
 
-;; ;; proposed new behavior:
+;; alternate behavior (todo: compare to the above!):
 ;; (assert-equal (serialize-lets-in-term '(let ((a b) (b (let ((b y)) (< a b)))) (< a b)) (w state))
 ;;               '(let* ((a-temp a)
 ;;                       (a b)
