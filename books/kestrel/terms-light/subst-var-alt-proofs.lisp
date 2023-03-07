@@ -83,7 +83,7 @@
                   (lambdas-closed-in-termp term))
              (lambdas-closed-in-termp (subst-var-alt var replacement term)))
     :flag subst-var-alt)
-  (defthm lambdas-closed-in-termp-of-subst-var-alt-lst
+  (defthm lambdas-closed-in-termsp-of-subst-var-alt-lst
     (implies (and (symbolp var)
                   (pseudo-termp replacement)
                   (lambdas-closed-in-termp replacement)
@@ -349,7 +349,7 @@
                   (all-lambdas-serialized-in-termp term))
              (all-lambdas-serialized-in-termp (subst-var-alt var replacement term)))
     :flag subst-var-alt)
-  (defthm all-lambdas-serialized-in-termp-of-subst-var-alt-lst
+  (defthm all-lambdas-serialized-in-termsp-of-subst-var-alt-lst
     (implies (and (symbolp var)
                   (pseudo-termp replacement)
                   (all-lambdas-serialized-in-termp replacement)
@@ -415,7 +415,7 @@
                   (no-nils-in-termp term))
              (no-nils-in-termp (subst-var-alt var replacement term)))
     :flag subst-var-alt)
-  (defthm no-nils-in-termp-of-subst-var-alt-lst
+  (defthm no-nils-in-termsp-of-subst-var-alt-lst
     (implies (and (symbolp var)
                   var
                   (pseudo-termp replacement)
@@ -945,3 +945,59 @@
                             set-difference-equal
                             empty-eval-of-fncall-args-back
                             CDR-OF-ASSOC-EQUAL-OF-EMPTY-EVAL-CDRS)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm no-duplicate-lambda-formals-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
+  (implies (no-duplicate-lambda-formals-in-termsp actuals)
+           (no-duplicate-lambda-formals-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
+
+(defthm no-duplicatesp-equal-of-mv-nth-0-of-filter-formals-and-actuals
+  (implies (no-duplicatesp-equal formals)
+           (no-duplicatesp-equal (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))))
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
+
+(defthm no-duplicate-lambda-formals-in-termsp-of-map-lookup-equal
+  (implies (no-duplicate-lambda-formals-in-termsp (strip-cdrs alist))
+           (no-duplicate-lambda-formals-in-termsp (map-lookup-equal keys alist)))
+  :hints (("Goal" :in-theory (enable map-lookup-equal))))
+
+;move
+(defthm no-duplicate-lambda-formals-in-termp-of-make-lambda-application-simple
+  (implies (and (pseudo-termp body)
+                (no-duplicate-lambda-formals-in-termp body)
+                (symbol-listp formals)
+                (no-duplicatesp-equal formals)
+                (pseudo-term-listp actuals)
+                (no-duplicate-lambda-formals-in-termsp actuals)
+                (equal (len formals) (len actuals)))
+           (no-duplicate-lambda-formals-in-termp (make-lambda-application-simple formals actuals body)))
+  :hints (("Goal" :in-theory (e/d (make-lambda-application-simple
+                                   no-duplicate-lambda-formals-in-termp)
+                                  (mv-nth-0-of-filter-formals-and-actuals len)))))
+
+;gen?
+(defthm-flag-subst-var-alt
+  (defthm no-duplicate-lambda-formals-in-termp-of-subst-var-alt
+    (implies (and (symbolp var)
+                  (pseudo-termp replacement)
+                  (no-duplicate-lambda-formals-in-termp replacement)
+                  (pseudo-termp term)
+                  (no-duplicate-lambda-formals-in-termp term))
+             (no-duplicate-lambda-formals-in-termp (subst-var-alt var replacement term)))
+    :flag subst-var-alt)
+  (defthm no-duplicate-lambda-formals-in-termsp-of-subst-var-alt-lst
+    (implies (and (symbolp var)
+                  (pseudo-termp replacement)
+                  (no-duplicate-lambda-formals-in-termp replacement)
+                  (pseudo-term-listp terms)
+                  (no-duplicate-lambda-formals-in-termsp terms))
+             (no-duplicate-lambda-formals-in-termsp (subst-var-alt-lst var replacement terms)))
+    :flag subst-var-alt-lst)
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (subst-var-alt
+                            subst-var-alt-lst
+                            pseudo-termp-when-symbolp
+                            no-duplicate-lambda-formals-in-termp)
+                           (pseudo-termp)))))
