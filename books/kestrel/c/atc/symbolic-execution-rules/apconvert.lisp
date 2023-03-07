@@ -31,78 +31,6 @@
     "These leave most expression values unchanged,
      but they convert integer arrays with object designators to pointers."))
 
-  (defruled apconvert-expr-value-when-ucharp
-    (implies (ucharp x)
-             (equal (apconvert-expr-value (expr-value x objdes))
-                    (expr-value x objdes)))
-    :enable apconvert-expr-value)
-
-  (defruled apconvert-expr-value-when-scharp
-    (implies (scharp x)
-             (equal (apconvert-expr-value (expr-value x objdes))
-                    (expr-value x objdes)))
-    :enable apconvert-expr-value)
-
-  (defruled apconvert-expr-value-when-ushortp
-    (implies (ushortp x)
-             (equal (apconvert-expr-value (expr-value x objdes))
-                    (expr-value x objdes)))
-    :enable apconvert-expr-value)
-
-  (defruled apconvert-expr-value-when-sshortp
-    (implies (sshortp x)
-             (equal (apconvert-expr-value (expr-value x objdes))
-                    (expr-value x objdes)))
-    :enable apconvert-expr-value)
-
-  (defruled apconvert-expr-value-when-uintp
-    (implies (uintp x)
-             (equal (apconvert-expr-value (expr-value x objdes))
-                    (expr-value x objdes)))
-    :enable apconvert-expr-value)
-
-  (defruled apconvert-expr-value-when-sintp
-    (implies (sintp x)
-             (equal (apconvert-expr-value (expr-value x objdes))
-                    (expr-value x objdes)))
-    :enable apconvert-expr-value)
-
-  (defruled apconvert-expr-value-when-ulongp
-    (implies (ulongp x)
-             (equal (apconvert-expr-value (expr-value x objdes))
-                    (expr-value x objdes)))
-    :enable apconvert-expr-value)
-
-  (defruled apconvert-expr-value-when-slongp
-    (implies (slongp x)
-             (equal (apconvert-expr-value (expr-value x objdes))
-                    (expr-value x objdes)))
-    :enable apconvert-expr-value)
-
-  (defruled apconvert-expr-value-when-ullongp
-    (implies (ullongp x)
-             (equal (apconvert-expr-value (expr-value x objdes))
-                    (expr-value x objdes)))
-    :enable apconvert-expr-value)
-
-  (defruled apconvert-expr-value-when-sllongp
-    (implies (sllongp x)
-             (equal (apconvert-expr-value (expr-value x objdes))
-                    (expr-value x objdes)))
-    :enable apconvert-expr-value)
-
-  (defruled apconvert-expr-value-when-value-pointer
-    (implies (value-case x :pointer)
-             (equal (apconvert-expr-value (expr-value x objdes))
-                    (expr-value x objdes)))
-    :enable apconvert-expr-value)
-
-  (defruled apconvert-expr-value-when-value-struct
-    (implies (value-case x :struct)
-             (equal (apconvert-expr-value (expr-value x objdes))
-                    (expr-value x objdes)))
-    :enable apconvert-expr-value)
-
   (defruled apconvert-expr-value-when-not-value-array
     (implies (not (value-case x :array))
              (equal (apconvert-expr-value (expr-value x objdes))
@@ -210,19 +138,7 @@
              value-array->elemtype-when-sllong-arrayp))
 
   (defval *atc-apconvert-rules*
-    '(apconvert-expr-value-when-ucharp
-      apconvert-expr-value-when-scharp
-      apconvert-expr-value-when-ushortp
-      apconvert-expr-value-when-sshortp
-      apconvert-expr-value-when-uintp
-      apconvert-expr-value-when-sintp
-      apconvert-expr-value-when-ulongp
-      apconvert-expr-value-when-slongp
-      apconvert-expr-value-when-ullongp
-      apconvert-expr-value-when-sllongp
-      apconvert-expr-value-when-value-pointer
-      apconvert-expr-value-when-value-struct
-      apconvert-expr-value-when-not-value-array
+    '(apconvert-expr-value-when-not-value-array
       apconvert-expr-value-when-uchar-arrayp
       apconvert-expr-value-when-schar-arrayp
       apconvert-expr-value-when-ushort-arrayp

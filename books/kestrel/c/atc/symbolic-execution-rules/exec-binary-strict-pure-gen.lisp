@@ -217,16 +217,7 @@
                              type-of-value-when-ulongp
                              type-of-value-when-sllongp
                              type-of-value-when-ullongp))
-                    apconvert-expr-value-when-ucharp
-                    apconvert-expr-value-when-scharp
-                    apconvert-expr-value-when-ushortp
-                    apconvert-expr-value-when-sshortp
-                    apconvert-expr-value-when-uintp
-                    apconvert-expr-value-when-sintp
-                    apconvert-expr-value-when-ulongp
-                    apconvert-expr-value-when-slongp
-                    apconvert-expr-value-when-ullongp
-                    apconvert-expr-value-when-sllongp
+                    apconvert-expr-value-when-not-value-array
                     value-integer
                     value-sint-to-sint
                     value-uint-to-uint

@@ -225,7 +225,7 @@
           `(("Goal"
              :in-theory (enable exec-unary
                                 exec-indir
-                                apconvert-expr-value-when-value-pointer))))
+                                apconvert-expr-value-when-not-value-array))))
          (event `(defruled ,name
                    ,formula
                    :hints ,hints)))
