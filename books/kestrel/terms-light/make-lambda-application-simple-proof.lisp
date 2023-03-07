@@ -1,6 +1,6 @@
 ; Proofs of properties of make-lambda-application-simple
 ;
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -310,11 +310,23 @@
 (defthm lambdas-closed-in-termp-of-make-lambda-application-simple
   (implies (and (pseudo-termp body)
                 (symbol-listp formals)
-                (pseudo-term-listp actuals)
-                (lambdas-closed-in-termsp actuals)
-                (lambdas-closed-in-termp body))
-           (lambdas-closed-in-termp (make-lambda-application-simple formals actuals body)))
+                (pseudo-term-listp actuals))
+           (equal (lambdas-closed-in-termp (make-lambda-application-simple formals actuals body))
+                  (and (lambdas-closed-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals (free-vars-in-term body))))
+                       (lambdas-closed-in-termp body))))
   :hints (("Goal" :do-not-induct t
            :in-theory (enable make-lambda-application-simple
                               lambdas-closed-in-termp ;todo
+                              ))))
+
+(defthm no-nils-in-termp-of-make-lambda-application-simple
+  (implies (and (pseudo-termp body)
+                (symbol-listp formals)
+                (pseudo-term-listp actuals))
+           (equal (no-nils-in-termp (make-lambda-application-simple formals actuals body))
+                  (and (no-nils-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals (free-vars-in-term body))))
+                       (no-nils-in-termp body))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (enable make-lambda-application-simple
+                              no-nils-in-termp ;todo
                               ))))
