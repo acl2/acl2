@@ -273,7 +273,9 @@
      we formalize that elsewhere,
      while here we assume that the argument expression of @('&')
      has been evaluated (because the special cases above do not hold),
-     and the resulting expression value is passed here."))
+     and the resulting expression value is passed here.")
+   (xdoc::p
+    "We perform no array-to-pointer conversion [C:6.3.2.1/3]."))
   (b* ((objdes (expr-value->object arg))
        ((unless objdes)
         (error (list :not-lvalue-result (expr-value-fix arg))))
