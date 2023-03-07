@@ -20,6 +20,7 @@
 (include-book "sublis-var-simple")
 (include-book "sublis-var-simple-proofs")
 (include-book "subst-var-alt")
+(include-book "subst-var-alt-proofs")
 (include-book "sublis-var-and-magic-eval")
 (include-book "expr-calls-fn")
 (include-book "unary-lambdap")
