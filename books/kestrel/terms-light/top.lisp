@@ -49,6 +49,7 @@
 (include-book "strengthen-conjuncts")
 (include-book "reconstruct-lets-in-term")
 (include-book "serialize-lambdas-in-term")
+(include-book "serialize-lambdas-in-term-proofs")
 (include-book "let-bind-formals-in-calls")
 (include-book "restore-mv-lets-in-term")
 (include-book "substitute-unnecessary-lambda-vars")
