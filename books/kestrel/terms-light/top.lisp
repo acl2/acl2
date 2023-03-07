@@ -1,6 +1,6 @@
 ; Top file for terms-light library
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,12 +19,14 @@
 (include-book "free-vars-in-term")
 (include-book "sublis-var-simple")
 (include-book "sublis-var-simple-proofs")
+(include-book "subst-var-alt")
 (include-book "sublis-var-and-magic-eval")
 (include-book "expr-calls-fn")
 (include-book "unary-lambdap")
 (include-book "wrap-pattern-around-term")
 (include-book "lambda-free-termp")
 (include-book "lambdas-closed-in-termp")
+(include-book "all-lambdas-serialized-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "expand-lambdas-in-term")
 (include-book "expand-lambdas-in-term-proof")
