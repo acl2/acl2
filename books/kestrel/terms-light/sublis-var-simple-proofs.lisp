@@ -215,7 +215,6 @@
   :hints (("Goal" :in-theory (enable make-lambda-terms-simple map-lookup-equal))))
 
 ;; The result of sublis-var-simple evaluates the same as if we had made a lambda.
-;move
 (defthm-flag-sublis-var-simple
   (defthm sublis-var-simple-correct
     (implies (and (symbol-alistp alist) ; usually a symbol-term-alistp
