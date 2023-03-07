@@ -165,12 +165,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read the variable's value (if any) from the computation state.
-     If the value is an array, we return a pointer value for the array.
+    "We obtain the object designator of the variable, propagating errors.
+     We read the value from the object designator,
+     which is guaranteed to work as proved in @(tsee read-object).")
+   (xdoc::p
+    "If the value is an array, we return a pointer value for the array.
      As explained in @(tsee exec-arrsub),
      our treatment of pointers and arrays differs slightly from full C,
      but leads to equivalent results in our C subset.
-     This is essentially like an array-to-pointer conversion,
+     This is essentially like an array-to-pointer conversion [C:6.3.2.1/3],
      but with the pointer pointing to the whole array
      instead of the first element,
      and with the pointer type being the array element type.
@@ -178,27 +181,25 @@
      currently @(tsee exec-block-item) prohibits local arrays,
      so a variable that contains an array can only be a global one.
      All of this will be properly generalized eventually,
-     to bring things more in line with full C.")
+     to bring things more in line with full C;
+     in particular, array-to-pointer conversions
+     will be moved to a separate ACL2 function,
+     called for the execution of the construct that encloses the variable.")
    (xdoc::p
-    "We actually an expression value.
-     If the variable's value is an array,
-     the expression value has no object designator:
-     this is because we are effectively returning a pointer value.
-     If the variable's value is not array,
-     the expression value has that variable's object designator.
-     Eventually the array case should be treated the same as the non-array case,
-     i.e. we should return an expression value with an object designator
-     in all cases, but see discussion above about arrays."))
-  (b* ((val (read-var id compst))
-       ((when (errorp val)) val))
+    "The alternative definition theorem is temporary,
+     for backward compatibility until more parts of the C dynamic semantics
+     have been properly exteded."))
+  (b* ((objdes (objdesign-of-var id compst))
+       ((unless objdes) (error (list :no-object-designator (ident-fix id))))
+       (val (read-object objdes compst)))
     (if (value-case val :array)
         (make-expr-value
          :value (make-value-pointer :core (pointer-valid (objdesign-static id))
                                     :reftype (value-array->elemtype val))
          :object nil)
-      (make-expr-value
-       :value val
-       :object (objdesign-of-var id compst))))
+      (make-expr-value :value val :object objdes)))
+  :guard-hints
+  (("Goal" :in-theory (enable valuep-of-read-object-of-objdesign-of-var)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
