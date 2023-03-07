@@ -925,7 +925,15 @@
        :enable (objdesign-of-var-aux
                 len
                 fix
-                nth-of-minus1-and-cdr)))))
+                nth-of-minus1-and-cdr))
+
+     (defruled objdesign-of-var-aux-iff-read-auto-var-aux
+       (iff (objdesign-of-var-aux var frame scopes)
+            (read-auto-var-aux var scopes))
+       :induct t
+       :enable (objdesign-of-var-aux
+                read-auto-var-aux
+                cdr-of-in-when-scopep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1214,14 +1222,6 @@
      ((:instance objdesign-of-var-aux-lemma
                  (frame (+ -1 (len (compustate->frames compst))))
                  (scopes (frame->scopes (car (compustate->frames compst)))))))
-
-   (defruled objdesign-of-var-aux-iff-read-auto-var-aux
-     (iff (objdesign-of-var-aux var frame scopes)
-          (read-auto-var-aux var scopes))
-     :induct t
-     :enable (objdesign-of-var-aux
-              read-auto-var-aux
-              cdr-of-in-when-scopep))
 
    (defruled read-var-to-read-object-when-static
      (b* ((objdes (objdesign-of-var var compst))
