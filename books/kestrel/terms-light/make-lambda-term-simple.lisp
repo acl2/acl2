@@ -21,7 +21,7 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
-;; Makes a lambda hat binds the FORMALS to the ACTUALS in the BODY (and binds extra vars as needed to make the lambda closed).
+;; Makes a lambda that binds the FORMALS to the ACTUALS in the BODY (and binds extra vars as needed to make the lambda closed).
 ;; Similar to make-lambda-term, but make-lambda-term is worse because of the accumulator in all-vars1.
 ;; We could consider not making a lambda when FORMALS is nil, but perhaps we should keep this simple, given the name.
 (defund make-lambda-term-simple (formals actuals body)
