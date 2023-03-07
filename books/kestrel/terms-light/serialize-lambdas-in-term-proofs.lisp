@@ -80,20 +80,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
- ;; Checks whether every lambda in TERM has at most on non-trivial formal.
+ ;; Checks whether every lambda in TERM has at most 1 non-trivial formal.
  (defun all-lambdas-serialized-in-termp (term)
    (declare (xargs :guard (pseudo-termp term)))
    (if (or (variablep term)
            (quotep term))
        t
-     ;; TERM is a function call (perhaps a lambda application_
+     ;; TERM is a function call (perhaps a lambda application)
      (let ((args (fargs term)))
        (and (all-lambdas-serialized-in-termsp args)
             (let ((fn (ffn-symb term)))
               (if (not (flambdap fn))
                   t
                 ;; more than one non-trivial formal would mean the lambda has not been serialized
-                (<= (len (non-trivial-formals (lambda-formals fn) args)) 1)))))))
+                (and (<= (len (non-trivial-formals (lambda-formals fn) args)) 1)
+                     (all-lambdas-serialized-in-termp (lambda-body fn)))))))))
 
  (defun all-lambdas-serialized-in-termsp (terms)
    (declare (xargs :guard (pseudo-term-listp terms)))
