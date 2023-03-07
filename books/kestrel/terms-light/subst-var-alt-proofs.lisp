@@ -24,8 +24,8 @@
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
 (include-book "lambdas-closed-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
-(include-book "sublis-var-simple-proofs") ; todo: split out make-lambda-terms-simple and make this local
-(include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system)
+(include-book "make-lambda-terms-simple")
+(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "make-lambda-application-simple-proof"))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
