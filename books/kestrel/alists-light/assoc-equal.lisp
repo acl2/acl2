@@ -109,6 +109,16 @@
                 (member-equal key (strip-cars alist))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
+(defthm assoc-equal-when-member-equal-of-strip-cars-iff-cheap
+  (implies (and (syntaxp (not (equal key ''nil))) ; prevent loops
+                (member-equal key (strip-cars alist)))
+           (iff (assoc-equal key alist)
+                (if (equal nil key)
+                    (assoc-equal nil alist) ; more concrete than the lhs
+                  t)))
+  :rule-classes ((:rewrite :backchain-limit-lst (nil 0)))
+  :hints (("Goal" :in-theory (enable assoc-equal member-equal))))
+
 ;; Not sure which normal form is better
 (defthmd member-equal-of-strip-cars-iff-assoc-equal
   (implies (or (alistp alist)

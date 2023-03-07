@@ -80,6 +80,12 @@
        (member-equal key keys))
   :hints (("Goal" :in-theory (enable pairlis$))))
 
+;; limit?
+(defthm assoc-equal-of-pairlis$-when-not-member-equal
+  (implies (not (member-equal key keys))
+           (equal (assoc-equal key (pairlis$ keys vals))
+                  nil)))
+
 (defthm pairlis$-of-true-list-fix-arg1
   (equal (pairlis$ (true-list-fix x) y)
          (pairlis$ x y))
