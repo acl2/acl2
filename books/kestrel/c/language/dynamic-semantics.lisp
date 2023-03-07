@@ -66,6 +66,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define apconvert-expr-value ((eval expr-valuep))
+  :returns (eval1 expr-value-resultp)
+  :short "Array-to-pointer conversion [C:6.3.2.1/3] on expression values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Under most circumstances,
+     an array is converted to a pointer to the first element of the array
+     [C:6.3.2.1/3];
+     indeed, arrays are used like pointers most of the time.")
+   (xdoc::p
+    "This cannot be formalized on values: we need expression values,
+     because we need to know where the array is in storage
+     (i.e. we need to know its object designator),
+     so that we can construct a pointer to it.
+     Non-array expression values are left unchanged.
+     If the array has no object designator, we return an error;
+     this should only happen for arrays with temporary lifetime [C:6.2.4/8],
+     which are currently not part of our C subset.")
+   (xdoc::p
+    "We make a slight approximation for now:
+     instead of returning a pointer to the first element of the array,
+     we return a pointer to the array.
+     This is adequate in our current formalization of our C subset,
+     because of the way we formalize array indexing
+     (e.g. see @(tsee exec-arrsbu));
+     however, we plan to make this, and array indexing,
+     consistent with full C.")
+   (xdoc::p
+    "The static counterpart of this is @(tsee apconvert-ype)."))
+  (b* (((expr-value eval) eval))
+    (if (value-case eval.value :array)
+        (if eval.object
+            (make-expr-value
+             :value (make-value-pointer
+                     :core (pointer-valid eval.object)
+                     :reftype (value-array->elemtype eval.value))
+             :object nil)
+          (error (list :array-without-designator (expr-value-fix eval))))
+      (expr-value-fix eval)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define eval-iconst ((ic iconstp))
   :returns (val value-resultp)
   :short "Evaluate an integer constant."
