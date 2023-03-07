@@ -933,7 +933,17 @@
        :induct t
        :enable (objdesign-of-var-aux
                 read-auto-var-aux
-                cdr-of-in-when-scopep)))))
+                cdr-of-in-when-scopep))))
+
+  ///
+
+  (defruled objdesign-of-var-when-valuep-of-read-var
+    (implies (valuep (read-var id compst))
+             (objdesign-of-var id compst))
+    :enable (read-var
+             read-static-var
+             read-auto-var
+             objdesign-of-var-aux-iff-read-auto-var-aux)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
