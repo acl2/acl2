@@ -103,6 +103,12 @@
                     (expr-value x objdes)))
     :enable apconvert-expr-value)
 
+  (defruled apconvert-expr-value-when-not-value-array
+    (implies (not (value-case x :array))
+             (equal (apconvert-expr-value (expr-value x objdes))
+                    (expr-value x objdes)))
+    :enable apconvert-expr-value)
+
   (defruled apconvert-expr-value-when-uchar-arrayp
     (implies (and (uchar-arrayp x)
                   (objdesignp objdes))
@@ -216,6 +222,7 @@
       apconvert-expr-value-when-sllongp
       apconvert-expr-value-when-value-pointer
       apconvert-expr-value-when-value-struct
+      apconvert-expr-value-when-not-value-array
       apconvert-expr-value-when-uchar-arrayp
       apconvert-expr-value-when-schar-arrayp
       apconvert-expr-value-when-ushort-arrayp
