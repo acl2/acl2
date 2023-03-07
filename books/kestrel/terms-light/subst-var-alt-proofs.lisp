@@ -25,12 +25,21 @@
 (include-book "lambdas-closed-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "sublis-var-simple-proofs") ; todo: split out make-lambda-terms-simple and make this local
+(include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system)
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "make-lambda-application-simple-proof"))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+(local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
@@ -395,10 +404,6 @@
                   (<= (nfix n) (len lst))))
   :hints (("Goal" :in-theory (enable take))))
 
-(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
-(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
-(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
-
 (defthm-flag-subst-var-alt
   (defthm no-nils-in-termp-of-subst-var-alt
     (implies (and (symbolp var)
@@ -431,9 +436,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
-(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
-(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 
 ;; true for any eval
 (defthm empty-eval-list-of-kwote-lst
@@ -575,9 +577,6 @@
   (implies (no-duplicatesp-equal formals)
            (no-duplicatesp-equal (non-trivial-formals formals args)))
   :hints (("Goal" :in-theory (enable non-trivial-formals no-duplicatesp-equal))))
-
-(include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system)
-(local (include-book "kestrel/alists-light/alistp" :dir :system))
 
      ;dup
 (defthm empty-eval-of-append-irrel-arg1
@@ -769,8 +768,6 @@
            :do-not '(preprocess generalize eliminate-destructors))))
 
 ;; (EMPTY-EVAL VAR (CONS (CONS VAR (EMPTY-EVAL REPLACEMENT A)) A))
-
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
 ;; for the proof, consider 3 cases: var, other trivial formal, non-trivial formal
 (defthm main.help
