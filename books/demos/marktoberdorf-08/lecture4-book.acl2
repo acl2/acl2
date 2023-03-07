@@ -1,6 +1,10 @@
 ; See :DOC run-script.
 
 (include-book "tools/run-script" :dir :system)
+; The call below of set-inhibit-warnings is actually a local event.  The
+; following command avoids potential skipping of locals that may be in force,
+; for example from an action by the build system.
+(set-ld-always-skip-top-level-locals nil state)
 ; Here we avoid verbose theory warnings, which differ between ACL2 and ACL2(r).
 ; We conclude with (ubu 1) so that a local event won't be in the portcullis
 ; commands.  Alternatively, we could use set-inhibit-warnings!; but that would

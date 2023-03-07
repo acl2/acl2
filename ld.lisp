@@ -404,6 +404,9 @@
           (ld-missing-input-ok
            (er-progn (chk-ld-missing-input-ok val ctx state)
                      (value pair)))
+          (ld-always-skip-top-level-locals
+           (er-progn (chk-ld-always-skip-top-level-locals val ctx state)
+                     (value pair)))
           (ld-pre-eval-filter
            (er-progn (chk-ld-pre-eval-filter val ctx state)
                      (value pair)))
@@ -710,6 +713,8 @@
          (f-put-global 'ld-prompt (cdar alist) state))
         (ld-missing-input-ok
          (f-put-global 'ld-missing-input-ok (cdar alist) state))
+        (ld-always-skip-top-level-locals
+         (f-put-global 'ld-always-skip-top-level-locals (cdar alist) state))
         (ld-pre-eval-filter
          (if (and (f-boundp-global 'ld-pre-eval-filter state); for boot-strap
                   (eq (f-get-global 'ld-pre-eval-filter state) :illegal-state))
@@ -770,6 +775,8 @@
               (f-get-global 'ld-prompt state))
         (cons 'ld-missing-input-ok
               (f-get-global 'ld-missing-input-ok state))
+        (cons 'ld-always-skip-top-level-locals
+              (f-get-global 'ld-always-skip-top-level-locals state))
         (cons 'ld-pre-eval-filter
               (f-get-global 'ld-pre-eval-filter state))
         (cons 'ld-pre-eval-print
@@ -2055,6 +2062,9 @@
               (ld-redefinition-action 'same ld-redefinition-actionp)
               (ld-prompt 'same ld-promptp)
               (ld-missing-input-ok 'same ld-missing-input-okp)
+              (ld-always-skip-top-level-locals
+               'same
+               ld-always-skip-top-level-localsp)
               (ld-pre-eval-filter 'same ld-pre-eval-filterp)
               (ld-pre-eval-print 'same ld-pre-eval-printp)
               (ld-post-eval-print 'same ld-post-eval-printp)
@@ -2099,6 +2109,10 @@
                  nil)
              (if ld-missing-input-okp
                  (list `(cons 'ld-missing-input-ok ,ld-missing-input-ok))
+               nil)
+             (if ld-always-skip-top-level-localsp
+                 (list `(cons 'ld-always-skip-top-level-locals
+                              ,ld-always-skip-top-level-locals))
                nil)
              (if ld-pre-eval-filterp
                  (list `(cons 'ld-pre-eval-filter ,ld-pre-eval-filter))
@@ -2555,6 +2569,7 @@
           :ld-skip-proofsp t
           :ld-prompt nil
           :ld-missing-input-ok nil
+          :ld-always-skip-top-level-locals nil
           :ld-pre-eval-filter filter
           :ld-pre-eval-print nil
           :ld-post-eval-print :command-conventions
@@ -3696,6 +3711,7 @@
                       (ld-verbose nil)
                       (ld-prompt nil)
                       (ld-missing-input-ok nil)
+                      (ld-always-skip-top-level-locals nil)
                       (ld-pre-eval-filter :all)
                       (ld-pre-eval-print :never)
                       (ld-post-eval-print nil)
