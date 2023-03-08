@@ -32,6 +32,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,6 +346,7 @@
                (<= (pseudo-term-list-count new-actuals)
                    (pseudo-term-list-count actuals))))
     :rule-classes :linear
+    :induct t
     :enable (remove-equal-formals-actuals
              pseudo-term-list-count))
 
@@ -644,7 +646,7 @@
     (defret len-of-fty-if-to-if*-lst
       (equal (len terms1)
              (len terms))
-      :hints (("Goal" :in-theory (enable len)))))
+      :hints (("Goal" :induct (len terms) :in-theory (enable len)))))
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 

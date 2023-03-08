@@ -26,6 +26,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -104,7 +105,7 @@
 
 (define atc-make-mv-nth-terms ((indices nat-listp) (term pseudo-termp))
   :returns (terms pseudo-term-listp
-                  :hints (("Goal" :in-theory (enable pseudo-termp))))
+                  :hints (("Goal" :induct t :in-theory (enable pseudo-termp))))
   :short "Create a list of @(tsee mv-nth)s applied to a term
           for a list of indices."
   (cond ((endp indices) nil)
@@ -113,7 +114,8 @@
   ///
   (defret len-of-atc-make-mv-nth-terms
     (equal (len terms)
-           (len indices))))
+           (len indices))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3029,4 +3031,5 @@
   ///
 
   (defret stmt-kind-of-atc-gen-loop-stmt
-    (equal (stmt-kind (lstmt-gout->stmt gout)) :while)))
+    (equal (stmt-kind (lstmt-gout->stmt gout)) :while)
+    :hints (("Goal" :induct t))))
