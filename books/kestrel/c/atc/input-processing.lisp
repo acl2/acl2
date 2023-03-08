@@ -45,6 +45,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,6 +58,7 @@
 (defrulel symbol-listp-of-strip-cars-when-symbol-alistp
   (implies (symbol-alistp x)
            (symbol-listp (strip-cars x)))
+  :induct t
   :enable symbol-alistp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -750,7 +752,14 @@
        (retok (acons fn fn-thm fn-thms)
               (acons fn fn-limit fn-limits)
               (acons fn fn-body-limit fn-body-limits)))
-     :prepwork ((local (in-theory (enable acons)))))))
+     :prepwork ((local (in-theory (enable acons))))
+     :verify-guards nil ; done below
+     ///
+     (verify-guards atc-process-const-name-aux
+       :hints
+       (("Goal"
+         :in-theory
+         (enable acl2::alistp-when-symbol-symbol-alistp-rewrite)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
