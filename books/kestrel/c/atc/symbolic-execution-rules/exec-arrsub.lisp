@@ -18,6 +18,8 @@
 (include-book "syntaxp")
 (include-book "arrays")
 (include-book "value-integer-get")
+(include-book "integers")
+(include-book "apconvert")
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -59,6 +61,7 @@
           (pack atype-array-length '-alt-def))
          (elemtype-when-apred
           (pack 'value-array->elemtype-when- apred))
+         (value-kind-when-itype (pack 'value-kind-when- ipred))
          (name (pack 'exec-arrsub-when- apred '-and- ipred))
          (integer-from-itype (pack 'integer-from- ifixtype))
          (formula `(implies
@@ -96,7 +99,9 @@
                             ifix
                             nfix
                             value-array->length
-                            not-errorp-when-valuep)
+                            not-errorp-when-valuep
+                            apconvert-expr-value-when-not-value-array
+                            ,value-kind-when-itype)
                    :prep-lemmas
                    ((defrule lemma
                       (implies (and (,atype-array-index-okp array index)

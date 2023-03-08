@@ -454,7 +454,9 @@
   (xdoc::topstring
    (xdoc::p
     "We perform array-to-pointer conversion [C:5.3.2.1/3] on the operand."))
-  (b* ((val (eval-cast tyname (expr-value->value arg)))
+  (b* ((arg (apconvert-expr-value arg))
+       ((when (errorp arg)) arg)
+       (val (eval-cast tyname (expr-value->value arg)))
        ((when (errorp val)) val))
     (make-expr-value :value val :object nil))
   :hooks (:fix))
@@ -466,6 +468,9 @@
   :short "Execute the array subscripting operation on expression values."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "We perform array-to-pointer conversion [C:5.3.2.1/3]
+     on both operands.")
    (xdoc::p
     "The first operand must be a valid pointer to an array;
      the pointer must have the element type of the array.
@@ -499,7 +504,9 @@
    (xdoc::p
     "In any case, we plan to make our formal semantics
      more consistent with full C in the treatment of arrays."))
-  (b* ((arr (expr-value->value arr))
+  (b* ((arr (apconvert-expr-value arr))
+       ((when (errorp arr)) arr)
+       (arr (expr-value->value arr))
        ((unless (value-case arr :pointer))
         (error (list :mistype-arrsub
                      :required :pointer
@@ -517,6 +524,8 @@
         (error (list :mistype-array-read
                      :pointer reftype
                      :array (value-array->elemtype array))))
+       (sub (apconvert-expr-value sub))
+       ((when (errorp sub)) sub)
        (sub (expr-value->value sub))
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
