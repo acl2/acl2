@@ -349,7 +349,7 @@
      as factored in @(tsee eval-unary).")
    (xdoc::p
     "Before calling @(tsee eval-unary),
-     we perform array-to-pointer conversion.
+     we perform array-to-pointer conversion [C:5.3.2.1/3].
      The functions handle @('&') and @('*')
      perform that conversion as needed
      (specifically, @('&') does not, while @('*') does)."))
@@ -450,6 +450,10 @@
 (define exec-cast ((tyname tynamep) (arg expr-valuep))
   :returns (eval expr-value-resultp)
   :short "Execute a type cast on an expression value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We perform array-to-pointer conversion [C:5.3.2.1/3] on the operand."))
   (b* ((val (eval-cast tyname (expr-value->value arg)))
        ((when (errorp val)) val))
     (make-expr-value :value val :object nil))
