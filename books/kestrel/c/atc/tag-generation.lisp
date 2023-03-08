@@ -168,7 +168,10 @@
                          value-fix-when-valuep
                          not-errorp-when-valuep
                          ,valuep-when-typep
-                         (:e c::objdesign-option-fix)))))
+                         (:e c::objdesign-option-fix)
+                         apconvert-expr-value-when-not-value-array
+                         expr-valuep-of-expr-value
+                         not-errorp-when-expr-valuep))))
              ((mv event-member &)
               (evmac-generate-defthm thm-member-name
                                      :formula formula-member

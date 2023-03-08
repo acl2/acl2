@@ -275,7 +275,9 @@
      has been evaluated (because the special cases above do not hold),
      and the resulting expression value is passed here.")
    (xdoc::p
-    "We perform no array-to-pointer conversion [C:6.3.2.1/3]."))
+    "We perform no array-to-pointer conversion,
+     because that conversion is not performed for the operand of @('&')
+     [C:6.3.2.1/3]."))
   (b* ((objdes (expr-value->object arg))
        ((unless objdes)
         (error (list :not-lvalue-result (expr-value-fix arg))))
@@ -551,7 +553,11 @@
   (xdoc::topstring
    (xdoc::p
     "This is for the @('.') operator.
-     The operand must be a structure.
+     We performed array-to-pointer conversion [C:6.3.2.1/3] on the operand.
+     The resulting operand must be a structure
+     (it actually makes no difference whether we make this check
+     before or after the array-to-pointer conversion,
+     but we maintain the uniformity of always performing the conversion).
      The named member must be in the structure.
      The value associated to the member is returned.")
    (xdoc::p
@@ -560,7 +566,9 @@
      obtained by adding the member to the one for the structure.
      If there is no object designator in the input,
      there is none in the output."))
-  (b* ((val-str (expr-value->value str))
+  (b* ((str (apconvert-expr-value str))
+       ((when (errorp str)) str)
+       (val-str (expr-value->value str))
        ((unless (value-case val-str :struct))
         (error (list :mistype-member
                      :required :struct
