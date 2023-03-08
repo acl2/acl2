@@ -91,11 +91,11 @@
      we return a pointer to the array.
      This is adequate in our current formalization of our C subset,
      because of the way we formalize array indexing
-     (e.g. see @(tsee exec-arrsbu));
+     (e.g. see @(tsee exec-arrsub));
      however, we plan to make this, and array indexing,
      consistent with full C.")
    (xdoc::p
-    "The static counterpart of this is @(tsee apconvert-ype)."))
+    "The static counterpart of this is @(tsee apconvert-type)."))
   (b* (((expr-value eval) eval))
     (if (value-case eval.value :array)
         (if eval.object
