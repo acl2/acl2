@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function intersection-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -149,3 +149,10 @@
   :hints (("Goal" :induct (intersection-equal-induct x y)
            :expand (intersection-equal y x)
            :in-theory (enable intersection-equal intersection-equal-induct))))
+
+;; The corresponding rule for y is not true.  Consider (intersection-equal '(1 1) '(1)) = '(1 1).
+(defthm <=-of-len-of-intersection-equal-linear
+  (<= (len (intersection-equal x y))
+      (len x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable intersection-equal))))
