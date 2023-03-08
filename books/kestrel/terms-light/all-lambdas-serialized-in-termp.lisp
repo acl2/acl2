@@ -54,10 +54,20 @@
   (implies (all-lambdas-serialized-in-termsp terms)
            (all-lambdas-serialized-in-termsp (take n terms))))
 
+(defthm all-lambdas-serialized-in-termsp-of-append
+  (equal (all-lambdas-serialized-in-termsp (append terms1 terms2))
+         (and (all-lambdas-serialized-in-termsp terms1)
+              (all-lambdas-serialized-in-termsp terms2)))
+  :hints (("Goal" :in-theory (enable append))))
+
 (defthm all-lambdas-serialized-in-termsp-of-revappend
   (implies (and (all-lambdas-serialized-in-termsp terms1)
                 (all-lambdas-serialized-in-termsp terms2))
            (all-lambdas-serialized-in-termsp (revappend terms1 terms2))))
+
+(defthm all-lambdas-serialized-in-termsp-of-set-difference-equal
+  (implies (all-lambdas-serialized-in-termsp terms1)
+           (all-lambdas-serialized-in-termsp (set-difference-equal terms1 terms2))))
 
 (defthm all-lambdas-serialized-in-termsp-when-symbol-listp
   (implies (symbol-listp terms)
