@@ -53,3 +53,10 @@
   (equal (len (mv-nth 1 (non-trivial-formals-and-args formals args)))
          (len (mv-nth 0 (non-trivial-formals-and-args formals args))))
   :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
+
+(defthm <=-of-acl2-count-of-mv-nth-1-of-non-trivial-formals-and-args-linear
+  (implies (equal (len formals) (len args))
+           (<= (acl2-count (mv-nth 1 (non-trivial-formals-and-args formals args)))
+               (acl2-count args)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
