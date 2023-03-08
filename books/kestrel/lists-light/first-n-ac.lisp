@@ -101,3 +101,11 @@
                   (revappend ac nil)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable first-n-ac))))
+
+(defthm <=-of-acl2-count-of-first-n-ac
+  (implies (<= i (len l))
+           (<= (acl2-count (first-n-ac i l ac))
+               (+ (acl2-count ac)
+                  (acl2-count l))))
+  :hints (("Goal" :induct (first-n-ac i l ac)
+           :in-theory (enable first-n-ac))))
