@@ -28,6 +28,12 @@
                  (intersection-equal y z)))
   :hints (("Goal" :in-theory (enable intersection-equal append))))
 
+(local
+ (defthm member-equal-of-intersection-equal-iff-helper
+   (implies (not (member-equal a y))
+            (not (member-equal a (intersection-equal x y))))
+   :hints (("Goal" :in-theory (enable member-equal intersection-equal)))))
+
 (defthm member-equal-of-intersection-equal-iff
   (iff (member-equal a (intersection-equal x y))
        (and (member-equal a x)
