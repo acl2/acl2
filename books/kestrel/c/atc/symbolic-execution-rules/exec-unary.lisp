@@ -70,6 +70,7 @@
                                     '(:schar :uchar :sshort :ushort))))
          (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                      (equal op (,(pack 'unop- op-kind)))
+                     (not (equal (value-kind x) :array))
                      (,pred x)
                      ,@(and op-type-okp
                             `((,op-type-okp x)))))
@@ -116,6 +117,7 @@
                     integer-type-min
                     integer-type-max
                     bit-width-value-choices
+                    apconvert-expr-value-when-not-value-array
                     ,@(and (unop-case op :bitnot)
                            `((:e sint-min)
                              (:e sint-max)

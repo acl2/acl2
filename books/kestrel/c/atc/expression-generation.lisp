@@ -350,6 +350,8 @@
        (hints
         (b* ((in-type-pred (type-to-recognizer in-type wrld))
              (valuep-when-in-type-pred (pack 'valuep-when- in-type-pred))
+             (value-kind-when-in-type-pred
+              (pack 'value-kind-when- in-type-pred))
              (op-name (pack (unop-kind op)))
              (exec-unary-when-op-and-in-type-pred
               (pack op-name '-value-when- in-type-pred))
@@ -364,6 +366,7 @@
                                  (:e expr-unary->arg)
                                  ,arg-thm
                                  ,valuep-when-in-type-pred
+                                 ,value-kind-when-in-type-pred
                                  ,valuep-when-type-pred
                                  value-fix-when-valuep
                                  ,exec-unary-when-op-and-in-type-pred

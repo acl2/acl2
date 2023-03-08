@@ -346,11 +346,19 @@
      and that only unary operator that returns an expression value
      (as opposed to just a value) is @('*').
      The other four unary operators only operate on values,
-     as factored in @(tsee eval-unary)."))
+     as factored in @(tsee eval-unary).")
+   (xdoc::p
+    "Before calling @(tsee eval-unary),
+     we perform array-to-pointer conversion.
+     The functions handle @('&') and @('*')
+     perform that conversion as needed
+     (specifically, @('&') does not, while @('*') does)."))
   (case (unop-kind op)
     (:address (exec-address arg))
     (:indir (exec-indir arg compst))
-    (t (b* ((val (eval-unary op (expr-value->value arg)))
+    (t (b* ((arg (apconvert-expr-value arg))
+            ((when (errorp arg)) arg)
+            (val (eval-unary op (expr-value->value arg)))
             ((when (errorp val)) val))
          (make-expr-value :value val :object nil))))
   :guard-hints (("Goal" :in-theory (enable unop-nonpointerp)))
