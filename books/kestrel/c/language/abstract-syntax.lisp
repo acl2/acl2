@@ -11,8 +11,6 @@
 
 (in-package "C")
 
-(include-book "errors")
-
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 
