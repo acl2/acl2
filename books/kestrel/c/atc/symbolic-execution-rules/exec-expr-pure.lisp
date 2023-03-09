@@ -304,43 +304,56 @@
                       (expr-value (sint-from-integer 0) nil)))
       :enable (sint-from-boolean-with-error test*)))
 
-  (defund exec-expr-pure-no-object (e compst)
+  (defund exec-expr-pure-apconvert-no-object (e compst)
     (b* ((eval (exec-expr-pure e compst))
-         ((when (errorp eval)) eval))
-      (expr-value (expr-value->value eval) nil)))
+         ((when (errorp eval)) eval)
+         (eval1 (apconvert-expr-value eval))
+         ((when (errorp eval1)) eval1))
+      (expr-value (expr-value->value eval1) nil)))
 
-  (defruled exec-expr-pure-no-object-open
+  (defruled exec-expr-pure-apconvert-no-object-open
     (implies (and (equal eval (exec-expr-pure e compst))
-                  (expr-valuep eval))
-             (equal (exec-expr-pure-no-object e compst)
-                    (expr-value (expr-value->value eval) nil)))
-    :enable exec-expr-pure-no-object)
+                  (expr-valuep eval)
+                  (equal eval1 (apconvert-expr-value eval))
+                  (expr-valuep eval1))
+             (equal (exec-expr-pure-apconvert-no-object e compst)
+                    (expr-value (expr-value->value eval1) nil)))
+    :enable exec-expr-pure-apconvert-no-object)
 
   (defruled exec-expr-pure-when-cond
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :cond)
                   (equal arg1 (exec-expr-pure (expr-cond->test e) compst))
                   (expr-valuep arg1)
-                  (equal test (test-value (expr-value->value arg1)))
+                  (equal carg1 (apconvert-expr-value arg1))
+                  (expr-valuep carg1)
+                  (equal test (test-value (expr-value->value carg1)))
                   (booleanp test))
              (equal (exec-expr-pure e compst)
                     (if test
-                        (exec-expr-pure-no-object (expr-cond->then e) compst)
-                      (exec-expr-pure-no-object (expr-cond->else e) compst))))
-    :enable (exec-expr-pure exec-expr-pure-no-object))
+                        (exec-expr-pure-apconvert-no-object
+                         (expr-cond->then e) compst)
+                      (exec-expr-pure-apconvert-no-object
+                       (expr-cond->else e) compst))))
+    :enable (exec-expr-pure
+             exec-expr-pure-apconvert-no-object))
 
   (defruled exec-expr-pure-when-cond-and-true
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :cond)
                   (equal arg1 (exec-expr-pure (expr-cond->test e) compst))
                   (expr-valuep arg1)
-                  (equal test (test-value (expr-value->value arg1)))
+                  (equal carg1 (apconvert-expr-value arg1))
+                  (expr-valuep carg1)
+                  (equal test (test-value (expr-value->value carg1)))
                   (booleanp test)
                   (test* test)
                   (equal eval (exec-expr-pure (expr-cond->then e) compst))
-                  (expr-valuep eval))
+                  (expr-valuep eval)
+                  (equal eval1 (apconvert-expr-value eval))
+                  (expr-valuep eval1))
              (equal (exec-expr-pure e compst)
-                    (expr-value (expr-value->value eval) nil)))
+                    (expr-value (expr-value->value eval1) nil)))
     :enable (exec-expr-pure test*))
 
   (defruled exec-expr-pure-when-cond-and-false
@@ -348,13 +361,17 @@
                   (equal (expr-kind e) :cond)
                   (equal arg1 (exec-expr-pure (expr-cond->test e) compst))
                   (expr-valuep arg1)
-                  (equal test (test-value (expr-value->value arg1)))
+                  (equal carg1 (apconvert-expr-value arg1))
+                  (expr-valuep carg1)
+                  (equal test (test-value (expr-value->value carg1)))
                   (booleanp test)
                   (test* (not test))
                   (equal eval (exec-expr-pure (expr-cond->else e) compst))
-                  (expr-valuep eval))
+                  (expr-valuep eval)
+                  (equal eval1 (apconvert-expr-value eval))
+                  (expr-valuep eval1))
              (equal (exec-expr-pure e compst)
-                    (expr-value (expr-value->value eval) nil)))
+                    (expr-value (expr-value->value eval1) nil)))
     :enable (exec-expr-pure test*))
 
   (defval *atc-exec-expr-pure-rules*
@@ -371,7 +388,7 @@
       exec-expr-pure-when-binary-logand
       exec-expr-pure-when-binary-logor
       sint-from-boolean-with-error-when-booleanp
-      exec-expr-pure-no-object-open
+      exec-expr-pure-apconvert-no-object-open
       exec-expr-pure-when-cond
       expr-valuep-of-expr-value
       expr-value->value-of-expr-value
