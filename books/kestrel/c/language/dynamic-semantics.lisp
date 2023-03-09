@@ -275,7 +275,9 @@
      has been evaluated (because the special cases above do not hold),
      and the resulting expression value is passed here.")
    (xdoc::p
-    "We perform no array-to-pointer conversion [C:6.3.2.1/3]."))
+    "We perform no array-to-pointer conversion,
+     because that conversion is not performed for the operand of @('&')
+     [C:6.3.2.1/3]."))
   (b* ((objdes (expr-value->object arg))
        ((unless objdes)
         (error (list :not-lvalue-result (expr-value-fix arg))))
@@ -551,7 +553,11 @@
   (xdoc::topstring
    (xdoc::p
     "This is for the @('.') operator.
-     The operand must be a structure.
+     We perform array-to-pointer conversion [C:6.3.2.1/3] on the operand.
+     The resulting operand must be a structure
+     (it actually makes no difference whether we make this check
+     before or after the array-to-pointer conversion,
+     but we maintain the uniformity of always performing the conversion).
      The named member must be in the structure.
      The value associated to the member is returned.")
    (xdoc::p
@@ -560,7 +566,9 @@
      obtained by adding the member to the one for the structure.
      If there is no object designator in the input,
      there is none in the output."))
-  (b* ((val-str (expr-value->value str))
+  (b* ((str (apconvert-expr-value str))
+       ((when (errorp str)) str)
+       (val-str (expr-value->value str))
        ((unless (value-case val-str :struct))
         (error (list :mistype-member
                      :required :struct
@@ -583,14 +591,17 @@
   (xdoc::topstring
    (xdoc::p
     "This is for the @('->') operator.
-     The operand must be a valid pointer to a structure
+     We perform array-to-pointer conversion [C:6.3.2.1/3] on the operand.
+     The resulting operand must be a valid pointer to a structure
      of type consistent with the structure.
      The named member must be in the structure.
      The value associated to the member is returned.")
    (xdoc::p
     "We return an expression value whose object designator is obtained
      by adding the member to the object designator in the pointer."))
-  (b* ((str (expr-value->value str))
+  (b* ((str (apconvert-expr-value str))
+       ((when (errorp str)) str)
+       (str (expr-value->value str))
        ((unless (value-case str :pointer))
         (error (list :mistype-memberp
                      :required :pointer
@@ -628,11 +639,7 @@
    (xdoc::p
     "This is a combination of @(tsee exec-arrsub) and @(tsee exec-member),
      but it is defined as a separate function because currently
-     those two functions are not really compositional.
-     Our current semantics of C is correct for its current uses,
-     but it is not full-fledged and compositional.
-     In particular, it should (and will) be extended so that
-     expression execution returns either a value or an object designator.")
+     those two functions are not really compositional.")
    (xdoc::p
     "So here we formalize the execution of expressions of the form @('s.m[i]'),
      where @('s') is a structure,
@@ -645,12 +652,16 @@
      For this reason, we do not bother
      returning an appropriate object designator when applicable,
      instead always returning no object designator in the result."))
-  (b* ((str (expr-value->value str))
+  (b* ((str (apconvert-expr-value str))
+       ((when (errorp str)) str)
+       (str (expr-value->value str))
        ((unless (value-case str :struct))
         (error (list :not-struct str)))
        (arr (value-struct-read mem str))
        ((when (errorp arr)) arr)
        ((unless (value-case arr :array)) (error (list :not-array arr)))
+       (sub (apconvert-expr-value sub))
+       ((when (errorp sub)) sub)
        (sub (expr-value->value sub))
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
@@ -697,7 +708,9 @@
      For this reason, we do not bother
      returning an appropriate object designator when applicable,
      instead always returning no object designator in the result."))
-  (b* ((str (expr-value->value str))
+  (b* ((str (apconvert-expr-value str))
+       ((when (errorp str)) str)
+       (str (expr-value->value str))
        ((unless (value-case str :pointer))
         (error (list :mistype-arrsub-of-memberp
                      :required :pointer
@@ -724,6 +737,8 @@
        ((when (errorp arr)) arr)
        ((unless (value-case arr :array))
         (error (list :not-array arr)))
+       (sub (apconvert-expr-value sub))
+       ((when (errorp sub)) sub)
        (sub (expr-value->value sub))
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
@@ -816,11 +831,15 @@
                  (:logand
                   (b* ((arg1 (exec-expr-pure e.arg1 compst))
                        ((when (errorp arg1)) arg1)
+                       (arg1 (apconvert-expr-value arg1))
+                       ((when (errorp arg1)) arg1)
                        (test1 (test-value (expr-value->value arg1)))
                        ((when (errorp test1)) test1)
                        ((when (not test1))
                         (make-expr-value :value (value-sint 0) :object nil))
                        (arg2 (exec-expr-pure e.arg2 compst))
+                       ((when (errorp arg2)) arg2)
+                       (arg2 (apconvert-expr-value arg2))
                        ((when (errorp arg2)) arg2)
                        (test2 (test-value (expr-value->value arg2)))
                        ((when (errorp test2)) test2))
@@ -848,13 +867,19 @@
                       (exec-binary-strict-pure e.op arg1 arg2)))))
      :cond (b* ((test (exec-expr-pure e.test compst))
                 ((when (errorp test)) test)
+                (test (apconvert-expr-value test))
+                ((when (errorp test)) test)
                 (test (test-value (expr-value->value test)))
                 ((when (errorp test)) test))
              (if test
                  (b* ((eval (exec-expr-pure e.then compst))
+                      ((when (errorp eval)) eval)
+                      (eval (apconvert-expr-value eval))
                       ((when (errorp eval)) eval))
                    (change-expr-value eval :object nil))
                (b* ((eval (exec-expr-pure e.else compst))
+                    ((when (errorp eval)) eval)
+                    (eval (apconvert-expr-value eval))
                     ((when (errorp eval)) eval))
                  (change-expr-value eval :object nil))))))
   :measure (expr-count e)

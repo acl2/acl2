@@ -891,35 +891,45 @@
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (type-pred (type-to-recognizer type wrld))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (value-kind-when-type-pred (pack 'value-kind-when- type-pred))
+       (value-kind-when-test-type-pred (pack 'value-kind-when- test-type-pred))
        (term* `(condexpr (if* ,test-term ,then-term ,else-term)))
-       (hints-then `(("Goal" :in-theory '(exec-expr-pure-when-cond-and-true
-                                          (:e expr-kind)
-                                          (:e expr-cond->test)
-                                          ,test-thm
-                                          (:e expr-cond->then)
-                                          ,then-thm
-                                          (:e expr-cond->else)
-                                          ,else-thm
-                                          booleanp-compound-recognizer
-                                          ,valuep-when-test-type-pred
-                                          expr-valuep-of-expr-value
-                                          expr-value->value-of-expr-value
-                                          value-fix-when-valuep
-                                          ,valuep-when-type-pred))))
-       (hints-else `(("Goal" :in-theory '(exec-expr-pure-when-cond-and-false
-                                          (:e expr-kind)
-                                          (:e expr-cond->test)
-                                          ,test-thm
-                                          (:e expr-cond->then)
-                                          ,then-thm
-                                          (:e expr-cond->else)
-                                          ,else-thm
-                                          booleanp-compound-recognizer
-                                          ,valuep-when-test-type-pred
-                                          expr-valuep-of-expr-value
-                                          expr-value->value-of-expr-value
-                                          value-fix-when-valuep
-                                          ,valuep-when-type-pred))))
+       (hints-then
+        `(("Goal" :in-theory '(exec-expr-pure-when-cond-and-true
+                               (:e expr-kind)
+                               (:e expr-cond->test)
+                               ,test-thm
+                               (:e expr-cond->then)
+                               ,then-thm
+                               (:e expr-cond->else)
+                               ,else-thm
+                               booleanp-compound-recognizer
+                               ,valuep-when-test-type-pred
+                               expr-valuep-of-expr-value
+                               expr-value->value-of-expr-value
+                               value-fix-when-valuep
+                               ,valuep-when-type-pred
+                               apconvert-expr-value-when-not-value-array
+                               ,value-kind-when-type-pred
+                               ,value-kind-when-test-type-pred))))
+       (hints-else
+        `(("Goal" :in-theory '(exec-expr-pure-when-cond-and-false
+                               (:e expr-kind)
+                               (:e expr-cond->test)
+                               ,test-thm
+                               (:e expr-cond->then)
+                               ,then-thm
+                               (:e expr-cond->else)
+                               ,else-thm
+                               booleanp-compound-recognizer
+                               ,valuep-when-test-type-pred
+                               expr-valuep-of-expr-value
+                               expr-value->value-of-expr-value
+                               value-fix-when-valuep
+                               ,valuep-when-type-pred
+                               apconvert-expr-value-when-not-value-array
+                               ,value-kind-when-type-pred
+                               ,value-kind-when-test-type-pred))))
        (instructions
         `((casesplit
            ,(atc-contextualize test-term gin.context nil nil nil nil nil wrld))
@@ -1026,6 +1036,8 @@
        (arg2-type-pred (type-to-recognizer arg2-type wrld))
        (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
        (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
+       (value-kind-when-arg1-type-pred (pack 'value-kind-when- arg1-type-pred))
+       (value-kind-when-arg2-type-pred (pack 'value-kind-when- arg2-type-pred))
        (hints-then
         `(("Goal"
            :in-theory '(exec-expr-pure-when-binary-logand-and-true
@@ -1043,7 +1055,10 @@
                         boolean-from-sint-of-sint-from-boolean
                         expr-valuep-of-expr-value
                         expr-value->value-of-expr-value
-                        value-fix-when-valuep))))
+                        value-fix-when-valuep
+                        apconvert-expr-value-when-not-value-array
+                        ,value-kind-when-arg1-type-pred
+                        ,value-kind-when-arg2-type-pred))))
        (hints-else
         `(("Goal"
            :in-theory '(exec-expr-pure-when-binary-logand-and-false
@@ -1060,7 +1075,9 @@
                         boolean-from-sint-of-0
                         expr-valuep-of-expr-value
                         expr-value->value-of-expr-value
-                        value-fix-when-valuep))))
+                        value-fix-when-valuep
+                        apconvert-expr-value-when-not-value-array
+                        ,value-kind-when-arg1-type-pred))))
        (instructions
         `((casesplit ,(atc-contextualize arg1-term
                                          gin.context nil nil nil nil nil wrld))

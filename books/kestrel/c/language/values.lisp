@@ -258,14 +258,7 @@
   (defruled errorp-when-value-resultp-and-not-valuep
     (implies (and (value-resultp x)
                   (not (valuep x)))
-             (errorp x)))
-
-  (defrule value-resultp-possibilities
-    (implies (value-resultp x)
-             (or (valuep x)
-                 (errorp x)))
-    :enable value-resultp
-    :rule-classes :forward-chaining))
+             (errorp x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
