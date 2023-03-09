@@ -708,7 +708,9 @@
      For this reason, we do not bother
      returning an appropriate object designator when applicable,
      instead always returning no object designator in the result."))
-  (b* ((str (expr-value->value str))
+  (b* ((str (apconvert-expr-value str))
+       ((when (errorp str)) str)
+       (str (expr-value->value str))
        ((unless (value-case str :pointer))
         (error (list :mistype-arrsub-of-memberp
                      :required :pointer
@@ -735,6 +737,8 @@
        ((when (errorp arr)) arr)
        ((unless (value-case arr :array))
         (error (list :not-array arr)))
+       (sub (apconvert-expr-value sub))
+       ((when (errorp sub)) sub)
        (sub (expr-value->value sub))
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
