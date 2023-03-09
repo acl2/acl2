@@ -14,6 +14,8 @@
 (include-book "pfield-lib-ext")
 
 (include-book "kestrel/fty/defomap" :dir :system)
+(include-book "kestrel/fty/nat-result" :dir :system)
+(include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/prime-fields/fe-listp" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
@@ -207,7 +209,7 @@
 
 (define eval-expr ((expr expressionp) (asg assignmentp) (p primep))
   :guard (assignment-wfp asg p)
-  :returns (nat? maybe-natp :hyp (primep p))
+  :returns (nat nat-resultp :hyp (primep p))
   :short "Evaluate an expression, given an assignment and a prime field."
   :long
   (xdoc::topstring
@@ -229,16 +231,12 @@
    :var (b* ((pair (omap::in expr.name (assignment-fix asg))))
           (if (consp pair)
               (nfix (cdr pair))
-            nil))
-   :add (b* ((val1 (eval-expr expr.arg1 asg p))
-             ((unless val1) nil)
-             (val2 (eval-expr expr.arg2 asg p))
-             ((unless val2) nil))
+            (reserr nil)))
+   :add (b* (((ok val1) (eval-expr expr.arg1 asg p))
+             ((ok val2) (eval-expr expr.arg2 asg p)))
           (add val1 val2 p))
-   :mul (b* ((val1 (eval-expr expr.arg1 asg p))
-             ((unless val1) nil)
-             (val2 (eval-expr expr.arg2 asg p))
-             ((unless val2) nil))
+   :mul (b* (((ok val1) (eval-expr expr.arg1 asg p))
+             ((ok val2) (eval-expr expr.arg2 asg p)))
           (mul val1 val2 p)))
   :measure (expression-count expr)
   :hooks (:fix)
@@ -246,17 +244,11 @@
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
   ///
 
-  (defrule natp-of-eval-expr
-    (implies (and (primep p)
-                  (assignmentp asg)
-                  (eval-expr expr asg p))
-             (natp (eval-expr expr asg p))))
-
   (defrule fep-of-eval-expr
     (implies (and (primep p)
                   (assignmentp asg)
                   (assignment-wfp asg p)
-                  (eval-expr expr asg p))
+                  (not (reserrp (eval-expr expr asg p))))
              (fep (eval-expr expr asg p) p))
     :enable fep-of-cdr-of-in-when-assignment-wfp)
 
@@ -268,37 +260,29 @@
                         (asg assignmentp)
                         (p primep))
   :guard (assignment-wfp asg p)
-  :returns (mv (okp booleanp)
-               (nats nat-listp
-                     :hyp (and (primep p)
-                               (assignmentp asg))))
+  :returns (nats nat-list-resultp :hyp (primep p))
   :short "Lift @(tsee eval-expr) to lists."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The first result is @('nil') if any expression yields an error,
-     in which case the second result is also @('nil').
-     Otherwise, the first result is @('t')
-     and the second result is the list of natural numbers that
-     the expressions evaluate to."))
-  (b* (((when (endp exprs)) (mv t nil))
-       (val (eval-expr (car exprs) asg p))
-       ((unless val) (mv nil nil))
-       ((mv okp vals) (eval-expr-list (cdr exprs) asg p))
-       ((unless okp) (mv nil nil)))
-    (mv t (cons val vals)))
+  (b* (((when (endp exprs)) nil)
+       ((ok val) (eval-expr (car exprs) asg p))
+       ((ok vals) (eval-expr-list (cdr exprs) asg p)))
+    (cons val vals))
   :hooks (:fix)
+  :prepwork
+  ((local
+    (in-theory
+     (enable acl2::natp-when-nat-resultp-and-not-reserrp
+             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
   ///
 
   (defrule fe-listp-of-eval-expr-list
     (implies (and (primep p)
                   (assignmentp asg)
                   (assignment-wfp asg p)
-                  (mv-nth 0 (eval-expr-list exprs asg p)))
-             (fe-listp (mv-nth 1 (eval-expr-list exprs asg p)) p)))
+                  (not (reserrp (eval-expr-list exprs asg p))))
+             (fe-listp (eval-expr-list exprs asg p) p)))
 
   (defret len-of-eval-expr-list
-    (implies okp
+    (implies (nat-listp nats)
              (equal (len nats)
                     (len exprs)))))
 
@@ -546,9 +530,9 @@
      :equal
      (b* (((unless (assignment-wfp ptree.asg p)) (proof-outcome-error))
           (left (eval-expr ptree.left ptree.asg p))
-          ((unless left) (proof-outcome-error))
+          ((unless (natp left)) (proof-outcome-error))
           (right (eval-expr ptree.right ptree.asg p))
-          ((unless right) (proof-outcome-error)))
+          ((unless (natp right)) (proof-outcome-error)))
        (if (equal left right)
            (proof-outcome-assertion
             (make-assertion :asg ptree.asg
@@ -560,8 +544,8 @@
            (proof-outcome-error))
           ((unless (assignment-wfp ptree.asgext p))
            (proof-outcome-error))
-          ((mv okp vals) (eval-expr-list ptree.args ptree.asg p))
-          ((unless okp) (proof-outcome-error))
+          (vals (eval-expr-list ptree.args ptree.asg p))
+          ((unless (nat-listp vals)) (proof-outcome-error))
           (def (lookup-definition ptree.name defs))
           ((unless def) (proof-outcome-error))
           ((definition def) def)

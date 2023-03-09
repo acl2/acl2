@@ -137,7 +137,7 @@
                             (constraint-equal->right constr))
                      (equal (eval-expr (constraint-equal->left constr) asg p)
                             (eval-expr (constraint-equal->right constr) asg p))
-                     (eval-expr (constraint-equal->left constr) asg p))))))
+                     (natp (eval-expr (constraint-equal->left constr) asg p)))))))
   :expand ((exec-proof-tree ptree defs p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -163,7 +163,7 @@
        (def (lookup-definition name defs))
        (para (definition->para def))
        (body (definition->body def))
-       ((mv okp vals) (eval-expr-list args asg p))
+       (vals (eval-expr-list args asg p))
        (asgext (proof-tree-relation->asgext ptree))
        (outcome-sub (exec-proof-tree-list
                      (proof-tree-relation->sub ptree) defs p))
@@ -175,7 +175,7 @@
                   (equal (proof-tree-relation->name ptree) name)
                   (equal (proof-tree-relation->args ptree) args)
                   def
-                  okp
+                  (nat-listp vals)
                   (equal (len para) (len vals))
                   (assignment-wfp asgext p)
                   (omap::submap (omap::from-lists para vals) asgext)
@@ -208,7 +208,7 @@
      because it does not directly involve the execution of proof trees.
      It says that the equality is satisfied
      exactly when the two expressions are equal and non-erroneous."))
-  (and (eval-expr left asg p)
+  (and (natp (eval-expr left asg p))
        (equal (eval-expr left asg p)
               (eval-expr right asg p))))
 
@@ -295,8 +295,8 @@
           (and def
                (b* (((definition def) def))
                  (and (equal (len args) (len def.para))
-                      (b* (((mv okp vals) (eval-expr-list args asg p)))
-                        (and okp
+                      (b* ((vals (eval-expr-list args asg p)))
+                        (and (nat-listp vals)
                              (omap::submap (omap::from-lists def.para vals)
                                            asgext)
                              (constraint-list-satp def.body
