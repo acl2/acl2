@@ -16,6 +16,7 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "arithmetic-5/top" :dir :system))
+(local (include-book "kestrel/utilities/lists/rev-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/typed-lists/top" :dir :system))
@@ -743,9 +744,7 @@
   (defrule nat=>bendian*-does-not-start-with-0
     (not (equal (car (nat=>bendian* base nat))
                 0))
-    :enable (nat=>bendian* car-of-rev-rewrite-car-of-last)
-    :prep-books
-    ((include-book "kestrel/utilities/lists/rev-theorems" :dir :system)))
+    :enable (nat=>bendian* car-of-rev-rewrite-car-of-last))
 
   (defruled len-of-nat=>bendian*-leq-width
     (implies (and (natp nat)
