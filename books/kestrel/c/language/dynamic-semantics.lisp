@@ -66,6 +66,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define apconvert-expr-value ((eval expr-valuep))
+  :returns (eval1 expr-value-resultp)
+  :short "Array-to-pointer conversion [C:6.3.2.1/3] on expression values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Under most circumstances,
+     an array is converted to a pointer to the first element of the array
+     [C:6.3.2.1/3];
+     indeed, arrays are used like pointers most of the time.")
+   (xdoc::p
+    "This cannot be formalized on values: we need expression values,
+     because we need to know where the array is in storage
+     (i.e. we need to know its object designator),
+     so that we can construct a pointer to it.
+     Non-array expression values are left unchanged.
+     If the array has no object designator, we return an error;
+     this should only happen for arrays with temporary lifetime [C:6.2.4/8],
+     which are currently not part of our C subset.")
+   (xdoc::p
+    "We make a slight approximation for now:
+     instead of returning a pointer to the first element of the array,
+     we return a pointer to the array.
+     This is adequate in our current formalization of our C subset,
+     because of the way we formalize array indexing
+     (e.g. see @(tsee exec-arrsub));
+     however, we plan to make this, and array indexing,
+     consistent with full C.")
+   (xdoc::p
+    "The static counterpart of this is @(tsee apconvert-type)."))
+  (b* (((expr-value eval) eval))
+    (if (value-case eval.value :array)
+        (if eval.object
+            (make-expr-value
+             :value (make-value-pointer
+                     :core (pointer-valid eval.object)
+                     :reftype (value-array->elemtype eval.value))
+             :object nil)
+          (error (list :array-without-designator (expr-value-fix eval))))
+      (expr-value-fix eval)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define eval-iconst ((ic iconstp))
   :returns (val value-resultp)
   :short "Evaluate an integer constant."
@@ -165,12 +209,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read the variable's value (if any) from the computation state.
-     If the value is an array, we return a pointer value for the array.
+    "We obtain the object designator of the variable, propagating errors.
+     We read the value from the object designator,
+     which is guaranteed to work as proved in @(tsee read-object).")
+   (xdoc::p
+    "If the value is an array, we return a pointer value for the array.
      As explained in @(tsee exec-arrsub),
      our treatment of pointers and arrays differs slightly from full C,
      but leads to equivalent results in our C subset.
-     This is essentially like an array-to-pointer conversion,
+     This is essentially like an array-to-pointer conversion [C:6.3.2.1/3],
      but with the pointer pointing to the whole array
      instead of the first element,
      and with the pointer type being the array element type.
@@ -178,27 +225,25 @@
      currently @(tsee exec-block-item) prohibits local arrays,
      so a variable that contains an array can only be a global one.
      All of this will be properly generalized eventually,
-     to bring things more in line with full C.")
+     to bring things more in line with full C;
+     in particular, array-to-pointer conversions
+     will be moved to a separate ACL2 function,
+     called for the execution of the construct that encloses the variable.")
    (xdoc::p
-    "We actually an expression value.
-     If the variable's value is an array,
-     the expression value has no object designator:
-     this is because we are effectively returning a pointer value.
-     If the variable's value is not array,
-     the expression value has that variable's object designator.
-     Eventually the array case should be treated the same as the non-array case,
-     i.e. we should return an expression value with an object designator
-     in all cases, but see discussion above about arrays."))
-  (b* ((val (read-var id compst))
-       ((when (errorp val)) val))
+    "The alternative definition theorem is temporary,
+     for backward compatibility until more parts of the C dynamic semantics
+     have been properly exteded."))
+  (b* ((objdes (objdesign-of-var id compst))
+       ((unless objdes) (error (list :no-object-designator (ident-fix id))))
+       (val (read-object objdes compst)))
     (if (value-case val :array)
         (make-expr-value
          :value (make-value-pointer :core (pointer-valid (objdesign-static id))
                                     :reftype (value-array->elemtype val))
          :object nil)
-      (make-expr-value
-       :value val
-       :object (objdesign-of-var id compst))))
+      (make-expr-value :value val :object objdes)))
+  :guard-hints
+  (("Goal" :in-theory (enable valuep-of-read-object-of-objdesign-of-var)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -228,7 +273,9 @@
      we formalize that elsewhere,
      while here we assume that the argument expression of @('&')
      has been evaluated (because the special cases above do not hold),
-     and the resulting expression value is passed here."))
+     and the resulting expression value is passed here.")
+   (xdoc::p
+    "We perform no array-to-pointer conversion [C:6.3.2.1/3]."))
   (b* ((objdes (expr-value->object arg))
        ((unless objdes)
         (error (list :not-lvalue-result (expr-value-fix arg))))
@@ -247,13 +294,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The value must be a pointer.
+    "First we perform array-to-pointer conversion [C:5.3.2.1/3].
+     The value must be a pointer.
      If the pointer is not valid, it is an error.
      Otherwise, we read the object designated by the object designator,
      which is a value,
      and we return it as an expression value,
      taking the object designator from the pointer value."))
-  (b* ((val (expr-value->value arg))
+  (b* ((arg (apconvert-expr-value arg))
+       ((when (errorp arg)) arg)
+       (val (expr-value->value arg))
        ((unless (value-case val :pointer))
         (error (list :non-pointer-dereference (expr-value-fix arg))))
        ((unless (value-pointer-validp val))
@@ -296,11 +346,19 @@
      and that only unary operator that returns an expression value
      (as opposed to just a value) is @('*').
      The other four unary operators only operate on values,
-     as factored in @(tsee eval-unary)."))
+     as factored in @(tsee eval-unary).")
+   (xdoc::p
+    "Before calling @(tsee eval-unary),
+     we perform array-to-pointer conversion [C:5.3.2.1/3].
+     The functions handle @('&') and @('*')
+     perform that conversion as needed
+     (specifically, @('&') does not, while @('*') does)."))
   (case (unop-kind op)
     (:address (exec-address arg))
     (:indir (exec-indir arg compst))
-    (t (b* ((val (eval-unary op (expr-value->value arg)))
+    (t (b* ((arg (apconvert-expr-value arg))
+            ((when (errorp arg)) arg)
+            (val (eval-unary op (expr-value->value arg)))
             ((when (errorp val)) val))
          (make-expr-value :value val :object nil))))
   :guard-hints (("Goal" :in-theory (enable unop-nonpointerp)))
@@ -348,8 +406,15 @@
   (xdoc::topstring
    (xdoc::p
     "This ACL2 function wraps @(tsee eval-binary-strict-pure)
-     to take and return expression values."))
-  (b* ((val1 (expr-value->value arg1))
+     to take and return expression values.")
+   (xdoc::p
+    "First we perform array-to-pointer conversion [C:5.3.2.1/3],
+     on both operands."))
+  (b* ((arg1 (apconvert-expr-value arg1))
+       ((when (errorp arg1)) arg1)
+       (arg2 (apconvert-expr-value arg2))
+       ((when (errorp arg2)) arg2)
+       (val1 (expr-value->value arg1))
        (val2 (expr-value->value arg2))
        (val (eval-binary-strict-pure op val1 val2))
        ((when (errorp val)) val))
@@ -385,7 +450,13 @@
 (define exec-cast ((tyname tynamep) (arg expr-valuep))
   :returns (eval expr-value-resultp)
   :short "Execute a type cast on an expression value."
-  (b* ((val (eval-cast tyname (expr-value->value arg)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We perform array-to-pointer conversion [C:5.3.2.1/3] on the operand."))
+  (b* ((arg (apconvert-expr-value arg))
+       ((when (errorp arg)) arg)
+       (val (eval-cast tyname (expr-value->value arg)))
        ((when (errorp val)) val))
     (make-expr-value :value val :object nil))
   :hooks (:fix))
@@ -397,6 +468,9 @@
   :short "Execute the array subscripting operation on expression values."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "We perform array-to-pointer conversion [C:5.3.2.1/3]
+     on both operands.")
    (xdoc::p
     "The first operand must be a valid pointer to an array;
      the pointer must have the element type of the array.
@@ -430,7 +504,9 @@
    (xdoc::p
     "In any case, we plan to make our formal semantics
      more consistent with full C in the treatment of arrays."))
-  (b* ((arr (expr-value->value arr))
+  (b* ((arr (apconvert-expr-value arr))
+       ((when (errorp arr)) arr)
+       (arr (expr-value->value arr))
        ((unless (value-case arr :pointer))
         (error (list :mistype-arrsub
                      :required :pointer
@@ -448,6 +524,8 @@
         (error (list :mistype-array-read
                      :pointer reftype
                      :array (value-array->elemtype array))))
+       (sub (apconvert-expr-value sub))
+       ((when (errorp sub)) sub)
        (sub (expr-value->value sub))
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index

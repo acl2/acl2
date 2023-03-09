@@ -28,6 +28,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -350,6 +351,8 @@
        (hints
         (b* ((in-type-pred (type-to-recognizer in-type wrld))
              (valuep-when-in-type-pred (pack 'valuep-when- in-type-pred))
+             (value-kind-when-in-type-pred
+              (pack 'value-kind-when- in-type-pred))
              (op-name (pack (unop-kind op)))
              (exec-unary-when-op-and-in-type-pred
               (pack op-name '-value-when- in-type-pred))
@@ -364,6 +367,7 @@
                                  (:e expr-unary->arg)
                                  ,arg-thm
                                  ,valuep-when-in-type-pred
+                                 ,value-kind-when-in-type-pred
                                  ,valuep-when-type-pred
                                  value-fix-when-valuep
                                  ,exec-unary-when-op-and-in-type-pred
@@ -509,6 +513,10 @@
              (arg2-type-pred (type-to-recognizer arg2-type wrld))
              (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
              (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
+             (value-kind-when-arg1-type-pred (pack 'value-kind-when-
+                                                   arg1-type-pred))
+             (value-kind-when-arg2-type-pred (pack 'value-kind-when-
+                                                   arg2-type-pred))
              (exec-binary-strict-pure-when-op
               (pack 'exec-binary-strict-pure-when- op-name))
              (type-pred (type-to-recognizer out-type wrld))
@@ -540,7 +548,9 @@
                                  expr-valuep-of-expr-value
                                  expr-value->value-of-expr-value
                                  value-fix-when-valuep
-                                 ,valuep-when-type-pred)))))
+                                 ,valuep-when-type-pred
+                                 ,value-kind-when-arg1-type-pred
+                                 ,value-kind-when-arg2-type-pred)))))
        ((when (eq op-arg1-type-arg2-type 'quote))
         (reterr (raise "Internal error: function symbol is QUOTE.")))
        ((mv thm-event thm-name thm-index names-to-avoid)

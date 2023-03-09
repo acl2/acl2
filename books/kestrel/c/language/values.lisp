@@ -11,6 +11,7 @@
 
 (in-package "C")
 
+(include-book "errors")
 (include-book "integer-ranges")
 (include-book "object-designators")
 (include-book "types")

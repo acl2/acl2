@@ -18,7 +18,7 @@
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 
-(set-induction-depth-limit 1)
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -68,7 +68,8 @@
     (implies (and (integerp x)
                   (> x 1)
                   (posp n))
-             (dab-basep (expt x n)))))
+             (dab-basep (expt x n)))
+    :induct t))
 
 (define dab-base-fix ((x dab-basep))
   :returns (fixed-x dab-basep)
@@ -161,7 +162,8 @@
 
   (defrule natp-listp-when-dab-digit-listp
     (implies (dab-digit-listp base x)
-             (nat-listp x)))
+             (nat-listp x))
+    :induct t)
 
   (fty::deffixequiv dab-digit-listp
     :args ((base dab-basep))))
@@ -173,6 +175,7 @@
                     (t (cons (dab-digit-fix base (car x))
                              (dab-digit-list-fix base (cdr x)))))
        :exec x)
+  :guard-hints (("Goal" :induct (len x)))
   :hooks (:fix)
   ///
 
@@ -181,12 +184,14 @@
 
   (defrule dab-digit-list-fix-of-true-list-fix
     (equal (dab-digit-list-fix base (true-list-fix digits))
-           (dab-digit-list-fix base digits)))
+           (dab-digit-list-fix base digits))
+    :induct t)
 
   (defrule dab-digit-list-fix-when-dab-digit-listp
     (implies (dab-digit-listp base x)
              (equal (dab-digit-list-fix base x)
-                    x)))
+                    x))
+    :induct t)
 
   (defrule dab-digit-list-fix-of-nil
     (equal (dab-digit-list-fix base nil)
@@ -200,15 +205,18 @@
   (defrule dab-digit-list-fix-of-append
     (equal (dab-digit-list-fix base (append x y))
            (append (dab-digit-list-fix base x)
-                   (dab-digit-list-fix base y))))
+                   (dab-digit-list-fix base y)))
+    :induct t)
 
   (defrule len-of-dab-digit-list-fix
     (equal (len (dab-digit-list-fix base x))
-           (len x)))
+           (len x))
+    :induct t)
 
   (defrule consp-of-dab-digit-list-fix
     (equal (consp (dab-digit-list-fix base x))
-           (consp x)))
+           (consp x))
+    :induct t)
 
   (defrule car-of-dab-digit-list-fix
     (implies (consp x)
@@ -223,6 +231,7 @@
   (defrule rev-of-dab-digit-list-fix
     (equal (rev (dab-digit-list-fix base x))
            (dab-digit-list-fix base (rev x)))
+    :induct t
     :enable rev)
 
   (defrule nat-list-fix-of-dab-digit-list-fix
@@ -303,21 +312,25 @@
 
   (defrule lendian=>nat-of-dab-digit-list-fix-digits
     (equal (lendian=>nat base (dab-digit-list-fix base digits))
-           (lendian=>nat base digits)))
+           (lendian=>nat base digits))
+    :induct t)
 
   (defrule lendian=>nat-of-dab-digit-list-fix-digits-normalize-const
     (implies (syntaxp (and (quotep digits)
                            (not (dab-digit-listp base (cadr digits)))))
              (equal (lendian=>nat base digits)
-                    (lendian=>nat base (dab-digit-list-fix base digits)))))
+                    (lendian=>nat base (dab-digit-list-fix base digits))))
+    :induct t)
 
   (defrule lendian=>nat-of-true-list-fix
     (equal (lendian=>nat base (true-list-fix digits))
-           (lendian=>nat base digits)))
+           (lendian=>nat base digits))
+    :induct t)
 
   (defrule lendian=>nat-of-nat-list-fix
     (equal (lendian=>nat base (nat-list-fix digits))
-           (lendian=>nat base digits)))
+           (lendian=>nat base digits))
+    :induct t)
 
   (defruled lendian=>nat-of-cons
     (equal (lendian=>nat base (cons lodigit hidigits))
@@ -329,6 +342,7 @@
            (+ (lendian=>nat base lodigits)
               (* (lendian=>nat base hidigits)
                  (expt (dab-base-fix base) (len lodigits)))))
+    :induct t
     :prep-books ((include-book "arithmetic/top" :dir :system)))
 
   (defruled digits=>nat-exec-to-lendian=>nat
@@ -338,6 +352,7 @@
              (equal (digits=>nat-exec base digits current-nat)
                     (+ (lendian=>nat base (rev digits))
                        (* (expt base (len digits)) current-nat))))
+    :induct t
     :enable (lendian=>nat-of-append digits=>nat-exec)
     :prep-books ((include-book "arithmetic/top" :dir :system)))
 
@@ -351,6 +366,7 @@
   (defrule lendian=>nat-of-all-zeros
     (equal (lendian=>nat base (repeat n 0))
            0)
+    :induct t
     :enable repeat)
 
   (defrule lendian=>nat-of-all-zeros-constant
@@ -362,7 +378,8 @@
     (implies (equal digit (1- (dab-base-fix base)))
              (equal (lendian=>nat base (repeat n digit))
                     (1- (expt (dab-base-fix base) (nfix n)))))
-    :cases (natp n)
+    :induct t
+    :hints ('(:cases (natp n)))
     :enable (repeat
              dab-basep
              dab-digitp)
@@ -372,7 +389,9 @@
 
 (define nat=>lendian* ((base dab-basep) (nat natp))
   :returns (digits (dab-digit-listp base digits)
-                   :hints (("Goal" :in-theory (enable dab-basep dab-digitp))))
+                   :hints (("Goal"
+                            :induct t
+                            :in-theory (enable dab-basep dab-digitp))))
   :short "Convert a natural number to
           its minimum-length little-endian list of digits."
   :long
@@ -422,6 +441,7 @@
              (equal (nat=>digits-exec base nat current-digits)
                     (append (rev (nat=>lendian* base nat))
                             current-digits)))
+    :induct t
     :enable (nat=>digits-exec dab-basep dab-digitp))
 
   (defrule nat=>lendian*-of-0
@@ -430,20 +450,23 @@
 
   (defrule len-0-of-nat=>lendian*
     (equal (equal (len (nat=>lendian* base x)) 0)
-           (zp x)))
+           (zp x))
+    :induct t)
 
   (defrule expt-of-len-of-nat=>lendian*-is-upper-bound
     (implies (and (natp nat)
                   (dab-basep base))
              (< nat (expt base (len (nat=>lendian* base nat)))))
-    :rule-classes :linear)
+    :rule-classes :linear
+    :induct t)
 
   (verify-guards nat=>lendian*
     :hints (("Goal" :in-theory (enable nat=>digits-exec-to-nat=>lendian*))))
 
   (defrule nat=>lendian*-does-not-end-with-0
     (not (equal (car (last (nat=>lendian* base nat)))
-                0)))
+                0))
+    :induct t)
 
   (defruled len-of-nat=>lendian*-leq-width
     (implies (and (natp nat)
@@ -841,6 +864,7 @@
   (defrule lendian=>nat-of-nat=>lendian*
     (equal (lendian=>nat base (nat=>lendian* base nat))
            (nfix nat))
+    :induct t
     :enable (nat=>lendian* lendian=>nat dab-digit-fix dab-digitp)
     :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
@@ -999,17 +1023,20 @@
   (defrule trim-bendian*-of-true-list-fix
     (equal (trim-bendian* (true-list-fix digits))
            (trim-bendian* digits))
+    :induct t
     :enable nat-list-fix)
 
   (defrule trim-bendian*-when-zp-listp
     (implies (zp-listp digits)
              (equal (trim-bendian* digits)
-                    nil)))
+                    nil))
+    :induct t)
 
   (defrule trim-bendian*-of-append-zeros
     (implies (zp-listp zeros)
              (equal (trim-bendian* (append zeros digits))
-                    (trim-bendian* digits))))
+                    (trim-bendian* digits)))
+    :induct t)
 
   (defrule trim-bendian*-when-no-starting-0
     (implies (not (zp (car digits)))
@@ -1031,6 +1058,7 @@
   (defrule bendian=>nat-of-trim-bendian*
     (equal (bendian=>nat base (trim-bendian* digits))
            (bendian=>nat base digits))
+    :induct t
     :enable (bendian=>nat lendian=>nat)
     :hints ('(:use (:instance bendian=>nat-of-append
                               (hidigits (list (car digits)))
@@ -1039,7 +1067,8 @@
   (defrule len-of-trim-bendian*-upper-bound
     (<= (len (trim-bendian* digits))
         (len digits))
-    :rule-classes :linear)
+    :rule-classes :linear
+    :induct t)
 
   (defrule append-of-repeat-and-trim-bendian*
     (equal (append (repeat (- (len digits)
@@ -1047,6 +1076,7 @@
                            0)
                    (trim-bendian* digits))
            (nat-list-fix digits))
+    :induct t
     :enable nat-list-fix)
 
   (defruled trim-bendian*-of-append
@@ -1054,7 +1084,8 @@
            (if (zp-listp (true-list-fix hidigits))
                (trim-bendian* lodigits)
              (append (trim-bendian* hidigits)
-                     (nat-list-fix lodigits)))))
+                     (nat-list-fix lodigits))))
+    :induct t)
 
   (defrule trim-bendian*-of-cons
     (equal (trim-bendian* (cons digit digits))
@@ -1065,7 +1096,8 @@
   (defruled trim-bendian*-iff-not-zp-listp
     (implies (true-listp digits)
              (iff (trim-bendian* digits)
-                  (not (zp-listp digits))))))
+                  (not (zp-listp digits))))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1284,6 +1316,7 @@
                      (dab-digit-listp base digits))
                 (equal (nat=>lendian* base (lendian=>nat base digits))
                        (trim-lendian* digits)))
+       :induct t
        :enable (lendian=>nat
                 trim-lendian*-of-cons
                 nat=>lendian*-of-digit-+-base-*-nat

@@ -930,12 +930,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Under certain circumstances,
+    "Under most circumstances,
      an array is converted to a pointer to the first element of the array
-     [C:6.3.2.1/3].
-     Indeed, arrays are used like pointers most of the time.
-     This conversion is captured, at the level of types, here.
-     Non-array types are left unchanged."))
+     [C:6.3.2.1/3];
+     indeed, arrays are used like pointers most of the time.")
+   (xdoc::p
+    "This conversion is captured, at the level of types, here.
+     Non-array types are left unchanged.")
+   (xdoc::p
+    "The dynamic counterpart of this is @(tsee apconvert-expr-value)."))
   (if (type-case type :array)
       (type-pointer (type-array->of type))
     (type-fix type))
