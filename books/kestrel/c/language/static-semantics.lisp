@@ -1406,8 +1406,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-arrsub ((arr-expr exprp) (arr-type typep)
-                      (sub-expr exprp) (sub-type typep))
+(define check-arrsub ((arr-expr exprp) (arr-etype expr-typep)
+                      (sub-expr exprp) (sub-etype expr-typep))
   :returns (type type-resultp)
   :short "Check an array subscripting expression."
   :long
@@ -1426,7 +1426,9 @@
    (xdoc::p
     "The pointer type may be the result of an array-to-pointer conversion,
      via @(tsee apconvert-type) in @(tsee check-expr-pure)."))
-  (b* (((unless (type-case arr-type :pointer))
+  (b* ((arr-type (apconvert-type (expr-type->type arr-etype)))
+       (sub-type (apconvert-type (expr-type->type sub-etype)))
+       ((unless (type-case arr-type :pointer))
         (reserrf (list :array-mistype (expr-fix arr-expr)
                        :required :pointer
                        :supplied (type-fix arr-type))))
@@ -1560,12 +1562,8 @@
      :const (b* (((okf type) (check-const e.get)))
               (make-expr-type :type type :lvalue nil))
      :arrsub (b* (((okf arr-etype) (check-expr-pure e.arr vartab tagenv))
-                  (arr-type (expr-type->type arr-etype))
-                  (arr-type (apconvert-type arr-type))
                   ((okf sub-etype) (check-expr-pure e.sub vartab tagenv))
-                  (sub-type (expr-type->type sub-etype))
-                  (sub-type (apconvert-type sub-type))
-                  ((okf type) (check-arrsub e.arr arr-type e.sub sub-type)))
+                  ((okf type) (check-arrsub e.arr arr-etype e.sub sub-etype)))
                (make-expr-type :type type :lvalue t))
      :call (reserrf (list :expr-non-pure e))
      :member (b* (((okf etype) (check-expr-pure e.target vartab tagenv))
