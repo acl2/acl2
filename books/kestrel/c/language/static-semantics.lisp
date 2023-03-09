@@ -1074,14 +1074,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-const ((c constp))
-  :returns (type type-resultp)
+  :returns (etype expr-type-resultp)
   :short "Check a constant."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only accept integer constants."))
+    "For now we only accept integer constants.")
+   (xdoc::p
+    "We return an expression type.
+     A constant is never an lvalue.")
+   (xdoc::p
+    "This is the static counterpart of @(tsee exec-const)."))
   (const-case c
-              :int (check-iconst c.get)
+              :int (b* (((okf type) (check-iconst c.get)))
+                     (make-expr-type :type type :lvalue nil))
               :float (reserrf (list :unsupported-float-const (const-fix c)))
               :enum (reserrf (list :unsupported-enum-const (const-fix c)))
               :char (reserrf (list :unsupported-char-const (const-fix c))))
@@ -1559,8 +1565,7 @@
      :ident (b* ((info (var-table-lookup e.get vartab))
                  ((unless info) (reserrf (list :var-not-found e.get))))
               (make-expr-type :type (var-sinfo->type info) :lvalue t))
-     :const (b* (((okf type) (check-const e.get)))
-              (make-expr-type :type type :lvalue nil))
+     :const (check-const e.get)
      :arrsub (b* (((okf arr-etype) (check-expr-pure e.arr vartab tagenv))
                   ((okf sub-etype) (check-expr-pure e.sub vartab tagenv))
                   ((okf type) (check-arrsub e.arr arr-etype e.sub sub-etype)))
