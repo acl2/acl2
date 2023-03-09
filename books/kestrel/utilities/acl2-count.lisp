@@ -108,26 +108,26 @@
 (defthm <=-of-acl2-count-of-take-linear
   (implies (<= n (len l))
            (<= (acl2-count (take n l)) (acl2-count l)))
-  :rule-classes (:rewrite (:linear :trigger-terms ((acl2-count (take n l))))))
+  :rule-classes ((:linear :trigger-terms ((acl2-count (take n l))))))
 
 (defthm <-of-acl2-count-of-take-linear
   (implies (< (nfix n) (len l))
            (< (acl2-count (take n l)) (acl2-count l)))
-  :rule-classes (:rewrite (:linear :trigger-terms ((acl2-count (take n l))))))
+  :rule-classes ((:linear :trigger-terms ((acl2-count (take n l))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm <-of-acl2-count-of-remove1-equal
+(defthm <-of-acl2-count-of-remove1-equal-linear
   (implies (member-equal a x)
            (< (acl2-count (remove1-equal a x))
               (acl2-count x)))
-  :rule-classes (:rewrite (:linear :trigger-terms ((acl2-count (remove1-equal a x)))))
+  :rule-classes ((:linear :trigger-terms ((acl2-count (remove1-equal a x)))))
   :hints (("Goal" :in-theory (enable remove1-equal))))
 
-(defthm <=-of-acl2-count-of-remove1-equal
+(defthm <=-of-acl2-count-of-remove1-equal-linear
   (<= (acl2-count (remove1-equal a x))
       (acl2-count x))
-  :rule-classes (:rewrite (:linear :trigger-terms ((acl2-count (remove1-equal a x)))))
+  :rule-classes ((:linear :trigger-terms ((acl2-count (remove1-equal a x)))))
   :hints (("Goal" :in-theory (enable remove1-equal))))
 
 (defthm equal-of-acl2-count-of-remove1-equal-and-acl2-count
@@ -137,8 +137,8 @@
              nil
            (equal (acl2-count (true-list-fix x)) ;simplify?
                   (acl2-count x))))
-  :hints (("Goal" :use (:instance <-of-acl2-count-of-remove1-equal)
-           :in-theory (disable <-of-acl2-count-of-remove1-equal))))
+  :hints (("Goal" :use (:instance <-of-acl2-count-of-remove1-equal-linear)
+           :in-theory (disable <-of-acl2-count-of-remove1-equal-linear))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
