@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -79,13 +79,6 @@
   :ok funinfo
   :pred funinfo-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-funinfop
-  (implies (funinfop x)
-           (not (reserrp x)))
-  :enable (reserrp funinfop))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define funinfo-for-fundef ((fundef fundefp))
@@ -121,13 +114,6 @@
   :short "Fixtype of errors and function scopes."
   :ok funscope
   :pred funscope-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-funscopep
-  (implies (funscopep x)
-           (not (reserrp x)))
-  :enable reserrp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,13 +174,6 @@
   :ok funenv
   :pred funenv-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-funenvp
-  (implies (funenvp x)
-           (not (reserrp x)))
-  :enable (reserrp funenvp))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod funinfo+funenv
@@ -216,13 +195,6 @@
           function information and a function environment."
   :ok funinfo+funenv
   :pred funinfo+funenv-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-funinfo+funenv-p
-  (implies (funinfo+funenv-p x)
-           (not (reserrp x)))
-  :enable (reserrp funinfo+funenv-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -388,13 +360,6 @@
   :short "Fixtype of errors and computation states."
   :ok cstate
   :pred cstate-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-cstatep
-  (implies (cstatep x)
-           (not (reserrp x)))
-  :enable (reserrp cstatep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -647,13 +612,6 @@
   :ok eoutcome
   :pred eoutcome-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-eoutcomep
-  (implies (eoutcomep x)
-           (not (reserrp x)))
-  :enable (reserrp eoutcomep))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod soutcome
@@ -681,13 +639,6 @@
   :short "Fixtype of errors and statement outcomes."
   :ok soutcome
   :pred soutcome-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-soutcomep
-  (implies (soutcomep x)
-           (not (reserrp x)))
-  :enable (reserrp soutcomep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
