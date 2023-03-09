@@ -18,6 +18,7 @@
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
+(local (include-book "std/typed-lists/top" :dir :system))
 
 (set-induction-depth-limit 0)
 
@@ -593,7 +594,6 @@
        (zeros (repeat (- width (len digits)) 0)))
     (append digits zeros))
   :guard-hints (("Goal" :in-theory (enable len-of-nat=>lendian*-leq-width)))
-  :prepwork ((local (include-book "std/typed-lists/top" :dir :system)))
   :hooks (:fix)
   ///
 
