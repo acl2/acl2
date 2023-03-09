@@ -637,13 +637,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-reserrp-when-types+vartab-p
-  (implies (types+vartab-p x)
-           (not (reserrp x)))
-  :enable (types+vartab-p reserrp))
-
-;;;;;;;;;;;;;;;;;;;;
-
 (defrule not-types+vartab-p-of-error
   (not (types+vartab-p (reserrf x)))
   :enable (fty::reserr types+vartab-p))
@@ -663,7 +656,8 @@
   :short "Fixtype of errors and triples consisting of
           a function table, a variable table, and a tag environment."
   :ok funtab+vartab+tagenv
-  :pred funtab+vartab+tagenv-resultp)
+  :pred funtab+vartab+tagenv-resultp
+  :prepwork ((local (in-theory (enable strip-cars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
