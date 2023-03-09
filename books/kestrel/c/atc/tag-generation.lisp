@@ -349,7 +349,10 @@
                              (list length
                                    'value-struct-read))
                       expr-value->value-of-expr-value
-                      ,@*atc-array-read-rules*))))
+                      ,@*atc-array-read-rules*
+                      apconvert-expr-value-when-not-value-array
+                      expr-valuep-of-expr-value
+                      not-errorp-when-expr-valuep))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member

@@ -639,11 +639,7 @@
    (xdoc::p
     "This is a combination of @(tsee exec-arrsub) and @(tsee exec-member),
      but it is defined as a separate function because currently
-     those two functions are not really compositional.
-     Our current semantics of C is correct for its current uses,
-     but it is not full-fledged and compositional.
-     In particular, it should (and will) be extended so that
-     expression execution returns either a value or an object designator.")
+     those two functions are not really compositional.")
    (xdoc::p
     "So here we formalize the execution of expressions of the form @('s.m[i]'),
      where @('s') is a structure,
@@ -656,12 +652,16 @@
      For this reason, we do not bother
      returning an appropriate object designator when applicable,
      instead always returning no object designator in the result."))
-  (b* ((str (expr-value->value str))
+  (b* ((str (apconvert-expr-value str))
+       ((when (errorp str)) str)
+       (str (expr-value->value str))
        ((unless (value-case str :struct))
         (error (list :not-struct str)))
        (arr (value-struct-read mem str))
        ((when (errorp arr)) arr)
        ((unless (value-case arr :array)) (error (list :not-array arr)))
+       (sub (apconvert-expr-value sub))
+       ((when (errorp sub)) sub)
        (sub (expr-value->value sub))
        ((unless (value-integerp sub)) (error
                                        (list :mistype-array :index
