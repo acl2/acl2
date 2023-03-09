@@ -1441,24 +1441,35 @@
 
 (define check-arrsub ((arr-expr exprp) (arr-etype expr-typep)
                       (sub-expr exprp) (sub-etype expr-typep))
-  :returns (type type-resultp)
+  :returns (etype expr-type-resultp)
   :short "Check an array subscripting expression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check @('arr-type') and @('sub-type');
-     @('arr-expr') and @('sub-expr') are just used for errors.
-     The first expression must have a pointer type [C:6.5.2.1/1].
+    "We check @('arr-etype') and @('sub-etype');
+     @('arr-expr') and @('sub-expr') are just used for errors.")
+   (xdoc::p
+    "We do lvalue conversion for both operands,
+     via @(tsee expr-type->type).
+     According to [C:6.3.2/2],
+     we should not do this for if an operand has an array type;
+     however, according to [C:6.3.2/3],
+     we should convert the array to a pointer
+     (which we do via @(tsee apconvert-type)),
+     and thus in the end the result is the same:
+     we have a pointer type that does not denote an lvalue,
+     if the operand is an array.
+     If an operand is an integer, @(tsee apconvert-type) has no effect.")
+   (xdoc::p
+    "The first expression must have a pointer type [C:6.5.2.1/1].
      The second expression must have an integer type [C:6.5.2.1/1].
      The type of the array subscripting expression
-     is the type referenced by the pointer.")
+     is the type referenced by the pointer.
+     An array subscripting expression is always an lvalue.")
    (xdoc::p
     "For now we do not allow the roles of the expressions to be swapped,
      i.e. that the second expression is a pointer and the first one an integer;
-     note the symmetry in [C:6.5.2.1/2].")
-   (xdoc::p
-    "The pointer type may be the result of an array-to-pointer conversion,
-     via @(tsee apconvert-type) in @(tsee check-expr-pure)."))
+     note the symmetry in [C:6.5.2.1/2]."))
   (b* ((arr-type (apconvert-type (expr-type->type arr-etype)))
        (sub-type (apconvert-type (expr-type->type sub-etype)))
        ((unless (type-case arr-type :pointer))
@@ -1469,7 +1480,7 @@
         (reserrf (list :subscript-mistype (expr-fix sub-expr)
                        :required :integer
                        :supplied (type-fix sub-type)))))
-    (type-pointer->to arr-type))
+    (make-expr-type :type (type-pointer->to arr-type) :lvalue t))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1486,30 +1497,12 @@
      (see @(tsee expr-type)).")
    (xdoc::p
     "We disallow function calls and pre/post-increment/decrement,
-     since they are not pure.")
+     since they are not pure.
+     We only allow pure binary operators.")
    (xdoc::p
     "An identifier must be in the variable table.
      Its type is looked up there.
      An identifier is always an lvalue.")
-   (xdoc::p
-    "For an array subscripting expression,
-     we do lvalue conversion for both operands,
-     via @(tsee expr-type->type).
-     According to [C:6.3.2/2],
-     we should not do this for the first operand,
-     if it has an array type;
-     however, according to [C:6.3.2/3],
-     we should convert the array to a pointer
-     (which we do via @(tsee apconvert-type)),
-     and thus in the end the result is the same:
-     we have a pointer type, which we pass to @(tsee check-arrsub).
-     In fact, we use @(tsee apconvert-type) on both operands,
-     because the roles of the array and index may be swapped,
-     as noted in @(tsee check-arrsub),
-     even though we do not handle the swapping in that function for now.
-     If an operand is an integer, @(tsee apconvert-type) has no effect.
-     An array subscripting expression is always an lvalue;
-     recall that it is like a form of the @('*') dereferencing expression.")
    (xdoc::p
     "For unary operators,
      we do not perform any lvalue or array-to-pointer conversion here,
@@ -1592,9 +1585,8 @@
               (make-expr-type :type (var-sinfo->type info) :lvalue t))
      :const (check-const e.get)
      :arrsub (b* (((okf arr-etype) (check-expr-pure e.arr vartab tagenv))
-                  ((okf sub-etype) (check-expr-pure e.sub vartab tagenv))
-                  ((okf type) (check-arrsub e.arr arr-etype e.sub sub-etype)))
-               (make-expr-type :type type :lvalue t))
+                  ((okf sub-etype) (check-expr-pure e.sub vartab tagenv)))
+               (check-arrsub e.arr arr-etype e.sub sub-etype))
      :call (reserrf (list :expr-non-pure e))
      :member (b* (((okf etype) (check-expr-pure e.target vartab tagenv))
                   (type (expr-type->type etype))
