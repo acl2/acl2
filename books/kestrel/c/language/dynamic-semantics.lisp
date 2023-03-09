@@ -553,7 +553,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is for the @('.') operator.
-     We performed array-to-pointer conversion [C:6.3.2.1/3] on the operand.
+     We perform array-to-pointer conversion [C:6.3.2.1/3] on the operand.
      The resulting operand must be a structure
      (it actually makes no difference whether we make this check
      before or after the array-to-pointer conversion,
@@ -591,14 +591,17 @@
   (xdoc::topstring
    (xdoc::p
     "This is for the @('->') operator.
-     The operand must be a valid pointer to a structure
+     We perform array-to-pointer conversion [C:6.3.2.1/3] on the operand.
+     The resulting operand must be a valid pointer to a structure
      of type consistent with the structure.
      The named member must be in the structure.
      The value associated to the member is returned.")
    (xdoc::p
     "We return an expression value whose object designator is obtained
      by adding the member to the object designator in the pointer."))
-  (b* ((str (expr-value->value str))
+  (b* ((str (apconvert-expr-value str))
+       ((when (errorp str)) str)
+       (str (expr-value->value str))
        ((unless (value-case str :pointer))
         (error (list :mistype-memberp
                      :required :pointer
