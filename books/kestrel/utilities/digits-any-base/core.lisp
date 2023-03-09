@@ -15,6 +15,7 @@
 (include-book "kestrel/utilities/zp-lists" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "arithmetic/nat-listp" :dir :system))
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "kestrel/utilities/lists/rev-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
@@ -1042,8 +1043,7 @@
            (digits (nat=>bendian* base nat))))
     :disable (nat=>bendian*-does-not-start-with-0
               trim-bendian*-when-no-starting-0
-              consp-of-nat=>bendian*-iff-not-zp)
-    :prep-books ((include-book "arithmetic/nat-listp" :dir :system)))
+              consp-of-nat=>bendian*-iff-not-zp))
 
   (defrule bendian=>nat-of-trim-bendian*
     (equal (bendian=>nat base (trim-bendian* digits))
@@ -1126,10 +1126,7 @@
     (implies (not (zp (car (last digits))))
              (equal (trim-lendian* digits)
                     (nat-list-fix digits)))
-    :enable car-of-last-rewrite-car-of-rev
-    :prep-books
-    ((include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system)
-     (include-book "kestrel/utilities/lists/rev-theorems" :dir :system)))
+    :enable car-of-last-rewrite-car-of-rev)
 
   (defrule trim-lendian*-of-nat=>lendian*
     (equal (trim-lendian* (nat=>lendian* base nat))
