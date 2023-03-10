@@ -849,11 +849,15 @@
                  (:logor
                   (b* ((arg1 (exec-expr-pure e.arg1 compst))
                        ((when (errorp arg1)) arg1)
+                       (arg1 (apconvert-expr-value arg1))
+                       ((when (errorp arg1)) arg1)
                        (test1 (test-value (expr-value->value arg1)))
                        ((when (errorp test1)) test1)
                        ((when test1)
                         (make-expr-value :value (value-sint 1) :object nil))
                        (arg2 (exec-expr-pure e.arg2 compst))
+                       ((when (errorp arg2)) arg2)
+                       (arg2 (apconvert-expr-value arg2))
                        ((when (errorp arg2)) arg2)
                        (test2 (test-value (expr-value->value arg2)))
                        ((when (errorp test2)) test2))
@@ -911,9 +915,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used, in particular,
-     for the argument expressions a function call.")
-   (xdoc::p
     "Given that the expression have no side effects (if there is no error),
      the order of evaluation does not matter.
      Thus, we proceed left to right.")
@@ -921,9 +922,14 @@
     "This ACL2 function is only used in situations
      in which we are interested in the values of the expressions,
      not their expression values (i.e. object designators, if any).
-     Thus, we just return lists of values here."))
+     Thus, we just return lists of values here.")
+   (xdoc::p
+    "In the situations in which this ACL2 function is used,
+     we also need to perform array-to-pointer conversion [C:6.3.2.1/3]."))
   (b* (((when (endp es)) nil)
        (eval (exec-expr-pure (car es) compst))
+       ((when (errorp eval)) eval)
+       (eval (apconvert-expr-value eval))
        ((when (errorp eval)) eval)
        (val (expr-value->value eval))
        (vals (exec-expr-pure-list (cdr es) compst))
@@ -1086,7 +1092,14 @@
       "This is only used for expressions that must be
        either function calls or pure.
        If the expression is a call, we use @(tsee exec-expr-call).
-       Otherwise, we resort to @(tsee exec-expr-pure).")
+       Otherwise, we resort to @(tsee exec-expr-pure),
+       we perform an array-to-pointer conversion
+       (which is appropriate because, in our C subset,
+       this ACL2  function is always used where such a conversion is needed),
+       and we peform an lvalue conversion
+       to return a value and not an expression value
+       (which is appropriate because, in our C subset,
+       this ACL2 function is always used where such a conversion is needed).")
      (xdoc::p
       "We return an optional value (if there is no error),
        which is @('nil') for a function that returns @('void')."))
@@ -1099,6 +1112,8 @@
                           fenv
                           (1- limit))
         (b* ((eval (exec-expr-pure e compst))
+             ((when (errorp eval)) (mv eval (compustate-fix compst)))
+             (eval (apconvert-expr-value eval))
              ((when (errorp eval)) (mv eval (compustate-fix compst))))
           (mv (expr-value->value eval)
               (compustate-fix compst)))))
@@ -1199,6 +1214,8 @@
               ((unless (type-integerp reftype))
                (error (list :non-integer-pointer-type (expr-fix e))))
               (eval (exec-expr-pure right compst))
+              ((when (errorp eval)) eval)
+              (eval (apconvert-expr-value eval))
               ((when (errorp eval)) eval)
               (val (expr-value->value eval))
               ((unless (equal reftype (type-of-value val)))

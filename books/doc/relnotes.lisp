@@ -287,6 +287,12 @@
      along with a checker for PFCSes that are in the R1CS subset,
      and along with a notion of structured R1CSes.")
 
+   (xdoc::p
+    "General rules have been added to support reasoning about PFCSes
+     without having to deal explicitly with the proof trees
+     used to define the PFCS semantics.
+     See @(see pfcs::proof-support) for details.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
