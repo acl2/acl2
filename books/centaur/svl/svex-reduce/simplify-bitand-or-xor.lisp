@@ -239,7 +239,7 @@ x
 (define bitand/or/xor-collect-leaves ((svex)
                                       (fn)
                                       &key
-                                      ((limit integerp) '*bitand/bitor-cancel-repeated-aux-limit*))
+                                      ((limit integerp) 'leave-depth))
   :Returns (leaves sv::Svexlist-p :hyp (and (sv::Svex-p svex)
                                             (not (equal fn ':var)))
                    :hints (("Goal"
@@ -254,11 +254,13 @@ x
      4))
   (case-match svex
     ((this-fn x y)
-     (if (and (>= limit 0)
+     (if (and (> limit 0)
               (equal this-fn fn))
          (cons svex (append (bitand/or/xor-collect-leaves x fn :limit (1- limit))
                             (bitand/or/xor-collect-leaves y fn :limit (1- limit))))
        (list svex)))
+    #|(('id x)
+     (list svex x))|#
     (& (list svex)))
   ///
   (defret true-listp-of-<fn>
@@ -359,6 +361,14 @@ x
          (res (bitand/or/xor-simple-constant-simplify 'sv::bitxor new-x new-y))
          (res (clear-1s-from-bitxor res)))
       (mv res t)))
+   #|((and (consp svex)
+         (equal (car svex) 'sv::id)
+         (equal-len (cdr svex) 1))
+    (b* (((mv res changed)
+          (bitand/bitor-cancel-repeated-aux (cadr svex) leaves new-val :limit (1- limit))))
+      (if changed
+          (mv (sv::svex-call 'id (hons-list res)) t)
+        (mv svex nil))))|#
    (t (mv svex nil)))
 
   ///
@@ -463,6 +473,8 @@ x
                                        (x sv::svex-p)
                                        (y sv::svex-p)
                                        &key
+                                       ((leave-depth integerp)
+                                        '*bitand/bitor-cancel-repeated-aux-limit*)
                                        ((env) 'env)
                                        ((context rp::rp-term-listp) 'context)
                                        ((config svex-reduce-config-p) 'config))
@@ -2176,6 +2188,8 @@ x
           ((mv l2 r2) (bitand/or/xor-collect-leaves2 y fn (1- limit))))
        (mv (append l1 l2)
            (or r1 r2))))
+    #|(('id x)
+     (mv (list x svex) nil))|#
     (& (mv (list svex) nil)))
   ///
   (defret true-listp-of-<fn>
@@ -2281,9 +2295,16 @@ x
                                       (svex-eval-bitxor-lst (remove-equal-once x lst) env))
                      (svex-eval-bitxor-lst lst env)))
      :hints (("goal"
-              :in-theory (e/d (remove-equal-once) ()))))))
+              :in-theory (e/d (remove-equal-once) ())))))
+
+  (defret svexlist-p-of-<fn>
+    (implies (sv::svexlist-p l)
+             (sv::svexlist-p res))
+    )
+  )
 
 (define remove-pair-equal ((lst true-listp))
+  :returns (res sv::Svexlist-p :hyp (sv::Svexlist-p lst))
   :prepwork
   ()
   (cond
