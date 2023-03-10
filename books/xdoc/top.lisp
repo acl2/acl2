@@ -312,9 +312,9 @@
         original
       acc)))
 
-(defun defsection-autodoc-fn (name parents short long pkg extension marker state)
+(defun defsection-autodoc-fn (name parents short long pkg code-source extension marker state)
   (declare (xargs :mode :program :stobjs state))
-  (let ((err (check-defxdoc-args name parents short long pkg)))
+  (let ((err (check-defxdoc-args name parents short long pkg code-source)))
     (if err
         (er hard? 'defsection
             "In section ~x0: Bad defsection arguments: ~s1~%" name err)
@@ -334,7 +334,8 @@
              :parents ,parents
              :short ,short
              :long ,long
-             :pkg ,pkg))))))
+             :pkg ,pkg
+             :code-source ,code-source))))))
 
 (defun make-xdoc-fragments (args) ;; args to a defsection
   (cond ((atom args)
@@ -354,6 +355,7 @@
          (long        (cdr (extract-keyword-from-args :long args)))
          (extension   (cdr (extract-keyword-from-args :extension args)))
          (pkg         (cdr (extract-keyword-from-args :pkg args)))
+         (code-source (cdr (extract-keyword-from-args :code-source args)))
          (no-xdoc-override (cdr (extract-keyword-from-args :no-xdoc-override args)))
          (set-as-default-parent (cdr (extract-keyword-from-args :set-as-default-parent args)))
          (extension
@@ -442,6 +444,7 @@
                            :parents ,parents
                            :short ,short
                            :long ,long
+                           :code-source ,code-source
                            :no-override ,no-xdoc-override)))
                 (with-output ,@stack-pop-if-nonempty
                   (,@wrapper . ,new-args))
@@ -468,7 +471,7 @@
                   (with-output ,@stack-pop-if-nonempty
                     (,@wrapper . ,new-args))
                   (make-event
-                   (defsection-autodoc-fn ',name ',parents ,short ,long ,pkg ',extension ',marker state))
+                   (defsection-autodoc-fn ',name ',parents ,short ,long ,pkg ,code-source ',extension ',marker state))
                   (value-triple ',name))))))))
 
 (defmacro defsection (name &rest args)

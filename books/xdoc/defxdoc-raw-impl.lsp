@@ -33,14 +33,17 @@
 (in-package "XDOC")
 (defvar *raw-xdoc-list* nil)
 
-(defun defxdoc-raw-fn (name parents short long pkg)
+(defun defxdoc-raw-fn (name parents short long pkg code-source)
   (let* ((pkg   (or pkg (package-name *package*)))
          (entry (list (cons :from "[defxdoc-raw]")
                       (cons :name name)
                       (cons :base-pkg (acl2::pkg-witness pkg))
                       (cons :parents parents)
                       (cons :short short)
-                      (cons :long long))))
+                      (cons :long long)
+                      ; [pending change]
+                      ; (cons :code-from "[defxdoc-raw]")
+                      )))
     (push entry *raw-xdoc-list*)
     nil))
 
