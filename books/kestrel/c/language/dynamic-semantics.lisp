@@ -1253,6 +1253,8 @@
                                      :array (value-array->elemtype array))))
                        (index (exec-expr-pure sub compst))
                        ((when (errorp index)) index)
+                       (index (apconvert-expr-value index))
+                       ((when (errorp index)) index)
                        (index (expr-value->value index))
                        ((unless (value-integerp index))
                         (error (list :mistype-array-index
@@ -1264,6 +1266,8 @@
                                                         :array array
                                                         :index index)))
                        (eval (exec-expr-pure right compst))
+                       ((when (errorp eval)) eval)
+                       (eval (apconvert-expr-value eval))
                        ((when (errorp eval)) eval)
                        (val (expr-value->value eval))
                        (new-array (value-array-write index val array))
