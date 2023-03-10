@@ -915,9 +915,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used, in particular,
-     for the argument expressions a function call.")
-   (xdoc::p
     "Given that the expression have no side effects (if there is no error),
      the order of evaluation does not matter.
      Thus, we proceed left to right.")
@@ -925,9 +922,14 @@
     "This ACL2 function is only used in situations
      in which we are interested in the values of the expressions,
      not their expression values (i.e. object designators, if any).
-     Thus, we just return lists of values here."))
+     Thus, we just return lists of values here.")
+   (xdoc::p
+    "In the situations in which this ACL2 function is used,
+     we also need to perform array-to-pointer conversion [C:6.3.2.1/3]."))
   (b* (((when (endp es)) nil)
        (eval (exec-expr-pure (car es) compst))
+       ((when (errorp eval)) eval)
+       (eval (apconvert-expr-value eval))
        ((when (errorp eval)) eval)
        (val (expr-value->value eval))
        (vals (exec-expr-pure-list (cdr es) compst))
