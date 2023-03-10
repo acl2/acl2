@@ -165,9 +165,11 @@
        (body (definition->body def))
        (vals (eval-expr-list args asg p))
        (asgext (proof-tree-relation->asgext ptree))
+       (asg-para-vals (omap::from-lists para vals))
        (outcome-sub (exec-proof-tree-list
                      (proof-tree-relation->sub ptree) defs p))
-       (asser-sub (proof-list-outcome-assertions->get outcome-sub)))
+       (asser-sub (proof-list-outcome-assertions->get outcome-sub))
+       (asg-sub (omap::update* asgext asg-para-vals)))
     (implies (and (proof-outcome-case outcome :assertion)
                   (constraint-case constr :relation))
              (and (proof-tree-case ptree :relation)
@@ -178,10 +180,11 @@
                   (nat-listp vals)
                   (equal (len para) (len vals))
                   (assignment-wfp asgext p)
-                  (omap::submap (omap::from-lists para vals) asgext)
+                  (not (set::intersectp (omap::keys asg-para-vals)
+                                        (omap::keys asgext)))
                   (proof-list-outcome-case outcome-sub :assertions)
                   (equal (assertion-list->asg-list asser-sub)
-                         (repeat (len body) asgext))
+                         (repeat (len body) asg-sub))
                   (equal (assertion-list->constr-list asser-sub)
                          body))))
   :expand ((exec-proof-tree ptree defs p)))
@@ -297,12 +300,19 @@
                  (and (equal (len args) (len def.para))
                       (b* ((vals (eval-expr-list args asg p)))
                         (and (nat-listp vals)
-                             (omap::submap (omap::from-lists def.para vals)
-                                           asgext)
-                             (constraint-list-satp def.body
-                                                   defs
+                             (b* ((asg-para-vals (omap::from-lists def.para
+                                                                   vals)))
+                               (and (not (set::intersectp
+                                          (omap::keys asg-para-vals)
+                                          (omap::keys asgext)))
+                                    (b* ((asg-sub (omap::update*
                                                    asgext
-                                                   p))))))))))
+                                                   asg-para-vals)))
+                                      (constraint-list-satp def.body
+                                                            defs
+                                                            asg-sub
+                                                            p))))))))))))
+  :guard-hints (("Goal" :in-theory (enable acl2::not-reserrp-when-nat-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -358,8 +368,19 @@
                       (constrs (definition->body
                                  (lookup-definition
                                   (constraint-relation->name constr) defs)))
-                      (asg (proof-tree-relation->asgext
-                            (constraint-satp-witness constr defs asg p)))
+                      (asg (omap::update*
+                            (proof-tree-relation->asgext
+                             (constraint-satp-witness constr defs asg p))
+                            (omap::from-lists
+                             (definition->para
+                               (lookup-definition
+                                (constraint-relation->name constr) defs))
+                             (eval-expr-list
+                              (proof-tree-relation->args
+                               (constraint-satp-witness constr defs asg p))
+                              (proof-tree-relation->asg
+                               (constraint-satp-witness constr defs asg p))
+                              p))))
                       (ptrees (proof-tree-relation->sub
                                (constraint-satp-witness constr defs asg p))))))
 
@@ -387,10 +408,19 @@
                                      (lookup-definition
                                       (constraint-relation->name constr) defs))
                                    defs
-                                   (constraint-relation-satp-witness
-                                    (constraint-relation->name constr)
-                                    (constraint-relation->args constr)
-                                    defs asg p)
+                                   (omap::update*
+                                    (constraint-relation-satp-witness
+                                     (constraint-relation->name constr)
+                                     (constraint-relation->args constr)
+                                     defs asg p)
+                                    (omap::from-lists
+                                     (definition->para
+                                       (lookup-definition
+                                        (constraint-relation->name constr)
+                                        defs))
+                                     (eval-expr-list
+                                      (constraint-relation->args constr)
+                                      asg p)))
                                    p)
                              :asgext (constraint-relation-satp-witness
                                       (constraint-relation->name constr)

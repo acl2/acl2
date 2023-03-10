@@ -406,11 +406,24 @@
         These include subtrees that must prove the satisfaction of
         the constraints in the body that defines the relation,
         for some assignment that extends the one that assigns
-        the values of the expressions to the formal parameters;
-        the assignment must be the same for all the subtrees,
-        and we make this assignment an explicit component of the proof tree
-        for greater convenience in manipulating proof trees.
-        This is formalized later; the description above is only a sketch.")))
+        the values of the expressions to the formal parameters.
+        Let @('asg0') be the assignment that assigns
+        the values of the expressions to the formal parameters,
+        and let @('asgsub') the assignment that extends @('asg0')
+        and that must satisfy all the constraints that define the relation.
+        Note that @('asg0') and @('asgsub') are different from
+        the assignment @('asg') that is
+        the homonymous component in the proof tree,
+        i.e. the one that must satisfy the relation.
+        The assignment @('asgsub') is specified indirectly in the proof tree,
+        via the @('asgext') component, which is the difference
+        between @('asgsub') and @('asg0'):
+        the domain of @('asgext') must be
+        disjoint from the parameters of the relation,
+        and must provide mappings from the non-parameter variables
+        used in the constraints of the relation.
+        All of this is formalized later;
+        the description just given is only a sketch.")))
     (:equal ((asg assignment)
              (left expression)
              (right expression)))
@@ -504,8 +517,9 @@
      Then we execute the proof subtrees, propagating errors and failures.
      If the proof subtrees all succeed, they yield a list of assertions.
      We ensure that they all have the same assignment,
-     specifically the one that is part of the proof tree;
-     we ensure that such an assignment extends the one that assigns
+     specifically the one that is obtained by extending,
+     with the assignment @('asgext') that is the component of the proof tree,
+     the assignment @('asg0') that assigns
      the values of the argument expressions to the relation's formal parameters.
      We ensure that the constraints are the ones that
      form the body of the named relation.
@@ -517,9 +531,9 @@
      in some suitable sense.
      We allow relations with an empty body (i.e. no constraints)
      to be proved by an empty list of subtrees;
-     note that in this case there is no use of the extended assignment
-     that is part of the proof tree,
-     because the subtrees do not prove any assertions in fact."))
+     note that in this case there is no use of @('asgext')
+     (which may just be @('nil')),
+     because the subtrees do not prove any assertions in this case."))
 
   (define exec-proof-tree ((ptree proof-treep)
                            (defs definition-listp)
@@ -542,8 +556,6 @@
      :relation
      (b* (((unless (assignment-wfp ptree.asg p))
            (proof-outcome-error))
-          ((unless (assignment-wfp ptree.asgext p))
-           (proof-outcome-error))
           (vals (eval-expr-list ptree.args ptree.asg p))
           ((unless (nat-listp vals)) (proof-outcome-error))
           (def (lookup-definition ptree.name defs))
@@ -551,6 +563,12 @@
           ((definition def) def)
           ((unless (= (len def.para) (len vals))) (proof-outcome-error))
           (asg-para-vals (omap::from-lists def.para vals))
+          ((unless (assignment-wfp ptree.asgext p))
+           (proof-outcome-error))
+          ((when (set::intersectp (omap::keys asg-para-vals)
+                                  (omap::keys ptree.asgext)))
+           (proof-outcome-fail))
+          (asg-sub (omap::update* ptree.asgext asg-para-vals))
           (outcome (exec-proof-tree-list ptree.sub defs p)))
        (proof-list-outcome-case
         outcome
@@ -560,8 +578,7 @@
         (b* ((asgs (assertion-list->asg-list outcome.get))
              (constrs (assertion-list->constr-list outcome.get))
              ((unless (equal constrs def.body)) (proof-outcome-fail))
-             ((unless (and (equal asgs (repeat (len asgs) ptree.asgext))
-                           (omap::submap asg-para-vals ptree.asgext)))
+             ((unless (equal asgs (repeat (len asgs) asg-sub)))
               (proof-outcome-fail)))
           (proof-outcome-assertion
            (make-assertion
