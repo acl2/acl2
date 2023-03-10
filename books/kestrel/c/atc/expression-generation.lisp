@@ -2129,6 +2129,7 @@
                                       thm-name nil pure.names-to-avoid wrld))
        (type-pred (type-to-recognizer pure.type wrld))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (value-kind-when-type-pred (pack 'value-kind-when- type-pred))
        (uterm* (untranslate$ pure.term nil state))
        (formula1 `(equal (exec-expr-call-or-pure ',pure.expr
                                                  ,gin.compst-var
@@ -2163,7 +2164,9 @@
                                      expr-valuep-of-expr-value
                                      expr-value->value-of-expr-value
                                      value-fix-when-valuep
-                                     ,valuep-when-type-pred))))
+                                     ,valuep-when-type-pred
+                                     apconvert-expr-value-when-not-value-array
+                                     ,value-kind-when-type-pred))))
        ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints

@@ -1092,7 +1092,14 @@
       "This is only used for expressions that must be
        either function calls or pure.
        If the expression is a call, we use @(tsee exec-expr-call).
-       Otherwise, we resort to @(tsee exec-expr-pure).")
+       Otherwise, we resort to @(tsee exec-expr-pure),
+       we perform an array-to-pointer conversion
+       (which is appropriate because, in our C subset,
+       this ACL2  function is always used where such a conversion is needed),
+       and we peform an lvalue conversion
+       to return a value and not an expression value
+       (which is appropriate because, in our C subset,
+       this ACL2 function is always used where such a conversion is needed).")
      (xdoc::p
       "We return an optional value (if there is no error),
        which is @('nil') for a function that returns @('void')."))
@@ -1105,6 +1112,8 @@
                           fenv
                           (1- limit))
         (b* ((eval (exec-expr-pure e compst))
+             ((when (errorp eval)) (mv eval (compustate-fix compst)))
+             (eval (apconvert-expr-value eval))
              ((when (errorp eval)) (mv eval (compustate-fix compst))))
           (mv (expr-value->value eval)
               (compustate-fix compst)))))
