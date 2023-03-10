@@ -49,8 +49,11 @@ the ACL2 source code and community books.
     <li>(<font color="red">Recommended</font> if you don't plan to
     update from git)<br/>Fetch
       <a href="https://github.com/acl2-devel/acl2-devel/releases/download/8.5/acl2-8.5.tar.gz">gzipped
-	tar file <code>acl2-8.5.tar.gz</code> from GitHub</a> and
-      then execute:<br/>
+      tar file <code>acl2-8.5.tar.gz</code> from GitHub</a> and
+      then execute the following (the <code>rm</code> command is just
+      to make sure you don't already have a subdirectory
+      named <code>acl2-8.5</code>):<br/>
+      <code>rm -rf acl2-8.5</code><br/>
       <code>tar xfz acl2-8.5.tar.gz</code><br/>
     This will create a subdirectory named <code>acl2-8.5</code>.
     Change to that directory.</li>
@@ -58,7 +61,10 @@ the ACL2 source code and community books.
     <li>(<font color="red">Development snapshot</font>, required if
       you want
       to <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____GITHUB-COMMIT-CODE-USING-PULL-REQUESTS">update
-      from GitHub</a>)<br/>Execute:<br/>
+      from GitHub</a>)<br/>Execute the following (the <code>rm</code> command is just
+      to make sure you don't already have a subdirectory
+      named <code>acl2</code>):<br/>
+      <code>rm -rf acl2-8.5</code><br/>
       <code>git clone https://github.com/acl2/acl2</code><br/>
       This will create the subdirectory <code>acl2</code>.
       Change to that directory.
