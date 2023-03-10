@@ -1215,6 +1215,8 @@
                (error (list :non-integer-pointer-type (expr-fix e))))
               (eval (exec-expr-pure right compst))
               ((when (errorp eval)) eval)
+              (eval (apconvert-expr-value eval))
+              ((when (errorp eval)) eval)
               (val (expr-value->value eval))
               ((unless (equal reftype (type-of-value val)))
                (error (list :mistype-apointer
