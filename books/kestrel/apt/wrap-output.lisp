@@ -214,11 +214,19 @@ functions that axe has lifted).</li>
                      `(if (and ,@(butlast (fargs term) 1))
                           ,(wrap-pattern-around-untranslated-term (car (last (fargs term))) wrapper)
                         ,(wrap-pattern-around-untranslated-term nil wrapper)))))
-             ;;fixme: handle nary OR as we do for AND above
-             (if (eq fn 'or) ;; (or x y) = (if x t y)
-                 `(if ,(farg1 term)
-                      ,(wrap-pattern-around-untranslated-term t wrapper)
-                    ,(wrap-output-in-term (farg2 term) wrapper fn-renaming new-formals))
+             ;; I can't think of a nice way to wrap an OR, since any of the
+             ;; arguments may be returned, and we also need the original
+             ;; versions of all the arguments, to test.
+             (if (eq fn 'or)
+                 ;; or we could do (wrap-output-in-term (or-macro (fargs term)) wrapper fn-renaming new-formals)
+                 ;; but then termination is tricky
+               (if (eql 0 (len (fargs term))) ;; (or) = nil, so we wrap nil:
+                   (wrap-pattern-around-untranslated-term nil wrapper)
+                 (if (eql 1 (len (fargs term))) ;; (or x) = x, so we wrap x:
+                     (wrap-pattern-around-untranslated-term (farg1 term) wrapper)
+                   `(if ,(farg1 term) ; (or x y) = (if x x y)
+                        ,(wrap-output-in-term (farg1 term) wrapper fn-renaming new-formals)
+                      ,(wrap-output-in-term `(or ,@(rest (fargs term))) wrapper fn-renaming new-formals))))
                (if (consp fn) ;test for lambda application: ((lambda (vars) body) ... args ...)
                    ;; If it's a lambda, wrap the lambda body (TODO: think about free vars in the wrapper)
                    ;; TODO: Think about this case

@@ -280,38 +280,52 @@
    (DEFTHM FOO-FOO$1-CONNECTION
      (EQUAL (F (FOO X Y Z W)) (FOO$1 X Y Z W)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; 'or' is not fully implemented, each of these tests fail!
-#|
-;; Test nary or:
-(deftest
-  (defun foo (x y z w)
-    (or x y z w))
-  (defstub f (x) t)
-  (wrap-output foo (lambda (x) (f x)) :print :all))
-
-;; Test 0-ary or:
+;; Test 0-ary OR:
 (deftest
   (defun foo ()
     (or))
   (defstub f (x) t)
-  (wrap-output foo (lambda (x) (f x)) :print :all))
+  (wrap-output foo (lambda (x) (f x)))
+  (must-be-redundant
+   (defun foo$1
+       nil (declare (xargs :verify-guards nil))
+       (f nil))))
 
-;; Test unary or:
+;; Test unary OR:
 (deftest
   (defun foo (x)
     (or x))
   (defstub f (x) t)
-  (wrap-output foo (lambda (x) (f x)) :print :all))
+  (wrap-output foo (lambda (x) (f x)))
+  (must-be-redundant
+   (defun foo$1 (x)
+     (declare (xargs :verify-guards nil))
+     (f x))))
 
-;; Test binary or:
+;; Test binary OR:
 (deftest
   (defun foo (x y)
     (or x y))
   (defstub f (x) t)
-  (wrap-output foo (lambda (x) (f x)) :print :all))
-|#
+  (wrap-output foo (lambda (x) (f x)))
+  (must-be-redundant
+   (defun foo$1 (x y) (declare (xargs :verify-guards nil))
+          (if x (f x) (f y)))))
 
+;; Test OR with more than 2 disjuncts:
+(deftest
+  (defun foo (x y z w)
+    (or x y z w))
+  (defstub f (x) t)
+  (wrap-output foo (lambda (x) (f x)))
+  (must-be-redundant
+   (defun foo$1 (x y z w)
+     (declare (xargs :verify-guards nil))
+     (if x (f x) (if y (f y) (if z (f z) (f w)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; test let
 (deftest
@@ -481,7 +495,7 @@
   (defun test-lambda (x n)
     (if (zp n) x
       ((lambda (x) (* x (test-lambda x (1- n)))) x)))
-  (wrap-output test-lambda (lambda (x) (* x x)) :print :all)
+  (wrap-output test-lambda (lambda (x) (* x x)))
   (must-be-redundant
    (DEFUN TEST-LAMBDA$1 (X N)
      (IF (ZP N)
