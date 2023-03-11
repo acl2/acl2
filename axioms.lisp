@@ -8162,6 +8162,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Now we define the weak notion of term that guards metafunctions.
 
+(defmacro len$ (x)
+
+; This variant of len is logically just len, but it executes as length in
+; guard-verified and program-mode code.  In such code it should thus be called
+; only when x is a true list, but it may be slightly faster than len because
+; the Lisp implementation may optimize the definition of length.  The following
+; experiment (performed on an Intel-based Mac) showed length to be faster than
+; len in CCL and perhaps about the same in SBCL.
+
+; :q ; go into raw Lisp
+; (defconstant *c* (loop for i from 1 to 1000 by 10
+;                        collect (make-list (* 1000 i))))
+; (defun f () (loop for x in *c* when (= (len x) 3) collect x))
+; (defun g () (loop for x in *c* when (= (length x) 3) collect x))
+; (time (f))
+; (time (g))
+
+; At first glance it may appear that x is being evaluated twice below from a
+; call of len$.  But in fact, only the :logic or the :exec code will be
+; evaluated from a call of len$.
+
+  `(mbe :logic (len ,x)
+        :exec (length ,x)))
+
 (mutual-recursion
 
 (defun pseudo-termp (x)
@@ -8181,12 +8205,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the checks below.
 
                (and (true-listp (car x))
-                    (equal (length (car x)) 3)
+                    (equal (len$ (car x)) 3)
                     (eq (car (car x)) 'lambda)
                     (symbol-listp (cadr (car x)))
                     (pseudo-termp (caddr (car x)))
-                    (equal (length (cadr (car x)))
-                           (length (cdr x))))))))
+                    (equal (len$ (cadr (car x)))
+                           (len$ (cdr x))))))))
 
 (defun pseudo-term-listp (lst)
   (declare (xargs :guard t))
@@ -11570,6 +11594,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq x 'rational) (list 'rationalp var))
         ((eq x 'real) (list 'real/rationalp var))
         ((eq x 'complex) (list 'complex/complex-rationalp var))
+        ((eq x 'number) (list 'acl2-numberp var))
         ((and (consp x)
               (eq (car x) 'rational)
               (true-listp x)
@@ -18271,6 +18296,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (case
                      typ
                      ((:character :object)
+
+; We allow the :element-type to default to character in the following call of
+; safe-open.  That may seem surprising when typ is :object.  But read-object
+; calls read, and the CL HyperSpec doesn't impose any requirements on the
+; stream when calling read.  So we prefer to leave :element-type as the
+; default.
+
                       (safe-open os-file-name :direction :input
                                  :if-does-not-exist nil))
                      (:byte (safe-open os-file-name :direction :input
@@ -18464,16 +18496,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       ((:character :object)
                        (cond ((eq file-name :string)
                               (make-string-output-stream))
-                             (t (safe-open os-file-name :direction :output
-                                           :if-exists :supersede
+                             (t
+
+; We allow the :element-type to default to character in the following call of
+; safe-open.  That may seem surprising when typ is :object.  But read-object
+; calls read, and the CL HyperSpec doesn't impose any requirements on the
+; stream when calling read.  So we prefer to leave :element-type as the
+; default.
+
+                              (safe-open os-file-name :direction :output
+                                         :if-exists :supersede
 
 ; In ACL2(p) using CCL, we have seen an error caused when standard-co was
 ; connected to a file.  Specifically, waterfall-print-clause-id@par was
 ; printing to standard-co -- i.e., to that file -- and CCL complained because
 ; the default is for a file stream to be private to the thread that created it.
 
-                                           #+(and acl2-par ccl) :sharing
-                                           #+(and acl2-par ccl) :lock))))
+                                         #+(and acl2-par ccl) :sharing
+                                         #+(and acl2-par ccl) :lock))))
                       (:byte
                        (cond ((eq file-name :string)
                               (make-string-output-stream

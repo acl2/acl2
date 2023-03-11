@@ -10965,9 +10965,7 @@
             (kwote summary)
           summary)
         str+
-        (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                             #\5 #\6 #\7 #\8 #\9)
-                           fmt-args)
+        (make-fmt-bindings *base-10-chars* fmt-args)
         'wrld
         'state-vars))
 

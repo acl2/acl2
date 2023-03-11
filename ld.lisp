@@ -2175,16 +2175,20 @@
        :ld-user-stobjs-modified-warning :same))
 
 (defun wormhole-prompt (channel state)
-  (fmt1 "Wormhole ~s0~sr ~@1~*2"
-        (list (cons #\0 (f-get-global 'current-package state))
-              (cons #\1 (defun-mode-prompt-string state))
-              (cons #\r
-                    #+:non-standard-analysis "(r)"
-                    #-:non-standard-analysis "")
-              (cons #\2
-                    (list "" ">" ">" ">"
-                          (make-list-ac (- (f-get-global 'ld-level state) 1) nil nil))))
-        0 channel state nil))
+  (the2s
+   (signed-byte 30)
+   (fmt1 "Wormhole ~s0~sr ~@1~*2"
+         (list (cons #\0 (f-get-global 'current-package state))
+               (cons #\1 (defun-mode-prompt-string state))
+               (cons #\r
+                     #+:non-standard-analysis "(r)"
+                     #-:non-standard-analysis "")
+               (cons #\2
+                     (list "" ">" ">" ">"
+                           (make-list-ac (- (f-get-global 'ld-level state) 1)
+                                         nil
+                                         nil))))
+         0 channel state nil)))
 
 (defun reset-ld-specials-fn (reset-channels-flg state)
 
