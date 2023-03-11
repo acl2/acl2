@@ -1379,6 +1379,8 @@
                (error (list :not-struct struct (compustate-fix compst))))
               (eval (exec-expr-pure right compst))
               ((when (errorp eval)) eval)
+              (eval (apconvert-expr-value eval))
+              ((when (errorp eval)) eval)
               (val (expr-value->value eval))
               (new-struct (value-struct-write mem val struct))
               ((when (errorp new-struct)) new-struct))
@@ -1409,6 +1411,8 @@
                             :pointer reftype
                             :struct (type-of-value struct))))
               (eval (exec-expr-pure right compst))
+              ((when (errorp eval)) eval)
+              (eval (apconvert-expr-value eval))
               ((when (errorp eval)) eval)
               (val (expr-value->value eval))
               (new-struct (value-struct-write mem val struct))

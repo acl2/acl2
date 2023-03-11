@@ -608,7 +608,19 @@
                    ,recognizer
                    ,fixer-recognizer-thm
                    ,type-of-value-thm
-                   not-errorp-when-expr-valuep)
+                   not-errorp-when-expr-valuep
+                   apconvert-expr-value-when-not-value-array-alt
+                   value-kind-when-ucharp
+                   value-kind-when-scharp
+                   value-kind-when-ushortp
+                   value-kind-when-sshortp
+                   value-kind-when-uintp
+                   value-kind-when-sintp
+                   value-kind-when-ulongp
+                   value-kind-when-slongp
+                   value-kind-when-ullongp
+                   value-kind-when-sllongp
+                   expr-value-fix-when-expr-valuep)
                  :use
                  (:instance
                   ,writer-return-thm
@@ -660,7 +672,19 @@
                    ,recognizer
                    ,fixer-recognizer-thm
                    ,type-of-value-thm
-                   not-errorp-when-expr-valuep)
+                   not-errorp-when-expr-valuep
+                   apconvert-expr-value-when-not-value-array-alt
+                   value-kind-when-ucharp
+                   value-kind-when-scharp
+                   value-kind-when-ushortp
+                   value-kind-when-sshortp
+                   value-kind-when-uintp
+                   value-kind-when-sintp
+                   value-kind-when-ulongp
+                   value-kind-when-slongp
+                   value-kind-when-ullongp
+                   value-kind-when-sllongp
+                   expr-value-fix-when-expr-valuep)
                  :use
                  (:instance
                   ,writer-return-thm
