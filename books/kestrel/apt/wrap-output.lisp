@@ -34,7 +34,6 @@
 ;; then I can replace the (w (f (update x))) with (f' (update x)).
 
 (include-book "tools/flag" :dir :system)
-(include-book "misc/records" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
 (include-book "utilities/deftransformation")
 (include-book "utilities/defun-variant")
@@ -136,7 +135,7 @@ functions that axe has lifted).</li>
 
 
 <p>TODO: Add check: For now, the wrapper should only be over one variable.</p>"
- 
+
   ;; TODO: add check that free variables are not function parameters! (or that they don't do bad things)
   ;; TODO: When wrap-input is added to community books, restore the following:
   ;; <p>This transformation is in some sense the dual of @(see wrap-input).</p>
@@ -295,6 +294,7 @@ functions that axe has lifted).</li>
                                             (defun-or-mutual-recursion-formp fn-event)
 ;                                            (PSEUDO-TERMP (THIRD WRAPPER))
                                             (function-renamingp fn-renaming)
+                                            (symbol-alistp options)
                                             (symbol-listp new-formals))
                   :verify-guards nil ;TODO
                   ))
@@ -303,7 +303,7 @@ functions that axe has lifted).</li>
          ;(body (fn-body fn t wrld))
          (formals (fn-formals fn wrld))
          (non-executable (non-executablep fn wrld))
-         (function-disabled (g :function-disabled options))
+         (function-disabled (lookup-eq :function-disabled options))
          ;; Chose between defun, defund, defun-nx, etc.:
          (defun-variant (defun-variant fn non-executable function-disabled state))
 
@@ -325,7 +325,7 @@ functions that axe has lifted).</li>
          (declares (remove-xarg-in-declares :guard-debug declares)) ; verify-guards is done separately
          (declares (remove-xarg-in-declares :guard-simplify declares)) ; verify-guards is done separately
          ;; Deal with the :guard xarg:
-;         (guard-alist (g :guard-alist options))
+;         (guard-alist (lookup-eq :guard-alist options))
 ;         (guard (lookup-eq-safe fn guard-alist))
          (declares (if (not (eq :auto guard))
                        (replace-xarg-in-declares :guard guard declares)
@@ -361,6 +361,7 @@ functions that axe has lifted).</li>
                               (defun-or-mutual-recursion-formp fn-event)
 ;                              (PSEUDO-TERMP (THIRD WRAPPER))
                               (function-renamingp fn-renaming)
+                              (symbol-alistp options)
                               (symbol-listp new-formals))))
   (if (endp fns)
       nil
@@ -380,10 +381,11 @@ functions that axe has lifted).</li>
                                             (not (member-eq fn *supported-untranslated-term-macros*))
                                             (symbolp new-fn)
                                             (untranslated-UNARY-LAMBDAP WRAPPER)
+                                            (symbol-alistp options)
 ;                                            (PSEUDO-TERMP (THIRD WRAPPER))
                                             )))
   (let ((formals (fn-formals fn (w state)))
-        (theorem-disabled (g :theorem-disabled options))
+        (theorem-disabled (lookup-eq :theorem-disabled options))
         (fn-not-normalized (install-not-normalized-name fn))
         (new-fn-not-normalized (install-not-normalized-name new-fn))
         )
@@ -424,7 +426,7 @@ functions that axe has lifted).</li>
                                             (symbol-listp new-fns)
                                             (untranslated-unary-lambdap wrapper)
 ;                                            (pseudo-termp (third wrapper))
-                                            )))
+                                            (symbol-alistp options))))
   (if (endp fns)
       nil
     (cons (make-wrap-output-defthm (first fns) (first new-fns) wrapper use-flagp options recursivep
@@ -445,10 +447,10 @@ functions that axe has lifted).</li>
   (b* ((wrld (w state))
        (fn-event (my-get-event fn wrld))
        (options nil)
-;         (options (s :guard-hints guard-hints options))
-;         (options (s :guard guard options))
-       (options (s :theorem-disabled theorem-disabled options))
-       (options (s :function-disabled function-disabled options))
+;         (options (acons :guard-hints guard-hints options))
+;         (options (acons :guard guard options))
+       (options (acons :theorem-disabled theorem-disabled options))
+       (options (acons :function-disabled function-disabled options))
        (wrapper (if (symbolp wrapper) `(lambda (x) (,wrapper x)) wrapper)) ;convert a symbol into a unary lambda
        (lambda-formals (lambda-formals wrapper))
        (wrapper-body (lambda-body wrapper))
