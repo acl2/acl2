@@ -1,6 +1,6 @@
-; A transformation to transform the output of a function using a wrapper
+; A transformation to combine a function's body with a wrapper
 ;
-; Copyright (C) 2014-2021 Kestrel Institute
+; Copyright (C) 2014-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,8 +17,6 @@
 
 ;;TODO: We may be able to better handle non-tail calls as follows: Say my
 ;;function f(x) makes a non-tail call in some branch.  Say that call is:
-
-;; TODO: Improve this to operate on untranslated terms
 
 ;; TODO: Applicability guard conditions for calling the wrapper on each branch.
 
@@ -228,7 +226,8 @@ functions that axe has lifted).</li>
                           (lambda-formals (ulambda-formals fn))
                           (lambda-declares (ulambda-declares fn))
                           (lambda-body (ulambda-body fn)))
-                     `(,(make-ulambda lambda-formals lambda-declares (wrap-output-in-term lambda-body wrapper fn-renaming new-formals)) ,@args))
+                     `(,(make-ulambda lambda-formals lambda-declares (wrap-output-in-term lambda-body wrapper fn-renaming new-formals))
+                       ,@args))
                  (if (member-eq fn '(let let*))
                      (let ((bindings (farg1 term))
                            (declares (let-declares term))
