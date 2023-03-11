@@ -1433,6 +1433,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-cast ((arg-expr exprp)
+                    (arg-etype expr-typep)
+                    (tyname tynamep)
+                    (tagenv tag-envp))
+  :returns (etype expr-type-resultp)
+  :short "Check a cast expression [C:6.5.4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A cast is allowed between scalar types.
+     The result has the type indicated in the cast.
+     See [C:6.5.4]; note that the additional requirements on the type
+     do not apply to our currently simplified model of C types.
+     We apply lvalue conversion to the operand.
+     We also apply array-to-pointer conversion,
+     which could turn an array into a pointer (and thus scalar) type.
+     A cast expression is never an lvalue."))
+  (b* ((arg-type (expr-type->type arg-etype))
+       (arg-type (apconvert-type arg-type))
+       ((unless (type-scalarp arg-type))
+        (reserrf (list :cast-mistype-operand (expr-fix arg-expr)
+                       :required :scalar
+                       :supplied arg-type)))
+       ((okf type) (check-tyname tyname tagenv))
+       ((unless (type-scalarp type))
+        (reserrf (list :cast-mistype-type (expr-fix arg-expr)
+                       :required :scalar
+                       :supplied type))))
+    (make-expr-type :type type :lvalue nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-arrsub ((arr-expr exprp) (arr-etype expr-typep)
                       (sub-expr exprp) (sub-etype expr-typep))
   :returns (etype expr-type-resultp)
@@ -1556,20 +1589,6 @@
      Its type is looked up there.
      An identifier is always an lvalue.")
    (xdoc::p
-    "For unary operators,
-     we do not perform any lvalue or array-to-pointer conversion here,
-     because that is done in @(tsee check-unary).
-     We check the argument,
-     pass the expression type to @(tsee check-unary),
-     and forward the returned expression type (or error).")
-   (xdoc::p
-    "For binary operators, we apply
-     both lvalue conversion and array-to-pointer conversion to the operand(s).
-     The latter is needed because some operators work on scalars,
-     and array-to-pointer conversion may produce a scalar.
-     Unary and binary expressions are never lvalues;
-     this is the case for the unary operators that we currently cover.")
-   (xdoc::p
     "A cast is allowed between scalar types.
      Since we check that the type name denotes a scalar type,
      we do not need to check its well-formedness against the tag environment.
@@ -1631,19 +1650,8 @@
      :predec (reserrf (list :expr-non-pure e))
      :unary (b* (((okf arg-etype) (check-expr-pure e.arg vartab tagenv)))
               (check-unary e.op e.arg arg-etype))
-     :cast (b* (((okf arg-etype) (check-expr-pure e.arg vartab tagenv))
-                (arg-type (expr-type->type arg-etype))
-                (arg-type (apconvert-type arg-type))
-                ((unless (type-scalarp arg-type))
-                 (reserrf (list :cast-mistype-operand e
-                                :required :scalar
-                                :supplied arg-type)))
-                ((okf type) (check-tyname e.type tagenv))
-                ((unless (type-scalarp type))
-                 (reserrf (list :cast-mistype-type e
-                                :required :scalar
-                                :supplied type))))
-             (make-expr-type :type type :lvalue nil))
+     :cast (b* (((okf arg-etype) (check-expr-pure e.arg vartab tagenv)))
+             (check-cast e.arg arg-etype e.type tagenv))
      :binary (b* (((unless (binop-purep e.op))
                    (reserrf (list :binary-non-pure e)))
                   ((okf arg1-etype) (check-expr-pure e.arg1 vartab tagenv))
