@@ -408,7 +408,7 @@
      :flag term)
    (defthm pseudo-term-listp-expand-all-lambdas-lst
      (implies (pseudo-term-listp terms)
-              (pseudo-term-listp (expand-all-lambdas-lst terms))) 
+              (pseudo-term-listp (expand-all-lambdas-lst terms)))
      :flag terms)))
 
 (verify-guards expand-all-lambdas)
@@ -550,3 +550,4 @@
 ; (verify-termination possibly-clean-up-dirty-lambda-objects)
 ; (skip-proofs (verify-guards possibly-clean-up-dirty-lambda-objects))
 ; (verify-termination remove-guard-holders)
+
