@@ -751,8 +751,10 @@
           (array-checker (pack elemfixtype '-array-index-okp))
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
           (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
-          (valuep-when-indextype (pack 'valuep-when- indextypep))
+          (valuep-when-indextypep (pack 'valuep-when- indextypep))
           (valuep-when-elemtypep (pack 'valuep-when- elemtypep))
+          (value-kind-when-indextypep (pack 'value-kind-when- indextypep))
+          (value-kind-when-elemtypep (pack 'value-kind-when- elemtypep))
           (type-thm (pack 'integer-from- indexfixtype))
           (thm-member-name (pack 'exec-member-write-when-
                                  recognizer
@@ -801,7 +803,9 @@
                           (,recognizer struct)
                           (equal eidx (exec-expr-pure index compst))
                           (expr-valuep eidx)
-                          (equal idx (expr-value->value eidx))
+                          (equal eidx1 (apconvert-expr-value eidx))
+                          (expr-valuep eidx1)
+                          (equal idx (expr-value->value eidx1))
                           (,indextypep idx)
                           ,check-hyp
                           (equal eval (exec-expr-pure right compst))
@@ -840,12 +844,16 @@
                           (,recognizer struct)
                           (equal eidx (exec-expr-pure index compst))
                           (expr-valuep eidx)
-                          (equal idx (expr-value->value eidx))
+                          (equal eidx1 (apconvert-expr-value eidx))
+                          (expr-valuep eidx1)
+                          (equal idx (expr-value->value eidx1))
                           (,indextypep idx)
                           ,check-hyp
                           (equal eval (exec-expr-pure right compst))
                           (expr-valuep eval)
-                          (equal val (expr-value->value eval))
+                          (equal eval1 (apconvert-expr-value eval))
+                          (expr-valuep eval1)
+                          (equal val (expr-value->value eval1))
                           (,elemtypep val))
                      (equal (exec-expr-asg e compst fenv limit)
                             (write-object (value-pointer->designator ptr)
@@ -900,22 +908,28 @@
                 ,array-writer
                 ,array-checker
                 ,valuep-when-elemtypep
-                ,valuep-when-indextype
+                ,valuep-when-indextypep
                 ,@*integer-value-disjoint-rules*
                 (:t ,type-thm)
                 ,@(and length (list length))
-                not-errorp-when-expr-valuep)
+                not-errorp-when-expr-valuep
+                apconvert-expr-value-when-not-value-array-alt
+                ,value-kind-when-elemtypep
+                ,value-kind-when-indextypep
+                expr-value-fix-when-expr-valuep)
               :use
               ((:instance
                 ,writer-return-thm
                 (index
                  (,integer-from-indextype
                   (expr-value->value
-                   (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
-                                   compst))))
+                   (apconvert-expr-value
+                    (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
+                                    compst)))))
                 (val
                  (expr-value->value
-                  (exec-expr-pure (expr-binary->arg2 e) compst)))
+                  (apconvert-expr-value
+                   (exec-expr-pure (expr-binary->arg2 e) compst))))
                 (struct
                  (read-var
                   (expr-ident->get
@@ -936,12 +950,14 @@
                 (index
                  (,integer-from-indextype
                   (expr-value->value
-                   (exec-expr-pure
-                    (expr-arrsub->sub (expr-binary->arg1 e))
-                    compst))))
+                   (apconvert-expr-value
+                    (exec-expr-pure
+                     (expr-arrsub->sub (expr-binary->arg1 e))
+                     compst)))))
                 (element
                  (expr-value->value
-                  (exec-expr-pure (expr-binary->arg2 e) compst))))))))
+                  (apconvert-expr-value
+                   (exec-expr-pure (expr-binary->arg2 e) compst)))))))))
           (hints-memberp
            `(("Goal"
               :in-theory
@@ -991,22 +1007,28 @@
                 ,array-writer
                 ,array-checker
                 ,valuep-when-elemtypep
-                ,valuep-when-indextype
+                ,valuep-when-indextypep
                 ,@*integer-value-disjoint-rules*
                 (:t ,type-thm)
                 ,@(and length (list length))
-                not-errorp-when-expr-valuep)
+                not-errorp-when-expr-valuep
+                apconvert-expr-value-when-not-value-array-alt
+                ,value-kind-when-elemtypep
+                ,value-kind-when-indextypep
+                expr-value-fix-when-expr-valuep)
               :use
               ((:instance
                 ,writer-return-thm
                 (index
                  (,integer-from-indextype
                   (expr-value->value
-                   (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
-                                   compst))))
+                   (apconvert-expr-value
+                    (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
+                                    compst)))))
                 (val
                  (expr-value->value
-                  (exec-expr-pure (expr-binary->arg2 e) compst)))
+                  (apconvert-expr-value
+                   (exec-expr-pure (expr-binary->arg2 e) compst))))
                 (struct
                  (read-object
                   (value-pointer->designator
@@ -1033,12 +1055,14 @@
                 (index
                  (,integer-from-indextype
                   (expr-value->value
-                   (exec-expr-pure
-                    (expr-arrsub->sub (expr-binary->arg1 e))
-                    compst))))
+                   (apconvert-expr-value
+                    (exec-expr-pure
+                     (expr-arrsub->sub (expr-binary->arg1 e))
+                     compst)))))
                 (element
                  (expr-value->value
-                  (exec-expr-pure (expr-binary->arg2 e) compst))))))))
+                  (apconvert-expr-value
+                   (exec-expr-pure (expr-binary->arg2 e) compst)))))))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member
