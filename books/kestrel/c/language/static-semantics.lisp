@@ -1436,7 +1436,7 @@
 (define check-arrsub ((arr-expr exprp) (arr-etype expr-typep)
                       (sub-expr exprp) (sub-etype expr-typep))
   :returns (etype expr-type-resultp)
-  :short "Check an array subscripting expression."
+  :short "Check an array subscripting expression [C:6.5.2.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1475,6 +1475,64 @@
                        :required :integer
                        :supplied (type-fix sub-type)))))
     (make-expr-type :type (type-pointer->to arr-type) :lvalue t))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-member ((target-expr exprp)
+                      (target-etype expr-typep)
+                      (name identp)
+                      (tagenv tag-envp))
+  :returns (etype expr-type-resultp)
+  :short "Check a structure member expression [C:6.5.2.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We ensure that the target has a structure type.
+     We do not do need to do array-to-pointer conversion,
+     because we require the type to be a structure type,
+     which rejects both array and pointer types.
+     We look up the structure type and its member.
+     We return its type, and we preserve the lvalue status:
+     if the target is an lvalue, so is the member;
+     if the target is not an lvalue, neither is the member."))
+  (b* ((target-type (expr-type->type target-etype))
+       (target-lvalue (expr-type->lvalue target-etype))
+       ((unless (type-case target-type :struct))
+        (reserrf (list :dot-target-not-struct (expr-fix target-expr))))
+       (tag (type-struct->tag target-type))
+       ((okf memtype) (struct-member-lookup tag name tagenv)))
+    (make-expr-type :type memtype :lvalue target-lvalue))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-memberp ((target-expr exprp)
+                       (target-etype expr-typep)
+                       (name identp)
+                       (tagenv tag-envp))
+  :returns (etype expr-type-resultp)
+  :short "Check a structure pointer member expression [C:6.5.2.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We ensure that the target has a pointer type to a structure type.
+     We perform array-to-pointer conversion on this type,
+     prior to ensuring it is a pointer to structure,
+     as an array type would become a pointer type via that conversion.
+     We look up the structure type and its member.
+     We return the member type, with the lvalue flag set."))
+  (b* ((target-type (expr-type->type target-etype))
+       (target-type (apconvert-type target-type))
+       ((unless (type-case target-type :pointer))
+        (reserrf (list :arrow-operator-not-pointer (expr-fix target-expr))))
+       (type (type-pointer->to target-type))
+       ((unless (type-case type :struct))
+        (reserrf (list :arrow-operator-not-pointer-to-struct
+                       (expr-fix target-expr))))
+       (tag (type-struct->tag type))
+       ((okf memtype) (struct-member-lookup tag name tagenv)))
+    (make-expr-type :type memtype :lvalue t))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1551,26 +1609,7 @@
      This is not surprising, as it is a used approach for compiler-like tools,
      namely annotating abstract syntax trees with additional information.
      We apply both lvalue conversion and array-to-pointer conversion.
-     A conditional expression is never an lvalue.")
-   (xdoc::p
-    "For a member expression with @('.') [C:6.5.2.3],
-     we first check the target, ensuring it has a structure type.
-     We do not do need to do array-to-pointer conversion,
-     because we require the type to be a structure type,
-     which rejects both array and pointer types.
-     We look up the structure type and its member.
-     We return its type, and we preserve the lvalue status:
-     if the target is an lvalue, so is the member;
-     if the target is not an lvalue, neither is the member.")
-   (xdoc::p
-    "For a member expression with @('->') [C:6.5.2.3],
-     we first check the target,
-     ensuring it has a pointer type to a structure type.
-     We perform array-to-pointer conversion on this type,
-     prior to ensuring it is a pointer to structure,
-     as an array type would become a pointer type via that conversion.
-     We look up the structure type and its member.
-     We return the member type, with the lvalue flag set."))
+     A conditional expression is never an lvalue."))
   (b* ((e (expr-fix e)))
     (expr-case
      e
@@ -1582,25 +1621,10 @@
                   ((okf sub-etype) (check-expr-pure e.sub vartab tagenv)))
                (check-arrsub e.arr arr-etype e.sub sub-etype))
      :call (reserrf (list :expr-non-pure e))
-     :member (b* (((okf etype) (check-expr-pure e.target vartab tagenv))
-                  (type (expr-type->type etype))
-                  (lvalue (expr-type->lvalue etype))
-                  ((unless (type-case type :struct))
-                   (reserrf (list :dot-target-not-struct e)))
-                  (tag (type-struct->tag type))
-                  ((okf memtype) (struct-member-lookup tag e.name tagenv)))
-               (make-expr-type :type memtype :lvalue lvalue))
-     :memberp (b* (((okf etype) (check-expr-pure e.target vartab tagenv))
-                   (type (expr-type->type etype))
-                   (type (apconvert-type type))
-                   ((unless (type-case type :pointer))
-                    (reserrf (list :arrow-operator-not-pointer e)))
-                   (type (type-pointer->to type))
-                   ((unless (type-case type :struct))
-                    (reserrf (list :arrow-operator-not-pointer-to-struct e)))
-                   (tag (type-struct->tag type))
-                   ((okf memtype) (struct-member-lookup tag e.name tagenv)))
-                (make-expr-type :type memtype :lvalue t))
+     :member (b* (((okf etype) (check-expr-pure e.target vartab tagenv)))
+               (check-member e.target etype e.name tagenv))
+     :memberp (b* (((okf etype) (check-expr-pure e.target vartab tagenv)))
+                (check-memberp e.target etype e.name tagenv))
      :postinc (reserrf (list :expr-non-pure e))
      :postdec (reserrf (list :expr-non-pure e))
      :preinc (reserrf (list :expr-non-pure e))
