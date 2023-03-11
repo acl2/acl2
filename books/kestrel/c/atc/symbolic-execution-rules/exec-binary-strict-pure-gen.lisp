@@ -20,6 +20,7 @@
 (include-book "uaconvert-values")
 (include-book "integer-conversions")
 (include-book "value-integer-get")
+(include-book "apconvert")
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -216,6 +217,7 @@
                              type-of-value-when-ulongp
                              type-of-value-when-sllongp
                              type-of-value-when-ullongp))
+                    apconvert-expr-value-when-not-value-array
                     value-integer
                     value-sint-to-sint
                     value-uint-to-uint
@@ -330,6 +332,8 @@
          (thm-event
           `(defruled ,exec-binary-strict-pure-when-op
              (implies (and (equal op (,(pack 'binop- op-kind)))
+                           (not (equal (value-kind x) :array))
+                           (not (equal (value-kind y) :array))
                            (equal val (,op-values x y))
                            (valuep val))
                       (equal (exec-binary-strict-pure op
@@ -337,7 +341,8 @@
                                                       (expr-value y objdes-y))
                              (expr-value val nil)))
              :enable (exec-binary-strict-pure
-                      eval-binary-strict-pure)))
+                      eval-binary-strict-pure
+                      apconvert-expr-value-when-not-value-array)))
          ((mv names events)
           (atc-exec-binary-rules-gen-op op ltypes rtypes))
          ((mv more-names more-events)

@@ -20,6 +20,7 @@
 (include-book "syntaxp")
 (include-book "integers")
 (include-book "value-integer-get")
+(include-book "apconvert")
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
@@ -135,6 +136,17 @@
                           (list dtype-from-stype))
                    ,@(and guardp
                           (list dtype-from-stype-okp))
+                   apconvert-expr-value-when-not-value-array
+                   value-kind-when-ucharp
+                   value-kind-when-scharp
+                   value-kind-when-ushortp
+                   value-kind-when-sshortp
+                   value-kind-when-uintp
+                   value-kind-when-sintp
+                   value-kind-when-ulongp
+                   value-kind-when-slongp
+                   value-kind-when-ullongp
+                   value-kind-when-sllongp
                    ifix)
                   :disable
                   ((:e integer-type-rangep)

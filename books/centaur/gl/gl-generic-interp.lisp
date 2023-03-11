@@ -80,10 +80,9 @@
 (progn ;; sublis-into-term-pseudo-termp
   (defthm len-sublis-into-list
     (implies (pseudo-term-listp x)
-             (equal (length (sublis-into-list x subst))
-                    (length x)))
-    :hints (("goal" :induct (len x)
-             :in-theory (enable length))))
+             (equal (len (sublis-into-list x subst))
+                    (len x)))
+    :hints (("goal" :induct (len x))))
 
   (defthm-sublis-into-term-flg
     sublis-into-term-pseudo-term-lemma

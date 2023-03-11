@@ -25,6 +25,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -167,7 +168,10 @@
                          value-fix-when-valuep
                          not-errorp-when-valuep
                          ,valuep-when-typep
-                         (:e c::objdesign-option-fix)))))
+                         (:e c::objdesign-option-fix)
+                         apconvert-expr-value-when-not-value-array
+                         expr-valuep-of-expr-value
+                         not-errorp-when-expr-valuep))))
              ((mv event-member &)
               (evmac-generate-defthm thm-member-name
                                      :formula formula-member
@@ -345,7 +349,10 @@
                              (list length
                                    'value-struct-read))
                       expr-value->value-of-expr-value
-                      ,@*atc-array-read-rules*))))
+                      ,@*atc-array-read-rules*
+                      apconvert-expr-value-when-not-value-array
+                      expr-valuep-of-expr-value
+                      not-errorp-when-expr-valuep))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member

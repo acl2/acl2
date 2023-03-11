@@ -2407,18 +2407,41 @@
            (stringp (car arg))
            (character-alistp (cdr arg)))))
 
+(defun collect-definition-rune-fns (fns runes)
+  (cond ((endp runes) nil)
+        ((and (eq (caar runes) :definition)
+              (member-eq (base-symbol (car runes)) fns))
+         (cons (base-symbol (car runes))
+               (collect-definition-rune-fns fns (cdr runes))))
+        (t (collect-definition-rune-fns fns (cdr runes)))))
+
 (defun print-failure1 (erp acc-ttree ctx state)
   (let ((channel (proofs-co state)))
     (pprogn
      (error-fms-channel
       nil ctx "Failure"
-      "~@0See :DOC failure.~#1~[~|*NOTE*: Useless-runes were in use and can ~
-       affect proof attempts.  See :DOC useless-runes-failures.~/~]"
+      "~@0See :DOC failure.~@1~#2~[~|*NOTE*: Useless-runes were in use and ~
+       can affect proof attempts.  See :DOC useless-runes-failures.~/~]"
       (list (cons #\0
                   (if (tilde-@p erp)
                       erp
                     ""))
             (cons #\1
+                  (if (global-val 'projects/apply/base-includedp (w state))
+                      ""
+                    (let ((loop$-fns (collect-definition-rune-fns
+                                      *loop$-special-function-symbols*
+                                      (tagged-objects 'lemma acc-ttree))))
+                      (if loop$-fns
+                          (msg "~|*NOTE*: The definition~#0~[ of ~&0 was~/s ~
+                                of ~&0 were~] used in the proof attempt, but ~
+                                a relevant book has not been included.  ~
+                                Consider first evaluating ~x1."
+                               loop$-fns
+                               '(include-book "projects/apply/top"
+                                              :dir :system))
+                        ""))))
+            (cons #\2
                   (if (and acc-ttree ; likely non-nil after a proof attempt
                            (not (ld-skip-proofsp state))
                            (let ((useless-runes

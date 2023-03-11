@@ -26,6 +26,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -289,7 +290,9 @@
                                            (wrld plist-worldp))
         :returns (mv (new-scope atc-symbol-varinfo-alistp
                                 :hyp (atc-symbol-varinfo-alistp scope)
-                                :hints (("Goal" :in-theory (enable acons))))
+                                :hints (("Goal"
+                                         :induct t
+                                         :in-theory (enable acons))))
                      (events pseudo-event-form-listp)
                      (names-to-avoid symbol-listp
                                      :hyp (symbol-listp names-to-avoid)))

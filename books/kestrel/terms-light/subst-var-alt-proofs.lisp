@@ -73,6 +73,10 @@
            (lambdas-closed-in-termsp (mv-nth 1 (non-trivial-formals-and-args formals args))))
   :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
 
+;; End of library material
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; subst-var-alt preserves closedness of lambdas.
 (defthm-flag-subst-var-alt
   (defthm lambdas-closed-in-termp-of-subst-var-alt
@@ -101,8 +105,7 @@
            (equal (subst-var-alt var replacement term)
                   (if (equal term var)
                       replacement
-                    term)
-                  ))
+                    term)))
   :hints (("Goal" :in-theory (enable subst-var-alt))))
 
 (local
@@ -115,11 +118,6 @@
    :hints (("Goal" ; :expand (subst-var-alt var replacement (car args))
             :in-theory (enable non-trivial-formals
                                subst-var-alt-lst)))))
-
-(defthm not-member-equal-of-non-trivial-formals
-  (implies (not (member-equal formal formals))
-           (not (member-equal formal (non-trivial-formals formals args))))
-  :hints (("Goal" :in-theory (enable non-trivial-formals))))
 
 (local
  (defthm <=-of-len-of-non-trivial-formals-of-subst-var-alt-2
@@ -147,35 +145,6 @@
                                trivial-formals
                                subst-var-alt-lst)))))
 
-(local
- (defthm symbol-listp-of-lambda-formals-of-car
-  (implies (and (pseudo-termp term)
-                (consp (car term)))
-           (symbol-listp (car (cdr (car term)))))))
-
-(local
- (defthm pseudo-termp-of-lambda-body-of-car
-   (implies (and (pseudo-termp term)
-                 (consp (car term)))
-            (pseudo-termp (lambda-body (car term))))))
-
-(local
- (defthm len-of-lambda-formals-of-car
-   (implies (and (pseudo-termp term)
-                 (consp (car term)))
-            (equal (len (lambda-formals (car term)))
-                   (len (cdr term))))))
-
-(defthm all-lambdas-serialized-in-termsp-of-append
-  (equal (all-lambdas-serialized-in-termsp (append x y))
-         (and (all-lambdas-serialized-in-termsp x)
-              (all-lambdas-serialized-in-termsp y)))
-  :hints (("Goal" :in-theory (enable append))))
-
-(defthm all-lambdas-serialized-in-termsp-of-set-difference-equal
-  (implies (all-lambdas-serialized-in-termsp x)
-           (all-lambdas-serialized-in-termsp (set-difference-equal x y))))
-
 (defthm all-lambdas-serialized-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
   (implies (all-lambdas-serialized-in-termsp actuals)
            (all-lambdas-serialized-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
@@ -191,14 +160,6 @@
          (non-trivial-formals formals args))
   :hints (("Goal" :in-theory (enable non-trivial-formals-and-args
                                      non-trivial-formals))))
-
-(defthm non-trivial-formals-of-append-and-append
-  (implies (equal (len formals1) (len args1))
-           (equal (non-trivial-formals (append formals1 formals2)
-                                       (append args1 args2))
-                  (append (non-trivial-formals formals1 args1)
-                          (non-trivial-formals formals2 args2))))
-  :hints (("Goal" :in-theory (enable non-trivial-formals))))
 
 (defthm formals-get-shorter ;rename
  (implies
@@ -220,11 +181,6 @@
          (mv nil nil))
   :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
 
-(defthm non-trivial-formals-of-nil
-  (equal (non-trivial-formals nil formals-to-keep)
-         nil)
-  :hints (("Goal" :in-theory (enable non-trivial-formals))))
-
 (defthm all-lambdas-serialized-in-termp-of-make-lambda-application-simple
   (implies (and (pseudo-termp body)
                 (symbol-listp formals)
@@ -234,8 +190,7 @@
                 (all-lambdas-serialized-in-termp body)
                 ;; move to conclusion?
                 (<= (len (non-trivial-formals formals actuals))
-                      1)
-                )
+                      1))
            (all-lambdas-serialized-in-termp (make-lambda-application-simple formals actuals body)))
   :hints (("Goal" ; :induct (make-lambda-application-simple formals actuals body)
            :in-theory (e/d (make-lambda-application-simple) (mv-nth-0-of-filter-formals-and-actuals)))))
@@ -266,11 +221,6 @@
   (implies (no-duplicate-lambda-formals-in-termsp args)
            (no-duplicate-lambda-formals-in-termsp (mv-nth 1 (non-trivial-formals-and-args formals args))))
   :hints (("Goal" :in-theory (enable non-trivial-formals-and-args))))
-
-(defthm not-member-equal-of-trivial-formals-when-not-member-equal
-  (implies (not (member-equal var formals))
-           (not (member-equal var (trivial-formals formals args))))
-  :hints (("Goal" :in-theory (enable trivial-formals))))
 
 (defthm not-member-equal-of-trivial-formals-when-member-equal-of-non-trivial-formals
   (implies (and (member-equal var (non-trivial-formals formals args))
@@ -314,7 +264,6 @@
 
 (local (defthm len-of-if (equal (len (if test tp ep)) (if test (len tp) (len ep)))))
 
-
 ;; (thm
 ;;  (implies (and (not (intersection-equal (free-vars-in-term replacement) formals))
 ;;                (member-equal var (trivial-formals formals args))
@@ -325,18 +274,6 @@
 ;;  :otf-flg t
 ;;  :hints (("Goal" :in-theory (enable non-trivial-formals trivial-formals (:d symbol-listp)))))
 ;; )
-
-(defthm <=-of-len-of-non-trivial-formals-linear
-  (<= (len (non-trivial-formals formals args))
-      (len formals))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable non-trivial-formals))))
-
-(defthm <=-of-len-of-intersection-equal-linear-1
-  (<= (len (intersection-equal x y))
-      (len x))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable intersection-equal))))
 
 ;; subst-var-alt cannot introduce an unserialized lambda (unlike sublis-var-simple).
 (defthm-flag-subst-var-alt

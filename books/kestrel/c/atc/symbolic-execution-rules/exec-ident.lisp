@@ -43,7 +43,9 @@
                       (make-expr-value
                        :value val
                        :object (objdesign-of-var id compst)))))
-    :enable exec-ident)
+    :enable (objdesign-of-var-when-valuep-of-read-var
+             exec-ident
+             read-object-of-objdesign-of-var-to-read-var))
 
   (defval *atc-exec-ident-rules*
     '(exec-ident-open)))

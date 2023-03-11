@@ -5079,10 +5079,10 @@
                             (fmt-ctx ctx col channel state)
                             (fmt1 ":  " nil col channel state nil)))))))
 
-(defun er-soft-off-p1 (summary wrld)
+(defun er-off-p1 (summary wrld)
 
-; This function is used by er-soft to determine whether a given error should be
-; printed.
+; This function is used by er-soft, er-hard?, and er-hard to determine whether
+; a given error should be printed.
 
   (declare (xargs :guard (and (or (null summary)
                                   (and (stringp summary)
@@ -5095,7 +5095,7 @@
         summary
         (table-alist 'inhibit-er-table wrld))))
 
-(defun er-soft-off-p (summary state)
+(defun er-off-p (summary state)
   (declare (xargs :stobjs state
                   :guard (and (or (null summary)
                                   (and (stringp summary)
@@ -5103,7 +5103,7 @@
                               (state-p state)
                               (standard-string-alistp
                                (table-alist 'inhibit-er-table (w state))))))
-  (er-soft-off-p1 summary (w state)))
+  (er-off-p1 summary (w state)))
 
 (defun error-fms-channel (hardp ctx summary str alist channel state newlines)
 
@@ -5119,7 +5119,7 @@
 ; by our er macro.  We rewrote the function this way simply so we
 ; would not have to remember that some variables are special.
 
-  (cond ((er-soft-off-p summary state)
+  (cond ((er-off-p summary state)
          state)
         (t
          (flet ((newlines (n channel state)

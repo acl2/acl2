@@ -1745,6 +1745,10 @@ notation causes an error and (b) the use of ,. is not permitted."
   #-cltl2 x)
 
 (defmacro safe-open (filename &rest args &key direction &allow-other-keys)
+
+; Note that this macro has the same default :element-type (i.e., character) as
+; open.
+
   (assert (member direction ; might later support :io and :probe
                   '(:input :output)
                   :test #'eq))

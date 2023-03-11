@@ -3475,6 +3475,7 @@
                          (equal (stobjs-in val wrld) '(nil state))
                          (equal (stobjs-out val wrld) '(nil state)))
                     (cond ((or (eq val 'brr-prompt)
+                               (eq val 'wormhole-prompt)
                                (ttag wrld))
                            (value nil))
                           (t (er soft ctx

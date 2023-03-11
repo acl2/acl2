@@ -46,6 +46,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1938,7 +1939,9 @@
 (define atc-gen-omap-update-formals ((typed-formals atc-symbol-varinfo-alistp))
   :returns (mv (term pseudo-termp
                      :hyp (atc-symbol-varinfo-alistp typed-formals)
-                     :hints (("Goal" :in-theory (enable pseudo-termp))))
+                     :hints (("Goal"
+                              :induct t
+                              :in-theory (enable pseudo-termp))))
                (all-integers-p booleanp))
   :short "Generate a term that is an @(tsee omap::update) nest
           for the formals of a function."
@@ -1972,7 +1975,9 @@
   :returns (term pseudo-termp
                  :hyp (and (symbolp compst-var)
                            (atc-symbol-varinfo-alistp typed-formals))
-                 :hints (("Goal" :in-theory (enable pseudo-termp))))
+                 :hints (("Goal"
+                          :induct t
+                          :in-theory (enable pseudo-termp))))
   :short "Generate a term that is an @(tsee add-var) nest
           for the formals of a function."
   :long
@@ -3329,7 +3334,7 @@
     (defret len-of-atc-loop-body-term-subst-lst
       (equal (len new-terms)
              (len terms))
-      :hints (("Goal" :in-theory (enable len)))))
+      :hints (("Goal" :induct (len terms) :in-theory (enable len)))))
 
   :ruler-extenders :all
 

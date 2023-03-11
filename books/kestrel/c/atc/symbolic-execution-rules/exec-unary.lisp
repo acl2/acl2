@@ -20,6 +20,7 @@
 (include-book "syntaxp")
 (include-book "promote-value")
 (include-book "value-integer-get")
+(include-book "apconvert")
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -69,6 +70,7 @@
                                     '(:schar :uchar :sshort :ushort))))
          (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                      (equal op (,(pack 'unop- op-kind)))
+                     (not (equal (value-kind x) :array))
                      (,pred x)
                      ,@(and op-type-okp
                             `((,op-type-okp x)))))
@@ -115,6 +117,7 @@
                     integer-type-min
                     integer-type-max
                     bit-width-value-choices
+                    apconvert-expr-value-when-not-value-array
                     ,@(and (unop-case op :bitnot)
                            `((:e sint-min)
                              (:e sint-max)
@@ -220,8 +223,11 @@
                                                (expr-value x objdes-x)
                                                compst)
                                    (expr-value val objdes))))
-         (hints `(("Goal" :in-theory (enable exec-unary
-                                             exec-indir))))
+         (hints
+          `(("Goal"
+             :in-theory (enable exec-unary
+                                exec-indir
+                                apconvert-expr-value-when-not-value-array))))
          (event `(defruled ,name
                    ,formula
                    :hints ,hints)))
