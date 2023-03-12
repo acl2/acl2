@@ -175,7 +175,26 @@
     :hints (("goal"
              :in-theory (e/d (sv::svex-p
                               sv::svexlist-p)
-                             ())))))
+                             ()))))
+
+
+  (defthm len-of-MERGE-LEXORDER
+    (equal (len (acl2::merge-lexorder l1 l2 acc))
+           (+ (len l1)
+              (len l2)
+              (len acc))))
+
+  (defthm len-of-evens+odds
+    (and (equal (+ (len (evens x))
+                   (len (odds x)))
+                (len x))
+         (equal (+ (len (evens x))
+                   (len (evens (cdr x))))
+                (len x))))
+  
+  (defthm len-of-merge-sort-lexorder
+    (equal (len (acl2::merge-sort-lexorder l))
+           (len l))))
 
 (local
  (in-theory (disable acl2::merge-sort-lexorder
@@ -1336,6 +1355,8 @@
          (apply$-warrant-ha-s-chain)
          (apply$-warrant-fa-s-chain)))
 
+  
+
   (defconst *adder-fncs*
     '(ha-c-chain
       fa-c-chain
@@ -1555,6 +1576,45 @@
                                    ((local
                                      (in-theory (disable
                                                  ha+1-s-chain-to-s-spec)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-unfloat-for-adder-svex (arg)
+  :returns (res sv::Svex-p :hyp (sv::Svex-p arg))
+  (case-match arg
+    (('fa-c-chain & & & &)
+     arg)
+    (('fa-s-chain & & &)
+     arg)
+    (('ha+1-s-chain & & &)
+     arg)
+    ((fn & &)
+     (if (member-equal fn '(sv::bitxor
+                            sv::bitor
+                            sv::bitand
+                            ha-c-chain
+                            ha-s-chain
+                            ha+1-s-chain))
+         arg
+       (svl::svex-reduce-w/-env-apply 'sv::unfloat (hons-list arg))))
+    (&
+     (svl::svex-reduce-w/-env-apply 'sv::unfloat (hons-list arg))))
+  ///
+  (defret <fn>-is-correct
+    (implies (warrants-for-adder-pattern-match)
+             (equal (sv::svex-eval$ res env)
+                    (sv::3vec-fix (sv::svex-eval$ arg env))))
+    :hints (("Goal"
+             :in-theory (e/d (HA-C-CHAIN
+                              HA-S-CHAIN
+                              HA+1-S-CHAIN
+                              FA-S-CHAIN
+                              FA-C-CHAIN
+                              SV::SVEX-APPLY
+                              SV::SVEX-APPLY$
+                              SV::SVEX-CALL->FN
+                              SV::SVEX-CALL->args)
+                             ())))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2590,6 +2650,9 @@
             (integer-listp (sv::svexlist-eval$ x env)))
    :hints (("Goal"
             :in-theory (e/d (SV::SVEX-QUOTE->VAL) ())))))
+
+
+
 
 (defines find-s-from-found-c-in-svex-aux
   :verify-guards nil
@@ -3951,8 +4014,8 @@
                    svex))
           ((list arg1 arg2 arg3)
            (acl2::merge-sort-lexorder (list arg1 arg2 arg3)))
-          ((when (and (equal arg2 0)
-                      (equal arg3 0)))
+          ((when (and* (equal arg2 0)
+                       (equal arg3 0)))
            0))
        (sv::svex-call 'fa-c-chain (hons-list 0 arg1 arg2 arg3))))
     (& svex))
@@ -3966,6 +4029,22 @@
                  (fa-c-chain 0 x y z)))
      :hints (("Goal"
               :in-theory (e/d (fa-c-chain) ())))))
+
+  (local
+   (defthm |(FA-C-CHAIN 0 0 0 x)|
+     (equal (FA-C-CHAIN 0 0 0 x)
+            0)
+     :hints (("Goal"
+              :in-theory (e/d (FA-C-CHAIN c-spec) ())))))
+
+  (local
+   (defthm c-spec-of-two-zeros
+     (implies (bitp x)
+              (and (equal (c-spec (list 0 x 0)) 0)
+                   (equal (c-spec (list x 0 0)) 0)
+                   (equal (c-spec (list 0 0 x)) 0)))
+     :hints (("Goal"
+              :in-theory (e/d (bitp) ())))))
 
   (defret <fn>-correct
     (implies (and (sv::svex-p svex)
@@ -3981,7 +4060,7 @@
              (equal (sv::Svex-eval$ res (rp-evlt env-term a))
                     (sv::Svex-eval$ svex (rp-evlt env-term a))))
     :hints (("Goal"
-             :do-not-induct t
+             :do-not-induct t 
              :in-theory (e/d (ACL2::MERGE-LEXORDER
                               ACL2::MERGE-SORT-LEXORDER
                               SV::SVEX-CALL->FN
@@ -4092,15 +4171,24 @@
   ;; After replacements,  ordered-ness of  arguments might change,  which might
   ;; prevent patterns  from being found  when looking more carefully.   So This
   ;; function goes around and reorders arguments in fa-s and ha-s arguments.
+
+  (local
+   (defthm nth-of-svex
+     (implies (and (sv::svexlist-p x)
+                   (natp i)
+                   (< i (len x)))
+              (sv::svex-p (nth i x)))))
+  
   (defines fix-order-of-fa/ha-chain-args
     :verify-guards nil
+    
     (define fix-order-of-fa/ha-chain-args ((x sv::svex-p)
                                            &key
                                            ((env) 'env)
                                            ((context rp-term-listp) 'context)
                                            ((config svl::svex-reduce-config-p) 'config))
       :measure (sv::svex-count x)
-      :returns (res sv::svex-p :hyp (sv::svex-p x))
+      :returns (res)
       (sv::svex-case
        x
        :var x
@@ -4109,20 +4197,20 @@
                (('fa-s-chain & & &)
                 (b* ((lst1 (fix-order-of-fa/ha-chain-args-lst x.args))
                      (lst2 (acl2::merge-sort-lexorder lst1))
-                     ((when (and (equal (first lst2) 0)
-                                 (equal (second lst2) 0)))
-                      (third lst2)))
+                     ((when (and* (equal (nth 0 lst2) 0)
+                                  (equal (nth 1 lst2) 0)))
+                      (make-unfloat-for-adder-svex (nth 2 lst2))))
                   (sv::svex-call x.fn lst2)))
                (('ha-s-chain & &)
                 (b* ((lst1 (fix-order-of-fa/ha-chain-args-lst x.args))
                      (lst2 (acl2::merge-sort-lexorder lst1))
-                     ((when (equal (first lst2) 0))
-                      (second lst2)))
+                     ((when (equal (nth 0 lst2) 0))
+                      (make-unfloat-for-adder-svex (nth 1 lst2))))
                   (sv::svex-call x.fn lst2)))
                (('ha-c-chain & &)
                 (b* ((lst1 (fix-order-of-fa/ha-chain-args-lst x.args))
                      (lst2 (acl2::merge-sort-lexorder lst1))
-                     ((when (equal (first lst2) 0))
+                     ((when (equal (nth 0 lst2) 0))
                       0))
                   (sv::svex-call x.fn lst2)))
                
@@ -4137,7 +4225,7 @@
                                                ((context rp-term-listp) 'context)
                                                ((config svl::svex-reduce-config-p) 'config))
       :measure (sv::svexlist-count lst)
-      :returns (res sv::svexlist-p :hyp (sv::svexlist-p lst))
+      :returns (res )
       (if (atom lst)
           nil
         (hons (fix-order-of-fa/ha-chain-args (car lst))
@@ -4145,6 +4233,23 @@
 
     ///
 
+    (defret len-of-<fn>
+      (equal (len res)
+             (len lst))
+      :fn fix-order-of-fa/ha-chain-args-lst)
+    
+    (defret-mutual svex-p-of-<fn>
+      (defret svex-p-of-<fn>
+        (implies (sv::svex-p x)
+                 (sv::svex-p res)) 
+        :fn fix-order-of-fa/ha-chain-args)
+      (defret svexlist-p-of-<fn>
+        (implies (sv::svexlist-p lst)
+                 (sv::svexlist-p res)) 
+        :fn fix-order-of-fa/ha-chain-args-lst)
+      :hints (("Goal"
+               :in-theory (e/d (SV::SVEX-CALL->ARGS) ()))))
+    
     (verify-guards fix-order-of-fa/ha-chain-args-fn)
 
     (memoize 'fix-order-of-fa/ha-chain-args-fn
@@ -4197,7 +4302,9 @@
                                 HA-C-CHAIN
                                 sv::svex-call->fn
                                 sv::svex-call->args)
-                               ())))))
+                               (nth
+                                member-equal
+                                cons-equal))))))
 
   (define fix-order-of-fa/ha-chain-args-alist ((alist sv::svex-alist-p)
                                                &key
