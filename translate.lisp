@@ -2449,7 +2449,8 @@
         (t (cons (car (car signatures))
                  (signature-fns (cdr signatures))))))
 
-(defun make-event-tuple (n d form ev-type namex symbol-class skipped-proofs-p)
+(defun make-event-tuple (n d form ev-type namex symbol-class skipped-proofs-p
+                           local-p)
 
 ; An event tuple is always a cons.  Except in the initial case created by
 ; primordial-world-globals, the car is always either a natural (denoting n and
@@ -2472,6 +2473,7 @@
 ;                     events that cannot perform proofs (see install-event) and
 ;                     otherwise indicates that proofs were skipped (except by
 ;                     the system only, as for include-book).
+;  local-p - t when event is in a local context, else nil
 
 ; In what we expect is the normal case, where d is 0 and the form is one of our
 ; standard ACL2 event macros, this concrete representation costs one cons.  If
@@ -2481,33 +2483,43 @@
 ; tuple if the car is an integer, then change the default value given getprop
 ; in max-absolute-event-number.
 
-  (cons (if (= d 0) n (cons n d))
-        (if (and (eq symbol-class :program)
-                 (consp form)
-                 (or (eq (car form) ev-type)
-                     (and (eq ev-type 'defuns)
-                          (eq (car form) 'mutual-recursion)))
-                 (equal namex
-                        (case (car form)
-                              (defuns (strip-cars (cdr form)))
-                              (mutual-recursion (strip-cadrs (cdr form)))
-                              ((verify-guards in-theory
-                                              in-arithmetic-theory
-                                              regenerate-tau-database
-                                              push-untouchable
-                                              remove-untouchable
-                                              reset-prehistory
-                                              set-body
-                                              table)
-                               0)
-                              (encapsulate (signature-fns (cadr form)))
-                              (otherwise (cadr form)))))
-            form
-          (cons (cons (cons ev-type
-                            (and (not (eq symbol-class :program))
-                                 skipped-proofs-p))
-                      (cons namex symbol-class))
-                form))))
+  (let ((x
+         (cons (if (= d 0) n (cons n d))
+               (if (and (eq symbol-class :program)
+                        (consp form)
+                        (or (eq (car form) ev-type)
+                            (and (eq ev-type 'defuns)
+                                 (eq (car form) 'mutual-recursion)))
+                        (equal namex
+                               (case (car form)
+                                 (defuns (strip-cars (cdr form)))
+                                 (mutual-recursion (strip-cadrs (cdr form)))
+                                 ((verify-guards in-theory
+                                    in-arithmetic-theory
+                                    regenerate-tau-database
+                                    push-untouchable
+                                    remove-untouchable
+                                    reset-prehistory
+                                    set-body
+                                    table)
+                                  0)
+                                 (encapsulate (signature-fns (cadr form)))
+                                 (otherwise (cadr form)))))
+                   form
+                 (cons (cons (cons ev-type
+                                   (and (not (eq symbol-class :program))
+                                        skipped-proofs-p))
+                             (cons namex symbol-class))
+                       form)))))
+    (if local-p `(local . ,x) x)))
+
+(defabbrev remove-local (x)
+  (if (eq (car x) 'local)
+      (cdr x)
+    x))
+
+(defun access-event-tuple-local-p (x)
+  (eq (car x) 'local))
 
 (defun access-event-tuple-number (x)
 
@@ -2515,26 +2527,30 @@
 ; is an integerp, then change the default value given getprop in
 ; max-absolute-event-number.
 
-  (if (integerp (car x)) (car x) (caar x)))
+  (let ((x (remove-local x)))
+    (if (integerp (car x)) (car x) (caar x))))
 
 (defun access-event-tuple-depth (x)
-  (if (integerp (car x)) 0 (cdar x)))
+  (let ((x (remove-local x)))
+    (if (integerp (car x)) 0 (cdar x))))
 
 (defun access-event-tuple-type (x)
-  (cond ((symbolp (cdr x)) ;eviscerated event
-         nil)
-        ((symbolp (cadr x))
-         (if (eq (cadr x) 'mutual-recursion)
-             'defuns
-           (cadr x)))
-        (t (caaadr x))))
+  (let ((x (remove-local x)))
+    (cond ((symbolp (cdr x)) ;eviscerated event
+           nil)
+          ((symbolp (cadr x))
+           (if (eq (cadr x) 'mutual-recursion)
+               'defuns
+             (cadr x)))
+          (t (caaadr x)))))
 
 (defun access-event-tuple-skipped-proofs-p (x)
-  (cond ((symbolp (cdr x)) ;eviscerated event
-         nil)
-        ((symbolp (cadr x))
-         nil)
-        (t (cdaadr x))))
+  (let ((x (remove-local x)))
+    (cond ((symbolp (cdr x)) ;eviscerated event
+           nil)
+          ((symbolp (cadr x))
+           nil)
+          (t (cdaadr x)))))
 
 (defun access-event-tuple-namex (x)
 
@@ -2542,32 +2558,35 @@
 ; the last case is the possibility of the list being nil (as from an
 ; encapsulate event introducing no constrained functions).
 
-  (cond
-   ((symbolp (cdr x)) ;eviscerated event
-    nil)
-   ((symbolp (cadr x))
-    (case (cadr x)
-          (defuns (strip-cars (cddr x)))
-          (mutual-recursion (strip-cadrs (cddr x)))
-          ((verify-guards in-theory
-                          in-arithmetic-theory
-                          regenerate-tau-database
-                          push-untouchable remove-untouchable reset-prehistory
-                          set-body table)
-           0)
-          (encapsulate (signature-fns (caddr x)))
-          (t (caddr x))))
-   (t (cadadr x))))
+  (let ((x (remove-local x)))
+    (cond
+     ((symbolp (cdr x)) ;eviscerated event
+      nil)
+     ((symbolp (cadr x))
+      (case (cadr x)
+        (defuns (strip-cars (cddr x)))
+        (mutual-recursion (strip-cadrs (cddr x)))
+        ((verify-guards in-theory
+           in-arithmetic-theory
+           regenerate-tau-database
+           push-untouchable remove-untouchable reset-prehistory
+           set-body table)
+         0)
+        (encapsulate (signature-fns (caddr x)))
+        (t (caddr x))))
+     (t (cadadr x)))))
 
 (defun access-event-tuple-form (x)
-  (if (symbolp (cadr x))
-      (cdr x)
-    (cddr x)))
+  (let ((x (remove-local x)))
+    (if (symbolp (cadr x))
+        (cdr x)
+      (cddr x))))
 
 (defun access-event-tuple-symbol-class (x)
-  (if (symbolp (cadr x))
-      :program
-    (cddadr x)))
+  (let ((x (remove-local x)))
+    (if (symbolp (cadr x))
+        :program
+      (cddadr x))))
 
 ; Essay on Command Tuples
 
@@ -3401,20 +3420,20 @@
                      (latches (actual-stobjs-out fn arg-exprs w))
                      ((eq fn 'do$) 'ignore) ; special handling below
                      (t (stobjs-out fn w))))
-              (val (catch 'raw-ev-fncall
-                     (chk-raw-ev-fncall fn w aok)
-                     (cond ((not (fboundp fn))
-                            (er hard 'raw-ev-fncall
-                                "A function, ~x0, that was supposed to be ~
-                                 defined is not.  Supposedly, this can only ~
-                                 arise because of aborts during undoing.  ~
-                                 There is no recovery from this erroneous ~
-                                 state."
-                                fn)))
-                     (prog1
-                         (let ((*hard-error-returns-nilp*
-                                hard-error-returns-nilp))
-                           (cond ((eq fn 'do$)
+              (val (catch-raw-ev-fncall
+                    (chk-raw-ev-fncall fn w aok)
+                    (cond ((not (fboundp fn))
+                           (er hard 'raw-ev-fncall
+                               "A function, ~x0, that was supposed to be ~
+                                defined is not.  Supposedly, this can only ~
+                                arise because of aborts during undoing.  ~
+                                There is no recovery from this erroneous ~
+                                state."
+                               fn)))
+                    (prog1
+                        (let ((*hard-error-returns-nilp*
+                               hard-error-returns-nilp))
+                          (cond ((eq fn 'do$)
 
 ; With the advent of do$ that doesn't have a well-defined stobjs-out, we avoid
 ; considering the stobjs-out for do4 and instead, we run its *1* function and
@@ -3423,13 +3442,13 @@
 ; that we consult stobjs-out in those cases, which might be more efficient
 ; anyhow than forming the multiple-value-list when not necessary.
 
-                                  (multiple-value-list?
-                                   (apply applied-fn arg-values)))
-                                 ((null (cdr stobjs-out))
-                                  (apply applied-fn arg-values))
-                                 (t (multiple-value-list
-                                     (apply applied-fn arg-values)))))
-                       (setq throw-raw-ev-fncall-flg nil))))
+                                 (multiple-value-list?
+                                  (apply applied-fn arg-values)))
+                                ((null (cdr stobjs-out))
+                                 (apply applied-fn arg-values))
+                                (t (multiple-value-list
+                                    (apply applied-fn arg-values)))))
+                      (setq throw-raw-ev-fncall-flg nil))))
 
 ; It is important to rebind w here, since we may have updated state since the
 ; last binding of w.
@@ -3467,6 +3486,8 @@
 
 (defun cltl-def-from-name2 (fn stobj-function axiomatic-p wrld)
 
+; Wrld is the event-index world for fn, a function symbol.
+
 ; Normally we expect to find the cltl definition of fn at the first
 ; 'cltl-command 'global-value triple.  But if fn is introduced by encapsulate
 ; then we may have to search further.  Try this, for example:
@@ -3474,7 +3495,7 @@
 ; (encapsulate ((f (x) x))
 ;              (local (defun f (x) x))
 ;              (defun g (x) (f x)))
-; (cltl-def-from-name 'f nil (w state))
+; (cltl-def-from-name 'f (w state))
 
   (cond ((endp wrld)
          nil)
@@ -10912,8 +10933,12 @@
 ; wormhole and hence doesn't modify state.
 
   (declare (xargs :guard (and (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary)))
+                                  (let ((summary ; could be ("Use"), e.g.
+                                         (if (consp summary)
+                                             (car summary)
+                                           summary)))
+                                    (and (stringp summary)
+                                         (standard-string-p summary))))
                               (alistp alist)
                               (plist-worldp wrld)
                               (standard-string-alistp
@@ -10946,18 +10971,20 @@
         'wrld
         'state-vars))
 
-(defmacro warning$-cw (ctx &rest args)
+(defmacro warning$-cw0 (ctx summary state-vars &rest args)
 
 ; This differs from warning$-cw1 in that state-vars and wrld are bound here for
-; the user, warnings are not suppressed based on the value of state global
-; 'ld-skip-proofsp, and there is no summary string.  A typical use of this
-; macro might be as follows.
+; the user.
 
-; (warning$-cw ctx name)
-
-  `(let ((state-vars (default-state-vars nil))
+  `(let ((state-vars ,state-vars)
          (wrld nil))
-     (warning$-cw1 ,ctx nil ,@args)))
+     (warning$-cw1 ,ctx ,summary ,@args)))
+
+(defmacro warning$-cw (ctx &rest args)
+  (prog2$
+   (cw "~|***NOTE***: Warning$-cw is deprecated.  Use warning$-cw0 or ~
+        warning$-cw1.")
+   `(warning$-cw0 ,ctx nil *default-state-vars* ,@args)))
 
 (defun chk-length-and-keys (actuals form wrld)
   (declare (xargs :guard (and (true-listp actuals)
@@ -20219,6 +20246,15 @@
                    (fboundp name))
                (not (getpropc name 'macro-body nil wrld))
                (eq (getpropc name 'formals t wrld) t)))
+
+; The natural return here would be a suitable call of trns-er+, in analogy to
+; the cases above.  But such a return is not logically explainable, because of
+; the use of raw Lisp code.  So we abort with (er hard ...), i.e., a call of
+; hard-error.  If we are not in the scope of catch-raw-ev-fncall (typically
+; during evaluation of raw-ev-fncall or raw-ev-fncall-simple), this will cause
+; an abort all the way to the top level, which is unfortunate.  However, this
+; error is probably quite rare.
+
       (prog2$ (er hard ctx
                   "It is illegal to ~@0-bind ~x1, because it is defined as a ~
                    ~s2 in raw Lisp~#3~[~/ but not in the ACL2 loop~]."
@@ -21944,7 +21980,7 @@
                                         nil ; cform
                                         'translate11-lambda-object
                                         wrld
-                                        *default-state-vars*
+                                        state-vars
                                         nil)
                                        (declare (ignore bindings))
                                        (and (null erp)

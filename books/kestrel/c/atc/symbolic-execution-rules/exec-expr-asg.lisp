@@ -25,6 +25,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,9 +92,11 @@
                  (equal ptr (read-var var compst))
                  (valuep ptr)
                  (value-case ptr :pointer)
-                 (not (value-pointer-nullp ptr))
+                 (value-pointer-validp ptr)
                  (equal (value-pointer->reftype ptr) (,constructor))
-                 (equal val (exec-expr-pure right compst))
+                 (equal eval (exec-expr-pure right compst))
+                 (expr-valuep eval)
+                 (equal val (expr-value->value eval))
                  (,pred val))
             (equal (exec-expr-asg e compst fenv limit)
                    (write-object (value-pointer->designator ptr)
@@ -101,8 +104,7 @@
                                  compst))))
          (event `(defruled ,name
                    ,formula
-                   :enable (exec-expr-asg
-                            ,type-of-value-when-pred))))
+                   :enable (exec-expr-asg ,type-of-value-when-pred))))
       (mv name event)))
 
   (define atc-exec-expr-asg-indir-rules-gen-loop ((types type-listp))
@@ -188,20 +190,24 @@
                  (valuep arr-val)
                  (equal ptr
                         (if (value-case arr-val :array)
-                            (value-pointer (objdesign-variable var)
+                            (value-pointer (pointer-valid (objdesign-static var))
                                            (value-array->elemtype arr-val))
                           arr-val))
                  (value-case ptr :pointer)
-                 (not (value-pointer-nullp ptr))
+                 (value-pointer-validp ptr)
                  (equal (value-pointer->reftype ptr)
                         ,(type-to-maker atype))
                  (equal array
                         (read-object (value-pointer->designator ptr) compst))
                  (,apred array)
-                 (equal index (exec-expr-pure sub compst))
+                 (equal eindex (exec-expr-pure sub compst))
+                 (expr-valuep eindex)
+                 (equal index (expr-value->value eindex))
                  (,ipred index)
                  (,atype-array-itype-index-okp array index)
-                 (equal val (exec-expr-pure right compst))
+                 (equal eval (exec-expr-pure right compst))
+                 (expr-valuep eval)
+                 (equal val (expr-value->value eval))
                  (,epred val))
             (equal (exec-expr-asg e compst fenv limit)
                    (write-object (value-pointer->designator ptr)

@@ -20,6 +20,7 @@
 (include-book "syntaxp")
 (include-book "integers")
 (include-book "value-integer-get")
+(include-book "apconvert")
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
@@ -29,6 +30,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,10 +96,11 @@
                   'x
                 `(,dtype-from-stype x)))
          (formula `(implies ,hyps
-                            (equal (exec-cast ',dtyname x)
-                                   ,rhs)))
+                            (equal (exec-cast ',dtyname (expr-value x objdes))
+                                   (expr-value ,rhs nil))))
          (hints `(:enable
                   (exec-cast
+                   eval-cast
                    convert-integer-value
                    value-integer
                    ,@*atc-value-integer->get-rules*
@@ -133,6 +136,17 @@
                           (list dtype-from-stype))
                    ,@(and guardp
                           (list dtype-from-stype-okp))
+                   apconvert-expr-value-when-not-value-array
+                   value-kind-when-ucharp
+                   value-kind-when-scharp
+                   value-kind-when-ushortp
+                   value-kind-when-sshortp
+                   value-kind-when-uintp
+                   value-kind-when-sintp
+                   value-kind-when-ulongp
+                   value-kind-when-slongp
+                   value-kind-when-ullongp
+                   value-kind-when-sllongp
                    ifix)
                   :disable
                   ((:e integer-type-rangep)

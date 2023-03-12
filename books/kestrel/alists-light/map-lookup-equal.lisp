@@ -1,6 +1,6 @@
 ; Applying lookup-equal to a list of keys
 ;
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,8 @@
 (in-package "ACL2")
 
 (include-book "lookup-equal")
+
+;; See also lookup-eq-lst (todo: rename that map-lookup-eq).
 
 ;; Look up all of the KEYS in the ALIST, returning a list of the results.
 (defund map-lookup-equal (keys alist)
@@ -31,4 +33,23 @@
   (implies (not (member-equal key keys))
            (equal (map-lookup-equal keys (cons (cons key val) alist))
                   (map-lookup-equal keys alist)))
+  :hints (("Goal" :in-theory (enable map-lookup-equal))))
+
+(defthm map-lookup-equal-when-not-consp
+  (implies (not (consp keys))
+           (equal (map-lookup-equal keys alist)
+                  nil))
+  :hints (("Goal" :in-theory (enable map-lookup-equal))))
+
+(defthm car-of-map-lookup-equal
+  (equal (car (map-lookup-equal keys alist))
+         (if (consp keys)
+             (lookup-equal (car keys) alist)
+           nil))
+  :hints (("Goal" :in-theory (enable map-lookup-equal))))
+
+(defthm map-lookup-equal-of-cons
+  (equal (map-lookup-equal (cons key keys) alist)
+         (cons (lookup-equal key alist)
+               (map-lookup-equal keys alist)))
   :hints (("Goal" :in-theory (enable map-lookup-equal))))

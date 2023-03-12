@@ -11,8 +11,6 @@
 
 (in-package "C")
 
-(include-book "errors")
-
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 
@@ -21,6 +19,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -772,7 +771,13 @@
   :true-listp t
   :elementp-of-nil nil
   :pred param-declon-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :prepwork ((local (in-theory (enable nfix))))
+  ///
+
+  (defruled cdr-of-param-declon-list-fix
+    (equal (cdr (param-declon-list-fix x))
+           (param-declon-list-fix (cdr x)))
+    :enable param-declon-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

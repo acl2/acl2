@@ -1,10 +1,11 @@
 ; FTY Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Stephen Westfold (westfold@kestrel.edu), Alessandro Coglio (coglio@kestrel.edu)
+; Authors: Stephen Westfold (westfold@kestrel.edu)
+;          Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13,7 +14,6 @@
 (include-book "centaur/fty/database" :dir :system)
 (include-book "centaur/fty/fty-parseutils" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
-;(include-book "std/osets/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 (include-book "kestrel/utilities/omaps/core" :dir :system)

@@ -143,7 +143,7 @@
 ;; Disabled since consp is so common.
 (defthmd consp-when-member-equal
   (implies (member-equal a x) ;note that a is a free var
-	   (consp x)))
+           (consp x)))
 
 (defthm true-listp-of-member-equal
   (implies (true-listp x)

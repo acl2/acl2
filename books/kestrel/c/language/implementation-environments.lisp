@@ -18,6 +18,8 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,6 +93,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod schar-format
+  :short "Fixtype of formats of @('signed char') objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Values of the @('signed char') type, like all the other values,
+     must be represented as one or more bytes [ISO:6.2.6.1/4].
+     Objects of the @('signed char') type,
+     like all other signed integer objects,
+     must have no more value bits
+     than value bits of their unsigned counterpart
+     [ISO:6.2.6.2/2],
+     i.e. @('unsigned char') objects in this case,
+     which consist of exactly one byte (see @(tsee uchar-format)):
+     therefore, @('signed char') objects must take exactly one byte as well.")
+   (xdoc::p
+    "Since @('signed char') objects must have one sign bit and no padding bits
+     [ISO:6.2.6.2/2],
+     they must have exactly @($\\mathtt{CHAR\\_BIT} - 1$) value bits.
+     Since the values of the value bits of a signed integer type
+     must be equal to the value bits of the unsigned integer type counterpart
+     [ISO:6.2.6.2/2],
+     the value bits of @('signed char') values are the low bits of the byte,
+     and the sign is the high bit.")
+   (xdoc::p
+    "While the byte/bit format of @('signed char') is thus set,
+     the exact values represented by this byte/bit format depend on the "
+    (xdoc::seetopic "signed-format" "signed format")
+    " (when the sign bit is 1).
+     Furthermore, [ISO:6.2.6.2/2] identifies one specific bit pattern,
+     for each signed format,
+     as a possible trap representation:
+     it either is a trap representation or it is not.
+     These two choices
+     (i.e. the signed format,
+     and whether the specific pattern is a trap representation),
+     completely define the representation of @('signed char').")
+   (xdoc::p
+    "We formalize the format of @('signed char') as consisting of
+     a specification of signed format
+     and a boolean flag saying whether the aforementioned pattern is a trap.
+     The latter only applies to
+     the sign-and-magniture and one's complement signed formats;
+     thus, we require it to be @('nil') for two's complement signed format."))
+  ((signed signed-format)
+   (trap bool :reqfix (if (equal (signed-format-kind signed) :twos-complement)
+                          nil
+                        trap)))
+  :require (implies (equal (signed-format-kind signed) :twos-complement)
+                    (not trap))
+  :pred schar-formatp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod ienv
   :short "Fixtype of implementation environments."
   :long
@@ -99,7 +155,7 @@
     "For now this only contains a few components,
      but we plan to add more components."))
   ((uchar-format uchar-format)
-   (signed-format signed-format))
+   (schar-format schar-format))
   :tag :ienv
   :pred ienvp)
 
@@ -144,15 +200,6 @@
     "This is at least 255, as required by [C:5.2.4.2.1/1]."))
   (1- (expt 2 (ienv->char-bits ienv)))
   :hooks (:fix)
-
-  :prepwork
-  ((defrulel lemma
-     (>= (expt 2 (ienv->char-bits ienv)) 256)
-     :rule-classes :linear
-     :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                     (x 2) (m 8) (n (ienv->char-bits ienv)))
-     :disable acl2::expt-is-weakly-increasing-for-base->-1))
-
   ///
 
   (defret ienv->uchar-max-type-prescription
@@ -161,6 +208,86 @@
     :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable posp))))
 
+  (defrulel lemma
+    (>= (expt 2 (ienv->char-bits ienv)) 256)
+    :rule-classes :linear
+    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                    (x 2) (m 8) (n (ienv->char-bits ienv)))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1)
+
   (defret ienv->uchar-max-lower-bound
     (>= max 255)
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->schar-max ((ienv ienvp))
+  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :short "The ACL2 integer value of @('SCHAR_MAX') [C:5.2.4.2.1/1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Based on the discussion in @(tsee schar-format),
+     this is always @($2^{\\mathtt{CHAR\\_BIT}-1} - 1$).
+     "))
+  (1- (expt 2 (1- (ienv->char-bits ienv))))
+  :hooks (:fix)
+  ///
+
+  (defret ienv->schar-max-type-prescription
+    (and (posp max)
+         (> max 1))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable posp))))
+
+  (defrulel lemma
+    (>= (expt 2 (1- (ienv->char-bits ienv))) 128)
+    :rule-classes :linear
+    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                    (x 2) (m 7) (n (1- (ienv->char-bits ienv))))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1)
+
+  (defret ienv->schar-max-lower-bound
+    (>= max 127)
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->schar-min ((ienv ienvp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('SCHAR_MIN') [C:5.2.4.2.1/1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Based on the discussion in @(tsee schar-format),
+     this is either @($- 2^{\\mathtt{CHAR\\_BIT}-1}$)
+     (if the signed format is two's complement)
+     or @($- 2^{\\mathtt{CHAR\\_BIT}-1} + 1$)
+     (if the signed format is one's complement or sign-and-magnitude)."))
+  (if (equal (signed-format-kind
+              (schar-format->signed (ienv->schar-format ienv)))
+             :twos-complement)
+      (- (expt 2 (1- (ienv->char-bits ienv))))
+    (- (1- (expt 2 (1- (ienv->char-bits ienv))))))
+  :hooks (:fix)
+  ///
+
+  (defret ienv->schar-min-type-prescription
+    (and (integerp min)
+         (< min 0))
+    :rule-classes :type-prescription)
+
+  (defrulel lemma
+    (>= (expt 2 (1- (ienv->char-bits ienv))) 128)
+    :rule-classes :linear
+    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                    (x 2) (m 7) (n (1- (ienv->char-bits ienv))))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1)
+
+  (defret ienv->schar-min-upper-bound
+    (<= min (if (equal (signed-format-kind
+                        (schar-format->signed (ienv->schar-format ienv)))
+                       :twos-complement)
+                -128
+              -127))
+    :rule-classes ((:linear :trigger-terms ((ienv->schar-min ienv))))))

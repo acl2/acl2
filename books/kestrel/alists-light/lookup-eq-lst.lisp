@@ -62,7 +62,7 @@
   :hints (("Goal" :in-theory (enable lookup-eq-lst))))
 
 ;; ;; Our strategy will be to rewrite lookup-eq to lookup-equal.
-;; (defthm lookup-eq-lst-becomes-lookup-equal-lst
+;; (defthm lookup-eq-lst-becomes-map-lookup-equal
 ;;   (equal (lookup-eq-lst key alist)
-;;          (lookup-equal-lst key alist))
-;;   :hints (("Goal" :in-theory (enable lookup-equal-lst lookup-eq-lst))))
+;;          (map-lookup-equal key alist))
+;;   :hints (("Goal" :in-theory (enable map-lookup-equal lookup-eq-lst))))

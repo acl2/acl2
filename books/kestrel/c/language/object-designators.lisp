@@ -15,6 +15,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,7 +40,9 @@
      used as top-level object designators for allocated storage,
      i.e. to designate separate objects in the heap.
      We also include top-level object designators for global variables,
-     i.e. objects declared with file scope.
+     i.e. objects declared with file scope in static storage.
+     We also include top-level object designators for local variables,
+     i.e. objects declarad with block scope in automatic storage.
      Then we allow object designators
      to include information that selects sub-objects of the top-level objects,
      and sub-sub-objects of those sub-objects,
@@ -90,13 +93,29 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "An object designator is a named variable,
-     or an address in the heap,
+    "An object designator is
+     a named variable in static storage,
+     or a named variable in automatic storage,
+     or an address in allocated storage (i.e. the heap),
      or a (structure) member of an object designator,
      or an (array) element of an object designator.
-     See @(see object-designators)."))
-  (:variable ((get ident)))
-  (:address ((get address)))
+     For a variable in automatic storage,
+     we need not only the name,
+     but also an indication of which scope in which frame the variable is:
+     we use natural numbers for this purpose,
+     meant to be indices in the frame stack and scope stack.
+     For both frames and scopes, index 0 refers to the bottom of the stack;
+     this is the opposite order in which the stacks of frames and scopes
+     are indexed as ACL2 lists (via @(tsee nth)),
+     but we need this opposite order in order for the indices
+     to be stable against frames and scopes being pushed and popped.")
+   (xdoc::p
+    "Also see @(see object-designators)."))
+  (:static ((name ident)))
+  (:auto ((name ident)
+          (frame nat)
+          (scope nat)))
+  (:alloc ((get address)))
   (:element ((super objdesign)
              (index nat)))
   (:member ((super objdesign)
@@ -124,15 +143,15 @@
      that is, it can be a conservative definition,
      because it is only used to express when
      object updates are independent.
-     For now, we require the two object designators to be addresses
-     (i.e. top-level objects in the heap)
+     For now, we require the two object designators
+     to be top-level designators in allocated storage
      and to be distinct.
      We may relax this notion in the future,
      but for now this suffices for our needs."))
-  (and (objdesign-case objdes1 :address)
-       (objdesign-case objdes2 :address)
-       (not (equal (objdesign-address->get objdes1)
-                   (objdesign-address->get objdes2))))
+  (and (objdesign-case objdes1 :alloc)
+       (objdesign-case objdes2 :alloc)
+       (not (equal (objdesign-alloc->get objdes1)
+                   (objdesign-alloc->get objdes2))))
   :hooks (:fix)
   ///
 

@@ -399,7 +399,7 @@ Warnings:  User-stobjs-modified
  :IRRELEVANT-VALUE
 ACL2 !>>(ASSERT-EVENT (EQUAL (FLD ST) NIL))
  :PASSED
-ACL2 !>>(LOCAL (SET-ABSSTOBJ-DEBUG T))
+ACL2 !>>(SET-ABSSTOBJ-DEBUG T)
  T
 ACL2 !>>(MAKE-EVENT (MV-LET (ERP VAL STATE)
                             (TRANS-EVAL '(UPDATE-FLD-NIL-BAD ST)
@@ -548,8 +548,6 @@ ACL2 !>>(WITH-OUTPUT
              (EQUAL X X)
              :HINTS (("Goal" :INSTRUCTIONS ((CL-PROC :FUNCTION SIMPLE-CL-PROC
                                                      :HINT NIL))))))
-
-ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 
 ACL2 Error in CHK-ABSSTOBJ-INVARIANTS:  Possible invariance violation

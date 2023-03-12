@@ -25,6 +25,8 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -101,7 +103,9 @@
 (define pprint-comma-sep ((parts msg-listp))
   :returns (part msgp
                  :hyp (msg-listp parts)
-                 :hints (("Goal" :in-theory (enable character-alistp))))
+                 :hints (("Goal"
+                          :induct t
+                          :in-theory (enable character-alistp))))
   :short "Turn zero or more parts into a single part
           containing the zero or more parts, comma-separated."
   (cond ((endp parts) "")
@@ -290,7 +294,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-obj-declor ((declor obj-declorp))
-  :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
+  :returns (part msgp
+                 :hints (("Goal"
+                          :induct t
+                          :in-theory (enable character-alistp))))
   :short "Pretty-print an object declarator."
   :long
   (xdoc::topstring
@@ -360,7 +367,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-obj-adeclor ((declor obj-adeclorp))
-  :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
+  :returns (part msgp
+                 :hints (("Goal"
+                          :induct t
+                          :in-theory (enable character-alistp))))
   :short "Pretty-print an abstract object declarator."
   :long
   (xdoc::topstring
@@ -1066,7 +1076,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-fun-declor ((declor fun-declorp))
-  :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
+  :returns (part msgp
+                 :hints (("Goal"
+                          :induct t
+                          :in-theory (enable character-alistp))))
   :short "Pretty-print a function declarator."
   :long
   (xdoc::topstring

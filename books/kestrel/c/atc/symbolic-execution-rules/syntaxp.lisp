@@ -18,6 +18,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,16 +41,17 @@
      that are expected to be rewritten
      to their shallow embedding counterparts."))
   `(syntaxp (or (atom ,var)
-                (not (member-eq (car ,var) '(exec-ident
-                                             exec-const
-                                             exec-iconst
+                (not (member-eq (car ,var) '(exec-const
+                                             exec-ident
+                                             exec-address
+                                             exec-indir
+                                             exec-unary
+                                             exec-binary-strict-pure
+                                             exec-cast
                                              exec-arrsub
                                              exec-member
                                              exec-memberp
                                              exec-arrsub-of-member
                                              exec-arrsub-of-memberp
-                                             exec-unary
-                                             exec-cast
-                                             exec-binary-strict-pure
                                              exec-expr-pure
                                              test-value))))))

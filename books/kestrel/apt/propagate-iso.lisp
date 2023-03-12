@@ -1869,7 +1869,7 @@ Example: int10-map-p-->-int20-map-p
        (enabledp (fundef-enabledp fun state))
        ;; substitute function names in body, measure, and guard of FUN:
        (body0 (ubody fun world))
-       (event-defun (cddr eventup))
+       (event-defun (acl2::access-event-tuple-form eventup))
        (declares (acl2::get-declares-from-defun event-defun))
        (body (fn-ubody1 fun body0 world event-defun))
        (body (clean-body body))

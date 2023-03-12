@@ -1190,8 +1190,8 @@
                 (not (has-square-root? z p))
                 (equal (tonelli-shanks-sqrt-aux n p z) y))
            (if (has-square-root? n p)
-	       (equal (mod (* y y) p) n)
-	     (equal y 0)))
+               (equal (mod (* y y) p) n)
+             (equal y 0)))
   :hints (("Goal"
            :use ((:instance hyps-true-t-s-aux
                             (n n)
@@ -1239,7 +1239,7 @@
              :use ((:instance tonelli-shanks-sqrt-aux-is-sqrt-modp
                               (n n) (z z) (p p)
                               (y (tonelli-shanks-sqrt-aux n p z)))
-		   (:instance has-square-root?-suff (x n) (p p) (y y))
+                   (:instance has-square-root?-suff (x n) (p p) (y y))
                    (:instance modx^2-y^2 (x (tonelli-shanks-sqrt-aux n p z)) (y y) (p p))
                    (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
                    (:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z)
@@ -1277,13 +1277,13 @@
                   (primep p)
                   (not (has-square-root? z p))
                   (equal (tonelli-shanks-sqrt n p z) y))
-	     (if (has-square-root? n p)
-		 (equal (mod (* y y) p) n)
-	       (equal y 0)))
+             (if (has-square-root? n p)
+                 (equal (mod (* y y) p) n)
+               (equal y 0)))
     :hints (("Goal"
              :use ((:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
-		   (:instance tonelli-shanks-sqrt-aux-is-sqrt-modp
-			      (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z)))
+                   (:instance tonelli-shanks-sqrt-aux-is-sqrt-modp
+                              (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z)))
                    (:instance mod-*mod-a*mod-b=
                               (a (- (tonelli-shanks-sqrt-aux n p z)))
                               (b (- (tonelli-shanks-sqrt-aux n p z)))
@@ -1314,7 +1314,7 @@
     :hints (("Goal"
              :use ((:instance tonelli-shanks-is-sqrt-modp (n n) (z z) (p p)
                               (y (tonelli-shanks-sqrt n p z)))
-		   (:instance has-square-root?-suff (x n) (p p) (y y))
+                   (:instance has-square-root?-suff (x n) (p p) (y y))
                    (:instance modx^2-y^2 (x (tonelli-shanks-sqrt n p z)) (y y) (p p))
                    (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
                    (:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z)

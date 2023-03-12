@@ -19,6 +19,8 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -166,12 +168,14 @@
     (b* (((mv id adeclor) (obj-declor-to-ident+adeclor declor)))
       (equal (ident+adeclor-to-obj-declor id adeclor)
              (obj-declor-fix declor)))
+    :induct t
     :enable obj-declor-to-ident+adeclor)
 
   (defrule obj-declor-to-ident+adeclor-of-ident+adeclor-to-obj-declor
     (equal (obj-declor-to-ident+adeclor
             (ident+adeclor-to-obj-declor id adeclor))
            (mv (ident-fix id) (obj-adeclor-fix adeclor)))
+    :induct t
     :enable obj-declor-to-ident+adeclor))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -221,12 +225,14 @@
     (b* (((mv id adeclor) (fun-declor-to-ident+adeclor declor)))
       (equal (ident+adeclor-to-fun-declor id adeclor)
              (fun-declor-fix declor)))
+    :induct t
     :enable fun-declor-to-ident+adeclor)
 
   (defrule fun-declor-to-ident+adeclor-of-ident+adeclor-to-fun-declor
     (equal (fun-declor-to-ident+adeclor
             (ident+adeclor-to-fun-declor id adeclor))
            (mv (ident-fix id) (fun-adeclor-fix adeclor)))
+    :induct t
     :enable fun-declor-to-ident+adeclor))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -379,11 +385,13 @@
 
   (defret len-of-param-declon-list-to-ident+tyname-lists.ids
     (equal (len ids)
-           (len declons)))
+           (len declons))
+    :hints (("Goal" :induct t)))
 
   (defret len-of-param-declon-list-to-ident+tyname-lists.tynames
     (equal (len tynames)
-           (len declons))))
+           (len declons))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

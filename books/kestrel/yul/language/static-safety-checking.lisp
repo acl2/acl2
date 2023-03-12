@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -91,13 +91,6 @@
   :ok funtype
   :pred funtype-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-funtypep
-  (implies (funtypep x)
-           (not (reserrp x)))
-  :enable (funtypep reserrp))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap funtable
@@ -118,13 +111,6 @@
   :short "Fixtype of errors and function tables."
   :ok funtable
   :pred funtable-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-funtablep
-  (implies (funtablep x)
-           (not (reserrp x)))
-  :enable reserrp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -560,13 +546,6 @@
           pairs consisting of a variable table and a set of modes."
   :ok vars+modes
   :pred vars+modes-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-vars+modes-p
-  (implies (vars+modes-p x)
-           (not (reserrp x)))
-  :enable (vars+modes-p reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

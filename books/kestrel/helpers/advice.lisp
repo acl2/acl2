@@ -1,6 +1,6 @@
 ; A tool to get proof advice from a server over the web
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -91,7 +91,7 @@
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/untranslated-terms/conjuncts-of-uterm" :dir :system)
 (include-book "kestrel/alists-light/string-string-alistp" :dir :system)
-(include-book "kestrel/htclient/post" :dir :system) ; todo: slow
+(include-book "kestrel/htclient/post-light" :dir :system) ; todo: slow
 (include-book "kestrel/json-parser/parse-json" :dir :system)
 (include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages that might arise are known ; todo: very slow
 (include-book "tools/prove-dollar" :dir :system)
@@ -343,20 +343,32 @@
   (strip-cars *non-ml-models-and-strings*))
 
 (defconst *ml-models-and-strings*
-  '((:calpoly . "kestrel-calpoly")
+  '(;; Calpoly models:
+    (:calpoly . "kestrel-calpoly")
+    (:calpoly-run10.0 . "calpoly-run10.0")
+    (:calpoly-run10.1 . "calpoly-run10.1")
+    ;; Leidos models:
+    (:leidos-gpt . "leidos-gpt")
     ;; note the capital L:
     (:leidos . "Leidos")
-    (:leidos-gpt . "leidos-gpt")
+    ;; note the capital L and underscores:
+    (:leidos-run10.0 . "Leidos_run10_0")
+    (:leidos-run10.1 . "Leidos_run10_1")
     ))
 
 (defconst *ml-models*
   (strip-cars *ml-models-and-strings*))
 
 (defconst *known-models-and-strings*
-  (append *non-ml-models-and-strings*
-          *ml-models-and-strings*))
+  (append *ml-models-and-strings*
+          *non-ml-models-and-strings*))
 
 (defconst *known-models* (strip-cars *known-models-and-strings*))
+
+;;TODO: Ask the server for the list?
+(defconst *ready-models*
+  *known-models* ; (remove-eq :leidos-run10.0 *known-models*)
+  )
 
 (defconst *extra-rec-sources*
   '(:enable :history))
@@ -1126,15 +1138,26 @@
   (book-mapp (mv-nth 1 (parse-book-map book-map state)))
   :hints (("Goal" :in-theory (enable parse-book-map))))
 
+(defund round-to-integer (x)
+  (declare (xargs :guard (and (rationalp x)
+                              (<= 0 x))))
+  (let* ((integer-part (floor x 1))
+         (fraction-part (- x integer-part)))
+    (if (>= fraction-part 1/2)
+        (+ 1 integer-part)
+      integer-part)))
+
 (defund round-to-hundredths (x)
-  (declare (xargs :guard (rationalp x)))
-  (/ (floor (* x 100) 1)
-     100))
+  (declare (xargs :guard (and (rationalp x)
+                              (<= 0 x))))
+  (/ (round-to-integer (* 100 x)) 100))
 
 (defthm confidence-percentp-of-round-to-hundredths
   (implies (confidence-percentp x)
            (confidence-percentp (round-to-hundredths x)))
-  :hints (("Goal" :in-theory (enable confidence-percentp round-to-hundredths))))
+  :hints (("Goal" :in-theory (enable confidence-percentp
+                                     round-to-hundredths
+                                     round-to-integer))))
 
 (local
  (defthm confidence-percentp-of-*-of-100
@@ -1143,6 +1166,20 @@
                  (rationalp x))
             (confidence-percentp (* 100 x)))
    :hints (("Goal" :in-theory (enable confidence-percentp)))))
+
+;; Prints VAL, rounded to the hundredths place.
+;; Returns nil.
+(defund print-to-hundredths (val)
+  (declare (xargs :guard (and (rationalp val)
+                              (<= 0 val))))
+  (let* ((val (round-to-hundredths val))
+         (integer-part (floor val 1))
+         (fraction-part (- val integer-part))
+         (tenths (floor (* fraction-part 10) 1))
+         (fraction-part-no-tenths (- fraction-part (/ tenths 10)))
+         (hundredths (floor (* fraction-part-no-tenths 100) 1)))
+    ;; Hoping that using ~c here prevents any newlines:
+    (cw "~c0.~c1~c2" (cons integer-part (integer-length integer-part)) (cons tenths 1) (cons hundredths 1))))
 
 ;; Returns (mv erp parsed-recommendation state) where parsed-recommendation may be :none.
 (defund parse-recommendation (rec rec-num source state)
@@ -1182,7 +1219,7 @@
          ((when erp)
           (er hard? 'parse-recommendation "Error (~x0) parsing recommended action: ~x1." erp object)
           (mv :parse-error nil state))
-         (name (concatenate 'string (model-to-nice-string source) (acl2::nat-to-string rec-num)))
+         (name (concatenate 'string (model-to-nice-string source) "[" (acl2::nat-to-string rec-num) "]"))
          )
       (mv nil ; no error
           (make-rec name type-keyword parsed-object confidence-percent book-map)
@@ -1256,20 +1293,31 @@
 
 ;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
-;; Returns a list of recs, which should contain no duplicates.
-(defun make-enable-recs (formula num-recs wrld)
+;; Returns (mv erp recs state), where recs is a list of recs, which should contain no duplicates.
+(defun make-enable-recs (formula num-recs print state)
   (declare (xargs :guard (and ;; formula is an untranslated term
-                          (natp num-recs)
-                          (plist-worldp wrld))
+                          (natp num-recs))
+                  :stobjs state
                   :mode :program ; because of acl2::translate-term
                   ))
-  (let* ((translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
-         (fns-to-try-enabling (set-difference-eq (acl2::defined-fns-in-term translated-formula wrld)
-                                                 ;; Don't bother wasting time with trying to enable implies
-                                                 ;; (I suppose we could try it if implies is disabled):
-                                                 '(implies))))
-    ;; todo: how to choose when we can't return them all?:
-    (acl2::firstn num-recs (make-enable-recs-aux fns-to-try-enabling 1))))
+  (b* ((wrld (w state))
+       (- (and (acl2::print-level-at-least-tp print)
+               (cw "Making ~x0 :enable recommendations: " ; the line is ended below when we print the time
+                   num-recs)))
+       (print-timep (acl2::print-level-at-least-tp print))
+       ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+       (translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
+       (fns-to-try-enabling (set-difference-eq (acl2::defined-fns-in-term translated-formula wrld)
+                                               ;; Don't bother wasting time with trying to enable implies
+                                               ;; (I suppose we could try it if implies is disabled):
+                                               '(implies)))
+       (recs-to-return ;; todo: how to choose when we can't return them all?:
+        (acl2::firstn num-recs (make-enable-recs-aux fns-to-try-enabling 1)))
+       ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+       (- (and print-timep (prog2$ (print-to-hundredths (- done-time start-time))
+                                   (cw "s~%") ; s = seconds
+                                   ))))
+    (mv nil recs-to-return state)))
 
 ;; (local
 ;;  (defthm recommendation-listp-of-make-enable-recs
@@ -1354,16 +1402,25 @@
                         3 ; confidence-percent (quite high)
                         nil))
 
-;; Returns (mv erp val state).
+;; Returns (mv erp recs state).
 ;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
-(defun make-recs-from-history (num-recs state)
+(defun make-recs-from-history (num-recs print state)
   (declare (xargs :guard (natp num-recs)
                   :mode :program
                   :stobjs state))
-  (b* ((events ;;(acl2::get-command-sequence-fn 1 :max state)
+  (b* ((- (and (acl2::print-level-at-least-tp print)
+               (cw "Making ~x0 :history recommendations: " ; the line is ended below when we print the time
+                   num-recs)))
+       (print-timep (acl2::print-level-at-least-tp print))
+       ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+       (events ;;(acl2::get-command-sequence-fn 1 :max state)
         (acl2::top-level-defthms-in-world (w state)))
-       )
-    (mv nil (make-recs-from-history-events num-recs events) state)))
+       (recs (make-recs-from-history-events num-recs events))
+       ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+       (- (and print-timep (prog2$ (print-to-hundredths (- done-time start-time))
+                                   (cw "s~%") ; s = seconds
+                                   ))))
+    (mv nil recs state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1641,7 +1698,7 @@
              ;; The include-book brought in the desired name (and that thing can be enabled), so now try the proof, enabling the item:
              ;; TTODO: Check if already enabled!
              (b* ( ; todo: ensure this is nice:
-                  (hints-with-enable (acl2::enable-runes-in-hints hints (list item-to-enable)))
+                  (hints-with-enable (acl2::add-enable*-to-hints hints (list item-to-enable)))
                   ((mv provedp state) (prove$-no-error 'try-enable-with-include-book formula hints-with-enable otf-flg step-limit time-limit state)))
                (if provedp
                    ;; We proved it with the enable hint.  Now, try again without the enable (just the include-book):
@@ -2137,7 +2194,10 @@
                   :stobjs state
                   :mode :program)
            (ignore theorem-name))
-  (b* ((translatablep (acl2::translatable-termp hyp (w state)))
+  (b* (((when (eq hyp 'acl2::unknown/untrained)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not adding hyp: ~x0)~%" hyp))
+        (mv nil nil state))
+       (translatablep (acl2::translatable-termp hyp (w state)))
        ((when (not translatablep))
         (and (acl2::print-level-at-least-tp print) (cw "fail (hyp not translatable: ~x0)~%" hyp)) ;; TTODO: Include any necessary books first
         (mv nil nil state))
@@ -2214,7 +2274,10 @@
                               )
                   :stobjs state :mode :program))
   (b* (((when (eq rule 'acl2::other)) ;; "Other" is a catch-all for low-frequency classes
-        (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling catch-all: ~x0)~%" rule))
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not enabling catch-all: ~x0)~%" rule))
+        (mv nil nil state))
+       ((when (eq rule 'acl2::unknown/untrained)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not enabling: ~x0)~%" rule))
         (mv nil nil state))
        ((when (keywordp rule))
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not enabling unsupported item: ~x0)~%" rule)) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
@@ -2245,7 +2308,7 @@
               (and (acl2::print-level-at-least-tp print) (cw "skip (~x0 is already enabled.)~%" fn))
               (mv nil nil state))
              ;; FN exists and just needs to be enabled:
-             (new-hints (acl2::enable-runes-in-hints theorem-hints (list fn))) ;; todo: ensure this is nice
+             (new-hints (acl2::add-enable*-to-hints theorem-hints (list fn))) ;; todo: ensure this is nice
              ((mv provedp state)
               (prove$-no-error 'try-add-enable-hint
                                theorem-body
@@ -2357,6 +2420,9 @@
   (b* (((when (eq rule 'acl2::other)) ;; "Other" is a catch-all for low-frequency classes
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling catch-all: ~x0)~%" rule))
         (mv nil nil state))
+       ((when (eq rule 'acl2::unknown/untrained)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling: ~x0)~%" rule))
+        (mv nil nil state))
        ((when (keywordp rule))
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling unsupported item: ~x0)~%" rule)) ; this can come from a ruleset of (:rules-of-class :type-prescription :here)
         (mv nil nil state))
@@ -2368,7 +2434,7 @@
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling since already disabled: ~x0)~%" rule))
         (mv nil nil state))
        ;; todo: ensure this is nice:
-       (new-hints (acl2::disable-runes-in-hints theorem-hints (list rule)))
+       (new-hints (acl2::add-disable*-to-hints theorem-hints (list rule)))
        ((mv provedp state) (prove$-no-error 'try-add-disable-hint
                                             theorem-body
                                             new-hints
@@ -2410,6 +2476,9 @@
                   :mode :program))
   (b* (((when (eq item 'acl2::other))
         (and (acl2::print-level-at-least-tp print) (cw "skip (skipping catch-all: ~x0)~%" item))
+        (mv nil nil state))
+       ((when (eq item 'acl2::unknown/untrained)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not :use-ing ~x0)~%" item))
         (mv nil nil state))
        ((when (not (symbolp item))) ; for now
         (and (acl2::print-level-at-least-tp print) (cw "skip (unexpected object for :add-use-hint: ~x0)~%" item)) ; todo: add support for other lemma-instances
@@ -2499,12 +2568,15 @@
   (b* (((when (eq 'acl2::other item))
         (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring recommendation to expand \"Other\")~%"))
         (mv nil nil state))
+       ((when (eq 'acl2::unknown/untrained item)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not :expand-ing ~x0)~%" item))
+        (mv nil nil state))
        ((when (symbolp item)) ; todo: eventually remove this case
         (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring illegal recommendation to expand a symbol)~%"))
         (mv nil nil state))
        ;; todo: can it be a single term?:
        ((when (not (acl2::translatable-term-listp item (w state))))
-        (and (acl2::print-level-at-least-tp print) (cw "fail (term not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
+        (and (acl2::print-level-at-least-tp print) (cw "fail (terms not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; todo: ensure this is nice:
        (new-hints (acl2::merge-hint-setting-into-goal-hint :expand item theorem-hints))
@@ -2550,6 +2622,9 @@
   (b* (((when (eq 'acl2::other item))
         (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :by hint with catch-all \"Other\")~%"))
         (mv nil nil state))
+       ((when (eq 'acl2::unknown/untrained item)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :by hint with ~x0)~%" item))
+        (mv nil nil state))
        ((when (not (symbolp item)))
         (and (acl2::print-level-at-least-tp print) (cw "fail (unexpected :by hint: ~x0)~%" item))
         (mv nil nil state))
@@ -2594,8 +2669,14 @@
                   :stobjs state
                   :mode :program)
            (ignore theorem-name))
-  (b* (((when (not (acl2::translatable-term-listp item (w state))))
-        (and (acl2::print-level-at-least-tp print) (cw "fail (terms not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
+  (b* (((when (eq 'acl2::unknown/untrained item))
+        (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :cases hint with ~x0)~%" item))
+        (mv nil nil state))
+       ((when (not (true-listp item)))
+        (and (acl2::print-level-at-least-tp print) (cw "fail (:cases not a true list: ~x0)~%" item))
+        (mv nil nil state))
+       ((when (not (acl2::translatable-term-listp item (w state))))
+        (and (acl2::print-level-at-least-tp print) (cw "fail (:cases not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
         (mv nil nil state))
        ;; todo: ensure this is nice:
        (new-hints (acl2::merge-hint-setting-into-goal-hint :cases item theorem-hints))
@@ -2638,7 +2719,10 @@
                           )
                   :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* (((when (not (booleanp item)))
+  (b* (((when (eq item 'acl2::unknown/untrained)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "skip (Not adding :nonlinearp hint of ~x0)~%" item))
+        (mv nil nil state))
+       ((when (not (booleanp item)))
         (and print (cw "WARNING: Invalid value for :nonlinearp: ~x0.~%" item))
         (mv nil nil state) ; or we could return erp=t here
         )
@@ -2675,7 +2759,10 @@
                           )
                   :stobjs state :mode :program)
            (ignore theorem-name))
-  (b* ( ;; Can't easily check the :do-not hint syntactically...
+  (b* (((when (eq 'acl2::unknown/untrained item)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :do-not hint with ~x0)~%" item))
+        (mv nil nil state))
+       ;; Can't easily check the :do-not hint syntactically...
        ;; todo: ensure this is nice:
        (new-hints (acl2::merge-hint-setting-into-goal-hint :do-not item theorem-hints))
        ((mv provedp state) (prove$-no-error 'try-add-do-not-hint
@@ -2710,12 +2797,15 @@
                           )
                   :stobjs state :mode :program)
            (ignore theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec))
-  (if (symbolp item)
-      ;; TODO: Try looking for calls of the given symbol in the theorem (maybe just with arguments that are vars?):
-      (prog2$ (and (acl2::print-level-at-least-tp print) (cw "skip (need arguments of ~x0 to create :induct hint)~%" item))
-              (mv nil nil state))
-    ;; TODO: Flesh this out when ready:
-    (mv :unsupported-induct-hint nil state)))
+  (b* (((when (eq 'acl2::unknown/untrained item)) ;; A leidos model can return this
+        (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :induct hint with ~x0)~%" item))
+        (mv nil nil state)))
+    (if (symbolp item)
+        ;; TODO: Try looking for calls of the given symbol in the theorem (maybe just with arguments that are vars?):
+        (prog2$ (and (acl2::print-level-at-least-tp print) (cw "skip (need arguments of ~x0 to create :induct hint)~%" item))
+                (mv nil nil state))
+      ;; TODO: Flesh this out when ready:
+      (mv :unsupported-induct-hint nil state))))
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-exact-hints (hints theorem-body theorem-otf-flg step-limit time-limit rec print state)
@@ -2945,9 +3035,9 @@
                   :stobjs state))
   (b* ((- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
        ((mv erp post-response state)
-        (htclient::post server-url post-data state))
+        (htclient::post-light server-url post-data state))
        ((when erp)
-        (cw "Error received from HTTP POST: ~x0.~%" erp)
+        (cw "~%Error received from HTTP POST:~%~@0.~%" erp)
         (mv erp nil state))
        (- (and debug (cw "Raw POST response: ~X01~%" post-response nil)))
        ;; Parse the JSON:
@@ -3185,7 +3275,7 @@
                         nil ; empty list of recommendations
                         state))
           (b* ((- (and (acl2::print-level-at-least-tp print)
-                       (cw "Asking server for ~x0 recommendations from ~x1 on ~x2 ~s3...~%"
+                       (cw "Asking server for ~x0 recommendations from ~x1 on ~x2 ~s3: " ; the line is ended below when we print the time
                            num-recs
                            model
                            (len checkpoint-clauses)
@@ -3196,8 +3286,14 @@
                (post-data (acons-all-to-val (ml-rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types))
                                             "off"
                                             post-data))
+               (print-timep (acl2::print-level-at-least-tp print))
+               ((mv server-start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url post-data debug state))
+               ((mv server-done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+               (- (and print-timep (prog2$ (print-to-hundredths (- server-done-time server-start-time))
+                                           (cw "s~%") ; s = seconds
+                                           )))
                ((when erp)
                 ;; (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp) ; was catching rare "output operation on closed SSL stream" errors
                 (mv erp nil state))
@@ -3206,10 +3302,11 @@
                 (mv :bad-server-response nil state)))
             (mv nil (acl2::parsed-json-array->values parsed-response) state))))
        ((when erp) (mv erp nil state))
-       (- (and (not (consp semi-parsed-recommendations))
-               (cw "~% WARNING: No recommendations returned from server.~%")))
-       (- (and (not (equal num-recs (len semi-parsed-recommendations)))
-               (cw "~% WARNING: Number of recs returned from server is ~x0 but we requested ~x1.~%" (len semi-parsed-recommendations) num-recs)))
+       (- (if (not (consp semi-parsed-recommendations))
+              (cw "~% WARNING: No recommendations returned from server for ~x0.~%" model)
+            (if (not (equal num-recs (len semi-parsed-recommendations)))
+                (cw "~% WARNING: Number of recs returned from server for ~x0 is ~x1 but we requested ~x2.~%" model (len semi-parsed-recommendations) num-recs)
+              nil)))
        ;; Parse the individual strings in the recs:
        ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
        ((when erp)
@@ -3240,15 +3337,13 @@
               ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
               (if (member-eq :add-enable-hint disallowed-rec-types)
                   (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-                (mv nil
-                    ;; todo: translate outside make-enable-recs?:
-                    (make-enable-recs theorem-body num-recs-per-model (w state))
-                    state))
+                ;; todo: translate outside make-enable-recs?:
+                (make-enable-recs theorem-body num-recs-per-model print state))
             (if (eq :history model)
                 ;; Make recs based on hints given to recent theorems:
                 (if (member-eq :exact-hints disallowed-rec-types)
                     (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-                  (make-recs-from-history num-recs-per-model state))
+                  (make-recs-from-history num-recs-per-model print state))
               ;; It's a normal ML model:
               (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses server-url debug print state))))
          ((when erp) (mv erp nil state))
@@ -3417,7 +3512,8 @@
                               (model-namesp models))
                   :stobjs state
                   :mode :program))
-  (b* (((mv erp recommendation-alist state)
+  (b* ((state (acl2::widen-margins state))
+       ((mv erp recommendation-alist state)
         (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print nil state))
        ((when erp) (mv erp nil nil state))
        ;; Combine all the lists:
@@ -3432,7 +3528,6 @@
                 state))
        ;; Try the recommendations:
        (- (and print (cw "~%TRYING RECOMMENDATIONS:~%")))
-       (state (acl2::widen-margins state))
        ((mv erp successful-recs extra-recs-ignoredp state)
         (try-recommendations recommendations current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit max-wins improve-recsp print nil state))
        (state (acl2::unwiden-margins state))
@@ -3594,7 +3689,7 @@
   (b* ((wrld (w state))
        ;; Elaborate options:
        (models (if (eq models :all)
-                   *known-models*
+                   *ready-models* ; *known-models*
                  (if (model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
@@ -3699,7 +3794,7 @@
   (b* ((wrld (w state))
        ;; Elaborate options:
        (models (if (eq models :all)
-                   *known-models*
+                   *ready-models* ; *known-models*
                  (if (model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
@@ -3800,7 +3895,7 @@
   (b* ((wrld (w state))
        ;; Elaborate options:
        (models (if (eq models :all)
-                   *known-models*
+                   *ready-models* ; *known-models*
                  (if (model-namep models)
                      (list models) ; single model stands for singleton list of that model
                    models)))
@@ -3920,7 +4015,8 @@
 
 ;; This supports the generation of training data to improve an existing ML model.
 ;; Returns (mv erp successful-actions state) where each successful-action is of the form (<action-type> <action-object> <symbol-table>).
-;; TODO: Also return unsuccessful actions
+;; TODO: Also return the source of each rec?
+;; TODO: Also return unsuccessful actions?
 ;; WARNING: This should not be used for evaluation of models/recommendations, as it allows the current-book to be used to prove checkpoints from its own theorems!
 (defun all-successful-actions-for-checkpoints (checkpoint-clauses
                                                theorem-body ; untranslated
@@ -3994,9 +4090,11 @@
        ;;             (if (< 1 removed-count) "successful recommendations were" "successful recommendation was"))))
        (num-successful-recs (len successful-recs-no-dupes))
        (- (and print
-               (if (< 1 num-successful-recs)
-                   (cw "~%(~x0 successful recommendations):~%" num-successful-recs)
-                 (cw "~%(1 successful recommendation):~%")))))
+               (if (= 0 num-successful-recs)
+                   (cw "~%(No successful recommendations):~%")
+                 (if (= 1 num-successful-recs)
+                     (cw "~%(1 successful recommendation):~%")
+                   (cw "~%(~x0 successful recommendations):~%" num-successful-recs))))))
     (mv nil ; no error
         (extract-actions-from-successful-recs successful-recs)
         state)))

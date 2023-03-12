@@ -1,0 +1,10 @@
+- name: basic
+
+- name: no-parameters
+  description: >
+               In C++ we can't declare a template function with an
+               empty parameter (note that we are not doing template
+               specialization here) but it's allowed in RAC.
+  disabled-checks:
+    - generated_code
+  bug: true

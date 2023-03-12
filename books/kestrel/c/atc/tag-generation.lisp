@@ -24,6 +24,8 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,27 +117,38 @@
              (formula-member
               `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
                              (,recognizer struct))
-                        (equal (exec-member struct
+                        (equal (exec-member (expr-value struct objdes)
                                             (ident ,(ident->name memname)))
-                               (,reader struct))))
+                               (expr-value (,reader struct)
+                                           (if (objdesign-option-fix objdes)
+                                               (objdesign-member
+                                                (objdesign-option-fix objdes)
+                                                (ident ,(ident->name memname)))
+                                             nil)))))
              (formula-memberp
               `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                              (valuep ptr)
                              (value-case ptr :pointer)
-                             (not (value-pointer-nullp ptr))
+                             (value-pointer-validp ptr)
                              (equal (value-pointer->reftype ptr)
                                     (type-struct (ident ,(ident->name tag))))
                              (equal struct
                                     (read-object (value-pointer->designator ptr)
                                                  compst))
                              (,recognizer struct))
-                        (equal (exec-memberp ptr
+                        (equal (exec-memberp (expr-value ptr objdes)
                                              (ident ,(ident->name memname))
                                              compst)
-                               (,reader struct))))
+                               (expr-value (,reader struct)
+                                           (objdesign-member
+                                            (value-pointer->designator ptr)
+                                            (ident ,(ident->name memname)))))))
              (value-kind-when-typep (pack 'value-kind-when-
                                           (integer-type-to-fixtype type)
                                           'p))
+             (valuep-when-typep (pack 'valuep-when-
+                                      (integer-type-to-fixtype type)
+                                      'p))
              (hints `(("Goal"
                        :in-theory
                        '(exec-member
@@ -149,7 +162,16 @@
                          ,fixer-recognizer-thm
                          value-struct-read
                          ,value-kind-when-typep
-                         (:e ident)))))
+                         (:e ident)
+                         expr-value->value-of-expr-value
+                         expr-value->object-of-expr-value
+                         value-fix-when-valuep
+                         not-errorp-when-valuep
+                         ,valuep-when-typep
+                         (:e c::objdesign-option-fix)
+                         apconvert-expr-value-when-not-value-array
+                         expr-valuep-of-expr-value
+                         not-errorp-when-expr-valuep))))
              ((mv event-member &)
               (evmac-generate-defthm thm-member-name
                                      :formula formula-member
@@ -248,40 +270,32 @@
           (formula-member
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
                           (,recognizer struct)
-                          (equal array
-                                 (value-struct-read (ident
-                                                     ,(ident->name memname))
-                                                    struct))
                           (,indextypep index)
                           ,check-hyp)
-                     (equal (exec-arrsub-of-member struct
-                                                   (ident
-                                                    ,(ident->name memname))
-                                                   index)
-                            (,reader index struct))))
+                     (equal (exec-arrsub-of-member
+                             (expr-value struct objdes-struct)
+                             (ident ,(ident->name memname))
+                             (expr-value index objdes-index))
+                            (expr-value (,reader index struct) nil))))
           (formula-memberp
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                           (valuep ptr)
                           (value-case ptr :pointer)
-                          (not (value-pointer-nullp ptr))
+                          (value-pointer-validp ptr)
                           (equal (value-pointer->reftype ptr)
                                  (type-struct (ident ,(ident->name tag))))
                           (equal struct
                                  (read-object (value-pointer->designator ptr)
                                               compst))
                           (,recognizer struct)
-                          (equal array
-                                 (value-struct-read (ident
-                                                     ,(ident->name memname))
-                                                    struct))
                           (,indextypep index)
                           ,check-hyp)
-                     (equal (exec-arrsub-of-memberp ptr
-                                                    (ident
-                                                     ,(ident->name memname))
-                                                    index
-                                                    compst)
-                            (,reader index struct))))
+                     (equal (exec-arrsub-of-memberp
+                             (expr-value ptr objdes-ptr)
+                             (ident ,(ident->name memname))
+                             (expr-value index objdes-index)
+                             compst)
+                            (expr-value (,reader index struct) nil))))
           (hints `(("Goal"
                     :in-theory
                     '(exec-arrsub-of-member
@@ -333,7 +347,12 @@
                       (:t ,type-thm)
                       ,@(and length
                              (list length
-                                   'value-struct-read))))))
+                                   'value-struct-read))
+                      expr-value->value-of-expr-value
+                      ,@*atc-array-read-rules*
+                      apconvert-expr-value-when-not-value-array
+                      expr-valuep-of-expr-value
+                      not-errorp-when-expr-valuep))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member
@@ -510,7 +529,9 @@
                              (equal var (expr-ident->get target))
                              (equal struct (read-var var compst))
                              (,recognizer struct)
-                             (equal val (exec-expr-pure right compst))
+                             (equal eval (exec-expr-pure right compst))
+                             (expr-valuep eval)
+                             (equal val (expr-value->value eval))
                              (,typep val))
                         (equal (exec-expr-asg e compst fenv limit)
                                (write-var var
@@ -532,14 +553,16 @@
                                                   compst))
                              (valuep ptr)
                              (value-case ptr :pointer)
-                             (not (value-pointer-nullp ptr))
+                             (value-pointer-validp ptr)
                              (equal (value-pointer->reftype ptr)
                                     (type-struct (ident ,(ident->name tag))))
                              (equal struct
                                     (read-object (value-pointer->designator ptr)
                                                  compst))
                              (,recognizer struct)
-                             (equal val (exec-expr-pure right compst))
+                             (equal eval (exec-expr-pure right compst))
+                             (expr-valuep eval)
+                             (equal val (expr-value->value eval))
                              (,typep val))
                         (equal (exec-expr-asg e compst fenv limit)
                                (write-object (value-pointer->designator ptr)
@@ -584,12 +607,14 @@
                    ,not-error-thm
                    ,recognizer
                    ,fixer-recognizer-thm
-                   ,type-of-value-thm)
+                   ,type-of-value-thm
+                   not-errorp-when-expr-valuep)
                  :use
                  (:instance
                   ,writer-return-thm
                   (val (b* ((left (expr-binary->arg1 e)))
-                         (exec-expr-pure (expr-binary->arg2 e) compst)))
+                         (expr-value->value
+                          (exec-expr-pure (expr-binary->arg2 e) compst))))
                   (struct (b* ((left (expr-binary->arg1 e))
                                (target (expr-member->target left))
                                (var (expr-ident->get target))
@@ -634,12 +659,14 @@
                    ,not-error-thm
                    ,recognizer
                    ,fixer-recognizer-thm
-                   ,type-of-value-thm)
+                   ,type-of-value-thm
+                   not-errorp-when-expr-valuep)
                  :use
                  (:instance
                   ,writer-return-thm
                   (val (b* ((left (expr-binary->arg1 e)))
-                         (exec-expr-pure (expr-binary->arg2 e) compst)))
+                         (expr-value->value
+                          (exec-expr-pure (expr-binary->arg2 e) compst))))
                   (struct (b* ((left (expr-binary->arg1 e))
                                (target (expr-memberp->target left))
                                (ptr (read-var (expr-ident->get target)
@@ -772,10 +799,14 @@
                           (equal var (expr-ident->get target))
                           (equal struct (read-var var compst))
                           (,recognizer struct)
-                          (equal idx (exec-expr-pure index compst))
+                          (equal eidx (exec-expr-pure index compst))
+                          (expr-valuep eidx)
+                          (equal idx (expr-value->value eidx))
                           (,indextypep idx)
                           ,check-hyp
-                          (equal val (exec-expr-pure right compst))
+                          (equal eval (exec-expr-pure right compst))
+                          (expr-valuep eval)
+                          (equal val (expr-value->value eval))
                           (,elemtypep val))
                      (equal (exec-expr-asg e compst fenv limit)
                             (write-var var
@@ -800,17 +831,21 @@
                                                compst))
                           (valuep ptr)
                           (value-case ptr :pointer)
-                          (not (value-pointer-nullp ptr))
+                          (value-pointer-validp ptr)
                           (equal (value-pointer->reftype ptr)
                                  (type-struct (ident ,(ident->name tag))))
                           (equal struct
                                  (read-object (value-pointer->designator ptr)
                                               compst))
                           (,recognizer struct)
-                          (equal idx (exec-expr-pure index compst))
+                          (equal eidx (exec-expr-pure index compst))
+                          (expr-valuep eidx)
+                          (equal idx (expr-value->value eidx))
                           (,indextypep idx)
                           ,check-hyp
-                          (equal val (exec-expr-pure right compst))
+                          (equal eval (exec-expr-pure right compst))
+                          (expr-valuep eval)
+                          (equal val (expr-value->value eval))
                           (,elemtypep val))
                      (equal (exec-expr-asg e compst fenv limit)
                             (write-object (value-pointer->designator ptr)
@@ -868,16 +903,19 @@
                 ,valuep-when-indextype
                 ,@*integer-value-disjoint-rules*
                 (:t ,type-thm)
-                ,@(and length (list length)))
+                ,@(and length (list length))
+                not-errorp-when-expr-valuep)
               :use
               ((:instance
                 ,writer-return-thm
                 (index
                  (,integer-from-indextype
-                  (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
-                                  compst)))
+                  (expr-value->value
+                   (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
+                                   compst))))
                 (val
-                 (exec-expr-pure (expr-binary->arg2 e) compst))
+                 (expr-value->value
+                  (exec-expr-pure (expr-binary->arg2 e) compst)))
                 (struct
                  (read-var
                   (expr-ident->get
@@ -897,11 +935,13 @@
                     compst))))
                 (index
                  (,integer-from-indextype
-                  (exec-expr-pure
-                   (expr-arrsub->sub (expr-binary->arg1 e))
-                   compst)))
+                  (expr-value->value
+                   (exec-expr-pure
+                    (expr-arrsub->sub (expr-binary->arg1 e))
+                    compst))))
                 (element
-                 (exec-expr-pure (expr-binary->arg2 e) compst)))))))
+                 (expr-value->value
+                  (exec-expr-pure (expr-binary->arg2 e) compst))))))))
           (hints-memberp
            `(("Goal"
               :in-theory
@@ -954,16 +994,19 @@
                 ,valuep-when-indextype
                 ,@*integer-value-disjoint-rules*
                 (:t ,type-thm)
-                ,@(and length (list length)))
+                ,@(and length (list length))
+                not-errorp-when-expr-valuep)
               :use
               ((:instance
                 ,writer-return-thm
                 (index
                  (,integer-from-indextype
-                  (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
-                                  compst)))
+                  (expr-value->value
+                   (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
+                                   compst))))
                 (val
-                 (exec-expr-pure (expr-binary->arg2 e) compst))
+                 (expr-value->value
+                  (exec-expr-pure (expr-binary->arg2 e) compst)))
                 (struct
                  (read-object
                   (value-pointer->designator
@@ -989,11 +1032,13 @@
                     compst))))
                 (index
                  (,integer-from-indextype
-                  (exec-expr-pure
-                   (expr-arrsub->sub (expr-binary->arg1 e))
-                   compst)))
+                  (expr-value->value
+                   (exec-expr-pure
+                    (expr-arrsub->sub (expr-binary->arg1 e))
+                    compst))))
                 (element
-                 (exec-expr-pure (expr-binary->arg2 e) compst)))))))
+                 (expr-value->value
+                  (exec-expr-pure (expr-binary->arg2 e) compst))))))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member

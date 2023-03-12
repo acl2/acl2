@@ -2718,7 +2718,7 @@
                                            term input-vars
                                            (set-difference-eq term-vars
                                                               input-vars)))))))
-              #+(and (not acl2-loop-only) akcl)
+              #+(and (not acl2-loop-only) gcl)
               (cond ((and (not *gcl-large-maxpages*)
                           (fboundp 'si::sgc-on)
                           (funcall 'si::sgc-on))

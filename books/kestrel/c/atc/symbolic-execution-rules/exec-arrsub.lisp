@@ -18,6 +18,8 @@
 (include-book "syntaxp")
 (include-book "arrays")
 (include-book "value-integer-get")
+(include-book "integers")
+(include-book "apconvert")
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -26,6 +28,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,27 +53,37 @@
           (pack afixtype '-array-read- ifixtype))
          (atype-array-read
           (pack afixtype '-array-read))
+         (atype-array-length
+          (pack afixtype '-array-length))
          (atype-array-read-alt-def
           (pack atype-array-read '-alt-def))
+         (atype-array-length-alt-def
+          (pack atype-array-length '-alt-def))
          (elemtype-when-apred
           (pack 'value-array->elemtype-when- apred))
+         (value-kind-when-itype (pack 'value-kind-when- ipred))
          (name (pack 'exec-arrsub-when- apred '-and- ipred))
+         (integer-from-itype (pack 'integer-from- ifixtype))
          (formula `(implies
                     (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
                          ,(atc-syntaxp-hyp-for-expr-pure 'y)
                          (valuep x)
                          (value-case x :pointer)
-                         (not (value-pointer-nullp x))
+                         (value-pointer-validp x)
                          (equal (value-pointer->reftype x)
                                 ,(type-to-maker atype))
-                         (equal array
-                                (read-object (value-pointer->designator x)
-                                             compst))
+                         (equal objdes (value-pointer->designator x))
+                         (equal array (read-object objdes compst))
                          (,apred array)
                          (,ipred y)
                          (,atype-array-itype-index-okp array y))
-                    (equal (exec-arrsub x y compst)
-                           (,atype-array-read-itype array y))))
+                    (equal (exec-arrsub (expr-value x objdes-x)
+                                        (expr-value y objdex-y)
+                                        compst)
+                           (expr-value (,atype-array-read-itype array y)
+                                       (objdesign-element
+                                        objdes
+                                        (,integer-from-itype y))))))
          (event `(defruled ,name
                    ,formula
                    :enable (exec-arrsub
@@ -78,7 +91,17 @@
                             ,atype-array-itype-index-okp
                             ,atype-array-read-itype
                             ,atype-array-read-alt-def
-                            ,elemtype-when-apred)
+                            ,elemtype-when-apred
+                            ,atype-array-index-okp
+                            ,atype-array-length-alt-def
+                            value-array-read
+                            integer-range-p
+                            ifix
+                            nfix
+                            value-array->length
+                            not-errorp-when-valuep
+                            apconvert-expr-value-when-not-value-array
+                            ,value-kind-when-itype)
                    :prep-lemmas
                    ((defrule lemma
                       (implies (and (,atype-array-index-okp array index)

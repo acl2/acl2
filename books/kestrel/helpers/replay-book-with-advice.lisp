@@ -56,7 +56,7 @@
                        '(:rewrite)))
        (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
        (- (cw "(ADVICE: ~x0: " theorem-name))
-       ;; Ignores any given hints (for now):
+       ;; Ignores any given hints (for now - todo: see the breakage-type stuff in eval-models.lisp):
        ((mv erp successp best-rec state)
         (help::best-rec-for-theorem theorem-name
                                     theorem-body

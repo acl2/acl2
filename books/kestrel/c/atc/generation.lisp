@@ -41,6 +41,8 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -175,9 +177,8 @@
      is in the source file."))
   (b* ((id (defobject-info->name-ident info))
        (type (defobject-info->type info))
-       (exprs (defobject-info->init info))
+       (initer? (defobject-info->init info))
        ((mv tyspec declor) (ident+type-to-tyspec+declor id type))
-       (initer? (if (consp exprs) (initer-list exprs) nil))
        (declon-h (and header
                       (make-obj-declon :scspec (scspecseq-extern)
                                        :tyspec tyspec
@@ -706,7 +707,7 @@
                         `(cw-event "~%File ~s0 generated.~%"
                                    ,path.c))))
             (list event)))
-  :guard-hints (("Goal" :in-theory (enable length)))
+  :guard-hints (("Goal" :in-theory (enable length len)))
   :prepwork
   ((define atc-gen-print-result-aux ((events pseudo-event-form-listp))
      :returns (events pseudo-event-form-listp)
@@ -739,7 +740,8 @@
                          (acl2::theorem-symbolp ',(cdr fn-thm) (w state))))))
     (cons wf-thm-assert
           fn-thms-assert))
-  :prepwork ((local (in-theory (enable acl2::loop-book-theory)))))
+  :prepwork ((local (in-theory (enable acl2::loop-book-theory)))
+             (set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -507,6 +507,9 @@
                          (ld-redefinition-action 'save ld-redefinition-actionp)
                          (ld-prompt ''wormhole-prompt)
                          (ld-missing-input-ok 'same ld-missing-input-okp)
+                         (ld-always-skip-top-level-locals
+                          'same
+                          ld-always-skip-top-level-localsp)
                          (ld-pre-eval-filter 'same ld-pre-eval-filterp)
                          (ld-pre-eval-print 'same ld-pre-eval-printp)
                          (ld-post-eval-print 'same ld-post-eval-printp)
@@ -551,6 +554,10 @@
           (list `(cons 'ld-prompt ,ld-prompt))
           (if ld-missing-input-okp
               (list `(cons 'ld-missing-input-ok ,ld-missing-input-ok))
+            nil)
+          (if ld-always-skip-top-level-localsp
+              (list `(cons 'ld-always-skip-top-level-locals
+                           ,ld-always-skip-top-level-locals))
             nil)
           (if ld-pre-eval-filterp
               (list `(cons 'ld-pre-eval-filter ,ld-pre-eval-filter))
@@ -616,10 +623,10 @@
 ; from using REST as an argument, you should see the severed end of a
 ; once tangled rope.
 
-; For example, akcl and lucid (and others perhaps) allow you to define
+; For example, gcl and lucid (and others perhaps) allow you to define
 ; (defun foo (boole-c2) boole-c2) but then (foo 3) causes an error.
 ; Note that boole-c2 is recognized as special (by
-; system::proclaimed-special-p) in lucid, but not in akcl (by
+; system::proclaimed-special-p) in lucid, but not in gcl (by
 ; si::specialp); in fact it's a constant in both.  Ugh.
 
 ; End of Historical Note.
@@ -1482,6 +1489,90 @@
                                       (f-get-global 'iprint-ar state))
                            state)))))))
 
+#-acl2-loop-only
+(defvar *iprint-read-state*
+
+; Possible values are:
+
+; nil      - no requirement on current iprint index
+; t        - either all indices must exceed iprint-last-index, or none does
+; (n . <=) - n, already read, is <= iprint-last-index; index must be too
+; (n .  >) - n, already read, is  > iprint-last-index; index must be too
+
+; The value is initially nil.  At a top-level read, it is set to nil if
+; iprint-fal is nil, else to t.  For the first index i that is read when the
+; value is t, we set the value to <= if (<= i iprint-last-index) and to >
+; otherwise.
+
+  nil)
+
+#-acl2-loop-only
+(defun iprint-oracle-updates-raw (state)
+
+; Warning: Keep in sync with iprint-oracle-updates.
+
+  (let* ((ar *wormhole-iprint-ar*))
+    (when ar
+      (f-put-global 'iprint-ar (compress1 'iprint-ar ar) state)
+      (f-put-global 'iprint-fal *wormhole-iprint-fal* state)
+      (f-put-global 'iprint-hard-bound *wormhole-iprint-hard-bound* state)
+      (f-put-global 'iprint-soft-bound *wormhole-iprint-soft-bound* state)
+      (setq *wormhole-iprint-ar* nil))
+    (setq *iprint-read-state*
+          (if (f-get-global 'iprint-fal state)
+              t
+            nil)))
+  state)
+
+(defun iprint-oracle-updates (state)
+
+; Warning: Keep in sync with iprint-oracle-updates-raw.
+
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from iprint-oracle-updates
+                 (iprint-oracle-updates-raw state)))
+  (mv-let (erp val state)
+    (read-acl2-oracle state)
+    (declare (ignore erp))
+
+; If we intend to reason about this function, then we might want to check that
+; val is a reasonable value.  But that seems not to be important, since very
+; little reasoning would be possible anyhow for this function.
+
+    (let ((val (fix-true-list val)))
+      (pprogn (f-put-global 'iprint-ar
+                            (nth 0 val)
+                            state)
+              (f-put-global 'iprint-hard-bound
+                            (nfix (nth 1 val))
+                            state)
+              (f-put-global 'iprint-soft-bound
+                            (nfix (nth 2 val))
+                            state)
+              (f-put-global 'iprint-fal
+                            (nth 3 val)
+                            state)
+              state))))
+
+(defun iprint-oracle-updates@par ()
+  #-acl2-loop-only
+  (iprint-oracle-updates-raw *the-live-state*)
+  nil)
+
+(defun iprint-oracle-updates? (state)
+
+; This is like iprint-oracle-updates, except that it returns state unchanged if
+; iprinting is off.  Since iprinting isn't turned on in the middle of
+; eviscerate-top or eviscerate-stobjs-top, we can use it there and thus avoid
+; calling iprint-oracle-updates from fmt-to-string etc.  That, in turn, let us
+; use fmt-to-string etc. in safe-mode, hence in defconst forms, without getting
+; a program-only error.
+
+  (cond ((iprint-enabledp state)
+         (iprint-oracle-updates state))
+        (t state)))
+
 (defun eviscerate-top (x print-level print-length alist evisc-table hiding-cars
                          state)
 
@@ -1489,24 +1580,29 @@
 ; in addition to returning the evisceration of x.  See eviscerate and the Essay
 ; on Iprinting for more details.
 
-  (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
-    (mv-let (result iprint-alist iprint-fal-new)
-      (eviscerate x print-level print-length alist evisc-table hiding-cars
-                  (and (iprint-enabledp state)
-                       (iprint-last-index state))
-                  nil iprint-fal-old (iprint-eager-p iprint-fal-old))
-      (fast-alist-free-on-exit
-       iprint-fal-new
-       (let ((state
-              (cond
-               ((eq iprint-alist t)
-                (f-put-global 'evisc-hitp-without-iprint t state))
-               ((atom iprint-alist) state)
-               (t (update-iprint-ar-fal iprint-alist
-                                        iprint-fal-new
-                                        iprint-fal-old
-                                        state)))))
-         (mv result state))))))
+  (pprogn
+
+; First we ensure that any iprinting will reflect iprint updates made during brr.
+
+   (iprint-oracle-updates? state)
+   (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
+     (mv-let (result iprint-alist iprint-fal-new)
+       (eviscerate x print-level print-length alist evisc-table hiding-cars
+                   (and (iprint-enabledp state)
+                        (iprint-last-index state))
+                   nil iprint-fal-old (iprint-eager-p iprint-fal-old))
+       (fast-alist-free-on-exit
+        iprint-fal-new
+        (let ((state
+               (cond
+                ((eq iprint-alist t)
+                 (f-put-global 'evisc-hitp-without-iprint t state))
+                ((atom iprint-alist) state)
+                (t (update-iprint-ar-fal iprint-alist
+                                         iprint-fal-new
+                                         iprint-fal-old
+                                         state)))))
+          (mv result state)))))))
 
 ; Essay on the ACL2 Prettyprinter
 
@@ -6064,9 +6160,8 @@
         ,@keyword-args))
 
 (defun output-ignored-p (token state)
-  (and (not (saved-output-token-p token state))
-       (member-eq token
-                  (f-get-global 'inhibit-output-lst state))))
+  (member-eq token
+             (f-get-global 'inhibit-output-lst state)))
 
 (defun error1 (ctx summary str alist state)
 
@@ -6168,22 +6263,41 @@
   (((safe-mode . boot-strap-flg) . (temp-touchable-vars . guard-checking-on))
    .
    ((ld-skip-proofsp . temp-touchable-fns) .
-    ((parallel-execution-enabled . in-macrolet-def) . do-expressionp)))
+    ((parallel-execution-enabled . in-macrolet-def)
+     do-expressionp warnings-as-errors . inhibit-output-lst)))
   nil)
 
+(defconst *default-state-vars*
+
+; Warning: if you change this definition, then change the defaults for the &key
+; parameters accordingly in the definition of macro default-state-vars.
+
+  (make state-vars
+        :guard-checking-on t
+        :inhibit-output-lst '(proof-tree)))
+
 (defmacro default-state-vars
-  (state-p &key
-           (safe-mode 'nil safe-mode-p)
-           (boot-strap-flg 'nil boot-strap-flg-p)
-           (temp-touchable-vars 'nil temp-touchable-vars-p)
-           (guard-checking-on 't guard-checking-on-p)
-           (ld-skip-proofsp 'nil ld-skip-proofsp-p)
-           (temp-touchable-fns 'nil temp-touchable-fns-p)
-           (parallel-execution-enabled 'nil parallel-execution-enabled-p)
-           (in-macrolet-def ; not a state global, so avoid f-get-global below
-            'nil)
-           (do-expressionp ; not a state global, so avoid f-get-global below
-            'nil))
+
+; Warning: if you change the defaults for the &key parameters below, change the
+; definition of *default-state-vars* accordingly.
+
+    (state-p &rest args
+             &key
+             (safe-mode 'nil safe-mode-p)
+             (boot-strap-flg 'nil boot-strap-flg-p)
+             (temp-touchable-vars 'nil temp-touchable-vars-p)
+             (guard-checking-on 't guard-checking-on-p)
+             (ld-skip-proofsp 'nil ld-skip-proofsp-p)
+             (temp-touchable-fns 'nil temp-touchable-fns-p)
+             (parallel-execution-enabled 'nil parallel-execution-enabled-p)
+             (in-macrolet-def ; not a state global, so avoid f-get-global below
+              'nil)
+             (do-expressionp ; not a state global, so avoid f-get-global below
+              'nil)
+             (warnings-as-errors 'nil warnings-as-errors-p)
+; Warning: If you change '(proof-tree) just below, make the corresponding
+; change in enter-boot-strap-mode.
+             (inhibit-output-lst ''(proof-tree) inhibit-output-lst-p))
 
 ; Warning: Keep this in sync with defrec state-vars.
 
@@ -6225,17 +6339,112 @@
                 :in-macrolet-def
                 ,in-macrolet-def
                 :do-expressionp
-                ,do-expressionp))
+                ,do-expressionp
+                :warnings-as-errors
+                ,(if warnings-as-errors-p
+                     warnings-as-errors
+                   '(f-get-global 'warnings-as-errors state))
+                :inhibit-output-lst
+                ,(if inhibit-output-lst-p
+                     inhibit-output-lst
+                   '(f-get-global 'inhibit-output-lst state))))
+        ((null args)
+         '*default-state-vars*)
         (t ; state-p is not t
          `(make state-vars
                 :safe-mode ,safe-mode
+                :boot-strap-flg ,boot-strap-flg
                 :temp-touchable-vars ,temp-touchable-vars
                 :guard-checking-on ,guard-checking-on
                 :ld-skip-proofsp ,ld-skip-proofsp
                 :temp-touchable-fns ,temp-touchable-fns
-                :parallel-execution-enabled ,parallel-execution-enabled))))
+                :parallel-execution-enabled ,parallel-execution-enabled
+                :warnings-as-errors ,warnings-as-errors
+                :inhibit-output-lst ,inhibit-output-lst))))
 
-(defconst *default-state-vars* (default-state-vars nil))
+(defrec warnings-as-errors
+  (default . alist)
+  nil)
+
+(defabbrev warnings-as-errors-default (x)
+  (and x ; else default is nil
+       (access warnings-as-errors x :default)))
+
+(defabbrev warnings-as-errors-alist (x)
+  (and x ; else alist is nil
+       (access warnings-as-errors x :alist)))
+
+
+(defun set-warnings-as-errors-alist (strings flg alist
+                                     uninhibited-warning-summaries)
+
+; Note that this code is fine even in the presence of duplicates (up to case)
+; in strings, or even a member of strings that is a key (up to case) in alist.
+; We simply update the alist with the new, duplicate string while deleting the
+; corresponding old key; so the final alist has keys that are duplicate-free up
+; to case.
+
+  (cond ((endp strings) alist)
+        ((member-string-equal (car strings) uninhibited-warning-summaries)
+         (er hard 'set-warnings-as-errors
+             "It is illegal to specify that warnings of type ~x0 are to be ~
+              converted to errors, because ~x0 is a member (up to case) of ~x1"
+             (car strings)
+             '*uninhibited-warning-summaries*))
+        (t (set-warnings-as-errors-alist
+            (cdr strings)
+            flg
+            (let ((pair (assoc-string-equal (car strings) alist)))
+              (cond ((and (consp pair)
+                          (eq (cdr pair) flg))
+                     alist)
+                    ((null pair)
+                     (acons (car strings) flg alist))
+                    (t
+                     (acons (car strings)
+                            flg
+                            (remove1-assoc-string-equal (car strings)
+                                                        alist)))))
+            uninhibited-warning-summaries))))
+
+(defun set-warnings-as-errors (flg strings state)
+
+; If strings is :all then we reset to make that the default.
+
+  (declare (xargs :guard (member-eq flg '(t nil :always))))
+  (cond
+   ((eq strings :all)
+    (f-put-global 'warnings-as-errors
+                  (make warnings-as-errors :default flg :alist nil)
+                  state))
+   ((string-listp strings)
+    (let* ((old (f-get-global 'warnings-as-errors state))
+           (default (warnings-as-errors-default old))
+           (alist (warnings-as-errors-alist old)))
+      (cond ((and (eq flg default)
+                  (null (assoc-string-equal (car strings) alist)))
+             state)
+            (t (f-put-global 'warnings-as-errors
+                             (if old
+                                 (change warnings-as-errors
+                                         old
+                                         :alist
+                                         (set-warnings-as-errors-alist
+                                          strings flg alist
+                                          *uninhibited-warning-summaries*))
+                               (make warnings-as-errors
+                                     :default nil
+                                     :alist
+                                     (set-warnings-as-errors-alist
+                                      strings flg alist
+                                      *uninhibited-warning-summaries*)))
+                             state)))))
+   (t (prog2$ (er hard 'set-warnings-as-errors
+                  "Illegal second argument of ~x0, ~x1: must be :ALL or a ~
+                   list of strings."
+                  'set-warnings-as-errors
+                  strings)
+              state))))
 
 (defun warning1-body (ctx summary str+ alist state)
 
@@ -6280,39 +6489,132 @@
                (fmt-in-ctx ctx col channel state)
                (fmt-abbrev str alist col channel state "~%~%")))))))))
 
+(defun warnings-as-errors-val-guard (summary warnings-as-errors)
+  (declare (xargs :guard t))
+  (and (or (null summary)
+           (and (stringp summary)
+                (standard-string-p summary)))
+       (or (null warnings-as-errors)
+           (and (weak-warnings-as-errors-p warnings-as-errors)
+                (standard-string-alistp
+                 (warnings-as-errors-alist warnings-as-errors))))))
+
+(defun warnings-as-errors-val (summary warnings-as-errors)
+  (declare (xargs :guard
+                  (warnings-as-errors-val-guard summary warnings-as-errors)))
+  (let* ((pair
+          (and summary
+               (assoc-string-equal summary (warnings-as-errors-alist
+                                            warnings-as-errors))))
+         (erp (if pair
+                  (cdr pair)
+                (warnings-as-errors-default warnings-as-errors))))
+    (if (booleanp erp)
+        erp
+      :always)))
+
 (defmacro warning1-form (commentp)
 
 ; See warning1.
 
-  `(mv-let
-    (check-warning-off summary)
-    (cond ((consp summary)
-           (mv nil (car summary)))
-          (t (mv t summary)))
-    (cond
-     ((and check-warning-off
-           ,(if commentp
-                '(warning-off-p1 summary
-                                 wrld
-                                 (access state-vars state-vars
-                                         :ld-skip-proofsp))
-              '(warning-off-p summary state)))
-      ,(if commentp nil 'state))
+  (declare (xargs :guard ; avoid capture
+                  (not (or (eq commentp 'warnings-as-errors-val)
+                           (eq commentp 'check-warning-off)
+                           (eq commentp 'summary)))))
+  `(mv-let (check-warning-off summary)
+     (cond ((consp summary)
+            (mv nil (car summary)))
+           (t (mv t summary)))
+     (let ((warnings-as-errors-val
+            ,(if commentp
+                 `(ec-call ; for guard verification of warning1-cw
+                   (warnings-as-errors-val
+                    summary
+                    (access state-vars state-vars :warnings-as-errors)))
+               `(warnings-as-errors-val
+                 summary
+                 (f-get-global 'warnings-as-errors state)))))
+       (cond
+        ((and (eq warnings-as-errors-val :always)
+              (not (and summary
+                        (member-string-equal
+                         summary
+                         *uninhibited-warning-summaries*))))
+         (let ((str (cond ((consp str) ; see handling of str+ in warning1-body
+                           (car str))
+                          (t str))))
+
+; We do not use io? here, because when commentp holds, io? makes a wormhole
+; call that seems to avoid avoiding having the throw from hard-error go all the
+; way to the top level.
+
+           ,(cond
+             (commentp
+              `(and (not (ec-call ; for guard verification of warning1-cw
+                          (member-equal 'error
+                                        (access state-vars state-vars
+                                                :inhibit-output-lst))))
+                    (hard-error ctx (cons summary str) alist)))
+             (t `(prog2$
+                  (and (not (member-eq 'error
+                                       (f-get-global 'inhibit-output-lst
+                                                     state)))
+                       (hard-error ctx (cons summary str) alist))
+                  state)))))
+        ((and check-warning-off
+              (not (and summary
+                        (member-string-equal
+                         summary
+                         *uninhibited-warning-summaries*)))
+              ,(if commentp
+                   '(or (ec-call ; for guard verification of warning1-cw
+                         (member-equal 'warning
+                                       (access state-vars state-vars
+                                               :inhibit-output-lst)))
+                        (warning-off-p1 summary
+                                        wrld
+                                        (access state-vars state-vars
+                                                :ld-skip-proofsp)))
+                 '(or (member-eq 'warning
+                                 (f-get-global 'inhibit-output-lst state))
+                      (warning-off-p summary state))))
+         ,(if commentp nil 'state))
+        ((and warnings-as-errors-val
+              (not (and summary
+                        (member-string-equal
+                         summary
+                         *uninhibited-warning-summaries*))))
+         (let ((str (cond ((consp str) ; see handling of str+ in warning1-body
+                           (car str))
+                          (t str))))
+; See comment above about not usingn io?.
+           ,(cond
+             (commentp
+              `(and (not (ec-call ; for guard verification of warning1-cw
+                          (member-equal 'error
+                                        (access state-vars state-vars
+                                                :inhibit-output-lst))))
+                    (hard-error ctx (cons summary str) alist)))
+             (t `(prog2$ (and (not (member-eq 'error
+                                              (f-get-global 'inhibit-output-lst
+                                                            state)))
+                              (hard-error ctx (cons summary str) alist))
+                         state)))))
 
 ; Note:  There are two io? expressions below.  They are just alike except
 ; that the first uses the token WARNING! and the other uses WARNING.  Keep
 ; them that way!
 
-     ((and summary
-           (member-string-equal summary *uninhibited-warning-summaries*))
-      (io? WARNING! ,commentp state
-           (summary ctx alist str)
-           (warning1-body ctx summary str alist state)
-           :chk-translatable nil))
-     (t (io? WARNING ,commentp state
-             (summary ctx alist str)
-             (warning1-body ctx summary str alist state)
-             :chk-translatable nil)))))
+        ((and summary
+              (member-string-equal summary *uninhibited-warning-summaries*))
+         (io? WARNING! ,commentp state
+              (summary ctx alist str)
+              (warning1-body ctx summary str alist state)
+              :chk-translatable nil))
+        (t (io? WARNING ,commentp state
+                (summary ctx alist str)
+                (warning1-body ctx summary str alist state)
+                :chk-translatable nil))))))
 
 (defun warning1 (ctx summary str alist state)
 
@@ -6323,15 +6625,23 @@
 
 (defmacro warning-disabled-p (summary)
 
-; We can use this function to avoid needless computation on behalf of disabled
+; We can use this utility to avoid needless computation on behalf of disabled
 ; warnings.
 
   (declare (xargs :guard (stringp summary)))
   (let ((tp (if (member-equal summary *uninhibited-warning-summaries*)
                 'warning!
               'warning)))
-    `(or (output-ignored-p ',tp state)
-         (warning-off-p ,summary state))))
+    `(and (or (output-ignored-p ',tp state)
+              (warning-off-p ,summary state))
+
+; Allow warning$ to be called even when it would normally be suppressed, if the
+; warning is to be converted unconditionally to an error.
+
+          (not (eq (warnings-as-errors-val
+                    ,summary
+                    (f-get-global 'warnings-as-errors state))
+                   :always)))))
 
 (defmacro er-soft (context summary str &rest str-args)
   (let ((alist (make-fmt-bindings *base-10-chars* str-args)))

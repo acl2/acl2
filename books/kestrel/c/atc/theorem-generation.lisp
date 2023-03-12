@@ -25,6 +25,8 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,6 +49,7 @@
                                        (expr exprp)
                                        (type typep)
                                        (term pseudo-termp)
+                                       (objdes pseudo-termp)
                                        (compst-var symbolp)
                                        (hints true-listp)
                                        (instructions true-listp)
@@ -87,8 +90,9 @@
                                   name nil names-to-avoid wrld))
        (type-pred (type-to-recognizer type wrld))
        (uterm (untranslate$ term nil state))
+       (uobjdes (untranslate$ objdes nil state))
        (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
-                         ,uterm))
+                         (expr-value ,uterm ,uobjdes)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
                                     compst-var nil nil wrld))
        (formula2 `(,type-pred ,uterm))
@@ -111,6 +115,7 @@
                                        (type typep)
                                        (aterm pseudo-termp)
                                        (cterm pseudo-termp)
+                                       (objdes pseudo-termp)
                                        (compst-var symbolp)
                                        (hints true-listp)
                                        (instructions true-listp)
@@ -164,8 +169,9 @@
        (type-pred (type-to-recognizer type wrld))
        (uaterm (untranslate$ aterm nil state))
        (ucterm (untranslate$ cterm nil state))
+       (uobjdes (untranslate$ objdes nil state))
        (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
-                         ,ucterm))
+                         (expr-value ,ucterm ,uobjdes)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
                                     compst-var nil nil wrld))
        (formula2 `(and (,type-pred ,ucterm)
@@ -284,7 +290,9 @@
                                            (wrld plist-worldp))
         :returns (mv (new-scope atc-symbol-varinfo-alistp
                                 :hyp (atc-symbol-varinfo-alistp scope)
-                                :hints (("Goal" :in-theory (enable acons))))
+                                :hints (("Goal"
+                                         :induct t
+                                         :in-theory (enable acons))))
                      (events pseudo-event-form-listp)
                      (names-to-avoid symbol-listp
                                      :hyp (symbol-listp names-to-avoid)))
@@ -459,7 +467,9 @@
                                    :formula var-in-scope-formula
                                    :hints var-in-scope-hints
                                    :enable nil))
-       (varinfo (make-atc-var-info :type type :thm var-in-scope-thm))
+       (varinfo (make-atc-var-info :type type
+                                   :thm var-in-scope-thm
+                                   :externalp nil))
        (new-inscope (atc-add-var var varinfo new-inscope)))
     (mv new-inscope
         new-context

@@ -1,6 +1,6 @@
 ; Proofs of properties of make-lambda-application-simple
 ;
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system) ; make local?
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
+(local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
@@ -33,43 +34,7 @@
 
 ;; TODO: Clean up and harvest this file
 
-(local (in-theory (disable alistp)))
-
-;; todo: add this to defevaluator+
-(defthm-flag-free-vars-in-term
-  ;; Adding a pair to the alist has no effect if the key is not one of the free vars in the term.
-  (defthm empty-eval-of-cons-irrel
-    (implies (and (not (member-equal (car pair) (free-vars-in-term term)))
-                  (pseudo-termp term))
-             (equal (empty-eval term (cons pair a))
-                    (empty-eval term a)))
-    :flag free-vars-in-term)
-  (defthm empty-eval-list-of-cons-irrel
-    (implies (and (not (member-equal (car pair) (free-vars-in-terms terms)))
-                  (pseudo-term-listp terms))
-             (equal (empty-eval-list terms (cons pair a))
-                    (empty-eval-list terms a)))
-    :flag free-vars-in-terms)
-  :hints (("Goal" :in-theory (e/d (empty-eval-of-fncall-args)
-                                  (empty-eval-of-fncall-args-back)))))
-
-;; todo: add this to defevaluator+
-(defthm-flag-free-vars-in-term
-  ;; Binds a var to the value it already has in the alist has no effect
-  (defthm empty-eval-of-cons-irrel2
-    (implies (and (equal val (cdr (assoc-equal var a))) ; so binding var to val has no effect
-                  (pseudo-termp term))
-             (equal (empty-eval term (cons (cons var val) a))
-                    (empty-eval term a)))
-    :flag free-vars-in-term)
-  (defthm empty-eval-list-of-cons-irrel2
-    (implies (and (equal val (cdr (assoc-equal var a))) ; so binding var to val has no effect
-                  (pseudo-term-listp terms))
-             (equal (empty-eval-list terms (cons (cons var val) a))
-                    (empty-eval-list terms a)))
-    :flag free-vars-in-terms)
-  :hints (("Goal" :in-theory (e/d (empty-eval-of-fncall-args)
-                                  (empty-eval-of-fncall-args-back)))))
+(local (in-theory (disable alistp no-duplicatesp-equal)))
 
 (defthm empty-eval-of-append-of-pairlis$-of-EMPTY-EVAL-LIST-when-relevant-actuals-are-formals
   (IMPLIES  (and (pseudo-termp body)
@@ -95,8 +60,6 @@
   :hints (("Goal" :in-theory (enable FILTER-FORMALS-AND-ACTUALS
                                      PAIRLIS$
                                      symbolp-when-member-equal-and-symbol-listp))))
-
-(local (in-theory (disable no-duplicatesp-equal))) ;move up
 
 (defthm-flag-free-vars-in-term
   (defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-alt ; todo: similar to one in the proof of expand-lambdas
@@ -189,15 +152,6 @@
          (intersection-equal x y))
   :hints (("Goal" ;:induct (intersection-equal y x)
            :in-theory (enable intersection-equal))))
-
-;true for any evaluator
-(defthm empty-eval-list-when-symbol-listp
-  (implies (and (symbol-listp terms)
-                (no-nils-in-termsp terms))
-           (equal (empty-eval-list terms a)
-                  (map-lookup-equal terms a)))
-  :hints (("Goal" :in-theory (enable map-lookup-equal
-                                     lookup-equal))))
 
 (defthm equal-of-cons-of-cdr-of-assoc-equal-and-assoc-equal-iff
   (implies (alistp a)
@@ -356,11 +310,23 @@
 (defthm lambdas-closed-in-termp-of-make-lambda-application-simple
   (implies (and (pseudo-termp body)
                 (symbol-listp formals)
-                (pseudo-term-listp actuals)
-                (lambdas-closed-in-termsp actuals)
-                (lambdas-closed-in-termp body))
-           (lambdas-closed-in-termp (make-lambda-application-simple formals actuals body)))
+                (pseudo-term-listp actuals))
+           (equal (lambdas-closed-in-termp (make-lambda-application-simple formals actuals body))
+                  (and (lambdas-closed-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals (free-vars-in-term body))))
+                       (lambdas-closed-in-termp body))))
   :hints (("Goal" :do-not-induct t
            :in-theory (enable make-lambda-application-simple
                               lambdas-closed-in-termp ;todo
+                              ))))
+
+(defthm no-nils-in-termp-of-make-lambda-application-simple
+  (implies (and (pseudo-termp body)
+                (symbol-listp formals)
+                (pseudo-term-listp actuals))
+           (equal (no-nils-in-termp (make-lambda-application-simple formals actuals body))
+                  (and (no-nils-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals (free-vars-in-term body))))
+                       (no-nils-in-termp body))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (enable make-lambda-application-simple
+                              no-nils-in-termp ;todo
                               ))))

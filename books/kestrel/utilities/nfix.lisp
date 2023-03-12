@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function nfix
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-;; TODO: Consider having this book disable nfix
+(in-theory (disable nfix))
 
 ;; only needed for Axe?
 (defthmd natp-of-nfix
@@ -19,7 +19,8 @@
 (defthm nfix-when-natp
   (implies (natp x)
            (equal (nfix x)
-                  x)))
+                  x))
+  :hints (("Goal" :in-theory (enable nfix))))
 
 (defthm nfix-when-natp-cheap
   (implies (natp x)

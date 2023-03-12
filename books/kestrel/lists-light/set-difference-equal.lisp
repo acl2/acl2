@@ -60,7 +60,7 @@
 
 (defthm set-difference-equal-of-add-to-set-equal-arg2
   (equal (set-difference-equal x (add-to-set-equal a y))
-	 (remove-equal a (set-difference-equal x y)))
+         (remove-equal a (set-difference-equal x y)))
   :hints (("Goal" :in-theory (enable set-difference-equal))))
 
 (defthm set-difference-equal-of-append

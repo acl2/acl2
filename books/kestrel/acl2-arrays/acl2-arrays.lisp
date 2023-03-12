@@ -586,8 +586,8 @@
   (implies (and (symbolp array-name)
                 (natp index) ;gen?
 ;                (< index len) ;we get nil if the index is out of bounds
-		(posp len)
-		(< len 2147483647)
+                (posp len)
+                (< len 2147483647)
                 )
            (equal (aref1 array-name (make-empty-array-with-default array-name len default) index)
                   default))
@@ -602,8 +602,8 @@
   (implies (and (symbolp array-name)
                 (natp index) ;gen?
 ;                (< index len) ;we get nil if the index is out of bounds
-		(posp len)
-		(< len 2147483647)
+                (posp len)
+                (< len 2147483647)
                 )
            (equal (aref1 array-name (make-empty-array array-name len) index)
                   nil))
@@ -611,7 +611,7 @@
            :do-not-induct t
            :in-theory (enable array1p ;compress1
                               array-order
-			      make-empty-array
+                              make-empty-array
                               aref1))))
 
 (in-theory (disable (:executable-counterpart break$))) ;keeps it from breaking when it's evaluted during a proof, e.g., proofs about aset1-safe

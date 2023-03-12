@@ -17,6 +17,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,13 +31,21 @@
      based on whether the value is an array or not."))
 
   (defruled exec-ident-open
-    (implies (equal val (read-var id compst))
+    (implies (and (equal val (read-var id compst))
+                  (valuep val))
              (equal (exec-ident id compst)
                     (if (value-case val :array)
-                        (value-pointer (objdesign-variable id)
-                                       (value-array->elemtype val))
-                      val)))
-    :enable (exec-ident value-kind errorp))
+                        (make-expr-value
+                         :value (make-value-pointer
+                                 :core (pointer-valid (objdesign-static id))
+                                 :reftype (value-array->elemtype val))
+                         :object nil)
+                      (make-expr-value
+                       :value val
+                       :object (objdesign-of-var id compst)))))
+    :enable (objdesign-of-var-when-valuep-of-read-var
+             exec-ident
+             read-object-of-objdesign-of-var-to-read-var))
 
   (defval *atc-exec-ident-rules*
     '(exec-ident-open)))

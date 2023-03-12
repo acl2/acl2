@@ -11,6 +11,11 @@ echo " -- Running in `pwd`"
 echo " -- Running on `hostname`"
 echo " -- PATH is $PATH"
 
+# Print some vars that should be set for retried builds:
+echo "NAGINATOR_COUNT is $NAGINATOR_COUNT" # How many times the build was rescheduled.
+echo "NAGINATOR_MAXCOUNT is $NAGINATOR_MAXCOUNT" # How many times the build can be rescheduled. This can be 0 if manually rescheduled.
+echo "NAGINATOR_BUILD_NUMBER is $NAGINATOR_BUILD_NUMBER" # The build number of the failed build causing the reschedule.
+
 source $JENKINS_HOME/env.sh
 
 ACL2DIR=`pwd`
@@ -62,6 +67,7 @@ cd books
 # subshell.
 NICENESS=13
 OOM_KILLER_ADJUSTMENT=500 # medium value for the build-single case
+# We don't use --keep-going here, so that emails about failures get sent ASAP:
 CMD="nice -n $NICENESS make $TARGET ACL2=$WORKSPACE/saved_acl2 -j $BOOK_PARALLELISM_LEVEL -l $BOOK_PARALLELISM_LEVEL $MAKEOPTS USE_QUICKLISP=1"
 CMD_WITH_OOM_KILLER_ADJUSTMENT="(echo ${OOM_KILLER_ADJUSTMENT} > /proc/self/oom_score_adj && exec ${CMD})"
 $STARTJOB -c "${CMD_WITH_OOM_KILLER_ADJUSTMENT}"

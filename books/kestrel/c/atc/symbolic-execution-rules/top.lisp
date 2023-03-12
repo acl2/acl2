@@ -53,9 +53,11 @@
 (include-book "hide")
 (include-book "pointed-integers")
 (include-book "sint-from-boolean")
+(include-book "apconvert")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -95,7 +97,8 @@
      under hypothesis on the types of the arguments.
      For instance, @('(exec-unary op x compst)')
      is rewritten to @('(<op>-<type> x)')
-     when @('op') is @('<op>')
+     when @('op') is the unary operation corresponding to @('<op>')
+     (unary plus, unary minus, bitwise complement, or logical complement),
      and @('x') has type @('<type>').
      These shallowly embedded counterparts are used
      in the ACL2 functions from which C code is represented:
@@ -199,7 +202,8 @@
           *atc-computation-state-return-rules*
           *atc-value-fix-rules*
           *atc-flexible-array-member-rules*
-          *atc-pointed-integer-rules*))
+          *atc-pointed-integer-rules*
+          *atc-apconvert-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

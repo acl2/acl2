@@ -2688,13 +2688,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (strip-cdrs (cdr x))))))
 
 #-acl2-loop-only
+(progn
+
 (defvar *hard-error-returns-nilp*
 
 ; For an explanation of this defvar, see the comment in hard-error, below.
 
   nil)
 
-#-acl2-loop-only
 (defparameter *ld-level*
 
 ; This parameter will always be equal to the number of recursive calls of LD
@@ -2724,7 +2725,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   0)
 
-#-acl2-loop-only
 (defun-one-output throw-raw-ev-fncall (val)
 
 ; This function just throws to raw-ev-fncall (or causes an
@@ -2746,8 +2746,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t
          (throw 'raw-ev-fncall val))))
 
-#-acl2-loop-only
 (defvar *hard-error-is-error* t) ; set to nil at the end of the boot-strap
+
+(defvar *raw-ev-fncall-catchable* nil)
+
+(defmacro catch-raw-ev-fncall (&rest forms)
+  `(let ((*raw-ev-fncall-catchable* t))
+     (catch 'raw-ev-fncall
+       ,@forms)))
+)
+
+(defun abort! ()
+  (declare (xargs :guard t))
+  #-acl2-loop-only
+  (throw 'local-top-level :abort)
+  nil)
 
 (defun hard-error (ctx str alist)
 
@@ -2818,7 +2831,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           (str (if (consp str) (cdr str) str)))
       (cond
        (*hard-error-is-error*
-        (hard-error-is-error ctx str alist))
+        (if (fboundp 'hard-error-is-error) ; for early in boot-strap
+            (hard-error-is-error ctx str alist)
+          (error "Error during ACL2 build in ctx ~s with string~%~s~%and ~
+                  alist~%~s"
+                 ctx str alist)))
        (t
         (when (not (and (f-get-global 'inhibit-er-hard state)
                         (member 'error
@@ -2828,14 +2845,27 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (*wormholep* nil))
             (error-fms t ctx summary str alist state)))
 
-; Once upon a time hard-error took a throw-flg argument and did the
-; following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
-; it signaled an interface-er.  Note that in either case it behaved like
-; an error -- interface-er's are rougher because they do not leave you in
-; the ACL2 command loop.  I think this aspect of the old code was a vestige
-; of the pre-*ld-level* days when we didn't know if we could throw or not.
+; Here is a historical comment, perhaps no longer directly relevant.
 
-        (throw-raw-ev-fncall 'illegal)))))
+;   Once upon a time hard-error took a throw-flg argument and did the
+;   following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
+;   it signaled an interface-er.  Note that in either case it behaved like
+;   an error -- interface-er's are rougher because they do not leave you in
+;   the ACL2 command loop.  I think this aspect of the old code was a vestige
+;   of the pre-*ld-level* days when we didn't know if we could throw or not.
+
+        (if *raw-ev-fncall-catchable*
+            (throw-raw-ev-fncall 'illegal)
+
+; Before we introduced catch-raw-ev-fncall, it was possible to get a raw Lisp
+; error at the top level from a hard error during translate, because there was
+; no catcher for the tag thrown to by the call just above of
+; throw-raw-ev-fncall, which is 'raw-ev-fncall.  Now we abort cleanly.  It's a
+; bit unfortunate perhaps that we abort all the way to the top level, so
+; hard-error should be used sparingly when not in the scope of
+; catch-raw-ev-fncall.
+
+          (abort!))))))
   #+acl2-loop-only
   (declare (ignore ctx str alist))
   nil)
@@ -3769,7 +3799,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         acl2_*1*_acl2::linear-lemma-term-exec
         acl2_*1*_acl2::conjoin
         acl2_*1*_acl2::pairlis$
-        acl2_*1*_acl2::close-input-channel))
+        acl2_*1*_acl2::close-input-channel
+        acl2_*1*_acl2::warnings-as-errors-val
+        acl2_*1*_acl2::member-equal))
 
 #-acl2-loop-only
 (defmacro ec-call1-raw (ign x)
@@ -4815,15 +4847,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (:rewrite
    (:forward-chaining :trigger-terms
                       ((coerce str 'list)))))
-
-; In AKCL the nonstandard character #\Page prints as ^L and may be included in
-; strings, as in "^L".  Now if you try to type that string in ACL2, you get an
-; error.  And ACL2 does not let you use coerce to produce the string, e.g.,
-; with (coerce (list #\Page) 'string), because the guard for coerce is
-; violated.  So here we have a situation in which no ACL2 function in LP will
-; ever see a nonstandard char in a string, but CLTL permits it.  However, we
-; consider the axiom to be appropriate, because ACL2 strings contain only
-; standard characters.
 
 (in-theory (disable standard-char-listp standard-char-p))
 
@@ -8608,9 +8631,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; (warning$ ctx nil "The :REWRITE rule ~x0 loops forever." name).
 ; If the second argument is wrapped in a one-element list, as in
 ; (warning$ ctx ("Loops") "The :REWRITE rule ~x0 loops forever." name),
-; then that argument is quoted, and no check will be made for whether the
-; warning is disabled, presumably because we are in a context where we know the
-; warning is enabled.
+; then no check will be made for whether the warning is disabled, presumably
+; because we are in a context where we know the warning is enabled.
 
   (list 'warning1
         ctx
@@ -8832,23 +8854,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (symbol-listp lst)))
   (position-ac-eq-exec item lst 0))
 
-(defun-with-guard-check position-eql-exec (item lst)
-  (or (stringp lst)
-      (and (true-listp lst)
-           (or (eqlablep item)
-               (eqlable-listp lst))))
-  (if (stringp lst)
-      (position-ac item (coerce lst 'list) 0)
-    (position-ac item lst 0)))
+(defun-with-guard-check position-eql-exec (x seq)
+  (or (stringp seq)
+      (and (true-listp seq)
+           (or (eqlablep x)
+               (eqlable-listp seq))))
+  (if (stringp seq)
+      (position-ac x (coerce seq 'list) 0)
+    (position-ac x seq 0)))
 
-(defun position-equal (item lst)
-  (declare (xargs :guard (or (stringp lst) (true-listp lst))))
+(defun position-equal (x seq)
+  (declare (xargs :guard (or (stringp seq) (true-listp seq))))
   #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
-  (position item lst :test #'equal)
+  (position x seq :test #'equal)
   #+acl2-loop-only
-  (if (stringp lst)
-      (position-ac item (coerce lst 'list) 0)
-    (position-equal-ac item lst 0)))
+  (if (stringp seq)
+      (position-ac x (coerce seq 'list) 0)
+    (position-equal-ac x seq 0)))
 
 (defmacro position-eq (item lst)
   `(position ,item ,lst :test 'eq))
@@ -9276,9 +9298,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (push ,item (car ,g))
          (if *lp-ever-entered-p*
              (illegal ,ctx
-                      "Apparently you have tried to execute a form in raw Lisp ~
-                       that is only intended to be executed inside the ACL2 ~
-                       loop.  You should probably abort (e.g., :Q in akcl or ~
+                      "Apparently you have tried to execute a form in raw ~
+                       Lisp that is only intended to be executed inside the ~
+                       ACL2 loop.  You should probably abort (e.g., :Q in ~
                        gcl, :A in LispWorks, :POP in Allegro), then type (LP) ~
                        and try again.  If this explanation seems incorrect, ~
                        then please contact the implementors of ACL2."
@@ -10480,14 +10502,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; there, we should skip evaluation of x here.
 
   (list 'if
-        '(equal (ld-skip-proofsp state) 'include-book)
+        '(or (member-eq (ld-skip-proofsp state)
+                        '(include-book initialize-acl2))
+             (f-get-global 'ld-always-skip-top-level-locals state))
         '(mv nil nil state)
-        (list 'if
-              '(equal (ld-skip-proofsp state) 'initialize-acl2)
-              '(mv nil nil state)
-              (list 'state-global-let*
-                    '((in-local-flg t))
-                    (list 'when-logic "LOCAL" x)))))
+        (list 'state-global-let*
+              '((in-local-flg t))
+              (list 'when-logic "LOCAL" x))))
 
 #+acl2-loop-only
 (defmacro defchoose (&whole event-form &rest def)
@@ -13561,8 +13582,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; *number-of-return-values* may be increased (but not reduced) to be
 ; as high as required to increase the allowed number of ACL2 return
 ; values.  However, if it is increased, the entire ACL2 system must be
-; recompiled.  Currently, the first 10 locations are handled specially
-; in releases of AKCL past 206.
+; recompiled.
 
 (defun cdrn (x i)
   (declare (xargs :guard (and (integerp i)
@@ -14544,8 +14564,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the value of state global 'acl2-version, which gets printed in .cert files.
 
 ; Leave this here.  It is read when loading acl2.lisp.  This constant should be
-; a string containing at least one `.'.  The function save-acl2-in-akcl in
-; akcl-init.lisp suggests that the user see :doc notexxx, where xxx is the
+; a string containing at least one `.'.  The function save-acl2-in-gcl in
+; acl2-init.lisp suggests that the user see :doc notexxx, where xxx is the
 ; substring appearing after the first `.'.
 
 ; We have occasion to write fixed version numbers in this code, that is,
@@ -14622,6 +14642,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (dmrp . nil)
     (evisc-hitp-without-iprint . nil)
     (eviscerate-hide-terms . nil)
+    (fast-cert-status . nil)
     (fmt-hard-right-margin . ,*fmt-hard-right-margin-default*)
     (fmt-soft-right-margin . ,*fmt-soft-right-margin-default*)
     (gag-mode . nil) ; set in lp
@@ -14649,6 +14670,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                      ; to nil.
     (inhibit-output-lst-stack . nil)
     (inhibited-summary-types . nil)
+    (inside-progn-fn1 . nil)
     (inside-skip-proofs . nil)
     (iprint-ar . ,(init-iprint-ar *iprint-hard-bound-default* nil))
     (iprint-fal . nil)
@@ -14725,7 +14747,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (skip-proofs-by-system . nil)
     (skip-proofs-okp-cert . t) ; t when not inside certify-book
     (skip-reset-prehistory . nil) ; non-nil skips (reset-prehistory nil)
-    (slow-apply$-action . t)
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
     (splitter-output . t)
     (standard-co . acl2-output-channel::standard-character-output-0)
@@ -14757,6 +14778,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      .
      (apply$-lambda apply$-prim plist-worldp-with-formals ilks-plist-worldp))
     (walkabout-alist . nil)
+    (warnings-as-errors . nil) ; nil or a warnings-as-errors record
     (waterfall-parallelism . nil) ; for #+acl2-par
     (waterfall-parallelism-timing-threshold
      . 10000) ; #+acl2-par -- microsec limit for resource-and-timing-based mode
@@ -15578,6 +15600,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (ld-redefinition-action . nil)
     (ld-prompt . t)
     (ld-missing-input-ok . nil)
+    (ld-always-skip-top-level-locals . nil)
     (ld-pre-eval-filter . :all)
     (ld-pre-eval-print . nil)
     (ld-post-eval-print . :command-conventions)
@@ -15648,9 +15671,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; state-global-let*.  It generates a list of f-put-globals that will set the
 ; bound variables in bindings to their desired local values, except that
 ; ``setters'' are used instead where provided (see the discussion of setters in
-; state-global-let*).  We insist that those initialization forms not mention
-; the temporary variable state-global-let* uses to hang onto the restoration
-; values.
+; :DOC state-global-let*).  We insist that those initialization forms not
+; mention the temporary variable state-global-let* uses to hang onto the
+; restoration values.
 
   (declare (xargs :guard (state-global-let*-bindings-p bindings)))
   (cond ((endp bindings) nil)
@@ -15701,7 +15724,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; way, which makes each f-put-global explicit and needs no special treatment.
 
 ; Finally, note that we use setters in place of f-put-global, when they are
-; provided; see the discussion of setters in state-global-let*.
+; provided; see the discussion of setters in :DOC state-global-let*.
 
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
                               (natp index))))
@@ -16092,6 +16115,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (cond
    ((null bindings) body)
+   ((not (symbol-doublet-listp bindings))
+
+; This this is a raw Lisp Function, it is reasonable to call error here rather
+; than to use (er hard ...).  This way we avoid depending on the value of
+; global *hard-error-is-error* for an error to be signaled.
+
+    (error "The first argument of state-free-global-let* must be a true ~%~
+            list of entries of the form (sym val) where sym is a symbol.~%~
+            The argument ~s is thus illegal."
+           bindings))
    (t (let (bs syms)
         (dolist (binding bindings)
           (let ((sym (global-symbol (car binding))))
@@ -16116,13 +16149,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the ACL2 loop; that's unimportant of course if this function is called only
 ; for side-effect or if body returns only one value.
 
-  `(if #-acl2-par *acl2-unwind-protect-stack* #+acl2-par nil
-       (with-live-state
-        (mv-let (erp val state)
-          (state-global-let* ,bindings (value ,body))
-          (declare (ignore erp state))
-          val))
-       (state-free-global-let* ,bindings ,body)))
+  (cond
+   ((not (symbol-doublet-listp bindings))
+; See comment at error call in state-free-global-let*.
+    (error "The first argument of state-free-global-let*-safe must be a ~%~
+            true list of entries of the form (sym val) where sym is a ~%~
+            symbol.  The argument ~s is thus illegal."
+           bindings))
+   (t `(if #-acl2-par *acl2-unwind-protect-stack* #+acl2-par nil
+           (with-live-state
+            (mv-let (erp val state)
+              (state-global-let* ,bindings (value ,body))
+              (declare (ignore erp state))
+              val))
+           (state-free-global-let* ,bindings ,body)))))
 
 ; With state-global-let* defined, we may now define a few more primitives and
 ; finish some unfinished business.
@@ -17909,7 +17949,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; We here set up the property list of the three channels that are open
 ; at the beginning.  The order of the setfs and the superfluous call
-; of symbol-name are to arrange, in AKCL, for the stream component to
+; of symbol-name are to arrange, in GCL, for the stream component to
 ; be first on the property list.
 
 #-acl2-loop-only
@@ -18107,7 +18147,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; In this alist, each key is a filename (in the native OS, as discussed further
 ; below) whose value is a triple (str fwd . fc): str is initially a character
-; stream str for that file ut may be replaced by nil, fwd is the
+; stream str for that file but may be replaced by nil, fwd is the
 ; file-write-date at the time the stream was created, and fc is the file-clock
 ; of the state at the time the stream was opened.  If str is nil, then the
 ; entry may be deleted (essentially, garbage collected) when the file-clock
@@ -18138,7 +18178,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; updates the file-clock.)  Note that a key in *read-file-into-string-alist* is
 ; based on fc, not fc+1.
 
-; Recall that we key on the filename in the native OS?  It would also be fine
+; Recall that we key on the filename in the native OS.  It would also be fine
 ; to key on the Unix filename, but our code just developed this way.  It's fine
 ; though: if we encounter the same Unix filename twice, then of course we'd
 ; encouter the same OS filename twice, which would catch the problem we're
@@ -18240,7 +18280,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (interface-er "Illegal input-type ~x0." typ)))))
               (cond
                ((null stream) (mv nil *the-live-state*))
-               #+(and acl2-infix akcl)
+               #+(and acl2-infix gcl)
                ((and (eq typ :object)
                      (not (lisp-book-syntaxp os-file-name)))
 
@@ -21747,6 +21787,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     proofs-co
     ld-prompt
     ld-missing-input-ok
+    ld-always-skip-top-level-locals
     ld-pre-eval-filter
     ld-pre-eval-print
     ld-post-eval-print
@@ -21818,6 +21859,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     verify-termination-on-raw-program-okp
     prompt-memo
     system-attachments-cache
+    fast-cert-status
+    inside-progn-fn1
+    warnings-as-errors
     ))
 
 ; There is a variety of state global variables, 'ld-skip-proofsp among them,
@@ -21996,7 +22040,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     (or (null entry)
                         (package-entry-hidden-p entry))
                     (cons
-                     "The symbol CLTL displays as ~s0 is not in any of the ~
+                     "The symbol displayed as ~s0 is not in any of the ~
                       packages known to ACL2.~@1"
                      (list
                       (cons #\0 (format nil "~s" x))
@@ -22005,14 +22049,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                              ((or (null entry)
                                   (null (package-entry-book-path entry)))
                               "")
+                             ((null (cdr (package-entry-book-path entry)))
+                              (msg "  This package was apparently defined ~
+                                    locally by the portcullis of the ~
+                                    book ~s0."
+                                   (book-name-to-filename-1
+                                    (car (package-entry-book-path entry))
+                                    (project-dir-alist (w *the-live-state*))
+                                    'bad-lisp-atomp)))
                              (t
-                              (msg "  This package was defined under a ~
-                                    locally included book.  Thus, some ~
-                                    include-book was local in the following ~
-                                    sequence of included books, from top-most ~
-                                    book down to the book whose portcullis ~
-                                    defines this package (with a defpkg ~
-                                    event).~|~%  ~F0"
+                              (msg "  This package was apparently defined ~
+                                    locally by the portcullis of the last in ~
+                                    the following sequence of included books, ~
+                                    where each book includes the next.~|~%  ~
+                                    ~F0"
                                    (reverse
                                     (book-name-lst-to-filename-lst
                                      (package-entry-book-path entry)
@@ -25044,12 +25094,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore val))
   form)
 
-(defun abort! ()
-  (declare (xargs :guard t))
-  #-acl2-loop-only
-  (throw 'local-top-level :abort)
-  nil)
-
 (defmacro a! ()
   (declare (xargs :guard t))
   '(abort!))
@@ -27468,7 +27512,10 @@ Lisp definition."
   (declare (xargs :guard (and (state-p state)
                               (member-eq val '(t nil :never :break :bt
                                                  :break-bt :bt-break)))
-                  :guard-hints (("Goal" :in-theory (enable state-p1)))))
+                  :guard-hints (("Goal" :in-theory (e/d (state-p1)
+                                                        ()
+                                                        ;;(all-boundp)
+                                                        )))))
   #+(and (not acl2-loop-only)
          (and gcl (not cltl2)))
   (when (live-state-p state)
