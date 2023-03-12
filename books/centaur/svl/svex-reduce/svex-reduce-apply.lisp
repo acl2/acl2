@@ -502,24 +502,7 @@
             :in-theory (e/d (bit?!-resolve)
                             ())))))
 
-(progn
-  (local
-   (use-arithmetic-5 t))
-  (local
-   (defthm 3vec-p-of-4vec-rsh
-     (implies (and (natp size)
-                   (sv::3vec-p val)
-                   (sv::4vec-p val))
-              (sv::3vec-p (4vec-rsh size val)))
-     :hints (("Goal"
-              :expand ((4vec-rsh size val)
-                       (SV::4VEC->UPPER SIZE)
-                       (SV::4VEC->UPPER SIZE))
-              :in-theory (e/d (4VEC-SHIFT-CORE
-                               sv::3vec-p)
-                              ())))))
-  (local
-   (use-arithmetic-5 nil)))
+
 
 (svex-eval-lemma-tmpl
  (defthm svex-eval-of-bit?-resolve-correct

@@ -260,7 +260,7 @@ x
                             (bitand/or/xor-collect-leaves y fn :limit (1- limit))))
        (list svex)))
     #|(('id x)
-     (list svex x))|#
+    (list svex x))|#
     (& (list svex)))
   ///
   (defret true-listp-of-<fn>
@@ -323,9 +323,14 @@ x
          ((Unless width)
           (mv new-val t)))
       (mv (4vec-part-select 0 width new-val) t)))
-   #|((and* (member-hons-equal-of-negated svex leaves)
-   (equal (width-of-svex svex) 1))
-   (mv (4vec-part-select 0 1 (lognot new-val)) t))|#
+   ((mbe :exec (and (member-hons-equal-of-negated svex leaves)
+                    (equal (width-of-svex svex) 1)
+                    (integerp-of-svex svex))
+         ;; I should find a better way than this mbe stuff..
+         :logic (and* (member-hons-equal-of-negated svex leaves)
+                      (equal (width-of-svex svex) 1)
+                      (integerp-of-svex svex)))
+    (mv (4vec-part-select 0 1 (lognot new-val)) t))
    ((and (consp svex)
          (equal (car svex) 'sv::bitor)
          (equal-len (cdr svex) 2))
@@ -354,7 +359,7 @@ x
          ((mv new-y changed-y) (bitand/bitor-cancel-repeated-aux y leaves new-val :limit (+ limit -1) :under-xor t))
          ((Unless (and (or changed-x changed-y) ;; this is and not and* becasue
                        ;; don't want to run integer-listp-of-svexlist if first
-                       ;; test fails. 
+                       ;; test fails.
                        (or (integer-listp-of-svexlist leaves)
                            (rp::cwe "integer-listp-of-svexlist check has failed for ~p0~%" leaves))))
           (mv svex nil))
@@ -362,13 +367,13 @@ x
          (res (clear-1s-from-bitxor res)))
       (mv res t)))
    #|((and (consp svex)
-         (equal (car svex) 'sv::id)
-         (equal-len (cdr svex) 1))
-    (b* (((mv res changed)
-          (bitand/bitor-cancel-repeated-aux (cadr svex) leaves new-val :limit (1- limit))))
-      (if changed
-          (mv (sv::svex-call 'id (hons-list res)) t)
-        (mv svex nil))))|#
+   (equal (car svex) 'sv::id)
+   (equal-len (cdr svex) 1))
+   (b* (((mv res changed)
+   (bitand/bitor-cancel-repeated-aux (cadr svex) leaves new-val :limit (1- limit))))
+   (if changed
+   (mv (sv::svex-call 'id (hons-list res)) t)
+   (mv svex nil))))|#
    (t (mv svex nil)))
 
   ///
@@ -1255,6 +1260,43 @@ x
  (in-theory (disable rp::falist-consistent-aux
                      rp::eval-and-all)))
 
+#|(skip-proofs
+(svex-eval-lemma-tmpl
+(local
+(defthm when-width-of-svex-is-1-its-rsh-is-0
+(implies (EQUAL (WIDTH-OF-SVEX SVEX) 1)
+(EQUAL (4VEC-RSH 1
+(SV::3VEC-FIX (SVEX-EVAL SVEX SVEX-ENV)))
+0))))))|#
+
+(local
+ (svex-eval-lemma-tmpl
+  (defthm svex-eval-member-hons-equal-of-negated-lemma-1
+    (implies (and (member-hons-equal-of-negated svex leaves)
+                  (integerp (svex-eval svex svex-env))
+                  (equal (4vec-part-select 0 1 (svex-eval svex svex-env))
+                         0))
+             (equal (4vec-part-select 0 1 (svex-eval-bitor-lst leaves svex-env))
+                    1))
+    :hints (("Goal"
+             :induct (MEMBER-HONS-EQUAL-OF-NEGATED SVEX LEAVES)
+             :do-not-induct t
+             :Expand ((SVEX-EVAL-BITOR-LST LEAVES SVEX-ENV))
+             :in-theory (e/d (4vec-rsh-of-3vec-fix
+                              MEMBER-HONS-EQUAL-OF-NEGATED
+                              4VEC-PART-SELECT-OF-4VEC-BITOR-BETTER
+                              4VEC-PART-SELECT-OF-4VEC-BITXOR-BETTER)
+                             ()))))))
+
+(local
+ (svex-eval-lemma-tmpl
+  (defthm dummy-integerp-of-svex-lemma-for-svex-eval
+    (implies (integerp (SVEX-EVAL SVEX SVEX-ENV))
+             (and (not (EQUAL (SVEX-EVAL SVEX SVEX-ENV)
+                              '(1 . 0)))
+                  (not (EQUAL (SVEX-EVAL SVEX SVEX-ENV)
+                              '(0 . 1))))))))
+
 (local
  (svex-eval-lemma-tmpl
   (defret svex-eval-of-bitand/bitor-cancel-repeated-aux-correct-1
@@ -1341,7 +1383,23 @@ x
                               (:rewrite-quoted-constant  sv::svex-fix-under-svex-equiv)
                               (:definition true-list-listp)
                               (:rewrite acl2::member-equal-newvar-components-1)
+                              svex-eval-width-of-svex-is-correct
+                              ;;svex-eval-of-integerp-of-svex-is-correct-env=nil
                               )))
+            (and stable-under-simplificationp
+                 '(:use ((:instance svex-eval-width-of-svex-is-correct
+                                    (free-var-width 1)
+                                    (x svex)
+                                    (env (rp-evlt env-term a))
+                                    ;;(x `(unfloat ,svex))
+                                    )
+                         (:instance svex-eval-width-of-svex-is-correct
+                                    (free-var-width 1)
+                                    (x svex)
+                                    (env svex-env)
+                                    ;;(x `(unfloat ,svex))
+                                    ))))
+
             (and stable-under-simplificationp
                  '(:clause-processor
                    (single-bit-part-select-case-splitter clause)))
@@ -1420,6 +1478,46 @@ x
                                svex-eval-bitand-lst
                                4vec-part-select-of-4vec-bitand-better)
                               ()))))))
+
+(local
+ (defthm dummy-lemma-when-bitand-of-2-is-zero-with-other-is-also-zero
+   (implies (equal (4vec-bitand x y) 0)
+            (equal (4vec-bitand x (4vec-bitand a y)) 0))))
+
+(local
+ (defthm 4vec-bitand-of-negated-same
+   (implies (and (4vec-correct-width-p 1 x)
+                 (integerp x))
+            (equal (4vec-bitand x (sv::4vec-bitxor 1 x))
+                   0))
+   :hints (("Goal"
+            :in-theory (e/d (4VEC-CORRECT-WIDTH-P
+                             SV::4VEC-BITXOR
+                             4VEC-BITAND
+                             4VEC
+                             3VEC-BITAND
+                             4VEC-PART-SELECT
+                             4VEC-RSH
+                             4VEC-SHIFT-CORE
+                             4VEC-CONCAT)
+                            (EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1))))))
+
+(local
+ (svex-eval-lemma-tmpl
+  (defthm svex-eval-member-hons-equal-of-negated-lemma-for-bitand
+    (implies (and (member-hons-equal-of-negated svex leaves)
+                  (4vec-correct-width-p 1 (svex-eval svex env))
+                  (integerp (svex-eval svex env)))
+             (equal
+              (4vec-bitand (svex-eval svex env)
+                           (svex-eval-bitand-lst leaves env))
+              0))
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((SVEX-EVAL-BITAND-LST LEAVES ENV))
+             :induct (member-hons-equal-of-negated svex leaves)
+             :in-theory (e/d (member-hons-equal-of-negated)
+                             ()))))))
 
 (local
  (svex-eval-lemma-tmpl
@@ -1501,6 +1599,7 @@ x
                               sv::4vec-p-when-maybe-4vec-p
                               (:rewrite-quoted-constant  sv::svex-fix-under-svex-equiv)
                               (:definition true-list-listp)
+                              ;;svex-eval-width-of-svex-is-correct
                               acl2::member-equal-newvar-components-1)))))))
 
 (svex-eval-lemma-tmpl
@@ -1657,8 +1756,6 @@ x
                   (rp::rp-term-listp context)
                   (rp::valid-sc env-term a)
                   (rp::eval-and-all context a)
-
-                  
 
                   (:@ :dollar-eval
                       (width-of-svex-extn-correct<$>-lst
@@ -2189,7 +2286,7 @@ x
        (mv (append l1 l2)
            (or r1 r2))))
     #|(('id x)
-     (mv (list x svex) nil))|#
+    (mv (list x svex) nil))|#
     (& (mv (list svex) nil)))
   ///
   (defret true-listp-of-<fn>

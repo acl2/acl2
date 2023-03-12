@@ -1067,7 +1067,9 @@
                                  ))))))
 
   (defconst *ha-s-chain-rule*
-    (hons-copy '(member-equal 'ha-c-chain found-patterns)))
+    (hons-copy '(or (member-equal 'ha-c-chain found-patterns)
+                    ;; if the necessary 1 in bitxor chain is missing, then it is ok to match this with ha-s-chain
+                    (member-equal 'ha+1-c-chain found-patterns))))
 
   (create-look-for-pattern-fnc :name ha-s-chain-pattern
                                :prepwork ((create-case-match-macro ha-s-chain-pattern
@@ -1153,6 +1155,8 @@
   (create-look-for-pattern-fnc :name ha+1-c-chain-pattern
                                :prepwork ((create-case-match-macro ha+1-c-chain-pattern
                                                                    ('sv::bitor x y))
+                                          (create-case-match-macro ha+1-c-chain-self-pattern
+                                                                   ('ha+1-c-chain x y))
                                           (local
                                            (in-theory (enable ha+1-c-chain))))
                                :body
@@ -1163,6 +1167,14 @@
                                          (list (make-pattern-fn-call
                                                 :fn 'ha+1-c-chain
                                                 :rule *ha+1-c-chain-rule*
+                                                :args args)))))
+                                     ((ha+1-c-chain-self-pattern-p svex)
+                                      (ha+1-c-chain-self-pattern-body
+                                       svex
+                                       (b* ((args (acl2::merge-sort-lexorder (list x y))))
+                                         (list (make-pattern-fn-call
+                                                :fn 'ha+1-c-chain
+                                                :rule nil
                                                 :args args))))))
                                :warrant-hyps ((apply$-warrant-ha+1-c-chain))))
 
@@ -1276,8 +1288,6 @@
                                                                    ('ha-c-chain x y))
                                           (create-case-match-macro ha+1-s-chain-self-pattern
                                                                    ('ha+1-s-chain m x y))
-                                          (create-case-match-macro ha+1-c-chain-self-pattern
-                                                                   ('ha+1-c-chain x y))
                                           (local
                                            (in-theory (enable pattern-fn-call->rule))))
                                :body
@@ -1381,11 +1391,11 @@
      ))
    ((eq adder-type 'ha)
     (append
-     (look-for-ha-s-chain-pattern svex)
-     (look-for-ha-c-chain-pattern svex)
-
      (look-for-ha+1-c-chain-pattern svex)
      (look-for-ha+1-s-chain-pattern svex)
+
+     (look-for-ha-s-chain-pattern svex)
+     (look-for-ha-c-chain-pattern svex)
      ))
    ((eq adder-type 'ha-self)
     (look-for-ha-self-pattern svex))
@@ -3933,7 +3943,10 @@
                                                              (svl::bitp-of-svex arg3)))
                    svex))
           ((list arg1 arg2 arg3)
-           (acl2::merge-sort-lexorder (list arg1 arg2 arg3))))
+           (acl2::merge-sort-lexorder (list arg1 arg2 arg3)))
+          ((when (and (equal arg2 0)
+                      (equal arg3 0)))
+           0))
        (sv::svex-call 'fa-c-chain (hons-list 0 arg1 arg2 arg3))))
     (& svex))
   ///
@@ -4088,16 +4101,25 @@
        :call (case-match x
                (('fa-s-chain & & &)
                 (b* ((lst1 (fix-order-of-fa/ha-chain-args-lst x.args))
-                     (lst2 (acl2::merge-sort-lexorder lst1)))
+                     (lst2 (acl2::merge-sort-lexorder lst1))
+                     ((when (and (equal (first lst2) 0)
+                                 (equal (second lst2) 0)))
+                      (third lst2)))
                   (sv::svex-call x.fn lst2)))
                (('ha-s-chain & &)
                 (b* ((lst1 (fix-order-of-fa/ha-chain-args-lst x.args))
-                     (lst2 (acl2::merge-sort-lexorder lst1)))
+                     (lst2 (acl2::merge-sort-lexorder lst1))
+                     ((when (equal (first lst2) 0))
+                      (second lst2)))
                   (sv::svex-call x.fn lst2)))
                (('ha-c-chain & &)
                 (b* ((lst1 (fix-order-of-fa/ha-chain-args-lst x.args))
-                     (lst2 (acl2::merge-sort-lexorder lst1)))
+                     (lst2 (acl2::merge-sort-lexorder lst1))
+                     ((when (equal (first lst2) 0))
+                      0))
                   (sv::svex-call x.fn lst2)))
+               
+               ;; TODO: Maybe add ha+1 stuff here....
                (& (zero-fa-c-chain-extra-arg
                    (sv::svex-call
                     x.fn

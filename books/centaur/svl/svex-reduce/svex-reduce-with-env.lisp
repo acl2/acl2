@@ -914,24 +914,7 @@ but did not resolve the branch ~%" first))))
                               SV::SVEX-QUOTE->VAL)
                              ()))))))
 
-(progn
-  (local
-   (use-arithmetic-5 t))
-  (local
-   (defthm 3vec-p-of-4vec-rsh
-     (implies (and (natp size)
-                   (sv::3vec-p val)
-                   (sv::4vec-p val))
-              (sv::3vec-p (4vec-rsh size val)))
-     :hints (("Goal"
-              :expand ((4vec-rsh size val)
-                       (sv::4vec->upper size)
-                       (sv::4vec->upper size))
-              :in-theory (e/d (4VEC-SHIFT-CORE
-                               sv::3vec-p)
-                              ())))))
-  (local
-   (use-arithmetic-5 nil)))
+
 
 (local
  (defthm 4VEC-BITOR-of-1
