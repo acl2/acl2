@@ -693,8 +693,39 @@
     (equal (lendian=>nat base digits)
            (bendian=>nat base (rev digits))))
 
-  (theory-invariant (incompatible (:rewrite lendian=>nat-as-bendian=>nat)
-                                  (:definition bendian=>nat))))
+  (defruled lendian=>nat-of-rev
+    (equal (lendian=>nat base (rev digits))
+           (bendian=>nat base digits)))
+
+  (defruled bendian=>nat-of-rev
+    (equal (bendian=>nat base (rev digits))
+           (lendian=>nat base digits)))
+
+  (progn
+
+    ;; incompatible:
+    ;; - BENDIAN=>NAT
+    ;; - LENDIAN=>NAT-AS-BENDIAN=>NAT
+    ;; - LENDIAN=>NAT-OF-REV
+    ;; - BENDIAN=>NAT-OF-REV
+
+    (theory-invariant (incompatible (:definition bendian=>nat)
+                                    (:rewrite lendian=>nat-as-bendian=>nat)))
+
+    (theory-invariant (incompatible (:definiton bendian=>nat)
+                                    (:rewrite lendian=>nat-of-rev)))
+
+    (theory-invariant (incompatible (:definiton bendian=>nat)
+                                    (:rewrite bendian=>nat-of-rev)))
+
+    (theory-invariant (incompatible (:rewrite lendian=>nat-as-bendian=>nat)
+                                    (:rewrite lendian=>nat-of-rev)))
+
+    (theory-invariant (incompatible (:rewrite lendian=>nat-as-bendian=>nat)
+                                    (:rewrite bendian=>nat-of-rev)))
+
+    (theory-invariant (incompatible (:rewrite lendian=>nat-of-rev)
+                                    (:rewrite bendian=>nat-of-rev)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
