@@ -1482,41 +1482,49 @@
                         (mv :return :exit state))
                        (t (pprogn
                            (ld-print-results trans-ans state)
-                           (cond
-                            ((and (ld-error-triples state)
-                                  (not (eq (ld-error-action state) :continue))
-                                  (equal (car trans-ans) *error-triple-sig*)
-                                  (let ((val (cadr (cdr trans-ans))))
-                                    (and (consp val)
-                                         (eq (car val) :stop-ld))))
-                             (mv :return
-                                 (list* :stop-ld
-                                        (f-get-global 'ld-level state)
-                                        (cdr (cadr (cdr trans-ans))))
-                                 state))
-                            (t
+                           (let ((action (ld-error-action state)))
+                             (cond
+                              ((and (ld-error-triples state)
+                                    (not (eq action :continue))
+                                    (equal (car trans-ans) *error-triple-sig*)
+                                    (let ((val (cadr (cdr trans-ans))))
+                                      (and (consp val)
+                                           (eq (car val) :stop-ld))))
+                               (cond
+                                ((and (consp action)
+                                      (eq (car action) :exit))
+                                 (mv action (good-bye-fn (cadr action)) state))
+                                (t
+                                 (mv :return
+                                     (list* :stop-ld
+                                            (f-get-global 'ld-level state)
+                                            (cdr (cadr (cdr trans-ans))))
+                                     state))))
+                              (t
 
 ; We make the convention of checking the new-namep filter immediately after
 ; we have successfully eval'd a form (rather than waiting for the next form)
 ; so that if the user has set the filter up he gets a satisfyingly
 ; immediate response when he introduces the name.
 
-                             (let ((filter (ld-pre-eval-filter state)))
-                               (cond
-                                ((and (not (eq filter :all))
-                                      (not (eq filter :query))
-                                      (not (eq filter :illegal-state))
-                                      (not (new-namep filter
-                                                      (w state))))
-                                 (er-progn
+                               (let ((filter (ld-pre-eval-filter state)))
+                                 (cond
+                                  ((and (not (eq filter :all))
+                                        (not (eq filter :query))
+                                        (not (eq filter :illegal-state))
+                                        (not (new-namep filter
+                                                        (w state))))
+                                   (er-progn
 
 ; We reset the filter to :all even though we are about to exit this LD
 ; with :return.  This just makes things work if "this LD" is the top-level
 ; one and LP immediately reenters.
 
-                                  (set-ld-pre-eval-filter :all state)
-                                  (mv :return :filter state)))
-                                (t (mv :continue nil state)))))))))))))))))))))))
+                                    (set-ld-pre-eval-filter :all state)
+                                    (mv :return :filter state)))
+                                  (t (mv :continue
+                                         nil
+                                         state))))))))))))))))))))))))
 
 (defun ld-loop (state)
 
