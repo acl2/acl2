@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function acl2-count
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -93,52 +93,6 @@
            (< (acl2-count (nthcdr n lst))
               (acl2-count lst)))
   :rule-classes ((:linear :trigger-terms ((acl2-count (nthcdr n lst))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Characterizes the unusual situation when take makes the list longer
-(defthm <-of-acl2-count-of-take
-  (implies (true-listp l) ; not easy to drop
-           (equal (< (acl2-count l) (acl2-count (take n l)))
-                  (and (< (len l) n)
-                       (natp n))))
-  :hints (("Goal" :in-theory (enable take))
-          ("subgoal *1/1" :cases ((< (+ 1 (len (cdr l))) n)))))
-
-(defthm <=-of-acl2-count-of-take-linear
-  (implies (<= n (len l))
-           (<= (acl2-count (take n l)) (acl2-count l)))
-  :rule-classes ((:linear :trigger-terms ((acl2-count (take n l))))))
-
-(defthm <-of-acl2-count-of-take-linear
-  (implies (< (nfix n) (len l))
-           (< (acl2-count (take n l)) (acl2-count l)))
-  :rule-classes ((:linear :trigger-terms ((acl2-count (take n l))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm <-of-acl2-count-of-remove1-equal-linear
-  (implies (member-equal a x)
-           (< (acl2-count (remove1-equal a x))
-              (acl2-count x)))
-  :rule-classes ((:linear :trigger-terms ((acl2-count (remove1-equal a x)))))
-  :hints (("Goal" :in-theory (enable remove1-equal))))
-
-(defthm <=-of-acl2-count-of-remove1-equal-linear
-  (<= (acl2-count (remove1-equal a x))
-      (acl2-count x))
-  :rule-classes ((:linear :trigger-terms ((acl2-count (remove1-equal a x)))))
-  :hints (("Goal" :in-theory (enable remove1-equal))))
-
-(defthm equal-of-acl2-count-of-remove1-equal-and-acl2-count
-  (equal (equal (acl2-count (remove1-equal a x))
-                (acl2-count x))
-         (if (member-equal a x)
-             nil
-           (equal (acl2-count (true-list-fix x)) ;simplify?
-                  (acl2-count x))))
-  :hints (("Goal" :use (:instance <-of-acl2-count-of-remove1-equal-linear)
-           :in-theory (disable <-of-acl2-count-of-remove1-equal-linear))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

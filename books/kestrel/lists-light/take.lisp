@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function take.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -147,6 +147,14 @@
 (theory-invariant (incompatible (:rewrite take-of-cdr) (:rewrite cdr-take-plus-1)))
 (theory-invariant (incompatible (:rewrite take-of-cdr) (:rewrite cdr-of-take)))
 
+(local
+ (defthm subsetp-equal-of-cons-arg2
+   (implies (and (syntaxp (not (and (quotep a)
+                                    (quotep y))))
+                 (subsetp-equal x y))
+            (subsetp-equal x (cons a y)))
+   :hints (("Goal" :in-theory (enable subsetp-equal)))))
+
 (defthm subsetp-equal-of-take-and-take
   (implies (<= n1 n2)
            (equal (subsetp-equal (take n1 lst)
@@ -199,6 +207,12 @@
   :hints (("Goal" :use (:instance nth-of-take-gen)
            :expand (take m lst)
            :in-theory (disable nth-of-take-gen))))
+
+(local
+ (defthm nthcdr-of-nil
+  (equal (nthcdr n nil)
+         nil)
+  :hints (("Goal" :in-theory (enable nthcdr)))))
 
 ;name clash with other one
 (defthm append-of-take-and-nthcdr-2
@@ -261,4 +275,27 @@
                 )
            (equal (UPDATE-NTH n val (TAKE (+ 1 n) lst))
                   (append (TAKE n lst) (list val))))
+  :hints (("Goal" :in-theory (enable take))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Characterizes the unusual situation when take makes the list longer
+(defthm <-of-acl2-count-of-take
+  (implies (true-listp l) ; not easy to drop
+           (equal (< (acl2-count l) (acl2-count (take n l)))
+                  (and (< (len l) n)
+                       (natp n))))
+  :hints (("Goal" :in-theory (enable take))
+          ("subgoal *1/1" :cases ((< (+ 1 (len (cdr l))) n)))))
+
+(defthm <=-of-acl2-count-of-take-linear
+  (implies (<= n (len l))
+           (<= (acl2-count (take n l)) (acl2-count l)))
+  :rule-classes ((:linear :trigger-terms ((acl2-count (take n l)))))
+  :hints (("Goal" :in-theory (enable take))))
+
+(defthm <-of-acl2-count-of-take-linear
+  (implies (< (nfix n) (len l))
+           (< (acl2-count (take n l)) (acl2-count l)))
+  :rule-classes ((:linear :trigger-terms ((acl2-count (take n l)))))
   :hints (("Goal" :in-theory (enable take))))
