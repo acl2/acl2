@@ -2264,11 +2264,9 @@
                     state))))
                (t state))))
        (t ; no checkpoints; aborted
-        (fms #-acl2-par
-             "*** Note: No checkpoints to print. ***~|"
-             #+acl2-par
-             "*** Note: No checkpoints from gag-mode to print. ***~|"
-             nil chan state nil)))))
+        (fms "*** Note: No checkpoints~#0~[ from gag-mode~/~] to print. ***~|"
+             (list (cons #\0 (if (@ waterfall-parallelism) 0 1)))
+             chan state nil)))))
    (t ; no checkpoints; proof never started
     state)))
 
