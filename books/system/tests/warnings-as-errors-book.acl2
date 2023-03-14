@@ -1,3 +1,7 @@
+; Avoid diff in checkpoint printing when waterfall-parallelism is on:
+#+acl2-par
+(set-waterfall-parallelism nil)
+
 (include-book "tools/run-script" :dir :system)
 (run-script "warnings-as-errors")
 
