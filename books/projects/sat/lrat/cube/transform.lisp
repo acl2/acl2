@@ -144,8 +144,9 @@
                   :stobjs state
                   :guard-hints
                   (("Goal" :in-theory (disable sp-valid-proofp$-top-rec)))))
-  (let ((formula (ec-call (cnf-read-file cnf-file state)))
-        (ctx 'transform))
+  (let* ((formula (ec-call (cnf-read-file cnf-file state)))
+         (state (increment-file-clock state))
+         (ctx 'transform))
     (cond
      ((not (stringp clrat-file))
       (er-soft-logic

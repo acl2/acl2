@@ -20,6 +20,8 @@
 ;; support is unfortunately open-ended.  We currently support let, let*, b*
 ;; (partially), cond, case, and case-match.
 
+;; TODO: Add support for flet and macrolet.
+
 ;; TODO: Add support for expanding away any macros for which we do not have
 ;; special handling (e.g., calls of b* with b* binders that we do not yet
 ;; handle).  Or perhaps many (hygienic?) macros can just be treated like
