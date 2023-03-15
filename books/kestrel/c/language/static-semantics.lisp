@@ -1466,6 +1466,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-cond ((test-expr exprp) (test-etype expr-typep)
+                    (then-expr exprp) (then-etype expr-typep)
+                    (else-expr exprp) (else-etype expr-typep))
+  :returns (etype expr-type-resultp)
+  :short "Check a ternary conditional expression [C:6.5.15]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The test of a conditional expression must be scalar.
+     For now we require the two branches to have arithmetic types.
+     According to [C:6.5.15/3],
+     in this case the type of the conditional expression
+     is the one resulting from the usual arithmetic conversions [C:6.5.15/5].
+     This means that, at run time, in our dynamic semantics of C,
+     we need to convert the branch that is executed to that type;
+     but at run time we do not have information about
+     the type of the other branch (the one that is not executed).
+     Thus, in order to handle the execution properly,
+     the static semantics should add information to the abstract syntax
+     about the resulting type of the conditional expression,
+     so that the dynamic semantics can perform the conversion
+     while evaluating just one branch.
+     (Presumably, C compilers would generate code that performs the conversion,
+     if needed, for both branches of the conditional expression.)
+     To avoid this complication,
+     for now we make our static semantics more restrictive:
+     we require the two branches to have the same promoted type.
+     This means that that promoted type is also
+     the type resulting from the usual arithmetic conversions,
+     as can be easily seen in @(tsee uaconvert-types).
+     We may relax the treatment eventually,
+     but note that we would have to restructure the static semantics
+     to return possibly modified abstract syntax.
+     This is not surprising, as it is a used approach for compiler-like tools,
+     namely annotating abstract syntax trees with additional information.
+     We apply both lvalue conversion and array-to-pointer conversion.
+     A conditional expression is never an lvalue.")
+   (xdoc::p
+    "We perform lvalue conversion and array-to-pointer conversion
+     on all three operands.
+     A conditional expression is never an lvalue."))
+  (b* ((test-expr (expr-fix test-expr))
+       (then-expr (expr-fix then-expr))
+       (else-expr (expr-fix else-expr))
+       (test-type (expr-type->type test-etype))
+       (then-type (expr-type->type then-etype))
+       (else-type (expr-type->type else-etype))
+       (test-type (apconvert-type test-type))
+       (then-type (apconvert-type then-type))
+       (else-type (apconvert-type else-type))
+       ((unless (type-scalarp test-type))
+        (reserrf (list :cond-mistype-test test-expr then-expr else-expr
+                       :required :scalar
+                       :supplied test-type)))
+       ((unless (type-arithmeticp then-type))
+        (reserrf (list :cond-mistype-then test-expr then-expr else-expr
+                       :required :arithmetic
+                       :supplied then-type)))
+       ((unless (type-arithmeticp else-type))
+        (reserrf (list :cond-mistype-else test-expr then-expr else-expr
+                       :required :arithmetic
+                       :supplied else-type)))
+       (then-type (promote-type then-type))
+       (else-type (promote-type else-type))
+       ((unless (equal then-type else-type))
+        (reserrf (list :diff-promoted-types then-type else-type)))
+       (type then-type))
+    (make-expr-type :type type :lvalue nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-arrsub ((arr-expr exprp) (arr-etype expr-typep)
                       (sub-expr exprp) (sub-etype expr-typep))
   :returns (etype expr-type-resultp)
@@ -1587,48 +1659,7 @@
    (xdoc::p
     "An identifier must be in the variable table.
      Its type is looked up there.
-     An identifier is always an lvalue.")
-   (xdoc::p
-    "A cast is allowed between scalar types.
-     Since we check that the type name denotes a scalar type,
-     we do not need to check its well-formedness against the tag environment.
-     The result has the type indicated in the cast.
-     See [C:6.5.4]; note that the additional requirements on the type
-     do not apply to our currently simplified model of C types.
-     We apply lvalue conversion to the operand.
-     We also apply array-to-pointer conversion,
-     which could turn an array into a pointer (and thus scalar) type.
-     A cast expression is never an lvalue.")
-   (xdoc::p
-    "The test of a conditional expression must be scalar.
-     For now we require the two branches to have arithmetic types.
-     According to [C:6.5.15/3],
-     in this case the type of the conditional expression
-     is the one resulting from the usual arithmetic conversions [C:6.5.15/5].
-     This means that, at run time, in our dynamic semantics of C,
-     we need to convert the branch that is executed to that type;
-     but at run time we do not have information about
-     the type of the other branch (the one that is not executed).
-     Thus, in order to handle the execution properly,
-     the static semantics should add information to the abstract syntax
-     about the resulting type of the conditional expression,
-     so that the dynamic semantics can perform the conversion
-     while evaluating just one branch.
-     (Presumably, C compilers would generate code that performs the conversion,
-     if needed, for both branches of the conditional expression.)
-     To avoid this complication,
-     for now we make our static semantics more restrictive:
-     we require the two branches to have the same promoted type.
-     This means that that promoted type is also
-     the type resulting from the usual arithmetic conversions,
-     as can be easily seen in @(tsee uaconvert-types).
-     We may relax the treatment eventually,
-     but note that we would have to restructure the static semantics
-     to return possibly modified abstract syntax.
-     This is not surprising, as it is a used approach for compiler-like tools,
-     namely annotating abstract syntax trees with additional information.
-     We apply both lvalue conversion and array-to-pointer conversion.
-     A conditional expression is never an lvalue."))
+     An identifier is always an lvalue."))
   (b* ((e (expr-fix e)))
     (expr-case
      e
@@ -1658,32 +1689,11 @@
                   ((okf arg2-etype) (check-expr-pure e.arg2 vartab tagenv)))
                (check-binary-pure e.op e.arg1 arg1-etype e.arg2 arg2-etype))
      :cond (b* (((okf test-etype) (check-expr-pure e.test vartab tagenv))
-                (test-type (expr-type->type test-etype))
-                (test-type (apconvert-type test-type))
-                ((unless (type-scalarp test-type))
-                 (reserrf (list :cond-mistype-test e.test e.then e.else
-                                :required :scalar
-                                :supplied test-type)))
                 ((okf then-etype) (check-expr-pure e.then vartab tagenv))
-                (then-type (expr-type->type then-etype))
-                (then-type (apconvert-type then-type))
-                ((unless (type-arithmeticp then-type))
-                 (reserrf (list :cond-mistype-then e.test e.then e.else
-                                :required :arithmetic
-                                :supplied then-type)))
-                ((okf else-etype) (check-expr-pure e.else vartab tagenv))
-                (else-type (expr-type->type else-etype))
-                (else-type (apconvert-type else-type))
-                ((unless (type-arithmeticp else-type))
-                 (reserrf (list :cond-mistype-else e.test e.then e.else
-                                :required :arithmetic
-                                :supplied else-type)))
-                (then-type (promote-type then-type))
-                (else-type (promote-type else-type))
-                ((unless (equal then-type else-type))
-                 (reserrf (list :diff-promoted-types then-type else-type)))
-                (type then-type))
-             (make-expr-type :type type :lvalue nil))))
+                ((okf else-etype) (check-expr-pure e.else vartab tagenv)))
+             (check-cond e.test test-etype
+                         e.then then-etype
+                         e.else else-etype))))
   :measure (expr-count e)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :verify-guards :after-returns
