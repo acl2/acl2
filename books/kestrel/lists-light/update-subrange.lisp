@@ -34,17 +34,21 @@
 ;dup?
 (defund update-subrange (start end vals lst)
   (declare (xargs :measure (nfix (+ 1 (- end start)))
-                  :guard (and (rationalp start)(rationalp end) (true-listp vals) (true-listp lst))
+                  :guard (and (natp start)
+                              (integerp end)
+                              (true-listp vals)
+                              (true-listp lst))
                   :verify-guards nil ;done below
                   ))
   (if (or (< end start)
           (not (natp start))
           (not (natp end)))
       lst
-      (update-nth start (nth 0 vals)
-                  (update-subrange (+ 1 start)
-                                   end (cdr vals)
-                                   lst))))
+    (update-nth start
+                (nth 0 vals)
+                (update-subrange (+ 1 start)
+                                 end (cdr vals)
+                                 lst))))
 
 (defthm update-nth-of-update-subrange-diff
   (implies (and (natp n)
