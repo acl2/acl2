@@ -41,6 +41,10 @@
        (keywordp (third x)) ; breakage-type
        ))
 
+;; The result of a model on a test, including the model name, the total number
+;; of recommendations it produced, the number of the first rec that worked
+;; (1-based), and the time spent trying recs in order before the first working
+;; rec was found.
 (defund model-resultp (x)
   (declare (xargs :guard t))
   (and (true-listp x)
@@ -102,7 +106,10 @@
                  (caddr x)))
    :hints (("Goal" :in-theory (enable model-resultp)))))
 
-;; can be treated like an alibst
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A list of model results.
+;; Can be treated like an alist.
 (defun model-result-listp (x)
   (declare (xargs :guard t))
   (if (atom x)
@@ -129,7 +136,10 @@
                  (consp x)))
    :hints (("Goal" :in-theory (enable model-result-listp)))))
 
-;; Maps test-infos to model-result-lists.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Maps test-infos to model-result-lists.  Each test may thus have many
+;; model-results, once for each model.
 (defun result-alistp (alist)
   (declare (xargs :guard t))
   (if (atom alist)
