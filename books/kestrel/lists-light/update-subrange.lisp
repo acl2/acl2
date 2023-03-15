@@ -1,7 +1,7 @@
 ; A utility to update part of a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,17 +21,8 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
-;move
-;BOZO might cause case splits?
-(defthm nthcdr-update-nth-better
-  (equal (nthcdr n (update-nth n2 v l))
-         (if (< (nfix n2) (ifix n))
-             (nthcdr n l)
-           (update-nth (- (nfix n2) (nfix n))
-                       v (nthcdr n l))))
-  :hints (("Goal" :in-theory (enable nthcdr update-nth))))
-
-;dup?
+;; Replace the elements of LST numbered START through END (inclusive, 0-based) with the VALS.
+;; TODO: Require the VALS to have the correct length?
 (defund update-subrange (start end vals lst)
   (declare (xargs :measure (nfix (+ 1 (- end start)))
                   :guard (and (natp start)
