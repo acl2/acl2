@@ -15,3 +15,5 @@
                          *t*
                          *nil*)
                        *acl2-exports*))
+
+(include-book "acl2s/portcullis" :dir :system)
