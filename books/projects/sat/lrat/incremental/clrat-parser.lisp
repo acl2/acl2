@@ -1908,6 +1908,7 @@
                   (("Goal" :in-theory (disable acl2::read-file-into-string2)))
                   :stobjs (state)))
   (b* ((str (read-file-into-string file-name))
+       (state (increment-file-clock state))
        ((unless (stringp str))
         (mv (er hard? 'clrat-read-file
                     "clrat-read-file: (read-file-into-string ~x0 .~%" file-name)

@@ -259,10 +259,10 @@
 
 ; See the Essay on Fast-cert; but here is a summary of the current situation.
 ; In this case, the world was extended only to support the possibility that we
-; are constructing the certification world for the later use of fast-cert, by
-; extending the top-level-cltl-command-stack when encountering redundant events
-; within a progn or the second pass of an encapsulate.  But there were no
-; actual events added to the world, so there's no such information that is
+; are constructing the certification world for the later use of fast-cert mode,
+; by extending the top-level-cltl-command-stack when encountering redundant
+; events within a progn or the second pass of an encapsulate.  But there were
+; no actual events added to the world, so there's no such information that is
 ; appropriate to record.
 
            (pprogn (set-w! old-wrld state)
