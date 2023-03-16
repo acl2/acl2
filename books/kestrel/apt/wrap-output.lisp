@@ -139,6 +139,7 @@ functions that axe has lifted).</li>
   ;; <p>This transformation is in some sense the dual of @(see wrap-input).</p>
   )
 
+;; todo: compare to untranslated-lambda-exprp
 (defun untranslated-lambdap (x)
   (declare (xargs :guard t))
   (and (true-listp x)
@@ -155,14 +156,14 @@ functions that axe has lifted).</li>
   ))
 
 (defun wrap-pattern-around-untranslated-term (term pattern)
-  (declare (xargs :guard (and (untranslated-TERMP TERM)
+  (declare (xargs :guard (and (untranslated-termp term) ; because of sublis-var-untranslated-term
                               (untranslated-unary-lambdap pattern))
-                  :guard-hints (("Goal" :in-theory (enable untranslated-LAMBDAP))))) ;todo
+                  :guard-hints (("Goal" :in-theory (enable untranslated-lambdap))))) ;todo
   (let* ((lambda-formals (second pattern))
          (lambda-body (third pattern))
          (var (first lambda-formals)) ;the only formal
          )
-    (sublis-var-UNTRANSLATED-TERM (acons var term nil) lambda-body)))
+    (sublis-var-untranslated-term (acons var term nil) lambda-body)))
 
 
 ;;TODO: Or maybe the extra vars can be names of params of the function (that are passed around unchanged??)?
@@ -244,9 +245,13 @@ functions that axe has lifted).</li>
                          ,bindings
                          ,@declares
                          ,(wrap-output-in-term body wrapper fn-renaming new-formals)))
-                   (if (eq 'b* fn)      ;no declare allowed for b*
-                       `(b* ,(farg1 term) ;the bindings
-                          ,(wrap-output-in-term (farg2 term) wrapper fn-renaming new-formals))
+                   (if (eq 'b* fn) ; (b* <bindings> ...result-terms...)
+                       (let ((bindings (farg1 term))
+                             ;; (result-terms (rest (fargs term)))
+                             )
+                         `(b* ,bindings ; TODO: Support bindings that return?
+                            ;; TODO: Support more than 1 result term:
+                            ,(wrap-output-in-term (farg2 term) wrapper fn-renaming new-formals)))
                      (if (eq 'cond fn)
                          `(cond ,@(make-doublets
                                    (strip-cars (rest term))

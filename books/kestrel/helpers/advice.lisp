@@ -106,7 +106,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
 
-(local (in-theory (disable member-equal len true-listp nth reverse)))
+(local (in-theory (disable member-equal len true-listp nth reverse mv-nth)))
 
 ;; ;; Returns all disabled runes associate with NAME.
 ;; ;; Like disabledp but hygienic, also doesn't end in "p" since not a predicate.
