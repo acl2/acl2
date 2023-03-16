@@ -1282,7 +1282,7 @@
 		  (bits_alt (lognot (lamz_alt a b e)) (- e 2) 0))))
 
 ; Matt K. addition: The following lemma, natp-lamz, is not normally necessary.
-; But in fast-cert mode we need it for the proof of lam1_alt-is-lam1.
+; But with fast-cert mode active, we need it for the proof of lam1_alt-is-lam1.
 ; See :DOC fast-cert-anomalies if you want an explanation.
 (local
  (defthm natp-lamz
