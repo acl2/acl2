@@ -95,6 +95,7 @@
                  '(("Failure")
                    ("Step-limit")
                    ("Time-limit")
+                   ("Interrupt")
                    ("Theory")))
                 ((string-listp prover-error-output-off)
                  (pairlis$ prover-error-output-off nil))
