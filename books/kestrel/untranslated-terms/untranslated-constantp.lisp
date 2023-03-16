@@ -21,7 +21,7 @@
       (and (symbolp x)
            (or (keywordp x) ;; unquoted keywords are constants
                ;; t, nil, and symbols that begin and end with * are constants:
-               ;; TODO: Consider disallowing *
+               ;; TODO: Consider disallowing the symbol '*'.
                (legal-constantp1 x)))
       (myquotep x)))
 
