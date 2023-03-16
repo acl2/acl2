@@ -46,7 +46,10 @@
          (true-listp-of-merge-sort-theorem-name (pack$ 'true-listp-of- merge-sort-name)))
     `(progn
        ;; Always needed:
-       (include-book "kestrel/utilities/split-list-fast" :dir :system)
+       (include-book "kestrel/utilities/split-list-fast-defs" :dir :system)
+       ;; Reasoning support for basic theorems:
+;       (local (include-book "kestrel/utilities/split-list-fast" :dir :system))
+       ;; Reasoning support for extra-theorems:
        ,@(and extra-theorems `((include-book "kestrel/lists-light/perm-def" :dir :system))) ; can cause name clashes
        (encapsulate
          ()
