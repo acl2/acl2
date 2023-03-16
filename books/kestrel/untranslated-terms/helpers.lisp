@@ -100,7 +100,7 @@
        (let ((binder (first binding)))
          (if (atom binder)
              (or (eq binder '-) ; (- <term> ... <term>) for any number of terms
-                 (and (symbolp binder) ; (<var> <term)
+                 (and (symbolp binder) ; (<var> <term>)
                       (= 1 (len (fargs binding)))))
            (case (car binder)
              ((when if unless) (= 1 (len (fargs binder)))) ; ((when <term>) <term> ... <term>)
