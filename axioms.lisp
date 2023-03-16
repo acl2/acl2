@@ -24985,14 +24985,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-acl2-loop-only
   (when (and *acl2-time-limit*
 
-; The following test isn't currently necessary, strictly speaking.  But it's a
-; cheap test so we include it for robustness, in case for example someone calls
-; rewrite not in the scope of catch-time-limit5.
+; The following test isn't currently necessary for the prover.  But it's a
+; cheap test so we include it, for example in case someone calls rewrite not in
+; the scope of catch-time-limit5.
 
              (member-eq 'time-limit5-tag *time-limit-tags*)
              (< *acl2-time-limit* (get-internal-time)))
     (setq *next-acl2-oracle-value*
           (if (eql *acl2-time-limit* 0)
+
+; As noted in comments above the definition of *acl2-time-limit*, that variable
+; is set to 0 to indicate that a proof has been interrupted (see our-abort).
+; We check for *interrupt-string* in waterfall-step to record whether the error
+; is due to an interrupt or to reaching a time-limit.
+
               *interrupt-string*
             msg))
     (throw 'time-limit5-tag
