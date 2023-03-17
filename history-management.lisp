@@ -3623,7 +3623,16 @@
   (cond
    ((null wrld) ; see initial call of set-w in enter-boot-strap-mode
     state)
-   ((active-useless-runes state) ; then we already updated
+   ((active-useless-runes state)
+
+; Then we already updated the global ens.  To see why this must be the case,
+; first note that (by definition of active-useless-runes) the :tag field of
+; useless-runes must be 'THEORY.  The transition to 'THEORY takes place under
+; with-useless-runes, where after that transition, the global-enabled-structure
+; is bound using function useless-runes-ens before evaluating the given form.
+; But useless-runes-ens updates the global ens (by calling
+; load-theory-into-enabled-structure-1).
+
     state)
    (t
     (let* ((augmented-theory (global-val 'current-theory-augmented wrld))
