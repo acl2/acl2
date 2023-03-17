@@ -47,6 +47,16 @@
                   (list (and (symbol-listp (fargs binder))
                              (= 1 (len expressions)) ; must be exactly 1 expression
                              ))
+                  ;; ((er <var>) <term>) or ((er <var> :iferr <term>) <term>):
+                  ;; TODO: Are patterns supported?
+                  (er (let ((binder-args (fargs binder)))
+                        (and (or (and (= 1 (len binder-args))
+                                      (symbolp (first binder-args)))
+                                 (and (= 3 (len binder-args))
+                                      (symbolp (first binder-args))
+                                      (eq :iferr (second binder-args))))
+                             (= 1 (len expressions)) ; must be exactly 1 expression
+                             )))
                   ;; todo: add more kinds of supported binder
                   (otherwise nil)))))))
 
@@ -81,6 +91,11 @@
         ;; ((list <var>*) <term>):
         (list expressions ; must only be one
               )
+        ;; ((er <var>) <term>) or ((er <var> :iferr <term>) <term>):
+        (er (if (= 1 (len (fargs binder)))
+                expressions ; must only be one
+              ;; special case for :iferr:
+              (cons (third (fargs binder)) expressions)))
         ;; Should never happen:
         (t (er hard 'extract-terms-from-b*-binding "Unsupported b* binder: ~x0." binding))))))
 
@@ -126,6 +141,14 @@
         ;; ((list <var>*) <term>):
         (list (mv `((list ,@(fargs binder)) ,(first new-terms))
                   (rest new-terms)))
+        ;; ((er <var>) <term>) or ((er <var> :iferr <term>) <term>):
+        (er (if (= 1 (len (fargs binder)))
+                ;; consumes 1 term:
+                (mv `((er ,@(fargs binder)) ,(first new-terms))
+                    (rest new-terms))
+              ;; consumes 2 terms:
+              (mv `((er ,(first (fargs binder)) :iferr ,(first new-terms)) ,(first (rest new-terms)))
+                  (rest (rest new-terms)))))
         ;; Should never happen:
         (otherwise (progn$ (er hard 'recreate-b*-binding "Unsupported b* binder: ~x0." binding)
                            (mv nil nil)))))))
