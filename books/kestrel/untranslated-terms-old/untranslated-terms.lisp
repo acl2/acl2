@@ -120,27 +120,6 @@
   :hints (("Goal" :expand ((LEN (CDR X)))
            :in-theory (enable last len))))
 
-(defthm acl2-count-of-last-bound
-  (<= (acl2-count (last x)) (acl2-count x))
-  :rule-classes ((:linear)))
-
-(defthm acl2-count-of-last-bound-rewrite
-  (not (< (acl2-count x) (acl2-count (last x)))))
-
-(defthm acl2-count-of-car-bound
-  (IMPLIES (AND (CONSP TERM))
-           (< (ACL2-COUNT (CAR term))
-              (ACL2-COUNT TERM)))
-  :rule-classes ((:linear))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-
-(defthm acl2-count-of-cdr-bound
-  (IMPLIES (AND (CONSP TERM))
-           (< (ACL2-COUNT (CdR term))
-              (ACL2-COUNT TERM)))
-  :rule-classes ((:linear))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-
 (defthm acl2-count-of-car-lemma
   (implies (<= (acl2-count term1) (acl2-count term2))
            (equal (< (acl2-count (car term1))
