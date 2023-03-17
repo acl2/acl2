@@ -45,7 +45,7 @@
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 ;(include-book "../sequences/defforall") ;drop (after replacing the defforall-simple below)?
 ;(include-book "../sequences/generics-utilities") ;for make-pairs (TODO: move that and rename to mention doublets)
-(include-book "std/alists/remove-assocs" :dir :system)
+(include-book "std/alists/remove-assocs" :dir :system) ; todo: use clear-keys
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
@@ -54,15 +54,7 @@
 
 ;;=== stuff to move to libraries:
 
-(in-theory (disable butlast))
-(in-theory (disable last))
-(in-theory (disable member-equal))
-
-(defthm acl2-count-of-car-of-last-of-fargs
-  (implies (consp x)
-           (< (ACL2-COUNT (CAR (LAST (fargs x))))
-              (ACL2-COUNT x)))
-  :rule-classes (:rewrite :linear))
+(in-theory (disable butlast last member-equal))
 
 ;; Test for a list of non-dotted pairs
 ;TODO: Aren't these doublets?
@@ -210,12 +202,6 @@
 ;(verify-guards all-untranslated-TERM-supported-bstar-binderp)
 
 
-
-;;these are terms that may contain let/let*/b*/cond/case-match/case/mv-let, etc.
-;ttodo: add support for case, mv-let, and more constructs.
-
-
-
 ;; Sanity check: Nothing can be an untranslated-constant and an
 ;; untranslated-variable.
 (defthm not-and-of-untranslated-constantp-and-untranslated-variablep
@@ -240,6 +226,7 @@
         ;todo: check the declares?
         (untranslated-termp (ulambda-body expr))))
 
+ ;; ttodo: add support for mv-let, and more constructs.
  (defun untranslated-termp (x)
    (declare (xargs :guard t
                    :measure (acl2-count x)))

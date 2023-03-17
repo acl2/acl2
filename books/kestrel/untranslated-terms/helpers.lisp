@@ -1,6 +1,6 @@
 ; Helper functions for manipulating untranslated terms
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -92,6 +92,10 @@
         ;; case is (<pat> <dcl> <body>):
         (cons (list (first case) (second case) (first new-terms-from-cases))
               (recreate-case-match-cases (rest cases) (rest new-terms-from-cases)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; See tests of b* in /data/ewsmithb/acl2/books/kestrel/tests/bstar-tests.lisp.
 
 (defun supported-b*-bindingp (binding)
   (declare (xargs :guard t))
