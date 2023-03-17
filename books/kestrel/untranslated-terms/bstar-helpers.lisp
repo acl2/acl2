@@ -42,6 +42,11 @@
                            (<= 2 (len (fargs binder))) ; must be at least 2 vars
                            (= 1 (len expressions)) ; must be exactly 1 expression
                            ))
+                  ;; ((list <var>*) <term>):
+                  ;; TODO: Consider supporting patterns, not just vars, supplied to LIST.
+                  (list (and (symbol-listp (fargs binder))
+                             (= 1 (len expressions)) ; must be exactly 1 expression
+                             ))
                   ;; todo: add more kinds of supported binder
                   (otherwise nil)))))))
 
@@ -73,6 +78,9 @@
         ;; ((mv <var> ... <var>) <term>)
         (mv expressions ; must only be one
             )
+        ;; ((list <var>*) <term>):
+        (list expressions ; must only be one
+              )
         ;; Should never happen:
         (t (er hard 'extract-terms-from-b*-binding "Unsupported b* binder: ~x0." binding))))))
 
@@ -115,6 +123,9 @@
         ;; ((mv <var> ... <var>) <term>):
         (mv (mv `((mv ,@(fargs binder)) ,(first new-terms))
                 (rest new-terms)))
+        ;; ((list <var>*) <term>):
+        (list (mv `((list ,@(fargs binder)) ,(first new-terms))
+                  (rest new-terms)))
         ;; Should never happen:
         (otherwise (progn$ (er hard 'recreate-b*-binding "Unsupported b* binder: ~x0." binding)
                            (mv nil nil)))))))
