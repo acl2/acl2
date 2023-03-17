@@ -719,6 +719,7 @@
     integerp-nth-2-var-fn-count-1
     ancestors-check-builtin-property
     ancestors-check-constraint
+    natp-conjoin-clause-sets-bound
     d-pos-listp-forward-to-true-listp
     true-listp-chars-for-tilde-@-clause-id-phrase/periods))
 
