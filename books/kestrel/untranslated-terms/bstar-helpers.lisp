@@ -14,22 +14,31 @@
 
 (include-book "kestrel/utilities/forms" :dir :system) ; for farg1, etc.
 
+;; Recognize a supported b* binding, of the form (<binder> ...<expressions>...)
+;; where the number of allowed expressions depends on the binder.
 (defun supported-b*-bindingp (binding)
   (declare (xargs :guard t))
   (and (true-listp binding)
        (consp binding)
-       (let ((binder (first binding)))
+       (let ((binder (first binding))
+             (expressions (rest binding)))
          (if (atom binder)
+             ;; A few binders are atoms:
              (or (eq binder '-) ; (- <term> ... <term>) for any number of terms
+                 ;; todo: uncomment once supported everywhere:
+                 ;; (eq binder '&) ; (& <term> ... <term>) for any number of terms
                  (and (symbolp binder) ; (<var> <term>)
-                      (= 1 (len (fargs binding)))))
+                      (= 1 (len expressions))))
+           ;; Most binders are conses:
            (case (car binder)
+             ;; todo must be at least 1 expression:
              ((when if unless) (= 1 (len (fargs binder)))) ; ((when <term>) <term> ... <term>)
              (mv (and (symbol-listp (fargs binder)) ; ((mv <var> ... <var>) <term>)
-                      (= 1 (len (fargs binding)))))
+                      (= 1 (len expressions))))
              ;; todo: add more kinds of supported binder
              (otherwise nil))))))
 
+;; Recognize a list of supported b* bindings
 (defun supported-b*-bindingsp (bindings)
   (declare (xargs :guard t))
   (if (atom bindings)
@@ -37,6 +46,7 @@
     (and (supported-b*-bindingp (first bindings))
          (supported-b*-bindingsp (rest bindings)))))
 
+;; Extracts all the terms in the b* binding, in order
 (defund extract-terms-from-b*-binding (binding)
   (declare (xargs :guard (supported-b*-bindingp binding)))
   (let ((binder (first binding)))
