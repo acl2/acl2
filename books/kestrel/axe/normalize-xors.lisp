@@ -47,6 +47,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/utilities/split-list-fast" :dir :system))
 
 ;(local (in-theory (disable car-becomes-nth-of-0)))
 

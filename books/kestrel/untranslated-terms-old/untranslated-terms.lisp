@@ -22,6 +22,8 @@
 
 ;; TODO: Add support for flet and macrolet.
 
+;; See also books/kestrel/untranslated-terms/, which reflects a newer approach.
+
 ;; TODO: Add support for expanding away any macros for which we do not have
 ;; special handling (e.g., calls of b* with b* binders that we do not yet
 ;; handle).  Or perhaps many (hygienic?) macros can just be treated like
@@ -43,7 +45,7 @@
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 ;(include-book "../sequences/defforall") ;drop (after replacing the defforall-simple below)?
 ;(include-book "../sequences/generics-utilities") ;for make-pairs (TODO: move that and rename to mention doublets)
-(include-book "std/alists/remove-assocs" :dir :system)
+(include-book "std/alists/remove-assocs" :dir :system) ; todo: use clear-keys
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
@@ -52,15 +54,7 @@
 
 ;;=== stuff to move to libraries:
 
-(in-theory (disable butlast))
-(in-theory (disable last))
-(in-theory (disable member-equal))
-
-(defthm acl2-count-of-car-of-last-of-fargs
-  (implies (consp x)
-           (< (ACL2-COUNT (CAR (LAST (fargs x))))
-              (ACL2-COUNT x)))
-  :rule-classes (:rewrite :linear))
+(in-theory (disable butlast last member-equal))
 
 ;; Test for a list of non-dotted pairs
 ;TODO: Aren't these doublets?
@@ -125,27 +119,6 @@
                   (car x)))
   :hints (("Goal" :expand ((LEN (CDR X)))
            :in-theory (enable last len))))
-
-(defthm acl2-count-of-last-bound
-  (<= (acl2-count (last x)) (acl2-count x))
-  :rule-classes ((:linear)))
-
-(defthm acl2-count-of-last-bound-rewrite
-  (not (< (acl2-count x) (acl2-count (last x)))))
-
-(defthm acl2-count-of-car-bound
-  (IMPLIES (AND (CONSP TERM))
-           (< (ACL2-COUNT (CAR term))
-              (ACL2-COUNT TERM)))
-  :rule-classes ((:linear))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
-
-(defthm acl2-count-of-cdr-bound
-  (IMPLIES (AND (CONSP TERM))
-           (< (ACL2-COUNT (CdR term))
-              (ACL2-COUNT TERM)))
-  :rule-classes ((:linear))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
 (defthm acl2-count-of-car-lemma
   (implies (<= (acl2-count term1) (acl2-count term2))
@@ -229,12 +202,6 @@
 ;(verify-guards all-untranslated-TERM-supported-bstar-binderp)
 
 
-
-;;these are terms that may contain let/let*/b*/cond/case-match/case/mv-let, etc.
-;ttodo: add support for case, mv-let, and more constructs.
-
-
-
 ;; Sanity check: Nothing can be an untranslated-constant and an
 ;; untranslated-variable.
 (defthm not-and-of-untranslated-constantp-and-untranslated-variablep
@@ -259,36 +226,35 @@
         ;todo: check the declares?
         (untranslated-termp (ulambda-body expr))))
 
+ ;; ttodo: add support for mv-let, and more constructs.
  (defun untranslated-termp (x)
    (declare (xargs :guard t
                    :measure (acl2-count x)))
    (or (untranslated-constantp x)
        (untranslated-variablep x)
        (and (consp x)
+            (true-listp (fargs x)) ; also checked below in some cases, but convenient to have here
             (let ((fn (ffn-symb x))) ;todo: what are the legal FNs?
               (case fn
                 ((let let*) ;; (let <bindings> ...declares... <body>)
-                 (and (true-listp (fargs x))
-                      (<= 2 (len (fargs x))) ; must have bindings and body
+                 (and (<= 2 (len (fargs x))) ; must have bindings and body
                       (var-untranslated-term-pairsp (let-bindings x))
                       ;;declares can intervene - todo: check their form
                       (untranslated-termp (let-body x))))
-                (b* ;;(b* <bindings> <form>+)
-                    (and (true-listp (fargs x))
-                         ;;(untranslated-term-pairsp (farg1 x)) ;TTODO: check the binder-forms more carefully
-                         (pair-listp (farg1 x)) ;FIXME: These are not necessarily pairs (consider binders like when)
-                         (or (not (farg1 x))    ;for termination
-                             (all-untranslated-term-supported-bstar-binderp (strip-cars (farg1 x))))
-                         (untranslated-term-listp (strip-cadrs (farg1 x)))
-                         (untranslated-term-listp (rest (fargs x)))))
+                (b* ;;(b* <bindings> <result-form>+)
+                    (let ((bindings (farg1 x)))
+                      (and ;;(untranslated-term-pairsp bindings) ;TTODO: check the binder-forms more carefully
+                           (pair-listp bindings) ;FIXME: These are not necessarily pairs (consider binders like when)
+                           (or (not bindings)    ;for termination
+                               (all-untranslated-term-supported-bstar-binderp (strip-cars bindings)))
+                           (untranslated-term-listp (strip-cadrs bindings))
+                           (untranslated-term-listp (rest (fargs x))))))
                 (cond ;; (cond ...pairs...)
-                 (and (true-listp (fargs x))
-                      (untranslated-term-pairsp (fargs x))))
+                 (and (untranslated-term-pairsp (fargs x))))
                 ((case case-match) ; (case-match tm ...pat-term-pairs...) or (case tm ...symbol-term-pairs...)
-                 (and (true-listp (fargs x))
-                      (untranslated-termp (farg1 x))
+                 (and (untranslated-termp (farg1 x))
                       (pat-untranslated-term-pairsp (cdr (fargs x)))))
-                (quote nil) ;; disallow quotes bot covered by the untranslated-constantp call above
+                (quote nil) ;; disallow quotes not covered by the untranslated-constantp call above
                 (otherwise
                  ;;regular function call or lambda application:
                  (and (untranslated-term-listp (fargs x)) ;;first check the args
@@ -299,18 +265,23 @@
 
  (defun untranslated-term-supported-bstar-binderp (binder)
    (declare (xargs :guard t :measure (acl2-count binder)))
-   (cond ((symbolp binder) t) ;includes binding a variable like x and binding - (means no binding)
+   (cond ((symbolp binder) t) ;includes binding a variable like x and binding - (means no binding) ; check for legal variable?
          ((call-of 'mv binder) ;; (mv a b c)
           (symbol-listp (fargs binder)))
          ((call-of 'list binder) ;; (list a b c)
           (symbol-listp (fargs binder)))
-         ((call-of 'er binder)
+         ;; This can cause the b* to return:
+         ((call-of 'er binder) ; (er a)
           (and (eql 1 (len (fargs binder)))
                (symbolp (first (fargs binder)))))
-         ((or (call-of 'when binder)
-              (call-of 'if binder)
-              (call-of 'unless binder))
-          (untranslated-term-listp (fargs binder)))
+         ;; These can cause the b* to return:
+         ((or (call-of 'when binder)   ; (when <test>)
+              (call-of 'if binder)     ; (if <test>)
+              (call-of 'unless binder) ; (unless <test>)
+              )
+          (and (eql 1 (len (fargs binder)))
+               (untranslated-termp (first (fargs binder)))))
+         ;; TODO: Add support for more b* binders:
          (t nil)))
 
  (defun all-untranslated-term-supported-bstar-binderp (binders)
@@ -529,11 +500,13 @@
            (untranslated-termp (car (last lst))))
   :hints (("Goal" :in-theory (enable last))))
 
-(defthm UNTRANSLATED-TERM-LISTP-of-remove
+(defthm UNTRANSLATED-TERM-LISTP-of-remove-equal
   (implies (UNTRANSLATED-TERM-LISTP x)
            (UNTRANSLATED-TERM-LISTP (REMOVE-EQUAL a x))))
 
 (local (in-theory (disable symbol-alistp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This one cannot be replaced with a call to def-untranslated-term-fold because it is used to define it!
 (mutual-recursion
@@ -768,6 +741,8 @@
                             UNTRANSLATED-TERMP
                             ALISTP)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (mutual-recursion
  ;;Return a list of all functions called in TERM
  (defun get-called-fns-in-untranslated-term (term)
@@ -876,6 +851,8 @@
 (verify-guards get-called-fns-in-untranslated-term
                :otf-flg t
                :hints (("Goal" :in-theory (enable true-listp-when-symbol-listp-rewrite-unlimited))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (defun beta-reduce-untranslated (lambda-expr)
 ;;   (declare (xargs :guard (untranslated-lambda-applicationp lambda-expr)
@@ -1059,6 +1036,7 @@
                                                 )
   (def-untranslated-term-fold-fn base-name operation-on-term extra-args extra-guards stobjs program-mode))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This version does not require pseudo-terms...
 ;; a variant of rename-fns-in-untranslated-term that also expands lambdas that any fns get mapped to
@@ -1182,6 +1160,8 @@
   :hints  (("Goal" :in-theory (enable UNTRANSLATED-LAMBDA-EXPRP)
             :expand (UNTRANSLATED-TERMP TERM))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;
 ;;;Replace 0-ary lambda applications of the form ((lambda () <body>)) with just
 ;;;<body> (and apply to body recursively).
@@ -1288,6 +1268,7 @@
                     (UNTRANSLATED-LAMBDA-EXPRP (CAR TERM)))))
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;TODO: Just write a rewriter for stuff like this?
 ;;TODO: Could also make a macro to automate the generation of the auxiliary functions in this:
@@ -1397,6 +1378,8 @@
            :expand ((UNTRANSLATED-TERMP TERM)
                     (UNTRANSLATED-LAMBDA-EXPRP (CAR TERM))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Attempt to prove that every pseudo-term is a proper untranslated-term.  It's
 ;; not quite true; we need to exclude the special macros LET, etc. from
 ;; appearing as functions in the pseudo-term.  For example: (pseudo-termp '(let
@@ -1464,6 +1447,8 @@
            (strong-pseudo-term-listp (firstn n lst)))
   :hints (("Goal" :in-theory (enable strong-pseudo-term-listp
                                      firstn))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Simplify things like (nth 3 (cons a (cons b x)))
 (defun simplify-nth-of-cons (n term)
@@ -2102,6 +2087,8 @@
 ;; (equal (replace-in-untranslated-term '(foo (bar 3)) (acons '(bar 3) '7 nil))
 ;;        '(foo 7))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun vars-bound-in-case-match-pattern (pat)
   (declare (xargs :guard t))
   (mv-let (tests bindings)
@@ -2267,6 +2254,8 @@
 
 (verify-guards get-vars-in-untranslated-term)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;
 ;;; Get all calls of FN in TERM
 ;;;
@@ -2395,6 +2384,8 @@
 (verify-guards get-calls-in-untranslated-term
                :otf-flg t
                :hints (("Goal" :in-theory (enable true-listp-when-symbol-listp-rewrite-unlimited))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;
 ;;; sublis-var-untranslated-term

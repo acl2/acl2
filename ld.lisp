@@ -259,10 +259,10 @@
 
 ; See the Essay on Fast-cert; but here is a summary of the current situation.
 ; In this case, the world was extended only to support the possibility that we
-; are constructing the certification world for the later use of fast-cert, by
-; extending the top-level-cltl-command-stack when encountering redundant events
-; within a progn or the second pass of an encapsulate.  But there were no
-; actual events added to the world, so there's no such information that is
+; are constructing the certification world for the later use of fast-cert mode,
+; by extending the top-level-cltl-command-stack when encountering redundant
+; events within a progn or the second pass of an encapsulate.  But there were
+; no actual events added to the world, so there's no such information that is
 ; appropriate to record.
 
            (pprogn (set-w! old-wrld state)
@@ -1022,36 +1022,35 @@
   (cond
    ((and (raw-mode-p state)
          (bad-lisp-objectp x))
-    (if (not (eq channel *standard-co*))
-        (error "Attempted to print LD results to other than *standard-co*!"))
     (format t "[Note:  Printing non-ACL2 result.]")
     (terpri)
-    (cond ((and (cdr stobjs-out)
-                (true-listp x)
-                (true-listp raw-x)
-                (let ((len (length stobjs-out)))
-                  (and (= (length x) len)
-                       (= (length raw-x) len))))
+    (let ((str (get-output-stream-from-channel channel)))
+      (cond ((and (cdr stobjs-out)
+                  (true-listp x)
+                  (true-listp raw-x)
+                  (let ((len (length stobjs-out)))
+                    (and (= (length x) len)
+                         (= (length raw-x) len))))
 
 ; We eviscerate each bad-lisp-objectp in x-raw that is not already eviscerated
 ; in the corresponding position of x.
 
-           (princ "(")
-           (loop with col+1 = (1+ col)
-                 for y in x
-                 as y-raw in raw-x
-                 as i from 1
-                 do
-                 (progn (when (not (= i 1))
-                          (fms "~t0" (list (cons #\0 col+1))
-                               channel state nil))
-                        (cond ((and (not (and (consp y)
-                                              (evisceratedp t y)))
-                                    (bad-lisp-objectp y-raw))
-                               (prin1 y-raw))
-                              (t (ppr y col channel state t)))))
-           (princ ")"))
-          (t (prin1 raw-x)))
+             (princ "(" str)
+             (loop with col+1 = (1+ col)
+                   for y in x
+                   as y-raw in raw-x
+                   as i from 1
+                   do
+                   (progn (when (not (= i 1))
+                            (fms "~t0" (list (cons #\0 col+1))
+                                 channel state nil))
+                          (cond ((and (not (and (consp y)
+                                                (evisceratedp t y)))
+                                      (bad-lisp-objectp y-raw))
+                                 (prin1 y-raw str))
+                                (t (ppr y col channel state t)))))
+             (princ ")" str))
+            (t (prin1 raw-x str))))
     state)
    (t
     (ppr x col channel state t))))

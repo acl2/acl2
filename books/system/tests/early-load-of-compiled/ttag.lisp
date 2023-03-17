@@ -13,8 +13,8 @@
 ; hcomp-build-from-state) -- i.e., the final symbol-function -- and that final
 ; eq check succeeds, so ttag-f is considered qualified.
 
-; Because such rollback is necessary, we make sure that fast-cert is inactive;
-; see ttag.acl2.
+; Because such rollback is necessary, we make sure that fast-cert mode is
+; disabled; see ttag.acl2.
 
 (in-package "ACL2")
 

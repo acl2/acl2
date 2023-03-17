@@ -1,6 +1,6 @@
 ; Replacing calls of functions in untranslated terms
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 ;; calls of new functions, perhaps with wrappers, etc.).
 
 (include-book "helpers")
+(include-book "bstar-helpers")
 (include-book "untranslated-constantp")
 (include-book "untranslated-variablep")
 (include-book "kestrel/utilities/make-var-names" :dir :system)
