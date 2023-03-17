@@ -1,7 +1,7 @@
 ; A tool to define a merge sort function, given a comparison function.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -49,8 +49,8 @@
        (include-book "kestrel/utilities/split-list-fast-defs" :dir :system)
        ;; Reasoning support for basic theorems:
 ;       (local (include-book "kestrel/utilities/split-list-fast" :dir :system))
-       ;; Reasoning support for extra-theorems:
-       ,@(and extra-theorems `((include-book "kestrel/lists-light/perm-def" :dir :system))) ; can cause name clashes
+       ;; Needed to express the extra theorems, but sometimes causes name clashes:
+       ,@(and extra-theorems `((include-book "kestrel/lists-light/perm-def" :dir :system)))
        (encapsulate
          ()
          (local (include-book "kestrel/lists-light/revappend" :dir :system))
@@ -238,7 +238,12 @@
                                            :in-theory nil)))))
 
          ,@(and extra-theorems
-                `((defthm ,(pack$ 'perm-of- merge-name)
+                `((local (include-book "kestrel/lists-light/perm" :dir :system))
+
+                  ;; proved elsewhere but needed to make PERM the equiv of the rules below:
+                  (defequiv perm :package :equiv) ; the :package argument prevents errors if defmergesort is done in a package other than ACL2
+
+                  (defthm ,(pack$ 'perm-of- merge-name)
                     (perm (,merge-name x y acc)
                           (append x y acc))
                     :hints (("Goal" :in-theory nil ;; all constraints should be cached
