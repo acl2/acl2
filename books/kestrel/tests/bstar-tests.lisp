@@ -137,3 +137,30 @@
  (defun test-?!-binder2 (x)
    (b* ((?! (cw "hello") (cw "world")))
      x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Typical case
+(defun test-list-binder (x)
+  (b* (((list a b c) x))
+    (+ a b c)))
+
+(defun test-list-binder-no-vars (x)
+  (b* (((list) x))
+    x))
+
+(defun test-list-binder-1-var (x)
+  (b* (((list a) x))
+    a))
+
+;; Illegal, no binding expression
+(must-fail
+ (defun test-list-binder0 (x)
+  (b* (((list a)))
+    a)))
+
+;; Illegal, more than 1 binding expression:
+(must-fail
+ (defun test-list-binder2 (x)
+  (b* (((list a) (cw "hi") x))
+    a)))
