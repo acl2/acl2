@@ -1,3 +1,13 @@
+; Some tests of b*
+;
+; Copyright (C) 2023 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "std/util/bstar" :dir :system)
@@ -27,14 +37,41 @@
   (b* ((y x))
     y))
 
-;; illegal: more than one form given to bind Y
+;; Illegal: more than one form given to bind Y.
 (must-fail
  (defun test-var-binder2 (x)
   (b* ((y 3 x))
     y)))
 
-;; illegal: no forms given to bind Y
+;; Illegal: no forms given to bind Y.
 (must-fail
  (defun test-var-binder0 (x)
    (b* ((y))
      y)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; normal case
+(defun test-mv-binder (x)
+  (b* (((mv a b) (mv 3 x)))
+    (list a b)))
+
+;; Illegal: more than one form after the binder (implicit progn).
+;; TODO: Should this be allowed?
+(must-fail
+ (defun test-mv-binder2 (x)
+  (b* (((mv a b) (cw "hi") (mv 3 x)))
+    (list a b))))
+
+;; Illegal: no term given to bind A and B.
+(must-fail
+ (defun test-mv-binder0 (x)
+  (b* (((mv a b)))
+    (list a b))))
+
+;; Illegal: only one var bound by the mv.
+;; TODO: Should this be allowed (just use a let)?
+(must-fail
+ (defun test-mv-binder-single-var (x)
+   (b* (((mv a) 3))
+     (list a x))))
