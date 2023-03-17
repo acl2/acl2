@@ -37,6 +37,7 @@
                   ((when if unless) (and (= 1 (len (fargs binder))) ; todo: check these restrictions
                                          (<= 1 (len expressions))))
                   ;; ((mv <var> ... <var>) <term>):
+                  ;; TODO: Consider supporting patterns, not just vars, supplied to MV.
                   (mv (and (symbol-listp (fargs binder))
                            (<= 2 (len (fargs binder))) ; must be at least 2 vars
                            (= 1 (len expressions)) ; must be exactly 1 expression
