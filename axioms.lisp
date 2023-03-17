@@ -14782,7 +14782,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (temp-touchable-vars . nil)
     (term-evisc-tuple . :default)
     (timer-alist . nil)
-    (tmp-dir . nil) ; set by lp; user-settable but not much advertised.
+    (tmp-dir . nil) ; initialized by initialize-state-globals
     (total-parallelism-work-limit ; for #+acl2-par
      . ,(default-total-parallelism-work-limit))
     (total-parallelism-work-limit-error . t) ; for #+acl2-par
