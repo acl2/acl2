@@ -75,3 +75,65 @@
  (defun test-mv-binder-single-var (x)
    (b* (((mv a) 3))
      (list a x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The use of & causes the CW to be completely ignored.  No printing is done
+;; when this is called.
+(defun test-&-binder (x)
+  (b* ((& (cw "hello")))
+    x))
+
+;; Variant with no expressions
+(defun test-&-binder0 (x)
+  (b* ((&))
+    x))
+
+;; Variant with more than 1 expression.  Still no printing is done.
+(defun test-&-binder2 (x)
+  (b* ((& (cw "hello") (cw "world")))
+    x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The use of ?!y causes the CW to be completely ignored.  No printing is done
+;; when this is called.
+(defun test-?!y-binder (x)
+  (b* ((?!y (cw "hello")))
+    x))
+
+;; Variant with no expressions
+;; Illegal! TODO: Treat this like & ?
+(must-fail
+ (defun test-?!y-binder0 (x)
+   (b* ((?!y))
+     x)))
+
+;; Variant with more than 1 expression.
+;; Illegal! TODO: Treat this like & ?
+(must-fail
+ (defun test-?!y-binder2 (x)
+   (b* ((?!y (cw "hello") (cw "world")))
+     x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The use of ?! causes the CW to be completely ignored.  No printing is done
+;; when this is called.
+(defun test-?!-binder (x)
+  (b* ((?! (cw "hello")))
+    x))
+
+;; Variant with no expressions
+;; Illegal! TODO: Treat this like & ?
+(must-fail
+ (defun test-?!-binder0 (x)
+   (b* ((?!))
+     x)))
+
+;; Variant with more than 1 expression.
+;; Illegal! TODO: Treat this like & ?
+(must-fail
+ (defun test-?!-binder2 (x)
+   (b* ((?! (cw "hello") (cw "world")))
+     x)))
