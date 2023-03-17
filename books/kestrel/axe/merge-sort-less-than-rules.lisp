@@ -37,11 +37,6 @@
                   (all-<= x y)))
   :hints (("Goal" :in-theory (enable all-<= all-<))))
 
-;; this one actually uses perm as the equiv
-(DEFTHM PERM-OF-MERGE-SORT-<-2
-  (PERM (MERGE-SORT-< X)
-        X))
-
 (defthm all-<=-all-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (all-<=-all x lst)
                 ;;(all-<=-all x tail)
