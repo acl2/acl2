@@ -237,6 +237,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "digits-any-base" "Digits Library"))
+
+   (xdoc::p
+    "Several theorems have been added.")
+
+   (xdoc::p
+    "The @(tsee defdigits) tool has been extended
+     to generate additional theorems.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Library"))
 
    (xdoc::p
