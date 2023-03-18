@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function last.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -66,9 +66,16 @@
            0))
   :hints (("Goal" :in-theory (enable last))))
 
-(defthm acl2-count-of-last-linear
+(defthm <=-of-acl2-count-of-last-linear
   (<= (acl2-count (last x))
       (acl2-count x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable last))))
+
+(defthm <-of-acl2-count-of-last-linear
+  (implies (< 1 (len x))
+           (< (acl2-count (last x))
+              (acl2-count x)))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable last))))
 

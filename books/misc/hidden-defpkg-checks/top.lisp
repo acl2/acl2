@@ -2,12 +2,12 @@
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "sub1") ; no_port
 (must-fail
- (if (fast-cert-p state) ; false by default
+ (if (eq (fast-cert-mode state) t) ; false by default
      (mv t nil state)
    (include-book "sub2"))) ; no_port
 (include-book "pkg1") ; no_port
 (must-fail
- (if (fast-cert-p state) ; false by default
+ (if (eq (fast-cert-mode state) t) ; false by default
      (mv t nil state)
    (defthm contradiction
      nil

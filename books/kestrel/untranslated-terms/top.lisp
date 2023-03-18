@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "bstar-helpers")
 (include-book "helpers")
 
 (include-book "replace-calls")
