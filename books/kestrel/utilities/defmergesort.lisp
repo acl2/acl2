@@ -1,7 +1,7 @@
 ; A tool to define a merge sort function, given a comparison function.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,17 +21,17 @@
 (defun defmergesort-fn (merge-name
                         merge-sort-name
                         comparison-fn ;; todo: allow an expression?
-                        pred
+                        element-pred
                         verify-guards
                         extra-theorems
                         )
   (declare (xargs :guard (and (symbolp merge-name)
                               (symbolp merge-sort-name)
                               (symbolp comparison-fn) ; todo: allow a lambda?
-                              (symbolp pred)
+                              (symbolp element-pred)
                               (booleanp verify-guards)
                               (booleanp extra-theorems)))) ;todo: flesh this out
-  (let* ((list-pred (pack$ 'all- pred))
+  (let* ((list-pred (pack$ 'all- element-pred))
          (list-pred-of-mv-nth-0-of-split-list-fast-aux-theorem-name (pack$ list-pred '-of-mv-nth-0-of-split-list-fast-aux))
          (list-pred-of-mv-nth-0-of-split-list-fast-theorem-name (pack$ list-pred '-of-mv-nth-0-of-split-list-fast))
          (list-pred-of-mv-nth-1-of-split-list-fast-aux-theorem-name (pack$ list-pred '-of-mv-nth-1-of-split-list-fast-aux))
@@ -39,43 +39,47 @@
          ;;(list-pred-of-revappend-theorem-name (pack$ list-pred '-of-revappend))
          (list-pred-of-cons-theorem-name (pack$ list-pred '-of-cons-for-defmergesort))
          (list-pred-of-cdr-theorem-name (pack$ list-pred '-of-cdr-for-defmergesort))
-         (pred-of-car-theorem-name (pack$ 'use- list-pred '-for-car-for-defmergesort))
+         (element-pred-of-car-theorem-name (pack$ 'use- list-pred '-for-car-for-defmergesort))
          (list-pred-of-merge-theorem-name (pack$ list-pred '-of- merge-name))
          (list-pred-of-merge-sort-theorem-name (pack$ list-pred '-of- merge-sort-name))
          (true-listp-of-merge-theorem-name (pack$ 'true-listp-of- merge-name))
          (true-listp-of-merge-sort-theorem-name (pack$ 'true-listp-of- merge-sort-name)))
     `(progn
-       (include-book "kestrel/utilities/split-list-fast" :dir :system)
-       ,@(and extra-theorems `((include-book "kestrel/lists-light/perm-def" :dir :system))) ; can cause name clashes
+       ;; Always needed:
+       (include-book "kestrel/utilities/split-list-fast-defs" :dir :system)
+       ;; Reasoning support for basic theorems:
+;       (local (include-book "kestrel/utilities/split-list-fast" :dir :system))
+       ;; Needed to express the extra theorems, but sometimes causes name clashes:
+       ,@(and extra-theorems `((include-book "kestrel/lists-light/perm-def" :dir :system)))
        (encapsulate
          ()
          (local (include-book "kestrel/lists-light/revappend" :dir :system))
          (local (include-book "kestrel/utilities/merge-sort-generic" :dir :system))
 
-         ;; Checks that all elements of X satisfy the PRED.
+         ;; Checks that all elements of X satisfy the ELEMENT-PRED.
          ;; We try to be compatible here with what defforall does.
          (defund ,list-pred (x)
            (declare (xargs :guard t
                            :verify-guards nil))
            (if (atom x)
                t
-             (and (,pred (first x))
+             (and (,element-pred (first x))
                   (,list-pred (rest x)))))
 
          ;; Made local so as not to conflict with what defforall would generate
          (local
           (defthm ,list-pred-of-cons-theorem-name
             (equal (,list-pred (cons x y))
-                   (and (,pred x)
+                   (and (,element-pred x)
                         (,list-pred y)))
             :hints (("Goal" :in-theory (enable ,list-pred atom car-cons cdr-cons)))))
 
          ;; Made local so as not to conflict with what defforall would generate
          (local
-          (defthm ,pred-of-car-theorem-name
+          (defthm ,element-pred-of-car-theorem-name
             (implies (and (,list-pred x)
                           (consp x))
-                     (,pred (car x)))
+                     (,element-pred (car x)))
             :hints (("Goal" :in-theory (enable ,list-pred atom car-cons cdr-cons)))))
 
          ;; Made local so as not to conflict with what defforall would generate
@@ -155,7 +159,7 @@
                     (,list-pred (mv-nth 0 (split-list-fast-aux lst tail acc))))
            :hints (("Goal" :in-theory '(,list-pred)
                     :use (:functional-instance all-generic-predp-of-mv-nth-0-of-split-list-fast-aux
-                                               (generic-predp ,pred)
+                                               (generic-predp ,element-pred)
                                                (all-generic-predp ,list-pred)))))
 
          (defthm ,list-pred-of-mv-nth-0-of-split-list-fast-theorem-name
@@ -163,7 +167,7 @@
                     (,list-pred (mv-nth 0 (split-list-fast lst))))
            :hints (("Goal" :in-theory nil ;; all constraints should be cached
                     :use (:functional-instance all-generic-predp-of-mv-nth-0-of-split-list-fast
-                                               (generic-predp ,pred)
+                                               (generic-predp ,element-pred)
                                                (all-generic-predp ,list-pred)))))
 
          (defthm ,list-pred-of-mv-nth-1-of-split-list-fast-aux-theorem-name
@@ -171,7 +175,7 @@
                     (,list-pred (mv-nth 1 (split-list-fast-aux lst tail acc))))
            :hints (("Goal" :in-theory nil ;; all constraints should be cached
                     :use (:functional-instance all-generic-predp-of-mv-nth-1-of-split-list-fast-aux
-                                               (generic-predp ,pred)
+                                               (generic-predp ,element-pred)
                                                (all-generic-predp ,list-pred)))))
 
          (defthm ,list-pred-of-mv-nth-1-of-split-list-fast-theorem-name
@@ -179,7 +183,7 @@
                     (,list-pred (mv-nth 1 (split-list-fast lst))))
            :hints (("Goal" :in-theory nil ;; all constraints should be cached
                     :use (:functional-instance all-generic-predp-of-mv-nth-1-of-split-list-fast
-                                               (generic-predp ,pred)
+                                               (generic-predp ,element-pred)
                                                (all-generic-predp ,list-pred)))))
 
          (defthm ,list-pred-of-merge-theorem-name
@@ -189,7 +193,7 @@
                     (,list-pred (,merge-name l1 l2 acc)))
            :hints (("Goal" :in-theory '(,merge-name) ;; all constraints should be cached
                     :use (:functional-instance all-generic-predp-of-merge-generic
-                                               (generic-predp ,pred)
+                                               (generic-predp ,element-pred)
                                                (all-generic-predp ,list-pred)
                                                (generic-comparison ,comparison-fn)
                                                (merge-generic ,merge-name)))))
@@ -217,7 +221,7 @@
                     (,list-pred (,merge-sort-name lst)))
            :hints (("Goal" :in-theory nil ;; all constraints should be cached
                     :use (:functional-instance all-generic-predp-of-merge-sort-generic
-                                               (generic-predp ,pred)
+                                               (generic-predp ,element-pred)
                                                (all-generic-predp ,list-pred)
                                                (generic-comparison ,comparison-fn)
                                                (merge-generic ,merge-name)
@@ -234,7 +238,12 @@
                                            :in-theory nil)))))
 
          ,@(and extra-theorems
-                `((defthm ,(pack$ 'perm-of- merge-name)
+                `((local (include-book "kestrel/lists-light/perm" :dir :system))
+
+                  ;; proved elsewhere but needed to make PERM the equiv of the rules below:
+                  (defequiv perm :package :equiv) ; the :package argument prevents errors if defmergesort is done in a package other than ACL2
+
+                  (defthm ,(pack$ 'perm-of- merge-name)
                     (perm (,merge-name x y acc)
                           (append x y acc))
                     :hints (("Goal" :in-theory nil ;; all constraints should be cached
@@ -247,7 +256,7 @@
                           x)
                     :hints (("Goal" :in-theory nil ;; all constraints should be cached
                              :use (:functional-instance perm-of-merge-sort-generic
-                                                        (generic-predp ,pred)
+                                                        (generic-predp ,element-pred)
                                                         (all-generic-predp ,list-pred)
                                                         (generic-comparison ,comparison-fn)
                                                         (merge-generic ,merge-name)
@@ -259,10 +268,10 @@
 (defmacro defmergesort (merge-name ;the name to use for the "merge" function
                         merge-sort-name ;the name to use for the "merge sort" function
                         comparison ;the comparison function (e.g., <) (todo: allow this to take extra args?)
-                        pred ;the name of a predicate recognizing the items to sort
-                        ;; list-pred ;a predicate asserting that all elements of a list satisfy pred
+                        element-pred ;the name of a predicate recognizing the items to sort
+                        ;; list-pred ;a predicate asserting that all elements of a list satisfy element-pred
                         &key
                         (verify-guards 't)
                         (extra-theorems 't) ;whether to generate theorems that mention non-built-in functions, like perm
                         )
-  (defmergesort-fn merge-name merge-sort-name comparison pred verify-guards extra-theorems))
+  (defmergesort-fn merge-name merge-sort-name comparison element-pred verify-guards extra-theorems))

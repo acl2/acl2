@@ -256,7 +256,7 @@
        (true-listp-thm `(defrule ,true-listp-thm-name
                           (true-listp (,name password salt iterations length))
                           :rule-classes :type-prescription
-                          :enable acl2::true-listp-when-byte-listp))
+                          :enable acl2::true-listp-when-byte-listp-compound-recognizer))
        (consp-thm `(defrule ,consp-thm-name
                      (consp (,name password salt iterations length))
                      :rule-classes :type-prescription

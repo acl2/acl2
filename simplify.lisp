@@ -524,11 +524,101 @@
             (add-each-literal (car cl-set))
             (add-each-literal-lst (cdr cl-set))))))
 
-(defun conjoin-clause-sets (cl-set1 cl-set2)
+(encapsulate
+
+; See conjoin-clause-sets.
+
+  ((conjoin-clause-sets-bound () t))
+  (logic)
+  (local (defun conjoin-clause-sets-bound () 0))
+  (defthm natp-conjoin-clause-sets-bound
+    (natp (conjoin-clause-sets-bound))
+    :rule-classes :type-prescription))
+
+(defun conjoin-clause-sets-bound-builtin ()
+
+; See conjoin-clause-sets.
+
+  (declare (xargs :guard t :mode :logic))
+  50)
+
+(defattach conjoin-clause-sets-bound conjoin-clause-sets-bound-builtin)
+
+(defun conjoin-clause-sets-rec (cl-set1 cl-set2)
   (cond ((null cl-set1) cl-set2)
         (t (conjoin-clause-to-clause-set
             (car cl-set1)
-            (conjoin-clause-sets (cdr cl-set1) cl-set2)))))
+            (conjoin-clause-sets-rec (cdr cl-set1) cl-set2)))))
+
+(defun conjoin-clause-to-clause-set-trivial (cl cl-set)
+  (cond ((member-equal *t* cl) cl-set)
+        (t (cons cl cl-set))))
+
+(defun conjoin-clause-sets-trivial (cl-set1 cl-set2)
+  (cond ((null cl-set1) cl-set2)
+        (t (conjoin-clause-to-clause-set-trivial
+            (car cl-set1)
+            (conjoin-clause-sets-trivial (cdr cl-set1) cl-set2)))))
+
+(defun conjoin-clause-sets (cl-set1 cl-set2)
+
+; This function is generally just a thin wrapper for conjoin-clause-sets-rec.
+; However, that function has quadratic behavior.
+
+; Here is the motivating example from Alessandro Coglio for
+
+;   ; a predicate used below as guard on x, parameterized on a:
+;   (defund p (x a)
+;     (declare (xargs :guard (integerp a)))
+;     (and (natp x)
+;          (< x a)))
+;
+;   ; a nullary function for an integer, used as the parameter a below:
+;   (defund c ()
+;     (declare (xargs :guard t))
+;     10)
+;
+;   ; define a function with 1000 params and 1000 guard conjuncts:
+;   (make-event
+;    (let ((vars (loop$ for i from 1 to 1000
+;                       collect (packn-pos (list 'x i) 'x)))
+;          (conjuncts (loop$ for i from 1 to 1000
+;                            collect `(p ,(packn-pos (list 'x i) 'x) (c)))))
+;      `(defun f ,vars
+;         (declare (xargs :guard (and ,@conjuncts)))
+;         (list ,@vars))))
+
+; Here are times measured for the make-event during development of the
+; restriction to avoid quadratic behavior, described below, as a function of
+; the value attached to conjoin-clause-sets-bound.
+
+;  10:  3.30 seconds
+;  50:  3.45 seconds
+; 100:  4.22 seconds
+; 200: 10.47 seconds
+
+; We rather arbitrarily chose 50, which should be large enough to make it rare
+; for the bound to kick in, but small enough to get most of the potential
+; benefit of avoiding quadratic behavior.  To see the quadratic behavior
+; analytically, consider a call (conjoin-clause-sets cl-set1 cl-set2).  There
+; are |cl-set1| recursive calls, and for each of those we'll count 1 for the
+; recursive call and the current |cl-set2| for the call of
+; conjoin-clause-to-clause-set.  So we have the following, where m is |cl-set1|
+; and n is |cl-set2|.
+
+; (n+1) + (n+2) + ... + (n + m)
+; = nm + m(m+1)/2
+
+; Our trivial way to avoid quadratic behavior is to bound m: if it exceeds the
+; bound then we use a "trivial" (linear) version of conjoin-clause-sets that
+; doesn't check membership (mod commuting or otherwise) of a clause in the
+; accumulated clause-set.
+
+  (cond ((nthcdr (conjoin-clause-sets-bound) cl-set1)
+; The bound is exceeded by the length of cl-set1.
+         (conjoin-clause-sets-trivial cl-set1 cl-set2))
+        (t
+         (conjoin-clause-sets-rec cl-set1 cl-set2))))
 
 (defun some-element-member-complement-term (lst1 lst2)
   (cond ((null lst1) nil)

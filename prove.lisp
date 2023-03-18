@@ -4167,27 +4167,40 @@
      (iprint-oracle-updates state)
      (iprint-oracle-updates@par))
     (cond
-     (erp ; from out-of-time or clause-processor failure; treat as 'error signal
-      (mv-let@par (erp2 val state)
-                  (er-soft@par ctx signal "~@0" erp)
-                  (declare (ignore erp2 val))
-                  (pprogn@par
-                   (assert$
-                    (null ttree)
-                    (mv-let@par
-                     (erp3 val state)
-                     (accumulate-ttree-and-step-limit-into-state@par
-                      (add-to-tag-tree! 'abort-cause
-                                        (if (equal erp *interrupt-string*)
-                                            'interrupt
-                                          'time-limit-reached)
-                                        nil)
-                      step-limit
-                      state)
-                     (declare (ignore val))
-                     (assert$ (null erp3)
-                              (state-mac@par))))
-                   (mv@par step-limit 'error nil nil nil nil state))))
+     (erp ; from out-of-time or clause-processor fail; treat as 'error signal
+      (let ((time-limit-reached-p
+
+; As noted in comments above the definition of *acl2-time-limit*, the variable
+; *acl2-time-limit* is nil by default, but is set to a positive time limit (in
+; units of internal-time-units-per-second) by with-prover-time-limit, and is
+; set to 0 to indicate that a proof has been interrupted (see our-abort).
+
+             (not (equal erp *interrupt-string*))))
+        (mv-let@par (erp2 val state)
+                    (er-soft@par ctx
+                                 (if time-limit-reached-p
+                                     "Time-limit"
+                                   "Interrupt")
+                                 "~@0"
+                                 erp)
+                    (declare (ignore erp2 val))
+                    (pprogn@par
+                     (assert$
+                      (null ttree)
+                      (mv-let@par
+                       (erp3 val state)
+                       (accumulate-ttree-and-step-limit-into-state@par
+                        (add-to-tag-tree! 'abort-cause
+                                          (if time-limit-reached-p
+                                              'time-limit-reached
+                                            'interrupt)
+                                          nil)
+                        step-limit
+                        state)
+                       (declare (ignore val))
+                       (assert$ (null erp3)
+                                (state-mac@par))))
+                     (mv@par step-limit 'error nil nil nil nil state)))))
      (t
       (pprogn@par ; account for bddnote in case we do not have a hit
        (cond ((and (eq processor 'apply-top-hints-clause)

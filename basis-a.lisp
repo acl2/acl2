@@ -1685,7 +1685,7 @@
 ;        (ppr2 tuple 0 *standard-co* state t)
 ;        (fms "~%" nil *standard-co* state nil))))
 ;
-;   (defmacro test (d x)
+;   (defmacro test (d x) `(testfn ',d ',x state))
 
 ; Ppr tuples record enough information about the widths of various forms so
 ; that it can be computed without having to recompute any part of it and so

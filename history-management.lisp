@@ -2264,11 +2264,9 @@
                     state))))
                (t state))))
        (t ; no checkpoints; aborted
-        (fms #-acl2-par
-             "*** Note: No checkpoints to print. ***~|"
-             #+acl2-par
-             "*** Note: No checkpoints from gag-mode to print. ***~|"
-             nil chan state nil)))))
+        (fms "*** Note: No checkpoints~#0~[ from gag-mode~/~] to print. ***~|"
+             (list (cons #\0 (if (@ waterfall-parallelism) 0 1)))
+             chan state nil)))))
    (t ; no checkpoints; proof never started
     state)))
 
@@ -3625,7 +3623,16 @@
   (cond
    ((null wrld) ; see initial call of set-w in enter-boot-strap-mode
     state)
-   ((active-useless-runes state) ; then we already updated
+   ((active-useless-runes state)
+
+; Then we already updated the global ens.  To see why this must be the case,
+; first note that (by definition of active-useless-runes) the :tag field of
+; useless-runes must be 'THEORY.  The transition to 'THEORY takes place under
+; with-useless-runes, where after that transition, the global-enabled-structure
+; is bound using function useless-runes-ens before evaluating the given form.
+; But useless-runes-ens updates the global ens (by calling
+; load-theory-into-enabled-structure-1).
+
     state)
    (t
     (let* ((augmented-theory (global-val 'current-theory-augmented wrld))
@@ -5185,16 +5192,42 @@
          (cddar wrld))
         (t (scan-to-cltl-command (cdr wrld)))))
 
-(defun fast-cert-p (state)
+(defun fast-cert-mode (state)
 
-; The value returned by this function is often t or nil.  But it can be a
-; full-book-string, signifying that fast-cert must remain active because there
-; was an attempt to include the indicated book, which was certified with
-; fast-cert.
+; This function returns a value representing fast-cert mode, which can be
+; designated as any of the following.
+
+; - "Disabled" (value nil): Fast-cert mode is neither active nor ACCEPT, as
+;   defined below.  If fast-cert mode is not disabled, we say it is "enabled".
+
+; - "Active": Certification avoids the local incompatibility step.
+
+; - "ACCEPT": Books may be included as certified when certification was
+;   performed with fast-cert mode enabled, but otherwise certification will
+;   take place as though fast-cert mode is not enabled.
+
+; The value returned by this function is nil, t, or :accept, according to
+; whether fast-cert mode is disabled, active, or ACCEPT.
+
+; Note that this function ignores whether the fast-cert-status includes a
+; string to represent a book whose inclusion was attempted.  Use (f-get-global
+; 'fast-cert-status state) to obtain such information.
 
 ; See also the Essay on Fast-cert.
 
-  (f-get-global 'fast-cert-status state))
+  (let ((status (f-get-global 'fast-cert-status state)))
+    (cond ((null status) nil)
+          ((consp status) :accept)
+          (t t))))
+
+(defun fast-cert-included-book (status)
+
+; Status is presumably (f-get-global 'fast-cert-status state) for the current
+; state.  We return the book that has been included with fast-cert mode
+; enabled, if any.
+
+  (let ((tmp (if (consp status) (car status) status)))
+    (and (stringp tmp) tmp)))
 
 (defun in-encapsulatep (embedded-event-lst non-trivp)
 
@@ -5220,7 +5253,7 @@
    ((f-get-global 'in-local-flg state)
     nil)
    ((f-get-global 'certify-book-info state)
-    (fast-cert-p state))
+    (eq (fast-cert-mode state) t))
 
 ; When at the top level, do the store when inside progn or encapsulate (at
 ; least in pass 2).
@@ -17633,7 +17666,7 @@
 ; probably rare.
 
 ; The key problem for implementing fast-cert mode, discussed further below, is
-; this: since the local-incompatibility check is skipped, local events are in
+; this: when the local-incompatibility check is skipped, local events are in
 ; the world at the end of the proof pass of certify-book but they will not be
 ; in the world when the book is included later.  A tricky aspect of that
 ; problem, which gets most of our attention here, is redundancy with local
@@ -17655,12 +17688,13 @@
 ; point of this Essay is to supplement that :DOC with information about the
 ; implementation.  For example, :DOC fast-cert discusses the notion of a
 ; "fast-cert certificate", which bears evidence of the book having been
-; certified in fast-cert mode.  Here we say a bit about the implementation,
+; certified with fast-cert mode enabled (i.e., the mode is either active or
+; ACCEPT; see set-fast-cert).  Here we say a bit about the implementation,
 ; pointing out that a fast-cert certificate has a version field near the top
 ; that puts the version in parentheses: see make-certificate-file1 for how that
 ; is written; and see chk-certificate-file1 for how it is handled, in
-; particular to consider a book uncertified when it was certified in fast-cert
-; mode but is being included without fast-cert mode.
+; particular to consider a book uncertified when it was certified with
+; fast-cert mode enabled but is being included without fast-cert mode enabled.
 
 ; The :DOC topic fast-cert-anomalies is not a prerequisite for reading this
 ; Essay.  But reading that topic might be useful for furthering understanding
@@ -17669,22 +17703,22 @@
 ; Section: Examples
 
 ; The community book, books/system/tests/fast-cert-tests.lisp, has numerous
-; examples involving redundancy in fast-cert mode, as does fast-cert-tests.acl2
-; in that directory.  Actually those two files are highly analogous, to
-; demonstrate the somewhat different handling of redundancy at the top level
-; (in the .acl2 file) versus during certification (in the .lisp file), as
-; described below.  Comments in those files flesh out this Essay.
+; examples involving redundancy when fast-cert mode is active, as does
+; fast-cert-tests.acl2 in that directory.  Actually those two files are highly
+; analogous, to demonstrate the somewhat different handling of redundancy at
+; the top level (in the .acl2 file) versus during certification (in the .lisp
+; file), as described below.  Comments in those files flesh out this Essay.
 
 ; Section: Problems and algorithms for their solution
 
-; The key problems to solve for fast-cert mode stem from skipping the
-; local-incompatibility check.  That complicates writing of the certificate and
-; expansion files because local events may be in the world: in particular, we
-; want to avoid writing cert-data to the certificate for local events, and we
-; want to avoid writing *1* function definitions to the expansion file for
-; local events.  In both cases, things are simpler when the
-; local-incompatibility check has been made, because then local events have
-; disappeared when producing the relevant information.
+; The key problems to solve when fast-cert mode is active stem from skipping
+; the local-incompatibility check when that mode is active.  That complicates
+; writing of the certificate and expansion files because local events may be in
+; the world: in particular, we want to avoid writing cert-data to the
+; certificate for local events, and we want to avoid writing *1* function
+; definitions to the expansion file for local events.  In both cases, things
+; are simpler when the local-incompatibility check has been made, because then
+; local events have disappeared when producing the relevant information.
 
 ; A key to solving these problems is in management of the world global,
 ; 'top-level-cltl-command-stack, so that it includes cltl-cmd structures only
@@ -17711,15 +17745,15 @@
 ;   is included.
 
 ; Next we discuss how the cltl-command-stack is populated as events are
-; processed in fast-cert mode.  First let's consider events in the book under
-; certification for which install-event is passed a non-nil cltl-cmd argument.
-; Then install-event calls function put-cltl-command on that cltl-cmd, and that
-; call extends the cltl-command-stack if and only if the event is non-local and
-; not under include-book.  (There is an exception allowing include-book within
-; the local-incompatibility check of certify-book, but that doesn't apply to
-; fast-cert mode since it skips that check.)  But this isn't sufficient,
-; because of redundant events.  Consider again the following sequence of two
-; events in a book.
+; processed when fast-cert mode is active.  First let's consider events in the
+; book under certification for which install-event is passed a non-nil cltl-cmd
+; argument.  Then install-event calls function put-cltl-command on that
+; cltl-cmd, and that call extends the cltl-command-stack if and only if the
+; event is non-local and not under include-book.  (There is an exception
+; allowing include-book within the local-incompatibility check of certify-book,
+; but that doesn't apply when fast-cert mode is active since that check is
+; skipped.)  But this isn't sufficient, because of redundant events.  Consider
+; again the following sequence of two events in a book.
 
 ;   (local (defun f (x) x))
 ;   (defun f (x) x)
@@ -17731,7 +17765,7 @@
 ; cltl-command-stack, since when the book is ultimately included it will
 ; execute that defun.  Normally this is not an issue because during the
 ; local-incompatibility check, the local defun disappears before the non-local
-; defun is processed.  But in fast-cert mode, we arrange for function
+; defun is processed.  But with fast-cert mode active, we arrange for function
 ; stop-redundant-event-fn to extend the cltl-command-stack when a defun (or
 ; other appropriate event) is redundant with a local event.  Details, in
 ; particular pertaining to defun-mode, are probably pretty clear in the code
@@ -17744,9 +17778,9 @@
 ;   (defun f (x) x)
 ;   (defun f (x) x)
 
-; When we process the final defun in fast-cert mode, we will see that it is
-; redundant with a local event.  We then go ahead an add its cltl-command to
-; the cltl-command-stack, resulting in a cltl-command-stack with two such
+; When we process the final defun with fast-cert mode active, we will see that
+; it is redundant with a local event.  We then go ahead an add its cltl-command
+; to the cltl-command-stack, resulting in a cltl-command-stack with two such
 ; cltl-commands.  Of course, for the second defun we could have looked in the
 ; cltl-command-stack to see if there is already an entry; but in the worst case
 ; that is quadratic behavior as we go through the book, unless we use a
@@ -17765,16 +17799,16 @@
 ; building a world for future certification).  One difference is that in
 ; certify-book, redundant events can only extend the cltl-command-stack when
 ; fast-cert mode is active, but the top level handles the cltl-command-stack
-; independently of whether fast-cert mode is active, since we may later switch
-; to fast-cert mode before certifying a book.  The other difference is in
-; whether the cltl-command-stack is extended, in fast-cert mode, in the case
-; that a non-local event is redundant with a local event.  Whether that
-; extension takes place is implemented by whether the call of
+; independently of whether fast-cert mode is active, since we may later make
+; fast-cert mode active before certifying a book.  The other difference is in
+; whether the cltl-command-stack is extended, with fast-cert mode active, in
+; the case that a non-local event is redundant with a local event.  Whether
+; that extension takes place is implemented by whether the call of
 ; store-cltl-command-for-redundant-def returns true in stop-redundant-event-fn.
-; Under certify-book (in fast-cert mode) there is no restriction, i.e.,
-; store-cltl-command-for-redundant-def returns true.  But at the top level,
-; store-cltl-command-for-redundant-def returns true only when the event is
-; inside a progn (or progn!) or encapsulate.  To see why, consider again the
+; Under certify-book (with fast-cert mode active) there is no restriction,
+; i.e., store-cltl-command-for-redundant-def returns true.  But at the top
+; level, store-cltl-command-for-redundant-def returns true only when the event
+; is inside a progn (or progn!) or encapsulate.  To see why, consider again the
 ; example presented early in this Essay.
 
 ;   (local (defun f (x) x))
@@ -17792,8 +17826,8 @@
 
 ; In this case, the progn will be in the portcullis commands (because g is not
 ; redundant), so f will be defined when including the book.  And indeed, ACL2
-; acts accordingly upon submitting these forms at the top level in fast-cert
-; mode.
+; acts accordingly upon submitting these forms at the top level with fast-cert
+; mode active.
 
 ;   ACL2 !>(global-val 'top-level-cltl-command-stack (w state))
 ;   ((DEFUNS :LOGIC NIL (G (X) X))
@@ -17825,21 +17859,21 @@
 
 ; Of course, extending the cltl-command-stack at the top level is completely
 ; useless if the world is not ultimately part of a certification world.  We
-; considered doing that extension only in fast-cert mode.  But we want the user
-; to be able to enter fast-cert mode part way through the session, for example
-; after an acl2-customization file is loaded.  The cost of such extensions of
-; the cltl-command-stack at the top level -- that is, for certain redundant
-; events within progn and encapsulate events -- should be invisible to the
-; user, with a performance hit that is trivial.
+; considered doing that extension only with fast-cert mode active.  But we want
+; the user to be able to make fast-cert mode active part way through the
+; session, for example after an acl2-customization file is loaded.  The cost of
+; such extensions of the cltl-command-stack at the top level -- that is, for
+; certain redundant events within progn and encapsulate events -- should be
+; invisible to the user, with a performance hit that is trivial.
 
 ; Section: Some shortcomings and possible future work
 
-; - Additional checks could be added to reject flawed certifications in
-;   fast-cert mode.  For example, when translate-bodies to a non-locally
-;   defined event, it could check that all the function symbols are defined
-;   non-locally.  With considerably more effort that would likely involve
-;   modifying (or copying some of) the translate and macroexpansion code, that
-;   check could perhaps extend to macros and constants.
+; - Additional checks could be added to reject flawed certifications performed
+;   with fast-cert mode active.  For example, when translate-bodies to a
+;   non-locally defined event, it could check that all the function symbols are
+;   defined non-locally.  With considerably more effort that would likely
+;   involve modifying (or copying some of) the translate and macroexpansion
+;   code, that check could perhaps extend to macros and constants.
 
 ; - As noted above, cltl-commands are added to the value of
 ;   'top-level-cltl-command-stack for events that are redundant with local
@@ -17850,8 +17884,8 @@
 ;   losing their translate cert-data isn't a big deal.
 
 ; - As noted in :DOC fast-cert, the local-incompatibility check is performed
-;   even in fast-cert mode when provisional certification is used.  It might be
-;   straightforward to remove that limitation, that is, to skip the
+;   even with fast-cert mode active when provisional certification is used.  It
+;   might be straightforward to remove that limitation, that is, to skip the
 ;   local-incompatibility check in fast-cert mode even for provisional
 ;   certification.
 
@@ -17862,11 +17896,11 @@
 ; - It may be reasonable and not too difficult to relax somewhat the following
 ;   restriction quoted from :DOC fast-cert, as discussed below.
 
-;     * When a book is included while fast-cert mode is active, and that book
-;       has a fast-cert certificate, then the rest of that ACL2 session
-;       must remain in fast-cert mode.  This restriction guarantees
-;       that any book then certified during that session will be given
-;       a fast-mode certificate.
+;     * When a book is included while fast-cert mode is enabled, and that book
+;       has a fast-cert certificate, then fast-cert mode must remain enabled
+;       for the rest of that ACL2 session.  This restriction guarantees that
+;       any book then certified during that session will be given a fast-mode
+;       certificate.
 
 ;   It might be more reasonable to make this restriction only if the book is
 ;   included as certified.  That would take some implementation work, because
@@ -17875,8 +17909,8 @@
 ;   the .cert file is stored in a cons).  It also would require some careful
 ;   thought: it might seem fine to make this relaxation since we already allow
 ;   erasing any trace of including an uncertified book (by undoing it with
-;   :ubt), but is there anything about fast-cert mode that makes the book
-;   inclusion more dangerous even when undone?
+;   :ubt), but is there anything about fast-cert mode being enabled that makes
+;   the book inclusion more dangerous even when undone?
 
 ; - The following problem seems quite harmless and might be difficult to fix,
 ;   but in case those assessments are wrong, we document it here.  Consider the
@@ -17927,7 +17961,7 @@
 ;   This isn't really right, because when problem.lisp is included, bar is
 ;   defined by inclusion of problem-sub.lisp, not at the top level of
 ;   problem.lisp.  In fact, if you certify the books without fast-cert mode
-;   then the expansion file looks like this.
+;   active then the expansion file looks like this.
 
 ;     (IN-PACKAGE "ACL2")
 ;     (SETQ *HCOMP-FN-ALIST* 'NIL)
@@ -17938,12 +17972,12 @@
 ;            (INCLUDE-BOOK "problem-sub")
 ;            (DEFUN BAR (X) X))
 
-;   Note that both with and without fast-cert mode, the new defun of BAR is
-;   evaluated during the early load of the compiled file (see the Essay on Hash
-;   Table Support for Compilation).  But since BAR is redundant, the relevant
-;   hash-table entry is never consulted when evaluating the book's events.
-;   Either way, BAR is properly defined after the non-local include-book
-;   event is processed.
+;   Note that both with and without fast-cert mode active, the new defun of BAR
+;   is evaluated during the early load of the compiled file (see the Essay on
+;   Hash Table Support for Compilation).  But since BAR is redundant, the
+;   relevant hash-table entry is never consulted when evaluating the book's
+;   events.  Either way, BAR is properly defined after the non-local
+;   include-book event is processed.
 
 ;   Here's a seed of a possible solution for this fast-cert mode issue, not
 ;   fully thought out.  We might arrange that each entry in the
@@ -17954,54 +17988,89 @@
 ;   was introduced by a book included locally.
 
 (defun set-fast-cert (val state)
-  (cond ((not (booleanp val))
+
+; See fast-cert-mode and the Essay on Fast-cert.
+
+  (cond ((not (member-eq val '(t nil :accept)))
          (er soft 'set-fast-cert
-             "Set-fast-cert requires a Boolean argument but has been given ~
-              the argument, ~x0."
+             "Set-fast-cert requires an argument that is t, nil, or :accept, ~
+              but it has been given the argument, ~x0."
              val))
         ((f-get-global 'certify-book-info state)
 
-; Without this restriction, the part of certification taking place before
-; setting fast-cert would not do the necessary job of populating the
-; top-level-cltl-command-stack.
+; Without this restriction, if fast-cert mode is made active then the part of
+; certification taking place before setting fast-cert mode would not do the
+; necessary job of populating the top-level-cltl-command-stack.  Rather than
+; think about whether it's OK to transition fast-cert mode to ACCEPT or nil,
+; let's just rule out all setting of fast-cert mode during certify-book, which
+; seems a very reasonable restriction.
 
          (er soft 'set-fast-cert
              "Set-fast-cert is illegal during certify-book."))
         ((not (int= (f-get-global 'make-event-debug-depth state) 0))
 
-; If you remove this restriction, then consider whether fast-cert-status should
-; be added to *protected-system-state-globals*.  (It is currently removed.)
+; Since we already prohibit changing fast-cert mode during certification, there
+; seems to be no need to change it with make-event; just evaluate set-fast-cert
+; at the top level.  If you remove this restriction, then consider whether
+; fast-cert-status should be added to *protected-system-state-globals*.  (It is
+; currently removed.)
 
          (er soft 'set-fast-cert
              "Set-fast-cert is illegal during make-event expansion."))
-        (t (let ((fast-cert-status (f-get-global 'fast-cert-status state)))
+        (t (let ((status (f-get-global 'fast-cert-status state)))
              (cond
               ((and (null val)
-                    (stringp fast-cert-status))
+                    (fast-cert-included-book status))
                (er soft 'set-fast-cert
-                   "The fast-cert status must remain active during this ACL2 ~
+                   "Fast-cert mode must remain enabled during this ACL2 ~
                     session, because of prior evaluation of an include-book ~
-                    form for a book that was certified with fast-cert active. ~
-                    ~ That book is ~x0.  See :DOC fast-cert."
-                   fast-cert-status))
-              ((iff val fast-cert-status)
+                    form for a book that was certified with fast-cert mode ~
+                    enabled.  That book is ~x0.  See :DOC fast-cert."
+                   status))
+              ((iff val status)
 
-; This include the case that fast-cert-status is a string (and val is non-nil
-; because the preceding case handled nil).
+; This includes the case that status is a string (and val is non-nil because
+; the preceding case handled nil).
 
-               (pprogn
-                (observation 'set-fast-cert
-                             "No change: fast-cert is already ~
-                              ~#0~[~/in~]active."
-                             (if val 0 1))
-                (value :no-change)))
+               (cond
+                ((null val)
+                 (pprogn
+                  (observation 'set-fast-cert
+                               "No change: fast-cert mode is already disabled.")
+                  (value :no-change)))
+                ((iff (consp status)
+                      (eq val :accept))
+                 (pprogn
+                  (observation 'set-fast-cert
+                               (if (consp status)
+                                   "No change: fast-cert is already in ACCEPT ~
+                                    mode."
+                                 "No change: fast-cert mode is already active."))
+                  (value :no-change)))
+                (t ; toggle between ACCEPT mode and active mode
+                 (pprogn (f-put-global 'fast-cert-status
+                                       (if (consp status)
+                                           (car status)
+                                         (list status))
+                                       state)
+                         (value val)))))
               (t
-               (pprogn (if val
-                           (fms-to-standard-co "TTAG NOTE: Fast-cert mode is ~
-                                                active (see :DOC fast-cert).~|"
-                                               nil state nil)
-                         state)
-                       (f-put-global 'fast-cert-status val state)
+               (pprogn (cond
+                        ((eq val :accept)
+                         (fms-to-standard-co "TTAG NOTE: Fast-cert is in ~
+                                              ACCEPT mode (see :DOC ~
+                                              fast-cert).~|"
+                                             nil state nil))
+                        ((eq val t)
+                         (fms-to-standard-co "TTAG NOTE: Fast-cert mode is ~
+                                              active (see :DOC fast-cert).~|"
+                                             nil state nil))
+                        (t state))
+                       (f-put-global 'fast-cert-status
+                                     (if (eq val :accept)
+                                         (list t)
+                                       val)
+                                     state)
                        (value val))))))))
 
 ; Next we handle the table event.  We formerly did this in other-events.lisp,

@@ -259,10 +259,10 @@
 
 ; See the Essay on Fast-cert; but here is a summary of the current situation.
 ; In this case, the world was extended only to support the possibility that we
-; are constructing the certification world for the later use of fast-cert, by
-; extending the top-level-cltl-command-stack when encountering redundant events
-; within a progn or the second pass of an encapsulate.  But there were no
-; actual events added to the world, so there's no such information that is
+; are constructing the certification world for the later use of fast-cert mode,
+; by extending the top-level-cltl-command-stack when encountering redundant
+; events within a progn or the second pass of an encapsulate.  But there were
+; no actual events added to the world, so there's no such information that is
 ; appropriate to record.
 
            (pprogn (set-w! old-wrld state)
@@ -1022,36 +1022,35 @@
   (cond
    ((and (raw-mode-p state)
          (bad-lisp-objectp x))
-    (if (not (eq channel *standard-co*))
-        (error "Attempted to print LD results to other than *standard-co*!"))
     (format t "[Note:  Printing non-ACL2 result.]")
     (terpri)
-    (cond ((and (cdr stobjs-out)
-                (true-listp x)
-                (true-listp raw-x)
-                (let ((len (length stobjs-out)))
-                  (and (= (length x) len)
-                       (= (length raw-x) len))))
+    (let ((str (get-output-stream-from-channel channel)))
+      (cond ((and (cdr stobjs-out)
+                  (true-listp x)
+                  (true-listp raw-x)
+                  (let ((len (length stobjs-out)))
+                    (and (= (length x) len)
+                         (= (length raw-x) len))))
 
 ; We eviscerate each bad-lisp-objectp in x-raw that is not already eviscerated
 ; in the corresponding position of x.
 
-           (princ "(")
-           (loop with col+1 = (1+ col)
-                 for y in x
-                 as y-raw in raw-x
-                 as i from 1
-                 do
-                 (progn (when (not (= i 1))
-                          (fms "~t0" (list (cons #\0 col+1))
-                               channel state nil))
-                        (cond ((and (not (and (consp y)
-                                              (evisceratedp t y)))
-                                    (bad-lisp-objectp y-raw))
-                               (prin1 y-raw))
-                              (t (ppr y col channel state t)))))
-           (princ ")"))
-          (t (prin1 raw-x)))
+             (princ "(" str)
+             (loop with col+1 = (1+ col)
+                   for y in x
+                   as y-raw in raw-x
+                   as i from 1
+                   do
+                   (progn (when (not (= i 1))
+                            (fms "~t0" (list (cons #\0 col+1))
+                                 channel state nil))
+                          (cond ((and (not (and (consp y)
+                                                (evisceratedp t y)))
+                                      (bad-lisp-objectp y-raw))
+                                 (prin1 y-raw str))
+                                (t (ppr y col channel state t)))))
+             (princ ")" str))
+            (t (prin1 raw-x str))))
     state)
    (t
     (ppr x col channel state t))))
@@ -1482,41 +1481,49 @@
                         (mv :return :exit state))
                        (t (pprogn
                            (ld-print-results trans-ans state)
-                           (cond
-                            ((and (ld-error-triples state)
-                                  (not (eq (ld-error-action state) :continue))
-                                  (equal (car trans-ans) *error-triple-sig*)
-                                  (let ((val (cadr (cdr trans-ans))))
-                                    (and (consp val)
-                                         (eq (car val) :stop-ld))))
-                             (mv :return
-                                 (list* :stop-ld
-                                        (f-get-global 'ld-level state)
-                                        (cdr (cadr (cdr trans-ans))))
-                                 state))
-                            (t
+                           (let ((action (ld-error-action state)))
+                             (cond
+                              ((and (ld-error-triples state)
+                                    (not (eq action :continue))
+                                    (equal (car trans-ans) *error-triple-sig*)
+                                    (let ((val (cadr (cdr trans-ans))))
+                                      (and (consp val)
+                                           (eq (car val) :stop-ld))))
+                               (cond
+                                ((and (consp action)
+                                      (eq (car action) :exit))
+                                 (mv action (good-bye-fn (cadr action)) state))
+                                (t
+                                 (mv :return
+                                     (list* :stop-ld
+                                            (f-get-global 'ld-level state)
+                                            (cdr (cadr (cdr trans-ans))))
+                                     state))))
+                              (t
 
 ; We make the convention of checking the new-namep filter immediately after
 ; we have successfully eval'd a form (rather than waiting for the next form)
 ; so that if the user has set the filter up he gets a satisfyingly
 ; immediate response when he introduces the name.
 
-                             (let ((filter (ld-pre-eval-filter state)))
-                               (cond
-                                ((and (not (eq filter :all))
-                                      (not (eq filter :query))
-                                      (not (eq filter :illegal-state))
-                                      (not (new-namep filter
-                                                      (w state))))
-                                 (er-progn
+                               (let ((filter (ld-pre-eval-filter state)))
+                                 (cond
+                                  ((and (not (eq filter :all))
+                                        (not (eq filter :query))
+                                        (not (eq filter :illegal-state))
+                                        (not (new-namep filter
+                                                        (w state))))
+                                   (er-progn
 
 ; We reset the filter to :all even though we are about to exit this LD
 ; with :return.  This just makes things work if "this LD" is the top-level
 ; one and LP immediately reenters.
 
-                                  (set-ld-pre-eval-filter :all state)
-                                  (mv :return :filter state)))
-                                (t (mv :continue nil state)))))))))))))))))))))))
+                                    (set-ld-pre-eval-filter :all state)
+                                    (mv :return :filter state)))
+                                  (t (mv :continue
+                                         nil
+                                         state))))))))))))))))))))))))
 
 (defun ld-loop (state)
 
