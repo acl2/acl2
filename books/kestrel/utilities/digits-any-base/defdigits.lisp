@@ -61,7 +61,7 @@
    (xdoc::p
     "These specialized operations,
      in combination with the unary recognizers and fixers,
-     may be easier to use and reason about
+     are easier to use and reason about
      than the general operations,
      when the base is known.")
 
