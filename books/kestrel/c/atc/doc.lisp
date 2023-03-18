@@ -900,7 +900,7 @@
        that has pointer or array type if @('fn') is non-recursive,
        @('term') is a statement term for @('fn') with loop flag @('nil')
        returning @('void') and affecting @('(var1 ... varn)')
-       that is either a call of a recursive target function
+       that is either a call of a target function
        that precedes @('fn') in the list of targets @('(t1 ... tp)')
        whose body term returns @('void') and affects @('(var1 ... varn)')
        or an @(tsee if) whose test is an expression term returning boolean
