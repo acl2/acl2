@@ -1602,6 +1602,8 @@
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (test-eval (exec-expr-pure test compst))
          ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
+         (test-eval (apconvert-expr-value test-eval))
+         ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
          (test-val (expr-value->value test-eval))
          (continuep (test-value test-val))
          ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
