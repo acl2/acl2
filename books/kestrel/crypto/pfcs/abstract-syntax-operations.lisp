@@ -15,6 +15,8 @@
 (include-book "kestrel/fty/symbol-set" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-operations
@@ -85,8 +87,7 @@
    constr
    :equal (set::union (expression-vars constr.left)
                       (expression-vars constr.right))
-   :relation (expression-list-vars constr.args))
-  :verify-guards :after-returns)
+   :relation (expression-list-vars constr.args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
