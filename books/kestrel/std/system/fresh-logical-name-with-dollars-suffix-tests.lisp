@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -37,15 +37,15 @@
 
 (assert-equal
  (mv-list 2 (fresh-logical-name-with-$s-suffix
-             'len 'function '(len$ len$$) (w state)))
+             'len 'function '(len$$) (w state)))
  '(len$$$
-   (len$$$ len$ len$$)))
+   (len$$$ len$$)))
 
 (assert-equal
  (mv-list 2 (fresh-logical-name-with-$s-suffix
-             'len 'function '(len$ len$$$) (w state)))
+             'len 'function '(len$$$) (w state)))
  '(len$$
-   (len$$ len$ len$$$)))
+   (len$$ len$$$)))
 
 (assert-equal
  (mv-list 2 (fresh-logical-name-with-$s-suffix

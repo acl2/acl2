@@ -49,6 +49,14 @@ void h2_test() {
   printf("m = %d\n", m);
 }
 
+void swap_uints_test() {
+  unsigned int a = 10;
+  unsigned int b = 20;
+  swap_uints(&a, &b);
+  printf("a = %d\n", a);
+  printf("b = %d\n", b);
+}
+
 int main(void) {
   f1_test();
   f2_test();
@@ -57,5 +65,6 @@ int main(void) {
   g3_test();
   h1_test();
   h2_test();
+  swap_uints_test();
   return 0;
 }

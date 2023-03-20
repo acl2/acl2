@@ -335,11 +335,11 @@
        (true-listp-bits-thm `(defrule ,true-listp-bits
                                (true-listp (,name-bits bits))
                                :rule-classes :type-prescription
-                               :enable acl2::true-listp-when-bit-listp))
+                               :enable acl2::true-listp-when-bit-listp-compound-recognizer))
        (true-listp-bytes-thm `(defrule ,true-listp-bytes
                                 (true-listp (,name-bytes bytes))
                                 :rule-classes :type-prescription
-                                :enable acl2::true-listp-when-byte-listp))
+                                :enable acl2::true-listp-when-byte-listp-compound-recognizer))
        (consp-bits-thm `(defrule ,consp-bits
                           (consp (,name-bits bits))
                           :rule-classes :type-prescription
