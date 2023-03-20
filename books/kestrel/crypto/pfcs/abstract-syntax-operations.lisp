@@ -12,10 +12,8 @@
 
 (include-book "abstract-syntax")
 
+(include-book "kestrel/fty/symbol-set" :dir :system)
 (include-book "std/util/deflist" :dir :system)
-
-(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
-(local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,100 +53,62 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expression-vars ((expr expressionp))
-  :returns (vars symbol-listp)
-  :short "Variables in an expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The variables are returned as a list without repetitions."))
+  :returns (vars symbol-setp)
+  :short "Set of variables in an expression."
   (expression-case
    expr
    :const nil
-   :var (list expr.name)
-   :add (union-eq (expression-vars expr.arg1)
-                  (expression-vars expr.arg2))
-   :mul (union-eq (expression-vars expr.arg1)
-                  (expression-vars expr.arg2)))
+   :var (set::insert expr.name nil)
+   :add (set::union (expression-vars expr.arg1)
+                    (expression-vars expr.arg2))
+   :mul (set::union (expression-vars expr.arg1)
+                    (expression-vars expr.arg2)))
   :measure (expression-count expr)
-  :verify-guards :after-returns
-  ///
-
-  (defrule no-duplicatesp-equal-of-expression-vars
-    (no-duplicatesp-equal (expression-vars expr))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expression-list-vars ((exprs expression-listp))
-  :returns (vars symbol-listp)
-  :short "Variables in a list of expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The variables are returned as a list without repetitions."))
+  :returns (vars symbol-setp)
+  :short "Set of variables in a list of expressions."
   (cond ((endp exprs) nil)
-        (t (union-eq (expression-vars (car exprs))
-                     (expression-list-vars (cdr exprs)))))
-  :verify-guards :after-returns
-  ///
-
-  (defrule no-duplicatesp-equal-of-expression-list-vars
-    (no-duplicatesp-equal (expression-list-vars exprs))))
+        (t (set::union (expression-vars (car exprs))
+                       (expression-list-vars (cdr exprs)))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-vars ((constr constraintp))
-  :returns (vars symbol-listp)
-  :short "Variables in a constraint."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The variables are returned as a list without repetitions."))
+  :returns (vars symbol-setp)
+  :short "Set of variables in a constraint."
   (constraint-case
    constr
-   :equal (union-eq (expression-vars constr.left)
-                    (expression-vars constr.right))
+   :equal (set::union (expression-vars constr.left)
+                      (expression-vars constr.right))
    :relation (expression-list-vars constr.args))
-  :verify-guards :after-returns
-  ///
-
-  (defrule no-duplicatesp-equal-of-constraint-vars
-    (no-duplicatesp-equal (constraint-vars expr))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-list-vars ((constrs constraint-listp))
-  :returns (vars symbol-listp)
-  :short "Variables in a list of constraints."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The variables are returned as a list without repetitions."))
+  :returns (vars symbol-setp)
+  :short "Set of variables in a list of constraints."
   (cond ((endp constrs) nil)
-        (t (union-eq (constraint-vars (car constrs))
-                     (constraint-list-vars (cdr constrs)))))
-  :verify-guards :after-returns
-  ///
-
-  (defrule no-duplicatesp-equal-of-constraint-list-vars
-    (no-duplicatesp-equal (constraint-list-vars expr))))
+        (t (set::union (constraint-vars (car constrs))
+                       (constraint-list-vars (cdr constrs)))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define definition-free-vars ((def definitionp))
-  :returns (vars symbol-listp)
-  :short "Free variables in a definition."
+  :returns (vars symbol-setp)
+  :short "Set of free variables in a definition."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the variables in the body minus the parameters.")
-   (xdoc::p
-    "The variables are returned as a list without repetitions."))
-  (set-difference-eq (constraint-list-vars (definition->body def))
-                     (definition->para def))
-  ///
-
-  (defrule no-duplicatesp-equal-of-definition-free-vars
-    (no-duplicatesp-equal (definition-free-vars expr))))
+    "These are the variables in the body minus the parameters."))
+  (set::difference (constraint-list-vars (definition->body def))
+                   (set::mergesort (definition->para def))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
