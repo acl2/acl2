@@ -77,6 +77,16 @@
   :guard (type-nonchar-integerp type)
   :returns (event pseudo-event-formp)
   :short "Event to generate operations on pointed integers of a given type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The enabled return type theorem for each writer
+     has the @(tsee star) wrapper,
+     because this is the kind of rule we want enabled
+     for more strictly typed reasoning.
+     We also add a disabled return type theorem without the wrapper,
+     which may be useful for other purposes,
+     namely when the @(tsee star) wrapper is enabled."))
 
   (b* ((type-string (integer-type-xdoc-string type))
        (<type> (integer-type-to-fixtype type))
