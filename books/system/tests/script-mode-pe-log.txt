@@ -23,7 +23,7 @@ ACL2 !>>(PE 'MINUS-CANCELLATION-ON-RIGHT)
               ]
               \
 >              (DEFTHM MINUS-CANCELLATION-ON-RIGHT
-                       (EQUAL (+ X Y (- X)) (FIX Y)))
+                 (EQUAL (+ X Y (- X)) (FIX Y)))
 ACL2 !>>(INCLUDE-BOOK "script-mode-pe-helper")
 
 Summary

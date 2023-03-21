@@ -31,3 +31,4 @@
           4 :hints
           (("Goal" :expand ((FOO$RAW::out2 n))
                    :induct (sub1-induction n))))
+
