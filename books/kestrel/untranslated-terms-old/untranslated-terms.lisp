@@ -238,7 +238,7 @@
                     (and (untranslated-termp expr)
                          (legal-case-clausesp pairs)
                          (untranslated-term-listp (strip-cadrs pairs)))))
-                (case-match ; (case-match tm ...pat-term-pairs...)
+                (case-match ; (case-match var ...cases...)
                  (and (untranslated-termp (farg1 x))
                       (pat-untranslated-term-pairsp (cdr (fargs x)))))
                 (quote nil) ;; disallow quotes not covered by the untranslated-constantp call above
@@ -579,7 +579,7 @@
                      `(case ,(rename-fns-in-untranslated-term expr alist)
                         ,@(make-doublets vals-to-match
                                          (rename-fns-in-untranslated-term-list vals-to-return alist))))
-                 (if (eq fn 'case-match) ;; (case-match ...)
+                 (if (eq fn 'case-match) ; (case-match var ...cases...)
                      ;; FIXME: Add support for declares in case-match items.
                      `(,fn ,(rename-fns-in-untranslated-term (farg1 term) alist)
                            ,@(rename-fns-in-pat-untranslated-term-pairs (cdr (fargs term)) alist))
@@ -819,7 +819,7 @@
                           (vals-to-return (strip-cadrs pairs)))
                      (union-eq (get-called-fns-in-untranslated-term expr)
                                (get-called-fns-in-untranslated-term-list vals-to-return)))
-                 (if (eq fn 'case-match) ;;(case-match tm <pat-term-pairs>)
+                 (if (eq fn 'case-match) ; (case-match var ...cases...)
                      (union-eq (get-called-fns-in-untranslated-term (farg1 term))
                                (get-called-fns-in-pat-untranslated-term-pairs (cdr (fargs term))))
                    (let ((fn-res (if (consp fn)
@@ -1025,7 +1025,7 @@
                             `(case ,(,term-processor-fn expr ,@extra-args)
                                ,@(make-doublets vals-to-match
                                                 (,term-list-processor-fn vals-to-return ,@extra-args))))
-                        (if (eq fn 'case-match) ;;(case-match tm <pat-term-pairs>)
+                        (if (eq fn 'case-match) ; (case-match var ...cases...)
                             `(,fn ,(,term-processor-fn (farg1 term) ,@extra-args)
                                   ,@(,pat-term-pairs-processor-fn (cdr (fargs term)) ,@extra-args))
                           (let* ((args (fargs term))
@@ -1156,7 +1156,7 @@
                        `(case ,(rename-fns-and-expand-lambdas-in-untranslated-term expr alist)
                           ,@(make-doublets vals-to-match
                                            (rename-fns-and-expand-lambdas-in-untranslated-term-lst vals-to-return alist))))
-                   (if (eq fn 'case-match)
+                   (if (eq fn 'case-match) ; (case-match var ...cases...)
                        `(,fn ,(rename-fns-and-expand-lambdas-in-untranslated-term (farg1 term) alist)
                              ,@(rename-fns-and-expand-lambdas-in-pat-untranslated-term-pairs (cdr (fargs term)) alist))
                      ;; regular function
@@ -1270,7 +1270,7 @@
                      `(case ,(clean-up-0ary-lambdas-in-untranslated-term expr)
                         ,@(make-doublets vals-to-match
                                          (clean-up-0ary-lambdas-in-untranslated-term-list vals-to-return))))
-                 (if (member-eq fn '(case case-match)) ;;(case-match tm <pat-term-pairs>)
+                 (if (member-eq fn '(case case-match)) ; (case-match var ...cases...)
                      `(,fn ,(clean-up-0ary-lambdas-in-untranslated-term (farg1 term))
                            ,@(clean-up-0ary-lambdas-in-pat-untranslated-term-pairs (cdr (fargs term))))
                    (if (consp fn)
@@ -1388,7 +1388,7 @@
                      `(case ,(clean-up-implies-of-t-in-untranslated-term expr)
                         ,@(make-doublets vals-to-match
                                          (clean-up-implies-of-t-in-untranslated-term-list vals-to-return))))
-                 (if (eq fn 'case-match) ;;(case-match tm <pat-term-pairs>)
+                 (if (eq fn 'case-match) ; (case-match var ...cases...)
                      `(,fn ,(clean-up-implies-of-t-in-untranslated-term (farg1 term))
                            ,@(clean-up-implies-of-t-in-pat-untranslated-term-pairs (cdr (fargs term))))
                    (if (consp fn)
@@ -2053,7 +2053,7 @@
                        `(case ,(replace-in-untranslated-term expr alist)
                           ,@(make-doublets vals-to-match
                                            (replace-in-untranslated-term-list vals-to-return alist))))
-                   (if (eq fn 'case-match)
+                   (if (eq fn 'case-match) ; (case-match var ...cases...)
                        (list* fn (replace-in-untranslated-term (farg1 term) alist)
                               (replace-in-pat-untranslated-term-pairs (cdr (fargs term))
                                                                       alist))
@@ -2240,7 +2240,7 @@
                           (vals-to-return (strip-cadrs pairs)))
                      (union-eq (get-vars-in-untranslated-term expr)
                                (get-vars-in-untranslated-term-list vals-to-return)))
-                 (if (eq fn 'case-match) ;;(case-match tm <pat-term-pairs>) ;; TODO: add vars only in pattern
+                 (if (eq fn 'case-match) ; (case-match var ...cases...) ;; TODO: add vars only in pattern
                      (union-eq (get-vars-in-untranslated-term (farg1 term))
                                (get-vars-in-pat-untranslated-term-pairs (cdr (fargs term)) (eq fn 'case-match)))
                    (let ((fn-res (if (consp fn)
@@ -2400,7 +2400,7 @@
                           (vals-to-return (strip-cadrs pairs)))
                      (union-equal (get-calls-in-untranslated-term expr fns)
                                   (get-calls-in-untranslated-term-list vals-to-return fns)))
-                 (if (eq this-fn 'case-match) ;;(case-match tm <pat-term-pairs>)
+                 (if (eq this-fn 'case-match) ; (case-match var ...cases...)
                      (union-equal (get-calls-in-untranslated-term (farg1 term) fns)
                                   (get-calls-in-pat-untranslated-term-pairs (cdr (fargs term)) fns))
                    (let ((fn-res (if (consp this-fn)
@@ -2699,7 +2699,7 @@
                          `(case ,(sublis-var-untranslated-term alist expr)
                             ,@(make-doublets vals-to-match
                                              (sublis-var-untranslated-term-list alist vals-to-return))))
-                     (if (eq fn 'case-match)
+                     (if (eq fn 'case-match) ; (case-match var ...cases...)
                          (list* fn (sublis-var-untranslated-term alist (farg1 term))
                                 (sublis-var-pat-untranslated-term-pairs alist (cdr (fargs term))
                                                                         (eq 'case-match fn)))
