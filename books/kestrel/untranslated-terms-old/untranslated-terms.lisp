@@ -1270,7 +1270,7 @@
                      `(case ,(clean-up-0ary-lambdas-in-untranslated-term expr)
                         ,@(make-doublets vals-to-match
                                          (clean-up-0ary-lambdas-in-untranslated-term-list vals-to-return))))
-                 (if (member-eq fn '(case case-match)) ; (case-match var ...cases...)
+                 (if (eq fn 'case-match) ; (case-match var ...cases...)
                      `(,fn ,(clean-up-0ary-lambdas-in-untranslated-term (farg1 term))
                            ,@(clean-up-0ary-lambdas-in-pat-untranslated-term-pairs (cdr (fargs term))))
                    (if (consp fn)
