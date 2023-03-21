@@ -1,0 +1,9 @@
+; It is necessary to evaluate the definition of all constants defined
+; in vw-eval-fns.lisp before we certify vw-eval.lisp, because all the
+; forms in vw-eval.lisp are read before any of them is evaluated --
+; and the value of constants must be known before attempting to read
+; the form #.<constant> .  We accomplish this here by having this
+; little .acl2 file to load before certifying vw-eval; note that
+; cert.pl loads this .acl2 file automatically in that case.
+
+(include-book "vw-eval-fns")
