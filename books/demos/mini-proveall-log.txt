@@ -68,9 +68,9 @@ Rules: ((:DEFINITION BINARY-APPEND)
 
 Proof succeeded.
 ACL2 !>>>(DEFUN APP (X Y)
-                (IF (CONSP X)
-                    (CONS (CAR X) (APP (CDR X) Y))
-                    Y))
+           (IF (CONSP X)
+               (CONS (CAR X) (APP (CDR X) Y))
+             Y))
 
 The admission of APP is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -83,8 +83,8 @@ Form:  ( DEFUN APP ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  APP
 ACL2 !>>>(DEFTHM ASSOC-OF-APP
-                 (EQUAL (APP (APP A B) C)
-                        (APP A (APP B C))))
+           (EQUAL (APP (APP A B) C)
+                  (APP A (APP B C))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -121,9 +121,9 @@ Rules: ((:DEFINITION APP)
         (:REWRITE CDR-CONS))
  ASSOC-OF-APP
 ACL2 !>>>(DEFUN REV (X)
-                (IF (CONSP X)
-                    (APP (REV (CDR X)) (CONS (CAR X) NIL))
-                    NIL))
+           (IF (CONSP X)
+               (APP (REV (CDR X)) (CONS (CAR X) NIL))
+             NIL))
 
 The admission of REV is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -136,8 +136,9 @@ Form:  ( DEFUN REV ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION APP))
  REV
-ACL2 !>>>(DEFTHM TRUE-LISTP-REV (TRUE-LISTP (REV X))
-                 :RULE-CLASSES (:REWRITE :GENERALIZE))
+ACL2 !>>>(DEFTHM TRUE-LISTP-REV
+           (TRUE-LISTP (REV X))
+           :RULE-CLASSES (:REWRITE :GENERALIZE))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -204,16 +205,16 @@ Rules: ((:DEFINITION APP)
         (:TYPE-PRESCRIPTION TRUE-LISTP))
  TRUE-LISTP-REV
 ACL2 !>>>(DEFTHM REV-APP-PROOF-BUILDER
-                 (EQUAL (REV (APP A B))
-                        (APP (REV B) (REV A)))
-                 :RULE-CLASSES NIL
-                 :INSTRUCTIONS (:INDUCT :BASH :INDUCT :BASH :SPLIT (:DV 1)
-                                        :X :NX (:DV 1)
-                                        :X
-                                        :TOP :S
-                                        :BASH (:DIVE 1 1)
-                                        := (:DROP 2)
-                                        :TOP :BASH))
+           (EQUAL (REV (APP A B))
+                  (APP (REV B) (REV A)))
+           :RULE-CLASSES NIL
+           :INSTRUCTIONS (:INDUCT :BASH :INDUCT :BASH :SPLIT (:DV 1)
+                                  :X :NX (:DV 1)
+                                  :X
+                                  :TOP :S
+                                  :BASH (:DIVE 1 1)
+                                  := (:DROP 2)
+                                  :TOP :BASH))
 
 Entering the proof-builder....
 
@@ -470,8 +471,8 @@ Rules: ((:DEFINITION APP)
         (:REWRITE CDR-CONS))
  REV-APP-PROOF-BUILDER
 ACL2 !>>>(DEFTHM REV-APP
-                 (EQUAL (REV (APP A B))
-                        (APP (REV B) (REV A))))
+           (EQUAL (REV (APP A B))
+                  (APP (REV B) (REV A))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -544,8 +545,8 @@ Rules: ((:DEFINITION APP)
         (:REWRITE CONS-CAR-CDR))
  REV-APP
 ACL2 !>>>(DEFTHM REV-REV
-                 (IMPLIES (TRUE-LISTP X)
-                          (EQUAL (REV (REV X)) X)))
+           (IMPLIES (TRUE-LISTP X)
+                    (EQUAL (REV (REV X)) X)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -589,11 +590,11 @@ Rules: ((:DEFINITION APP)
         (:REWRITE REV-APP))
  REV-REV
 ACL2 !>>>(ENCAPSULATE (((LT * *) => *))
-                      (LOCAL (DEFUN LT (X Y)
-                                    (DECLARE (IGNORE X Y))
-                                    NIL))
-                      (DEFTHM LT-NON-SYMMETRIC
-                              (IMPLIES (LT X Y) (NOT (LT Y X)))))
+           (LOCAL (DEFUN LT (X Y)
+                    (DECLARE (IGNORE X Y))
+                    NIL))
+           (DEFTHM LT-NON-SYMMETRIC
+             (IMPLIES (LT X Y) (NOT (LT Y X)))))
 
 To verify that the two encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -603,8 +604,8 @@ Encapsulated Events:
 
 
 ACL2 !>>>>(LOCAL (DEFUN LT (X Y)
-                        (DECLARE (IGNORE X Y))
-                        NIL))
+                   (DECLARE (IGNORE X Y))
+                   NIL))
 
 Since LT is non-recursive, its admission is trivial.  We observe that
 the type of LT is described by the theorem (EQUAL (LT X Y) NIL).  
@@ -616,7 +617,7 @@ LT
 
 
 ACL2 !>>>>(DEFTHM LT-NON-SYMMETRIC
-                  (IMPLIES (LT X Y) (NOT (LT Y X))))
+            (IMPLIES (LT X Y) (NOT (LT Y X))))
 
 ACL2 Warning [Non-rec] in ( DEFTHM LT-NON-SYMMETRIC ...):  A :REWRITE
 rule generated from LT-NON-SYMMETRIC will be triggered only by terms
@@ -657,9 +658,9 @@ Rules: NIL
 Warnings:  Subsume and Non-rec
  LT
 ACL2 !>>>(DEFUN INSERT (X LST)
-                (COND ((ATOM LST) (LIST X))
-                      ((LT X (CAR LST)) (CONS X LST))
-                      (T (CONS (CAR LST) (INSERT X (CDR LST))))))
+           (COND ((ATOM LST) (LIST X))
+                 ((LT X (CAR LST)) (CONS X LST))
+                 (T (CONS (CAR LST) (INSERT X (CDR LST))))))
 
 The admission of INSERT is trivial, using the relation O< (which is
 known to be well-founded on the domain recognized by O-P) and the measure
@@ -671,9 +672,9 @@ Form:  ( DEFUN INSERT ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  INSERT
 ACL2 !>>>(DEFUN INSERT-SORT (LST)
-                (COND ((ATOM LST) NIL)
-                      (T (INSERT (CAR LST)
-                                 (INSERT-SORT (CDR LST))))))
+           (COND ((ATOM LST) NIL)
+                 (T (INSERT (CAR LST)
+                            (INSERT-SORT (CDR LST))))))
 
 The admission of INSERT-SORT is trivial, using the relation O< (which
 is known to be well-founded on the domain recognized by O-P) and the
@@ -687,9 +688,9 @@ Form:  ( DEFUN INSERT-SORT ...)
 Rules: ((:TYPE-PRESCRIPTION INSERT))
  INSERT-SORT
 ACL2 !>>>(DEFUN DEL (X LST)
-                (COND ((ATOM LST) NIL)
-                      ((EQUAL X (CAR LST)) (CDR LST))
-                      (T (CONS (CAR LST) (DEL X (CDR LST))))))
+           (COND ((ATOM LST) NIL)
+                 ((EQUAL X (CAR LST)) (CDR LST))
+                 (T (CONS (CAR LST) (DEL X (CDR LST))))))
 
 The admission of DEL is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -700,9 +701,9 @@ Form:  ( DEFUN DEL ...)
 Rules: NIL
  DEL
 ACL2 !>>>(DEFUN MEM (X LST)
-                (COND ((ATOM LST) NIL)
-                      ((EQUAL X (CAR LST)) T)
-                      (T (MEM X (CDR LST)))))
+           (COND ((ATOM LST) NIL)
+                 ((EQUAL X (CAR LST)) T)
+                 (T (MEM X (CDR LST)))))
 
 The admission of MEM is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -714,10 +715,10 @@ Form:  ( DEFUN MEM ...)
 Rules: NIL
  MEM
 ACL2 !>>>(DEFUN PERM (LST1 LST2)
-                (COND ((ATOM LST1) (ATOM LST2))
-                      ((MEM (CAR LST1) LST2)
-                       (PERM (CDR LST1) (DEL (CAR LST1) LST2)))
-                      (T NIL)))
+           (COND ((ATOM LST1) (ATOM LST2))
+                 ((MEM (CAR LST1) LST2)
+                  (PERM (CDR LST1) (DEL (CAR LST1) LST2)))
+                 (T NIL)))
 
 The admission of PERM is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -777,10 +778,10 @@ Rules: ((:DEFINITION ATOM)
         (:TYPE-PRESCRIPTION PERM))
  PERM-REFLEXIVE
 ACL2 !>>>(DEFTHM PERM-CONS
-                 (IMPLIES (MEM A X)
-                          (EQUAL (PERM X (CONS A Y))
-                                 (PERM (DEL A X) Y)))
-                 :HINTS (("Goal" :INDUCT (PERM X Y))))
+           (IMPLIES (MEM A X)
+                    (EQUAL (PERM X (CONS A Y))
+                           (PERM (DEL A X) Y)))
+           :HINTS (("Goal" :INDUCT (PERM X Y))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -842,7 +843,7 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION DEL) (:DEFINITION MEM))
  PERM-CONS
 ACL2 !>>>(DEFTHM PERM-SYMMETRIC
-                 (IMPLIES (PERM X Y) (PERM Y X)))
+           (IMPLIES (PERM X Y) (PERM Y X)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -897,8 +898,8 @@ Rules: ((:DEFINITION ATOM)
         (:TYPE-PRESCRIPTION PERM))
  PERM-SYMMETRIC
 ACL2 !>>>(DEFTHM MEM-DEL
-                 (IMPLIES (MEM A (DEL B X)) (MEM A X))
-                 :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
+           (IMPLIES (MEM A (DEL B X)) (MEM A X))
+           :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -953,9 +954,9 @@ Rules: ((:DEFINITION ATOM)
         (:TYPE-PRESCRIPTION MEM))
  MEM-DEL
 ACL2 !>>>(DEFTHM PERM-MEM
-                 (IMPLIES (AND (PERM X Y) (MEM A X))
-                          (MEM A Y))
-                 :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
+           (IMPLIES (AND (PERM X Y) (MEM A X))
+                    (MEM A Y))
+           :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1012,8 +1013,8 @@ Rules: ((:DEFINITION ATOM)
         (:TYPE-PRESCRIPTION MEM))
  PERM-MEM
 ACL2 !>>>(DEFTHM MEM-DEL2
-                 (IMPLIES (AND (MEM A X) (NOT (EQUAL A B)))
-                          (MEM A (DEL B X))))
+           (IMPLIES (AND (MEM A X) (NOT (EQUAL A B)))
+                    (MEM A (DEL B X))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1066,8 +1067,8 @@ Rules: ((:DEFINITION ATOM)
         (:TYPE-PRESCRIPTION MEM))
  MEM-DEL2
 ACL2 !>>>(DEFTHM COMM-DEL
-                 (EQUAL (DEL A (DEL B X))
-                        (DEL B (DEL A X))))
+           (EQUAL (DEL A (DEL B X))
+                  (DEL B (DEL A X))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1124,8 +1125,8 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION DEL))
  COMM-DEL
 ACL2 !>>>(DEFTHM PERM-DEL
-                 (IMPLIES (PERM X Y)
-                          (PERM (DEL A X) (DEL A Y))))
+           (IMPLIES (PERM X Y)
+                    (PERM (DEL A X) (DEL A Y))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1185,9 +1186,9 @@ Rules: ((:DEFINITION ATOM)
         (:TYPE-PRESCRIPTION PERM))
  PERM-DEL
 ACL2 !>>>(DEFTHM PERM-TRANSITIVE
-                 (IMPLIES (AND (PERM X Y) (PERM Y Z))
-                          (PERM X Z))
-                 :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
+           (IMPLIES (AND (PERM X Y) (PERM Y Z))
+                    (PERM X Z))
+           :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1333,9 +1334,9 @@ Rules: NIL
 Warnings:  Equiv
  PERM-IMPLIES-IFF-MEM-2
 ACL2 !>>>(DEFTHM ATOM-PERM
-                 (IMPLIES (NOT (CONSP X)) (PERM X NIL))
-                 :RULE-CLASSES :FORWARD-CHAINING
-                 :HINTS (("Goal" :IN-THEORY (ENABLE PERM))))
+           (IMPLIES (NOT (CONSP X)) (PERM X NIL))
+           :RULE-CLASSES :FORWARD-CHAINING
+           :HINTS (("Goal" :IN-THEORY (ENABLE PERM))))
 
 ACL2 Observation in ( DEFTHM ATOM-PERM ...):  The :TRIGGER-TERMS for
 the :FORWARD-CHAINING rule ATOM-PERM will consist of the list containing
@@ -1350,7 +1351,7 @@ Rules: ((:DEFINITION NOT)
         (:EXECUTABLE-COUNTERPART CONSP))
  ATOM-PERM
 ACL2 !>>>(DEFTHM INSERT-IS-CONS
-                 (PERM (INSERT A X) (CONS A X)))
+           (PERM (INSERT A X) (CONS A X)))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM INSERT-IS-CONS ...):  In
 a :REWRITE rule generated from INSERT-IS-CONS, equivalence relation
@@ -1423,7 +1424,7 @@ Splitter rules (see :DOC splitter):
 Warnings:  Double-rewrite
  INSERT-IS-CONS
 ACL2 !>>>(DEFTHM INSERT-SORT-IS-ID
-                 (PERM (INSERT-SORT X) X))
+           (PERM (INSERT-SORT X) X))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM INSERT-SORT-IS-ID ...): 
 In a :REWRITE rule generated from INSERT-SORT-IS-ID, equivalence relation
@@ -1521,8 +1522,8 @@ Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  PERM-IMPLIES-PERM-APP-2
 ACL2 !>>>(DEFTHM APP-CONS
-                 (PERM (APP A (CONS B C))
-                       (CONS B (APP A C))))
+           (PERM (APP A (CONS B C))
+                 (CONS B (APP A C))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1565,7 +1566,8 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-CONS-2)
         (:REWRITE CDR-CONS)
         (:REWRITE PERM-CONS))
  APP-CONS
-ACL2 !>>>(DEFTHM APP-COMMUTES (PERM (APP A B) (APP B A)))
+ACL2 !>>>(DEFTHM APP-COMMUTES
+           (PERM (APP A B) (APP B A)))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM APP-COMMUTES ...):  In a
 :REWRITE rule generated from APP-COMMUTES, equivalence relation PERM
@@ -1641,9 +1643,10 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-APP-2)
         (:REWRITE CONS-CAR-CDR))
 Warnings:  Subsume and Double-rewrite
  APP-COMMUTES
-ACL2 !>>>(DEFCONG PERM PERM (APP X Y)
-                  1
-                  :HINTS (("Goal" :INDUCT (APP Y X))))
+ACL2 !>>>(DEFCONG PERM PERM
+           (APP X Y)
+           1
+           :HINTS (("Goal" :INDUCT (APP Y X))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1750,12 +1753,12 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-APP-1)
 Warnings:  Double-rewrite
  REV-IS-ID
 ACL2 !>>>(DEFUN == (X Y)
-                (IF (CONSP X)
-                    (IF (CONSP Y)
-                        (AND (EQUAL (CAR X) (CAR Y))
-                             (== (CDR X) (CDR Y)))
-                        NIL)
-                    (NOT (CONSP Y))))
+           (IF (CONSP X)
+               (IF (CONSP Y)
+                   (AND (EQUAL (CAR X) (CAR Y))
+                        (== (CDR X) (CDR Y)))
+                 NIL)
+             (NOT (CONSP Y))))
 
 The admission of == is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -1813,7 +1816,7 @@ Rules: ((:DEFINITION ==)
         (:TYPE-PRESCRIPTION ==))
  ==-SYMMETRIC
 ACL2 !>>>(DEFTHM ==-REFLEXIVE
-                 (IMPLIES (== X Y) (== Y X)))
+           (IMPLIES (== X Y) (== Y X)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -2065,7 +2068,8 @@ Summary
 Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  ==-IMPLIES-==-APP-1
-ACL2 !>>>(DEFTHM REV-REV-AGAIN (== (REV (REV X)) X))
+ACL2 !>>>(DEFTHM REV-REV-AGAIN
+           (== (REV (REV X)) X))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM REV-REV-AGAIN ...):  In a
 :REWRITE rule generated from REV-REV-AGAIN, equivalence relation ==
@@ -2115,10 +2119,10 @@ Rules: ((:CONGRUENCE ==-IMPLIES-==-APP-2)
 Warnings:  Double-rewrite
  REV-REV-AGAIN
 ACL2 !>>>(DEFUN ENDS-IN-A-0 (X)
-                (DECLARE (XARGS :GUARD T))
-                (IF (CONSP X)
-                    (ENDS-IN-A-0 (CDR X))
-                    (EQUAL X 0)))
+           (DECLARE (XARGS :GUARD T))
+           (IF (CONSP X)
+               (ENDS-IN-A-0 (CDR X))
+             (EQUAL X 0)))
 
 The admission of ENDS-IN-A-0 is trivial, using the relation O< (which
 is known to be well-founded on the domain recognized by O-P) and the
@@ -2137,11 +2141,12 @@ Form:  ( DEFUN ENDS-IN-A-0 ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  ENDS-IN-A-0
 ACL2 !>>>(DEFUN APP0 (X Y)
-                (DECLARE (XARGS :GUARD (ENDS-IN-A-0 X)))
-                (IF (ENDS-IN-A-0 X)
-                    (IF (EQUAL X 0)
-                        Y (CONS (CAR X) (APP0 (CDR X) Y)))
-                    'DEFAULT))
+           (DECLARE (XARGS :GUARD (ENDS-IN-A-0 X)))
+           (IF (ENDS-IN-A-0 X)
+               (IF (EQUAL X 0)
+                   Y
+                 (CONS (CAR X) (APP0 (CDR X) Y)))
+             'DEFAULT))
 
 For the admission of APP0 we will use the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -2197,12 +2202,12 @@ Rules: ((:DEFINITION ENDS-IN-A-0)
         (:TYPE-PRESCRIPTION ACL2-COUNT))
  APP0
 ACL2 !>>>(DEFUN REV0 (X)
-                (DECLARE (XARGS :GUARD (ENDS-IN-A-0 X)))
-                (IF (ENDS-IN-A-0 X)
-                    (IF (EQUAL X 0)
-                        0
-                        (APP0 (REV0 (CDR X)) (CONS (CAR X) 0)))
-                    'DEFAULT))
+           (DECLARE (XARGS :GUARD (ENDS-IN-A-0 X)))
+           (IF (ENDS-IN-A-0 X)
+               (IF (EQUAL X 0)
+                   0
+                 (APP0 (REV0 (CDR X)) (CONS (CAR X) 0)))
+             'DEFAULT))
 
 For the admission of REV0 we will use the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -2340,8 +2345,8 @@ Rules: ((:DEFINITION APP0)
         (:TYPE-PRESCRIPTION ENDS-IN-A-0))
  REV0
 ACL2 !>>>(DEFTHM APP0-RIGHT-ID
-                 (IMPLIES (FORCE (ENDS-IN-A-0 X))
-                          (EQUAL (APP0 X 0) X)))
+           (IMPLIES (FORCE (ENDS-IN-A-0 X))
+                    (EQUAL (APP0 X 0) X)))
 Goal'
 
 ([ A key checkpoint:
@@ -2397,7 +2402,7 @@ Rules: ((:DEFINITION APP0)
         (:TYPE-PRESCRIPTION ENDS-IN-A-0))
  APP0-RIGHT-ID
 ACL2 !>>>(DEFUN ENDS-IN-A-ZERO (X)
-                (ENDS-IN-A-0 X))
+           (ENDS-IN-A-0 X))
 
 Since ENDS-IN-A-ZERO is non-recursive, its admission is trivial.  We
 observe that the type of ENDS-IN-A-ZERO is described by the theorem
@@ -2409,8 +2414,8 @@ Form:  ( DEFUN ENDS-IN-A-ZERO ...)
 Rules: ((:TYPE-PRESCRIPTION ENDS-IN-A-0))
  ENDS-IN-A-ZERO
 ACL2 !>>>(DEFTHM ENDS-IN-A-ZERO-APP0
-                 (IMPLIES (FORCE (ENDS-IN-A-ZERO X))
-                          (ENDS-IN-A-0 (APP0 X (CONS Y 0)))))
+           (IMPLIES (FORCE (ENDS-IN-A-ZERO X))
+                    (ENDS-IN-A-0 (APP0 X (CONS Y 0)))))
 Goal'
 
 ([ A key checkpoint:
@@ -2475,13 +2480,13 @@ Form:  ( IN-THEORY (DISABLE ...))
 Rules: NIL
  :CURRENT-THEORY-UPDATED
 ACL2 !>>>(DEFTHM FORCE-TEST
-                 (AND (IMPLIES (ENDS-IN-A-0 X)
-                               (EQUAL (APP0 (REV0 X) 0) (REV0 X)))
-                      (IMPLIES (ENDS-IN-A-0 Y)
-                               (EQUAL (APP0 (REV0 Y) 0) (REV0 Y)))
-                      (IMPLIES (ENDS-IN-A-0 Z)
-                               (EQUAL (APP0 (REV0 Z) 0) (REV0 Z))))
-                 :HINTS (("[2]Goal" :IN-THEORY (ENABLE ENDS-IN-A-ZERO))))
+           (AND (IMPLIES (ENDS-IN-A-0 X)
+                         (EQUAL (APP0 (REV0 X) 0) (REV0 X)))
+                (IMPLIES (ENDS-IN-A-0 Y)
+                         (EQUAL (APP0 (REV0 Y) 0) (REV0 Y)))
+                (IMPLIES (ENDS-IN-A-0 Z)
+                         (EQUAL (APP0 (REV0 Z) 0) (REV0 Z))))
+           :HINTS (("[2]Goal" :IN-THEORY (ENABLE ENDS-IN-A-ZERO))))
 Subgoal 3
 
 Forcing Round 1 is pending (caused first by Subgoal 3).
@@ -2605,12 +2610,12 @@ Rules: ((:DEFINITION ENDS-IN-A-0)
         (:TYPE-PRESCRIPTION ENDS-IN-A-0))
  FORCE-TEST
 ACL2 !>>>(DEFUN PROPER-CONS-NEST-P (X)
-                (DECLARE (XARGS :GUARD (PSEUDO-TERMP X)))
-                (COND ((SYMBOLP X) NIL)
-                      ((FQUOTEP X) (TRUE-LISTP (CADR X)))
-                      ((EQ (FFN-SYMB X) 'CONS)
-                       (PROPER-CONS-NEST-P (FARGN X 2)))
-                      (T NIL)))
+           (DECLARE (XARGS :GUARD (PSEUDO-TERMP X)))
+           (COND ((SYMBOLP X) NIL)
+                 ((FQUOTEP X) (TRUE-LISTP (CADR X)))
+                 ((EQ (FFN-SYMB X) 'CONS)
+                  (PROPER-CONS-NEST-P (FARGN X 2)))
+                 (T NIL)))
 
 For the admission of PROPER-CONS-NEST-P we will use the relation O<
 (which is known to be well-founded on the domain recognized by O-P)
@@ -2725,8 +2730,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:TYPE-PRESCRIPTION ACL2-COUNT)
         (:TYPE-PRESCRIPTION PSEUDO-TERM-LISTP))
  PROPER-CONS-NEST-P
-ACL2 !>>>(DEFTHM
-          ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST
+ACL2 !>>>(DEFTHM ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST
           (IMPLIES (AND (ORDERED-SYMBOL-ALISTP L)
                         (SYMBOLP KEY)
                         (ASSOC-EQ KEY L))

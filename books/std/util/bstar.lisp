@@ -657,6 +657,7 @@ The B* binding of ~x0 to ~x1 isn't allowed." pattern assign-exprs))
   (declare (xargs :guard (debuggable-binders-p bindlist)))
   (b*-fn bindlist (cons expr exprs)))
 
+(table acl2::pp-special-syms 'b* 1)
 
 
 (defxdoc def-b*-binder

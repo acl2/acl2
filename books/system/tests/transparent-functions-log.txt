@@ -8,10 +8,11 @@ ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
 ACL2 !>>(ENCAPSULATE ((F1 (X) T :TRANSPARENT T) (F2 (X) T))
-                     (LOCAL (DEFUN F1 (X) X))
-                     (LOCAL (DEFUN F2 (X) X))
-                     (DEFTHM F1-IS-F2 (EQUAL (F2 X) (F1 X))
-                             :RULE-CLASSES NIL))
+          (LOCAL (DEFUN F1 (X) X))
+          (LOCAL (DEFUN F2 (X) X))
+          (DEFTHM F1-IS-F2
+            (EQUAL (F2 X) (F1 X))
+            :RULE-CLASSES NIL))
 
 
 ACL2 Error in ( ENCAPSULATE ((F1 ...) ...) ...):  The signature for
@@ -30,10 +31,11 @@ failure.
 ******** FAILED ********
 ACL2 !>>(ENCAPSULATE (((F1 *) => *)
                       ((F2 *) => * :TRANSPARENT T))
-                     (LOCAL (DEFUN F1 (X) X))
-                     (LOCAL (DEFUN F2 (X) X))
-                     (DEFTHM F1-IS-F2 (EQUAL (F2 X) (F1 X))
-                             :RULE-CLASSES NIL))
+          (LOCAL (DEFUN F1 (X) X))
+          (LOCAL (DEFUN F2 (X) X))
+          (DEFTHM F1-IS-F2
+            (EQUAL (F2 X) (F1 X))
+            :RULE-CLASSES NIL))
 
 
 ACL2 Error in ( ENCAPSULATE (((F1 * ...) ...) ...) ...):  The signature
@@ -52,10 +54,11 @@ See :DOC failure.
 ******** FAILED ********
 ACL2 !>>(ENCAPSULATE (((F1 *) => * :TRANSPARENT T)
                       ((F2 *) => * :TRANSPARENT NIL))
-                     (LOCAL (DEFUN F1 (X) X))
-                     (LOCAL (DEFUN F2 (X) X))
-                     (DEFTHM F1-IS-F2 (EQUAL (F2 X) (F1 X))
-                             :RULE-CLASSES NIL))
+          (LOCAL (DEFUN F1 (X) X))
+          (LOCAL (DEFUN F2 (X) X))
+          (DEFTHM F1-IS-F2
+            (EQUAL (F2 X) (F1 X))
+            :RULE-CLASSES NIL))
 
 
 ACL2 Error in ( ENCAPSULATE (((F1 * ...) ...) ...) ...):  The signature
@@ -74,15 +77,15 @@ See :DOC failure.
 ******** FAILED ********
 ACL2 !>>(ENCAPSULATE ((F1 (X) T :TRANSPARENT T)
                       (F2 (X) T :TRANSPARENT T))
-                     (LOCAL (DEFUN F1 (X) X))
-                     (LOCAL (DEFUN F2 (X) X))
-                     (ENCAPSULATE ((F3 (X) T))
-                                  (LOCAL (DEFUN F3 (X) X))
-                                  (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
-                     (DEFTHM F1-IS-F2
-                             (OR (EQUAL (F2 X) (F1 X))
-                                 (EQUAL (F2 X) (F2 X)))
-                             :RULE-CLASSES NIL))
+          (LOCAL (DEFUN F1 (X) X))
+          (LOCAL (DEFUN F2 (X) X))
+          (ENCAPSULATE ((F3 (X) T))
+            (LOCAL (DEFUN F3 (X) X))
+            (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
+          (DEFTHM F1-IS-F2
+            (OR (EQUAL (F2 X) (F1 X))
+                (EQUAL (F2 X) (F2 X)))
+            :RULE-CLASSES NIL))
 
 To verify that the four encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -114,8 +117,8 @@ F2
 
 
 ACL2 !>>>(ENCAPSULATE ((F3 (X) T))
-                      (LOCAL (DEFUN F3 (X) X))
-                      (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
+           (LOCAL (DEFUN F3 (X) X))
+           (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
 
 To verify that the two encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -182,9 +185,9 @@ F3
 
 
 ACL2 !>>>(DEFTHM F1-IS-F2
-                 (OR (EQUAL (F2 X) (F1 X))
-                     (EQUAL (F2 X) (F2 X)))
-                 :RULE-CLASSES NIL)
+           (OR (EQUAL (F2 X) (F1 X))
+               (EQUAL (F2 X) (F2 X)))
+           :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -212,15 +215,15 @@ failure.
 
 ******** FAILED ********
 ACL2 !>>(ENCAPSULATE ((F1 (X) T) (F2 (X) T))
-                     (LOCAL (DEFUN F1 (X) X))
-                     (LOCAL (DEFUN F2 (X) X))
-                     (ENCAPSULATE ((F3 (X) T :TRANSPARENT T))
-                                  (LOCAL (DEFUN F3 (X) X))
-                                  (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
-                     (DEFTHM F1-IS-F2
-                             (OR (EQUAL (F2 X) (F1 X))
-                                 (EQUAL (F2 X) (F2 X)))
-                             :RULE-CLASSES NIL))
+          (LOCAL (DEFUN F1 (X) X))
+          (LOCAL (DEFUN F2 (X) X))
+          (ENCAPSULATE ((F3 (X) T :TRANSPARENT T))
+            (LOCAL (DEFUN F3 (X) X))
+            (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
+          (DEFTHM F1-IS-F2
+            (OR (EQUAL (F2 X) (F1 X))
+                (EQUAL (F2 X) (F2 X)))
+            :RULE-CLASSES NIL))
 
 To verify that the four encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -252,8 +255,8 @@ F2
 
 
 ACL2 !>>>(ENCAPSULATE ((F3 (X) T :TRANSPARENT T))
-                      (LOCAL (DEFUN F3 (X) X))
-                      (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
+           (LOCAL (DEFUN F3 (X) X))
+           (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
 
 To verify that the two encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -320,9 +323,9 @@ F3
 
 
 ACL2 !>>>(DEFTHM F1-IS-F2
-                 (OR (EQUAL (F2 X) (F1 X))
-                     (EQUAL (F2 X) (F2 X)))
-                 :RULE-CLASSES NIL)
+           (OR (EQUAL (F2 X) (F1 X))
+               (EQUAL (F2 X) (F2 X)))
+           :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -351,10 +354,11 @@ failure.
 
 ******** FAILED ********
 ACL2 !>>(ENCAPSULATE ((F1 (X) T))
-                     (LOCAL (DEFUN F1 (X) X))
-                     (ENCAPSULATE ((F3 (X) T :TRANSPARENT T))
-                                  (LOCAL (DEFUN F3 (X) X))
-                                  (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X)))))
+          (LOCAL (DEFUN F1 (X) X))
+          (ENCAPSULATE ((F3 (X) T :TRANSPARENT T))
+            (LOCAL (DEFUN F3 (X) X))
+            (DEFTHM F3-IS-F1
+              (EQUAL (F3 X) (F1 X)))))
 
 To verify that the two encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -375,8 +379,8 @@ F1
 
 
 ACL2 !>>>(ENCAPSULATE ((F3 (X) T :TRANSPARENT T))
-                      (LOCAL (DEFUN F3 (X) X))
-                      (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
+           (LOCAL (DEFUN F3 (X) X))
+           (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
 
 To verify that the two encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -460,10 +464,11 @@ failure.
 
 ******** FAILED ********
 ACL2 !>>(ENCAPSULATE ((F1 (X) T :TRANSPARENT 7) (F2 (X) T))
-                     (LOCAL (DEFUN F1 (X) X))
-                     (LOCAL (DEFUN F2 (X) X))
-                     (DEFTHM F1-IS-F2 (EQUAL (F2 X) (F1 X))
-                             :RULE-CLASSES NIL))
+          (LOCAL (DEFUN F1 (X) X))
+          (LOCAL (DEFUN F2 (X) X))
+          (DEFTHM F1-IS-F2
+            (EQUAL (F2 X) (F1 X))
+            :RULE-CLASSES NIL))
 
 
 ACL2 Error in ( ENCAPSULATE ((F1 ...) ...) ...):  The object 
@@ -483,13 +488,14 @@ ACL2 !>>(PARTIAL-ENCAPSULATE ((F (X) T :TRANSPARENT T)
                               (G (X) T :TRANSPARENT T))
                              NIL
                              (LOCAL (DEFUN F (X)
-                                           (DECLARE (XARGS :GUARD T))
-                                           (CONSP X)))
+                                      (DECLARE (XARGS :GUARD T))
+                                      (CONSP X)))
                              (LOCAL (DEFUN G (X)
-                                           (DECLARE (XARGS :GUARD T))
-                                           (CONSP X)))
-                             (DEFTHM BOOLEANP-F (BOOLEANP (F X))
-                                     :RULE-CLASSES :TYPE-PRESCRIPTION))
+                                      (DECLARE (XARGS :GUARD T))
+                                      (CONSP X)))
+                             (DEFTHM BOOLEANP-F
+                               (BOOLEANP (F X))
+                               :RULE-CLASSES :TYPE-PRESCRIPTION))
 
 To verify that the four encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -499,8 +505,8 @@ Encapsulated Events:
 
 
 ACL2 !>>>(LOCAL (DEFUN F (X)
-                       (DECLARE (XARGS :GUARD T))
-                       (CONSP X)))
+                  (DECLARE (XARGS :GUARD T))
+                  (CONSP X)))
 
 Since F is non-recursive, its admission is trivial.  We observe that
 the type of F is described by the theorem 
@@ -518,8 +524,8 @@ F
 
 
 ACL2 !>>>(LOCAL (DEFUN G (X)
-                       (DECLARE (XARGS :GUARD T))
-                       (CONSP X)))
+                  (DECLARE (XARGS :GUARD T))
+                  (CONSP X)))
 
 Since G is non-recursive, its admission is trivial.  We observe that
 the type of G is described by the theorem 
@@ -536,8 +542,9 @@ Rules: NIL
 G
 
 
-ACL2 !>>>(DEFTHM BOOLEANP-F (BOOLEANP (F X))
-                 :RULE-CLASSES :TYPE-PRESCRIPTION)
+ACL2 !>>>(DEFTHM BOOLEANP-F
+           (BOOLEANP (F X))
+           :RULE-CLASSES :TYPE-PRESCRIPTION)
 
 ACL2 Observation in ( DEFTHM BOOLEANP-F ...):  Our heuristics choose
 (F X) as the :TYPED-TERM.
@@ -585,11 +592,11 @@ Rules: NIL
  F0
 ACL2 !>>(ENCAPSULATE ((F1 (X) T :TRANSPARENT T)
                       ((F2 *) => * :TRANSPARENT T))
-                     (LOCAL (DEFUN F1 (X) (F0 X)))
-                     (LOCAL (DEFUN F2 (X) (F0 X)))
-                     (DEFTHM F2-IS-F1
-                             (IMPLIES (F0 X) (EQUAL (F2 X) (F1 X)))
-                             :RULE-CLASSES NIL))
+          (LOCAL (DEFUN F1 (X) (F0 X)))
+          (LOCAL (DEFUN F2 (X) (F0 X)))
+          (DEFTHM F2-IS-F1
+            (IMPLIES (F0 X) (EQUAL (F2 X) (F1 X)))
+            :RULE-CLASSES NIL))
 
 To verify that the three encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -621,8 +628,8 @@ F2
 
 
 ACL2 !>>>(DEFTHM F2-IS-F1
-                 (IMPLIES (F0 X) (EQUAL (F2 X) (F1 X)))
-                 :RULE-CLASSES NIL)
+           (IMPLIES (F0 X) (EQUAL (F2 X) (F1 X)))
+           :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -718,8 +725,8 @@ Form:  ( DEFUN META-FN1 ...)
 Rules: NIL
  META-FN1
 ACL2 !>>(DEFTHM THM1
-                (EQUAL (EVL X A) (EVL (META-FN1 X) A))
-                :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+          (EQUAL (EVL X A) (EVL (META-FN1 X) A))
+          :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
 
 
 ACL2 Error in ( DEFTHM THM1 ...):  The proposed :META rule, THM1, is
@@ -852,8 +859,8 @@ ACL2 Error [Failure] in ( DEFATTACH (F1 CONSP) ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFAXIOM THM1
-                  (EQUAL (EVL X A) (EVL (META-FN1 X) A))
-                  :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+          (EQUAL (EVL X A) (EVL (META-FN1 X) A))
+          :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
 
 
 ACL2 Error in ( DEFAXIOM THM1 ...):  It is illegal for a defaxiom event
@@ -954,8 +961,8 @@ Form:  ( DEFATTACH (F1 CONSP) ...)
 Rules: NIL
  :ATTACHMENTS-RECORDED
 ACL2 !>>(DEFTHM THM1
-                (EQUAL (EVL X A) (EVL (META-FN1 X) A))
-                :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+          (EQUAL (EVL X A) (EVL (META-FN1 X) A))
+          :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
 
 Q.E.D.
 
@@ -993,12 +1000,12 @@ ACL2 Error [Failure] in ( DEFATTACH (F1 NIL) ...):  See :DOC failure.
 ******** FAILED ********
 ACL2 !>>(ENCAPSULATE ((F4 (X) T :TRANSPARENT T)
                       (F5 (X) T :TRANSPARENT T))
-                     (LOCAL (DEFUN F4 (X) X))
-                     (LOCAL (DEFUN F5 (X) X))
-                     (DEFUN F6 (X) (F4 X))
-                     (DEFTHM F5-IS-F6
-                             (IMPLIES (F6 X) (EQUAL (F5 X) (F6 X)))
-                             :RULE-CLASSES NIL))
+          (LOCAL (DEFUN F4 (X) X))
+          (LOCAL (DEFUN F5 (X) X))
+          (DEFUN F6 (X) (F4 X))
+          (DEFTHM F5-IS-F6
+            (IMPLIES (F6 X) (EQUAL (F5 X) (F6 X)))
+            :RULE-CLASSES NIL))
 
 To verify that the four encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -1042,8 +1049,8 @@ F6
 
 
 ACL2 !>>>(DEFTHM F5-IS-F6
-                 (IMPLIES (F6 X) (EQUAL (F5 X) (F6 X)))
-                 :RULE-CLASSES NIL)
+           (IMPLIES (F6 X) (EQUAL (F5 X) (F6 X)))
+           :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -1146,8 +1153,8 @@ ACL2 !>>(PROGN (DEFSTUB G0 (X) T)
                (DEFUN META-FN2 (X) (IF (G0 X) X X))
                (DEFATTACH G0 CONSP)
                (DEFTHM THM2
-                       (EQUAL (EVL X A) (EVL (META-FN2 X) A))
-                       :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
+                 (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+                 :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
 
 
 ACL2 !>>>(DEFSTUB G0 (X) T)
@@ -1214,8 +1221,8 @@ Rules: NIL
 
 
 ACL2 !>>>(DEFTHM THM2
-                 (EQUAL (EVL X A) (EVL (META-FN2 X) A))
-                 :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+           (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+           :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
 
 
 ACL2 Error in ( DEFTHM THM2 ...):  The proposed :META rule, THM2, is
@@ -1254,8 +1261,8 @@ ACL2 !>>(PROGN (DEFSTUB G0 (X) T)
                             :ALL (DEFEVALUATOR EVL EVL-LIST ((G0 X))))
                (DEFUN META-FN2 (X) (IF (G0 X) X X))
                (DEFTHM THM2
-                       (EQUAL (EVL X A) (EVL (META-FN2 X) A))
-                       :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
+                 (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+                 :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
 
 
 ACL2 !>>>(DEFSTUB G0 (X) T)
@@ -1302,8 +1309,8 @@ META-FN2
 
 
 ACL2 !>>>(DEFTHM THM2
-                 (EQUAL (EVL X A) (EVL (META-FN2 X) A))
-                 :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+           (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+           :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
 
 Q.E.D.
 
@@ -1336,8 +1343,8 @@ ACL2 !>>(UBT 'G0)
    d       1:x(INCLUDE-BOOK "tools/run-script"
                             :DIR ...)
 ACL2 !>>(ENCAPSULATE ((G0 (X) T) (G1 (X) T))
-                     (LOCAL (DEFUN G0 (X) X))
-                     (LOCAL (DEFUN G1 (X) X)))
+          (LOCAL (DEFUN G0 (X) X))
+          (LOCAL (DEFUN G1 (X) X)))
 
 To verify that the two encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -1383,8 +1390,8 @@ ACL2 !>>(PROGN (WITH-OUTPUT :OFF
                             :ALL (DEFEVALUATOR EVL EVL-LIST ((G0 X))))
                (DEFUN META-FN2 (X) (IF (G0 X) X X))
                (DEFTHM THM2
-                       (EQUAL (EVL X A) (EVL (META-FN2 X) A))
-                       :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
+                 (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+                 :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
 
 
 ACL2 !>>>(WITH-OUTPUT :OFF
@@ -1423,8 +1430,8 @@ META-FN2
 
 
 ACL2 !>>>(DEFTHM THM2
-                 (EQUAL (EVL X A) (EVL (META-FN2 X) A))
-                 :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+           (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+           :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
 
 Q.E.D.
 
@@ -1503,16 +1510,16 @@ Subgoal 1
 ACL2 !>>(ENCAPSULATE ((G1 (X) T)
                       ((G2 *) => *)
                       (META-FN2 (X) T))
-                     (LOCAL (DEFUN G1 (X) (G0 X)))
-                     (LOCAL (DEFUN G2 (X) (G0 X)))
-                     (DEFTHM G2-IS-G1
-                             (IMPLIES (G0 X) (EQUAL (G2 X) (G1 X)))
-                             :RULE-CLASSES NIL)
-                     (LOCAL (DEFUN META-FN2 (X)
-                                   (IF (OR (G2 X) (G0 X)) X X)))
-                     (DEFTHM THM2
-                             (EQUAL (EVL X A) (EVL (META-FN2 X) A))
-                             :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
+          (LOCAL (DEFUN G1 (X) (G0 X)))
+          (LOCAL (DEFUN G2 (X) (G0 X)))
+          (DEFTHM G2-IS-G1
+            (IMPLIES (G0 X) (EQUAL (G2 X) (G1 X)))
+            :RULE-CLASSES NIL)
+          (LOCAL (DEFUN META-FN2 (X)
+                   (IF (OR (G2 X) (G0 X)) X X)))
+          (DEFTHM THM2
+            (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+            :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
 
 To verify that the five encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -1544,8 +1551,8 @@ G2
 
 
 ACL2 !>>>(DEFTHM G2-IS-G1
-                 (IMPLIES (G0 X) (EQUAL (G2 X) (G1 X)))
-                 :RULE-CLASSES NIL)
+           (IMPLIES (G0 X) (EQUAL (G2 X) (G1 X)))
+           :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -1558,7 +1565,7 @@ G2-IS-G1
 
 
 ACL2 !>>>(LOCAL (DEFUN META-FN2 (X)
-                       (IF (OR (G2 X) (G0 X)) X X)))
+                  (IF (OR (G2 X) (G0 X)) X X)))
 
 Since META-FN2 is non-recursive, its admission is trivial.  We observe
 that the type of META-FN2 is described by the theorem (EQUAL (META-FN2 X) X).
@@ -1570,8 +1577,8 @@ META-FN2
 
 
 ACL2 !>>>(DEFTHM THM2
-                 (EQUAL (EVL X A) (EVL (META-FN2 X) A))
-                 :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+           (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+           :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
 
 
 ACL2 Error in ( DEFTHM THM2 ...):  Rules of class :META are illegal
@@ -1607,16 +1614,16 @@ failure.
 ACL2 !>>(ENCAPSULATE ((G1 (X) T :TRANSPARENT T)
                       ((G2 *) => * :TRANSPARENT T)
                       (META-FN2 (X) T :TRANSPARENT T))
-                     (LOCAL (DEFUN G1 (X) (G0 X)))
-                     (LOCAL (DEFUN G2 (X) (G0 X)))
-                     (DEFTHM G2-IS-G1
-                             (IMPLIES (G0 X) (EQUAL (G2 X) (G1 X)))
-                             :RULE-CLASSES NIL)
-                     (LOCAL (DEFUN META-FN2 (X)
-                                   (IF (OR (G2 X) (G0 X)) X X)))
-                     (DEFTHM THM2
-                             (EQUAL (EVL X A) (EVL (META-FN2 X) A))
-                             :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
+          (LOCAL (DEFUN G1 (X) (G0 X)))
+          (LOCAL (DEFUN G2 (X) (G0 X)))
+          (DEFTHM G2-IS-G1
+            (IMPLIES (G0 X) (EQUAL (G2 X) (G1 X)))
+            :RULE-CLASSES NIL)
+          (LOCAL (DEFUN META-FN2 (X)
+                   (IF (OR (G2 X) (G0 X)) X X)))
+          (DEFTHM THM2
+            (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+            :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
 
 To verify that the five encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -1648,8 +1655,8 @@ G2
 
 
 ACL2 !>>>(DEFTHM G2-IS-G1
-                 (IMPLIES (G0 X) (EQUAL (G2 X) (G1 X)))
-                 :RULE-CLASSES NIL)
+           (IMPLIES (G0 X) (EQUAL (G2 X) (G1 X)))
+           :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -1662,7 +1669,7 @@ G2-IS-G1
 
 
 ACL2 !>>>(LOCAL (DEFUN META-FN2 (X)
-                       (IF (OR (G2 X) (G0 X)) X X)))
+                  (IF (OR (G2 X) (G0 X)) X X)))
 
 Since META-FN2 is non-recursive, its admission is trivial.  We observe
 that the type of META-FN2 is described by the theorem (EQUAL (META-FN2 X) X).
@@ -1674,8 +1681,8 @@ META-FN2
 
 
 ACL2 !>>>(DEFTHM THM2
-                 (EQUAL (EVL X A) (EVL (META-FN2 X) A))
-                 :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+           (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+           :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
 
 
 ACL2 Error in ( DEFTHM THM2 ...):  Rules of class :META are illegal
@@ -1740,13 +1747,13 @@ Subgoal 2
 Subgoal 1
  (EVL EVL-LIST)
 ACL2 !>>(ENCAPSULATE ((MY-META-FN (X) X))
-                     (LOCAL (DEFUN MY-META-FN (X)
-                                   (IF (EQUAL X '(F))
-                                       (LIST 'QUOTE (F))
-                                       X)))
-                     (DEFTHM MY-META-FN-CORRECT
-                             (EQUAL (EVL X A) (EVL (MY-META-FN X) A))
-                             :RULE-CLASSES ((:META :TRIGGER-FNS (F)))))
+          (LOCAL (DEFUN MY-META-FN (X)
+                   (IF (EQUAL X '(F))
+                       (LIST 'QUOTE (F))
+                     X)))
+          (DEFTHM MY-META-FN-CORRECT
+            (EQUAL (EVL X A) (EVL (MY-META-FN X) A))
+            :RULE-CLASSES ((:META :TRIGGER-FNS (F)))))
 
 To verify that the two encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -1756,9 +1763,9 @@ Encapsulated Events:
 
 
 ACL2 !>>>(LOCAL (DEFUN MY-META-FN (X)
-                       (IF (EQUAL X '(F))
-                           (LIST 'QUOTE (F))
-                           X)))
+                  (IF (EQUAL X '(F))
+                      (LIST 'QUOTE (F))
+                    X)))
 
 Since MY-META-FN is non-recursive, its admission is trivial.  We observe
 that the type of MY-META-FN is described by the theorem 
@@ -1774,8 +1781,8 @@ MY-META-FN
 
 
 ACL2 !>>>(DEFTHM MY-META-FN-CORRECT
-                 (EQUAL (EVL X A) (EVL (MY-META-FN X) A))
-                 :RULE-CLASSES ((:META :TRIGGER-FNS (F))))
+           (EQUAL (EVL X A) (EVL (MY-META-FN X) A))
+           :RULE-CLASSES ((:META :TRIGGER-FNS (F))))
 
 
 ACL2 Error in ( DEFTHM MY-META-FN-CORRECT ...):  Rules of class :META
