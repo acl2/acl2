@@ -10,5 +10,5 @@
 
 (in-package "ACL2")
 
-(include-book "bstar-tests")
+(include-book "bstar")
 (include-book "case-match")
