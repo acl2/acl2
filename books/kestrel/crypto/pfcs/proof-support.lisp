@@ -12,6 +12,11 @@
 
 (include-book "semantics-deep")
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ proof-support
@@ -397,7 +402,9 @@
                        (constraint-satp constr defs asg p)))
      :enable (constraint-relation-satp
               constraint-list-satp
-              exec-proof-tree)
+              exec-proof-tree
+              nfix
+              min)
      :use (:instance constraint-satp-suff
                      (ptree (make-proof-tree-relation
                              :asg asg
@@ -496,7 +503,8 @@
                       (ptrees (cdr (constraint-list-satp-witness
                                     (cons constr constrs) defs asg p)))))
      :enable (exec-proof-tree-list
-              assertion-list-from))
+              assertion-list-from
+              len))
 
    (defruled if-direction
      (implies (and (constraint-satp constr defs asg p)
@@ -510,7 +518,8 @@
                             (constraint-list-satp-witness constrs defs asg p)))
                      (constrs (cons constr constrs)))
      :enable (exec-proof-tree-list
-              assertion-list-from))))
+              assertion-list-from
+              len))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -519,7 +528,9 @@
   (equal (constraint-list-satp (append constrs1 constrs2) defs asg p)
          (and (constraint-list-satp constrs1 defs asg p)
               (constraint-list-satp constrs2 defs asg p)))
-  :enable (constraint-list-satp-of-cons
+  :induct t
+  :enable (append
+           constraint-list-satp-of-cons
            constraint-list-satp-of-atom))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -528,6 +539,7 @@
   :short "Proof rule for a reversed list of constraints."
   (equal (constraint-list-satp (rev constrs) defs asg p)
          (constraint-list-satp constrs defs asg p))
+  :induct t
   :enable (rev
            constraint-list-satp-of-atom
            constraint-list-satp-of-cons
