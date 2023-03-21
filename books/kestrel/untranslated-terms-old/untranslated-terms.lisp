@@ -1,6 +1,6 @@
 ; Utilities for dealing with untranslated terms
 ;
-; Copyright (C) 2015-2021 Kestrel Institute
+; Copyright (C) 2015-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -52,10 +52,11 @@
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
 ;;=== stuff to move to libraries:
 
-(in-theory (disable butlast last member-equal))
+(in-theory (disable butlast))
 
 ;; ;; Test for a list of non-dotted pairs
 ;; ;TODO: Aren't these doublets?
@@ -98,11 +99,6 @@
 ;;   :rule-classes (:rewrite :linear)
 ;;   :hints (("Goal" :in-theory (enable pair-listp))))
 
-(defthm ACL2-COUNT-of-STRIP-CARS-weak
-  (<= (ACL2-COUNT (STRIP-CARS x))
-      (ACL2-COUNT x))
-  :rule-classes (:rewrite :linear))
-
 ;; (defthm acl2-count-of-strip-cadrs-when-pair-listp
 ;;   (implies (and (pair-listp x)
 ;;                 (consp x))
@@ -111,10 +107,11 @@
 ;;   :rule-classes (:rewrite :linear)
 ;;   :hints (("Goal" :in-theory (enable pair-listp))))
 
-(defthm ACL2-COUNT-of-STRIP-CAdRS-weak
-  (<= (ACL2-COUNT (STRIP-CAdRS x))
-      (ACL2-COUNT x))
-  :rule-classes (:rewrite :linear))
+(defthm <=-of-acl2-count-of-strip-cadrs-linear
+  (<= (acl2-count (strip-cadrs x))
+      (acl2-count x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable strip-cadrs))))
 
 (defthmd car-of-last-when-len-is-1
   (implies (equal 1 (len x))
@@ -146,35 +143,6 @@
 ;;   (pair-listp (make-doublets x y))
 ;;   :hints (("Goal" :in-theory (enable pair-listp make-doublets))))
 
-;; (defthm last-of-append
-;;   (implies (and (true-listp x)
-;;                 (true-listp y)
-;;                 )
-;;            (equal (last (append x y))
-;;                   (if (consp y)
-;;                       (last y)
-;;                     (last x))))
-;;   :hints (("Goal" :in-theory (enable append))))
-
-
-(defthm car-car-of-make-doublets
-  (equal (car (car (make-doublets x y)))
-         (car x)))
-
-(defthm strip-cadrs-of-make-doublets
-  (equal (strip-cadrs (make-doublets x y))
-         (take (len x) y)))
-
-(in-theory (disable make-doublets))
-
-(defthm strip-cars-of-cdr-of-make-doublets
-  (implies (and ; (consp x)
-            (true-listp x))
-           (equal (strip-cars (cdr (make-doublets x y)))
-                  (cdr x)))
-  :hints (("Goal" :in-theory (enable make-doublets))))
-
-
 ;todo: looped with LIST::LEN-WHEN-AT-MOST-1
 (defthmd consp-when-len-known
   (implies (and (equal free (len x))
@@ -182,18 +150,6 @@
                 (posp free) ;gets evaluated
                 )
            (consp x)))
-
-;move
-(defthm member-equal-of-cons-drop
-  (implies (not (equal item a))
-           (equal (member-equal item (cons a b))
-                  (member-equal item b)))
-  :hints (("Goal" :in-theory (enable member-equal))))
-
-;move
-(defthm not-member-equal-of-nil
-  (not (member-equal item nil))
-  :hints (("Goal" :in-theory (enable member-equal))))
 
 ;;
 ;; end of library lemmas
