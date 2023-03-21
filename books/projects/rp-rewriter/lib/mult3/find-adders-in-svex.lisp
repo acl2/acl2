@@ -696,6 +696,11 @@
     t
     ;;(hons-copy '(member-equal 'fa-s-chain found-patterns))
     )
+  
+  (defconst *fa-c-chain-rule-convervative*
+    ;;t
+    (hons-copy '(member-equal 'fa-s-chain found-patterns))
+    )
 
   ;; this is  to recollect the  found patterns so  missed fa-s patterns  may be
   ;; found. (sometimes the same fa-s may  appear in different shapes within the
@@ -794,8 +799,7 @@
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-2b
                                :prepwork ((create-case-match-macro fa-c-chain-pattern-2b
                                                                    ('sv::bitor  ('sv::bitand y z)
-                                                                                ('sv::bitand
-                                                                                 yz x)))
+                                                                                ('sv::bitand yz x)))
                                           (local
                                            (in-theory (enable fa-c-chain))))
                                :body
@@ -827,8 +831,7 @@
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-2c
                                :prepwork ((create-case-match-macro fa-c-chain-pattern-2c
                                                                    ('sv::bitor  ('sv::bitand x yz)
-                                                                                ('sv::bitand
-                                                                                 y z)))
+                                                                                ('sv::bitand y z)))
                                           (local
                                            (in-theory (enable FA-C-CHAIN))))
                                :body
@@ -860,8 +863,7 @@
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-2d
                                :prepwork ((create-case-match-macro fa-c-chain-pattern-2d
                                                                    ('sv::bitor  ('sv::bitand yz x)
-                                                                                ('sv::bitand
-                                                                                 y z)))
+                                                                                ('sv::bitand y z)))
                                           (local
                                            (in-theory (enable FA-C-CHAIN))))
                                :body
@@ -1011,7 +1013,7 @@
                                        (list (make-pattern-fn-call
                                               :fn 'fa-c-chain
                                               :extra-arg 4
-                                              :rule *fa-c-chain-rule*
+                                              :rule *fa-c-chain-rule-convervative*
                                               :args args)))))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
@@ -1048,7 +1050,7 @@
                                  (list (make-pattern-fn-call
                                         :fn 'fa-c-chain
                                         :extra-arg 5
-                                        :rule *fa-c-chain-rule*
+                                        :rule *fa-c-chain-rule-convervative*
                                         :args args)))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
@@ -1465,7 +1467,9 @@
              (equal (sv::svex-eval$ (pattern-call pattern) env)
                     (sv::svex-eval$ svex env)))
     :hints (("Goal"
-             :in-theory (e/d () (pattern-call))))))
+             :in-theory (e/d () (pattern-call)))))
+
+  (memoize 'adder-pattern-match))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (progn
@@ -1616,6 +1620,18 @@
 (define ex-adder-fnc-from-unfloat ((svex sv::Svex-p))
   :returns (res-svex sv::svex-p :hyp (sv::Svex-p svex))
   (case-match svex
+    (('sv::unfloat ('id x))
+     (if (and (equal (sv::svex-kind x) :call)
+              (member-equal (sv::Svex-call->fn x)
+                            '(fa-c-chain
+                              fa-s-chain
+                              fa-s-c-chain
+                              ha+1-c-chain
+                              ha+1-s-chain
+                              ha-c-chain
+                              ha-s-chain)))
+         (cadr svex)
+       svex))
     (('sv::unfloat x)
      (if (and (equal (sv::svex-kind x) :call)
               (member-equal (sv::Svex-call->fn x)
@@ -1637,6 +1653,9 @@
     :hints (("Goal"
              :expand ((SV::SVEX-CALL->FN SVEX)
                       (SV::SVEX-CALL->ARGS SVEX)
+                      (SV::SVEX-CALL->FN (cadr SVEX))
+                      (SV::SVEX-CALL->ARGS (cadr SVEX))
+                      (:free (args) (sv::svex-apply 'id args))
                       (:free (args) (sv::svex-apply 'sv::unfloat args)))
              :in-theory (e/d (FA-C-CHAIN
                               FA-s-CHAIN
@@ -3981,9 +4000,10 @@
                        (and* (svl::bitp-of-svex arg1)
                              (svl::bitp-of-svex arg2)
                              (svl::bitp-of-svex arg3))))
-           (progn$ (raise "bitp check ~p0 failed for:" (list (svl::bitp-of-svex arg1)
-                                                             (svl::bitp-of-svex arg2)
-                                                             (svl::bitp-of-svex arg3)))
+           (progn$ (cwe "bitp check in rp::zero-fa-c-chain-extra-arg ~p0 failed.~%"
+                        (list (svl::bitp-of-svex arg1)
+                              (svl::bitp-of-svex arg2)
+                              (svl::bitp-of-svex arg3)))
                    svex))
           ((list arg1 arg2 arg3)
            (acl2::merge-sort-lexorder (list arg1 arg2 arg3)))
@@ -4764,6 +4784,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                (cw "--- Searching for ~s0 patterns now. ~%" adder-str)))
        (- (cw "-- Pass #~p0:~%" pass-num))
 
+       (- (clear-memoize-table 'adder-pattern-match))
        ((mv pattern-alist &)
         (gather-adder-patterns-in-svex-alist svex-alist nil nil adder-type))
        (new-svex-alist (replace-adder-patterns-in-svex-alist svex-alist pattern-alist adder-type))
@@ -4853,8 +4874,12 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
         (progn$ (cw "-> Success! some fa-c patterns are revealed. Let's make another pass.~%")
                 (find-f/h-adders-in-svex-alist new-svex-alist (1- limit))))
 
-       (- (cw "- Nothing. Let's increase local simplification strength from 0 to 1 and try again.~%"))
-       (new-svex-alist (simplify-to-find-fa-c-patterns-alist svex-alist :strength 1))
+       (- (and
+           (aggressive-find-adders-in-svex)
+           (cw "- Nothing. Let's increase local simplification strength from 0 to 1 and try again. ~%")))
+       (new-svex-alist (if (aggressive-find-adders-in-svex)
+                           (simplify-to-find-fa-c-patterns-alist svex-alist :strength 1)
+                         svex-alist))
        ((Unless (hons-equal new-svex-alist svex-alist))
         (progn$ (cw "-> Success! some fa-c patterns are revealed. Let's make another pass.~%")
                 (find-f/h-adders-in-svex-alist new-svex-alist (1- limit))))
@@ -4873,12 +4898,12 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
 
        ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;; Push in negations
-       ;; (- (cw "- Will try to see if we can shrink the svexes by reducing negations~%"))
-       ;; (new-svex-alist (svl::svex-alist-reduce-bit-negations svex-alist))
-       ;; ((Unless (hons-equal new-svex-alist svex-alist))
-       ;;  (progn$ (cw "-> Some negation chains are reduced. ~%")
-       ;;          (find-f/h-adders-in-svex-alist new-svex-alist (1- limit))))
-       ;; (- (cw "-> No change from negation compresions~%"))
+       (- (cw "- Will try to see if we can shrink the svexes by reducing negations~%"))
+       (new-svex-alist (svl::svex-alist-reduce-bit-negations svex-alist))
+       ((Unless (hons-equal new-svex-alist svex-alist))
+        (progn$ (cw "-> Some negation chains are reduced. ~%")
+                (find-f/h-adders-in-svex-alist new-svex-alist (1- limit))))
+       (- (cw "-> No change from negation compresions~%"))
 
        ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;; ;; RW  corner cases

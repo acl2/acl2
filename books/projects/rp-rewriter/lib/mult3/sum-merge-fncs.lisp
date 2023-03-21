@@ -305,6 +305,8 @@
            (ex-from-rp/times (caddr x)))
           ((is-rp x)
            (ex-from-rp/times (caddr x)))
+          ((--.p x)
+           (ex-from-rp/times (cadr x)))
           (t x)))
 
   (define pp-order ((x rp-termp)
