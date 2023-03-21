@@ -164,3 +164,47 @@
  (defun test-list-binder2 (x)
   (b* (((list a) (cw "hi") x))
     a)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Typical case
+(defun test-er-binder (x state)
+  (declare (xargs :stobjs state))
+  (b* (((er a) (mv nil x state)))
+    ;; must return an error triple, since the ER binder creates a branch that does:
+    (mv nil (cons 3 a) state)))
+
+;; Alternate form (explicit error value given):
+(defun test-er-binder-with-iferr (x state)
+  (declare (xargs :stobjs state))
+  (b* (((er a :iferr 7) (mv nil x state)))
+    ;; must return an error triple, since the ER binder creates a branch that does:
+    (mv nil (cons 3 a) state)))
+
+;; Illegal: no binding expressions given
+(must-fail
+ (defun test-er-binder0 (x state)
+   (declare (xargs :stobjs state))
+   (b* (((er a)))
+     (mv nil (cons 3 a) state))))
+
+;; Illegal: more than 1 expression given:
+(must-fail
+ (defun test-er-binder2 (x state)
+   (declare (xargs :stobjs state))
+   (b* (((er a) (mv nil x state) (mv nil x state)))
+     (mv nil (cons 3 a) state))))
+
+;; Illegal: no variable given
+(must-fail
+ (defun test-er-binder-n-vars (x state)
+   (declare (xargs :stobjs state))
+   (b* (((er) (mv nil x state)))
+     (mv nil (cons 3 a) state))))
+
+;; Illegal: more than 1 variable given
+(must-fail
+ (defun test-er-binder-n-vars (x state)
+   (declare (xargs :stobjs state))
+   (b* (((er a b) (mv nil x state)))
+     (mv nil (cons a b) state))))
