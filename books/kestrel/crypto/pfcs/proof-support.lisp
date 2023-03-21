@@ -12,6 +12,9 @@
 
 (include-book "semantics-deep")
 
+(local (include-book "oset-lib-ext"))
+(local (include-book "omap-lib-ext"))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -432,6 +435,105 @@
                                       (constraint-relation->name constr)
                                       (constraint-relation->args constr)
                                       defs asg p)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define constraint-relation-nofreevars-satp ((name symbolp)
+                                             (args expression-listp)
+                                             (defs definition-listp)
+                                             (asg assignmentp)
+                                             (p primep))
+  :guard (assignment-wfp asg p)
+  :returns (yes/no booleanp)
+  :short "Satisfaction of a relation constraint without free variables,
+          expressed without proof trees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a specialized version of @(tsee constraint-relation-satp),
+     applicable when the definition of the relation has no free variables.
+     In this case, we can avoid the existential quantification."))
+  (b* ((def (lookup-definition name defs)))
+    (and def
+         (set::empty (definition-free-vars def))
+         (b* (((definition def) def))
+           (and (equal (len args) (len def.para))
+                (b* ((vals (eval-expr-list args asg p)))
+                  (and (nat-listp vals)
+                       (b* ((asg-para-vals (omap::from-lists def.para vals)))
+                         (constraint-list-satp def.body
+                                               defs
+                                               asg-para-vals
+                                               p))))))))
+  :guard-hints (("Goal" :in-theory (enable acl2::not-reserrp-when-nat-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled constraint-satp-of-relation-when-nofreevars
+  (implies (and (assignmentp asg)
+                (assignment-wfp asg p)
+                (constraint-case constr :relation))
+           (b* ((name (constraint-relation->name constr))
+                (args (constraint-relation->args constr))
+                (def (lookup-definition name defs)))
+             (implies (and def
+                           (set::empty (definition-free-vars def)))
+                      (equal (constraint-satp constr defs asg p)
+                             (constraint-relation-nofreevars-satp name
+                                                                  args
+                                                                  defs
+                                                                  asg
+                                                                  p)))))
+  :use (only-if-direction if-direction)
+
+  :prep-lemmas
+
+  ((defrule only-if-direction
+     (implies (and (assignmentp asg)
+                   (assignment-wfp asg p)
+                   (constraint-case constr :relation))
+              (b* ((name (constraint-relation->name constr))
+                   (args (constraint-relation->args constr))
+                   (def (lookup-definition name defs)))
+                (implies (and def
+                              (set::empty (definition-free-vars def)))
+                         (implies (constraint-satp constr defs asg p)
+                                  (constraint-relation-nofreevars-satp name
+                                                                       args
+                                                                       defs
+                                                                       asg
+                                                                       p)))))
+     :rule-classes nil
+     :enable (constraint-satp-of-relation
+              constraint-relation-satp
+              constraint-relation-nofreevars-satp
+              set::empty
+              omap::keys-iff-not-empty))
+
+   (defrule if-direction
+     (implies (and (assignmentp asg)
+                   (assignment-wfp asg p)
+                   (constraint-case constr :relation))
+              (b* ((name (constraint-relation->name constr))
+                   (args (constraint-relation->args constr))
+                   (def (lookup-definition name defs)))
+                (implies (and def
+                              (set::empty (definition-free-vars def)))
+                         (implies (constraint-relation-nofreevars-satp name
+                                                                       args
+                                                                       defs
+                                                                       asg
+                                                                       p)
+                                  (constraint-satp constr defs asg p)))))
+     :rule-classes nil
+     :enable (constraint-relation-nofreevars-satp
+              constraint-satp-of-relation
+              definition-free-vars
+              set::not-difference-when-subset)
+     :use (:instance constraint-relation-satp-suff
+                     (name (constraint-relation->name constr))
+                     (args (constraint-relation->args constr))
+                     (asgext nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
