@@ -211,37 +211,11 @@
    (xdoc::p
     "We obtain the object designator of the variable, propagating errors.
      We read the value from the object designator,
-     which is guaranteed to work as proved in @(tsee read-object).")
-   (xdoc::p
-    "If the value is an array, we return a pointer value for the array.
-     As explained in @(tsee exec-arrsub),
-     our treatment of pointers and arrays differs slightly from full C,
-     but leads to equivalent results in our C subset.
-     This is essentially like an array-to-pointer conversion [C:6.3.2.1/3],
-     but with the pointer pointing to the whole array
-     instead of the first element,
-     and with the pointer type being the array element type.
-     The object designator is just the variable:
-     currently @(tsee exec-block-item) prohibits local arrays,
-     so a variable that contains an array can only be a global one.
-     All of this will be properly generalized eventually,
-     to bring things more in line with full C;
-     in particular, array-to-pointer conversions
-     will be moved to a separate ACL2 function,
-     called for the execution of the construct that encloses the variable.")
-   (xdoc::p
-    "The alternative definition theorem is temporary,
-     for backward compatibility until more parts of the C dynamic semantics
-     have been properly exteded."))
+     which is guaranteed to work as proved in @(tsee read-object)."))
   (b* ((objdes (objdesign-of-var id compst))
        ((unless objdes) (error (list :no-object-designator (ident-fix id))))
        (val (read-object objdes compst)))
-    (if (value-case val :array)
-        (make-expr-value
-         :value (make-value-pointer :core (pointer-valid (objdesign-static id))
-                                    :reftype (value-array->elemtype val))
-         :object nil)
-      (make-expr-value :value val :object objdes)))
+    (make-expr-value :value val :object objdes))
   :guard-hints
   (("Goal" :in-theory (enable valuep-of-read-object-of-objdesign-of-var)))
   :hooks (:fix))
@@ -1163,12 +1137,12 @@
      (xdoc::p
       "If the left-hand side is
        an array subscripting expression where the array is a variable,
-       we treat the content of the variable similarly to @(tsee exec-ident):
-       if it is an array value, we return a pointer to it instead;
+       we perform, in essence, an array-to-pointer conversion;
        otherwise, we return the value unchanged.
-       The motivation for this is explained in @(tsee exec-ident);
-       it is due to our currently simplified treatment
-       of arrays and pointer in our C dynamic semantics.")
+       This is a currently simplified treatment
+       of arrays and pointer in our C dynamic semantics,
+       which is adequate to our current purposes,
+       but will be properly generalized soon.")
      (xdoc::p
       "We ensure that if the right-hand side expression is a function call,
        it returns a value (i.e. it is not @('void')).")
