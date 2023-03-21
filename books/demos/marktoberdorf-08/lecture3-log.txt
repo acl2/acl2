@@ -30,7 +30,7 @@ Rules: NIL
 ACL2 >>(IN-PACKAGE "M1")
  "M1"
 M1 >>(DEFUN F (N)
-            (IF (ZP N) 1 (* N (F (- N 1)))))
+       (IF (ZP N) 1 (* N (F (- N 1)))))
 
 The admission of F is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -44,7 +44,7 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::ZP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  F
 M1 >>(DEFUN G (N A)
-            (IF (ZP N) A (G (- N 1) (* N A))))
+       (IF (ZP N) A (G (- N 1) (* N A))))
 
 The admission of G is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -57,31 +57,31 @@ Form:  ( DEFUN G ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  G
 M1 >>(DEFCONST *G*
-               '((PUSH 1)
-                 (STORE 1)
-                 (LOAD 0)
-                 (IFLE 10)
-                 (LOAD 0)
-                 (LOAD 1)
-                 (MUL)
-                 (STORE 1)
-                 (LOAD 0)
-                 (PUSH 1)
-                 (SUB)
-                 (STORE 0)
-                 (GOTO -10)
-                 (LOAD 1)
-                 (RETURN)))
+       '((PUSH 1)
+         (STORE 1)
+         (LOAD 0)
+         (IFLE 10)
+         (LOAD 0)
+         (LOAD 1)
+         (MUL)
+         (STORE 1)
+         (LOAD 0)
+         (PUSH 1)
+         (SUB)
+         (STORE 0)
+         (GOTO -10)
+         (LOAD 1)
+         (RETURN)))
 
 Summary
 Form:  ( DEFCONST *G* ...)
 Rules: NIL
  *G*
 M1 >>(DEFUN G-SCHED-LOOP (N)
-            (IF (ZP N)
-                (REPEAT 0 4)
-                (APPEND (REPEAT 0 11)
-                        (G-SCHED-LOOP (- N 1)))))
+       (IF (ZP N)
+           (REPEAT 0 4)
+         (APPEND (REPEAT 0 11)
+                 (G-SCHED-LOOP (- N 1)))))
 
 The admission of G-SCHED-LOOP is trivial, using the relation O< (which
 is known to be well-founded on the domain recognized by O-P) and the
@@ -96,7 +96,7 @@ Rules: ((:TYPE-PRESCRIPTION BINARY-APPEND)
         (:TYPE-PRESCRIPTION ACL2::TRUE-LISTP-APPEND))
  G-SCHED-LOOP
 M1 >>(DEFUN G-SCHED (N)
-            (APPEND (REPEAT 0 2) (G-SCHED-LOOP N)))
+       (APPEND (REPEAT 0 2) (G-SCHED-LOOP N)))
 
 Since G-SCHED is non-recursive, its admission is trivial.  We observe
 that the type of G-SCHED is described by the theorem 
@@ -321,12 +321,12 @@ Proof succeeded.
 M1 >>'(END OF DEMO 2)
 (END OF DEMO 2)
 M1 >>(DEFTHM STEP-1-[LOOP]
-             (IMPLIES (AND (NATP N) (NATP A))
-                      (EQUAL (RUN (G-SCHED-LOOP N)
-                                  (MAKE-STATE 2 (LIST N A) STK *G*))
-                             (MAKE-STATE 14 (LIST 0 (G N A))
-                                         (PUSH (G N A) STK)
-                                         *G*))))
+       (IMPLIES (AND (NATP N) (NATP A))
+                (EQUAL (RUN (G-SCHED-LOOP N)
+                            (MAKE-STATE 2 (LIST N A) STK *G*))
+                       (MAKE-STATE 14 (LIST 0 (G N A))
+                                   (PUSH (G N A) STK)
+                                   *G*))))
 
 Name the formula above *1.
 
@@ -706,12 +706,12 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
 M1 >>'(END OF DEMO 3)
 (END OF DEMO 3)
 M1 >>(DEFTHM STEP-1
-             (IMPLIES (NATP N)
-                      (EQUAL (RUN (G-SCHED N)
-                                  (MAKE-STATE 0 (LIST N A) STK *G*))
-                             (MAKE-STATE 14 (LIST 0 (G N 1))
-                                         (PUSH (G N 1) STK)
-                                         *G*))))
+       (IMPLIES (NATP N)
+                (EQUAL (RUN (G-SCHED N)
+                            (MAKE-STATE 0 (LIST N A) STK *G*))
+                       (MAKE-STATE 14 (LIST 0 (G N 1))
+                                   (PUSH (G N 1) STK)
+                                   *G*))))
 
 ACL2 Warning [Non-rec] in ( DEFTHM STEP-1 ...):  A :REWRITE rule generated
 from STEP-1 will be triggered only by terms containing the function
@@ -809,8 +809,8 @@ Rules: NIL
 M1 >>'(END OF DEMO 4)
 (END OF DEMO 4)
 M1 >>(DEFTHM STEP-2
-             (IMPLIES (NATP A)
-                      (EQUAL (G N A) (* A (F N)))))
+       (IMPLIES (NATP A)
+                (EQUAL (G N A) (* A (F N)))))
 
 Name the formula above *1.
 
@@ -891,12 +891,12 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
         (:REWRITE UNICITY-OF-1))
  STEP-2
 M1 >>(DEFTHM MAIN
-             (IMPLIES (NATP N)
-                      (EQUAL (RUN (G-SCHED N)
-                                  (MAKE-STATE 0 (LIST N A) STK *G*))
-                             (MAKE-STATE 14 (LIST 0 (F N))
-                                         (PUSH (F N) STK)
-                                         *G*))))
+       (IMPLIES (NATP N)
+                (EQUAL (RUN (G-SCHED N)
+                            (MAKE-STATE 0 (LIST N A) STK *G*))
+                       (MAKE-STATE 14 (LIST 0 (F N))
+                                   (PUSH (F N) STK)
+                                   *G*))))
 
 ACL2 Warning [Subsume] in ( DEFTHM MAIN ...):  A newly proposed :REWRITE
 rule generated from MAIN probably subsumes the previously added :REWRITE
@@ -929,11 +929,11 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
 Warnings:  Subsume
  MAIN
 M1 >>(DEFTHM COROLLARY1
-             (LET ((S_FIN (RUN (G-SCHED N)
-                               (MAKE-STATE 0 (LIST N A) STK *G*))))
-                  (IMPLIES (NATP N)
-                           (AND (EQUAL (TOP (STACK S_FIN)) (F N))
-                                (HALTEDP S_FIN)))))
+       (LET ((S_FIN (RUN (G-SCHED N)
+                         (MAKE-STATE 0 (LIST N A) STK *G*))))
+         (IMPLIES (NATP N)
+                  (AND (EQUAL (TOP (STACK S_FIN)) (F N))
+                       (HALTEDP S_FIN)))))
 
 ACL2 Warning [Non-rec] in ( DEFTHM COROLLARY1 ...):  A :REWRITE rule
 generated from COROLLARY1 will be triggered only by terms containing
@@ -1014,18 +1014,18 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
 Warnings:  Non-rec
  COROLLARY1
 M1 >>(DEFTHM COROLLARY2
-             (LET ((S_FIN (RUN (G-SCHED N)
-                               (MAKE-STATE 0 (LIST N A)
-                                           STK
-                                           (COMPILE '(N)
-                                                    '((A = 1)
-                                                      (WHILE (N > 0)
-                                                             (A = (N * A))
-                                                             (N = (N - 1)))
-                                                      (RETURN A)))))))
-                  (IMPLIES (NATP N)
-                           (AND (EQUAL (TOP (STACK S_FIN)) (F N))
-                                (HALTEDP S_FIN)))))
+       (LET ((S_FIN (RUN (G-SCHED N)
+                         (MAKE-STATE 0 (LIST N A)
+                                     STK
+                                     (COMPILE '(N)
+                                              '((A = 1)
+                                                (WHILE (N > 0)
+                                                       (A = (N * A))
+                                                       (N = (N - 1)))
+                                                (RETURN A)))))))
+         (IMPLIES (NATP N)
+                  (AND (EQUAL (TOP (STACK S_FIN)) (F N))
+                       (HALTEDP S_FIN)))))
 
 ACL2 Warning [Non-rec] in ( DEFTHM COROLLARY2 ...):  A :REWRITE rule
 generated from COROLLARY2 will be triggered only by terms containing
