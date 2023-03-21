@@ -185,8 +185,8 @@
                   (nat-listp vals)
                   (equal (len para) (len vals))
                   (assignment-wfp asgext p)
-                  (not (set::intersectp (omap::keys asg-para-vals)
-                                        (omap::keys asgext)))
+                  (equal (omap::keys asgext)
+                         (definition-free-vars def))
                   (proof-list-outcome-case outcome-sub :assertions)
                   (equal (assertion-list->asg-list asser-sub)
                          (repeat (len body) asg-sub))
@@ -307,9 +307,8 @@
                         (and (nat-listp vals)
                              (b* ((asg-para-vals (omap::from-lists def.para
                                                                    vals)))
-                               (and (not (set::intersectp
-                                          (omap::keys asg-para-vals)
-                                          (omap::keys asgext)))
+                               (and (equal (omap::keys asgext)
+                                           (definition-free-vars def))
                                     (b* ((asg-sub (omap::update*
                                                    asgext
                                                    asg-para-vals)))

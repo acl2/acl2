@@ -539,6 +539,9 @@
      with the assignment @('asgext') that is the component of the proof tree,
      the assignment @('asg0') that assigns
      the values of the argument expressions to the relation's formal parameters.
+     We require @('asgext') to have as keys
+     exactly the free variables of the relation;
+     this implies that the keys are disjoint from @('asg0').
      We ensure that the constraints are the ones that
      form the body of the named relation.
      In other words, the subtrees must prove that
@@ -583,8 +586,8 @@
           (asg-para-vals (omap::from-lists def.para vals))
           ((unless (assignment-wfp ptree.asgext p))
            (proof-outcome-error))
-          ((when (set::intersectp (omap::keys asg-para-vals)
-                                  (omap::keys ptree.asgext)))
+          ((unless (equal (omap::keys ptree.asgext)
+                          (definition-free-vars def)))
            (proof-outcome-fail))
           (asg-sub (omap::update* ptree.asgext asg-para-vals))
           (outcome (exec-proof-tree-list ptree.sub defs p)))
