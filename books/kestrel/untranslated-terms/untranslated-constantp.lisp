@@ -48,6 +48,13 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable untranslated-constantp))))
 
+(defthm untranslated-constantp-when-not-quotep-forward
+  (implies (and (untranslated-constantp term)
+                (not (equal 'quote (car term))))
+           (not (consp term)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable untranslated-constantp))))
+
 (defthm untranslated-constantp-of-cons
   (equal (untranslated-constantp (cons x y))
          (and (equal x 'quote)

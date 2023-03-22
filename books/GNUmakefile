@@ -756,7 +756,6 @@ ACL2_CUSTOM_TARGETS := \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
   workshops/2003/kaufmann/support/input/defs-in.cert \
-  workshops/2003/kaufmann/support/rtl/diffs.out \
   workshops/2003/kaufmann/support/rtl/package-defs.cert \
   workshops/2004/sumners-ray/support/success.txt
 
@@ -817,9 +816,6 @@ workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert: \
 
 workshops/2003/kaufmann/support/input/defs-in.cert: \
   workshops/2003/kaufmann/deps.cert
-	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
-
-workshops/2003/kaufmann/support/rtl/diffs.out:
 	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 workshops/2003/kaufmann/support/rtl/package-defs.cert: \
