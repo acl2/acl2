@@ -189,8 +189,9 @@ functions that axe has lifted).</li>
 ;                              (pseudo-termp (third wrapper))
                                (function-renamingp fn-renaming)
                                (symbol-listp new-formals))
-                   :guard-hints (("Goal" :in-theory (enable legal-cond-clausesp)
-                                  :expand (untranslated-termp term)))))
+                   :guard-hints (("Goal" :in-theory (enable legal-cond-clausesp
+                                                            extract-terms-from-cond-clauses)
+                                  :expand ((untranslated-termp term))))))
    (if (atom term)
        (wrap-pattern-around-untranslated-term term wrapper)
      (let ((fn (ffn-symb term)))
