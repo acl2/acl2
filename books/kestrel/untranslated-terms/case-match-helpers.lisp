@@ -10,6 +10,10 @@
 
 (in-package "ACL2")
 
+(local (include-book "kestrel/lists-light/last" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/utilities/acl2-count" :dir :system))
+
 ;; TODO: Consider using this as a guard on the functions below:
 (defund legal-case-match-casesp (cases)
   (declare (xargs :guard t))
@@ -17,12 +21,10 @@
       (null cases)
     (let ((case (first cases)))
       (and (true-listp case)
-           (or (= 2 (len case))
-               (= 3 (len case)))
-           ;; todo: add a check on the declare
-           ;; todo: can there be more than one declare?
-           ;; todo: can we do any checks on the pattern or body
-           ;; A case with just & must be last:
+           (<= 2 (len case)) ; a pattern, maybe some declares, then a body
+           ;; todo: add a check on the declares
+           ;; todo: can we do any checks on the pattern or body?
+           ;; A case with a pattern of & must be last:
            (if (eq '& (first case))
                (null (rest cases))
              t)
@@ -48,34 +50,35 @@
   (declare (xargs :guard (true-list-listp cases)))
   (if (endp cases)
       nil
-    (let ((case (first cases)))
-      (if (= 2 (len case))
-          ;; case is (<pat> <body>):
-          (cons (second case) (extract-terms-from-case-match-cases (rest cases)))
-        ;; case is (<pat> <dcl> <body>):
-        (cons (third case) (extract-terms-from-case-match-cases (rest cases)))))))
+    (let ((case (first cases))) ; (pat ...declares... body)
+      (cons (car (last case))
+            (extract-terms-from-case-match-cases (rest cases))))))
 
 (defthm <=-of-acl2-count-of-extract-terms-from-case-match-cases-linear
   (<= (acl2-count (extract-terms-from-case-match-cases cases))
       (acl2-count cases))
   :rule-classes :linear)
 
-;; Whenever there is a term in the cases, use the corresponding term from new-terms-from-cases.
-(defun recreate-case-match-cases (cases new-terms-from-cases)
+;; Whenever there is a term in the cases, use the corresponding term from new-terms.
+;; Consumes one of the NEW-TERMS for each case.
+(defun recreate-case-match-cases (cases new-terms)
   (declare (xargs :guard (and (true-list-listp cases)
-                              (true-listp new-terms-from-cases))))
+                              (true-listp new-terms)
+                              ;; (equal (len cases) (len new-terms)) ; uncomment?
+                              )))
   (if (endp cases)
       nil
-    (let ((case (first cases)))
-      (if (= 2 (len case))
-          ;; case is (<pat> <body>):
-          (cons (list (first case) (first new-terms-from-cases))
-                (recreate-case-match-cases (rest cases) (rest new-terms-from-cases)))
-        ;; case is (<pat> <dcl> <body>):
-        (cons (list (first case) (second case) (first new-terms-from-cases))
-              (recreate-case-match-cases (rest cases) (rest new-terms-from-cases)))))))
+    (let* ((case (first cases))
+           (pattern (first case))
+           (declares (butlast (rest case) 1)) ; may be empty
+           ;; (body (car (last case))) ; the part being replaced
+           )
+      (cons `(,pattern
+              ,@declares
+              ,(first new-terms))
+            (recreate-case-match-cases (rest cases) (rest new-terms))))))
 
 (defthm legal-case-match-casesp-of-recreate-case-match-cases
   (implies (legal-case-match-casesp cases)
-           (legal-case-match-casesp (recreate-case-match-cases cases new-terms-from-cases)))
+           (legal-case-match-casesp (recreate-case-match-cases cases new-terms)))
   :hints (("Goal" :in-theory (enable legal-case-match-casesp))))
