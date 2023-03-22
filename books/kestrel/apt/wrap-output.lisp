@@ -189,7 +189,8 @@ functions that axe has lifted).</li>
 ;                              (pseudo-termp (third wrapper))
                                (function-renamingp fn-renaming)
                                (symbol-listp new-formals))
-                   :guard-hints (("Goal" :expand (UNTRANSLATED-TERMP TERM)))))
+                   :guard-hints (("Goal" :in-theory (enable legal-cond-clausesp)
+                                  :expand (untranslated-termp term)))))
    (if (atom term)
        (wrap-pattern-around-untranslated-term term wrapper)
      (let ((fn (ffn-symb term)))
@@ -253,9 +254,11 @@ functions that axe has lifted).</li>
                             ;; TODO: Support more than 1 result term:
                             ,(wrap-output-in-term (farg2 term) wrapper fn-renaming new-formals)))
                      (if (eq 'cond fn)
-                         `(cond ,@(make-doublets
-                                   (strip-cars (rest term))
-                                   (wrap-output-in-terms (strip-cadrs (rest term)) wrapper fn-renaming new-formals)))
+                         `(cond ;; ,@(make-doublets
+                           ;;    (strip-cars (rest term))
+                           ;;    (wrap-output-in-terms (strip-cadrs (rest term)) wrapper fn-renaming new-formals))
+                           ,@(wrap-output-in-cond-clauses (fargs term) wrapper fn-renaming new-formals)
+                           )
                        ;; TODO: Handle case!
                        (if (assoc-eq fn fn-renaming)
                            ;; It's a tail call, so
@@ -266,6 +269,25 @@ functions that axe has lifted).</li>
                          ;;anything other than an IF or lambda or call of the old function is just a branch to be wrapped:
                          ;; There may be calls of functions in the nest below this, so they just remain.
                          (wrap-pattern-around-untranslated-term term wrapper)))))))))))))
+
+ ;; todo: instead, split and reassemble:
+ (defun wrap-output-in-cond-clauses (clauses wrapper fn-renaming new-formals)
+   (declare (xargs :guard (and (legal-cond-clausesp clauses)
+                               (untranslated-term-listp (extract-terms-from-cond-clauses clauses))
+                               (untranslated-unary-lambdap wrapper)
+;                              (pseudo-termp (third wrapper))
+                               (function-renamingp fn-renaming)
+                               (symbol-listp new-formals))))
+   (if (endp clauses)
+       nil
+     (let ((clause (first clauses)))
+       (cons (if (= 2 (len clause))
+                 ;; normal case (wrap the second item in the clause only):
+                 (list (first clause)
+                       (wrap-output-in-term (second clause) wrapper fn-renaming new-formals))
+               ;; todo: handle:
+               (er hard? 'wrap-output-cond-clauses "Unsupported case (cond clause of length 1)."))
+             (wrap-output-in-cond-clauses (rest clauses) wrapper fn-renaming new-formals)))))
 
  (defun wrap-output-in-terms (terms wrapper fn-renaming new-formals)
    (declare (xargs :guard (and (untranslated-term-listp terms)
