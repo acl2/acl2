@@ -31,8 +31,8 @@
 (assert-equal (foo2 '(cons x y)) 'x-is-a-call-of-cons)
 (assert-equal (foo2 '(blah x y)) 'x-is-something-else)
 
-;; Test with multiple declares
-;; TODO: This works fine but is illegal according to :doc case-match, due to the multiple declares.
+;; A test with multiple declares.  Previously, :doc case-match disallowed this,
+;; though it worked fine.
 (defun foo3 (x)
   (case-match x
     (('cons y z) (declare (ignore y)) (declare (ignore z)) 'x-is-a-call-of-cons)
