@@ -79,15 +79,6 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable last))))
 
-;; Avoid name clash with std
-(defthm last-of-append-2
-  (equal (last (append x y))
-         (if (consp y)
-             (last y)
-           (if (consp x)
-               (cons (car (last x)) y)
-             y))))
-
 (defthm last-when-not-cdr-cheap
   (implies (not (cdr x))
            (equal (last x)

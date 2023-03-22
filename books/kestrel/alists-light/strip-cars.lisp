@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function strip-cars.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -100,4 +100,10 @@
 (defthm strip-cars-iff
   (iff (strip-cars alist)
        (consp alist))
+  :hints (("Goal" :in-theory (enable strip-cars))))
+
+(defthm <=-of-acl2-count-of-strip-cars-linear
+  (<= (acl2-count (strip-cars x))
+      (acl2-count x))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable strip-cars))))

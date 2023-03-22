@@ -23,7 +23,7 @@
     :invokespecial
     :invokeinterface))
 
-;; todo: consider memberp here (and then replace member-equal-of-nil above).
+;; todo: consider memberp here (and then replace not-member-equal-of-nil below).
 (defun make-step-opener-for-non-already-lifted-methods (all-lifted-methods)
   (declare (xargs :guard (all-method-designator-stringp all-lifted-methods)))
   ;; we'll avoid exporting this since many versions of this will be generated
@@ -44,7 +44,7 @@
 ;;todo: use these in unroll-java-code2
 (defun compositional-lifter-rules ()
   '(step-opener-for-non-already-lifted-methods ;note that this one is defined on the fly
-    member-equal-of-nil
+    not-member-equal-of-nil
     jvm::step-always-open ; jvm::step is replaced by JVM::STEP-ALWAYS-OPEN when we decide to open it
     step-opener-for-non-invokes ;open step, but only for non-invoke instructions
     natp-of-call-stack-size))

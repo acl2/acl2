@@ -15,6 +15,7 @@
 
 (include-book "helpers")
 (include-book "bstar-helpers")
+(include-book "case-match-helpers")
 (include-book "untranslated-constantp")
 (include-book "untranslated-variablep")
 (include-book "kestrel/utilities/make-var-names" :dir :system)
@@ -171,7 +172,7 @@
                      (items (append-all2 clauses))
                      (new-items (replace-calls-in-untranslated-terms-aux items alist permissivep (+ -1 count) wrld state)))
                 `(cond ,@(recreate-cond-clauses clauses new-items))))
-             ((case) ;; (case <expr> ...cases...)
+             (case ;; (case <expr> ...cases...)
               (let* ((expr (farg1 term))
                      (cases (rest (fargs term)))
                      (vals-to-match (strip-cars cases))
@@ -179,7 +180,7 @@
                 `(case ,(replace-calls-in-untranslated-term-aux expr alist permissivep (+ -1 count) wrld state)
                    ,@(make-doublets vals-to-match
                                     (replace-calls-in-untranslated-terms-aux vals-to-return alist permissivep (+ -1 count) wrld state)))))
-             ((case-match)              ;; (case-match <var> ...cases...)
+             (case-match ;; (case-match <var> ...cases...)
               (let* ((var (farg1 term)) ; must be a symbol
                      (cases (rest (fargs term)))
                      (terms-from-cases (extract-terms-from-case-match-cases cases))
