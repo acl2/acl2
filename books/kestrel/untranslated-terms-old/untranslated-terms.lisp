@@ -2638,12 +2638,6 @@
 ;;; sublis-var-untranslated-term
 ;;;
 
-
-(defthm <=-of-acl2-count-of-car-of-last
-  (<= (acl2-count (car (last x)))
-      (acl2-count x))
-  :rule-classes :linear)
-
 (defund ulet-body (term)
   (declare (xargs :guard (and (untranslated-termp term)
                               (call-of 'let term))))
