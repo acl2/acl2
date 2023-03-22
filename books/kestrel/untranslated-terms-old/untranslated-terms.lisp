@@ -2334,16 +2334,6 @@
        (union-eq (get-vars-in-untranslated-term term)
                  (get-vars-in-var-untranslated-term-pairs (rest pairs))))))
 
- (defun get-vars-in-cadrs-of-untranslated-term-pairs (pairs)
-   (declare (xargs :guard (untranslated-term-pairsp pairs)))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            ;;(term1 (first pair))
-            (term2 (second pair)))
-       (union-eq (get-vars-in-untranslated-term term2)
-                 (get-vars-in-cadrs-of-untranslated-term-pairs (rest pairs))))))
-
  (defun get-vars-in-untranslated-term-pairs (pairs)
    (declare (xargs :guard (untranslated-term-pairsp pairs)))
    (if (endp pairs)
@@ -2389,10 +2379,6 @@
     (implies (var-untranslated-term-pairsp pairs)
              (symbol-listp (get-vars-in-var-untranslated-term-pairs pairs)))
     :flag get-vars-in-var-untranslated-term-pairs)
-  (defthm symbol-listp-of-get-vars-in-cadrs-of-untranslated-term-pairs
-    (implies (untranslated-term-pairsp pairs)
-             (symbol-listp (get-vars-in-cadrs-of-untranslated-term-pairs pairs)))
-    :flag get-vars-in-cadrs-of-untranslated-term-pairs)
   (defthm symbol-listp-of-get-vars-in-untranslated-term-pairs
     (implies (untranslated-term-pairsp pairs)
              (symbol-listp (get-vars-in-untranslated-term-pairs pairs)))
@@ -2415,10 +2401,6 @@
     (implies (var-untranslated-term-pairsp pairs)
              (true-listp (get-vars-in-var-untranslated-term-pairs pairs)))
     :flag get-vars-in-var-untranslated-term-pairs)
-  (defthm true-listp-of-get-vars-in-cadrs-of-untranslated-term-pairs
-    (implies (untranslated-term-pairsp pairs)
-             (true-listp (get-vars-in-cadrs-of-untranslated-term-pairs pairs)))
-    :flag get-vars-in-cadrs-of-untranslated-term-pairs)
   (defthm true-listp-of-get-vars-in-untranslated-term-pairs
     (implies (untranslated-term-pairsp pairs)
              (true-listp (get-vars-in-untranslated-term-pairs pairs)))
