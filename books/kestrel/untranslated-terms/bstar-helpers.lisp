@@ -1,4 +1,4 @@
-; Helper functions for manipulating untranslated terms
+; Helper functions for manipulating calls of b*
 ;
 ; Copyright (C) 2021-2023 Kestrel Institute
 ;

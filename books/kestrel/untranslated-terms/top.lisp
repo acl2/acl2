@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "bstar-helpers")
+(include-book "case-match-helpers")
 (include-book "helpers")
 
 (include-book "replace-calls")
