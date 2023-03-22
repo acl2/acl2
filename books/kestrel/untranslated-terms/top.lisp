@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "cond-helpers")
 (include-book "bstar-helpers")
 (include-book "case-match-helpers")
 (include-book "helpers")

@@ -16,6 +16,7 @@
 (include-book "helpers")
 (include-book "bstar-helpers")
 (include-book "case-match-helpers")
+(include-book "cond-helpers")
 (include-book "untranslated-constantp")
 (include-book "untranslated-variablep")
 (include-book "kestrel/utilities/make-var-names" :dir :system)
