@@ -13,17 +13,6 @@
 (include-book "../utilities/acl2-defaults-table")
 (include-book "kestrel/utilities/forms" :dir :system) ; for farg1, etc.
 
-;move
-;clash
-;similar to flatten
-;; Doesn't require the lists to be true-lists
-(defun append-all2 (lists)
-  (declare (xargs :guard (true-listp lists)))
-  (if (endp lists)
-      nil
-    (append (true-list-fix (first lists))
-            (append-all2 (rest lists)))))
-
 ;; Sets the ignore-ok property in WRLD to t.
 ;; Returns a new world.
 (defund set-ignore-ok-in-world (wrld)
@@ -50,18 +39,3 @@
     ;; TREE must be a cons:
     (cons (replace-symbols-in-tree (car tree) alist)
           (replace-symbols-in-tree (cdr tree) alist))))
-
-;; Replace the terms in the CLAUSES with the corresponding NEW-TERMS, which
-;; come in order and correspond to the terms in the existing CLAUSES.  Note
-;; that each element of CLAUSES may have length 1 or 2.
-(defun recreate-cond-clauses (clauses new-terms)
-  (if (endp clauses)
-      nil
-    (let* ((clause (first clauses))
-           (clause-len (len clause)) ;can be 1 or 2
-           )
-      (cons (take clause-len new-terms) ; the new clause
-            (recreate-cond-clauses (rest clauses)
-                                   (nthcdr clause-len new-terms))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
