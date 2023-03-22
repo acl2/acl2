@@ -169,7 +169,7 @@
               ;; Note that cond clauses can have length 1 or 2.  We flatten the clauses, process the resulting list of untranslated terms, and then recreate the clauses
               ;; by walking through them and putting in the new items:
               (let* ((clauses (fargs term))
-                     (items (append-all2 clauses))
+                     (items (extract-terms-from-cond-clauses clauses))
                      (new-items (replace-calls-in-untranslated-terms-aux items alist permissivep (+ -1 count) wrld state)))
                 `(cond ,@(recreate-cond-clauses clauses new-items))))
              (case ;; (case <expr> ...cases...)

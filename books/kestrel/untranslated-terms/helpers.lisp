@@ -16,13 +16,15 @@
 ;move
 ;clash
 ;similar to flatten
-;; Doesn't require the lists to be true-lists
-(defun append-all2 (lists)
-  (declare (xargs :guard (true-listp lists)))
-  (if (endp lists)
+;; The CLAUSES can have length 1 or 2.  All we have to do is flatten.
+;; Doesn't require the lists to be true-lists -- todo: why not?
+;; TODO: Better guard
+(defun extract-terms-from-cond-clauses (clauses)
+  (declare (xargs :guard (true-listp clauses)))
+  (if (endp clauses)
       nil
-    (append (true-list-fix (first lists))
-            (append-all2 (rest lists)))))
+    (append (true-list-fix (first clauses))
+            (extract-terms-from-cond-clauses (rest clauses)))))
 
 ;; Sets the ignore-ok property in WRLD to t.
 ;; Returns a new world.
