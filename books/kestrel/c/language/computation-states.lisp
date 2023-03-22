@@ -943,7 +943,13 @@
     :enable (read-var
              read-static-var
              read-auto-var
-             objdesign-of-var-aux-iff-read-auto-var-aux)))
+             objdesign-of-var-aux-iff-read-auto-var-aux))
+
+  (defruled objdesignp-of-objdesign-of-var-when-valuep-of-read-var
+    (implies (valuep (read-var id compst))
+             (objdesignp (objdesign-of-var id compst)))
+    :enable objdesign-of-var-when-valuep-of-read-var
+    :disable objdesign-of-var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
