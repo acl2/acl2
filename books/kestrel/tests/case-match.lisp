@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "std/testing/assert-equal" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (defun foo (x)
   (case-match x
@@ -40,3 +41,25 @@
 
 (assert-equal (foo3 '(cons x y)) 'x-is-a-call-of-cons)
 (assert-equal (foo3 '(blah x y)) 'x-is-something-else)
+
+;; Illegal: First arg of case-match is not a variable
+(must-fail
+ (defun foo4 (x)
+   (case-match (+ 1 x)
+     (3 'x-is-three)
+     (& 'x-is-something-else))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Should this be illegal, since nil is not a variable?
+(defun foo5 ()
+  (case-match nil
+    (nil "nil")
+    (& "something-else")))
+
+;; TODO: Should this be illegal, since t is not a variable?
+(defun foo6 ()
+  (case-match t
+    (nil "nil")
+    (t "t")
+    (& "something-else")))
