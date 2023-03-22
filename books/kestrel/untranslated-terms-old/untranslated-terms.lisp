@@ -2291,7 +2291,7 @@
   (symbol-listp (var-refs-in-case-match-pattern pat)))
 
 (defun var-refs-in-case-match-patterns (pats)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t)) ; try (true-listp pats)
   (if (not (consp pats))
       nil
     (union-eq (var-refs-in-case-match-pattern (first pats))
@@ -2845,12 +2845,13 @@
    (if (endp cases)
        nil
      (let* ((case (first cases))
-            (pat1 (first case))
-            (term2 (car (last case)))
-            (alist-for-body (remove-assocs (vars-bound-in-case-match-pattern pat1) alist)))
-       (cons (list pat1
-                   ;; fixme: include the declare!
-                   (sublis-var-untranslated-term alist-for-body term2))
+            (pattern (first case))
+            (declares (butlast (rest case) 1)) ; may be empty
+            (body (car (last case)))
+            (alist-for-body (remove-assocs (vars-bound-in-case-match-pattern pattern) alist)))
+       (cons `(,pattern
+               ,@declares
+               ,(sublis-var-untranslated-term alist-for-body body))
              (sublis-var-case-match-cases alist (rest cases))))))
 
  (defun sublis-var-untranslated-term-list
