@@ -10,20 +10,39 @@
 
 (in-package "ACL2")
 
+(local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
+
+(defun legal-cond-clausesp (clauses)
+  (declare (xargs :guard t))
+  (if (atom clauses)
+      (null clauses)
+    (let ((clause (first clauses)))
+      (and (true-listp clause)
+           (or (= 1 (len clause))
+               (= 2 (len clause)))
+           (legal-cond-clausesp (rest clauses))))))
+
 ;; The CLAUSES can have length 1 or 2.  All we have to do is flatten.
-;; Doesn't require the lists to be true-lists -- todo: why not?
-;; TODO: Better guard
 (defun extract-terms-from-cond-clauses (clauses)
-  (declare (xargs :guard (true-listp clauses)))
+  (declare (xargs :guard (legal-cond-clausesp clauses)))
   (if (endp clauses)
       nil
     (append (true-list-fix (first clauses))
             (extract-terms-from-cond-clauses (rest clauses)))))
 
+(defthm <=-of-acl2-count-of-extract-terms-from-cond-clauses-linear
+  (<= (acl2-count (extract-terms-from-cond-clauses clauses))
+      (acl2-count clauses))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable extract-terms-from-cond-clauses))))
+
 ;; Replace the terms in the CLAUSES with the corresponding NEW-TERMS, which
 ;; come in order and correspond to the terms in the existing CLAUSES.  Note
 ;; that each element of CLAUSES may have length 1 or 2.
 (defun recreate-cond-clauses (clauses new-terms)
+  (declare (xargs :guard (and (legal-cond-clausesp clauses)
+                              (true-listp new-terms))))
   (if (endp clauses)
       nil
     (let* ((clause (first clauses))
@@ -32,3 +51,7 @@
       (cons (take clause-len new-terms) ; the new clause
             (recreate-cond-clauses (rest clauses)
                                    (nthcdr clause-len new-terms))))))
+
+(defthm legal-cond-clausesp-of-recreate-cond-clauses
+  (implies (legal-cond-clausesp clauses)
+           (legal-cond-clausesp (recreate-cond-clauses clauses new-terms))))
