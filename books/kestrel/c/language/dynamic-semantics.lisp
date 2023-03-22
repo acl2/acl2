@@ -509,7 +509,6 @@
                                              :supplied (type-of-value sub))))
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
-                                        :pointer arr
                                         :array array
                                         :index sub)))
        (val (value-array-read index array))
@@ -628,12 +627,20 @@
      instead always returning no object designator in the result."))
   (b* ((str (apconvert-expr-value str))
        ((when (errorp str)) str)
-       (str (expr-value->value str))
-       ((unless (value-case str :struct))
-        (error (list :not-struct str)))
-       (arr (value-struct-read mem str))
-       ((when (errorp arr)) arr)
-       ((unless (value-case arr :array)) (error (list :not-array arr)))
+       (val-str (expr-value->value str))
+       (objdes-str (expr-value->object str))
+       ((unless (value-case val-str :struct))
+        (error (list :mistype-member
+                     :required :struct
+                     :supplied (type-of-value val-str))))
+       (val-mem (value-struct-read mem val-str))
+       ((when (errorp val-mem)) val-mem)
+       (objdes-mem (and objdes-str
+                        (make-objdesign-member :super objdes-str :name mem)))
+       ((unless objdes-mem)
+        (error (list :array-without-designator
+                     (expr-value val-mem objdes-mem))))
+       ((unless (value-case val-mem :array)) (error (list :not-array val-mem)))
        (sub (apconvert-expr-value sub))
        ((when (errorp sub)) sub)
        (sub (expr-value->value sub))
@@ -643,9 +650,9 @@
                                              :supplied (type-of-value sub))))
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
-                                        :array arr
+                                        :array val-mem
                                         :index sub)))
-       (val (value-array-read index arr))
+       (val (value-array-read index val-mem))
        ((when (errorp val)) val))
     (make-expr-value :value val :object nil))
   :hooks (:fix))

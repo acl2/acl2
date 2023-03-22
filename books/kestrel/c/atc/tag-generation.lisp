@@ -271,7 +271,8 @@
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
                           (,recognizer struct)
                           (,indextypep index)
-                          ,check-hyp)
+                          ,check-hyp
+                          (objdesignp objdes-struct))
                      (equal (exec-arrsub-of-member
                              (expr-value struct objdes-struct)
                              (ident ,(ident->name memname))
@@ -349,10 +350,15 @@
                              (list length
                                    'value-struct-read))
                       expr-value->value-of-expr-value
+                      expr-value->object-of-expr-value
                       ,@*atc-array-read-rules*
                       apconvert-expr-value-when-not-value-array
                       expr-valuep-of-expr-value
-                      not-errorp-when-expr-valuep))))
+                      not-errorp-when-expr-valuep
+                      objdesign-option-fix
+                      objdesign-fix-when-objdesignp
+                      (:e objdesignp)
+                      (:t objdesign-member)))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member

@@ -53,4 +53,5 @@
                 var-in-scopes-p))))
 
   (defval *atc-object-designator-rules*
-    '(objdesign-of-var-when-static)))
+    '(objdesign-of-var-when-static
+      objdesignp-of-objdesign-of-var-when-valuep-of-read-var)))
