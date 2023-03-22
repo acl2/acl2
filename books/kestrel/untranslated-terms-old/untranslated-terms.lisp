@@ -34,6 +34,7 @@
 
 (include-book "kestrel/untranslated-terms/untranslated-constantp" :dir :system)
 (include-book "kestrel/untranslated-terms/untranslated-variablep" :dir :system)
+(include-book "kestrel/untranslated-terms/cond-helpers" :dir :system)
 (include-book "kestrel/untranslated-terms/bstar-helpers" :dir :system)
 (include-book "kestrel/untranslated-terms/case-match-helpers" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
@@ -232,7 +233,9 @@
                            (untranslated-term-listp (extract-terms-from-b*-bindings bindings))
                            (untranslated-term-listp result-forms))))
                 (cond ; (cond ...clauses...)
-                 (and (untranslated-term-pairsp (fargs x))))
+                 (let ((clauses (fargs x)))
+                   (and (legal-cond-clausesp clauses)
+                        (untranslated-term-listp (extract-terms-from-cond-clauses clauses)))))
                 (case ; (case expr ...pairs...)
                   (let ((expr (farg1 x))
                         (pairs (cdr (fargs x))))
@@ -282,19 +285,19 @@
  ;;         (t (and (untranslated-term-supported-bstar-binderp (car binders))
  ;;                 (all-untranslated-term-supported-bstar-binderp (cdr binders))))))
 
- ;; recognize a list of non-dotted pairs of untranslated-terms (this occurs in
- ;; a cond and I guess in b*)
- (defun untranslated-term-pairsp  (pairs)
-   (declare (xargs :guard t :measure (acl2-count pairs)))
-   (if (atom pairs)
-       (eq nil pairs)
-     (let ((pair (first pairs)))
-       (and (consp pair)
-            (true-listp pair)
-            (eql 2 (len pair))
-            (untranslated-TERMp (first pair))
-            (untranslated-TERMp (second pair))
-            (untranslated-TERM-pairsp (rest pairs))))))
+ ;; ;; recognize a list of non-dotted pairs of untranslated-terms (this occurs in
+ ;; ;; a cond)
+ ;; (defun untranslated-term-pairsp  (pairs)
+ ;;   (declare (xargs :guard t :measure (acl2-count pairs)))
+ ;;   (if (atom pairs)
+ ;;       (eq nil pairs)
+ ;;     (let ((pair (first pairs)))
+ ;;       (and (consp pair)
+ ;;            (true-listp pair)
+ ;;            (eql 2 (len pair))
+ ;;            (untranslated-TERMp (first pair))
+ ;;            (untranslated-TERMp (second pair))
+ ;;            (untranslated-TERM-pairsp (rest pairs))))))
 
  ;; (defun pat-untranslated-term-pairsp  (pairs)
  ;;   (declare (xargs :guard t :measure (acl2-count pairs)))
@@ -371,8 +374,8 @@
                              (untranslated-term-listp (extract-terms-from-b*-bindings bindings))
                              (untranslated-term-listp result-forms))))
                (if (eq 'cond x)
-                   (and (true-listp y)
-                        (untranslated-term-pairsp y))
+                   (and (legal-cond-clausesp y)
+                        (untranslated-term-listp (extract-terms-from-cond-clauses y)))
                  (if (eq x 'case)
                      (and (true-listp y)
                           (let ((expr (car y))
@@ -435,10 +438,10 @@
            (untranslated-termp (car (last term))))
   :hints (("Goal" :expand ((untranslated-termp term)))))
 
-(defthm var-untranslated-term-pairsp-of-cadr
-  (implies (and (untranslated-termp term)
-                (member-equal (car term) '(let let*)))
-           (var-untranslated-term-pairsp (cadr term))))
+;; (defthm var-untranslated-term-pairsp-of-cadr
+;;   (implies (and (untranslated-termp term)
+;;                 (member-equal (car term) '(let let*)))
+;;            (var-untranslated-term-pairsp (cadr term))))
 
 (local (in-theory (enable UNTRANSLATED-TERMP)))
 
@@ -524,6 +527,11 @@
 
 (local (in-theory (disable symbol-alistp)))
 
+(defthm untranslated-term-listp-of-extract-terms-from-cond-clauses-of-recreate-cond-clauses
+  (implies (untranslated-term-listp new-terms)
+           (untranslated-term-listp (extract-terms-from-cond-clauses (recreate-cond-clauses clauses new-terms))))
+  :hints (("Goal" :in-theory (enable extract-terms-from-cond-clauses recreate-cond-clauses))))
+
 (defthm untranslated-term-listp-of-extract-terms-from-b*-binding-of-mv-nth-0-of-recreate-b*-binding
   (implies (and (supported-b*-bindingp binding)
                 (untranslated-term-listp new-terms))
@@ -586,7 +594,10 @@
                  `(b* ,new-bindings
                     ,@(rename-fns-in-untranslated-term-list result-forms alist)))
              (if (eq 'cond fn) ; (cond ...clauses...)
-                 `(,fn ,@(rename-fns-in-untranslated-term-pairs (fargs term) alist))
+                 (let* ((clauses (fargs term))
+                        (terms (extract-terms-from-cond-clauses clauses))
+                        (new-terms (rename-fns-in-untranslated-term-list terms alist)))
+                   `(cond ,@(recreate-cond-clauses clauses new-terms)))
                (if (eq fn 'case) ;; (case <expr> ...pairs...)
                    (let* ((expr (farg1 term))
                           (pairs (cdr (fargs term)))
@@ -645,18 +656,18 @@
  ;;                   (rename-fns-in-untranslated-term term2 alist))
  ;;             (rename-fns-in-cadrs-of-untranslated-term-pairs (rest pairs) alist)))))
 
- ;; For the pairs in a COND.
- (defun rename-fns-in-untranslated-term-pairs (pairs alist)
-   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
-                               (symbol-alistp alist))))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (term1 (first pair))
-            (term2 (second pair)))
-       (cons (list (rename-fns-in-untranslated-term term1 alist)
-                   (rename-fns-in-untranslated-term term2 alist))
-             (rename-fns-in-untranslated-term-pairs (rest pairs) alist)))))
+ ;; ;; For the pairs in a COND.
+ ;; (defun rename-fns-in-untranslated-term-pairs (pairs alist)
+ ;;   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
+ ;;                               (symbol-alistp alist))))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            (term1 (first pair))
+ ;;            (term2 (second pair)))
+ ;;       (cons (list (rename-fns-in-untranslated-term term1 alist)
+ ;;                   (rename-fns-in-untranslated-term term2 alist))
+ ;;             (rename-fns-in-untranslated-term-pairs (rest pairs) alist)))))
 
  ;; ;; For CASE-MATCH
  ;; (defun rename-fns-in-pat-untranslated-term-pairs (pairs alist)
@@ -692,10 +703,10 @@
   :hints (("Goal" :expand (untranslated-termp term)
            :in-theory (enable untranslated-termp))))
 
-(defthm untranslated-term-pairsp-of-cdr
-  (implies (and (untranslated-termp term)
-                (equal 'cond (car term)))
-           (untranslated-term-pairsp (cdr term))))
+;; (defthm untranslated-term-pairsp-of-cdr
+;;   (implies (and (untranslated-termp term)
+;;                 (equal 'cond (car term)))
+;;            (untranslated-term-pairsp (cdr term))))
 
 (defthm untranslated-termp-forward-to-alistp-of-cddr-when-case
   (implies (and (untranslated-termp term)
@@ -837,8 +848,10 @@
                      (result-forms (rest (fargs term))))
                  (union-eq (get-called-fns-in-untranslated-term-list (extract-terms-from-b*-bindings bindings))
                            (get-called-fns-in-untranslated-term-list result-forms)))
-             (if (eq 'cond fn) ;;(cond <pairs>)
-                 (get-called-fns-in-untranslated-term-pairs (fargs term))
+             (if (eq 'cond fn) ; (cond ...clauses...)
+                 (let* ((clauses (fargs term))
+                        (terms (extract-terms-from-cond-clauses clauses)))
+                   (get-called-fns-in-untranslated-term-list terms))
                (if (eq fn 'case) ;; (case <expr> ...pairs...)
                    (let* ((expr (farg1 term))
                           (pairs (cdr (fargs term)))
@@ -870,25 +883,25 @@
        (union-eq (get-called-fns-in-untranslated-term term)
                  (get-called-fns-in-var-untranslated-term-pairs (rest pairs))))))
 
- (defun get-called-fns-in-cadrs-of-untranslated-term-pairs (pairs)
-   (declare (xargs :guard (untranslated-term-pairsp pairs)))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (term2 (second pair)))
-       (union-eq (get-called-fns-in-untranslated-term term2)
-                 (get-called-fns-in-cadrs-of-untranslated-term-pairs (rest pairs))))))
+ ;; (defun get-called-fns-in-cadrs-of-untranslated-term-pairs (pairs)
+ ;;   (declare (xargs :guard (untranslated-term-pairsp pairs)))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            (term2 (second pair)))
+ ;;       (union-eq (get-called-fns-in-untranslated-term term2)
+ ;;                 (get-called-fns-in-cadrs-of-untranslated-term-pairs (rest pairs))))))
 
- (defun get-called-fns-in-untranslated-term-pairs (pairs)
-   (declare (xargs :guard (untranslated-term-pairsp pairs)))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (term1 (first pair))
-            (term2 (second pair)))
-       (union-eq (union-eq (get-called-fns-in-untranslated-term term1)
-                           (get-called-fns-in-untranslated-term term2))
-                 (get-called-fns-in-untranslated-term-pairs (rest pairs))))))
+ ;; (defun get-called-fns-in-untranslated-term-pairs (pairs)
+ ;;   (declare (xargs :guard (untranslated-term-pairsp pairs)))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            (term1 (first pair))
+ ;;            (term2 (second pair)))
+ ;;       (union-eq (union-eq (get-called-fns-in-untranslated-term term1)
+ ;;                           (get-called-fns-in-untranslated-term term2))
+ ;;                 (get-called-fns-in-untranslated-term-pairs (rest pairs))))))
 
  ;; (defun get-called-fns-in-pat-untranslated-term-pairs (pairs)
  ;;   (declare (xargs :guard (pat-untranslated-term-pairsp pairs)))
@@ -917,14 +930,14 @@
     (implies (var-untranslated-term-pairsp pairs)
              (symbol-listp (get-called-fns-in-var-untranslated-term-pairs pairs)))
     :flag get-called-fns-in-var-untranslated-term-pairs)
-  (defthm true-listp-of-get-called-fns-in-cadrs-of-untranslated-term-pairs
-    (implies (untranslated-term-pairsp pairs)
-             (symbol-listp (get-called-fns-in-cadrs-of-untranslated-term-pairs pairs)))
-    :flag get-called-fns-in-cadrs-of-untranslated-term-pairs)
-  (defthm true-listp-of-get-called-fns-in-untranslated-term-pairs
-    (implies (untranslated-term-pairsp pairs)
-             (symbol-listp (get-called-fns-in-untranslated-term-pairs pairs)))
-    :flag get-called-fns-in-untranslated-term-pairs)
+  ;; (defthm true-listp-of-get-called-fns-in-cadrs-of-untranslated-term-pairs
+  ;;   (implies (untranslated-term-pairsp pairs)
+  ;;            (symbol-listp (get-called-fns-in-cadrs-of-untranslated-term-pairs pairs)))
+  ;;   :flag get-called-fns-in-cadrs-of-untranslated-term-pairs)
+  ;; (defthm true-listp-of-get-called-fns-in-untranslated-term-pairs
+  ;;   (implies (untranslated-term-pairsp pairs)
+  ;;            (symbol-listp (get-called-fns-in-untranslated-term-pairs pairs)))
+  ;;   :flag get-called-fns-in-untranslated-term-pairs)
   ;; (defthm true-listp-of-get-called-fns-in-pat-untranslated-term-pairs
   ;;   (implies (pat-untranslated-term-pairsp pairs)
   ;;            (symbol-listp (get-called-fns-in-pat-untranslated-term-pairs pairs)))
@@ -959,7 +972,7 @@
                                       program-mode)
   (let* ((term-processor-fn (pack$ base-name '-in-untranslated-term))
          (term-list-processor-fn (pack$ base-name '-in-untranslated-term-list))
-         (term-pairs-processor-fn (pack$ base-name '-in-untranslated-term-pairs))
+;         (term-pairs-processor-fn (pack$ base-name '-in-untranslated-term-pairs))
 ;         (pat-term-pairs-processor-fn (pack$ base-name '-in-pat-untranslated-term-pairs))
          (var-term-pairs-processor-fn (pack$ base-name '-in-var-untranslated-term-pairs))
          (theorems `((make-flag ,term-processor-fn)
@@ -985,11 +998,11 @@
                                       ,@extra-guards)
                                  (var-untranslated-term-pairsp (,var-term-pairs-processor-fn pairs ,@extra-args)))
                         :flag ,var-term-pairs-processor-fn)
-                      (defthm ,(pack$ 'untranslated-term-pairsp-of- term-pairs-processor-fn)
-                        (implies (and (untranslated-term-pairsp pairs)
-                                      ,@extra-guards)
-                                 (untranslated-term-pairsp (,term-pairs-processor-fn pairs ,@extra-args)))
-                        :flag ,term-pairs-processor-fn)
+                      ;; (defthm ,(pack$ 'untranslated-term-pairsp-of- term-pairs-processor-fn)
+                      ;;   (implies (and (untranslated-term-pairsp pairs)
+                      ;;                 ,@extra-guards)
+                      ;;            (untranslated-term-pairsp (,term-pairs-processor-fn pairs ,@extra-args)))
+                      ;;   :flag ,term-pairs-processor-fn)
                       ;; (defthm ,(pack$ 'untranslated-term-pairsp-of- pat-term-pairs-processor-fn)
                       ;;   (implies (and (pat-untranslated-term-pairsp pairs)
                       ;;                 ,@extra-guards)
@@ -1045,8 +1058,11 @@
                              (new-bindings (recreate-b*-bindings bindings new-terms)))
                         `(b* ,new-bindings
                            ,@(,term-list-processor-fn result-forms ,@extra-args)))
-                    (if (eq 'cond fn) ;;(cond <pairs>)
-                        `(,fn ,@(,term-pairs-processor-fn (fargs term) ,@extra-args))
+                    (if (eq 'cond fn) ; (cond ...clauses...)
+                        (let* ((clauses (fargs term))
+                               (terms (extract-terms-from-cond-clauses clauses))
+                               (new-terms (,term-list-processor-fn terms ,@extra-args)))
+                          `(cond ,@(recreate-cond-clauses clauses new-terms)))
                       ;; function call (possibly a lambda):
                       (if (eq fn 'case) ;; (case <expr> ...pairs...)
                           (let* ((expr (farg1 term))
@@ -1081,18 +1097,18 @@
               (cons (list var (,term-processor-fn term ,@extra-args))
                     (,var-term-pairs-processor-fn (rest pairs) ,@extra-args)))))
 
-        (defun ,term-pairs-processor-fn (pairs ,@extra-args)
-          (declare (xargs :guard (and (untranslated-term-pairsp pairs)
-                                      ,@extra-guards)
-                          ,@(and stobjs `(:stobjs ,stobjs))))
-          (if (endp pairs)
-              nil
-            (let* ((pair (first pairs))
-                   (term1 (first pair))
-                   (term2 (second pair)))
-              (cons (list (,term-processor-fn term1 ,@extra-args)
-                          (,term-processor-fn term2 ,@extra-args))
-                    (,term-pairs-processor-fn (rest pairs) ,@extra-args)))))
+        ;; (defun ,term-pairs-processor-fn (pairs ,@extra-args)
+        ;;   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
+        ;;                               ,@extra-guards)
+        ;;                   ,@(and stobjs `(:stobjs ,stobjs))))
+        ;;   (if (endp pairs)
+        ;;       nil
+        ;;     (let* ((pair (first pairs))
+        ;;            (term1 (first pair))
+        ;;            (term2 (second pair)))
+        ;;       (cons (list (,term-processor-fn term1 ,@extra-args)
+        ;;                   (,term-processor-fn term2 ,@extra-args))
+        ;;             (,term-pairs-processor-fn (rest pairs) ,@extra-args)))))
 
         ;; (defun ,pat-term-pairs-processor-fn (pairs ,@extra-args)
         ;;   (declare (xargs :guard (and (pat-untranslated-term-pairsp pairs)
@@ -1183,8 +1199,11 @@
                         (new-bindings (recreate-b*-bindings bindings new-terms)))
                    `(b* ,new-bindings
                       ,@(rename-fns-and-expand-lambdas-in-untranslated-term-lst result-forms alist)))
-               (if (eq fn 'cond)
-                   `(,fn ,@(rename-fns-and-expand-lambdas-in-untranslated-term-pairs (fargs term) alist))
+               (if (eq fn 'cond) ; (cond ...clauses...)
+                   (let* ((clauses (fargs term))
+                          (terms (extract-terms-from-cond-clauses clauses))
+                          (new-terms (rename-fns-and-expand-lambdas-in-untranslated-term-lst terms alist)))
+                     `(cond ,@(recreate-cond-clauses clauses new-terms)))
                  (if (eq fn 'case) ;; (case <expr> ...pairs...)
                      (let* ((expr (farg1 term))
                             (pairs (cdr (fargs term)))
@@ -1238,19 +1257,19 @@
        (cons (list var (rename-fns-and-expand-lambdas-in-untranslated-term term alist))
              (rename-fns-and-expand-lambdas-in-var-untranslated-term-pairs (rest pairs) alist)))))
 
-  ;; these are non-dotted pairs
- (defun rename-fns-and-expand-lambdas-in-untranslated-term-pairs (pairs alist)
-   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
-                               (symbol-alistp alist)
-                               (all-symbol-or-untranslated-lambda-exprp (strip-cdrs alist)))))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (term1 (first pair))
-            (term2 (second pair)))
-       (cons (list (rename-fns-and-expand-lambdas-in-untranslated-term term1 alist)
-                   (rename-fns-and-expand-lambdas-in-untranslated-term term2 alist))
-             (rename-fns-and-expand-lambdas-in-untranslated-term-pairs (rest pairs) alist)))))
+ ;;  ;; these are non-dotted pairs
+ ;; (defun rename-fns-and-expand-lambdas-in-untranslated-term-pairs (pairs alist)
+ ;;   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
+ ;;                               (symbol-alistp alist)
+ ;;                               (all-symbol-or-untranslated-lambda-exprp (strip-cdrs alist)))))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            (term1 (first pair))
+ ;;            (term2 (second pair)))
+ ;;       (cons (list (rename-fns-and-expand-lambdas-in-untranslated-term term1 alist)
+ ;;                   (rename-fns-and-expand-lambdas-in-untranslated-term term2 alist))
+ ;;             (rename-fns-and-expand-lambdas-in-untranslated-term-pairs (rest pairs) alist)))))
 
  ;; (defun rename-fns-and-expand-lambdas-in-pat-untranslated-term-pairs (pairs alist)
  ;;   (declare (xargs :guard (and (pat-untranslated-term-pairsp pairs)
@@ -1303,8 +1322,11 @@
                       (new-bindings (recreate-b*-bindings bindings new-terms)))
                  `(b* ,new-bindings
                     ,@(clean-up-0ary-lambdas-in-untranslated-term-list result-forms)))
-             (if (eq 'cond fn) ;;(cond <pairs>)
-                 `(,fn ,@(clean-up-0ary-lambdas-in-untranslated-term-pairs (fargs term)))
+             (if (eq 'cond fn) ; (cond ...clauses...)
+                 (let* ((clauses (fargs term))
+                        (terms (extract-terms-from-cond-clauses clauses))
+                        (new-terms (clean-up-0ary-lambdas-in-untranslated-term-list terms)))
+                   `(cond ,@(recreate-cond-clauses clauses new-terms)))
                (if (eq fn 'case) ;; (case <expr> ...pairs...)
                    (let* ((expr (farg1 term))
                           (pairs (cdr (fargs term)))
@@ -1357,16 +1379,16 @@
  ;;                   (clean-up-0ary-lambdas-in-untranslated-term term2))
  ;;             (clean-up-0ary-lambdas-in-cadrs-of-untranslated-term-pairs (rest pairs))))))
 
- (defun clean-up-0ary-lambdas-in-untranslated-term-pairs (pairs)
-   (declare (xargs :guard (untranslated-term-pairsp pairs)))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (term1 (first pair))
-            (term2 (second pair)))
-       (cons (list (clean-up-0ary-lambdas-in-untranslated-term term1)
-                   (clean-up-0ary-lambdas-in-untranslated-term term2))
-             (clean-up-0ary-lambdas-in-untranslated-term-pairs (rest pairs))))))
+ ;; (defun clean-up-0ary-lambdas-in-untranslated-term-pairs (pairs)
+ ;;   (declare (xargs :guard (untranslated-term-pairsp pairs)))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            (term1 (first pair))
+ ;;            (term2 (second pair)))
+ ;;       (cons (list (clean-up-0ary-lambdas-in-untranslated-term term1)
+ ;;                   (clean-up-0ary-lambdas-in-untranslated-term term2))
+ ;;             (clean-up-0ary-lambdas-in-untranslated-term-pairs (rest pairs))))))
 
 ;;  (defun clean-up-0ary-lambdas-in-pat-untranslated-term-pairs (pairs)
 ;;    (declare (xargs :guard (pat-untranslated-term-pairsp pairs)))
@@ -1426,8 +1448,11 @@
                       (new-bindings (recreate-b*-bindings bindings new-terms)))
                  `(b* ,new-bindings
                     ,@(clean-up-implies-of-t-in-untranslated-term-list result-forms)))
-             (if (eq 'cond fn) ;;(cond <pairs>)
-                 `(,fn ,@(clean-up-implies-of-t-in-untranslated-term-pairs (fargs term)))
+             (if (eq 'cond fn) ; (cond ...clauses...)
+                 (let* ((clauses (fargs term))
+                        (terms (extract-terms-from-cond-clauses clauses))
+                        (new-terms (clean-up-implies-of-t-in-untranslated-term-list terms)))
+                   `(cond ,@(recreate-cond-clauses clauses new-terms)))
                (if (eq fn 'case) ;; (case <expr> ...pairs...)
                    (let* ((expr (farg1 term))
                           (pairs (cdr (fargs term)))
@@ -1482,16 +1507,16 @@
  ;;                   (clean-up-implies-of-t-in-untranslated-term term2))
  ;;             (clean-up-implies-of-t-in-cadrs-of-untranslated-term-pairs (rest pairs))))))
 
- (defun clean-up-implies-of-t-in-untranslated-term-pairs (pairs)
-   (declare (xargs :guard (untranslated-term-pairsp pairs)))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (term1 (first pair))
-            (term2 (second pair)))
-       (cons (list (clean-up-implies-of-t-in-untranslated-term term1)
-                   (clean-up-implies-of-t-in-untranslated-term term2))
-             (clean-up-implies-of-t-in-untranslated-term-pairs (rest pairs))))))
+ ;; (defun clean-up-implies-of-t-in-untranslated-term-pairs (pairs)
+ ;;   (declare (xargs :guard (untranslated-term-pairsp pairs)))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            (term1 (first pair))
+ ;;            (term2 (second pair)))
+ ;;       (cons (list (clean-up-implies-of-t-in-untranslated-term term1)
+ ;;                   (clean-up-implies-of-t-in-untranslated-term term2))
+ ;;             (clean-up-implies-of-t-in-untranslated-term-pairs (rest pairs))))))
 
  ;; (defun clean-up-implies-of-t-in-pat-untranslated-term-pairs (pairs)
  ;;   (declare (xargs :guard (pat-untranslated-term-pairsp pairs)))
@@ -1660,7 +1685,7 @@
 ;;                    `(,fn ;,(clean-up-nth-of-cons-in-cadrs-of-untranslated-term-pairs (farg1 term))
 ;;                      ,(MAKE-DOUBLETS binders (clean-up-nth-of-cons-in-untranslated-term-list terms))
 ;;                      ,@(clean-up-nth-of-cons-in-untranslated-term-list (rest (fargs term)))))
-;;                (if (eq 'cond fn) ;;(cond <pairs>)
+;;                (if (eq 'cond fn) ; (cond ...clauses...)
 ;;                    `(,fn ,@(clean-up-nth-of-cons-in-untranslated-term-pairs (fargs term)))
 ;;                  ;; function call (possibly a lambda):
 ;;                  (let* ((args (fargs term))
@@ -1830,7 +1855,7 @@
 ;;                    `(,fn ;,(clean-up-true-listp-of-cons-in-cadrs-of-untranslated-term-pairs (farg1 term))
 ;;                      ,(MAKE-DOUBLETS binders (clean-up-true-listp-of-cons-in-untranslated-term-list terms))
 ;;                      ,@(clean-up-true-listp-of-cons-in-untranslated-term-list (rest (fargs term)))))
-;;                (if (eq 'cond fn) ;;(cond <pairs>)
+;;                (if (eq 'cond fn) ; (cond ...clauses...)
 ;;                    `(,fn ,@(clean-up-true-listp-of-cons-in-untranslated-term-pairs (fargs term)))
 ;;                  ;; function call (possibly a lambda):
 ;;                  (let* ((args (fargs term))
@@ -2096,8 +2121,10 @@
                    `(b* ,new-bindings
                       ,@(replace-in-untranslated-term-list result-forms alist)))
                (if (eq 'cond fn)
-                   (cons fn (replace-in-untranslated-term-pairs (fargs term)
-                                                                alist))
+                   (let* ((clauses (fargs term))
+                          (terms (extract-terms-from-cond-clauses clauses))
+                          (new-terms (replace-in-untranslated-term-list terms alist)))
+                     `(cond ,@(recreate-cond-clauses clauses new-terms)))
                  (if (eq fn 'case) ;; (case <expr> ...pairs...)
                      (let* ((expr (farg1 term))
                             (pairs (cdr (fargs term)))
@@ -2133,20 +2160,20 @@
              (cons (list var (replace-in-untranslated-term term alist))
                    (replace-in-var-untranslated-term-pairs (rest pairs)
                                                            alist)))))
- (defun replace-in-untranslated-term-pairs
-   (pairs alist)
-   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
-                               (alistp alist)
-                               (untranslated-term-listp (strip-cdrs alist)))))
-   (if (endp pairs)
-       nil
-       (let* ((pair (first pairs))
-              (term1 (first pair))
-              (term2 (second pair)))
-             (cons (list (replace-in-untranslated-term term1 alist)
-                         (replace-in-untranslated-term term2 alist))
-                   (replace-in-untranslated-term-pairs (rest pairs)
-                                                       alist)))))
+ ;; (defun replace-in-untranslated-term-pairs
+ ;;   (pairs alist)
+ ;;   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
+ ;;                               (alistp alist)
+ ;;                               (untranslated-term-listp (strip-cdrs alist)))))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;       (let* ((pair (first pairs))
+ ;;              (term1 (first pair))
+ ;;              (term2 (second pair)))
+ ;;             (cons (list (replace-in-untranslated-term term1 alist)
+ ;;                         (replace-in-untranslated-term term2 alist))
+ ;;                   (replace-in-untranslated-term-pairs (rest pairs)
+ ;;                                                       alist)))))
  ;; (defun replace-in-pat-untranslated-term-pairs
  ;;   (pairs alist)
  ;;   (declare (xargs :guard (and (pat-untranslated-term-pairsp pairs)
@@ -2198,12 +2225,12 @@
                   (untranslated-term-listp (strip-cdrs alist)))
              (var-untranslated-term-pairsp (replace-in-var-untranslated-term-pairs pairs alist)))
     :flag replace-in-var-untranslated-term-pairs)
-  (defthm untranslated-term-pairsp-of-replace-in-untranslated-term-pairs
-    (implies (and (untranslated-term-pairsp pairs)
-                  (alistp alist)
-                  (untranslated-term-listp (strip-cdrs alist)))
-             (untranslated-term-pairsp (replace-in-untranslated-term-pairs pairs alist)))
-    :flag replace-in-untranslated-term-pairs)
+  ;; (defthm untranslated-term-pairsp-of-replace-in-untranslated-term-pairs
+  ;;   (implies (and (untranslated-term-pairsp pairs)
+  ;;                 (alistp alist)
+  ;;                 (untranslated-term-listp (strip-cdrs alist)))
+  ;;            (untranslated-term-pairsp (replace-in-untranslated-term-pairs pairs alist)))
+  ;;   :flag replace-in-untranslated-term-pairs)
   ;; (defthm pat-untranslated-term-pairsp-of-replace-in-pat-untranslated-term-pairs
   ;;   (implies (and (pat-untranslated-term-pairsp pairs)
   ;;                 (alistp alist)
@@ -2299,8 +2326,10 @@
                      (result-forms (rest (fargs term))))
                  (union-eq (get-vars-in-untranslated-term-list (extract-terms-from-b*-bindings bindings))
                            (get-vars-in-untranslated-term-list result-forms)))
-             (if (eq 'cond fn) ;;(cond <pairs>)
-                 (get-vars-in-untranslated-term-pairs (fargs term))
+             (if (eq 'cond fn) ; (cond ...clauses...)
+                 (let* ((clauses (fargs term))
+                        (terms (extract-terms-from-cond-clauses clauses)))
+                   (get-vars-in-untranslated-term-list terms))
                (if (eq fn 'case) ;; (case <expr> ...pairs...)
                    (let* ((expr (farg1 term))
                           (pairs (cdr (fargs term)))
@@ -2334,16 +2363,16 @@
        (union-eq (get-vars-in-untranslated-term term)
                  (get-vars-in-var-untranslated-term-pairs (rest pairs))))))
 
- (defun get-vars-in-untranslated-term-pairs (pairs)
-   (declare (xargs :guard (untranslated-term-pairsp pairs)))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (term1 (first pair))
-            (term2 (second pair)))
-       (union-eq (union-eq (get-vars-in-untranslated-term term1)
-                           (get-vars-in-untranslated-term term2))
-                 (get-vars-in-untranslated-term-pairs (rest pairs))))))
+ ;; (defun get-vars-in-untranslated-term-pairs (pairs)
+ ;;   (declare (xargs :guard (untranslated-term-pairsp pairs)))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            (term1 (first pair))
+ ;;            (term2 (second pair)))
+ ;;       (union-eq (union-eq (get-vars-in-untranslated-term term1)
+ ;;                           (get-vars-in-untranslated-term term2))
+ ;;                 (get-vars-in-untranslated-term-pairs (rest pairs))))))
 
  ;; (defun get-vars-in-pat-untranslated-term-pairs (pairs
  ;;                                                 case-match-p ; todo: drop
@@ -2360,7 +2389,7 @@
  ;;                      (var-refs-in-case-match-pattern pat))
  ;;                 (get-vars-in-pat-untranslated-term-pairs (rest pairs) case-match-p)))))
 
- ;;rename all functions calls in TERMS according to
+ ;; Get all the free vars in the TERMS.
  (defun get-vars-in-untranslated-term-list (terms)
    (declare (xargs :guard (untranslated-term-listp terms)))
    (if (endp terms)
@@ -2379,10 +2408,10 @@
     (implies (var-untranslated-term-pairsp pairs)
              (symbol-listp (get-vars-in-var-untranslated-term-pairs pairs)))
     :flag get-vars-in-var-untranslated-term-pairs)
-  (defthm symbol-listp-of-get-vars-in-untranslated-term-pairs
-    (implies (untranslated-term-pairsp pairs)
-             (symbol-listp (get-vars-in-untranslated-term-pairs pairs)))
-    :flag get-vars-in-untranslated-term-pairs)
+  ;; (defthm symbol-listp-of-get-vars-in-untranslated-term-pairs
+  ;;   (implies (untranslated-term-pairsp pairs)
+  ;;            (symbol-listp (get-vars-in-untranslated-term-pairs pairs)))
+  ;;   :flag get-vars-in-untranslated-term-pairs)
   ;; (defthm symbol-listp-of-get-vars-in-pat-untranslated-term-pairs
   ;;   (implies (pat-untranslated-term-pairsp pairs)
   ;;            (symbol-listp (get-vars-in-pat-untranslated-term-pairs pairs case-match-p)))
@@ -2401,10 +2430,10 @@
     (implies (var-untranslated-term-pairsp pairs)
              (true-listp (get-vars-in-var-untranslated-term-pairs pairs)))
     :flag get-vars-in-var-untranslated-term-pairs)
-  (defthm true-listp-of-get-vars-in-untranslated-term-pairs
-    (implies (untranslated-term-pairsp pairs)
-             (true-listp (get-vars-in-untranslated-term-pairs pairs)))
-    :flag get-vars-in-untranslated-term-pairs)
+  ;; (defthm true-listp-of-get-vars-in-untranslated-term-pairs
+  ;;   (implies (untranslated-term-pairsp pairs)
+  ;;            (true-listp (get-vars-in-untranslated-term-pairs pairs)))
+  ;;   :flag get-vars-in-untranslated-term-pairs)
   ;; (defthm true-listp-of-get-vars-in-pat-untranslated-term-pairs
   ;;   (implies (pat-untranslated-term-pairsp pairs)
   ;;            (true-listp (get-vars-in-pat-untranslated-term-pairs pairs case-match-p)))
@@ -2446,8 +2475,10 @@
                      (result-forms (rest (fargs term))))
                  (union-equal (get-calls-in-untranslated-term-list (extract-terms-from-b*-bindings bindings) fns)
                               (get-calls-in-untranslated-term-list result-forms fns)))
-             (if (eq 'cond this-fn) ;;(cond <pairs>)
-                 (get-calls-in-untranslated-term-pairs (fargs term) fns)
+             (if (eq 'cond this-fn) ; (cond ...clauses...)
+                 (let* ((clauses (fargs term))
+                        (terms (extract-terms-from-cond-clauses clauses)))
+                   (get-calls-in-untranslated-term-list terms fns))
                (if (eq this-fn 'case)
                    (let* ((expr (farg1 term))
                           (pairs (cdr (fargs term)))
@@ -2485,28 +2516,28 @@
        (union-equal (get-calls-in-untranslated-term term fns)
                     (get-calls-in-var-untranslated-term-pairs (rest pairs) fns)))))
 
- (defun get-calls-in-cadrs-of-untranslated-term-pairs (pairs fns)
-   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
-                               (symbol-listp fns))))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            ;;(term1 (first pair))
-            (term2 (second pair)))
-       (union-equal (get-calls-in-untranslated-term term2 fns)
-                    (get-calls-in-cadrs-of-untranslated-term-pairs (rest pairs) fns)))))
+ ;; (defun get-calls-in-cadrs-of-untranslated-term-pairs (pairs fns)
+ ;;   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
+ ;;                               (symbol-listp fns))))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            ;;(term1 (first pair))
+ ;;            (term2 (second pair)))
+ ;;       (union-equal (get-calls-in-untranslated-term term2 fns)
+ ;;                    (get-calls-in-cadrs-of-untranslated-term-pairs (rest pairs) fns)))))
 
- (defun get-calls-in-untranslated-term-pairs (pairs fns)
-   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
-                               (symbol-listp fns))))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (term1 (first pair))
-            (term2 (second pair)))
-       (union-equal (union-equal (get-calls-in-untranslated-term term1 fns)
-                                 (get-calls-in-untranslated-term term2 fns))
-                    (get-calls-in-untranslated-term-pairs (rest pairs) fns)))))
+ ;; (defun get-calls-in-untranslated-term-pairs (pairs fns)
+ ;;   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
+ ;;                               (symbol-listp fns))))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            (term1 (first pair))
+ ;;            (term2 (second pair)))
+ ;;       (union-equal (union-equal (get-calls-in-untranslated-term term1 fns)
+ ;;                                 (get-calls-in-untranslated-term term2 fns))
+ ;;                    (get-calls-in-untranslated-term-pairs (rest pairs) fns)))))
 
  ;; (defun get-calls-in-pat-untranslated-term-pairs (pairs fns)
  ;;   (declare (xargs :guard (and (pat-untranslated-term-pairsp pairs)
@@ -2518,7 +2549,7 @@
  ;;       (union-equal (get-calls-in-untranslated-term term2 fns)
  ;;                    (get-calls-in-pat-untranslated-term-pairs (rest pairs) fns)))))
 
- ;;rename all functions calls in TERMS according to
+ ;; Get all calls of any of the FNS in the TERMS.
  (defun get-calls-in-untranslated-term-list (terms fns)
    (declare (xargs :guard (and (untranslated-term-listp terms)
                                (symbol-listp fns))))
@@ -2538,14 +2569,14 @@
     (implies (var-untranslated-term-pairsp pairs)
              (true-listp (get-calls-in-var-untranslated-term-pairs pairs fns)))
     :flag get-calls-in-var-untranslated-term-pairs)
-  (defthm true-listp-of-get-calls-in-cadrs-of-untranslated-term-pairs
-    (implies (untranslated-term-pairsp pairs)
-             (true-listp (get-calls-in-cadrs-of-untranslated-term-pairs pairs fns)))
-    :flag get-calls-in-cadrs-of-untranslated-term-pairs)
-  (defthm true-listp-of-get-calls-in-untranslated-term-pairs
-    (implies (untranslated-term-pairsp pairs)
-             (true-listp (get-calls-in-untranslated-term-pairs pairs fns)))
-    :flag get-calls-in-untranslated-term-pairs)
+  ;; (defthm true-listp-of-get-calls-in-cadrs-of-untranslated-term-pairs
+  ;;   (implies (untranslated-term-pairsp pairs)
+  ;;            (true-listp (get-calls-in-cadrs-of-untranslated-term-pairs pairs fns)))
+  ;;   :flag get-calls-in-cadrs-of-untranslated-term-pairs)
+  ;; (defthm true-listp-of-get-calls-in-untranslated-term-pairs
+  ;;   (implies (untranslated-term-pairsp pairs)
+  ;;            (true-listp (get-calls-in-untranslated-term-pairs pairs fns)))
+  ;;   :flag get-calls-in-untranslated-term-pairs)
   ;; (defthm true-listp-of-get-calls-in-pat-untranslated-term-pairs
   ;;   (implies (pat-untranslated-term-pairsp pairs)
   ;;            (true-listp (get-calls-in-pat-untranslated-term-pairs pairs fns)))
@@ -2748,8 +2779,11 @@
                           (new-bindings (recreate-b*-bindings bindings new-terms)))
                      `(b* ,new-bindings
                         ,@(sublis-var-untranslated-term-list alist result-forms)))
-                 (if (eq 'cond fn)
-                     (cons fn (sublis-var-untranslated-term-pairs alist (fargs term)))
+                 (if (eq 'cond fn) ; (cond ...clauses...)
+                     (let* ((clauses (fargs term))
+                            (terms (extract-terms-from-cond-clauses clauses))
+                            (new-terms (sublis-var-untranslated-term-list alist terms)))
+                       `(cond ,@(recreate-cond-clauses clauses new-terms)))
                    (if (eq fn 'case) ;; (case <expr> ...pairs...)
                        (let* ((expr (farg1 term))
                               (pairs (cdr (fargs term)))
@@ -2789,18 +2823,18 @@
              (sublis-var-var-untranslated-term-pairs alist
                                                      (rest pairs))))))
 
- (defun sublis-var-untranslated-term-pairs (alist pairs)
-   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
-                               (symbol-alistp alist)
-                               (untranslated-term-listp (strip-cdrs alist)))))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (term1 (first pair))
-            (term2 (second pair)))
-       (cons (list (sublis-var-untranslated-term alist term1)
-                   (sublis-var-untranslated-term alist term2))
-             (sublis-var-untranslated-term-pairs alist (rest pairs))))))
+ ;; (defun sublis-var-untranslated-term-pairs (alist pairs)
+ ;;   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
+ ;;                               (symbol-alistp alist)
+ ;;                               (untranslated-term-listp (strip-cdrs alist)))))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            (term1 (first pair))
+ ;;            (term2 (second pair)))
+ ;;       (cons (list (sublis-var-untranslated-term alist term1)
+ ;;                   (sublis-var-untranslated-term alist term2))
+ ;;             (sublis-var-untranslated-term-pairs alist (rest pairs))))))
 
  ;fixme: consider capture
  (defun sublis-var-case-match-cases (alist cases)
@@ -2863,12 +2897,12 @@
                   (untranslated-term-listp (strip-cdrs alist)))
              (var-untranslated-term-pairsp (sublis-var-var-untranslated-term-pairs alist pairs)))
     :flag sublis-var-var-untranslated-term-pairs)
-  (defthm untranslated-term-pairsp-of-sublis-var-untranslated-term-pairs
-    (implies (and (untranslated-term-pairsp pairs)
-                  (alistp alist)
-                  (untranslated-term-listp (strip-cdrs alist)))
-             (untranslated-term-pairsp (sublis-var-untranslated-term-pairs alist pairs)))
-    :flag sublis-var-untranslated-term-pairs)
+  ;; (defthm untranslated-term-pairsp-of-sublis-var-untranslated-term-pairs
+  ;;   (implies (and (untranslated-term-pairsp pairs)
+  ;;                 (alistp alist)
+  ;;                 (untranslated-term-listp (strip-cdrs alist)))
+  ;;            (untranslated-term-pairsp (sublis-var-untranslated-term-pairs alist pairs)))
+  ;;   :flag sublis-var-untranslated-term-pairs)
   (defthm untranslated-term-listp-of-sublis-var-case-match-cases
     (implies (and (legal-case-match-casesp cases)
                   (untranslated-term-listp (extract-terms-from-case-match-cases cases))
@@ -2916,19 +2950,19 @@
                     (NTHCDR 1 (CAR CASES)))))
   :otf-flg t)
 
-(defthm alist-when-untranslated-term-pairsp-cheap
-  (implies (untranslated-term-pairsp x)
-           (alistp x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+;; (defthm alist-when-untranslated-term-pairsp-cheap
+;;   (implies (untranslated-term-pairsp x)
+;;            (alistp x))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-(defthm all->=-len-when-untranslated-term-pairsp-cheap
-  (implies (untranslated-term-pairsp x)
-           (all->=-len x 2))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+;; (defthm all->=-len-when-untranslated-term-pairsp-cheap
+;;   (implies (untranslated-term-pairsp x)
+;;            (all->=-len x 2))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-(defthm untranslated-term-listp-of-strip-cadrs
-  (implies (untranslated-term-pairsp x)
-           (untranslated-term-listp (strip-cadrs x))))
+;; (defthm untranslated-term-listp-of-strip-cadrs
+;;   (implies (untranslated-term-pairsp x)
+;;            (untranslated-term-listp (strip-cadrs x))))
 
 ;; ;todo: just say farg 2
 ;; (defthm
