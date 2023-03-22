@@ -231,7 +231,7 @@
                       (and (supported-b*-bindingsp bindings)
                            (untranslated-term-listp (extract-terms-from-b*-bindings bindings))
                            (untranslated-term-listp result-forms))))
-                (cond ;; (cond ...pairs...)
+                (cond ; (cond ...clauses...)
                  (and (untranslated-term-pairsp (fargs x))))
                 (case ; (case expr ...pairs...)
                   (let ((expr (farg1 x))
@@ -585,7 +585,7 @@
                       (new-bindings (recreate-b*-bindings bindings new-terms)))
                  `(b* ,new-bindings
                     ,@(rename-fns-in-untranslated-term-list result-forms alist)))
-             (if (eq 'cond fn) ;; (cond <clauses>)
+             (if (eq 'cond fn) ; (cond ...clauses...)
                  `(,fn ,@(rename-fns-in-untranslated-term-pairs (fargs term) alist))
                (if (eq fn 'case) ;; (case <expr> ...pairs...)
                    (let* ((expr (farg1 term))
