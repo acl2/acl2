@@ -13,7 +13,7 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
-(defun legal-cond-clausesp (clauses)
+(defund legal-cond-clausesp (clauses)
   (declare (xargs :guard t))
   (if (atom clauses)
       (null clauses)
@@ -23,9 +23,16 @@
                (= 2 (len clause)))
            (legal-cond-clausesp (rest clauses))))))
 
+(defthm legal-cond-clausesp-forward-to-true-listp
+  (implies (legal-cond-clausesp clauses)
+           (true-listp clauses))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable legal-cond-clausesp))))
+
 ;; The CLAUSES can have length 1 or 2.  All we have to do is flatten.
-(defun extract-terms-from-cond-clauses (clauses)
-  (declare (xargs :guard (legal-cond-clausesp clauses)))
+(defund extract-terms-from-cond-clauses (clauses)
+  (declare (xargs :guard (legal-cond-clausesp clauses)
+                  :guard-hints (("Goal" :in-theory (enable legal-cond-clausesp)))))
   (if (endp clauses)
       nil
     (append (true-list-fix (first clauses))
@@ -40,9 +47,10 @@
 ;; Replace the terms in the CLAUSES with the corresponding NEW-TERMS, which
 ;; come in order and correspond to the terms in the existing CLAUSES.  Note
 ;; that each element of CLAUSES may have length 1 or 2.
-(defun recreate-cond-clauses (clauses new-terms)
+(defund recreate-cond-clauses (clauses new-terms)
   (declare (xargs :guard (and (legal-cond-clausesp clauses)
-                              (true-listp new-terms))))
+                              (true-listp new-terms))
+                  :guard-hints (("Goal" :in-theory (enable legal-cond-clausesp)))))
   (if (endp clauses)
       nil
     (let* ((clause (first clauses))
@@ -54,4 +62,5 @@
 
 (defthm legal-cond-clausesp-of-recreate-cond-clauses
   (implies (legal-cond-clausesp clauses)
-           (legal-cond-clausesp (recreate-cond-clauses clauses new-terms))))
+           (legal-cond-clausesp (recreate-cond-clauses clauses new-terms)))
+  :hints (("Goal" :in-theory (enable legal-cond-clausesp recreate-cond-clauses))))
