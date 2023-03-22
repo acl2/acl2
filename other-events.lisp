@@ -8724,24 +8724,7 @@
      ctx
      (revert-world-on-error
       (state-global-let*
-       ((inside-progn-fn1 t)
-
-; It is tempting to bind ld-always-skip-top-level-locals to nil here, as we do
-; in process-embedded-events.  A reason might seem to be that we don't want bad
-; local events in the certification world, for example as follows.  However,
-; that's not necessary, because local events are skipped
-
-; (set-ld-always-skip-top-level-locals t state)
-; (defun f (x) x)
-; (progn
-;   (defun g (x) x)
-;   (local (defun f (x) (cons x x))))
-
-; But it isn't actually a problem for the conflicting defuns of f to wind up in
-; the portcullis commands of a .cert file, because the local one will be
-; ignored when including the book.
-
-        )
+       ((inside-progn-fn1 t))
        (mv-let
          (erp val expansion-alist ignore-kpa state)
          (pprogn
