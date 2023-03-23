@@ -277,7 +277,12 @@
                              (expr-value struct objdes-struct)
                              (ident ,(ident->name memname))
                              (expr-value index objdes-index))
-                            (expr-value (,reader index struct) nil))))
+                            (expr-value (,reader index struct)
+                                        (objdesign-element
+                                         (objdesign-member
+                                          objdes-struct
+                                          (ident ,(ident->name memname)))
+                                         (value-integer->get index))))))
           (formula-memberp
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                           (valuep ptr)

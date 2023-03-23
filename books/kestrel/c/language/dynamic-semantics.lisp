@@ -653,8 +653,9 @@
                                         :array val-mem
                                         :index sub)))
        (val (value-array-read index val-mem))
-       ((when (errorp val)) val))
-    (make-expr-value :value val :object nil))
+       ((when (errorp val)) val)
+       (objdes (make-objdesign-element :super objdes-mem :index index)))
+    (make-expr-value :value val :object objdes))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
