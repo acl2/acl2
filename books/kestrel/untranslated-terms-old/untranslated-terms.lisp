@@ -2338,7 +2338,8 @@
   :hints (("Goal" :expand (untranslated-termp term)
            :in-theory (enable let-bindings))))
 
-;; TODO: Can we really do this right without translating calls of user macros?
+;; TODO: Deprecate this.  To do this right, we need the world so we can
+;; translate calls of user macros.
 (mutual-recursion
  ;;Return a list of all variables in TERM.
  (defun free-vars-in-untranslated-term (term)
