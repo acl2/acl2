@@ -13,6 +13,7 @@
 (include-book "std/testing/assert-equal" :dir :system)
 (include-book "std/testing/must-fail" :dir :system)
 
+;; Normal example
 (defun foo (x)
   (case-match x
     (3 'x-is-three)
@@ -23,6 +24,8 @@
 (assert-equal (foo '(cons x y)) 'x-is-a-call-of-cons)
 (assert-equal (foo '(blah x y)) 'x-is-something-else)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun foo2 (x)
   (case-match x
     ;; test that multiple ampersands don't have to match the same thing:
@@ -31,6 +34,8 @@
 
 (assert-equal (foo2 '(cons x y)) 'x-is-a-call-of-cons)
 (assert-equal (foo2 '(blah x y)) 'x-is-something-else)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A test with multiple declares.  Previously, :doc case-match disallowed this,
 ;; though it worked fine.
@@ -41,6 +46,8 @@
 
 (assert-equal (foo3 '(cons x y)) 'x-is-a-call-of-cons)
 (assert-equal (foo3 '(blah x y)) 'x-is-something-else)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Illegal: First arg of case-match is not a symbol.
 (must-fail
@@ -65,9 +72,30 @@
     (nil "nil")
     (& "something-else")))
 
+(assert-equal (foo5) "nil")
+
 ;; Okay, since t is a symbol, even though it's not a variable.
 (defun foo6 ()
   (case-match t
     (nil "nil")
     (t "t")
     (& "something-else")))
+
+(assert-equal (foo6) "t")
+
+;; Okay, since :key is a symbol, even though it's not a variable.
+(defun foo7 ()
+  (case-match :key
+    (:key ":key")
+    (& "something-else")))
+
+(assert-equal (foo7) ":key")
+
+;; Okay, since *c* is a symbol, even though it's not a variable.
+(defconst *c* 7)
+(defun foo8 ()
+  (case-match *c*
+    (7 "seven")
+    (& "something-else")))
+
+(assert-equal (foo8) "seven")
