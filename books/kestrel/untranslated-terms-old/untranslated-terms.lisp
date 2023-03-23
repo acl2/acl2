@@ -59,11 +59,11 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
-(local (in-theory (disable legal-case-clausesp legal-variablep)))
+(local (in-theory (disable butlast
+                           legal-case-clausesp ; todo
+                           legal-variablep)))
 
 ;;=== stuff to move to libraries:
-
-(in-theory (disable butlast))
 
 ;move
 (local
@@ -183,8 +183,6 @@
 ;;
 ;; end of library lemmas
 ;;
-
-(in-theory (disable legal-variablep))
 
 ;; Sanity check: Nothing can be an untranslated-constant and an
 ;; untranslated-variable.
