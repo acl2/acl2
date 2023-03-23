@@ -42,14 +42,14 @@
 (assert-equal (foo3 '(cons x y)) 'x-is-a-call-of-cons)
 (assert-equal (foo3 '(blah x y)) 'x-is-something-else)
 
-;; Illegal: First arg of case-match is not a variable
+;; Illegal: First arg of case-match is not a symbol.
 (must-fail
  (defun foo4 (x)
    (case-match (+ 1 x)
      (3 'x-is-three)
      (& 'x-is-something-else))))
 
-;; Illegal: First arg of case-match is not a variable
+;; Illegal: First arg of case-match is not symbol.
 ;; Could perhaps be made legal.
 (must-fail
  (defun foo4b (x)
@@ -59,13 +59,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Should this be illegal, since nil is not a variable?
+;; Okay, since nil is a symbol, even though it's not a variable.
 (defun foo5 ()
   (case-match nil
     (nil "nil")
     (& "something-else")))
 
-;; TODO: Should this be illegal, since t is not a variable?
+;; Okay, since t is a symbol, even though it's not a variable.
 (defun foo6 ()
   (case-match t
     (nil "nil")
