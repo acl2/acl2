@@ -49,6 +49,14 @@
      (3 'x-is-three)
      (& 'x-is-something-else))))
 
+;; Illegal: First arg of case-match is not a variable
+;; Could perhaps be made legal.
+(must-fail
+ (defun foo4b (x)
+   (case-match '(foo bar)
+     (3 'x-is-three)
+     (& 'x-is-something-else))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Should this be illegal, since nil is not a variable?
