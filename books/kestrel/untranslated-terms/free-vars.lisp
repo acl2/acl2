@@ -22,3 +22,12 @@
                   :mode :program))
   (let ((translated-term (translate-term term 'free-vars-in-untranslated-term$ wrld)))
     (free-vars-in-term translated-term)))
+
+(defun free-vars-in-untranslated-term-list$ (terms wrld)
+  (declare (xargs :guard (and (true-listp terms)
+                              (plist-worldp wrld))
+                  :mode :program))
+  (if (endp terms)
+      nil
+    (union-eq (free-vars-in-untranslated-term$ (first terms) wrld)
+              (free-vars-in-untranslated-term-list$ (rest terms) wrld))))
