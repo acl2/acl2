@@ -55,7 +55,7 @@
     (cons `(declare ,@(substitute-guard-in-declare-args (fargs (first declares)) alist))
           (substitute-guard-in-declares (rest declares) alist))))
 
-
+;; TODO: Deprecate this.  We can't really do it right without a world for translating the body.
 ;; Fixup the ignore declarations to ignore exactly those formals not mentioned in the body.
 ;; Note that irrelevant params may have to be dealt with separately.
 (defun fixup-ignores (declares formals body)
