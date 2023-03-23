@@ -1,6 +1,6 @@
-; Utilities to fix up ignore declares
+; Utilities to fix up IGNORE declares
 ;
-; Copyright (C) 2014-2022 Kestrel Institute
+; Copyright (C) 2014-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,8 +15,6 @@
 (include-book "translate")
 (include-book "declares0")
 (include-book "mutual-recursion-forms")
-
-;; TODO: Move this file to ../../utilities
 
 ;; Fixup the ignore declarations to ignore exactly those formals not mentioned in the body.
 ;; A fake-wrld is required so we can translate the BODY during the process (though we try to keep the result untranslated).
