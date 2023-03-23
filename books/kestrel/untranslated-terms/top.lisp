@@ -15,6 +15,8 @@
 (include-book "case-match-helpers")
 (include-book "helpers")
 
+(include-book "free-vars")
+
 (include-book "replace-calls")
 (include-book "rename-functions")
 (include-book "add-conjunct-to-uterm")
