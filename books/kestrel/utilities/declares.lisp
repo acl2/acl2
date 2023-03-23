@@ -55,14 +55,14 @@
     (cons `(declare ,@(substitute-guard-in-declare-args (fargs (first declares)) alist))
           (substitute-guard-in-declares (rest declares) alist))))
 
-
+;; TODO: Deprecate this.  We can't really do it right without a world for translating the body.
 ;; Fixup the ignore declarations to ignore exactly those formals not mentioned in the body.
 ;; Note that irrelevant params may have to be dealt with separately.
 (defun fixup-ignores (declares formals body)
   (declare (xargs :guard (and (symbol-listp formals)
                               (untranslated-termp body) ;TODO: relax this
                               (all-declarep declares))))
-  (let* ((formals-mentioned (get-vars-in-untranslated-term body))
+  (let* ((formals-mentioned (free-vars-in-untranslated-term body))
          (ignored-formals (set-difference-eq formals formals-mentioned))
          (declares (remove-declares 'ignore declares))
          ;; Also remove any ignorable declares, since we are setting the ignore to be exactly what we need:

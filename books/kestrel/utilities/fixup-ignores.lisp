@@ -1,6 +1,6 @@
-; Utilities to fix up ignore declares
+; Utilities to fix up IGNORE declares
 ;
-; Copyright (C) 2014-2022 Kestrel Institute
+; Copyright (C) 2014-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,13 +10,14 @@
 
 (in-package "ACL2")
 
+;; See also fixup-ignores0.lisp
+
 (include-book "fake-worlds")
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "translate")
 (include-book "declares0")
+(include-book "fixup-ignores0")
 (include-book "mutual-recursion-forms")
-
-;; TODO: Move this file to ../../utilities
 
 ;; Fixup the ignore declarations to ignore exactly those formals not mentioned in the body.
 ;; A fake-wrld is required so we can translate the BODY during the process (though we try to keep the result untranslated).
@@ -30,18 +31,10 @@
   (declare (xargs :guard (and (symbol-listp formals)
                               (all-declarep declares)
                               (plist-worldp fake-wrld))
-                  :mode :program ;; because we call translate-term-with-defaults
+                  :mode :program ; because this translates the body
                   ))
-  (b* ((translated-body (translate-term-allowing-ignored-vars body 'fixup-ignores-with-fake-world fake-wrld))
-       (formals-mentioned (free-vars-in-term translated-body))
-       (ignored-formals (set-difference-eq formals formals-mentioned))
-       (declares (remove-declares 'ignore declares))
-       ;; Also remove any ignorable declares, since we are setting the ignore to be exactly what we need:
-       (declares (remove-declares 'ignorable declares))
-       (declares (if ignored-formals
-                     (add-declare-arg `(ignore ,@ignored-formals) declares)
-                   declares)))
-    declares))
+  (let ((translated-body (translate-term-allowing-ignored-vars body 'fixup-ignores-with-fake-world fake-wrld)))
+    (fixup-ignores-for-translated-body declares formals translated-body)))
 
 ;; The name-arity-alist supports translating the BODY by assigning arities to
 ;; functions that may appear but are not already defined.
