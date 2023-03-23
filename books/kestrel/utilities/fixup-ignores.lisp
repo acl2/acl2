@@ -19,10 +19,12 @@
 (include-book "fixup-ignores0")
 (include-book "mutual-recursion-forms")
 
-;; Fixup the ignore declarations to ignore exactly those formals not mentioned in the body.
-;; A fake-wrld is required so we can translate the BODY during the process (though we try to keep the result untranslated).
+;; Fixup the DECLARES to have ignore declarations for exactly those FORMALS not mentioned in the body.
+;; A world is required so we can translate the BODY to see which formals are mentioned in it.
+;; The world may contain fake entries giving arities to functions that do not yet exist.
 ;; Note that irrelevant params may have to be dealt with separately.
 ;; Returns the new declares.
+;; todo: rename to fixup-ignores once that one is deprecated.
 (defun fixup-ignores-with-fake-world (declares
                                       formals
                                       body ; untranslated
