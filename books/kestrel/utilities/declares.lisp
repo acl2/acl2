@@ -90,6 +90,11 @@
                    ,@(apply-function-renaming-to-guard-in-xargs (cddr xargs) function-renaming))) ;there may be more guards
       `(,(first xargs) ,(second xargs) ,@(apply-function-renaming-to-guard-in-xargs (cddr xargs) function-renaming)))))
 
+(defthm keyword-value-listp-of-apply-function-renaming-to-guard-in-xargs
+  (implies (xargsp xargs)
+           (keyword-value-listp (apply-function-renaming-to-guard-in-xargs xargs function-renaming)))
+  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-in-xargs xargsp keyword-value-listp))))
+
 (defun apply-function-renaming-to-guard-in-declare-args (declare-args function-renaming)
   (declare (xargs :guard (and (symbol-alistp function-renaming)
                               (all-declare-argp declare-args))))
@@ -107,10 +112,20 @@
       (cons arg
             (apply-function-renaming-to-guard-in-declare-args (rest declare-args) function-renaming)))))
 
+(defthm all-declare-argp-of-apply-function-renaming-to-guard-in-declare-args
+  (implies (all-declare-argp declare-args)
+           (all-declare-argp (apply-function-renaming-to-guard-in-declare-args declare-args function-renaming)))
+  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-in-declare-args))))
+
 (defun apply-function-renaming-to-guard-in-declare (declare function-renaming)
   (declare (xargs :guard (and (symbol-alistp function-renaming)
                               (declarep declare))))
   `(declare ,@(apply-function-renaming-to-guard-in-declare-args (fargs declare) function-renaming)))
+
+(defthm declarep-of-apply-function-renaming-to-guard-in-declare
+  (implies (declarep declare)
+           (declarep (apply-function-renaming-to-guard-in-declare declare function-renaming)))
+  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-in-declare declarep))))
 
 (defun apply-function-renaming-to-guard-in-declares (declares function-renaming)
   (declare (xargs :guard (and (symbol-alistp function-renaming)
@@ -119,21 +134,6 @@
       nil
     (cons (apply-function-renaming-to-guard-in-declare (first declares) function-renaming)
           (apply-function-renaming-to-guard-in-declares (rest declares) function-renaming))))
-
-(defthm keyword-value-listp-of-apply-function-renaming-to-guard-in-xargs
-  (implies (xargsp xargs)
-           (keyword-value-listp (apply-function-renaming-to-guard-in-xargs xargs function-renaming)))
-  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-in-xargs xargsp keyword-value-listp))))
-
-(defthm all-declare-argp-of-apply-function-renaming-to-guard-in-declare-args
-  (implies (all-declare-argp declare-args)
-           (all-declare-argp (apply-function-renaming-to-guard-in-declare-args declare-args function-renaming)))
-  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-in-declare-args))))
-
-(defthm declarep-of-apply-function-renaming-to-guard-in-declare
-  (implies (declarep declare)
-           (declarep (apply-function-renaming-to-guard-in-declare declare function-renaming)))
-  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-in-declare declarep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
