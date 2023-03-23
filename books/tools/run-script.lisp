@@ -39,6 +39,11 @@
  are evaluated and a transcript is written to @('NAME-log.out').
  Forms that are @(see command)s change the logical world.</p>
 
+ <p>NOTE: The @(see time-tracker) utility is disabled by @('run-script').
+ After a call of @('run-script'), you need to evaluate @('(time-tracker t)') if
+ you want to return to the default behavior (where the time-tracker capability
+ is enabled).</p>
+
  <p>To use @('run-script') for regression testing, you will need
  to create three files in addition to the input file, as described below.
  For an example, see the files @('books/demos/mini-proveall-*.*') in
@@ -160,14 +165,16 @@
 
   (let ((input-file (concatenate 'string name "-input.lsp"))
         (output-file (concatenate 'string name "-log.out")))
-    `(ld '((unset-waterfall-parallelism) ; avoid different output in ACL2(p)
-           (assign script-mode t)
-           (set-ld-prompt t state)
-           (set-inhibited-summary-types ,inhibited-summary-types)
-           (set-inhibit-output-lst ,inhibit-output-lst)
-           .
-           ,input-file)
-         :ld-prompt nil ; for (assign script-mode t)
-         :ld-verbose nil ; avoid absolute pathname printed for cbd
-         :ld-pre-eval-print t :ld-error-action ,ld-error-action
-         :standard-co ,output-file :proofs-co ,output-file)))
+    `(prog2$
+      (time-tracker nil)
+      (ld '((unset-waterfall-parallelism) ; avoid different output in ACL2(p)
+            (assign script-mode t)
+            (set-ld-prompt t state)
+            (set-inhibited-summary-types ,inhibited-summary-types)
+            (set-inhibit-output-lst ,inhibit-output-lst)
+            .
+            ,input-file)
+          :ld-prompt nil ; for (assign script-mode t)
+          :ld-verbose nil ; avoid absolute pathname printed for cbd
+          :ld-pre-eval-print t :ld-error-action ,ld-error-action
+          :standard-co ,output-file :proofs-co ,output-file))))
