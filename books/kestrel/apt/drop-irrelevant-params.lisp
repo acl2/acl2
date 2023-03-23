@@ -233,7 +233,7 @@
        (declares (add-verify-guards-nil declares)) ;we will later verify the guards if needed
        ;; TODO: This can cause problems when we generate hints for the guard proof (need to instantiate dropped params somehow): Perhaps the user
        ;; could supply such instances (in general, in terms of the other params) with the guard hints.  Or we try to find values of the right type, at least.
-       (declares (drop-guard-conjuncts-that-mention-vars-in-declares declares (assoc-eq fn params-to-drop-alist)))
+       (declares (drop-guard-conjuncts-that-mention-vars-in-declares declares (assoc-eq fn params-to-drop-alist) (w state)))
 ;         (declares (replace-mode-with-program-in-declares declares))
        (measure (and rec (fn-measure fn state)))
        (formals-in-measure (and rec (free-vars-in-term measure)))
