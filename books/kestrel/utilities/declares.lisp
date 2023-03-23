@@ -1,6 +1,6 @@
 ; Utilities for manipulating declares (e.g., in xargs of defuns)
 ;
-; Copyright (C) 2015-2020 Kestrel Institute
+; Copyright (C) 2015-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -55,6 +55,8 @@
     (cons `(declare ,@(substitute-guard-in-declare-args (fargs (first declares)) alist))
           (substitute-guard-in-declares (rest declares) alist))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; ;; TODO: Deprecate this.  We can't really do it right without a world for translating the body.
 ;; ;; Fixup the ignore declarations to ignore exactly those formals not mentioned in the body.
 ;; ;; Note that irrelevant params may have to be dealt with separately.
@@ -71,6 +73,8 @@
 ;;                        (add-declare-arg `(ignore ,@ignored-formals) declares)
 ;;                      declares)))
 ;;     declares))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; Rename the functions in a guard
 
@@ -116,7 +120,22 @@
     (cons (apply-function-renaming-to-guard-in-declare (first declares) function-renaming)
           (apply-function-renaming-to-guard-in-declares (rest declares) function-renaming))))
 
+(defthm keyword-value-listp-of-apply-function-renaming-to-guard-in-xargs
+  (implies (xargsp xargs)
+           (keyword-value-listp (apply-function-renaming-to-guard-in-xargs xargs function-renaming)))
+  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-in-xargs xargsp keyword-value-listp))))
 
+(defthm all-declare-argp-of-apply-function-renaming-to-guard-in-declare-args
+  (implies (all-declare-argp declare-args)
+           (all-declare-argp (apply-function-renaming-to-guard-in-declare-args declare-args function-renaming)))
+  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-in-declare-args))))
+
+(defthm declarep-of-apply-function-renaming-to-guard-in-declare
+  (implies (declarep declare)
+           (declarep (apply-function-renaming-to-guard-in-declare declare function-renaming)))
+  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-in-declare declarep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun simplify-nth-of-cons-in-untranslated-guard (xargs)
    ;; (declare (xargs :guard (and ;(p )
@@ -144,8 +163,7 @@
     (cons `(declare ,@(simplify-nth-of-cons-in-untranslated-guard-in-declare-args (fargs (first declares))))
           (simplify-nth-of-cons-in-untranslated-guard-in-declares (rest declares)))))
 
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun simplify-true-listp-of-cons-in-untranslated-guard (xargs)
    ;; (declare (xargs :guard (and ;(p )
@@ -173,6 +191,7 @@
     (cons `(declare ,@(simplify-true-listp-of-cons-in-untranslated-guard-in-declare-args (fargs (first declares))))
           (simplify-true-listp-of-cons-in-untranslated-guard-in-declares (rest declares)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun simplify-and-of-t-in-untranslated-guard (xargs)
    ;; (declare (xargs :guard (and ;(p )
@@ -200,6 +219,7 @@
     (cons `(declare ,@(simplify-and-of-t-in-untranslated-guard-in-declare-args (fargs (first declares))))
           (simplify-and-of-t-in-untranslated-guard-in-declares (rest declares)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun simplify-equal-of-len-of-cons-nest-and-number-in-untranslated-guard (xargs)
    ;; (declare (xargs :guard (and ;(p )
@@ -227,10 +247,9 @@
     (cons `(declare ,@(simplify-equal-of-len-of-cons-nest-and-number-in-untranslated-guard-in-declare-args (fargs (first declares))))
           (simplify-equal-of-len-of-cons-nest-and-number-in-untranslated-guard-in-declares (rest declares)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;
-;;; Rename the functions in :guard-hints
-;;;
+;;; Renaming the functions in :guard-hints
 
 (defund apply-function-renaming-to-guard-hints-in-xargs (xargs function-renaming)
   (declare (xargs :guard (and (symbol-alistp function-renaming)
@@ -244,6 +263,11 @@
                          ,@(cddr xargs))) ;there can only be one occurence of :guard-hints
       `(,(first xargs) ,(second xargs) ,@(apply-function-renaming-to-guard-hints-in-xargs (cddr xargs) function-renaming)))))
 
+(defthm keyword-value-listp-of-apply-function-renaming-to-guard-hints-in-xargs
+  (implies (xargsp xargs)
+           (keyword-value-listp (apply-function-renaming-to-guard-hints-in-xargs xargs function-renaming)))
+  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-hints-in-xargs xargsp))))
+
 (defund apply-function-renaming-to-guard-hints-in-declare-args (declare-args function-renaming)
   (declare (xargs :guard (and (symbol-alistp function-renaming)
                               (all-declare-argp declare-args))))
@@ -256,10 +280,20 @@
       (cons arg
             (apply-function-renaming-to-guard-hints-in-declare-args (rest declare-args) function-renaming)))))
 
+(defthm all-declare-argp-of-apply-function-renaming-to-guard-hints-in-declare-args
+  (implies (all-declare-argp declare-args)
+           (all-declare-argp (apply-function-renaming-to-guard-hints-in-declare-args declare-args function-renaming)))
+  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-hints-in-declare-args))))
+
 (defund apply-function-renaming-to-guard-hints-in-declare (declare function-renaming)
   (declare (xargs :guard (and (symbol-alistp function-renaming)
                               (declarep declare))))
   `(declare ,@(apply-function-renaming-to-guard-hints-in-declare-args (fargs declare) function-renaming)))
+
+(defthm declarep-of-apply-function-renaming-to-guard-hints-in-declare
+  (implies (declarep declare)
+           (declarep (apply-function-renaming-to-guard-hints-in-declare declare function-renaming)))
+  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-hints-in-declare declarep))))
 
 (defund apply-function-renaming-to-guard-hints-in-declares (declares function-renaming)
   (declare (xargs :guard (and (symbol-alistp function-renaming)
@@ -269,10 +303,9 @@
     (cons (apply-function-renaming-to-guard-hints-in-declare (first declares) function-renaming)
           (apply-function-renaming-to-guard-hints-in-declares (rest declares) function-renaming))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;
-;;; Rename the functions in :hints
-;;;
+;;; Rename the functions in measure :hints
 
 (defund apply-function-renaming-to-hints-in-xargs (xargs function-renaming)
   (declare (xargs :guard (and (symbol-alistp function-renaming)
@@ -286,6 +319,11 @@
                    ,@(cddr xargs))) ;there can only be one occurence of :hints
       `(,(first xargs) ,(second xargs) ,@(apply-function-renaming-to-hints-in-xargs (cddr xargs) function-renaming)))))
 
+(defthm keyword-value-listp-of-apply-function-renaming-to-hints-in-xargs
+  (implies (xargsp xargs)
+           (keyword-value-listp (apply-function-renaming-to-hints-in-xargs xargs function-renaming)))
+  :hints (("Goal" :in-theory (enable apply-function-renaming-to-hints-in-xargs xargsp))))
+
 (defund apply-function-renaming-to-hints-in-declare-args (declare-args function-renaming)
   (declare (xargs :guard (and (symbol-alistp function-renaming)
                               (all-declare-argp declare-args))))
@@ -298,10 +336,20 @@
       (cons arg
             (apply-function-renaming-to-hints-in-declare-args (rest declare-args) function-renaming)))))
 
+(defthm all-declare-argp-of-apply-function-renaming-to-hints-in-declare-args
+  (implies (all-declare-argp declare-args)
+           (all-declare-argp (apply-function-renaming-to-hints-in-declare-args declare-args function-renaming)))
+  :hints (("Goal" :in-theory (enable apply-function-renaming-to-hints-in-declare-args))))
+
 (defund apply-function-renaming-to-hints-in-declare (declare function-renaming)
   (declare (xargs :guard (and (symbol-alistp function-renaming)
                               (declarep declare))))
   `(declare ,@(apply-function-renaming-to-hints-in-declare-args (fargs declare) function-renaming)))
+
+(defthm declarep-of-apply-function-renaming-to-hints-in-declare
+  (implies (declarep declare)
+           (declarep (apply-function-renaming-to-hints-in-declare declare function-renaming)))
+  :hints (("Goal" :in-theory (enable apply-function-renaming-to-hints-in-declare declarep))))
 
 (defund apply-function-renaming-to-hints-in-declares (declares function-renaming)
   (declare (xargs :guard (and (symbol-alistp function-renaming)
@@ -310,59 +358,3 @@
       nil
     (cons (apply-function-renaming-to-hints-in-declare (first declares) function-renaming)
           (apply-function-renaming-to-hints-in-declares (rest declares) function-renaming))))
-
-(in-theory (disable declarep)) ;move
-
-(in-theory (disable xargsp)) ;move
-
-(defthm declare-of-cons
-  (equal (declarep (cons a x))
-         (and (equal 'declare a)
-              (all-declare-argp x)
-              (true-listp x)))
-  :hints (("Goal" :in-theory (enable declarep))))
-
-(defthm keyword-value-listp-of-apply-function-renaming-to-guard-hints-in-xargs
-  (implies (xargsp xargs)
-           (keyword-value-listp (apply-function-renaming-to-guard-hints-in-xargs xargs function-renaming)))
-  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-hints-in-xargs xargsp))))
-
-(defthm all-declare-argp-of-apply-function-renaming-to-guard-hints-in-declare-args
-  (implies (all-declare-argp declare-args)
-           (all-declare-argp (apply-function-renaming-to-guard-hints-in-declare-args declare-args function-renaming)))
-  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-hints-in-declare-args))))
-
-(defthm declarep-of-apply-function-renaming-to-guard-hints-in-declare-args
-  (implies (declarep declare)
-           (declarep (apply-function-renaming-to-guard-hints-in-declare declare function-renaming)))
-  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-hints-in-declare declarep))))
-
-(defthm keyword-value-listp-of-apply-function-renaming-to-hints-in-xargs
-  (implies (xargsp xargs)
-           (keyword-value-listp (apply-function-renaming-to-hints-in-xargs xargs function-renaming)))
-  :hints (("Goal" :in-theory (enable apply-function-renaming-to-hints-in-xargs xargsp))))
-
-(defthm all-declare-argp-of-apply-function-renaming-to-hints-in-declare-args
-  (implies (all-declare-argp declare-args)
-           (all-declare-argp (apply-function-renaming-to-hints-in-declare-args declare-args function-renaming)))
-  :hints (("Goal" :in-theory (enable apply-function-renaming-to-hints-in-declare-args))))
-
-(defthm declarep-of-apply-function-renaming-to-hints-in-declare-args
-  (implies (declarep declare)
-           (declarep (apply-function-renaming-to-hints-in-declare declare function-renaming)))
-  :hints (("Goal" :in-theory (enable apply-function-renaming-to-hints-in-declare declarep))))
-
-(defthm keyword-value-listp-of-apply-function-renaming-to-guard-in-xargs
-  (implies (xargsp xargs)
-           (keyword-value-listp (apply-function-renaming-to-guard-in-xargs xargs function-renaming)))
-  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-in-xargs xargsp keyword-value-listp))))
-
-(defthm all-declare-argp-of-apply-function-renaming-to-guard-in-declare-args
-  (implies (all-declare-argp declare-args)
-           (all-declare-argp (apply-function-renaming-to-guard-in-declare-args declare-args function-renaming)))
-  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-in-declare-args))))
-
-(defthm declarep-of-apply-function-renaming-to-guard-in-declare-args
-  (implies (declarep declare)
-           (declarep (apply-function-renaming-to-guard-in-declare declare function-renaming)))
-  :hints (("Goal" :in-theory (enable apply-function-renaming-to-guard-in-declare declarep))))
