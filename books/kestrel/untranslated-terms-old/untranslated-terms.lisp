@@ -212,6 +212,7 @@
         (untranslated-termp (ulambda-body expr))))
 
  ;; ttodo: add support for mv-let, and more constructs.
+ ;; This allows macro calls that look like function calls, even if the macros are unknown.
  (defun untranslated-termp (x)
    (declare (xargs :guard t
                    :measure (acl2-count x)))
@@ -251,7 +252,7 @@
                          (untranslated-term-listp (extract-terms-from-case-match-cases cases)))))
                 (quote nil) ;; disallow quotes not covered by the untranslated-constantp call above
                 (otherwise
-                 ;;regular function call or lambda application:
+                 ;;regular function call or macro call or lambda application:
                  (and (untranslated-term-listp (fargs x)) ;;first check the args
                       (or (symbolp fn)
                           (and (untranslated-lambda-exprp fn)
@@ -2337,6 +2338,7 @@
   :hints (("Goal" :expand (untranslated-termp term)
            :in-theory (enable let-bindings))))
 
+;; TODO: Can we really do this right without translating calls of user macros?
 (mutual-recursion
  ;;Return a list of all variables in TERM.
  (defun free-vars-in-untranslated-term (term)
@@ -2797,7 +2799,7 @@
                  `(let ,(make-doublets vars new-terms) ,@declares ,new-body))
              (if (eq fn 'let*) ;fffixme
                  (cons fn
-                       (cons (sublis-var-var-untranslated-term-pairs alist
+                       (cons (sublis-var-in-let*-bindings alist
                                                                      (farg1 term))
                              (append (butlast (rest (fargs term)) 1)
                                      (cons (sublis-var-untranslated-term alist
@@ -2842,7 +2844,7 @@
                          (let* ((term (cons fn args)))
                            term)))))))))))))
 
- (defun sublis-var-var-untranslated-term-pairs (alist pairs)
+ (defun sublis-var-in-let*-bindings (alist pairs)
    (declare (xargs :guard (and (var-untranslated-term-pairsp pairs)
                                (symbol-alistp alist)
                                (untranslated-term-listp (strip-cdrs alist)))))
@@ -2853,7 +2855,7 @@
             (term (second pair)))
        (cons (list var
                    (sublis-var-untranslated-term alist term))
-             (sublis-var-var-untranslated-term-pairs alist
+             (sublis-var-in-let*-bindings alist
                                                      (rest pairs))))))
 
  ;; (defun sublis-var-untranslated-term-pairs (alist pairs)
@@ -2925,12 +2927,12 @@
                   (untranslated-term-listp (strip-cdrs alist)))
              (untranslated-termp (sublis-var-untranslated-term alist term)))
     :flag sublis-var-untranslated-term)
-  (defthm var-untranslated-term-pairsp-of-sublis-var-var-untranslated-term-pairs
+  (defthm var-untranslated-term-pairsp-of-sublis-var-in-let*-bindings
     (implies (and (var-untranslated-term-pairsp pairs)
                   (alistp alist)
                   (untranslated-term-listp (strip-cdrs alist)))
-             (var-untranslated-term-pairsp (sublis-var-var-untranslated-term-pairs alist pairs)))
-    :flag sublis-var-var-untranslated-term-pairs)
+             (var-untranslated-term-pairsp (sublis-var-in-let*-bindings alist pairs)))
+    :flag sublis-var-in-let*-bindings)
   ;; (defthm untranslated-term-pairsp-of-sublis-var-untranslated-term-pairs
   ;;   (implies (and (untranslated-term-pairsp pairs)
   ;;                 (alistp alist)
