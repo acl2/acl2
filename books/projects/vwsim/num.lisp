@@ -9,6 +9,8 @@
 
 ; This file defines our rational/floating-point numbers.
 
+; cert_param: (non-acl2r)
+
 (in-package "ACL2")
 
 ; Used to assist with our "cheating" (i.e., using floating point).
