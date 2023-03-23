@@ -245,8 +245,7 @@
                 (case-match ; (case-match var ...cases...)
                   (let* ((var (farg1 x))
                          (cases (rest (fargs x))))
-                    (and ;; (legal-variablep var) ; todo: put back
-                     (untranslated-termp var)
+                    (and (legal-variablep var) ; todo: change to just symbolp?
                          (legal-case-match-casesp cases)
                          (untranslated-term-listp (extract-terms-from-case-match-cases cases)))))
                 (quote nil) ;; disallow quotes not covered by the untranslated-constantp call above
@@ -387,7 +386,7 @@
                        (and (true-listp y)
                             (let* ((var (car y))
                                    (cases (cdr y)))
-                              (and (untranslated-termp var)
+                              (and (legal-variablep var)
                                    (legal-case-match-casesp cases)
                                    (untranslated-term-listp (extract-terms-from-case-match-cases cases)))))
                      (and (untranslated-term-listp y)
@@ -1073,13 +1072,15 @@
                                ,@(make-doublets vals-to-match
                                                 (,term-list-processor-fn vals-to-return ,@extra-args))))
                         (if (eq fn 'case-match) ; (case-match var ...cases...)
-                            (let* ((var (farg1 term))
-                                   (cases (rest (fargs term)))
-                                   (new-var (,term-processor-fn var ,@extra-args))
-                                   (terms-from-cases (extract-terms-from-case-match-cases cases))
-                                   (new-terms-from-cases (,term-list-processor-fn terms-from-cases ,@extra-args))
-                                   (new-cases (recreate-case-match-cases cases new-terms-from-cases)))
-                              `(case-match ,new-var ; fixme: what if it's not a var?
+                            (b* ((var (farg1 term))
+                                 (cases (rest (fargs term)))
+                                 (new-var (,term-processor-fn var ,@extra-args))
+                                 ((when (not (legal-variablep new-var))) ; todo: could let-bind a new var, for use in the case-match?
+                                  (er hard? ',term-processor-fn "Attempt to create a case-match whose first argument is ~x0, which is not a legal variable." new-var))
+                                 (terms-from-cases (extract-terms-from-case-match-cases cases))
+                                 (new-terms-from-cases (,term-list-processor-fn terms-from-cases ,@extra-args))
+                                 (new-cases (recreate-case-match-cases cases new-terms-from-cases)))
+                              `(case-match ,new-var
                                  ,@new-cases))
                           (let* ((args (fargs term))
                                  (args (,term-list-processor-fn args ,@extra-args)))
@@ -2134,14 +2135,15 @@
                           ,@(make-doublets vals-to-match
                                            (replace-in-untranslated-term-list vals-to-return alist))))
                    (if (eq fn 'case-match) ; (case-match var ...cases...)
-                       (let* ((var (farg1 term)) ; must be a symbol
-                              (new-var (replace-in-untranslated-term var alist))
-                              (cases (rest (fargs term)))
-                              (terms-from-cases (extract-terms-from-case-match-cases cases))
-                              (new-terms-from-cases (replace-in-untranslated-term-list terms-from-cases alist))
-                              (new-cases (recreate-case-match-cases cases new-terms-from-cases)))
-                         `(case-match ,new-var ; fixme: what if it's not a var?
-                            ,@new-cases))
+                       (b* ((var (farg1 term)) ; must be a symbol
+                            (new-var (replace-in-untranslated-term var alist))
+                            ((when (not (legal-variablep new-var))) ; todo: could let-bind a new var, for use in the case-match?
+                             (er hard? 'replace-in-untranslated-term "Attempt to create a case-match whose first argument is ~x0, which is not a legal variable." new-var))
+                            (cases (rest (fargs term)))
+                            (terms-from-cases (extract-terms-from-case-match-cases cases))
+                            (new-terms-from-cases (replace-in-untranslated-term-list terms-from-cases alist))
+                            (new-cases (recreate-case-match-cases cases new-terms-from-cases)))
+                         `(case-match ,new-var ,@new-cases))
                      (let* ((args (fargs term))
                             (args (replace-in-untranslated-term-list args alist)))
                        ;;todo: handle lambdas
@@ -2819,16 +2821,16 @@
                             ,@(make-doublets vals-to-match
                                              (sublis-var-untranslated-term-list alist vals-to-return))))
                      (if (eq fn 'case-match) ; (case-match var ...cases...)
-                         (let* ((var (farg1 term)) ; must be a symbol
-                                (new-var (sublis-var-untranslated-term alist var))
-                                (cases (rest (fargs term)))
-                                ;;(terms-from-cases (extract-terms-from-case-match-cases cases))
-                                ;;(new-terms-from-cases (sublis-var-untranslated-term-list alist terms-from-cases))
-                                ;;(new-cases (recreate-case-match-cases cases new-terms-from-cases))
-                                (new-cases (sublis-var-case-match-cases alist cases))
-                                )
-                           `(case-match ,new-var ; fixme: what if it's not a var?
-                              ,@new-cases))
+                         (b* ((var (farg1 term)) ; must be a symbol
+                              (new-var (sublis-var-untranslated-term alist var))
+                              ((when (not (legal-variablep new-var))) ; todo: could let-bind a new var, for use in the case-match?
+                               (er hard? 'sublis-var-untranslated-term "Attempt to create a case-match whose first argument is ~x0, which is not a legal variable." new-var))
+                              (cases (rest (fargs term)))
+                              ;;(terms-from-cases (extract-terms-from-case-match-cases cases))
+                              ;;(new-terms-from-cases (sublis-var-untranslated-term-list alist terms-from-cases))
+                              ;;(new-cases (recreate-case-match-cases cases new-terms-from-cases))
+                              (new-cases (sublis-var-case-match-cases alist cases)))
+                           `(case-match ,new-var ,@new-cases))
                        (let* ((args (fargs term))
                               (args (sublis-var-untranslated-term-list alist args)))
                          ;;todo: handle lambdas
