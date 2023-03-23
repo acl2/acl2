@@ -2655,21 +2655,30 @@ SUB0 A  GND SUB_DEF
 ; some of the contents include the comments we want included with a
 ; manual.
 
-(xdoc::save "doc" :error t)  ;; Write the manual in HTML
+(make-event
+ (if (string-prefixp (canonical-pathname "~/Sync/sf/Hunt/" 'save-vwsim state)
+                     (canonical-pathname "." 'save-vwsim state))
+     '(xdoc::save "doc" :error t)   ;; Write the manual in HTML
+   '(value-triple nil)))
 
 ; During certification, this next Lisp form produces the documentation
 ; that is read and displayed by the ``M-x acl2-doc'' E-lisp command.
 
-(xdoc::save-rendered-event
- ;; outfile: the file where the documentation is written
- "doc/rendered-vwsim-acl2-doc.lsp"
- ;; header: text added to beginning of outfile
- "; Documentation for VWSIM"
- ;; topic-list-name: a symbol that can be the first argument of defconst
- '*vwsim-documentation*
- ;; error: causes an error upon encountering a syntax error in xdoc
- ;; source
- t)  ;; write the acl2-doc manual
+(make-event
+ (if (string-prefixp (canonical-pathname "~/Sync/sf/Hunt/" 'save-vwsim state)
+                     (canonical-pathname "." 'save-vwsim state))
+     '(xdoc::save-rendered-event
+       ;; outfile: the file where the documentation is written
+       "doc/rendered-vwsim-acl2-doc.lsp"
+       ;; header: text added to beginning of outfile
+       "; Documentation for VWSIM"
+       ;; topic-list-name: a symbol that can be the first argument of defconst
+       '*vwsim-documentation*
+       ;; error: causes an error upon encountering a syntax error in xdoc
+       ;; source
+       t) ;; write the acl2-doc manual
+   '(value-triple nil)))
+
 
 ; The above form will generate an entire ACL2 manual (but, we're
 ; unsure of how much of the ACL2 manual is included) -- including the
