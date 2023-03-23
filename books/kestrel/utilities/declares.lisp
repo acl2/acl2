@@ -62,7 +62,7 @@
   (declare (xargs :guard (and (symbol-listp formals)
                               (untranslated-termp body) ;TODO: relax this
                               (all-declarep declares))))
-  (let* ((formals-mentioned (get-vars-in-untranslated-term body))
+  (let* ((formals-mentioned (free-vars-in-untranslated-term body))
          (ignored-formals (set-difference-eq formals formals-mentioned))
          (declares (remove-declares 'ignore declares))
          ;; Also remove any ignorable declares, since we are setting the ignore to be exactly what we need:

@@ -143,7 +143,7 @@
   (if (endp terms)
       nil
     (let ((term (first terms)))
-      (if (intersection-eq (get-vars-in-untranslated-term term)
+      (if (intersection-eq (free-vars-in-untranslated-term term)
                            vars)
           (drop-untranslated-terms-that-mention-vars (rest terms)
                                                      vars)
