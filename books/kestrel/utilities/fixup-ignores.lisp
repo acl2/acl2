@@ -33,9 +33,8 @@
                               (plist-worldp fake-wrld))
                   :mode :program ; because this translates the body
                   ))
-  (fixup-ignores-for-translated-body declares
-                                     formals
-                                     (translate-term-allowing-ignored-vars body 'fixup-ignores-with-fake-world fake-wrld)))
+  (let ((translated-body (translate-term-allowing-ignored-vars body 'fixup-ignores-with-fake-world fake-wrld)))
+    (fixup-ignores-for-translated-body declares formals translated-body)))
 
 ;; The name-arity-alist supports translating the BODY by assigning arities to
 ;; functions that may appear but are not already defined.
