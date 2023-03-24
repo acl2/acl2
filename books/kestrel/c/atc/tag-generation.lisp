@@ -68,7 +68,8 @@
      for each integer index type (10)
      and for each of @(tsee exec-member) and @(tsee exec-memberp).
      The theorems rewrite calls of
-     @(tsee exec-arrsub-of-member) or @(tsee exec-arrsub-of-memberp)
+     @('exec-arrsub-of-member') or @('exec-arrsub-of-memberp')
+     (see @(see atc-exec-expr-pure-rules))
      to calls of the readers.
      The generation of these theorems relies on the fact that
      the order of the readers and the checkers matches the order of
