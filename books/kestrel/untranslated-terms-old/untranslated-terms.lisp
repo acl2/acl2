@@ -59,11 +59,13 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
-(local (in-theory (disable legal-case-clausesp legal-variablep)))
+(local (in-theory (disable butlast
+                           legal-case-clausesp ; todo
+                           legal-variablep
+                           symbol-alistp
+                           mv-nth)))
 
 ;;=== stuff to move to libraries:
-
-(in-theory (disable butlast))
 
 ;move
 (local
@@ -180,11 +182,11 @@
                 )
            (consp x)))
 
-;;
-;; end of library lemmas
-;;
-
-(in-theory (disable legal-variablep))
+(defthm ulambda-formals-of-make-ulambda
+  (equal (ulambda-formals (make-ulambda formals declares body))
+         formals)
+  :hints (("Goal"
+           :in-theory (enable make-ulambda ulambda-formals))))
 
 ;; Sanity check: Nothing can be an untranslated-constant and an
 ;; untranslated-variable.
@@ -196,6 +198,10 @@
                                      untranslated-constantp
                                      legal-variablep
                                      legal-variable-or-constant-namep))))
+
+;; end of library lemmas
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
 
@@ -213,6 +219,7 @@
 
  ;; ttodo: add support for mv-let, and more constructs.
  ;; This allows macro calls that look like function calls, even if the macros are unknown.
+ ;; NOTE: Keep in sync with *supported-untranslated-term-macros*.
  (defun untranslated-termp (x)
    (declare (xargs :guard t
                    :measure (acl2-count x)))
@@ -259,59 +266,8 @@
                                (equal (len (ulambda-formals fn))
                                       (len (fargs x))))))))))))
 
- ;; (defun untranslated-term-supported-bstar-binderp (binder)
- ;;   (declare (xargs :guard t :measure (acl2-count binder)))
- ;;   (cond ((symbolp binder) t) ;includes binding a variable like x and binding - (means no binding) ; check for legal variable?
- ;;         ((call-of 'mv binder) ;; (mv a b c)
- ;;          (symbol-listp (fargs binder)))
- ;;         ((call-of 'list binder) ;; (list a b c)
- ;;          (symbol-listp (fargs binder)))
- ;;         ;; This can cause the b* to return:
- ;;         ((call-of 'er binder) ; (er a)
- ;;          (and (eql 1 (len (fargs binder)))
- ;;               (symbolp (first (fargs binder)))))
- ;;         ;; These can cause the b* to return:
- ;;         ((or (call-of 'when binder)   ; (when <test>)
- ;;              (call-of 'if binder)     ; (if <test>)
- ;;              (call-of 'unless binder) ; (unless <test>)
- ;;              )
- ;;          (and (eql 1 (len (fargs binder)))
- ;;               (untranslated-termp (first (fargs binder)))))
- ;;         ;; TODO: Add support for more b* binders:
- ;;         (t nil)))
-
- ;; (defun all-untranslated-term-supported-bstar-binderp (binders)
- ;;   (declare (xargs :guard t :measure (acl2-count binders)))
- ;;   (cond ((atom binders) (equal binders nil))
- ;;         (t (and (untranslated-term-supported-bstar-binderp (car binders))
- ;;                 (all-untranslated-term-supported-bstar-binderp (cdr binders))))))
-
- ;; ;; recognize a list of non-dotted pairs of untranslated-terms (this occurs in
- ;; ;; a cond)
- ;; (defun untranslated-term-pairsp  (pairs)
- ;;   (declare (xargs :guard t :measure (acl2-count pairs)))
- ;;   (if (atom pairs)
- ;;       (eq nil pairs)
- ;;     (let ((pair (first pairs)))
- ;;       (and (consp pair)
- ;;            (true-listp pair)
- ;;            (eql 2 (len pair))
- ;;            (untranslated-TERMp (first pair))
- ;;            (untranslated-TERMp (second pair))
- ;;            (untranslated-TERM-pairsp (rest pairs))))))
-
- ;; (defun pat-untranslated-term-pairsp  (pairs)
- ;;   (declare (xargs :guard t :measure (acl2-count pairs)))
- ;;   (if (atom pairs)
- ;;       (eq nil pairs)
- ;;     (let ((pair (first pairs)))
- ;;       (and (consp pair)
- ;;            (true-listp pair)
- ;;            (>= (len pair) 2)
- ;;            (untranslated-TERMp (car (last pair)))
- ;;            (pat-untranslated-term-pairsp (rest pairs))))))
-
  ;; This occurs in a let/let*
+ ;; rename?
  (defun var-untranslated-TERM-pairsp (pairs)
    (DECLARE (XARGS :GUARD T :measure (acl2-count pairs)))
    (if (atom pairs)
@@ -324,11 +280,139 @@
             (untranslated-TERMp (second pair))
             (var-untranslated-TERM-pairsp (rest pairs))))))
 
- (DEFUN untranslated-TERM-LISTP (LST)
-   (DECLARE (XARGS :GUARD T :measure (acl2-count lst)))
-   (COND ((ATOM LST) (EQUAL LST NIL))
-         (T (AND (untranslated-TERMP (CAR LST))
-                 (untranslated-TERM-LISTP (CDR LST)))))))
+ (defun untranslated-term-listp (lst)
+   (declare (xargs :guard t :measure (acl2-count lst)))
+   (if (not (consp lst))
+       (null lst)
+     (and (untranslated-termp (car lst))
+          (untranslated-term-listp (cdr lst))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *supported-untranslated-term-macros* '(let let* b* cond case case-match))
+
+;; Do we still need this?
+(defthm untranslated-termp-of-cons
+  (equal (untranslated-termp (cons x y))
+         (and (true-listp y)
+              (if (eq 'quote x)
+                  (and (true-listp y)
+                       (equal 1 (len y)))
+                (if (member-eq x '(let let*))
+                    (and (true-listp y)
+                         (<= 2 (len y))
+                         (var-untranslated-term-pairsp (first y))
+                         ;;declares can intervene - todo: check their form
+                         (untranslated-termp (car (last y))))
+                  (if (eq 'b* x)
+                      (and (true-listp y)
+                           (let ((bindings (first y))
+                                 (result-forms (rest y)))
+                             (and (supported-b*-bindingsp bindings)
+                                  (untranslated-term-listp (extract-terms-from-b*-bindings bindings))
+                                  (untranslated-term-listp result-forms))))
+                    (if (eq 'cond x)
+                        (and (legal-cond-clausesp y)
+                             (untranslated-term-listp (extract-terms-from-cond-clauses y)))
+                      (if (eq x 'case)
+                          (and (true-listp y)
+                               (let ((expr (car y))
+                                     (pairs (cdr y)))
+                                 (and (untranslated-termp expr)
+                                      (legal-case-clausesp pairs)
+                                      (untranslated-term-listp (strip-cadrs pairs)))))
+                        (if (eq x 'case-match)
+                            (and (true-listp y)
+                                 (let* ((sym (car y))
+                                        (cases (cdr y)))
+                                   (and (symbolp sym)
+                                        (untranslated-termp sym)
+                                        (legal-case-match-casesp cases)
+                                        (untranslated-term-listp (extract-terms-from-case-match-cases cases)))))
+                          (and (untranslated-term-listp y)
+                               (or (symbolp x)
+                                   (and (untranslated-lambda-exprp x)
+                                        (equal (len (ulambda-formals x))
+                                               (len y))))))))))))))
+
+;; Needed for untranslated-termp-of-cons-normal-case
+(defthm untranslated-term-listp-forward-to-true-listp
+  (implies (untranslated-term-listp terms)
+           (true-listp terms))
+  :rule-classes :forward-chaining)
+
+(defthm untranslated-termp-of-cons-normal-case
+  (implies (and (symbolp fn)
+                (not (member-equal fn *supported-untranslated-term-macros*))
+                (not (equal fn 'quote)))
+           (equal (untranslated-termp (cons fn args))
+                  (untranslated-term-listp args)))
+  :hints (("Goal" :expand (untranslated-termp (cons fn args))
+           :in-theory (enable member-equal))))
+
+(defthm untranslated-termp-forward-to-true-listp
+  (implies (and (untranslated-termp term)
+                (consp term))
+           (true-listp term))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :expand (untranslated-termp term)
+           :in-theory (enable untranslated-termp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Rules about untranslated-term-listp
+
+(defthm untranslated-termp-of-car-when-untranslated-term-listp
+  (implies (and (untranslated-term-listp terms)
+                (consp terms))
+           (untranslated-termp (car terms)))
+  :hints (("Goal" :in-theory (enable untranslated-term-listp))))
+
+(defthm untranslated-term-listp-of-cdr-when-untranslated-term-listp
+  (implies (and (untranslated-term-listp terms)
+                (consp terms))
+           (untranslated-term-listp (cdr terms)))
+  :hints (("Goal" :in-theory (enable untranslated-term-listp))))
+
+(defthm untranslated-term-listp-of-take
+  (implies (untranslated-term-listp x)
+           (untranslated-term-listp (take n x)))
+  :hints (("Goal" :in-theory (e/d (untranslated-term-listp take)
+                                  (;take-of-cdr-becomes-subrange
+                                   )))))
+
+(defthm untranslated-termp-of-cadr
+  (implies (and (untranslated-term-listp terms)
+                (<= 2 (len terms)))
+           (untranslated-termp (cadr terms))))
+
+(defthm untranslated-termp-of-car-of-last-gen
+  (implies (untranslated-term-listp lst)
+           (untranslated-termp (car (last lst))))
+  :hints (("Goal" :in-theory (enable last))))
+
+(defthm untranslated-term-listp-of-remove-equal
+  (implies (untranslated-term-listp x)
+           (untranslated-term-listp (remove-equal a x))))
+
+(defthm untranslated-term-listp-of-nthcdr
+  (implies (untranslated-term-listp x)
+           (untranslated-term-listp (nthcdr n x))))
+
+(defthm untranslated-term-listp-of-append
+  (equal (untranslated-term-listp (append x y))
+         (and (untranslated-term-listp (true-list-fix x))
+              (untranslated-term-listp y)))
+  :hints (("Goal" :in-theory (enable append))))
+
+;; Disable for speed
+(defthmd true-listp-when-untranslated-term-listp
+  (implies (untranslated-term-listp terms)
+           (true-listp terms))
+  :hints (("Goal" :in-theory (enable untranslated-term-listp))))
+
+(local (in-theory (enable true-listp-when-untranslated-term-listp)))
+
 
 (defthm untranslated-termp-when-legal-variablep-cheap
   (implies (legal-variablep x)
@@ -343,70 +427,8 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable legal-variable-listp))))
 
-(defthm untranslated-term-listp-forward-to-true-listp
-  (implies (untranslated-term-listp terms)
-           (true-listp terms))
-  :rule-classes (:forward-chaining))
 
-;; Disable for speed
-(defthmd true-listp-when-untranslated-term-listp
-  (implies (untranslated-term-listp terms)
-           (true-listp terms))
-  :hints (("Goal" :in-theory (enable untranslated-term-listp))))
 
-(local (in-theory (enable true-listp-when-untranslated-term-listp)))
-
-(defthm untranslated-termp-of-cons
-  (equal (untranslated-termp (cons x y))
-         (if (eq 'quote x)
-             (and (true-listp y)
-                  (equal 1 (len y)))
-           (if (member-eq x '(let let*))
-               (and (true-listp y)
-                    (<= 2 (len y))
-                    (var-untranslated-term-pairsp (first y))
-                    ;;declares can intervene - todo: check their form
-                    (untranslated-termp (car (last y))))
-             (if (eq 'b* x)
-                 (and (true-listp y)
-                      (let ((bindings (first y))
-                            (result-forms (rest y)))
-                        (and (supported-b*-bindingsp bindings)
-                             (untranslated-term-listp (extract-terms-from-b*-bindings bindings))
-                             (untranslated-term-listp result-forms))))
-               (if (eq 'cond x)
-                   (and (legal-cond-clausesp y)
-                        (untranslated-term-listp (extract-terms-from-cond-clauses y)))
-                 (if (eq x 'case)
-                     (and (true-listp y)
-                          (let ((expr (car y))
-                                (pairs (cdr y)))
-                            (and (untranslated-termp expr)
-                                 (legal-case-clausesp pairs)
-                                 (untranslated-term-listp (strip-cadrs pairs)))))
-                   (if (eq x 'case-match)
-                       (and (true-listp y)
-                            (let* ((sym (car y))
-                                   (cases (cdr y)))
-                              (and (symbolp sym)
-                                   (untranslated-termp sym)
-                                   (legal-case-match-casesp cases)
-                                   (untranslated-term-listp (extract-terms-from-case-match-cases cases)))))
-                     (and (untranslated-term-listp y)
-                          (or (symbolp x)
-                              (and (untranslated-lambda-exprp x)
-                                   (equal (len (ulambda-formals x))
-                                          (len y)))))))))))))
-
-(defthm untranslated-termp-of-cons-normal-case
-  (implies (and (symbolp fn)
-                (not (member-equal fn '(let let* b* cond case case-match)))
-                (not (equal fn 'quote))
-                )
-           (equal (untranslated-termp (cons fn args))
-                  (untranslated-term-listp args)))
-  :hints (("Goal" :expand (untranslated-termp (cons fn args))
-           :in-theory (enable member-equal))))
 
 (defthm untranslated-termp-of-ulambda-body
   (implies (untranslated-lambda-exprp lambda)
@@ -421,37 +443,21 @@
   :hints (("Goal"
            :in-theory (enable make-ulambda untranslated-lambda-exprp ulambda-body ulambda-formals))))
 
-(defthm ulambda-formals-of-make-ulambda
-  (equal (ulambda-formals (make-ulambda formals declares body))
-         formals)
-  :hints (("Goal"
-           :in-theory (enable make-ulambda ulambda-formals))))
-
-;drop?
-(defthm untranslated-termp-of-car-of-last-of-fargs
+(defthm untranslated-termp-of-let-body
   (implies (and (untranslated-termp term)
                 (member-equal (car term) '(let let*)))
-           (untranslated-termp (car (last (fargs term)))))
+           (untranslated-termp (let-body term)))
   :hints (("Goal" :expand ((untranslated-termp term)))))
 
-(defthm untranslated-termp-of-car-of-last-when-let-or-let*
-  (implies (and (untranslated-termp term)
-                (member-equal (car term) '(let let*)))
-           (untranslated-termp (car (last term))))
-  :hints (("Goal" :expand ((untranslated-termp term)))))
-
-;; (defthm var-untranslated-term-pairsp-of-cadr
-;;   (implies (and (untranslated-termp term)
-;;                 (member-equal (car term) '(let let*)))
-;;            (var-untranslated-term-pairsp (cadr term))))
-
-(local (in-theory (enable UNTRANSLATED-TERMP)))
+(local (in-theory (enable UNTRANSLATED-TERMP))) ; drop?
 
 (defthm untranslated-termp-of-cdr-of-assoc-equal
   (implies (and (assoc-equal key alist)
                 (untranslated-term-listp (strip-cdrs alist)))
            (untranslated-termp (cdr (assoc-equal key alist))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun symbol-or-untranslated-lambda-exprp (item)
   (declare (xargs :guard t))
@@ -486,49 +492,6 @@
 ;;   :hints (("Goal" :expand ((UNTRANSLATED-TERMP TERM))
 ;;            )))
 
-(defthm untranslated-termp-of-car
-  (implies (and (untranslated-term-listp terms)
-                (consp terms))
-           (untranslated-termp (car terms))))
-
-(defthm untranslated-term-listp-of-cdr
-  (implies (and (untranslated-term-listp terms)
-                (consp terms))
-           (untranslated-term-listp (cdr terms))))
-
-(defthm untranslated-term-listp-of-take
-  (implies (untranslated-term-listp x)
-           (untranslated-term-listp (take n x)))
-  :hints (("Goal" :in-theory (e/d (untranslated-term-listp take)
-                                  (;take-of-cdr-becomes-subrange
-                                   )))))
-
-(defthm untranslated-termp-of-cadr
-  (implies (and (untranslated-term-listp terms)
-                (<= 2 (len terms)))
-           (untranslated-termp (cadr terms))))
-
-(defthm untranslated-termp-of-car-of-last-gen
-  (implies (untranslated-term-listp lst)
-           (untranslated-termp (car (last lst))))
-  :hints (("Goal" :in-theory (enable last))))
-
-(defthm untranslated-term-listp-of-remove-equal
-  (implies (untranslated-term-listp x)
-           (untranslated-term-listp (remove-equal a x))))
-
-(defthm untranslated-term-listp-of-nthcdr
-  (implies (untranslated-term-listp x)
-           (untranslated-term-listp (nthcdr n x))))
-
-(defthm untranslated-term-listp-of-append
-  (equal (untranslated-term-listp (append x y))
-         (and (untranslated-term-listp (true-list-fix x))
-              (untranslated-term-listp y)))
-  :hints (("Goal" :in-theory (enable append))))
-
-(local (in-theory (disable symbol-alistp)))
-
 (defthm untranslated-term-listp-of-extract-terms-from-cond-clauses-of-recreate-cond-clauses
   (implies (untranslated-term-listp new-terms)
            (untranslated-term-listp (extract-terms-from-cond-clauses (recreate-cond-clauses clauses new-terms))))
@@ -545,8 +508,6 @@
                 (untranslated-term-listp new-terms))
            (untranslated-term-listp (mv-nth 1 (recreate-b*-binding binding new-terms))))
   :hints (("Goal" :in-theory (enable recreate-b*-binding extract-terms-from-b*-binding))))
-
-(local (in-theory (disable mv-nth))) ; move up
 
 (defthm untranslated-term-listp-of-extract-terms-from-b*-bindings-of-recreate-b*-bindings
   (implies (and (supported-b*-bindingsp bindings)
@@ -645,45 +606,6 @@
        (cons (list var (rename-fns-in-untranslated-term term alist))
              (rename-fns-in-var-untranslated-term-pairs (rest pairs) alist)))))
 
- ;; ;;currently used for b* (we ignore the b* binders?)
- ;; (defun rename-fns-in-cadrs-of-untranslated-term-pairs (pairs alist)
- ;;   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
- ;;                               (alistp alist))))
- ;;   (if (endp pairs)
- ;;       nil
- ;;     (let* ((pair (first pairs))
- ;;            (term1 (first pair))
- ;;            (term2 (second pair)))
- ;;       (cons (list term1 ;unchanged
- ;;                   (rename-fns-in-untranslated-term term2 alist))
- ;;             (rename-fns-in-cadrs-of-untranslated-term-pairs (rest pairs) alist)))))
-
- ;; ;; For the pairs in a COND.
- ;; (defun rename-fns-in-untranslated-term-pairs (pairs alist)
- ;;   (declare (xargs :guard (and (untranslated-term-pairsp pairs)
- ;;                               (symbol-alistp alist))))
- ;;   (if (endp pairs)
- ;;       nil
- ;;     (let* ((pair (first pairs))
- ;;            (term1 (first pair))
- ;;            (term2 (second pair)))
- ;;       (cons (list (rename-fns-in-untranslated-term term1 alist)
- ;;                   (rename-fns-in-untranslated-term term2 alist))
- ;;             (rename-fns-in-untranslated-term-pairs (rest pairs) alist)))))
-
- ;; ;; For CASE-MATCH
- ;; (defun rename-fns-in-pat-untranslated-term-pairs (pairs alist)
- ;;   (declare (xargs :guard (and (pat-untranslated-term-pairsp pairs)
- ;;                               (symbol-alistp alist))))
- ;;   (if (endp pairs)
- ;;       nil
- ;;     (let* ((pair (first pairs))
- ;;            (pat (first pair))
- ;;            (term2 (car (last pair))))
- ;;       (cons (list pat
- ;;                   (rename-fns-in-untranslated-term term2 alist))
- ;;             (rename-fns-in-pat-untranslated-term-pairs (rest pairs) alist)))))
-
  ;;rename all functions calls in TERMS according to ALIST
  (defun rename-fns-in-untranslated-term-list (terms alist)
    (declare (xargs :guard (and (untranslated-term-listp terms)
@@ -693,23 +615,15 @@
      (cons (rename-fns-in-untranslated-term (first terms) alist)
            (rename-fns-in-untranslated-term-list (rest terms) alist)))))
 
-(defthm TRUE-LISTP-of-rename-fns-in-untranslated-term-list
-  (TRUE-LISTP (rename-fns-in-untranslated-term-list TERMs ALIST)))
-
-
-(defthm untranslated-termp-forward-to-true-listp
-  (implies (and (untranslated-termp term)
-                (consp term))
-           (true-listp term))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :expand (untranslated-termp term)
-           :in-theory (enable untranslated-termp))))
+(defthm true-listp-of-rename-fns-in-untranslated-term-list
+  (true-listp (rename-fns-in-untranslated-term-list terms alist)))
 
 ;; (defthm untranslated-term-pairsp-of-cdr
 ;;   (implies (and (untranslated-termp term)
 ;;                 (equal 'cond (car term)))
 ;;            (untranslated-term-pairsp (cdr term))))
 
+;drop?
 (defthm untranslated-termp-forward-to-alistp-of-cddr-when-case
   (implies (and (untranslated-termp term)
                 (eq (car term) 'case))
@@ -717,6 +631,7 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :expand (untranslated-termp term))))
 
+;drop?
 (defthm untranslated-termp-forward-to-alistp-of-cddr-when-case-match
   (implies (and (untranslated-termp term)
                 (eq (car term) 'case-match))
@@ -1563,11 +1478,6 @@
 ;; function calls in the term.  We'll have to add things to this as we
 ;; add support for more constructs in untranslated-termp.
 
-;; Make sure this list is kept up to-date (perhaps prove a sanity
-;; check that if none of these appear, untranslated-termp acts as we
-;; would expect):
-(defconst *supported-untranslated-term-macros* '(let let* b* cond case case-match))
-
 (mutual-recursion
  (defund strong-pseudo-termp (x)
    (declare (xargs :guard t :mode :logic))
@@ -2338,7 +2248,8 @@
   :hints (("Goal" :expand (untranslated-termp term)
            :in-theory (enable let-bindings))))
 
-;; TODO: Can we really do this right without translating calls of user macros?
+;; TODO: Deprecate this.  To do this right, we need the world so we can
+;; translate calls of user macros.
 (mutual-recursion
  ;;Return a list of all variables in TERM.
  (defun free-vars-in-untranslated-term (term)
