@@ -49,7 +49,72 @@
      The latter rules avoid @(tsee if) in the right side,
      to avoid unwanted case splits;
      furthermore, they wrap the @(tsee if) tests into @(tsee test*)
-     to prevent unwanted rewrites (see @(tsee atc-contextualize))."))
+     to prevent unwanted rewrites (see @(tsee atc-contextualize)).")
+   (xdoc::p
+    "We also include the function @('exec-arrsub-of-member'),
+     which combines @(tsee exec-member) and @(tsee exec-arrsub),
+     so that the execution of expressions of the form @('s.m[i]')
+     (where @('s') is a structure,
+     @('m') is the name of a member of the structure of array type,
+     and @('i') is an index into the array)
+     turn into this single function,
+     which is the one that the @(tsee defstruct)-specific generated theorems
+     turn into the shallowly embedded structure array member readers."))
+
+  (define exec-arrsub-of-member ((str expr-valuep)
+                                 (mem identp)
+                                 (sub expr-valuep)
+                                 (compst compustatep))
+    :returns (eval expr-value-resultp)
+    :parents nil
+    (b* ((str (apconvert-expr-value str))
+         ((when (errorp str)) str)
+         (val-str (expr-value->value str))
+         ((unless (value-case val-str :struct))
+          (error (list :mistype-member
+                       :required :struct
+                       :supplied (type-of-value val-str))))
+         (val-mem (value-struct-read mem val-str))
+         ((when (errorp val-mem)) val-mem)
+         (objdes-str (expr-value->object str))
+         (objdes-mem (and objdes-str
+                          (make-objdesign-member :super objdes-str :name mem)))
+         (eval-mem (apconvert-expr-value (expr-value val-mem objdes-mem)))
+         ((when (errorp eval-mem)) eval-mem)
+         (val-mem (expr-value->value eval-mem))
+         ((unless (value-case val-mem :pointer))
+          (error (list :mistype-arrsub
+                       :required :pointer
+                       :supplied (type-of-value val-mem))))
+         ((unless (value-pointer-validp val-mem))
+          (error (list :invalid-pointer val-mem)))
+         (objdes-mem (value-pointer->designator val-mem))
+         (reftype (value-pointer->reftype val-mem))
+         (array (read-object objdes-mem compst))
+         ((when (errorp array))
+          (error (list :array-not-found val-mem (compustate-fix compst))))
+         ((unless (value-case array :array))
+          (error (list :not-array val-mem (compustate-fix compst))))
+         ((unless (equal reftype (value-array->elemtype array)))
+          (error (list :mistype-array-read
+                       :pointer reftype
+                       :array (value-array->elemtype array))))
+         (sub (apconvert-expr-value sub))
+         ((when (errorp sub)) sub)
+         (sub (expr-value->value sub))
+         ((unless (value-integerp sub)) (error
+                                         (list :mistype-array :index
+                                               :required :integer
+                                               :supplied (type-of-value sub))))
+         (index (value-integer->get sub))
+         ((when (< index 0)) (error (list :negative-array-index
+                                          :array array
+                                          :index sub)))
+         (val (value-array-read index array))
+         ((when (errorp val)) val)
+         (elem-objdes (make-objdesign-element :super objdes-mem :index index)))
+      (make-expr-value :value val :object elem-objdes))
+    :hooks (:fix))
 
   (defruled exec-expr-pure-when-ident
     (implies (and (syntaxp (quotep e))
