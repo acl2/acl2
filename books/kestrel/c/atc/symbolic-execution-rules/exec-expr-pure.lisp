@@ -113,7 +113,13 @@
                                            (expr-member->name arr)
                                            evalsub
                                            compst)))
-    :enable exec-expr-pure)
+    :expand ((exec-expr-pure e compst)
+             (exec-expr-pure (expr-arrsub->arr e) compst))
+    :enable (exec-member
+             exec-arrsub
+             exec-arrsub-of-member
+             apconvert-expr-value
+             not-errorp-when-expr-valuep))
 
   (defruled exec-expr-pure-when-arrsub-of-memberp
     (implies (and (syntaxp (quotep e))

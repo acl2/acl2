@@ -791,13 +791,6 @@
      :ident (exec-ident e.get compst)
      :const (exec-const e.get)
      :arrsub (case (expr-kind e.arr)
-               (:member
-                (b* (((expr-member e.arr) e.arr)
-                     (str (exec-expr-pure e.arr.target compst))
-                     ((when (errorp str)) str)
-                     (sub (exec-expr-pure e.sub compst))
-                     ((when (errorp sub)) sub))
-                  (exec-arrsub-of-member str e.arr.name sub compst)))
                (:memberp
                 (b* (((expr-memberp e.arr) e.arr)
                      (str (exec-expr-pure e.arr.target compst))
