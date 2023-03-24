@@ -202,7 +202,14 @@
                                             (expr-memberp->name arr)
                                             evalsub
                                             compst)))
-    :enable exec-expr-pure)
+    :expand ((exec-expr-pure e compst)
+             (exec-expr-pure (expr-arrsub->arr e) compst))
+    :enable (exec-memberp
+             exec-arrsub
+             exec-arrsub-of-memberp
+             apconvert-expr-value
+             not-errorp-when-expr-valuep)
+    :disable equal-of-type-struct) ; <-- to reduce splits
 
   (defruled exec-expr-pure-when-unary
     (implies (and (syntaxp (quotep e))
