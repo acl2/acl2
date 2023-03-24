@@ -1040,14 +1040,6 @@
          ((unless (binop-case op :asg))
           (error (list :expr-asg-not-asg op))))
       (case (expr-kind left)
-        (:ident
-         (b* ((var (expr-ident->get left))
-              ((mv val? compst)
-               (exec-expr-call-or-pure right compst fenv (1- limit)))
-              ((when (errorp val?)) val?)
-              ((when (not val?)) (error (list :asg-void-expr (expr-fix e))))
-              (val val?))
-           (write-var var val compst)))
         (:unary
          (b* ((op (expr-unary->op left))
               (arg (expr-unary->arg left))
@@ -1271,6 +1263,14 @@
               (new-struct (value-struct-write mem val struct))
               ((when (errorp new-struct)) new-struct))
            (write-object objdes new-struct compst)))
+        (:ident
+         (b* ((var (expr-ident->get left))
+              ((mv val? compst)
+               (exec-expr-call-or-pure right compst fenv (1- limit)))
+              ((when (errorp val?)) val?)
+              ((when (not val?)) (error (list :asg-void-expr (expr-fix e))))
+              (val val?))
+           (write-var var val compst)))
         (t (error (list :expr-asg-left-not-var-or-array-var-subscript left)))))
     :measure (nfix limit))
 
