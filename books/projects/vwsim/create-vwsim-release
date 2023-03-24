@@ -1,0 +1,82 @@
+#! /bin/bash
+
+# create-vwsim-release                         Vivek & Warren
+
+# A simple script to generate a VWSIM release for the ACL2 books.
+
+# To make a new VWSIM release, make a new directory, and unpack the
+# contents of the generated TAR file from within that directory.
+
+# Standing in the VWSIM directory,
+
+# ./create-vwsim-release
+
+# cd ..; mkdir <dir-name>; cd <dir-name>
+
+# tar -xvzf <tar-file>
+
+vwsim_version="2.9"
+
+vwsim_dir="./"
+vwsim_release_file="../vwsim-${vwsim_version}-release.tar.gz"
+
+# Begin tar process
+
+cirs_dir="${vwsim_dir}Testing/test-circuits/cirs/"
+parse_spice_dir="${vwsim_dir}parse-spice/"
+
+flags="-cvzf"
+
+tar $flags $vwsim_release_file \
+    "${vwsim_dir}create-vwsim-release" \
+    "${vwsim_dir}README" \
+    "${cirs_dir}rc-circuit.cir" \
+    "${cirs_dir}four-stage-jtl.cir" \
+    "${cirs_dir}d-latch.cir" \
+    "${parse_spice_dir}parse-spice.lisp" \
+    "${parse_spice_dir}spice-to-vwsim.lisp" \
+    "${vwsim_dir}arith-fp.lisp" \
+    "${vwsim_dir}constants.lisp" \
+    "${vwsim_dir}csv-plot.gnuplot" \
+    "${vwsim_dir}gnuplot.lisp" \
+    "${vwsim_dir}gnuplot.acl2" \
+    "${vwsim_dir}driver.lsp" \
+    "${vwsim_dir}dz-unc/fake-dz-unc.lisp" \
+    "${vwsim_dir}dz-unc/fake-dz-unc.acl2" \
+    "${vwsim_dir}expt10.lisp" \
+    "${vwsim_dir}images/VWSIM-Flowchart-Small.png" \
+    "${vwsim_dir}images/d-latch.png" \
+    "${vwsim_dir}images/d-latch-top-level.png" \
+    "${vwsim_dir}images/jtl4.png" \
+    "${vwsim_dir}images/jtl4-top-level.png" \
+    "${vwsim_dir}names-and-indices.lisp" \
+    "${vwsim_dir}nth-lemmas.lisp" \
+    "${vwsim_dir}num.lisp" \
+    "${vwsim_dir}print-records-rec.lisp" \
+    "${vwsim_dir}raw.lsp" \
+    "${vwsim_dir}read-float.lisp" \
+    "${vwsim_dir}records.lisp" \
+    "${vwsim_dir}rtime.lisp" \
+    "${vwsim_dir}sra-matrix-defuns.lisp" \
+    "${vwsim_dir}sra-vw-flat-sim-help.lisp" \
+    "${vwsim_dir}sra-vw-flat-sim.lisp" \
+    "${vwsim_dir}sra-vw-flat-sim.acl2" \
+    "${vwsim_dir}top.lisp" \
+    "${vwsim_dir}top.acl2" \
+    "${vwsim_dir}vw-eval-ar.lisp" \
+    "${vwsim_dir}vw-eval-fns.lisp" \
+    "${vwsim_dir}vw-eval-raw.lsp" \
+    "${vwsim_dir}vw-eval.lisp" \
+    "${vwsim_dir}vw-eval.acl2" \
+    "${vwsim_dir}vw-flat-hdl.lisp" \
+    "${vwsim_dir}vw-flatten-top-sort.lisp" \
+    "${vwsim_dir}vw-hrchl-hdl.lisp" \
+    "${vwsim_dir}vwsim-doc.lisp" \
+    "${vwsim_dir}vwsim-doc.acl2" \
+    "${vwsim_dir}write-csv.lisp" \
+    "${vwsim_dir}tests/vwsim-tests-book.acl2" \
+    "${vwsim_dir}tests/vwsim-tests-book.lisp" \
+    "${vwsim_dir}tests/vwsim-tests-input.lsp" \
+    "${vwsim_dir}tests/vwsim-tests-log.txt"
+
+#     # "${vwsim_dir}stobj-raw.lsp" \    # not needed?

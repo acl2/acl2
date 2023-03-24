@@ -10382,10 +10382,10 @@
                 (t (er-let*-cmp ((val
                                   (cmp-do-body-1 (lambda-body (ffn-symb x))
                                                  twvts aterm vars wrld)))
-                     (value-cmp (make-lambda-term
+                     (value-cmp (make-lambda-application
                                  (lambda-formals (ffn-symb x))
-                                 (fargs x)
-                                 val)))))))
+                                 val
+                                 (fargs x))))))))
             (t (value-cmp (prog2$-call x
                                        (cmp-do-body-exit nil *nil* aterm)))))))
    (t (case (ffn-symb x)
