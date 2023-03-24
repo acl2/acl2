@@ -303,7 +303,12 @@
                              (ident ,(ident->name memname))
                              (expr-value index objdes-index)
                              compst)
-                            (expr-value (,reader index struct) nil))))
+                            (expr-value (,reader index struct)
+                                        (objdesign-element
+                                         (objdesign-member
+                                          (value-pointer->designator ptr)
+                                          (ident ,(ident->name memname)))
+                                         (value-integer->get index))))))
           (hints `(("Goal"
                     :in-theory
                     '(exec-arrsub-of-member

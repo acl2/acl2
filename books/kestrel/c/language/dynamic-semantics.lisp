@@ -585,8 +585,7 @@
        (reftype (value-pointer->reftype str))
        (struct (read-object objdes compst))
        ((when (errorp struct))
-        (error
-         (list :struct-not-found str (compustate-fix compst))))
+        (error (list :struct-not-found str (compustate-fix compst))))
        ((unless (value-case struct :struct))
         (error (list :not-struct str (compustate-fix compst))))
        ((unless (equal reftype
@@ -636,7 +635,7 @@
        ((when (errorp str)) str)
        (str (expr-value->value str))
        ((unless (value-case str :pointer))
-        (error (list :mistype-arrsub-of-memberp
+        (error (list :mistype-memberp
                      :required :pointer
                      :supplied (type-of-value str))))
        ((unless (value-pointer-validp str))
@@ -645,22 +644,37 @@
        (reftype (value-pointer->reftype str))
        (struct (read-object objdes compst))
        ((when (errorp struct))
-        (error (list :struct-not-found
-                     str
-                     (compustate-fix compst))))
+        (error (list :struct-not-found str (compustate-fix compst))))
        ((unless (value-case struct :struct))
-        (error (list :not-struct
-                     str
-                     (compustate-fix compst))))
+        (error (list :not-struct str (compustate-fix compst))))
        ((unless (equal reftype
                        (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
                      :pointer reftype
                      :array (type-struct (value-struct->tag struct)))))
-       (arr (value-struct-read mem struct))
-       ((when (errorp arr)) arr)
-       ((unless (value-case arr :array))
-        (error (list :not-array arr)))
+       (val-mem (value-struct-read mem struct))
+       ((when (errorp val-mem)) val-mem)
+       (objdes-mem (make-objdesign-member :super objdes :name mem))
+       (eval-mem (apconvert-expr-value (expr-value val-mem objdes-mem)))
+       ((when (errorp eval-mem)) eval-mem)
+       (val-mem (expr-value->value eval-mem))
+       ((unless (value-case val-mem :pointer))
+        (error (list :mistype-arrsub
+                     :required :pointer
+                     :supplied (type-of-value val-mem))))
+       ((unless (value-pointer-validp val-mem))
+        (error (list :invalid-pointer val-mem)))
+       (objdes-mem (value-pointer->designator val-mem))
+       (reftype (value-pointer->reftype val-mem))
+       (array (read-object objdes-mem compst))
+       ((when (errorp array))
+        (error (list :array-not-found val-mem (compustate-fix compst))))
+       ((unless (value-case array :array))
+        (error (list :not-array val-mem (compustate-fix compst))))
+       ((unless (equal reftype (value-array->elemtype array)))
+        (error (list :mistype-array-read
+                     :pointer reftype
+                     :array (value-array->elemtype array))))
        (sub (apconvert-expr-value sub))
        ((when (errorp sub)) sub)
        (sub (expr-value->value sub))
@@ -670,11 +684,12 @@
                                              :supplied (type-of-value sub))))
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
-                                        :array arr
+                                        :array array
                                         :index sub)))
-       (val (value-array-read index arr))
-       ((when (errorp val)) val))
-    (make-expr-value :value val :object nil))
+       (val (value-array-read index array))
+       ((when (errorp val)) val)
+       (elem-objdes (make-objdesign-element :super objdes-mem :index index)))
+    (make-expr-value :value val :object elem-objdes))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
