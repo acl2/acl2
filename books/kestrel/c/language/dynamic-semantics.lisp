@@ -984,9 +984,12 @@
        "A right-hand side consisting of
         a function call or a pure expression,
         with the restriction that it must be a pure expression
-        when the left hand side is
-        an array subscripting expression;
-        in that case, the index expression must be also pure."))
+        unless the left-hand side is just an identifier."))
+     (xdoc::p
+      "If the left-hand side is an array subscripting expression
+       (where the array is a variable
+       or a structure or structure pointer member expression),
+       we require the index expression to be pure.")
      (xdoc::p
       "If the left-hand side is a unary indirection expression,
        for now we require its type to be a pointer to integer.
@@ -1008,7 +1011,26 @@
        as the full expressions [C:6.8/4] of expression statements.
        Thus, we discard the value of the assignment
        (which is the value written to the variable);
-       this ACL2 function just returns an updated computation state."))
+       this ACL2 function just returns an updated computation state.")
+     (xdoc::p
+      "Some of the restrictions we put on assignment expressions
+       are motivated by the fact that [C] does not prescribe
+       the order of evaluation of left-hand side and right-hand side
+       of assignment expressions, just like for any other binary operator;
+       there are no sequence points [C:5.1.2.3] within assignments.
+       Thus, we always requires the subexpressions of assignment expressions
+       to be pure unless the left-hand side is a variable,
+       in which case the right-hand side may be a function call,
+       which may have side effects:
+       this is deterministic because,
+       even though the function call may modify the value of the variable,
+       that value is not used (it is overwritten) to perform the assignment.
+       More precisely, our model of the writing to a variable uses it
+       to ensure that the type of the new value is the same as the old value,
+       but it is an invariant (although we have not formally proved it yet)
+       that a variable will always have the same type,
+       so when doing the write we would get the same type for the old value,
+       whether the function call has modified that value or not."))
     (b* (((when (zp limit)) (error :limit))
          ((unless (expr-case e :binary))
           (error (list :expr-asg-not-binary (expr-fix e))))
