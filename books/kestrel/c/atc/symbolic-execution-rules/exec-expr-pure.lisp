@@ -111,7 +111,8 @@
              (equal (exec-expr-pure e compst)
                     (exec-arrsub-of-member evalstr
                                            (expr-member->name arr)
-                                           evalsub)))
+                                           evalsub
+                                           compst)))
     :enable exec-expr-pure)
 
   (defruled exec-expr-pure-when-arrsub-of-memberp

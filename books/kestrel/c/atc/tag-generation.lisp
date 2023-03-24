@@ -272,11 +272,13 @@
                           (,recognizer struct)
                           (,indextypep index)
                           ,check-hyp
-                          (objdesignp objdes-struct))
+                          (objdesignp objdes-struct)
+                          (equal (read-object objdes-struct compst) struct))
                      (equal (exec-arrsub-of-member
                              (expr-value struct objdes-struct)
                              (ident ,(ident->name memname))
-                             (expr-value index objdes-index))
+                             (expr-value index objdes-index)
+                             compst)
                             (expr-value (,reader index struct)
                                         (objdesign-element
                                          (objdesign-member
@@ -328,6 +330,16 @@
                       value-kind-when-ulongp
                       value-kind-when-sllongp
                       value-kind-when-ullongp
+                      value-array->elemtype-when-uchar-arrayp
+                      value-array->elemtype-when-schar-arrayp
+                      value-array->elemtype-when-ushort-arrayp
+                      value-array->elemtype-when-sshort-arrayp
+                      value-array->elemtype-when-uint-arrayp
+                      value-array->elemtype-when-sint-arrayp
+                      value-array->elemtype-when-ulong-arrayp
+                      value-array->elemtype-when-slong-arrayp
+                      value-array->elemtype-when-ullong-arrayp
+                      value-array->elemtype-when-sllong-arrayp
                       ifix
                       integer-range-p
                       not-errorp-when-valuep
@@ -358,11 +370,41 @@
                       expr-value->object-of-expr-value
                       ,@*atc-array-read-rules*
                       apconvert-expr-value-when-not-value-array
+                      apconvert-expr-value-when-uchar-arrayp
+                      apconvert-expr-value-when-schar-arrayp
+                      apconvert-expr-value-when-ushort-arrayp
+                      apconvert-expr-value-when-sshort-arrayp
+                      apconvert-expr-value-when-uint-arrayp
+                      apconvert-expr-value-when-sint-arrayp
+                      apconvert-expr-value-when-ulong-arrayp
+                      apconvert-expr-value-when-slong-arrayp
+                      apconvert-expr-value-when-ullong-arrayp
+                      apconvert-expr-value-when-sllong-arrayp
                       expr-valuep-of-expr-value
                       not-errorp-when-expr-valuep
                       objdesign-option-fix
                       objdesign-fix-when-objdesignp
+                      return-type-of-objdesign-member
+                      return-type-of-value-pointer
+                      value-pointer->designator-of-value-pointer
+                      value-pointer-validp-of-value-pointer
+                      return-type-of-pointer-valid
+                      pointer-valid->get-of-pointer-valid
+                      value-pointer->designator-of-value-pointer
+                      value-pointer->reftype-of-value-pointer
+                      read-object-of-objdesign-member
                       (:e objdesignp)
+                      (:e type-fix)
+                      (:e type-uchar)
+                      (:e type-schar)
+                      (:e type-ushort)
+                      (:e type-sshort)
+                      (:e type-uint)
+                      (:e type-sint)
+                      (:e type-ulong)
+                      (:e type-slong)
+                      (:e type-ullong)
+                      (:e type-sllong)
                       (:t objdesign-member)))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name

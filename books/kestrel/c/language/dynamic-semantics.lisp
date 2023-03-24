@@ -602,7 +602,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-arrsub-of-member ((str expr-valuep) (mem identp) (sub expr-valuep))
+(define exec-arrsub-of-member ((str expr-valuep)
+                               (mem identp)
+                               (sub expr-valuep)
+                               (compst compustatep))
   :returns (eval expr-value-resultp)
   :short "Execute the array subscripting operation on
           the result of a structure member operation,
@@ -628,19 +631,35 @@
   (b* ((str (apconvert-expr-value str))
        ((when (errorp str)) str)
        (val-str (expr-value->value str))
-       (objdes-str (expr-value->object str))
        ((unless (value-case val-str :struct))
         (error (list :mistype-member
                      :required :struct
                      :supplied (type-of-value val-str))))
        (val-mem (value-struct-read mem val-str))
        ((when (errorp val-mem)) val-mem)
+       (objdes-str (expr-value->object str))
        (objdes-mem (and objdes-str
                         (make-objdesign-member :super objdes-str :name mem)))
-       ((unless objdes-mem)
-        (error (list :array-without-designator
-                     (expr-value val-mem objdes-mem))))
-       ((unless (value-case val-mem :array)) (error (list :not-array val-mem)))
+       (eval-mem (apconvert-expr-value (expr-value val-mem objdes-mem)))
+       ((when (errorp eval-mem)) eval-mem)
+       (val-mem (expr-value->value eval-mem))
+       ((unless (value-case val-mem :pointer))
+        (error (list :mistype-arrsub
+                     :required :pointer
+                     :supplied (type-of-value val-mem))))
+       ((unless (value-pointer-validp val-mem))
+        (error (list :invalid-pointer val-mem)))
+       (objdes-mem (value-pointer->designator val-mem))
+       (reftype (value-pointer->reftype val-mem))
+       (array (read-object objdes-mem compst))
+       ((when (errorp array))
+        (error (list :array-not-found val-mem (compustate-fix compst))))
+       ((unless (value-case array :array))
+        (error (list :not-array val-mem (compustate-fix compst))))
+       ((unless (equal reftype (value-array->elemtype array)))
+        (error (list :mistype-array-read
+                     :pointer reftype
+                     :array (value-array->elemtype array))))
        (sub (apconvert-expr-value sub))
        ((when (errorp sub)) sub)
        (sub (expr-value->value sub))
@@ -650,12 +669,12 @@
                                              :supplied (type-of-value sub))))
        (index (value-integer->get sub))
        ((when (< index 0)) (error (list :negative-array-index
-                                        :array val-mem
+                                        :array array
                                         :index sub)))
-       (val (value-array-read index val-mem))
+       (val (value-array-read index array))
        ((when (errorp val)) val)
-       (objdes (make-objdesign-element :super objdes-mem :index index)))
-    (make-expr-value :value val :object objdes))
+       (elem-objdes (make-objdesign-element :super objdes-mem :index index)))
+    (make-expr-value :value val :object elem-objdes))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -778,7 +797,7 @@
                      ((when (errorp str)) str)
                      (sub (exec-expr-pure e.sub compst))
                      ((when (errorp sub)) sub))
-                  (exec-arrsub-of-member str e.arr.name sub)))
+                  (exec-arrsub-of-member str e.arr.name sub compst)))
                (:memberp
                 (b* (((expr-memberp e.arr) e.arr)
                      (str (exec-expr-pure e.arr.target compst))
