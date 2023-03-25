@@ -719,9 +719,9 @@
                                    (remove-flexible-array-member val)
                                    scope)
                      (scope-list-fix (cdr scopes)))
-             (error (list :write-auto-var-mistype (ident-fix var)
-                          :required (type-of-value (cdr pair))
-                          :supplied (type-of-value val)))))
+             (error (list :write-auto-object-mistype (ident-fix var)
+                          :old (type-of-value (cdr pair))
+                          :new (type-of-value val)))))
           (new-cdr-scopes (write-auto-var-aux var val (cdr scopes)))
           ((when (errorp new-cdr-scopes)) new-cdr-scopes)
           ((when (endp new-cdr-scopes)) nil))
@@ -1094,7 +1094,7 @@
         (newval val)
         ((unless (equal (type-of-value newval)
                         (type-of-value oldval)))
-         (error (list :write-auto-object-mistype
+         (error (list :write-auto-object-mistype objdes.name
                       :old (type-of-value oldval)
                       :new (type-of-value newval))))
         (new-scope (omap::update objdes.name
