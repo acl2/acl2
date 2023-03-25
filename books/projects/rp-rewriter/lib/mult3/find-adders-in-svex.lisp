@@ -696,7 +696,7 @@
     t
     ;;(hons-copy '(member-equal 'fa-s-chain found-patterns))
     )
-  
+
   (defconst *fa-c-chain-rule-convervative*
     ;;t
     (hons-copy '(member-equal 'fa-s-chain found-patterns))
@@ -3585,371 +3585,7 @@
              :in-theory (e/d (sv::svex-alist-eval$) ())))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Simplification for final stage adders.
-
-(define ppx-mergeable-precheck--collect-fa-c-args (svex)
-  :returns (list-of-fa-c-args)
-  (case-match svex
-    (('sv::bitor x y)
-     (append (ppx-mergeable-precheck--collect-fa-c-args x)
-             (ppx-mergeable-precheck--collect-fa-c-args y)))
-    (('sv::id x)
-     (ppx-mergeable-precheck--collect-fa-c-args x))
-    (('fa-c-chain & x y z)
-     (list (list svex x y z)))
-    (('sv::bitand x y)
-     (list (list svex x y 0))))
-  ///
-  (defret svex-p-lemma-of-<fn>
-    (implies (sv::Svex-p svex)
-             (sv::svexlistlist-p list-of-fa-c-args))))
-
-(define ppx-mergeable-find-matching-m2-aux (x y collected-fa-c-args)
-  :returns (mv (foundp booleanp)
-               (fa-c-term sv::Svex-p :hyp (sv::svexlistlist-p collected-fa-c-args)))
-  (if (atom collected-fa-c-args)
-      (mv nil 0)
-    (b* (((unless (svl::equal-len (car collected-fa-c-args) 4))
-          (ppx-mergeable-find-matching-m2-aux x y (cdr collected-fa-c-args)))
-         ((list fa-c-term arg1 arg2 arg3) (car collected-fa-c-args))
-         ((when (or (and (equal x arg1)
-                         (or (equal y arg2)
-                             (equal y arg3)))
-                    (and (equal x arg2)
-                         (or (equal y arg1)
-                             (equal y arg3)))
-                    (and (equal x arg3)
-                         (or (equal y arg1)
-                             (equal y arg2)))))
-          (mv t fa-c-term)))
-      (ppx-mergeable-find-matching-m2-aux x y (cdr collected-fa-c-args)))))
-
-(define ppx-mergeable-find-matching-m2 ((svex sv::Svex-p)
-                                        collected-fa-c-args
-                                        &key
-                                        ((config svl::svex-reduce-config-p)
-                                         'config))
-  ;; Given a collected-fa-c-argsm finds and extracts a matching m2 term from a given bitand list.
-  :returns (mv (foundp booleanp)
-               (remaining-bitand sv::svex-p :hyp (sv::Svex-p svex))
-               (m2-term sv::Svex-p :hyp (sv::Svex-p svex))
-               (fa-c-term sv::Svex-p :hyp (sv::svexlistlist-p collected-fa-c-args)))
-  :verify-guards :after-returns
-  (case-match svex
-    (('sv::bitand x y)
-     (b* (((mv foundp rest-bitand m2-term fa-c-term)
-           (ppx-mergeable-find-matching-m2 x collected-fa-c-args))
-          ((when foundp)
-           (mv foundp
-               (ex-adder-fnc-from-unfloat
-                (svl::bitand/or/xor-simple-constant-simplify 'sv::bitand rest-bitand y))
-               m2-term fa-c-term))
-          ((mv foundp rest-bitand m2-term fa-c-term)
-           (ppx-mergeable-find-matching-m2 y collected-fa-c-args))
-          ((when foundp)
-           (mv foundp
-               (ex-adder-fnc-from-unfloat
-                (svl::bitand/or/xor-simple-constant-simplify 'sv::bitand rest-bitand x))
-               m2-term fa-c-term)))
-       (mv nil 0 0 0)))
-    (('sv::bitxor x y)
-     (b* (((mv found fa-c-term)
-           (ppx-mergeable-find-matching-m2-aux x y collected-fa-c-args)))
-       (mv found -1 svex fa-c-term)))
-    (('ha-s-chain x y)
-     (b* (((mv found fa-c-term)
-           (ppx-mergeable-find-matching-m2-aux x y collected-fa-c-args)))
-       (mv found -1 svex fa-c-term)))
-    (('sv::id x)
-     (ppx-mergeable-find-matching-m2 x collected-fa-c-args))
-    (&
-     (mv nil 0 0 0)))
-
-  ///
-
-  (defret <fn>-is-correct
-    (implies (and (svl::width-of-svex-extn-correct$-lst
-                   (svl::svex-reduce-config->width-extns config))
-                  (sv::svex-p svex)
-                  (warrants-for-adder-pattern-match)
-                  foundp
-                  )
-             (equal (sv::4vec-bitand (sv::svex-eval$ remaining-bitand env)
-                                     (sv::svex-eval$ m2-term env))
-                    (sv::svex-eval$ svex env)))
-    :hints (("Goal"
-             :in-theory (e/d (sv::svex-call->fn
-                              sv::svex-apply$
-                              sv::svex-apply
-                              ha-s-chain
-                              sv::svex-call->args)
-                             ()))))
-
-  )
-
-(define ppx-mergeable-extract-matching-m2 ((svex sv::Svex-p)
-                                           collected-fa-c-args
-                                           &key
-                                           ((config svl::svex-reduce-config-p) 'config))
-  :verify-guards :after-returns
-  :returns (mv (foundp booleanp)
-               (remaining-bitor sv::Svex-p :hyp (sv::Svex-p svex))
-               (remaining-bitand sv::svex-p :hyp (sv::Svex-p svex))
-               (m2-term sv::Svex-p :hyp (sv::Svex-p svex))
-               (fa-c-term sv::Svex-p :hyp (sv::svexlistlist-p collected-fa-c-args)))
-  (case-match svex
-    (('sv::bitor x y)
-     (b* (((mv foundp remaining-bitor remaining-bitand m2-term fa-c-term)
-           (ppx-mergeable-extract-matching-m2 x collected-fa-c-args))
-          ((when foundp)
-           (mv foundp
-               (ex-adder-fnc-from-unfloat
-                (svl::bitand/or/xor-simple-constant-simplify 'sv::bitor remaining-bitor y))
-               remaining-bitand m2-term fa-c-term))
-          ((mv foundp remaining-bitor remaining-bitand m2-term fa-c-term)
-           (ppx-mergeable-extract-matching-m2 y collected-fa-c-args))
-          ((when foundp)
-           (mv foundp
-               (ex-adder-fnc-from-unfloat
-                (svl::bitand/or/xor-simple-constant-simplify 'sv::bitor remaining-bitor x))
-               remaining-bitand m2-term fa-c-term)))
-       (mv nil svex 0 0 0)))
-    ((fn & &)
-     (b* (((unless (or (equal fn 'sv::bitxor)
-                       (equal fn 'sv::bitand)
-                       (equal fn 'ha-s-chain)))
-           (mv nil svex 0 0 0))
-          ((mv foundp remaining-bitand m2-term fa-c-term)
-           (ppx-mergeable-find-matching-m2 svex collected-fa-c-args)))
-       (mv foundp 0 remaining-bitand m2-term fa-c-term)))
-    (('sv::id x)
-     (ppx-mergeable-extract-matching-m2 x collected-fa-c-args))
-    (& (mv nil svex 0 0 0)))
-  ///
-
-  (defret <fn>-is-correct
-    (implies (and (svl::width-of-svex-extn-correct$-lst
-                   (svl::svex-reduce-config->width-extns config))
-                  (sv::svex-p svex)
-                  (warrants-for-adder-pattern-match)
-                  foundp
-                  )
-             (equal (sv::4vec-bitor (sv::svex-eval$ remaining-bitor env)
-                                    (sv::4vec-bitand (sv::svex-eval$ remaining-bitand env)
-                                                     (sv::svex-eval$ m2-term env)))
-                    (sv::svex-eval$ svex env)))
-    :hints (("Goal"
-             :in-theory (e/d (sv::svex-call->fn
-                              sv::svex-apply$
-                              sv::svex-apply
-                              ha-s-chain
-                              sv::svex-call->args)
-                             ())))))
-
-#!svl
-(define bitor-remove-node ((svex sv::svex-p)
-                           node
-                           &key
-                           ((config svl::svex-reduce-config-p) 'config))
-  :verify-guards :after-returns
-  :returns (mv success
-               (res-svex sv::svex-p :hyp (sv::Svex-p svex)))
-  (case-match svex
-    (('sv::bitor x y)
-     (b* (((when (equal x node))
-           (mv t (svl::svex-reduce-w/-env-apply 'sv::unfloat (hons-list y))))
-          ((when (equal y node))
-           (mv t (svl::svex-reduce-w/-env-apply 'sv::unfloat (hons-list x))))
-          ((mv s1 x) (bitor-remove-node x node))
-          ((mv s2 y) (bitor-remove-node y node)))
-       (mv (or s1 s2)
-           (svl::bitand/or/xor-simple-constant-simplify 'sv::bitor x y))))
-    (('sv::id x)
-     (bitor-remove-node x node))
-    (('sv::unfloat x)
-     (bitor-remove-node x node)
-     #|(if (equal x node)
-     (mv t 0)
-     (mv nil svex))|#)
-    (& (if (equal svex node)
-           (mv t 0)
-         (mv nil svex))))
-  ///
-
-  (local
-   (defthm 4vec-bitor-dummy-lemma
-     (implies (equal (4vec-bitor x y) (sv::3vec-fix b))
-              (equal (equal (4vec-bitor x (4vec-bitor a y))
-                            (4vec-bitor a b))
-                     t))))
-
-  (local
-   (defthm 4vec-bitor-dummy-lemma-1
-     (implies (equal (4vec-bitor x y) (sv::3vec-fix b))
-              (equal (equal (4vec-bitor x (4vec-bitor a y))
-                            (4vec-bitor b a))
-                     t))))
-
-  (Local
-   (defthmd 4vec-bitor-dummy-distribute
-     (equal (sv::4vec-bitor x (sv::4vec-bitor y z))
-            (sv::4vec-bitor (sv::4vec-bitor x y)
-                            (sv::4vec-bitor x z)))))
-
-  (local
-   (defthm 4vec-bitor-dummy-lemma-3
-     (implies (and (equal (4vec-bitor x y1) (sv::3vec-fix z2))
-                   (equal (4vec-bitor x y2) (sv::3vec-fix z3)))
-              (equal (equal (4vec-bitor x (4vec-bitor y1 y2))
-                            (4vec-bitor z2 z3))
-                     t))
-     :hints (("goal"
-              :use ((:instance 4vec-bitor-dummy-distribute
-                               (y y1)
-                               (z y2)))
-              :in-theory '(sv::4vec-bitor-of-3vec-fix-y
-                           sv::4vec-bitor-of-3vec-fix-x)))))
-
-  (local
-   (in-theory (disable sv::svexlist-eval$-is-svexlist-eval
-                       sv::svex-apply$-is-svex-apply)))
-
-  (svex-eval-lemma-tmpl
-   (defret svex-eval-of-<fn>-correct
-     (implies (and (svex-p svex)
-                   (:@ :dollar-eval
-                       (width-of-svex-extn-correct<$>-lst
-                        (svex-reduce-config->width-extns config)))
-                   (:@ :normal-eval
-                       (equal (svex-reduce-config->width-extns config) nil)))
-              (and (implies success
-                            (equal (4vec-bitor (svex-eval res-svex env)
-                                               (svex-eval node env))
-                                   (sv::3vec-fix (svex-eval svex env))))
-                   (implies (Not success)
-                            (equal (sv::3vec-fix (svex-eval res-svex env))
-                                   (sv::3vec-fix (svex-eval svex env))))))
-     :hints (("Goal"
-              :expand ((:free (args) (sv::svex-apply 'sv::bitor args))
-                       (:free (args) (sv::svex-apply 'sv::id args))
-                       (:free (args) (sv::svex-apply 'sv::unfloat args))
-                       (sv::svexlist-eval (cdr svl::svex) env)
-                       (sv::svexlist-eval (cddr svl::svex) env))
-              :in-theory (e/d (SV::SVEX-CALL->FN
-                               SV::SVEX-CALL->ARGS)
-                              ())))))
-
-  (svex-eval-lemma-tmpl
-   (defret svex-eval-of-<fn>-correct-2
-     (implies (and (svex-p svex)
-                   (:@ :dollar-eval
-                       (width-of-svex-extn-correct<$>-lst
-                        (svex-reduce-config->width-extns config)))
-                   (:@ :normal-eval
-                       (equal (svex-reduce-config->width-extns config) nil)))
-              (implies success
-                       (equal (4vec-bitor (svex-eval res-svex env)
-                                          (4vec-bitor (svex-eval node env)
-                                                      other))
-                              (4vec-bitor (svex-eval svex env)
-                                          other))))
-     :hints (("Goal"
-              :do-not-induct t
-              :in-theory (e/d (SV::SVEX-CALL->FN
-                               SV::SVEX-CALL->ARGS)
-                              (<fn>)))))))
-
-(local
- (defthm SVEX-QUOTE->VAL-when-integerp
-   (implies (integerp x)
-            (equal (sv::SVEX-QUOTE->VAL x) x))
-   :hints (("Goal"
-            :in-theory (e/d (sv::SVEX-QUOTE->VAL) ())))))
-
-(define ppx-mergeable-node-pull-common-args (m2-term fa-c-term)
-  :returns (mv success
-               (shared-arg1 sv::Svex-p :hyp (sv::Svex-p m2-term))
-               (shared-arg2 sv::Svex-p :hyp (sv::Svex-p m2-term))
-               (other-arg sv::Svex-p :hyp (sv::Svex-p fa-c-term)))
-  (b* (((mv success m2-arg1 m2-arg2)
-        (case-match m2-term
-          (('sv::bitxor x y)
-           (mv t x y))
-          (('ha-s-chain x y)
-           (mv t x y))
-          (& (mv nil 0 0))))
-       ((unless success)
-        (mv nil 0 0 0))
-       ((mv success fa-c-arg1 fa-c-arg2 fa-c-arg3)
-        (case-match fa-c-term
-          (('fa-c-chain m x y z) (mv (valid-fa-c-chain-args-p m x)
-                                     x y z))
-          (('sv::bitand x y) (mv t x y 0))
-          (& (mv nil 0 0 0))))
-       ((unless success)
-        (mv nil 0 0 0))
-       ((mv success shared-arg1 shared-arg2 other-arg)
-        (cond ((or* (and* (equal fa-c-arg1 m2-arg1)
-                          (equal fa-c-arg2 m2-arg2))
-                    (and* (equal fa-c-arg1 m2-arg2)
-                          (equal fa-c-arg2 m2-arg1)))
-               (mv t m2-arg1 m2-arg2 fa-c-arg3))
-              ((or* (and* (equal fa-c-arg1 m2-arg1)
-                          (equal fa-c-arg3 m2-arg2))
-                    (and* (equal fa-c-arg1 m2-arg2)
-                          (equal fa-c-arg3 m2-arg1)))
-               (mv t m2-arg1 m2-arg2 fa-c-arg2))
-              ((or* (and* (equal fa-c-arg2 m2-arg1)
-                          (equal fa-c-arg3 m2-arg2))
-                    (and* (equal fa-c-arg2 m2-arg2)
-                          (equal fa-c-arg3 m2-arg1)))
-               (mv t m2-arg1 m2-arg2 fa-c-arg1))
-              (t (mv nil 0 0 0)))))
-    (mv success shared-arg1 shared-arg2 other-arg))
-  ///
-
-  (defret <fn>-is-correct
-    (implies (and success
-                  (warrants-for-adder-pattern-match))
-             (and (implies (and (bitp (sv::svex-eval$ shared-arg1 env))
-                                (bitp (sv::svex-eval$ shared-arg2 env)))
-                           (equal (s-spec (list (sv::svex-eval$ shared-arg1 env)
-                                                (sv::svex-eval$ shared-arg2 env)))
-                                  (sv::svex-eval$ m2-term env)))
-                  (implies (and (bitp (sv::svex-eval$ shared-arg1 env))
-                                (bitp (sv::svex-eval$ shared-arg2 env))
-                                (bitp (sv::svex-eval$ other-arg env)))
-                           (equal (c-spec (list (sv::svex-eval$ shared-arg1 env)
-                                                (sv::svex-eval$ shared-arg2 env)
-                                                (sv::svex-eval$ other-arg env)))
-                                  (sv::svex-eval$ fa-c-term env)))))
-    :hints (("Goal"
-             :in-theory (e/d (or*
-                              bitp
-                              SV::SVEX-APPLY$
-                              SV::SVEX-CALL->FN
-                              SV::SVEX-CALL->args)
-                             ()))))
-
-  #|(defret <fn>-is-correct-2
-  (implies (and success
-  (warrants-for-adder-pattern-match))
-  (implies (and (bitp (sv::svex-eval$ shared-arg1 env))
-  (bitp (sv::svex-eval$ shared-arg2 env))
-  (equal other-arg -1))
-  (equal (fa-c-chain 0
-  (sv::svex-eval$ shared-arg1 env)
-  (sv::svex-eval$ shared-arg2 env)
-  -1)
-  (sv::svex-eval$ fa-c-term env))))
-  :hints (("Goal"
-  :in-theory (e/d (or*
-  bitp
-  SV::SVEX-APPLY$
-  SV::SVEX-CALL->FN
-  SV::SVEX-CALL->args)
-  ()))))|#
-  )
+;; Correct fa-c/s-chain arguments
 
 (define create-fa-c-chain-instance (arg1 arg2 arg3)
   :inline t
@@ -4057,6 +3693,7 @@
              :in-theory (e/d (ACL2::MERGE-LEXORDER
                               ACL2::MERGE-SORT-LEXORDER
                               SV::SVEX-CALL->FN
+                              SV::SVEX-QUOTE->VAL
                               SV::SVEX-APPLY$
                               SV::SVEX-CALL->ARGS)
                              ())))))
@@ -4328,6 +3965,283 @@
       :hints (("Goal"
                :in-theory (e/d (SV::SVEX-ALIST-EVAL$) ()))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Simplification for final stage adders.
+
+(define ppx-mergeable-precheck--collect-fa-c-args (svex)
+  :returns (list-of-fa-c-args)
+  (case-match svex
+    (('sv::bitor x y)
+     (append (ppx-mergeable-precheck--collect-fa-c-args x)
+             (ppx-mergeable-precheck--collect-fa-c-args y)))
+    (('sv::id x)
+     (ppx-mergeable-precheck--collect-fa-c-args x))
+    (('fa-c-chain & x y z)
+     (list (list svex x y z)))
+    (('sv::bitand x y)
+     (list (list svex x y 0))))
+  ///
+  (defret svex-p-lemma-of-<fn>
+    (implies (sv::Svex-p svex)
+             (sv::svexlistlist-p list-of-fa-c-args))))
+
+(define ppx-mergeable-find-matching-m2-aux (x y collected-fa-c-args)
+  :returns (mv (foundp booleanp)
+               (fa-c-term sv::Svex-p :hyp (sv::svexlistlist-p collected-fa-c-args)))
+  (if (atom collected-fa-c-args)
+      (mv nil 0)
+    (b* (((unless (svl::equal-len (car collected-fa-c-args) 4))
+          (ppx-mergeable-find-matching-m2-aux x y (cdr collected-fa-c-args)))
+         ((list fa-c-term arg1 arg2 arg3) (car collected-fa-c-args))
+         ((when (or (and (equal x arg1)
+                         (or (equal y arg2)
+                             (equal y arg3)))
+                    (and (equal x arg2)
+                         (or (equal y arg1)
+                             (equal y arg3)))
+                    (and (equal x arg3)
+                         (or (equal y arg1)
+                             (equal y arg2)))))
+          (mv t fa-c-term)))
+      (ppx-mergeable-find-matching-m2-aux x y (cdr collected-fa-c-args)))))
+
+(define ppx-mergeable-find-matching-m2 ((svex sv::Svex-p)
+                                        collected-fa-c-args
+                                        &key
+                                        ((config svl::svex-reduce-config-p)
+                                         'config))
+  ;; Given a collected-fa-c-argsm finds and extracts a matching m2 term from a given bitand list.
+  :returns (mv (foundp booleanp)
+               (remaining-bitand sv::svex-p :hyp (sv::Svex-p svex))
+               (m2-term sv::Svex-p :hyp (sv::Svex-p svex))
+               (fa-c-term sv::Svex-p :hyp (sv::svexlistlist-p collected-fa-c-args)))
+  :verify-guards :after-returns
+  (case-match svex
+    (('sv::bitand x y)
+     (b* (((mv foundp rest-bitand m2-term fa-c-term)
+           (ppx-mergeable-find-matching-m2 x collected-fa-c-args))
+          ((when foundp)
+           (mv foundp
+               (ex-adder-fnc-from-unfloat
+                (svl::bitand/or/xor-simple-constant-simplify 'sv::bitand rest-bitand y))
+               m2-term fa-c-term))
+          ((mv foundp rest-bitand m2-term fa-c-term)
+           (ppx-mergeable-find-matching-m2 y collected-fa-c-args))
+          ((when foundp)
+           (mv foundp
+               (ex-adder-fnc-from-unfloat
+                (svl::bitand/or/xor-simple-constant-simplify 'sv::bitand rest-bitand x))
+               m2-term fa-c-term)))
+       (mv nil 0 0 0)))
+    (('sv::bitxor x y)
+     (b* (((mv found fa-c-term)
+           (ppx-mergeable-find-matching-m2-aux x y collected-fa-c-args)))
+       (mv found -1 svex fa-c-term)))
+    (('sv::bitor x y) ;; instead of XOR, OR can work too.
+     (b* (((mv found fa-c-term)
+           (ppx-mergeable-find-matching-m2-aux x y collected-fa-c-args)))
+       (mv found -1 svex fa-c-term)))
+    (('ha-s-chain x y)
+     (b* (((mv found fa-c-term)
+           (ppx-mergeable-find-matching-m2-aux x y collected-fa-c-args)))
+       (mv found -1 svex fa-c-term)))
+    (('sv::id x)
+     (ppx-mergeable-find-matching-m2 x collected-fa-c-args))
+    (&
+     (mv nil 0 0 0)))
+
+  ///
+
+  (defret <fn>-is-correct
+    (implies (and (svl::width-of-svex-extn-correct$-lst
+                   (svl::svex-reduce-config->width-extns config))
+                  (sv::svex-p svex)
+                  (warrants-for-adder-pattern-match)
+                  foundp
+                  )
+             (equal (sv::4vec-bitand (sv::svex-eval$ remaining-bitand env)
+                                     (sv::svex-eval$ m2-term env))
+                    (sv::svex-eval$ svex env)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::svex-call->fn
+                              sv::svex-apply$
+                              sv::svex-apply
+                              ha-s-chain
+                              sv::svex-call->args)
+                             ()))))
+
+  )
+
+(define ppx-mergeable-extract-matching-m2 ((svex sv::Svex-p)
+                                           collected-fa-c-args
+                                           &key
+                                           ((config svl::svex-reduce-config-p) 'config))
+  :verify-guards :after-returns
+  :returns (mv (foundp booleanp)
+               (remaining-bitor sv::Svex-p :hyp (sv::Svex-p svex))
+               (remaining-bitand sv::svex-p :hyp (sv::Svex-p svex))
+               (m2-term sv::Svex-p :hyp (sv::Svex-p svex))
+               (fa-c-term sv::Svex-p :hyp (sv::svexlistlist-p collected-fa-c-args)))
+  (case-match svex
+    (('sv::bitor x y)
+     (b* (((mv foundp remaining-bitand m2-term fa-c-term)
+           (ppx-mergeable-find-matching-m2 svex collected-fa-c-args))
+          ((when foundp)
+           (mv foundp 0 remaining-bitand m2-term fa-c-term))
+
+          ((mv foundp remaining-bitor remaining-bitand m2-term fa-c-term)
+           (ppx-mergeable-extract-matching-m2 x collected-fa-c-args))
+          ((when foundp)
+           (mv foundp
+               (ex-adder-fnc-from-unfloat
+                (svl::bitand/or/xor-simple-constant-simplify 'sv::bitor remaining-bitor y))
+               remaining-bitand m2-term fa-c-term))
+          ((mv foundp remaining-bitor remaining-bitand m2-term fa-c-term)
+           (ppx-mergeable-extract-matching-m2 y collected-fa-c-args))
+          ((when foundp)
+           (mv foundp
+               (ex-adder-fnc-from-unfloat
+                (svl::bitand/or/xor-simple-constant-simplify 'sv::bitor remaining-bitor x))
+               remaining-bitand m2-term fa-c-term)))
+       (mv nil svex 0 0 0)))
+    ((fn & &)
+     (b* (((unless (or (equal fn 'sv::bitxor)
+                       (equal fn 'sv::bitand)
+                       (equal fn 'ha-s-chain)))
+           (mv nil svex 0 0 0))
+          ((mv foundp remaining-bitand m2-term fa-c-term)
+           (ppx-mergeable-find-matching-m2 svex collected-fa-c-args)))
+       (mv foundp 0 remaining-bitand m2-term fa-c-term)))
+    (('sv::id x)
+     (ppx-mergeable-extract-matching-m2 x collected-fa-c-args))
+    (& (mv nil svex 0 0 0)))
+  ///
+
+  (defret <fn>-is-correct
+    (implies (and (svl::width-of-svex-extn-correct$-lst
+                   (svl::svex-reduce-config->width-extns config))
+                  (sv::svex-p svex)
+                  (warrants-for-adder-pattern-match)
+                  foundp
+                  )
+             (equal (sv::4vec-bitor (sv::svex-eval$ remaining-bitor env)
+                                    (sv::4vec-bitand (sv::svex-eval$ remaining-bitand env)
+                                                     (sv::svex-eval$ m2-term env)))
+                    (sv::svex-eval$ svex env)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::svex-call->fn
+                              sv::svex-apply$
+                              sv::svex-apply
+                              ha-s-chain
+                              sv::svex-call->args)
+                             ())))))
+
+(local
+ (defthm SVEX-QUOTE->VAL-when-integerp
+   (implies (integerp x)
+            (equal (sv::SVEX-QUOTE->VAL x) x))
+   :hints (("Goal"
+            :in-theory (e/d (sv::SVEX-QUOTE->VAL) ())))))
+
+(define ppx-mergeable-node-pull-common-args (m2-term fa-c-term)
+  :returns (mv success
+               m2-regular-type-p
+               (shared-arg1 sv::Svex-p :hyp (sv::Svex-p m2-term))
+               (shared-arg2 sv::Svex-p :hyp (sv::Svex-p m2-term))
+               (other-arg sv::Svex-p :hyp (sv::Svex-p fa-c-term)))
+  (b* (((mv success m2-regular-type-p m2-arg1 m2-arg2)
+        (case-match m2-term
+          (('sv::bitxor x y)
+           (mv t t x y))
+          (('ha-s-chain x y)
+           (mv t t x y))
+          (('sv::bitor x y)
+           (mv t nil x y))
+          (& (mv nil nil 0 0))))
+       ((unless success)
+        (mv nil nil 0 0 0))
+       ((mv success fa-c-arg1 fa-c-arg2 fa-c-arg3)
+        (case-match fa-c-term
+          (('fa-c-chain m x y z) (mv (valid-fa-c-chain-args-p m x)
+                                     x y z))
+          (('sv::bitand x y) (mv t x y 0))
+          (& (mv nil 0 0 0))))
+       ((unless success)
+        (mv nil nil 0 0 0))
+       ((mv success shared-arg1 shared-arg2 other-arg)
+        (cond ((or* (and* (equal fa-c-arg1 m2-arg1)
+                          (equal fa-c-arg2 m2-arg2))
+                    (and* (equal fa-c-arg1 m2-arg2)
+                          (equal fa-c-arg2 m2-arg1)))
+               (mv t m2-arg1 m2-arg2 fa-c-arg3))
+              ((or* (and* (equal fa-c-arg1 m2-arg1)
+                          (equal fa-c-arg3 m2-arg2))
+                    (and* (equal fa-c-arg1 m2-arg2)
+                          (equal fa-c-arg3 m2-arg1)))
+               (mv t m2-arg1 m2-arg2 fa-c-arg2))
+              ((or* (and* (equal fa-c-arg2 m2-arg1)
+                          (equal fa-c-arg3 m2-arg2))
+                    (and* (equal fa-c-arg2 m2-arg2)
+                          (equal fa-c-arg3 m2-arg1)))
+               (mv t m2-arg1 m2-arg2 fa-c-arg1))
+              (t (mv nil 0 0 0)))))
+    (mv success m2-regular-type-p shared-arg1 shared-arg2 other-arg))
+  ///
+
+  (defret <fn>-is-correct
+    (implies (and success
+                  (warrants-for-adder-pattern-match))
+             (and (implies (and (bitp (sv::svex-eval$ shared-arg1 env))
+                                (bitp (sv::svex-eval$ shared-arg2 env))
+                                (case-split m2-regular-type-p))
+                           (equal (s-spec (list (sv::svex-eval$ shared-arg1 env)
+                                                (sv::svex-eval$ shared-arg2 env)))
+                                  (sv::svex-eval$ m2-term env)))
+
+                  (implies (and (bitp (sv::svex-eval$ shared-arg1 env))
+                                (bitp (sv::svex-eval$ shared-arg2 env))
+                                (not m2-regular-type-p))
+                           (equal
+                            (binary-or (sv::svex-eval$ shared-arg1 env)
+                                       (sv::svex-eval$ shared-arg2 env))
+                            (sv::svex-eval$ m2-term env)))
+
+                  (implies (and (bitp (sv::svex-eval$ shared-arg1 env))
+                                (bitp (sv::svex-eval$ shared-arg2 env))
+                                (bitp (sv::svex-eval$ other-arg env)))
+                           (equal (c-spec (list (sv::svex-eval$ shared-arg1 env)
+                                                (sv::svex-eval$ shared-arg2 env)
+                                                (sv::svex-eval$ other-arg env)))
+                                  (sv::svex-eval$ fa-c-term env)))))
+    :hints (("Goal"
+             :in-theory (e/d (or*
+                              bitp
+                              SV::SVEX-APPLY$
+                              SV::SVEX-CALL->FN
+                              SV::SVEX-CALL->args)
+                             ()))))
+
+
+  #|(defret <fn>-is-correct-2
+  (implies (and success
+  (warrants-for-adder-pattern-match))
+  (implies (and (bitp (sv::svex-eval$ shared-arg1 env))
+  (bitp (sv::svex-eval$ shared-arg2 env))
+  (equal other-arg -1))
+  (equal (fa-c-chain 0
+  (sv::svex-eval$ shared-arg1 env)
+  (sv::svex-eval$ shared-arg2 env)
+  -1)
+  (sv::svex-eval$ fa-c-term env))))
+  :hints (("Goal"
+  :in-theory (e/d (or*
+  bitp
+  SV::SVEX-APPLY$
+  SV::SVEX-CALL->FN
+  SV::SVEX-CALL->args)
+  ()))))|#
+  )
+
 (local
  (defthm 4vec-bitor-of-minus1
    (equal (sv::4vec-bitor -1 x)
@@ -4373,7 +4287,7 @@
 
            (remaining-bitor (ex-adder-fnc-from-unfloat remaining-bitor))
 
-           ((mv success shared-arg1 shared-arg2 other-arg)
+           ((mv success & shared-arg1 shared-arg2 other-arg)
             (ppx-mergeable-node-pull-common-args m2-term fa-c-term))
 
            ((unless success) svex)
@@ -4430,10 +4344,32 @@
                    (bitp y)
                    (bitp z1)
                    (bitp z2))
-              (equal (c-spec (list x y (sv::4vec-bitor z2 z1)))
-                     (sv::4vec-bitor (c-spec (list x y z1))
-                                     (sv::4vec-bitand (ha-s-chain x y)
-                                                      z2))))
+              (and (equal (c-spec (list x y (sv::4vec-bitor z2 z1)))
+                          (sv::4vec-bitor (c-spec (list x y z1))
+                                          (sv::4vec-bitand
+                                           (if (mv-nth ;; m2-term can be bitxor
+                                                ;; or bitor. This helps with a
+                                                ;; nice caseplit between the two.
+                                                1
+                                                (ppx-mergeable-node-pull-common-args
+                                                 (mv-nth 3
+                                                         (ppx-mergeable-extract-matching-m2
+                                                          svex
+                                                          (ppx-mergeable-precheck--collect-fa-c-args svex)))
+                                                 (mv-nth 4
+                                                         (ppx-mergeable-extract-matching-m2
+                                                          svex
+                                                          (ppx-mergeable-precheck--collect-fa-c-args svex)))))
+
+                                               (s-spec (list x y))
+                                             (binary-or x y))
+                                           z2)))
+                   #|(equal (sv::4vec-bitor (c-spec (list x y z1))
+                                          (sv::4vec-bitand (b-or x y)
+                                                           z2))
+                          (sv::4vec-bitor (c-spec (list x y z1))
+                                          (sv::4vec-bitand (ha-s-chain x y)
+                                                           z2)))|#))
      :hints (("Goal"
               :in-theory (e/d (bitp) ())))))
 
@@ -4618,9 +4554,8 @@ y))
 ;;           (mv (hons-copy `(sv::bitxor 1 (sv::bitor (sv::bitand (sv::bitor ,x ,y) ,z)
 ;;                                                    (sv::bitand ,x ,y))))
 ;;               t)))
-;;         (t 
+;;         (t
 ;;          (mv svex nil))))
-   
 
 ;; (defines rw-adder-corner-cases
 ;;   :verify-guards nil
@@ -4724,9 +4659,7 @@ y))
 ;;              :in-theory (e/d (sv::svex-alist-eval$)
 ;;                              ())))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 (progn
   (encapsulate
@@ -5653,7 +5586,6 @@ was ~st seconds."))
           ;;        (cw "-> Nothing is changed after negation reduction attempt. ~%")
           ;;      (cw "-> Could clean some number negations. ~%")))
           ;; (svex-alist new-svex-alist)
-          
 
           (svex-alist (find-f/h-adders-in-svex-alist svex-alist
                                                      *find-f/h-adders-in-svex-alist-limit*
@@ -5704,7 +5636,6 @@ was ~st seconds."))
           ;;        (cw "-> Nothing is changed after negation reduction attempt. ~%")
           ;;      (cw "-> Could clean some number negations. ~%")))
           ;; (svex-alist new-svex-alist)
-          
 
           ;; I have seen a case (32X32_UBP_AR_VCSkA) where simplifying before removing ha-pairs helps
           (svex-alist (svl::svex-alist-simplify-bitand/or/xor svex-alist))
