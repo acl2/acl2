@@ -1280,3 +1280,116 @@
               read-var
               read-auto-var
               objdesign-of-var-aux-iff-read-auto-var-aux))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled write-object-of-objdesign-of-var-to-write-var
+  :short "Equivalence of @(tsee write-object) and @(tsee write-var)
+          for object designators of variables."
+  (b* ((objdes (objdesign-of-var var compst)))
+    (implies objdes
+             (equal (write-object objdes val compst)
+                    (write-var var val compst))))
+  :enable (objdesign-of-var
+           compustate-frames-number
+           write-var-to-write-object-when-auto
+           write-var-to-write-object-when-static)
+
+  :prep-lemmas
+
+  ((defruled write-auto-var-aux-to-update-nth-of-objdesign
+     (b* ((objdes (objdesign-of-var-aux var frame scopes)))
+       (implies
+        objdes
+        (equal (write-auto-var-aux var val scopes)
+               (if (equal (type-of-value val)
+                          (type-of-value
+                           (cdr (omap::in (ident-fix var)
+                                          (scope-fix
+                                           (nth (objdesign-auto->scope objdes)
+                                                (rev scopes)))))))
+                   (rev
+                    (update-nth
+                     (objdesign-auto->scope objdes)
+                     (omap::update (ident-fix var)
+                                   (remove-flexible-array-member val)
+                                   (scope-fix
+                                    (nth (objdesign-auto->scope objdes)
+                                         (rev scopes))))
+                     (rev (scope-list-fix scopes))))
+                 (error (list :write-auto-object-mistype (ident-fix var)
+                              :old (type-of-value
+                                    (cdr
+                                     (omap::in
+                                      (ident-fix var)
+                                      (scope-fix
+                                       (nth (objdesign-auto->scope objdes)
+                                            (rev scopes))))))
+                              :new (type-of-value val)))))))
+     :induct t
+     :enable (write-auto-var-aux
+              objdesign-of-var-aux
+              nth-of-minus1-and-cdr
+              update-nth-of-rev
+              len
+              fix
+              not-errorp-when-scope-listp))
+
+   (defruled write-var-to-write-object-when-auto
+     (implies
+      (> (compustate-frames-number compst) 0)
+      (b* ((objdes (objdesign-of-var-aux
+                    var
+                    (1- (compustate-frames-number compst))
+                    (frame->scopes (top-frame compst)))))
+        (implies
+         objdes
+         (equal (write-var var val compst)
+                (write-object objdes val compst)))))
+     :enable (write-object
+              write-var
+              write-auto-var
+              write-auto-var-aux-to-update-nth-of-objdesign
+              top-frame
+              push-frame
+              pop-frame
+              compustate-frames-number
+              fix
+              not-errorp-when-scope-listp)
+     :cases ((consp (compustate->frames compst)))
+     :use
+     ((:instance objdesign-of-var-aux-lemma
+                 (frame (+ -1 (len (compustate->frames compst))))
+                 (scopes (frame->scopes (car (compustate->frames compst))))))
+     :prep-lemmas
+     ((defrule lemma
+        (implies (and (true-listp x)
+                      (consp x))
+                 (equal (rev (update-nth (1- (len x)) a (rev x)))
+                        (cons a (cdr x))))
+        :do-not-induct t
+        :enable (len fix))))
+
+   (defruled write-var-to-write-object-when-static
+     (b* ((objdes (objdesign-of-var var compst))
+          (objdes0 (objdesign-of-var-aux var
+                                         (1- (compustate-frames-number compst))
+                                         (frame->scopes (top-frame compst)))))
+       (implies (and objdes
+                     (or (equal (compustate-frames-number compst) 0)
+                         (not objdes0)))
+                (and (equal (objdesign-kind objdes) :static)
+                     (equal (objdesign-static->name objdes) (ident-fix var))
+                     (equal (write-var var val compst)
+                            (write-object objdes val compst)))))
+     :use (:instance write-auto-var-aux-iff-objdesign-of-var-aux
+                     (frame (+ -1 (len (compustate->frames compst))))
+                     (scopes (frame->scopes (top-frame compst))))
+     :enable (objdesign-of-var
+              compustate-frames-number
+              write-object
+              write-var
+              write-auto-var
+              push-frame
+              pop-frame
+              top-frame))))
