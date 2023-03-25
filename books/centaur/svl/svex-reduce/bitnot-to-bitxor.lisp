@@ -69,7 +69,6 @@
   :disabled t))
 
 
-
 (create-case-match-macro de-morgan-pattern-1
                          ('sv::bitnot ('sv::bitor ('sv::bitnot x)
                                                   ('sv::bitnot y))))
@@ -78,14 +77,142 @@
                          ('sv::bitnot ('sv::bitand ('sv::bitnot x)
                                                    ('sv::bitnot y))))
 
+(create-case-match-macro xor-pattern-1
+                         ('sv::bitand ('sv::bitor x y)
+                                      ('sv::bitnot
+                                       ('sv::bitand x y))))
+
+(create-case-match-macro xor-pattern-2
+                         ('sv::bitand ('sv::bitnot
+                                       ('sv::bitand x y))
+                                      ('sv::bitor x y)))
+
+(local
+ (defsection proofs-with-logbitp
+
+   (local
+    (in-theory '(bitp
+                 SV::3VEC-P
+
+                 sv::4vec-bitnot
+                 sv::3vec-bitnot
+                 (:type-prescription lognot)
+                 sv::4vec-bitxor
+                 sv::4vec-bitand
+                 sv::3vec-bitand
+                 sv::4vec-bitor
+                 sv::3vec-bitor
+                 sv::3vec-fix
+                 (:e sv::4vec->lower)
+                 (:e sv::4vec->upper)
+                 (:e logxor)
+                 acl2::simplify-logxor
+                 acl2::simplify-logior
+                 acl2::simplify-logand
+                 sv::4vec->lower-of-4vec-fix
+                 sv::4vec->upper-of-4vec-fix
+                 sv::4vec-p-of-4vec-fix
+                 (:type-prescription logbitp)
+                 sv::4vec->upper-of-4vec
+                 sv::4vec->lower-of-4vec
+                 sv::4vec-equal
+                 sv::4vec-p-of-4vec
+                 ifix
+                 (:e acl2::zbp)
+                 (:e acl2::BIT->BOOL)
+                 (:e acl2::bool->bit)
+                 acl2::b-xor
+                 acl2::b-ior
+                 acl2::b-not
+                 acl2::b-and
+                 acl2::bfix
+                 ;;b-xor-def
+                 ;;acl2::bfix-opener
+                 ;;(:type-prescription acl2::bitp-of-b-xor)
+                 ;;(:rewrite acl2::bfix-opener)
+                 (:compound-recognizer acl2::bitp-compound-recognizer)
+                 acl2::bitp-of-b-ior
+                 acl2::bitp-of-b-xor
+                 acl2::bitp-of-b-not
+                 acl2::bitp-of-b-and
+                 acl2::bool->bit-of-bit->bool
+                 bitops::logbit-to-logbitp
+                 bitops::logbitp-of-logior
+                 bitops::logbitp-of-logxor
+                 bitops::logbitp-of-logand
+                 bitops::logbitp-of-lognot
+
+                 (:e INTEGER-LENGTH)
+                 (:e 4vec-p)
+
+                 (:type-prescription acl2::binary-logior)
+                 (:type-prescription acl2::binary-logxor)
+                 (:type-prescription acl2::binary-logand)
+
+
+
+                 SV::4VEC->UPPER
+                 SV::4VEC->LOWER
+                
+                 )))
+
+   (local
+    (defthm bool->bit-lemma
+      (equal (ACL2::ZBP (acl2::BOOL->BIT x))
+             (not x))
+      :hints (("Goal"
+               :in-theory (e/d (acl2::zbp acl2::bool->bit) ())))))
+
+
+   #|(defthm xor-pattern-1-lemma1
+   (implies t ;
+   (EQUAL ;
+   (4VEC-BITAND ;
+   (4VEC-BITOR x y) ;
+   (sv::4vec-bitnot (4VEC-BITand x y))) ;
+   (SV::4VEC-BITXOR x y))) ;
+   :hints ((bitops::logbitp-reasoning)))|#
+  
+   (defthm xor-pattern-1-lemma1
+     (implies t
+              (EQUAL
+               (4VEC-BITAND
+                (4VEC-BITOR x y)
+                (4VEC-BITOR (SV::4VEC-BITnot x)
+                            (SV::4VEC-BITnot y)))
+               (SV::4VEC-BITXOR x y)))
+     :hints ((bitops::logbitp-reasoning)))
+
+   (defthm xor-pattern-1-lemma2
+     (implies t
+              (EQUAL
+               (4VEC-BITAND
+                (4VEC-BITOR x y)
+                (4VEC-BITOR (SV::4VEC-BITxor -1 x)
+                            (SV::4VEC-BITxor -1 y)))
+               (SV::4VEC-BITXOR x y)))
+     :hints (("Goal"
+              :use ((:instance xor-pattern-1-lemma1))
+              :in-theory (e/d (4vec-bitnot-to-4vec-bitxor) ()))))))
+
+
+
 (defines svex-convert-bitnot-to-bitxor
   :hints (("Goal"
-           :in-theory (e/d (SVEX-KIND
-                            SV::SVEX-COUNT) ())))
+           :expand ((SV::SVEX-COUNT SVEX)
+                    (SV::SVEX-COUNT (CADR SVEX))
+                    (SV::SVEXLIST-COUNT (CDR SVEX))
+                    (SV::SVEXLIST-COUNT (CDR (CADR SVEX))))
+           :in-theory (e/d (svex-kind
+                            SVEX-CALL->ARGS
+                            SVEX-CALL->fn
+                            SV::SVEXLIST-COUNT
+                            sv::svex-count)
+                           ())))
   :verify-guards nil
   (define svex-convert-bitnot-to-bitxor ((svex svex-p))
     :measure (sv::svex-count svex)
-    :returns (res svex-p :hyp (and (svex-p svex)))
+    :returns (res)
     (cond ((not (equal (sv::svex-kind svex) :call))
            svex)
           ((de-morgan-pattern-1-p svex)
@@ -102,6 +229,18 @@
                            (hons-list
                             (svex-convert-bitnot-to-bitxor x)
                             (svex-convert-bitnot-to-bitxor y)))))
+          ((xor-pattern-1-p svex)
+           (xor-pattern-1-body
+            svex
+            (svex-reduce-w/-env-apply 'sv::bitxor
+                                      (hons-list (svex-convert-bitnot-to-bitxor x)
+                                                 (svex-convert-bitnot-to-bitxor y)))))
+          ((xor-pattern-2-p svex)
+           (xor-pattern-2-body
+            svex
+            (svex-reduce-w/-env-apply 'sv::bitxor
+                                      (hons-list (svex-convert-bitnot-to-bitxor x)
+                                                 (svex-convert-bitnot-to-bitxor y)))))
           ((and (equal (sv::svex-call->fn svex) 'sv::bitnot)
                 (equal (len (sv::svex-call->args svex)) 1))
            (svex-reduce-w/-env-apply 'sv::bitxor
@@ -114,39 +253,30 @@
                            (sv::svex-call->args svex))))))
   (define svexlist-convert-bitnot-to-bitxor ((lst svexlist-p))
     :measure (sv::svexlist-count lst)
-    :returns (res svexlist-p :hyp (and (svexlist-p lst)))
+    :returns (res)
     (if (atom lst)
         nil
       (hons (svex-convert-bitnot-to-bitxor (car lst))
             (svexlist-convert-bitnot-to-bitxor (cdr lst)))))
-
-  :prepwork
-  ((local
-    (defthm measure-lemma
-      (and (IMPLIES (DE-MORGAN-PATTERN-1-P SVEX)
-                    (< (SV::SVEX-COUNT (CADR (CADR (CADR SVEX))))
-                       (SV::SVEX-COUNT SVEX)))
-           (IMPLIES (DE-MORGAN-PATTERN-2-P SVEX)
-                    (< (SV::SVEX-COUNT (CADR (CADDR (CADR SVEX))))
-                       (SV::SVEX-COUNT SVEX)))
-           (IMPLIES (DE-MORGAN-PATTERN-2-P SVEX)
-                    (< (SV::SVEX-COUNT (CADR (CADR (CADR SVEX))))
-                       (SV::SVEX-COUNT SVEX)))
-           (IMPLIES (DE-MORGAN-PATTERN-1-P SVEX)
-                    (< (SV::SVEX-COUNT (CADR (CADDR (CADR SVEX))))
-                       (SV::SVEX-COUNT SVEX))))
-      :hints (("Goal"
-               :expand ((SV::SVEXLIST-COUNT (CDR (CADR SVEX)))
-                        (SV::SVEX-COUNT (CADR SVEX))
-                        (SV::SVEXLIST-COUNT (CDR SVEX))
-                        (SV::SVEX-COUNT SVEX))
-               :in-theory (e/d (svex-call->args
-                                svex-call->fn
-                                sv::svexlist-count
-                                sv::svex-kind
-                                SV::SVEX-COUNT) ()))))))
-
   ///
+
+  (defret-mutual ret-val
+    (defret svex-p-of-<fn>
+      (implies (svex-p svex)
+               (svex-p res))
+      :fn svex-convert-bitnot-to-bitxor)
+    (defret svexlist-p-of-<fn>
+      (implies (svexlist-p lst)
+               (svexlist-p res))
+      :fn svexlist-convert-bitnot-to-bitxor)
+    :hints (("Goal"
+             :expand ((svex-p svex)
+                      (SVEX-P (CADR SVEX))
+                      (SVEXLIST-P (CDDR SVEX))
+                      (SVEX-P (CADDR SVEX))
+                      (SVEXLIST-P (CDR SVEX)))
+             :in-theory (e/d () ()))))
+
   (verify-guards svex-convert-bitnot-to-bitxor
     :hints (("goal"
              :expand ((svex-p svex)

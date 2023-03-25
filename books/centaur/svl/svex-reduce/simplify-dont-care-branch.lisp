@@ -94,10 +94,12 @@
          :quote (mv nil t)
          :call
          (cond ((and (equal x.fn 'sv::partsel)
-                     (equal-len x.args 3))
+                     (equal-len x.args 3)
+                     (atom (third x.args)) ;; only collect variables
+                     )
                 (mv (list x) (and (natp (first x.args))
                                   (natp (second x.args))
-                                  (< (second x.args) 6))))
+                                  (< (second x.args) 9))))
                (t (collect-part-sels-from-tests-aux-lst x.args (1- limit)))))))
     (define collect-part-sels-from-tests-aux-lst ((lst sv::svexlist-p)
                                                   (limit natp))
@@ -387,7 +389,7 @@
         ;; proofs go through more easily. !!!
         x)
        ((when (> (simplify-dont-care-branch-count-cases collected)
-                 100))
+                 512))
         x)
 
        ;;(- (cw "simplify-dont-care-branch: Collected: ~p0 ~%" collected))

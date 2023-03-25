@@ -205,6 +205,16 @@
   `(mbe :logic (if* ,x ,y ,z)
         :exec (if ,x ,y ,z)))
 
+(defmacro and*-exec (&rest x)
+  `(mbe :logic (and* ,@x)
+        :exec (and ,@x)))
+
+
+(local
+ (defthmd 4vec-p-implies-svex-p-rw-rule
+   (implies (sv::4vec-p x)
+            (sv::svex-p x))))
+
 (with-output
   :off :All
   :on (error summary)
@@ -218,7 +228,8 @@
                               sv::svex-call->args
                               measure-lemmas) ())))
     :prepwork ((local
-                (in-theory (enable svex-kind-wog))))
+                (in-theory (enable 4vec-p-implies-svex-p-rw-rule
+                                   svex-kind-wog))))
 
     (define svex-and/or/xor-reduce-w/-env-masked ((svex svex-p)
                                                   (start natp)
@@ -384,7 +395,7 @@
                            (4vec-part-select start size
                                              (4vec-concat c-size term1 term2))
                          (svex-reduce-w/-env-masked-return
-                          (hons-list 'sv::concat c-size term1 term2)))))
+                          (svex-reduce-w/-env-apply fn (hons-list c-size term1 term2))))))
                     ((when (<= c-size start))
                      (svex-reduce-w/-env-masked term2
                                                 (- start c-size)
@@ -399,10 +410,12 @@
                           (term2 (svex-reduce-w/-env-masked term2
                                                             0
                                                             (- size (- c-size start))))
-                          ((when (equal term2 0)) term1))
-                       (svex-reduce-w/-env-apply fn
-                                                 (hons-list (- c-size start)
-                                                            term1 term2)))))
+                          ((when (equal term2 0)) term1)
+                          (res
+                           (svex-reduce-w/-env-apply fn
+                                                     (hons-list (- c-size start)
+                                                                term1 term2))))
+                       res)))
                  (hons-list 'sv::concat c-size ;; should never come to this case
                             (svex-reduce-w/-env-masked term1 0 c-size )
                             (svex-reduce-w/-env term2))))
@@ -482,13 +495,17 @@
                        ((equal term2 (4vec-part-select 0 size (sv::4vec-z)))
                         term1)
                        (t
-                        (svex-reduce-w/-env-apply fn (hons-list term1
-                                                                term2))))))
+                        (svex-reduce-w/-env-apply fn (hons-list term1 term2))))))
 
               ((and* (or ;; can use improvements here....
                       (equal fn 'sv::unfloat))
                      (equal-len args 1))
-               (b* ((term1 (svex-reduce-w/-env-masked (first args) start size )))
+               (b* ((term1 (svex-reduce-w/-env-masked (first args) start size))
+                    #|((when (and*-exec (consp term1)
+                    ;; minimize calls to integerp-of-svex
+                    (hide (equal (car term1) 'sv::partsel))
+                    (integerp-of-svex term1)))
+                    term1)|#)
                  (svex-reduce-w/-env-apply fn (hons-list term1))))
 
               ((and* (or ;; can use improvements here....
@@ -530,8 +547,8 @@
                     (s-size (svex-reduce-w/-env (second args)))
                     (old-term (third args))
                     (term (fourth args)))
-                 (cond ((or (not (natp s-start))
-                            (not (natp s-size)))
+                 (cond ((not (and (natp s-start)
+                                  (natp s-size)))
                         (b* ((old-term (svex-reduce-w/-env old-term))
                              (term (svex-reduce-w/-env term)))
                           (if (and* (4vec-p s-start) (4vec-p s-size)
@@ -545,15 +562,18 @@
                                         s-start s-size
                                         old-term
                                         term)))))
-                       ((or (<= (+ start size) s-start) ;;case5
-                            (<= (+ s-start s-size) start))
+                       ((and ;;(hide "case5")
+                              (not (and (> (+ start size) s-start) ;;case5
+                                        (> (+ s-start s-size) start))))
                         (svex-reduce-w/-env-masked old-term start size ))
-                       ((and (<= (+ start size) ;;case4
-                                 (+ s-start s-size))
-                             (<= s-start start))
+                       ((and ;;(hide "case4")
+                              (<= (+ start size) ;;case4
+                                  (+ s-start s-size))
+                              (<= s-start start))
                         (svex-reduce-w/-env-masked term (- start s-start)
                                                    size ))
-                       ((and (< start s-start) ;;case 3
+                       ((and ;;(hide "case3")
+                             (< start s-start) ;;case 3
                              (< s-start (+ start size))
                              (<= (+ start size)
                                  (+ s-start s-size)))
@@ -561,13 +581,15 @@
                                      old-term start (- s-start start) ))
                              (term2 (svex-reduce-w/-env-masked
                                      term 0 (+ start size (- s-start)) )))
-                          (if (and (4vec-p term1) (4vec-p term2))
+                          (if (and* (4vec-p term1) (4vec-p term2))
                               (4vec-concat (- s-start start) term1 term2)
-                            (hons-list 'sv::concat
-                                       (- s-start start)
-                                       term1
-                                       term2))))
-                       ((and (<= s-start start) ;;case 2
+                            (svex-reduce-w/-env-apply 'sv::concat
+                                                      (hons-list
+                                                       (- s-start start)
+                                                       term1
+                                                       term2)))))
+                       ((and ;;(hide "case2")
+                             (<= s-start start) ;;case 2
                              (< start (+ s-start s-size))
                              (< (+ s-start s-size)
                                 (+ start size)))
@@ -581,12 +603,14 @@
                                      (+ size start (- (+ s-start s-size)))
                                      ))
                              (c-size (+ s-size s-start (- start))))
-                          (if (and (4vec-p term1) (4vec-p term2))
+                          (if (and* (4vec-p term1) (4vec-p term2))
                               (4vec-concat c-size term1 term2)
-                            (hons-list 'sv::concat c-size term1 term2))))
-                       ((and (< start s-start) ;;case 1
-                             (< (+ s-start s-size)
-                                (+ start size)))
+                            (svex-reduce-w/-env-apply 'sv::concat
+                                                      (hons-list c-size term1 term2)))))
+                       ((and ;;(hide "case1")
+                         (< start s-start) ;;case 1
+                         (< (+ s-start s-size)
+                            (+ start size)))
                         (b* ((c-size1 (- s-start start))
                              (term1 (svex-reduce-w/-env-masked old-term start
                                                                (- s-start start) ))
@@ -598,12 +622,14 @@
                                                                (- (+ start size)
                                                                   (+ s-start s-size))
                                                                ))
-                             (m-term2 (if (and (4vec-p term2) (4vec-p term3))
+                             (m-term2 (if (and* (4vec-p term2) (4vec-p term3))
                                           (4vec-concat c-size2 term2 term3)
-                                        (hons-list 'sv::concat c-size2 term2 term3)))
-                             (mterm1 (if (and (4vec-p term1) (4vec-p m-term2))
+                                        (hons 'sv::concat ;; TODO. turn this into svex-reduce-w/-env-apply
+                                              (hons-list c-size2 term2 term3))))
+                             (mterm1 (if (and* (4vec-p term1) (4vec-p m-term2))
                                          (4vec-concat c-size1 term1 m-term2)
-                                       (hons-list 'sv::concat c-size1 term1 m-term2))))
+                                       (svex-reduce-w/-env-apply 'sv::concat
+                                                      (hons-list c-size1 term1 m-term2)))))
                           Mterm1))
                        (t (hons-list 'sv::partinst ;; should never come here.
                                      s-start
@@ -677,7 +703,7 @@ but did not resolve the branch ~%" first))))
       :returns (res svex-p :hyp (svex-p svex))
       (b* ((fn (car svex))
            (args (cdr svex)))
-        (cond 
+        (cond
          ((mbt (and* (equal (svex-kind svex) :call)
                      (equal fn 'sv::bitand)
                      (equal-len args 2)))
@@ -701,11 +727,10 @@ but did not resolve the branch ~%" first))))
                                 (svex-reduce-w/-env-masked term2 0 min-width)
                                 (svex-reduce-w/-env term2)))
 
-
                ;; !!!!
                ;; TODO:
                ;; IDEALLY, WE RECALCULATE TERM2'S WIDTH HERE AND RECURSE IF IT'S SMALLER THAN MIN-WIDTH
-               
+
                ;; ;; recalculate term2's width
                ;; (term2-width (width-of-svex term2))
 
@@ -725,10 +750,9 @@ but did not resolve the branch ~%" first))))
                                  (integerp term2)))
                 (bitand/or/xor-simple-constant-simplify fn term1 term2)))
             (bitand/or/xor-cancel-repeated fn term1 term2)))
-                   
+
          (t (acl2::impossible svex)))))
-      
-    
+
     (define svex-reduce-w/-env ((svex svex-p)
                                 &key
                                 ((env) 'env)
@@ -780,8 +804,9 @@ but did not resolve the branch ~%" first))))
                          (second
                           (svex-reduce-w/-env-masked (second args) 0 size ))
                          ((when (equal third 0)) second)
-                         (args-evaluated (hons-list size second third)))
-                      (svex-reduce-w/-env-apply fn args-evaluated)))
+                         (args-evaluated (hons-list size second third))
+                         (res (svex-reduce-w/-env-apply fn args-evaluated)))
+                      res))
                    ((and* (equal fn 'sv::bitand)
                           (equal-len args 2))
                     (svex-reduce-w/-env-unmasked-bitand svex))
@@ -846,8 +871,10 @@ but did not resolve the branch ~%" first))))
     :guard-debug t
     :hints (("Goal"
              :expand ((SVEX-P SVEX))
+             :do-not-induct t
              :in-theory (e/d (svex-kind)
-                             ((:e tau-system)))))))
+                             (subsetp-equal
+                              (:e tau-system)))))))
 
 (memoize 'svex-reduce-w/-env
          :condition '(equal (svex-kind svex) :call)
@@ -913,8 +940,6 @@ but did not resolve the branch ~%" first))))
              :in-theory (e/d (SVEX-KIND
                               SV::SVEX-QUOTE->VAL)
                              ()))))))
-
-
 
 (local
  (defthm 4VEC-BITOR-of-1
@@ -1757,7 +1782,6 @@ SVEX-CALL->FN)
    :hints (("Goal"
             :in-theory (e/d (move-over-part-select-from-4vec-bitand) ())))))
 
-
 (local
  (defthm 4vec-bitand-of-same-sized-args
    (implies (and (natp start)
@@ -1818,7 +1842,17 @@ SVEX-CALL->FN)
                               (x other)))
              :in-theory (e/d () ()))))))
 
- 
+;; (local
+;;  (svex-eval-lemma-tmpl
+;;   (defthm svexl-eval-of-reduce-lemma-for-integerp-of-svex
+;;     (implies (and ;;(INTEGERP-OF-SVEX (SVEX-REDUCE-W/-ENV-MASKED svex START SIZE)) ;; redundant for trigger
+;;                   (integerp (svex-eval (SVEX-REDUCE-W/-ENV-MASKED svex START SIZE) env))
+;;                   (natp start)
+;;                   (natp size)
+;;                   (equal (svex-eval (SVEX-REDUCE-W/-ENV-MASKED svex START SIZE) env)
+;;                          (4vec-part-select start size (svex-eval svex env))))
+;;              (integerp (4vec-part-select start size (svex-eval svex env)))))))
+
 
 (encapsulate nil
   (local
@@ -1939,7 +1973,7 @@ SVEX-CALL->FN)
                        (:REWRITE-QUOTED-CONSTANT
                         SV::MAYBE-4VEC-FIX-UNDER-MAYBE-4VEC-EQUIV)
                        (:REWRITE-QUOTED-CONSTANT
-                                    SV::4VEC-FIX-UNDER-4VEC-EQUIV)
+                        SV::4VEC-FIX-UNDER-4VEC-EQUIV)
                        )))
 
   (svex-eval-lemma-tmpl
@@ -1981,7 +2015,7 @@ SVEX-CALL->FN)
                        (equal-len (cdr svex) 2)) ; ; ;
                        (acl2::and* (equal (car svex) 'sv::unfloat) ; ; ;
                        (equal-len (cdr svex) 1))) ; ; ;
-; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
+; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
                        (all-xor/and/or-nodes-are-masked-p res size (rp-evlt env-term a)))|#
                        ))
          :fn svex-and/or/xor-reduce-w/-env-masked)
@@ -2084,8 +2118,6 @@ SVEX-CALL->FN)
        :hints (("Goal"
                 :do-not-induct t
 
-                
-
                 :expand ((:free (x y)
                                 (natp (+ x y)))
                          (SVEX-REDUCE-W/-ENV SVEX)
@@ -2120,7 +2152,7 @@ SVEX-CALL->FN)
                              min-width
 
                              ;;move-over-part-select-from-4vec-bitand
-                             
+
                              svex-eval-svex-reduce-w/-env-apply-correct-when-returns-4vec-P
                              svex-reduce-w/-env-masked
                              svex-reduce-w/-env-unmasked-bitand

@@ -7507,6 +7507,44 @@ lognot)
 
 (add-svex-simplify-rule 3vec-p-of-4vec-concat$)
 
+(def-rp-rule :disabled t
+  3vec-fix-of-4vec-concat
+  (implies (and (integerp size))
+           (and (equal (sv::3vec-fix (4vec-concat size x y))
+                       (4vec-concat size
+                                    (sv::3vec-fix x)
+                                    (sv::3vec-fix y)))
+                (equal (sv::3vec-fix (4vec-concat$ size x y))
+                       (4vec-concat$ size
+                                    (sv::3vec-fix x)
+                                    (sv::3vec-fix y)))))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-concat
+                            SV::3VEC-FIX
+                            LOGIOR-OF-LOGAPP
+                            4VEC-FIX
+                            4vec-concat$
+                            sv::3vec-p)
+                           ()))))
+(def-rp-rule :disabled t
+  3vec-fix-of-4vec-concat-reverse
+  (implies (and (integerp size))
+           (and (equal (4vec-concat size
+                                    (sv::3vec-fix x)
+                                    (sv::3vec-fix y))
+                       (sv::3vec-fix (4vec-concat size x y))
+                       )
+                (equal (4vec-concat$ size
+                                    (sv::3vec-fix x)
+                                    (sv::3vec-fix y))
+                       (sv::3vec-fix (4vec-concat$ size x y))
+                       )))
+  :hints (("Goal"
+           :in-theory (e/d (3vec-fix-of-4vec-concat)
+                           ()))))
+
+
+
 (defthm 3vec-p-of-4vec-fix
   (IMPLIES (AND (SV::3VEC-P Y))
            (SV::3VEC-P (4VEC-FIX Y)))

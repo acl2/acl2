@@ -293,6 +293,47 @@
    :hints (("goal"
             :in-theory (e/d (svex-p) ())))))
 
+(defmacro and*-exec (&rest x)
+  `(mbe :logic (and* ,@x)
+        :exec (and ,@x)))
+
+(define concat-reduce ((svex))
+  :returns (res sv::svex-p :hyp (sv::svex-p svex)
+                :hints (("Goal"
+                         :in-theory (e/d (svex-p
+                                          SVEXLIST-P)
+                                         ()))))
+  :guard-hints (("Goal"
+                 :in-theory (e/d (svex-p
+                                  SVEXLIST-P)
+                                 ())))
+  :prepwork ((create-case-match-macro concat-of-unfloat-pattern
+                                      ('sv::concat size ('sv::unfloat x) ('sv::unfloat y))
+                                      (natp size))
+
+             (create-case-match-macro concat-of-conseq-partsel-pattern
+                                      ('sv::concat size
+                                                   ('sv::partsel st1 sz1 x)
+                                                   ('sv::partsel st2 sz2 x))
+                                      (and (natp size)
+                                           (natp st1) (natp st2)
+                                           (natp sz1) (natp sz2)
+                                           (equal sz1 size)
+                                           (equal (+ st1 sz1) st2)))
+
+             (set-ignore-ok t))
+  (cond ((concat-of-unfloat-pattern-p svex)
+         (concat-of-unfloat-pattern-body
+          svex
+          (hons-list
+           'sv::unfloat
+           (concat-reduce (hons-list 'sv::concat size x y)))))
+        ((concat-of-conseq-partsel-pattern-p svex)
+         (concat-of-conseq-partsel-pattern-body
+          svex
+          (hons-list 'sv::partsel st1 (+ sz1 sz2) x)))
+        (t svex)))
+
 (define svex-reduce-w/-env-apply-specials (fn args)
   :returns (res svex-p :hyp (and (FNSYM-P fn)
                                  (SVEXLIST-P args))
@@ -301,9 +342,9 @@
                                   (SVEX-P (CAR ARGS)))
                          :in-theory (e/d () ()))))
   (cond
-   ((and (or (equal fn 'sv::?)
-             (equal fn 'sv::?*))
-         (equal-len args 3))
+   ((and* (or* (equal fn 'sv::?)
+               (equal fn 'sv::?*))
+          (equal-len args 3))
     (b* ((test (first args))
          ((unless (4vec-p test)) (hons fn args))
          (test (sv::3vec-fix test))
@@ -316,8 +357,8 @@
           then))
       (hons fn args)))
 
-   ((and (equal fn 'sv::?!)
-         (equal-len args 3))
+   ((and* (equal fn 'sv::?!)
+          (equal-len args 3))
     (b* ((test (first args))
          ((unless (4vec-p test)) (hons fn args))
          ((sv::4vec test))
@@ -325,8 +366,8 @@
          ((when (eql testvec 0)) (third args)))
       (second args)))
 
-   ((and (equal fn 'sv::bit?)
-         (equal-len args 3))
+   ((and* (equal fn 'sv::bit?)
+          (equal-len args 3))
     (b* ((test (first args))
          ((unless (4vec-p test)) (hons fn args))
          (test (sv::3vec-fix test))
@@ -336,8 +377,8 @@
           (second args)))
       (bit?-resolve (sv::3vec-fix test) (second args) (third args) (expt 2 30))))
 
-   ((and (equal fn 'sv::bit?!)
-         (equal-len args 3))
+   ((and* (equal fn 'sv::bit?!)
+          (equal-len args 3))
     (b* ((test (first args))
          ((unless (4vec-p test)) (hons fn args))
          ((when (eql test -1))
@@ -347,10 +388,10 @@
           (third args)))
       (bit?!-resolve test (second args) (third args) (expt 2 30))))
 
-   ((and (or (equal fn 'sv::bitor)
-             (equal fn 'sv::bitand)
-             (equal fn 'sv::bitxor))
-         (equal-len args 2))
+   ((and* (or* (equal fn 'sv::bitor)
+               (equal fn 'sv::bitand)
+               (equal fn 'sv::bitxor))
+          (equal-len args 2))
     (b* ((arg1 (first args))
          (arg2 (second args))
          ((when (and (equal fn 'sv::bitor)
@@ -369,8 +410,8 @@
                  (& arg2))))
       (hons-list fn arg1 arg2)))
 
-   ((and (equal fn 'sv::unfloat)
-         (equal-len args 1))
+   ((and* (equal fn 'sv::unfloat)
+          (equal-len args 1))
     (if (and (consp (car args))
              (member-equal (caar args) '(sv::unfloat
                                          sv::bitand
@@ -379,6 +420,11 @@
                                          sv::bitxor)))
         (car args)
       (hons fn args)))
+
+   ((and* (equal fn 'sv::concat)
+          (equal-len args 3))
+    (b* ((res (hons fn args)))
+      (concat-reduce res)))
 
    (t (hons fn args))))
 
@@ -503,7 +549,6 @@
                             ())))))
 
 
-
 (svex-eval-lemma-tmpl
  (defthm svex-eval-of-bit?-resolve-correct
    (implies (and (sv::4vec-p test)
@@ -612,6 +657,34 @@
            :in-theory (e/d (4vec-p)
                            (SV::RETURN-TYPE-OF-SVEX-EVAL$.VAL)))))
 
+
+
+(svex-eval-lemma-tmpl
+ (defret svex-eval-of-concat-reduce-correct
+   (equal (svex-eval res env)
+          (svex-eval svex env))
+   :fn concat-reduce
+   :otf-flg t
+   :hints (("goal"
+            :expand ((svex-eval svex env))
+            :induct (concat-reduce svex)
+            :do-not-induct t
+            :in-theory (e/d (svex-apply
+                             svex-kind
+                             svex-call->fn
+                             svex-call->args
+                             svexlist-eval
+                             svex-eval
+                             concat-reduce
+                             concat-of-conseq-partsel-pattern-p
+                             3vec-fix-of-4vec-concat-reverse)
+                            ((:rewrite sv::4veclist-nth-safe-out-of-bounds)
+                             (:definition acl2::apply$-badgep)
+                             (:linear acl2::apply$-badgep-properties . 1)
+                             (:definition subsetp-equal)
+                             (:definition member-equal)))))))
+
+
 (svex-eval-lemma-tmpl
  (defthm svex-eval-of-svex-reduce-w/-env-apply-specials-correct
    (equal (svex-eval (svex-reduce-w/-env-apply-specials fn args) env)
@@ -639,6 +712,7 @@
                      (:free (x) (sv::svex-apply 'sv::bit? x)))
             :in-theory (e/d (svex-reduce-w/-env-apply-specials
                              4vec-?
+                             or*
                              svex-call->args
                              sv::4vec-bit?!
                              4vec-p
@@ -649,7 +723,19 @@
                              sv::4vec-?!
                              sv::4vec->upper
                              sv::3vec-?)
-                            ())))))
+                            ((:TYPE-PRESCRIPTION 4VECLIST-NTH-SAFE)
+                             (:DEFINITION ACL2::APPLY$-BADGEP)
+                             (:REWRITE BITP-IMPLIES-4VECP)
+                             (:TYPE-PRESCRIPTION 4VEC)
+                             (:TYPE-PRESCRIPTION NATP-4VEC-LSH)
+
+                             (:TYPE-PRESCRIPTION
+                              SV::INTEGERP-OF-4VEC->LOWER)
+                             (:TYPE-PRESCRIPTION
+                              SV::INTEGERP-OF-4VEC->UPPER)
+                             (:TYPE-PRESCRIPTION SV::4VEC-FIX$INLINE)
+                             (:TYPE-PRESCRIPTION ACL2::BINARY-LOGAND)
+                             ))))))
 
 (local
  (defthm svex-eval-when-fn-is-absent
@@ -692,5 +778,18 @@
                             (sv::svex-apply x y)))
             :in-theory (e/d (svex-reduce-w/-env-apply)
                             (4VEC-OVERRIDE-WHEN-INTEGERP))))))
+
+#|(svex-eval-lemma-tmpl
+ (defthm svex-eval-svex-reduce-w/-env-apply-correct-when-4vec-p
+   (implies (and (4vec-p (svex-reduce-w/-env-apply fn args))
+                 (force (fnsym-p fn)))
+            (equal (svex-reduce-w/-env-apply fn args)
+                   (svex-eval `(,fn . ,args) (RP-EVLT ENV-TERM A))))
+   :hints (("goal"
+            :do-not-induct t
+            :use ((:instance svex-eval-svex-reduce-w/-env-apply-correct
+                             (env (RP-EVLT ENV-TERM A))))
+            :in-theory (e/d ()
+                            (svex-eval-svex-reduce-w/-env-apply-correct))))))|#
 
 ;;;;;;;;

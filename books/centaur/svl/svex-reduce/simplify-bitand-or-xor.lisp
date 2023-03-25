@@ -3383,3 +3383,117 @@ x
          :hints (("goal"
                   :in-theory (e/d (svex-alist-eval) ())))
          ))))
+
+
+
+(define bitor-remove-node ((svex sv::svex-p)
+                           node
+                           &key
+                           ((config svl::svex-reduce-config-p) 'config))
+  :verify-guards :after-returns
+  :returns (mv success
+               (res-svex sv::svex-p :hyp (sv::Svex-p svex)))
+  (case-match svex
+    (('sv::bitor x y)
+     (b* (((when (equal x node))
+           (mv t (svl::svex-reduce-w/-env-apply 'sv::unfloat (hons-list y))))
+          ((when (equal y node))
+           (mv t (svl::svex-reduce-w/-env-apply 'sv::unfloat (hons-list x))))
+          ((mv s1 x) (bitor-remove-node x node))
+          ((mv s2 y) (bitor-remove-node y node)))
+       (mv (or s1 s2)
+           (svl::bitand/or/xor-simple-constant-simplify 'sv::bitor x y))))
+    (('sv::id x)
+     (bitor-remove-node x node))
+    (('sv::unfloat x)
+     (bitor-remove-node x node)
+     #|(if (equal x node)
+     (mv t 0) ;
+     (mv nil svex))|#)
+    (& (if (equal svex node)
+           (mv t 0)
+         (mv nil svex))))
+  ///
+
+  (local
+   (defthm 4vec-bitor-dummy-lemma
+     (implies (equal (4vec-bitor x y) (sv::3vec-fix b))
+              (equal (equal (4vec-bitor x (4vec-bitor a y))
+                            (4vec-bitor a b))
+                     t))))
+
+  (local
+   (defthm 4vec-bitor-dummy-lemma-1
+     (implies (equal (4vec-bitor x y) (sv::3vec-fix b))
+              (equal (equal (4vec-bitor x (4vec-bitor a y))
+                            (4vec-bitor b a))
+                     t))))
+
+  (Local
+   (defthmd 4vec-bitor-dummy-distribute
+     (equal (sv::4vec-bitor x (sv::4vec-bitor y z))
+            (sv::4vec-bitor (sv::4vec-bitor x y)
+                            (sv::4vec-bitor x z)))))
+
+  (local
+   (defthm 4vec-bitor-dummy-lemma-3
+     (implies (and (equal (4vec-bitor x y1) (sv::3vec-fix z2))
+                   (equal (4vec-bitor x y2) (sv::3vec-fix z3)))
+              (equal (equal (4vec-bitor x (4vec-bitor y1 y2))
+                            (4vec-bitor z2 z3))
+                     t))
+     :hints (("goal"
+              :use ((:instance 4vec-bitor-dummy-distribute
+                               (y y1)
+                               (z y2)))
+              :in-theory '(sv::4vec-bitor-of-3vec-fix-y
+                           sv::4vec-bitor-of-3vec-fix-x)))))
+
+  (local
+   (in-theory (disable sv::svexlist-eval$-is-svexlist-eval
+                       sv::svex-apply$-is-svex-apply)))
+
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-of-<fn>-correct
+     (implies (and (svex-p svex)
+                   (:@ :dollar-eval
+                       (width-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->width-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->width-extns config) nil)))
+              (and (implies success
+                            (equal (4vec-bitor (svex-eval res-svex env)
+                                               (svex-eval node env))
+                                   (sv::3vec-fix (svex-eval svex env))))
+                   (implies (Not success)
+                            (equal (sv::3vec-fix (svex-eval res-svex env))
+                                   (sv::3vec-fix (svex-eval svex env))))))
+     :hints (("Goal"
+              :expand ((:free (args) (sv::svex-apply 'sv::bitor args))
+                       (:free (args) (sv::svex-apply 'sv::id args))
+                       (:free (args) (sv::svex-apply 'sv::unfloat args))
+                       (sv::svexlist-eval (cdr svl::svex) env)
+                       (sv::svexlist-eval (cddr svl::svex) env))
+              :in-theory (e/d (SV::SVEX-CALL->FN
+                               SV::SVEX-CALL->ARGS)
+                              ())))))
+
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-of-<fn>-correct-2
+     (implies (and (svex-p svex)
+                   (:@ :dollar-eval
+                       (width-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->width-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->width-extns config) nil)))
+              (implies success
+                       (equal (4vec-bitor (svex-eval res-svex env)
+                                          (4vec-bitor (svex-eval node env)
+                                                      other))
+                              (4vec-bitor (svex-eval svex env)
+                                          other))))
+     :hints (("Goal"
+              :do-not-induct t
+              :in-theory (e/d (SV::SVEX-CALL->FN
+                               SV::SVEX-CALL->ARGS)
+                              (<fn>)))))))
