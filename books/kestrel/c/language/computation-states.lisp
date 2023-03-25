@@ -109,6 +109,13 @@
                   (not (scope-listp x))))
   :enable (errorp scope-list-resultp))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-errorp-when-scope-listp
+  (implies (scope-listp x)
+           (not (errorp x)))
+  :enable errorp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod frame
@@ -901,6 +908,14 @@
        (("Goal"
          :expand (objdesign-of-var-aux var frame (scope-list-fix scopes)))))
 
+     (defrule objdesign-auto->scope-of-objdesign-of-var-aux-upper-bound ; move
+       (b* ((objdes (objdesign-of-var-aux var frame scopes)))
+         (implies objdes
+                  (< (objdesign-auto->scope objdes) (len scopes))))
+       :rule-classes :linear
+       :induct t
+       :enable (len nfix))
+
      (defruled objdesign-of-var-aux-lemma
        (b* ((objdes (objdesign-of-var-aux var frame scopes))
             (pair (omap::in (objdesign-auto->name objdes)
@@ -933,7 +948,12 @@
        :induct t
        :enable (objdesign-of-var-aux
                 read-auto-var-aux
-                cdr-of-in-when-scopep))))
+                cdr-of-in-when-scopep))
+
+     (defruled write-auto-var-aux-iff-objdesign-of-var-aux
+       (iff (write-auto-var-aux var val scopes)
+            (objdesign-of-var-aux var frame scopes))
+       :enable write-auto-var-aux)))
 
   ///
 
