@@ -1071,9 +1071,10 @@
    (xdoc::p
     "If the object designator is an address,
      we store the value without removing the flexible array member
-     (see @(tsee remove-flexible-array-member).
-     In all other cases, we remove it, indirectly,
-     via the functions called by this function."))
+     (see @(tsee remove-flexible-array-member)).
+     In all other cases, we remove it,
+     directly in the case of automated storage,
+     and indirectly via @(tsee write-static-var) in case of static storage."))
   (objdesign-case
    objdes
    :static (write-static-var objdes.name val compst)
@@ -1096,7 +1097,9 @@
          (error (list :write-auto-object-mistype
                       :old (type-of-value oldval)
                       :new (type-of-value newval))))
-        (new-scope (omap::update objdes.name (value-fix newval) scope))
+        (new-scope (omap::update objdes.name
+                                 (remove-flexible-array-member newval)
+                                 scope))
         (rev-new-scopes (update-nth objdes.scope new-scope rev-scopes))
         (new-frame (change-frame frame :scopes (rev rev-new-scopes)))
         (rev-new-frames (update-nth objdes.frame new-frame rev-frames))
