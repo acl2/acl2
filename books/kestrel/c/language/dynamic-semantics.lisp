@@ -962,50 +962,48 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is only used for expressions that must be assignments.
-       For now we only support certain assignment expressions, with:")
-     (xdoc::ul
-      (xdoc::li
-       "A left-hand side consisting of
-        either a variable,
-        or an indirection operation whose argument is a variable,
-        or an array subscripting expression where the array is a variable,
-        or a structure member expression where the target is a variable,
-        or a structure pointer member expression where the target is a variable,
-        or an array subscripting expression
-        where the array is a structure member expression
-        where the target is a variable,
-        or an array subscripting expression
-        where the array is a structure pointer member expression
-        where the target is a variable.
-        See the discussion in @(tsee exec-arrsub) about arrays and pointers,
-        which also applies here.")
-      (xdoc::li
-       "A right-hand side consisting of
-        a function call or a pure expression,
-        with the restriction that it must be a pure expression
-        unless the left-hand side is just an identifier."))
+      "This is only used for expressions that must be assignments:
+       we check that the expression is an assignment.")
      (xdoc::p
-      "If the left-hand side is an array subscripting expression
-       (where the array is a variable
-       or a structure or structure pointer member expression),
-       we require the index expression to be pure.")
+      "The left-hand side must be a pure lvalue expressions,
+       i.e. its evaluation must return
+       an expression value with an object designator.
+       The right-hand side must be a pure expression (lvalue or not),
+       but if the left-hand side is just an identifier,
+       then we allow the right-hand side to be also a function call.")
      (xdoc::p
-      "If the left-hand side is a unary indirection expression,
-       for now we require its type to be a pointer to integer.
-       We may relax this in the future.")
+      "The just mentioned restrictions on the subexpressions
+       are motivated by the fact that [C] does not prescribe
+       the order of evaluation of left-hand side and right-hand side
+       of assignment expressions, just like for any other binary operator;
+       there are no sequence points [C:5.1.2.3] within assignments.
+       Thus, if both sides are pure, the order of evaluation does not matter,
+       and we can evaluate them in any order.
+       The case of a left-hand side that is an identifier (i.e. variable)
+       and a right-hand side that is a function call
+       is allowed here because,
+       even though the function call could modify the variable,
+       its value is not actually used to perform the assignment:
+       it is overwritten by the result of the function call.
+       A function call cannot put a named variable into of out of existence,
+       because that depends on scoping;
+       thus, the successful or unsuccessul retrieval
+       of the object designator of the named variable
+       is the same whether it is performed before or after the function call.
+       Therefore it does not matter in which order
+       we evaluate the subexpressions of the assignment,
+       also in the case in which we assign a function call to a variable.
+       We should formally prove the fact mentioned just above
+       that the existence of a named variable
+       is not affected by a function call;
+       this may be actually part of a larger plan to model and support
+       assignments with arbitrary expressions,
+       where our model will cover all possible evaluation orders,
+       as done in other formalizations of C in the literature.")
      (xdoc::p
-      "If the left-hand side is
-       an array subscripting expression where the array is a variable,
-       we perform, in essence, an array-to-pointer conversion;
-       otherwise, we return the value unchanged.
-       This is a currently simplified treatment
-       of arrays and pointer in our C dynamic semantics,
-       which is adequate to our current purposes,
-       but will be properly generalized soon.")
-     (xdoc::p
-      "We ensure that if the right-hand side expression is a function call,
-       it returns a value (i.e. it is not @('void')).")
+      "If the right-hand side is a function call,
+       we require it to return a value,
+       i.e. not @('nil'), i.e. the function cannot return @('void').")
      (xdoc::p
       "We allow these assignment expressions
        as the full expressions [C:6.8/4] of expression statements.
@@ -1013,24 +1011,35 @@
        (which is the value written to the variable);
        this ACL2 function just returns an updated computation state.")
      (xdoc::p
-      "Some of the restrictions we put on assignment expressions
-       are motivated by the fact that [C] does not prescribe
-       the order of evaluation of left-hand side and right-hand side
-       of assignment expressions, just like for any other binary operator;
-       there are no sequence points [C:5.1.2.3] within assignments.
-       Thus, we always requires the subexpressions of assignment expressions
-       to be pure unless the left-hand side is a variable,
-       in which case the right-hand side may be a function call,
-       which may have side effects:
-       this is deterministic because,
-       even though the function call may modify the value of the variable,
-       that value is not used (it is overwritten) to perform the assignment.
-       More precisely, our model of the writing to a variable uses it
-       to ensure that the type of the new value is the same as the old value,
-       but it is an invariant (although we have not formally proved it yet)
-       that a variable will always have the same type,
-       so when doing the write we would get the same type for the old value,
-       whether the function call has modified that value or not."))
+      "For historical reasons,
+       namely that initially we only supported certain forms of assignments,
+       the definition of this ACL2 funcion is more complicated than needed.
+       It would be sufficient to have the initial code up to the @('case'),
+       and the code in the @('t') case of the @('case'):
+       the other cases of the @('case') are redundant,
+       in the sense that are covered by the last case.
+       (They may not be exactly equivalent,
+       but they are equivalent from the standpoint of
+       providing an appropriate model of C execution.)
+       But these cases are stil temporarily there
+       because ATC's symbolic execution rules are based on these cases.
+       We plan to eliminate these cases,
+       while leaving the ATC symbolic rules for assignments unchanged,
+       as we did for some special cases in @(tsee exec-expr-pure),
+       which are no longer there.")
+     (xdoc::p
+      "The special cases are those of a left-hand side consisting of
+       either a variable,
+       or an indirection operation whose argument is an integer variable,
+       or an array subscripting expression where the array is a variable,
+       or a structure member expression where the target is a variable,
+       or a structure pointer member expression where the target is a variable,
+       or an array subscripting expression
+       where the array is a structure member expression
+       where the target is a variable,
+       or an array subscripting expression
+       where the array is a structure pointer member expression
+       where the target is a variable."))
     (b* (((when (zp limit)) (error :limit))
          ((unless (expr-case e :binary))
           (error (list :expr-asg-not-binary (expr-fix e))))
