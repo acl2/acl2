@@ -46,10 +46,14 @@
                                                  (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
-                  (valuep val))
+                  (valuep val)
+                  (valuep (read-var (expr-ident->get e1) compst1)))
              (equal (exec-expr-asg e compst fenv limit)
                     (write-var (expr-ident->get e1) val compst1)))
-    :enable exec-expr-asg)
+    :enable (exec-expr-asg
+             exec-expr-pure
+             exec-ident
+             write-object-of-objdesign-of-var-to-write-var))
 
   (defval *atc-exec-expr-asg-ident-rules*
     '(exec-expr-asg-ident
