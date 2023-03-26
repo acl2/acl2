@@ -1,4 +1,4 @@
-; Top book for tests/ directory
+; A test of acl2r cert_params
 ;
 ; Copyright (C) 2023 Kestrel Institute
 ;
@@ -10,6 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "bstar")
-(include-book "case-match")
-(include-book "mv-let")
+;; TODO: Should this be an error (detected by 'make'?), since these are contradictory?:
+
+; cert_param: (uses-acl2r, non-acl2r)
