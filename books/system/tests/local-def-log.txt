@@ -8,9 +8,9 @@ ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
 ACL2 !>>(DEFUN F1-BAD1 (X)
-               (FLET ((G (X) X))
-                     (MACROLET ((MAC (A) (LIST 'QUOTE (G A))))
-                               (CONS X (MAC X)))))
+          (FLET ((G (X) X))
+                (MACROLET ((MAC (A) (LIST 'QUOTE (G A))))
+                          (CONS X (MAC X)))))
 
 
 ACL2 Error [Translate] in ( DEFUN F1-BAD1 ...):  The call (G A) is
@@ -27,9 +27,9 @@ ACL2 Error [Failure] in ( DEFUN F1-BAD1 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN F1-BAD2 (X)
-               (MACROLET ((G (X) X))
-                         (MACROLET ((MAC (A) (LIST 'QUOTE (G A))))
-                                   (CONS X (MAC X)))))
+          (MACROLET ((G (X) X))
+                    (MACROLET ((MAC (A) (LIST 'QUOTE (G A))))
+                              (CONS X (MAC X)))))
 
 
 ACL2 Error [Translate] in ( DEFUN F1-BAD2 ...):  The call (G A) is
@@ -46,9 +46,9 @@ ACL2 Error [Failure] in ( DEFUN F1-BAD2 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN F1 (X)
-               (FLET ((G (X) X))
-                     (MACROLET ((MAC (A) (LIST 'QUOTE A)))
-                               (CONS (G X) (MAC X)))))
+          (FLET ((G (X) X))
+                (MACROLET ((MAC (A) (LIST 'QUOTE A)))
+                          (CONS (G X) (MAC X)))))
 
 Since F1 is non-recursive, its admission is trivial.  We observe that
 the type of F1 is described by the theorem 
@@ -75,9 +75,9 @@ Rules: NIL
 ACL2 !>>(ASSERT-EVENT (EQUAL (F1 3) '(3 . X)))
  :PASSED
 ACL2 !>>(DEFUN BINDS-AND-CALLS-F1 NIL
-               (MACROLET ((F1 (X) X)
-                          (F2 NIL (LIST 'QUOTE (F1 3))))
-                         (F2)))
+          (MACROLET ((F1 (X) X)
+                     (F2 NIL (LIST 'QUOTE (F1 3))))
+                    (F2)))
 
 Since BINDS-AND-CALLS-F1 is non-recursive, its admission is trivial.
 We observe that the type of BINDS-AND-CALLS-F1 is described by the
@@ -91,12 +91,12 @@ Rules: NIL
 ACL2 !>>(ASSERT-EVENT (EQUAL (BINDS-AND-CALLS-F1) '(3 . X)))
  :PASSED
 ACL2 !>>(DEFUN F2 (X)
-               (FLET ((G (X) (DECLARE (TYPE CONS X)) X))
-                     (DECLARE (INLINE G))
-                     (FLET ((MAC (A)
-                                 (DECLARE (TYPE (SATISFIES TRUE-LISTP) A))
-                                 (LIST 'QUOTE (G A))))
-                           (CONS X (MAC X)))))
+          (FLET ((G (X) (DECLARE (TYPE CONS X)) X))
+                (DECLARE (INLINE G))
+                (FLET ((MAC (A)
+                            (DECLARE (TYPE (SATISFIES TRUE-LISTP) A))
+                            (LIST 'QUOTE (G A))))
+                      (CONS X (MAC X)))))
 
 Since F2 is non-recursive, its admission is trivial.  We observe that
 the type of F2 is described by the theorem 
@@ -116,8 +116,8 @@ The non-trivial part of the guard conjecture for F2 is
 
 Goal
 (LET ((A X))
-     (AND (TRUE-LISTP A)
-          (LET ((X A)) (CONSP X)))).
+  (AND (TRUE-LISTP A)
+       (LET ((X A)) (CONSP X)))).
 Subgoal 2
 
 ([ A key checkpoint:
@@ -177,8 +177,8 @@ and :GUARD-DEBUG.  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN MAC-FN (X)
-               (DECLARE (XARGS :GUARD (TRUE-LISTP X)))
-               (CONS (CADR X) (CAR X)))
+          (DECLARE (XARGS :GUARD (TRUE-LISTP X)))
+          (CONS (CADR X) (CAR X)))
 
 Since MAC-FN is non-recursive, its admission is trivial.  We observe
 that the type of MAC-FN is described by the theorem (CONSP (MAC-FN X)).
@@ -194,8 +194,8 @@ Form:  ( DEFUN MAC-FN ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  MAC-FN
 ACL2 !>>(DEFUN F3 (Y Z)
-               (MACROLET ((MAC (X) (MAC-FN X)))
-                         (MAC (((IFIX Y) (IFIX Z)) EXPT))))
+          (MACROLET ((MAC (X) (MAC-FN X)))
+                    (MAC (((IFIX Y) (IFIX Z)) EXPT))))
 
 Since F3 is non-recursive, its admission is trivial.  We observe that
 the type of F3 is described by the theorem (RATIONALP (F3 Y Z)).  We
@@ -209,8 +209,8 @@ Rules: ((:TYPE-PRESCRIPTION IFIX)
 ACL2 !>>(ASSERT-EVENT (EQUAL (F3 2 3) 8))
  :PASSED
 ACL2 !>>(DEFUN F3-BAD (Y Z)
-               (MACROLET ((MAC (X) (MAC-FN X)))
-                         (MAC (((IFIX Y) (IFIX Z)) . EXPT))))
+          (MACROLET ((MAC (X) (MAC-FN X)))
+                    (MAC (((IFIX Y) (IFIX Z)) . EXPT))))
 
 
 ACL2 Error [Translate] in ( DEFUN F3-BAD ...):  In the attempt to macroexpand
@@ -268,9 +268,9 @@ Form:  ( PROGN (DEFUN MY-ID ...) ...)
 Rules: NIL
  T
 ACL2 !>>(DEFUN F3-BAD2 (Y Z)
-               (MACROLET ((MAC (X)
-                               (MAC-FN (APPLY$ 'MY-ID (LIST X)))))
-                         (MAC (((IFIX Y) (IFIX Z)) EXPT))))
+          (MACROLET ((MAC (X)
+                          (MAC-FN (APPLY$ 'MY-ID (LIST X)))))
+                    (MAC (((IFIX Y) (IFIX Z)) EXPT))))
 
 
 ACL2 Error [Translate] in ( DEFUN F3-BAD2 ...):  All quoted function
@@ -295,9 +295,9 @@ ACL2 Error [Failure] in ( DEFUN F3-BAD2 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN DUPS-DISALLOWED (X Z)
-               (FLET ((F1 (Y) (LIST 'QUOTE (LIST Y X)))
-                      (F1 (Y) (LIST 'QUOTE (LIST X Y))))
-                     (F1 Z)))
+          (FLET ((F1 (Y) (LIST 'QUOTE (LIST Y X)))
+                 (F1 (Y) (LIST 'QUOTE (LIST X Y))))
+                (F1 Z)))
 
 
 ACL2 Error [Translate] in ( DEFUN DUPS-DISALLOWED ...):  We do not
@@ -319,8 +319,8 @@ ACL2 Error [Failure] in ( DEFUN DUPS-DISALLOWED ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN CANNOT-BIND-PREDEFINED NIL
-               (FLET ((NTH (N X) (CONS N X)))
-                     (NTH 3 NIL)))
+          (FLET ((NTH (N X) (CONS N X)))
+                (NTH 3 NIL)))
 
 
 ACL2 Error [Translate] in ( DEFUN CANNOT-BIND-PREDEFINED ...):  An
@@ -338,8 +338,8 @@ failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN CANNOT-BIND-BUILT-INS-NOT-PREDEFINED NIL
-               (FLET ((THROW-RAW-EV-FNCALL (N X) (CONS N X)))
-                     (THROW-RAW-EV-FNCALL 3 NIL)))
+          (FLET ((THROW-RAW-EV-FNCALL (N X) (CONS N X)))
+                (THROW-RAW-EV-FNCALL 3 NIL)))
 
 
 ACL2 Error [Translate] in ( DEFUN CANNOT-BIND-BUILT-INS-NOT-PREDEFINED
@@ -358,8 +358,8 @@ ACL2 Error [Failure] in ( DEFUN CANNOT-BIND-BUILT-INS-NOT-PREDEFINED
 
 ******** FAILED ********
 ACL2 !>>(DEFUN CANNOT-BIND-IN-MAIN-LISP-PACKAGE NIL
-               (FLET ((LET (N X) (CONS N X)))
-                     (LET 3 NIL)))
+          (FLET ((LET (N X) (CONS N X)))
+                (LET 3 NIL)))
 
 
 ACL2 Error [Translate] in ( DEFUN CANNOT-BIND-IN-MAIN-LISP-PACKAGE
@@ -379,8 +379,8 @@ See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN CANNOT-BIND-RETURN-LAST-TABLE NIL
-               (MACROLET ((TIME$1-RAW (N X) (CONS N X)))
-                         (TIME$1-RAW 3 NIL)))
+          (MACROLET ((TIME$1-RAW (N X) (CONS N X)))
+                    (TIME$1-RAW 3 NIL)))
 
 
 ACL2 Error [Translate] in ( DEFUN CANNOT-BIND-RETURN-LAST-TABLE ...):
@@ -400,8 +400,8 @@ ACL2 Error [Failure] in ( DEFUN CANNOT-BIND-RETURN-LAST-TABLE ...):
 See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>(DEFUN UNUSED-VAR
-               NIL (FLET ((FOO (N X) X)) (FOO 3 4)))
+ACL2 !>>(DEFUN UNUSED-VAR NIL
+          (FLET ((FOO (N X) X)) (FOO 3 4)))
 
 
 ACL2 Error [Translate] in ( DEFUN UNUSED-VAR ...):  The variable N
@@ -418,10 +418,11 @@ Rules: NIL
 ACL2 Error [Failure] in ( DEFUN UNUSED-VAR ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>(ENCAPSULATE NIL (SET-IGNORE-OK T)
-                     (DEFUN UNUSED-VAR
-                            NIL (FLET ((FOO (N X) X)) (FOO 3 4)))
-                     (ASSERT-EVENT (EQUAL (UNUSED-VAR) 4)))
+ACL2 !>>(ENCAPSULATE NIL
+          (SET-IGNORE-OK T)
+          (DEFUN UNUSED-VAR NIL
+            (FLET ((FOO (N X) X)) (FOO 3 4)))
+          (ASSERT-EVENT (EQUAL (UNUSED-VAR) 4)))
 
 To verify that the three encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -434,8 +435,8 @@ ACL2 !>>>(SET-IGNORE-OK T)
 T
 
 
-ACL2 !>>>(DEFUN UNUSED-VAR
-                NIL (FLET ((FOO (N X) X)) (FOO 3 4)))
+ACL2 !>>>(DEFUN UNUSED-VAR NIL
+           (FLET ((FOO (N X) X)) (FOO 3 4)))
 
 Since UNUSED-VAR is non-recursive, its admission is trivial.  We observe
 that the type of UNUSED-VAR is described by the theorem 
@@ -465,8 +466,8 @@ Form:  ( ENCAPSULATE NIL (SET-IGNORE-OK T) ...)
 Rules: NIL
  T
 ACL2 !>>(DEFUN F4 (X)
-               (MACROLET ((MAC (&REST A) (LIST 'QUOTE A)))
-                         (CONS X (MAC X Y Z))))
+          (MACROLET ((MAC (&REST A) (LIST 'QUOTE A)))
+                    (CONS X (MAC X Y Z))))
 
 Since F4 is non-recursive, its admission is trivial.  We observe that
 the type of F4 is described by the theorem 
@@ -485,9 +486,9 @@ Form:  ( DEFMACRO MAC ...)
 Rules: NIL
  MAC
 ACL2 !>>(DEFUN F5 (X)
-               (MACROLET ((MAC (&KEY K)
-                               (LIST 'QUOTE (LIST K K K))))
-                         (CONS X (MAC :K Y))))
+          (MACROLET ((MAC (&KEY K)
+                          (LIST 'QUOTE (LIST K K K))))
+                    (CONS X (MAC :K Y))))
 
 Since F5 is non-recursive, its admission is trivial.  We observe that
 the type of F5 is described by the theorem 

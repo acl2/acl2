@@ -528,6 +528,9 @@
        where each variable in @('vars')
        is a formal parameter of @('fn') with pointer or array type
        and where @('T') is not @('void') if @('vars') is @('nil').
+       (In general, @('vars') is a subset of
+       the formal parameters of @('fn') with pointer or array type;
+       that is, not all such formal parameters are necessarily affected.)
        The return type of the C function represented by @('fn') is @('T').")
      (xdoc::li
       "If @('fn') is recursive, the unnormalized body must be
@@ -900,7 +903,7 @@
        that has pointer or array type if @('fn') is non-recursive,
        @('term') is a statement term for @('fn') with loop flag @('nil')
        returning @('void') and affecting @('(var1 ... varn)')
-       that is either a call of a recursive target function
+       that is either a call of a target function
        that precedes @('fn') in the list of targets @('(t1 ... tp)')
        whose body term returns @('void') and affects @('(var1 ... varn)')
        or an @(tsee if) whose test is an expression term returning boolean

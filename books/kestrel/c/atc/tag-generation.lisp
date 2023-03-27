@@ -25,6 +25,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,7 +68,8 @@
      for each integer index type (10)
      and for each of @(tsee exec-member) and @(tsee exec-memberp).
      The theorems rewrite calls of
-     @(tsee exec-arrsub-of-member) or @(tsee exec-arrsub-of-memberp)
+     @('exec-arrsub-of-member') or @('exec-arrsub-of-memberp')
+     (see @(see atc-exec-expr-pure-rules))
      to calls of the readers.
      The generation of these theorems relies on the fact that
      the order of the readers and the checkers matches the order of
@@ -167,7 +169,10 @@
                          value-fix-when-valuep
                          not-errorp-when-valuep
                          ,valuep-when-typep
-                         (:e c::objdesign-option-fix)))))
+                         (:e c::objdesign-option-fix)
+                         apconvert-expr-value-when-not-value-array
+                         expr-valuep-of-expr-value
+                         not-errorp-when-expr-valuep))))
              ((mv event-member &)
               (evmac-generate-defthm thm-member-name
                                      :formula formula-member
@@ -267,12 +272,20 @@
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
                           (,recognizer struct)
                           (,indextypep index)
-                          ,check-hyp)
+                          ,check-hyp
+                          (objdesignp objdes-struct)
+                          (equal (read-object objdes-struct compst) struct))
                      (equal (exec-arrsub-of-member
                              (expr-value struct objdes-struct)
                              (ident ,(ident->name memname))
-                             (expr-value index objdes-index))
-                            (expr-value (,reader index struct) nil))))
+                             (expr-value index objdes-index)
+                             compst)
+                            (expr-value (,reader index struct)
+                                        (objdesign-element
+                                         (objdesign-member
+                                          objdes-struct
+                                          (ident ,(ident->name memname)))
+                                         (value-integer->get index))))))
           (formula-memberp
            `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
                           (valuep ptr)
@@ -291,7 +304,12 @@
                              (ident ,(ident->name memname))
                              (expr-value index objdes-index)
                              compst)
-                            (expr-value (,reader index struct) nil))))
+                            (expr-value (,reader index struct)
+                                        (objdesign-element
+                                         (objdesign-member
+                                          (value-pointer->designator ptr)
+                                          (ident ,(ident->name memname)))
+                                         (value-integer->get index))))))
           (hints `(("Goal"
                     :in-theory
                     '(exec-arrsub-of-member
@@ -318,6 +336,16 @@
                       value-kind-when-ulongp
                       value-kind-when-sllongp
                       value-kind-when-ullongp
+                      value-array->elemtype-when-uchar-arrayp
+                      value-array->elemtype-when-schar-arrayp
+                      value-array->elemtype-when-ushort-arrayp
+                      value-array->elemtype-when-sshort-arrayp
+                      value-array->elemtype-when-uint-arrayp
+                      value-array->elemtype-when-sint-arrayp
+                      value-array->elemtype-when-ulong-arrayp
+                      value-array->elemtype-when-slong-arrayp
+                      value-array->elemtype-when-ullong-arrayp
+                      value-array->elemtype-when-sllong-arrayp
                       ifix
                       integer-range-p
                       not-errorp-when-valuep
@@ -345,7 +373,45 @@
                              (list length
                                    'value-struct-read))
                       expr-value->value-of-expr-value
-                      ,@*atc-array-read-rules*))))
+                      expr-value->object-of-expr-value
+                      ,@*atc-array-read-rules*
+                      apconvert-expr-value-when-not-value-array
+                      apconvert-expr-value-when-uchar-arrayp
+                      apconvert-expr-value-when-schar-arrayp
+                      apconvert-expr-value-when-ushort-arrayp
+                      apconvert-expr-value-when-sshort-arrayp
+                      apconvert-expr-value-when-uint-arrayp
+                      apconvert-expr-value-when-sint-arrayp
+                      apconvert-expr-value-when-ulong-arrayp
+                      apconvert-expr-value-when-slong-arrayp
+                      apconvert-expr-value-when-ullong-arrayp
+                      apconvert-expr-value-when-sllong-arrayp
+                      expr-valuep-of-expr-value
+                      not-errorp-when-expr-valuep
+                      objdesign-option-fix
+                      objdesign-fix-when-objdesignp
+                      return-type-of-objdesign-member
+                      return-type-of-value-pointer
+                      value-pointer->designator-of-value-pointer
+                      value-pointer-validp-of-value-pointer
+                      return-type-of-pointer-valid
+                      pointer-valid->get-of-pointer-valid
+                      value-pointer->designator-of-value-pointer
+                      value-pointer->reftype-of-value-pointer
+                      read-object-of-objdesign-member
+                      (:e objdesignp)
+                      (:e type-fix)
+                      (:e type-uchar)
+                      (:e type-schar)
+                      (:e type-ushort)
+                      (:e type-sshort)
+                      (:e type-uint)
+                      (:e type-sint)
+                      (:e type-ulong)
+                      (:e type-slong)
+                      (:e type-ullong)
+                      (:e type-sllong)
+                      (:t objdesign-member)))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member
@@ -601,7 +667,19 @@
                    ,recognizer
                    ,fixer-recognizer-thm
                    ,type-of-value-thm
-                   not-errorp-when-expr-valuep)
+                   not-errorp-when-expr-valuep
+                   apconvert-expr-value-when-not-value-array-alt
+                   value-kind-when-ucharp
+                   value-kind-when-scharp
+                   value-kind-when-ushortp
+                   value-kind-when-sshortp
+                   value-kind-when-uintp
+                   value-kind-when-sintp
+                   value-kind-when-ulongp
+                   value-kind-when-slongp
+                   value-kind-when-ullongp
+                   value-kind-when-sllongp
+                   expr-value-fix-when-expr-valuep)
                  :use
                  (:instance
                   ,writer-return-thm
@@ -653,7 +731,19 @@
                    ,recognizer
                    ,fixer-recognizer-thm
                    ,type-of-value-thm
-                   not-errorp-when-expr-valuep)
+                   not-errorp-when-expr-valuep
+                   apconvert-expr-value-when-not-value-array-alt
+                   value-kind-when-ucharp
+                   value-kind-when-scharp
+                   value-kind-when-ushortp
+                   value-kind-when-sshortp
+                   value-kind-when-uintp
+                   value-kind-when-sintp
+                   value-kind-when-ulongp
+                   value-kind-when-slongp
+                   value-kind-when-ullongp
+                   value-kind-when-sllongp
+                   expr-value-fix-when-expr-valuep)
                  :use
                  (:instance
                   ,writer-return-thm
@@ -744,8 +834,10 @@
           (array-checker (pack elemfixtype '-array-index-okp))
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
           (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
-          (valuep-when-indextype (pack 'valuep-when- indextypep))
+          (valuep-when-indextypep (pack 'valuep-when- indextypep))
           (valuep-when-elemtypep (pack 'valuep-when- elemtypep))
+          (value-kind-when-indextypep (pack 'value-kind-when- indextypep))
+          (value-kind-when-elemtypep (pack 'value-kind-when- elemtypep))
           (type-thm (pack 'integer-from- indexfixtype))
           (thm-member-name (pack 'exec-member-write-when-
                                  recognizer
@@ -794,7 +886,9 @@
                           (,recognizer struct)
                           (equal eidx (exec-expr-pure index compst))
                           (expr-valuep eidx)
-                          (equal idx (expr-value->value eidx))
+                          (equal eidx1 (apconvert-expr-value eidx))
+                          (expr-valuep eidx1)
+                          (equal idx (expr-value->value eidx1))
                           (,indextypep idx)
                           ,check-hyp
                           (equal eval (exec-expr-pure right compst))
@@ -833,12 +927,16 @@
                           (,recognizer struct)
                           (equal eidx (exec-expr-pure index compst))
                           (expr-valuep eidx)
-                          (equal idx (expr-value->value eidx))
+                          (equal eidx1 (apconvert-expr-value eidx))
+                          (expr-valuep eidx1)
+                          (equal idx (expr-value->value eidx1))
                           (,indextypep idx)
                           ,check-hyp
                           (equal eval (exec-expr-pure right compst))
                           (expr-valuep eval)
-                          (equal val (expr-value->value eval))
+                          (equal eval1 (apconvert-expr-value eval))
+                          (expr-valuep eval1)
+                          (equal val (expr-value->value eval1))
                           (,elemtypep val))
                      (equal (exec-expr-asg e compst fenv limit)
                             (write-object (value-pointer->designator ptr)
@@ -893,22 +991,28 @@
                 ,array-writer
                 ,array-checker
                 ,valuep-when-elemtypep
-                ,valuep-when-indextype
+                ,valuep-when-indextypep
                 ,@*integer-value-disjoint-rules*
                 (:t ,type-thm)
                 ,@(and length (list length))
-                not-errorp-when-expr-valuep)
+                not-errorp-when-expr-valuep
+                apconvert-expr-value-when-not-value-array-alt
+                ,value-kind-when-elemtypep
+                ,value-kind-when-indextypep
+                expr-value-fix-when-expr-valuep)
               :use
               ((:instance
                 ,writer-return-thm
                 (index
                  (,integer-from-indextype
                   (expr-value->value
-                   (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
-                                   compst))))
+                   (apconvert-expr-value
+                    (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
+                                    compst)))))
                 (val
                  (expr-value->value
-                  (exec-expr-pure (expr-binary->arg2 e) compst)))
+                  (apconvert-expr-value
+                   (exec-expr-pure (expr-binary->arg2 e) compst))))
                 (struct
                  (read-var
                   (expr-ident->get
@@ -929,12 +1033,14 @@
                 (index
                  (,integer-from-indextype
                   (expr-value->value
-                   (exec-expr-pure
-                    (expr-arrsub->sub (expr-binary->arg1 e))
-                    compst))))
+                   (apconvert-expr-value
+                    (exec-expr-pure
+                     (expr-arrsub->sub (expr-binary->arg1 e))
+                     compst)))))
                 (element
                  (expr-value->value
-                  (exec-expr-pure (expr-binary->arg2 e) compst))))))))
+                  (apconvert-expr-value
+                   (exec-expr-pure (expr-binary->arg2 e) compst)))))))))
           (hints-memberp
            `(("Goal"
               :in-theory
@@ -984,22 +1090,28 @@
                 ,array-writer
                 ,array-checker
                 ,valuep-when-elemtypep
-                ,valuep-when-indextype
+                ,valuep-when-indextypep
                 ,@*integer-value-disjoint-rules*
                 (:t ,type-thm)
                 ,@(and length (list length))
-                not-errorp-when-expr-valuep)
+                not-errorp-when-expr-valuep
+                apconvert-expr-value-when-not-value-array-alt
+                ,value-kind-when-elemtypep
+                ,value-kind-when-indextypep
+                expr-value-fix-when-expr-valuep)
               :use
               ((:instance
                 ,writer-return-thm
                 (index
                  (,integer-from-indextype
                   (expr-value->value
-                   (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
-                                   compst))))
+                   (apconvert-expr-value
+                    (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
+                                    compst)))))
                 (val
                  (expr-value->value
-                  (exec-expr-pure (expr-binary->arg2 e) compst)))
+                  (apconvert-expr-value
+                   (exec-expr-pure (expr-binary->arg2 e) compst))))
                 (struct
                  (read-object
                   (value-pointer->designator
@@ -1026,12 +1138,14 @@
                 (index
                  (,integer-from-indextype
                   (expr-value->value
-                   (exec-expr-pure
-                    (expr-arrsub->sub (expr-binary->arg1 e))
-                    compst))))
+                   (apconvert-expr-value
+                    (exec-expr-pure
+                     (expr-arrsub->sub (expr-binary->arg1 e))
+                     compst)))))
                 (element
                  (expr-value->value
-                  (exec-expr-pure (expr-binary->arg2 e) compst))))))))
+                  (apconvert-expr-value
+                   (exec-expr-pure (expr-binary->arg2 e) compst)))))))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member

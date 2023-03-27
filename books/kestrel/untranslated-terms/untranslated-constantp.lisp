@@ -21,7 +21,7 @@
       (and (symbolp x)
            (or (keywordp x) ;; unquoted keywords are constants
                ;; t, nil, and symbols that begin and end with * are constants:
-               ;; TODO: Consider disallowing *
+               ;; TODO: Consider disallowing the symbol '*'.
                (legal-constantp1 x)))
       (myquotep x)))
 
@@ -45,6 +45,13 @@
   (implies (and (untranslated-constantp term)
                 (consp term))
            (equal (car term) 'quote))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable untranslated-constantp))))
+
+(defthm untranslated-constantp-when-not-quotep-forward
+  (implies (and (untranslated-constantp term)
+                (not (equal 'quote (car term))))
+           (not (consp term)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable untranslated-constantp))))
 

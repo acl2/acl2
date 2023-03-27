@@ -109,6 +109,13 @@
                   (not (scope-listp x))))
   :enable (errorp scope-list-resultp))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-errorp-when-scope-listp
+  (implies (scope-listp x)
+           (not (errorp x)))
+  :enable errorp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod frame
@@ -719,9 +726,9 @@
                                    (remove-flexible-array-member val)
                                    scope)
                      (scope-list-fix (cdr scopes)))
-             (error (list :write-auto-var-mistype (ident-fix var)
-                          :required (type-of-value (cdr pair))
-                          :supplied (type-of-value val)))))
+             (error (list :write-auto-object-mistype (ident-fix var)
+                          :old (type-of-value (cdr pair))
+                          :new (type-of-value val)))))
           (new-cdr-scopes (write-auto-var-aux var val (cdr scopes)))
           ((when (errorp new-cdr-scopes)) new-cdr-scopes)
           ((when (endp new-cdr-scopes)) nil))
@@ -901,6 +908,14 @@
        (("Goal"
          :expand (objdesign-of-var-aux var frame (scope-list-fix scopes)))))
 
+     (defrule objdesign-auto->scope-of-objdesign-of-var-aux-upper-bound ; move
+       (b* ((objdes (objdesign-of-var-aux var frame scopes)))
+         (implies objdes
+                  (< (objdesign-auto->scope objdes) (len scopes))))
+       :rule-classes :linear
+       :induct t
+       :enable (len nfix))
+
      (defruled objdesign-of-var-aux-lemma
        (b* ((objdes (objdesign-of-var-aux var frame scopes))
             (pair (omap::in (objdesign-auto->name objdes)
@@ -925,7 +940,36 @@
        :enable (objdesign-of-var-aux
                 len
                 fix
-                nth-of-minus1-and-cdr)))))
+                nth-of-minus1-and-cdr))
+
+     (defruled objdesign-of-var-aux-iff-read-auto-var-aux
+       (iff (objdesign-of-var-aux var frame scopes)
+            (read-auto-var-aux var scopes))
+       :induct t
+       :enable (objdesign-of-var-aux
+                read-auto-var-aux
+                cdr-of-in-when-scopep))
+
+     (defruled write-auto-var-aux-iff-objdesign-of-var-aux
+       (iff (write-auto-var-aux var val scopes)
+            (objdesign-of-var-aux var frame scopes))
+       :enable write-auto-var-aux)))
+
+  ///
+
+  (defruled objdesign-of-var-when-valuep-of-read-var
+    (implies (valuep (read-var id compst))
+             (objdesign-of-var id compst))
+    :enable (read-var
+             read-static-var
+             read-auto-var
+             objdesign-of-var-aux-iff-read-auto-var-aux))
+
+  (defruled objdesignp-of-objdesign-of-var-when-valuep-of-read-var
+    (implies (valuep (read-var id compst))
+             (objdesignp (objdesign-of-var id compst)))
+    :enable objdesign-of-var-when-valuep-of-read-var
+    :disable objdesign-of-var))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1047,9 +1091,10 @@
    (xdoc::p
     "If the object designator is an address,
      we store the value without removing the flexible array member
-     (see @(tsee remove-flexible-array-member).
-     In all other cases, we remove it, indirectly,
-     via the functions called by this function."))
+     (see @(tsee remove-flexible-array-member)).
+     In all other cases, we remove it,
+     directly in the case of automated storage,
+     and indirectly via @(tsee write-static-var) in case of static storage."))
   (objdesign-case
    objdes
    :static (write-static-var objdes.name val compst)
@@ -1069,10 +1114,12 @@
         (newval val)
         ((unless (equal (type-of-value newval)
                         (type-of-value oldval)))
-         (error (list :write-auto-object-mistype
+         (error (list :write-auto-object-mistype objdes.name
                       :old (type-of-value oldval)
                       :new (type-of-value newval))))
-        (new-scope (omap::update objdes.name (value-fix newval) scope))
+        (new-scope (omap::update objdes.name
+                                 (remove-flexible-array-member newval)
+                                 scope))
         (rev-new-scopes (update-nth objdes.scope new-scope rev-scopes))
         (new-frame (change-frame frame :scopes (rev rev-new-scopes)))
         (rev-new-frames (update-nth objdes.frame new-frame rev-frames))
@@ -1163,7 +1210,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule read-object-of-objdesign-of-var-to-read-var
+(defruled read-object-of-objdesign-of-var-to-read-var
   :short "Equivalence of @(tsee read-object) and @(tsee read-var)
           for object designators of variables."
   (b* ((objdes (objdesign-of-var var compst)))
@@ -1215,14 +1262,6 @@
                  (frame (+ -1 (len (compustate->frames compst))))
                  (scopes (frame->scopes (car (compustate->frames compst)))))))
 
-   (defruled objdesign-of-var-aux-iff-read-auto-var-aux
-     (iff (objdesign-of-var-aux var frame scopes)
-          (read-auto-var-aux var scopes))
-     :induct t
-     :enable (objdesign-of-var-aux
-              read-auto-var-aux
-              cdr-of-in-when-scopep))
-
    (defruled read-var-to-read-object-when-static
      (b* ((objdes (objdesign-of-var var compst))
           (objdes0 (objdesign-of-var-aux var
@@ -1241,3 +1280,116 @@
               read-var
               read-auto-var
               objdesign-of-var-aux-iff-read-auto-var-aux))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled write-object-of-objdesign-of-var-to-write-var
+  :short "Equivalence of @(tsee write-object) and @(tsee write-var)
+          for object designators of variables."
+  (b* ((objdes (objdesign-of-var var compst)))
+    (implies objdes
+             (equal (write-object objdes val compst)
+                    (write-var var val compst))))
+  :enable (objdesign-of-var
+           compustate-frames-number
+           write-var-to-write-object-when-auto
+           write-var-to-write-object-when-static)
+
+  :prep-lemmas
+
+  ((defruled write-auto-var-aux-to-update-nth-of-objdesign
+     (b* ((objdes (objdesign-of-var-aux var frame scopes)))
+       (implies
+        objdes
+        (equal (write-auto-var-aux var val scopes)
+               (if (equal (type-of-value val)
+                          (type-of-value
+                           (cdr (omap::in (ident-fix var)
+                                          (scope-fix
+                                           (nth (objdesign-auto->scope objdes)
+                                                (rev scopes)))))))
+                   (rev
+                    (update-nth
+                     (objdesign-auto->scope objdes)
+                     (omap::update (ident-fix var)
+                                   (remove-flexible-array-member val)
+                                   (scope-fix
+                                    (nth (objdesign-auto->scope objdes)
+                                         (rev scopes))))
+                     (rev (scope-list-fix scopes))))
+                 (error (list :write-auto-object-mistype (ident-fix var)
+                              :old (type-of-value
+                                    (cdr
+                                     (omap::in
+                                      (ident-fix var)
+                                      (scope-fix
+                                       (nth (objdesign-auto->scope objdes)
+                                            (rev scopes))))))
+                              :new (type-of-value val)))))))
+     :induct t
+     :enable (write-auto-var-aux
+              objdesign-of-var-aux
+              nth-of-minus1-and-cdr
+              update-nth-of-rev
+              len
+              fix
+              not-errorp-when-scope-listp))
+
+   (defruled write-var-to-write-object-when-auto
+     (implies
+      (> (compustate-frames-number compst) 0)
+      (b* ((objdes (objdesign-of-var-aux
+                    var
+                    (1- (compustate-frames-number compst))
+                    (frame->scopes (top-frame compst)))))
+        (implies
+         objdes
+         (equal (write-var var val compst)
+                (write-object objdes val compst)))))
+     :enable (write-object
+              write-var
+              write-auto-var
+              write-auto-var-aux-to-update-nth-of-objdesign
+              top-frame
+              push-frame
+              pop-frame
+              compustate-frames-number
+              fix
+              not-errorp-when-scope-listp)
+     :cases ((consp (compustate->frames compst)))
+     :use
+     ((:instance objdesign-of-var-aux-lemma
+                 (frame (+ -1 (len (compustate->frames compst))))
+                 (scopes (frame->scopes (car (compustate->frames compst))))))
+     :prep-lemmas
+     ((defrule lemma
+        (implies (and (true-listp x)
+                      (consp x))
+                 (equal (rev (update-nth (1- (len x)) a (rev x)))
+                        (cons a (cdr x))))
+        :do-not-induct t
+        :enable (len fix))))
+
+   (defruled write-var-to-write-object-when-static
+     (b* ((objdes (objdesign-of-var var compst))
+          (objdes0 (objdesign-of-var-aux var
+                                         (1- (compustate-frames-number compst))
+                                         (frame->scopes (top-frame compst)))))
+       (implies (and objdes
+                     (or (equal (compustate-frames-number compst) 0)
+                         (not objdes0)))
+                (and (equal (objdesign-kind objdes) :static)
+                     (equal (objdesign-static->name objdes) (ident-fix var))
+                     (equal (write-var var val compst)
+                            (write-object objdes val compst)))))
+     :use (:instance write-auto-var-aux-iff-objdesign-of-var-aux
+                     (frame (+ -1 (len (compustate->frames compst))))
+                     (scopes (frame->scopes (top-frame compst))))
+     :enable (objdesign-of-var
+              compustate-frames-number
+              write-object
+              write-var
+              write-auto-var
+              push-frame
+              pop-frame
+              top-frame))))

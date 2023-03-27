@@ -34,16 +34,12 @@
     (implies (and (equal val (read-var id compst))
                   (valuep val))
              (equal (exec-ident id compst)
-                    (if (value-case val :array)
-                        (make-expr-value
-                         :value (make-value-pointer
-                                 :core (pointer-valid (objdesign-static id))
-                                 :reftype (value-array->elemtype val))
-                         :object nil)
-                      (make-expr-value
-                       :value val
-                       :object (objdesign-of-var id compst)))))
-    :enable exec-ident)
+                    (make-expr-value
+                     :value val
+                     :object (objdesign-of-var id compst))))
+    :enable (objdesign-of-var-when-valuep-of-read-var
+             exec-ident
+             read-object-of-objdesign-of-var-to-read-var))
 
   (defval *atc-exec-ident-rules*
     '(exec-ident-open)))

@@ -637,13 +637,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled not-reserrp-when-types+vartab-p
-  (implies (types+vartab-p x)
-           (not (reserrp x)))
-  :enable (types+vartab-p reserrp))
-
-;;;;;;;;;;;;;;;;;;;;
-
 (defrule not-types+vartab-p-of-error
   (not (types+vartab-p (reserrf x)))
   :enable (fty::reserr types+vartab-p))
@@ -663,7 +656,8 @@
   :short "Fixtype of errors and triples consisting of
           a function table, a variable table, and a tag environment."
   :ok funtab+vartab+tagenv
-  :pred funtab+vartab+tagenv-resultp)
+  :pred funtab+vartab+tagenv-resultp
+  :prepwork ((local (in-theory (enable strip-cars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -930,12 +924,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Under certain circumstances,
+    "Under most circumstances,
      an array is converted to a pointer to the first element of the array
-     [C:6.3.2.1/3].
-     Indeed, arrays are used like pointers most of the time.
-     This conversion is captured, at the level of types, here.
-     Non-array types are left unchanged."))
+     [C:6.3.2.1/3];
+     indeed, arrays are used like pointers most of the time.")
+   (xdoc::p
+    "This conversion is captured, at the level of types, here.
+     Non-array types are left unchanged.")
+   (xdoc::p
+    "The dynamic counterpart of this is @(tsee apconvert-expr-value)."))
   (if (type-case type :array)
       (type-pointer (type-array->of type))
     (type-fix type))
@@ -1071,14 +1068,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-const ((c constp))
-  :returns (type type-resultp)
+  :returns (etype expr-type-resultp)
   :short "Check a constant."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only accept integer constants."))
+    "For now we only accept integer constants.")
+   (xdoc::p
+    "We return an expression type.
+     A constant is never an lvalue.")
+   (xdoc::p
+    "This is the static counterpart of @(tsee exec-const)."))
   (const-case c
-              :int (check-iconst c.get)
+              :int (b* (((okf type) (check-iconst c.get)))
+                     (make-expr-type :type type :lvalue nil))
               :float (reserrf (list :unsupported-float-const (const-fix c)))
               :enum (reserrf (list :unsupported-enum-const (const-fix c)))
               :char (reserrf (list :unsupported-char-const (const-fix c))))
@@ -1302,17 +1305,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-binary-pure ((op binopp)
-                           (arg1-expr exprp) (arg1-type typep)
-                           (arg2-expr exprp) (arg2-type typep))
+                           (arg1-expr exprp) (arg1-etype expr-typep)
+                           (arg2-expr exprp) (arg2-etype expr-typep))
   :guard (binop-purep op)
-  :returns (type type-resultp)
+  :returns (etype expr-type-resultp)
   :short "Check the application of a pure binary operator to two expressions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check @('arg1-type') and @('arg2-type') against @('op');
+    "We check @('arg1-etype') and @('arg2-etype') against @('op');
      @('arg1-expr') and @('arg2-expr') are used just for errors.
-     We return the type of the binary expression.")
+     We return the type of the binary expression;
+     a binary pure expression is never an lvalue.")
    (xdoc::p
     "For multiplication, division, and reminder,
      the operands must be arithmetic,
@@ -1344,56 +1348,84 @@
     "For the conditional logical operators,
      the operands must be scalar,
      and the result is @('int')."))
-  (case (binop-kind op)
-    ((:mul :div :rem :add :sub)
-     (if (and (type-arithmeticp arg1-type)
-              (type-arithmeticp arg2-type))
-         (uaconvert-types arg1-type arg2-type)
-       (reserrf (list :binary-mistype
-                      (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-                      :required :arithmetic :arithmetic
-                      :supplied (type-fix arg1-type) (type-fix arg2-type)))))
-    ((:shl :shr)
-     (if (and (type-integerp arg1-type)
-              (type-integerp arg2-type))
-         (promote-type arg1-type)
-       (reserrf (list :binary-mistype
-                      (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-                      :required :integer :integer
-                      :supplied (type-fix arg1-type) (type-fix arg2-type)))))
-    ((:lt :gt :le :ge)
-     (if (and (type-realp arg1-type)
-              (type-realp arg2-type))
-         (type-sint)
-       (reserrf (list :binary-mistype
-                      (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-                      :required :real :real
-                      :supplied (type-fix arg1-type) (type-fix arg2-type)))))
-    ((:eq :ne)
-     (if (and (type-arithmeticp arg1-type)
-              (type-arithmeticp arg2-type))
-         (type-sint)
-       (reserrf (list :binary-mistype
-                      (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-                      :required :arithmetic :arithmetic
-                      :supplied (type-fix arg1-type) (type-fix arg2-type)))))
-    ((:bitand :bitxor :bitior)
-     (if (and (type-integerp arg1-type)
-              (type-integerp arg2-type))
-         (uaconvert-types arg1-type arg2-type)
-       (reserrf (list :binary-mistype
-                      (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-                      :required :integer :integer
-                      :supplied (type-fix arg1-type) (type-fix arg2-type)))))
-    ((:logand :logor)
-     (if (and (type-scalarp arg1-type)
-              (type-scalarp arg2-type))
-         (type-sint)
-       (reserrf (list :binary-mistype
-                      (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
-                      :required :integer :integer
-                      :supplied (type-fix arg1-type) (type-fix arg2-type)))))
-    (t (reserrf (impossible))))
+  (b* ((arg1-type (apconvert-type (expr-type->type arg1-etype)))
+       (arg2-type (apconvert-type (expr-type->type arg2-etype)))
+       ((okf type)
+        (case (binop-kind op)
+          ((:mul :div :rem :add :sub)
+           (if (and (type-arithmeticp arg1-type)
+                    (type-arithmeticp arg2-type))
+               (uaconvert-types arg1-type arg2-type)
+             (reserrf (list :binary-mistype
+                            (binop-fix op)
+                            (expr-fix arg1-expr)
+                            (expr-fix arg2-expr)
+                            :required :arithmetic :arithmetic
+                            :supplied
+                            (type-fix arg1-type)
+                            (type-fix arg2-type)))))
+          ((:shl :shr)
+           (if (and (type-integerp arg1-type)
+                    (type-integerp arg2-type))
+               (promote-type arg1-type)
+             (reserrf (list :binary-mistype
+                            (binop-fix op)
+                            (expr-fix arg1-expr)
+                            (expr-fix arg2-expr)
+                            :required :integer :integer
+                            :supplied
+                            (type-fix arg1-type)
+                            (type-fix arg2-type)))))
+          ((:lt :gt :le :ge)
+           (if (and (type-realp arg1-type)
+                    (type-realp arg2-type))
+               (type-sint)
+             (reserrf (list :binary-mistype
+                            (binop-fix op)
+                            (expr-fix arg1-expr)
+                            (expr-fix arg2-expr)
+                            :required :real :real
+                            :supplied
+                            (type-fix arg1-type)
+                            (type-fix arg2-type)))))
+          ((:eq :ne)
+           (if (and (type-arithmeticp arg1-type)
+                    (type-arithmeticp arg2-type))
+               (type-sint)
+             (reserrf (list :binary-mistype
+                            (binop-fix op)
+                            (expr-fix arg1-expr)
+                            (expr-fix arg2-expr)
+                            :required :arithmetic :arithmetic
+                            :supplied
+                            (type-fix arg1-type)
+                            (type-fix arg2-type)))))
+          ((:bitand :bitxor :bitior)
+           (if (and (type-integerp arg1-type)
+                    (type-integerp arg2-type))
+               (uaconvert-types arg1-type arg2-type)
+             (reserrf (list :binary-mistype
+                            (binop-fix op)
+                            (expr-fix arg1-expr)
+                            (expr-fix arg2-expr)
+                            :required :integer :integer
+                            :supplied
+                            (type-fix arg1-type)
+                            (type-fix arg2-type)))))
+          ((:logand :logor)
+           (if (and (type-scalarp arg1-type)
+                    (type-scalarp arg2-type))
+               (type-sint)
+             (reserrf (list :binary-mistype
+                            (binop-fix op)
+                            (expr-fix arg1-expr)
+                            (expr-fix arg2-expr)
+                            :required :integer :integer
+                            :supplied
+                            (type-fix arg1-type)
+                            (type-fix arg2-type)))))
+          (t (reserrf (impossible))))))
+    (make-expr-type :type type :lvalue nil))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp
                                            type-realp
                                            binop-purep)))
@@ -1401,102 +1433,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-arrsub ((arr-expr exprp) (arr-type typep)
-                      (sub-expr exprp) (sub-type typep))
-  :returns (type type-resultp)
-  :short "Check an array subscripting expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We check @('arr-type') and @('sub-type');
-     @('arr-expr') and @('sub-expr') are just used for errors.
-     The first expression must have a pointer type [C:6.5.2.1/1].
-     The second expression must have an integer type [C:6.5.2.1/1].
-     The type of the array subscripting expression
-     is the type referenced by the pointer.")
-   (xdoc::p
-    "For now we do not allow the roles of the expressions to be swapped,
-     i.e. that the second expression is a pointer and the first one an integer;
-     note the symmetry in [C:6.5.2.1/2].")
-   (xdoc::p
-    "The pointer type may be the result of an array-to-pointer conversion,
-     via @(tsee apconvert-type) in @(tsee check-expr-pure)."))
-  (b* (((unless (type-case arr-type :pointer))
-        (reserrf (list :array-mistype (expr-fix arr-expr)
-                       :required :pointer
-                       :supplied (type-fix arr-type))))
-       ((unless (type-integerp sub-type))
-        (reserrf (list :subscript-mistype (expr-fix sub-expr)
-                       :required :integer
-                       :supplied (type-fix sub-type)))))
-    (type-pointer->to arr-type))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-expr-pure ((e exprp) (vartab var-tablep) (tagenv tag-envp))
+(define check-cast ((arg-expr exprp)
+                    (arg-etype expr-typep)
+                    (tyname tynamep)
+                    (tagenv tag-envp))
   :returns (etype expr-type-resultp)
-  :short "Check a pure expression."
+  :short "Check a cast expression [C:6.5.4]."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "More precisely, we check whether an expression is pure and well-formed.
-     If all the checks are satisfied,
-     we return the expression type of the expression
-     (see @(tsee expr-type)).")
-   (xdoc::p
-    "We disallow function calls and pre/post-increment/decrement,
-     since they are not pure.")
-   (xdoc::p
-    "An identifier must be in the variable table.
-     Its type is looked up there.
-     An identifier is always an lvalue.")
-   (xdoc::p
-    "A constant is never an lvalue.")
-   (xdoc::p
-    "For an array subscripting expression,
-     we do lvalue conversion for both operands,
-     via @(tsee expr-type->type).
-     According to [C:6.3.2/2],
-     we should not do this for the first operand,
-     if it has an array type;
-     however, according to [C:6.3.2/3],
-     we should convert the array to a pointer
-     (which we do via @(tsee apconvert-type)),
-     and thus in the end the result is the same:
-     we have a pointer type, which we pass to @(tsee check-arrsub).
-     In fact, we use @(tsee apconvert-type) on both operands,
-     because the roles of the array and index may be swapped,
-     as noted in @(tsee check-arrsub),
-     even though we do not handle the swapping in that function for now.
-     If an operand is an integer, @(tsee apconvert-type) has no effect.
-     An array subscripting expression is always an lvalue;
-     recall that it is like a form of the @('*') dereferencing expression.")
-   (xdoc::p
-    "For unary operators,
-     we do not perform any lvalue or array-to-pointer conversion here,
-     because that is done in @(tsee check-unary).
-     We check the argument,
-     pass the expression type to @(tsee check-unary),
-     and forward the returned expression type (or error).")
-   (xdoc::p
-    "For binary operators, we apply
-     both lvalue conversion and array-to-pointer conversion to the operand(s).
-     The latter is needed because some operators work on scalars,
-     and array-to-pointer conversion may produce a scalar.
-     Unary and binary expressions are never lvalues;
-     this is the case for the unary operators that we currently cover.")
    (xdoc::p
     "A cast is allowed between scalar types.
-     Since we check that the type name denotes a scalar type,
-     we do not need to check its well-formedness against the tag environment.
      The result has the type indicated in the cast.
      See [C:6.5.4]; note that the additional requirements on the type
      do not apply to our currently simplified model of C types.
      We apply lvalue conversion to the operand.
      We also apply array-to-pointer conversion,
      which could turn an array into a pointer (and thus scalar) type.
-     A cast expression is never an lvalue.")
+     A cast expression is never an lvalue."))
+  (b* ((arg-type (expr-type->type arg-etype))
+       (arg-type (apconvert-type arg-type))
+       ((unless (type-scalarp arg-type))
+        (reserrf (list :cast-mistype-operand (expr-fix arg-expr)
+                       :required :scalar
+                       :supplied arg-type)))
+       ((okf type) (check-tyname tyname tagenv))
+       ((unless (type-scalarp type))
+        (reserrf (list :cast-mistype-type (expr-fix arg-expr)
+                       :required :scalar
+                       :supplied type))))
+    (make-expr-type :type type :lvalue nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-cond ((test-expr exprp) (test-etype expr-typep)
+                    (then-expr exprp) (then-etype expr-typep)
+                    (else-expr exprp) (else-etype expr-typep))
+  :returns (etype expr-type-resultp)
+  :short "Check a ternary conditional expression [C:6.5.15]."
+  :long
+  (xdoc::topstring
    (xdoc::p
     "The test of a conditional expression must be scalar.
      For now we require the two branches to have arithmetic types.
@@ -1528,118 +1504,196 @@
      We apply both lvalue conversion and array-to-pointer conversion.
      A conditional expression is never an lvalue.")
    (xdoc::p
-    "For a member expression with @('.') [C:6.5.2.3],
-     we first check the target, ensuring it has a structure type.
+    "We perform lvalue conversion and array-to-pointer conversion
+     on all three operands.
+     A conditional expression is never an lvalue."))
+  (b* ((test-expr (expr-fix test-expr))
+       (then-expr (expr-fix then-expr))
+       (else-expr (expr-fix else-expr))
+       (test-type (expr-type->type test-etype))
+       (then-type (expr-type->type then-etype))
+       (else-type (expr-type->type else-etype))
+       (test-type (apconvert-type test-type))
+       (then-type (apconvert-type then-type))
+       (else-type (apconvert-type else-type))
+       ((unless (type-scalarp test-type))
+        (reserrf (list :cond-mistype-test test-expr then-expr else-expr
+                       :required :scalar
+                       :supplied test-type)))
+       ((unless (type-arithmeticp then-type))
+        (reserrf (list :cond-mistype-then test-expr then-expr else-expr
+                       :required :arithmetic
+                       :supplied then-type)))
+       ((unless (type-arithmeticp else-type))
+        (reserrf (list :cond-mistype-else test-expr then-expr else-expr
+                       :required :arithmetic
+                       :supplied else-type)))
+       (then-type (promote-type then-type))
+       (else-type (promote-type else-type))
+       ((unless (equal then-type else-type))
+        (reserrf (list :diff-promoted-types then-type else-type)))
+       (type then-type))
+    (make-expr-type :type type :lvalue nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-arrsub ((arr-expr exprp) (arr-etype expr-typep)
+                      (sub-expr exprp) (sub-etype expr-typep))
+  :returns (etype expr-type-resultp)
+  :short "Check an array subscripting expression [C:6.5.2.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check @('arr-etype') and @('sub-etype');
+     @('arr-expr') and @('sub-expr') are just used for errors.")
+   (xdoc::p
+    "We do lvalue conversion for both operands,
+     via @(tsee expr-type->type).
+     According to [C:6.3.2/2],
+     we should not do this for if an operand has an array type;
+     however, according to [C:6.3.2/3],
+     we should convert the array to a pointer
+     (which we do via @(tsee apconvert-type)),
+     and thus in the end the result is the same:
+     we have a pointer type that does not denote an lvalue,
+     if the operand is an array.
+     If an operand is an integer, @(tsee apconvert-type) has no effect.")
+   (xdoc::p
+    "The first expression must have a pointer type [C:6.5.2.1/1].
+     The second expression must have an integer type [C:6.5.2.1/1].
+     The type of the array subscripting expression
+     is the type referenced by the pointer.
+     An array subscripting expression is always an lvalue.")
+   (xdoc::p
+    "For now we do not allow the roles of the expressions to be swapped,
+     i.e. that the second expression is a pointer and the first one an integer;
+     note the symmetry in [C:6.5.2.1/2]."))
+  (b* ((arr-type (apconvert-type (expr-type->type arr-etype)))
+       (sub-type (apconvert-type (expr-type->type sub-etype)))
+       ((unless (type-case arr-type :pointer))
+        (reserrf (list :array-mistype (expr-fix arr-expr)
+                       :required :pointer
+                       :supplied (type-fix arr-type))))
+       ((unless (type-integerp sub-type))
+        (reserrf (list :subscript-mistype (expr-fix sub-expr)
+                       :required :integer
+                       :supplied (type-fix sub-type)))))
+    (make-expr-type :type (type-pointer->to arr-type) :lvalue t))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-member ((target-expr exprp)
+                      (target-etype expr-typep)
+                      (name identp)
+                      (tagenv tag-envp))
+  :returns (etype expr-type-resultp)
+  :short "Check a structure member expression [C:6.5.2.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We ensure that the target has a structure type.
      We do not do need to do array-to-pointer conversion,
      because we require the type to be a structure type,
      which rejects both array and pointer types.
      We look up the structure type and its member.
      We return its type, and we preserve the lvalue status:
      if the target is an lvalue, so is the member;
-     if the target is not an lvalue, neither is the member.")
+     if the target is not an lvalue, neither is the member."))
+  (b* ((target-type (expr-type->type target-etype))
+       (target-lvalue (expr-type->lvalue target-etype))
+       ((unless (type-case target-type :struct))
+        (reserrf (list :dot-target-not-struct (expr-fix target-expr))))
+       (tag (type-struct->tag target-type))
+       ((okf memtype) (struct-member-lookup tag name tagenv)))
+    (make-expr-type :type memtype :lvalue target-lvalue))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-memberp ((target-expr exprp)
+                       (target-etype expr-typep)
+                       (name identp)
+                       (tagenv tag-envp))
+  :returns (etype expr-type-resultp)
+  :short "Check a structure pointer member expression [C:6.5.2.3]."
+  :long
+  (xdoc::topstring
    (xdoc::p
-    "For a member expression with @('->') [C:6.5.2.3],
-     we first check the target,
-     ensuring it has a pointer type to a structure type.
+    "We ensure that the target has a pointer type to a structure type.
      We perform array-to-pointer conversion on this type,
      prior to ensuring it is a pointer to structure,
      as an array type would become a pointer type via that conversion.
      We look up the structure type and its member.
      We return the member type, with the lvalue flag set."))
+  (b* ((target-type (expr-type->type target-etype))
+       (target-type (apconvert-type target-type))
+       ((unless (type-case target-type :pointer))
+        (reserrf (list :arrow-operator-not-pointer (expr-fix target-expr))))
+       (type (type-pointer->to target-type))
+       ((unless (type-case type :struct))
+        (reserrf (list :arrow-operator-not-pointer-to-struct
+                       (expr-fix target-expr))))
+       (tag (type-struct->tag type))
+       ((okf memtype) (struct-member-lookup tag name tagenv)))
+    (make-expr-type :type memtype :lvalue t))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-expr-pure ((e exprp) (vartab var-tablep) (tagenv tag-envp))
+  :returns (etype expr-type-resultp)
+  :short "Check a pure expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "More precisely, we check whether an expression is pure and well-formed.
+     If all the checks are satisfied,
+     we return the expression type of the expression
+     (see @(tsee expr-type)).")
+   (xdoc::p
+    "We disallow function calls and pre/post-increment/decrement,
+     since they are not pure.
+     We only allow pure binary operators.")
+   (xdoc::p
+    "An identifier must be in the variable table.
+     Its type is looked up there.
+     An identifier is always an lvalue."))
   (b* ((e (expr-fix e)))
     (expr-case
      e
      :ident (b* ((info (var-table-lookup e.get vartab))
                  ((unless info) (reserrf (list :var-not-found e.get))))
               (make-expr-type :type (var-sinfo->type info) :lvalue t))
-     :const (b* (((okf type) (check-const e.get)))
-              (make-expr-type :type type :lvalue nil))
+     :const (check-const e.get)
      :arrsub (b* (((okf arr-etype) (check-expr-pure e.arr vartab tagenv))
-                  (arr-type (expr-type->type arr-etype))
-                  (arr-type (apconvert-type arr-type))
-                  ((okf sub-etype) (check-expr-pure e.sub vartab tagenv))
-                  (sub-type (expr-type->type sub-etype))
-                  (sub-type (apconvert-type sub-type))
-                  ((okf type) (check-arrsub e.arr arr-type e.sub sub-type)))
-               (make-expr-type :type type :lvalue t))
+                  ((okf sub-etype) (check-expr-pure e.sub vartab tagenv)))
+               (check-arrsub e.arr arr-etype e.sub sub-etype))
      :call (reserrf (list :expr-non-pure e))
-     :member (b* (((okf etype) (check-expr-pure e.target vartab tagenv))
-                  (type (expr-type->type etype))
-                  (lvalue (expr-type->lvalue etype))
-                  ((unless (type-case type :struct))
-                   (reserrf (list :dot-target-not-struct e)))
-                  (tag (type-struct->tag type))
-                  ((okf memtype) (struct-member-lookup tag e.name tagenv)))
-               (make-expr-type :type memtype :lvalue lvalue))
-     :memberp (b* (((okf etype) (check-expr-pure e.target vartab tagenv))
-                   (type (expr-type->type etype))
-                   (type (apconvert-type type))
-                   ((unless (type-case type :pointer))
-                    (reserrf (list :arrow-operator-not-pointer e)))
-                   (type (type-pointer->to type))
-                   ((unless (type-case type :struct))
-                    (reserrf (list :arrow-operator-not-pointer-to-struct e)))
-                   (tag (type-struct->tag type))
-                   ((okf memtype) (struct-member-lookup tag e.name tagenv)))
-                (make-expr-type :type memtype :lvalue t))
+     :member (b* (((okf etype) (check-expr-pure e.target vartab tagenv)))
+               (check-member e.target etype e.name tagenv))
+     :memberp (b* (((okf etype) (check-expr-pure e.target vartab tagenv)))
+                (check-memberp e.target etype e.name tagenv))
      :postinc (reserrf (list :expr-non-pure e))
      :postdec (reserrf (list :expr-non-pure e))
      :preinc (reserrf (list :expr-non-pure e))
      :predec (reserrf (list :expr-non-pure e))
      :unary (b* (((okf arg-etype) (check-expr-pure e.arg vartab tagenv)))
               (check-unary e.op e.arg arg-etype))
-     :cast (b* (((okf arg-etype) (check-expr-pure e.arg vartab tagenv))
-                (arg-type (expr-type->type arg-etype))
-                (arg-type (apconvert-type arg-type))
-                ((unless (type-scalarp arg-type))
-                 (reserrf (list :cast-mistype-operand e
-                                :required :scalar
-                                :supplied arg-type)))
-                ((okf type) (check-tyname e.type tagenv))
-                ((unless (type-scalarp type))
-                 (reserrf (list :cast-mistype-type e
-                                :required :scalar
-                                :supplied type))))
-             (make-expr-type :type type :lvalue nil))
+     :cast (b* (((okf arg-etype) (check-expr-pure e.arg vartab tagenv)))
+             (check-cast e.arg arg-etype e.type tagenv))
      :binary (b* (((unless (binop-purep e.op))
                    (reserrf (list :binary-non-pure e)))
                   ((okf arg1-etype) (check-expr-pure e.arg1 vartab tagenv))
-                  (arg1-type (expr-type->type arg1-etype))
-                  (arg1-type (apconvert-type arg1-type))
-                  ((okf arg2-etype) (check-expr-pure e.arg2 vartab tagenv))
-                  (arg2-type (expr-type->type arg2-etype))
-                  (arg2-type (apconvert-type arg2-type))
-                  ((okf type) (check-binary-pure e.op
-                                                 e.arg1 arg1-type
-                                                 e.arg2 arg2-type)))
-               (make-expr-type :type type :lvalue nil))
+                  ((okf arg2-etype) (check-expr-pure e.arg2 vartab tagenv)))
+               (check-binary-pure e.op e.arg1 arg1-etype e.arg2 arg2-etype))
      :cond (b* (((okf test-etype) (check-expr-pure e.test vartab tagenv))
-                (test-type (expr-type->type test-etype))
-                (test-type (apconvert-type test-type))
-                ((unless (type-scalarp test-type))
-                 (reserrf (list :cond-mistype-test e.test e.then e.else
-                                :required :scalar
-                                :supplied test-type)))
                 ((okf then-etype) (check-expr-pure e.then vartab tagenv))
-                (then-type (expr-type->type then-etype))
-                (then-type (apconvert-type then-type))
-                ((unless (type-arithmeticp then-type))
-                 (reserrf (list :cond-mistype-then e.test e.then e.else
-                                :required :arithmetic
-                                :supplied then-type)))
-                ((okf else-etype) (check-expr-pure e.else vartab tagenv))
-                (else-type (expr-type->type else-etype))
-                (else-type (apconvert-type else-type))
-                ((unless (type-arithmeticp else-type))
-                 (reserrf (list :cond-mistype-else e.test e.then e.else
-                                :required :arithmetic
-                                :supplied else-type)))
-                (then-type (promote-type then-type))
-                (else-type (promote-type else-type))
-                ((unless (equal then-type else-type))
-                 (reserrf (list :diff-promoted-types then-type else-type)))
-                (type then-type))
-             (make-expr-type :type type :lvalue nil))))
+                ((okf else-etype) (check-expr-pure e.else vartab tagenv)))
+             (check-cond e.test test-etype
+                         e.then then-etype
+                         e.else else-etype))))
   :measure (expr-count e)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :verify-guards :after-returns

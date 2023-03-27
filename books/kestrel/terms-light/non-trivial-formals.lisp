@@ -31,3 +31,39 @@
   (implies (symbol-listp formals)
            (symbol-listp (non-trivial-formals formals args)))
   :hints (("Goal" :in-theory (enable non-trivial-formals))))
+
+(defthm non-trivial-formals-of-cons-and-cons
+  (equal (non-trivial-formals (cons formal formals) (cons arg args))
+         (if (equal formal arg)
+             (non-trivial-formals formals args)
+           (cons formal (non-trivial-formals formals args))))
+  :hints (("Goal" :in-theory (enable non-trivial-formals))))
+
+(defthm non-trivial-formals-same
+  (equal (non-trivial-formals formals formals)
+         nil)
+  :hints (("Goal" :induct t :in-theory (enable non-trivial-formals))))
+
+(defthm not-member-equal-of-non-trivial-formals
+  (implies (not (member-equal formal formals))
+           (not (member-equal formal (non-trivial-formals formals args))))
+  :hints (("Goal" :in-theory (enable non-trivial-formals))))
+
+(defthm non-trivial-formals-of-append-and-append
+  (implies (equal (len formals1) (len args1))
+           (equal (non-trivial-formals (append formals1 formals2)
+                                       (append args1 args2))
+                  (append (non-trivial-formals formals1 args1)
+                          (non-trivial-formals formals2 args2))))
+  :hints (("Goal" :in-theory (enable non-trivial-formals))))
+
+(defthm non-trivial-formals-of-nil
+  (equal (non-trivial-formals nil args)
+         nil)
+  :hints (("Goal" :in-theory (enable non-trivial-formals))))
+
+(defthm <=-of-len-of-non-trivial-formals-linear
+  (<= (len (non-trivial-formals formals args))
+      (len formals))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable non-trivial-formals))))

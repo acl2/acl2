@@ -53,6 +53,8 @@
 (include-book "hide")
 (include-book "pointed-integers")
 (include-book "sint-from-boolean")
+(include-book "apconvert")
+(include-book "object-designators")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -201,7 +203,9 @@
           *atc-computation-state-return-rules*
           *atc-value-fix-rules*
           *atc-flexible-array-member-rules*
-          *atc-pointed-integer-rules*))
+          *atc-pointed-integer-rules*
+          *atc-apconvert-rules*
+          *atc-object-designator-rules*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

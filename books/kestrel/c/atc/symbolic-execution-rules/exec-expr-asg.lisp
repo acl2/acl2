@@ -46,10 +46,14 @@
                                                  (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
-                  (valuep val))
+                  (valuep val)
+                  (valuep (read-var (expr-ident->get e1) compst1)))
              (equal (exec-expr-asg e compst fenv limit)
                     (write-var (expr-ident->get e1) val compst1)))
-    :enable exec-expr-asg)
+    :enable (exec-expr-asg
+             exec-expr-pure
+             exec-ident
+             write-object-of-objdesign-of-var-to-write-var))
 
   (defval *atc-exec-expr-asg-ident-rules*
     '(exec-expr-asg-ident
@@ -96,7 +100,9 @@
                  (equal (value-pointer->reftype ptr) (,constructor))
                  (equal eval (exec-expr-pure right compst))
                  (expr-valuep eval)
-                 (equal val (expr-value->value eval))
+                 (equal eval1 (apconvert-expr-value eval))
+                 (expr-valuep eval1)
+                 (equal val (expr-value->value eval1))
                  (,pred val))
             (equal (exec-expr-asg e compst fenv limit)
                    (write-object (value-pointer->designator ptr)
@@ -202,12 +208,16 @@
                  (,apred array)
                  (equal eindex (exec-expr-pure sub compst))
                  (expr-valuep eindex)
-                 (equal index (expr-value->value eindex))
+                 (equal eindex1 (apconvert-expr-value eindex))
+                 (expr-valuep eindex1)
+                 (equal index (expr-value->value eindex1))
                  (,ipred index)
                  (,atype-array-itype-index-okp array index)
                  (equal eval (exec-expr-pure right compst))
                  (expr-valuep eval)
-                 (equal val (expr-value->value eval))
+                 (equal eval1 (apconvert-expr-value eval))
+                 (expr-valuep eval1)
+                 (equal val (expr-value->value eval1))
                  (,epred val))
             (equal (exec-expr-asg e compst fenv limit)
                    (write-object (value-pointer->designator ptr)

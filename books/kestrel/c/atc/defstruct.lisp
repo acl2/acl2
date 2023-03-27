@@ -31,6 +31,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -960,7 +961,7 @@
                        (:e posp)
                        (:e member-value-listp)
                        (:e len)
-                       true-listp-when-uchar-listp
+                       true-listp-when-uchar-listp-compound-recognizer
                        member-value-listp-of-cons
                        member-valuep-of-member-value
                        schar-fix-when-scharp
@@ -1426,7 +1427,7 @@
        (fixtype-arrayp-of-fixtype-array-of
         (pack fixtype '-arrayp-of- fixtype '-array-of))
        (valuep-when-fixtype-arrayp (pack 'valuep-when- fixtype '-arrayp))
-       (true-listp-when-fixtype-listp (pack 'true-listp-when- elem-type-listp))
+       (true-listp-when-fixtype-listp (pack 'true-listp-when- elem-type-listp '-compound-recognizer))
        (fixtype-array-of-of-fixtype-list-fix-elements
         (pack fixtype '-array-of-of- fixtype '-list-fix-elements))
        (struct-tag-equiv-implies-equal-struct-tag-fix-1
@@ -1884,6 +1885,7 @@
   (defruled defstruct-len-consp-lemma
     (implies (consp x)
              (not (equal (len x) 0)))
+    :induct t
     :enable len))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

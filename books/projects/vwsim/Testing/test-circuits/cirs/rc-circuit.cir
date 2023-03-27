@@ -1,0 +1,27 @@
+* RC Circuit
+
+VVS1 vs1 gnd pwl (0 0 1 1V)
+RR1  vs1 vc1 1
+CC1  vc1 gnd 1
+
+.tran .1 1 0
+
+* A VWSIM user may ask for values of any and/or all simulation values
+* after a simulation has been performed.
+
+* The print commands below are for compatibility with JoSIM, where the
+* user provides the signal names and their types that should be saved
+* for output.
+
+.print NODEV VS1
+.print NODEV VC1
+
+.print DEVV CC1
+.print DEVI VVS1
+.print DEVI RR1
+
+.print NODEP VC1
+
+.print PHASE VVS1
+
+.END

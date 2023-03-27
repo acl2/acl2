@@ -540,3 +540,14 @@
   (make-fun-declon :tyspec (fundef->tyspec fundef)
                    :declor (fundef->declor fundef))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection fundef-list-to-fun-declon-list (x)
+  :guard (fundef-listp x)
+  :returns (declons fun-declon-listp)
+  :short "Lift @(tsee fundef-to-fun-declon) to lists."
+  (fundef-to-fun-declon x)
+  ///
+  (fty::deffixequiv fundef-list-to-fun-declon-list
+    :args ((x fundef-listp))))

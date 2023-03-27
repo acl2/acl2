@@ -507,6 +507,9 @@
                          (ld-redefinition-action 'save ld-redefinition-actionp)
                          (ld-prompt ''wormhole-prompt)
                          (ld-missing-input-ok 'same ld-missing-input-okp)
+                         (ld-always-skip-top-level-locals
+                          'same
+                          ld-always-skip-top-level-localsp)
                          (ld-pre-eval-filter 'same ld-pre-eval-filterp)
                          (ld-pre-eval-print 'same ld-pre-eval-printp)
                          (ld-post-eval-print 'same ld-post-eval-printp)
@@ -551,6 +554,10 @@
           (list `(cons 'ld-prompt ,ld-prompt))
           (if ld-missing-input-okp
               (list `(cons 'ld-missing-input-ok ,ld-missing-input-ok))
+            nil)
+          (if ld-always-skip-top-level-localsp
+              (list `(cons 'ld-always-skip-top-level-locals
+                           ,ld-always-skip-top-level-locals))
             nil)
           (if ld-pre-eval-filterp
               (list `(cons 'ld-pre-eval-filter ,ld-pre-eval-filter))
@@ -1639,6 +1646,8 @@
 ;        after doing so the eye tends to miss little atoms (like b above)
 ;        hiding in their shadows.
 
+; See :DOC pp-special-syms for a discussion of the special-term-num feature.
+
 ; To play with ppr we recommend executing this form:
 
 ; (ppr2 (ppr1 x (print-base) (print-radix) 30 0 state t)
@@ -1678,7 +1687,7 @@
 ;        (ppr2 tuple 0 *standard-co* state t)
 ;        (fms "~%" nil *standard-co* state nil))))
 ;
-;   (defmacro test (d x)
+;   (defmacro test (d x) `(testfn ',d ',x state))
 
 ; Ppr tuples record enough information about the widths of various forms so
 ; that it can be computed without having to recompute any part of it and so
@@ -1746,7 +1755,21 @@
 ;                      t1, a space, and then prettyprint t2.  The
 ;                      length of the longest line we will print is n.
 
-; The sentences "The length of the longest line we will print is n."
+; Supporting the extension by Stephen Westfold described in :DOC
+; pp-special-syms:
+; (SPECIAL-TERM n t1 (i-ind i1 ...) r-ind r1 ...)
+;                    - Here, t1 is a FLAT tuple of width j. 
+;                      o-nm is NIL or a FLAT tuple that fits on the same
+;                        line as t1.
+;                      i-ind is NIL or a natural number.
+;                      i1 ... are prettyprinted on the same line as t1 if
+;                        i-ind is NIL, otherwise on the next line with
+;                        relative indentation i-ind.
+;                      r-ind is a natural number.
+;                      r1 ... are prettyprinted with relative indentation
+;                        r-ind.
+
+; The sentence "The length of the longest line we will print is n."
 ; bears explanation.  Consider
 
 ; (FOO (BAR X)
@@ -2006,6 +2029,52 @@
 (defmacro ppr-flat-right-margin ()
   '(f-get-global 'ppr-flat-right-margin state))
 
+(defconst *pp-special-syms*
+
+; The values in the following alist must all satisfy natp.  We keep this alist
+; sorted by key (for readability only).
+
+  '((case . 1)
+    (case-match . 1)
+    (defabsstobj . 1)
+    (defaxiom . 1)
+    (defchoose . 3) 
+    (defcong . 2)
+    (defconst . 1)
+    (defmacro . 2)
+    (defstobj . 1)
+    (defthm . 1)
+    (defthmd . 1)
+    (defun . 2)
+    (defun-inline . 2)
+    (defun-sk . 2)
+    (defund . 2)
+    (encapsulate . 1)
+    (if . 2)
+    (lambda . 1)
+    (lambda$ . 1)
+    (let . 1)
+    (let* . 1)
+    (mutual-recursion . 0)
+    (mv-let . 2)
+    (table . 1)))
+
+(table pp-special-syms nil nil
+       :guard (and (symbolp key)
+                   (natp val)))
+
+(table pp-special-syms nil *pp-special-syms* :clear)
+
+(defun special-term-num (sym state)
+  (let ((pair (assoc-eq sym (table-alist 'pp-special-syms (w state)))))
+
+; Because of the table guard on pp-special-syms, we know that all values in the
+; table satisfy natp.  So this function is guaranteed to return either nil or a
+; natp.
+
+    (and pair
+         (cdr pair))))
+
 (defun set-ppr-flat-right-margin (val state)
   (if (posp val)
       (f-put-global 'ppr-flat-right-margin val state)
@@ -2039,7 +2108,7 @@
       (eq (car tuple) 'wide)
       (integerp (car tuple))))
 
-(defun cons-ppr1 (x column width ppr-flat-right-margin eviscp)
+(defun cons-ppr1 (x column width ppr-flat-right-margin pair-keywords-p eviscp)
 
 ; Here, x is a ppr tuple representing either a dot or a single object and
 ; column is a list of tuples corresponding to a list of objects (possibly a
@@ -2102,7 +2171,8 @@
 
         (cond
          ((and (keyword-param-valuep row1 eviscp)
-               (or (null (cdr column))
+               (or pair-keywords-p
+                   (null (cdr column))
                    (eq (car (cadr column)) 'keypair)
                    (eq (car (cadr column)) 'matched-keyword)))
 
@@ -2367,7 +2437,8 @@
                             eviscp)))
              (cons 'quote (cons (+ 1 (cadr x1)) x1))))
           (t
-           (let* ((x1 (ppr1 (car x) print-base print-radix (+f width -1)
+           (let* ((width-1 (+f width -1))
+                  (x1 (ppr1 (car x) print-base print-radix width-1
                             (the-fixnum (if (null (cdr x)) (+ rpc 1) 0))
                             state eviscp))
 
@@ -2380,26 +2451,91 @@
                                 (cadr x1))
                                (t nil)))
 
-; When printing the cdr of x, give each argument the full width (minus 1 for
-; the minimal amount of indenting).  Note that x2 contains the ppr tuples for
-; the car and the cdr.
+; Special-term-num non-nil means: print args after special-term-num(-th) arg
+; indenting just 2 spaces.
 
-                  (x2 (cons x1
-                            (ppr1-lst (cdr x) print-base print-radix (+f width -1)
-                                      (+f rpc 1) state eviscp)))
+                  (special-term-num (special-term-num (car x) state))
+                  (special-term-num (and special-term-num
+                                         (>= (len (cdr x)) special-term-num)
+                                         special-term-num))
+
+; When printing the cdr of x (or the special-term-num(-th) cdr), give each
+; argument the full width (minus 1 for the minimal amount of indenting).  Note
+; that x2 contains the ppr tuples for the car and the cdr.
+
+                  (xc (ppr1-lst (cdr (if special-term-num
+                                         (nthcdr special-term-num x)
+                                       x))
+                                print-base print-radix width-1
+                                (+f rpc 1) special-term-num state eviscp))
+                  (x2 (cons x1 xc))
 
 ; If the fn is a symbol, then we get the maximum width of any single argument.
-; Otherwise, we get the maximum width of the fn and its arguments.
+; Otherwise, we get the maximum width of the fn and its arguments.  Xc could be
+; nil, in which case maximum is -1, which represents the lack of a space before
+; the arguments.
 
-                  (maximum (cond (hd-sz (max-width (cdr x2) -1))
+                  (maximum (cond (hd-sz (max-width xc -1))
                                  (t (max-width x2 -1)))))
-
+             (declare (type (signed-byte 30) width-1))
              (cond ((null hd-sz)
 
 ; If the fn is lambda, we indent the args by 1 and report the width of the
 ; whole to be one more than the maximum computed above.
 
                     (cons 1 (cons (+ 1 maximum) x2)))
+                   (special-term-num
+                    (let* ((init-args (take special-term-num (cdr x)))
+                           (opt-name-pp
+                            (if (and init-args
+                                     (symbolp (car init-args)))
+                                (ppr1 (car init-args)
+                                      print-base print-radix (-f width hd-sz)
+                                      0 state eviscp)
+                              nil))
+                           (opt-name-pp
+                            (and opt-name-pp
+                                 (<= (+ hd-sz 1 (cadr opt-name-pp)) width-1)
+                                 opt-name-pp))
+                           (opt-name-sz
+                            (if opt-name-pp (+ 1 (cadr opt-name-pp)) 0))
+                           (x1 (if opt-name-pp
+                                   (cons 'flat (cons (+ hd-sz opt-name-sz)
+                                                     (list (car x)
+                                                           (car init-args))))
+                                 x1))
+                           (init-args-pp
+                            (and init-args
+                                 (ppr1-lst (if opt-name-pp
+                                               (cdr init-args)
+                                             init-args)
+                                           print-base print-radix width-1
+                                           (if (null xc) (+ rpc 1) 0)
+                                           nil state eviscp)))
+                           (max-init-args-pp (max-width init-args-pp 0))
+                           (init-args-indent
+                            (and init-args-pp
+                                 (>= (+ hd-sz opt-name-sz max-init-args-pp)
+                                     width-1) ; Put on first line if false.
+                                 (if (>= (+ hd-sz max-init-args-pp)
+                                         width-1)
+                                     (max 1 (- width-1 max-init-args-pp))
+                                   (+ hd-sz 2))))
+                           (xc-indent (if (or (>= maximum width-1)
+                                              (equal init-args-indent 1))
+                                          1 2))
+                           (maximum
+                            (max (max hd-sz (+ maximum xc-indent -1))
+                                 (cond (init-args-indent
+                                        (+ init-args-indent
+                                           max-init-args-pp -1))
+                                       (t (+ hd-sz opt-name-sz 1
+                                             max-init-args-pp))))))
+                      (cons 'special-term
+                            (cons (+ 1 maximum) ; 1 for left paren.
+                                  (cons x1
+                                        (cons (cons init-args-indent init-args-pp)
+                                              (cons xc-indent xc)))))))
                    ((<= (+ hd-sz (+ 2 maximum)) width)
 
 ; We can print WIDE if we have room for an open paren, the fn, a space, and the
@@ -2436,8 +2572,8 @@
 
 ; If you haven't read about cons-ppr1, above, do so now.
 
-(defun ppr1-lst (lst print-base print-radix width rpc state eviscp)
-
+(defun ppr1-lst (lst print-base print-radix width rpc pair-keywords-p state
+                     eviscp)
   (declare (type (signed-byte 30) print-base width rpc))
   (cond ((atom lst)
 
@@ -2454,7 +2590,7 @@
                (t (cons-ppr1 '(dot 1)
                              (list (ppr1 lst print-base print-radix width rpc
                                          state eviscp))
-                             width (ppr-flat-right-margin) eviscp))))
+                             width (ppr-flat-right-margin) nil eviscp))))
 
 ; The case for an eviscerated terminal cdr is handled the same way.
 
@@ -2462,7 +2598,7 @@
          (cons-ppr1 '(dot 1)
                     (list (ppr1 lst print-base print-radix width rpc state
                                 eviscp))
-                    width (ppr-flat-right-margin) eviscp))
+                    width (ppr-flat-right-margin) nil eviscp))
 
 ; If the list is a true singleton, we just use ppr1 and we pass it the rpc that
 ; was passed in because this last item will be followed by that many parens on
@@ -2477,8 +2613,8 @@
         (t (cons-ppr1 (ppr1 (car lst) print-base print-radix width 0 state
                             eviscp)
                       (ppr1-lst (cdr lst) print-base print-radix width rpc
-                                state eviscp)
-                      width (ppr-flat-right-margin) eviscp))))
+                                pair-keywords-p state eviscp)
+                      width (ppr-flat-right-margin) pair-keywords-p eviscp))))
 
 )
 
@@ -2674,14 +2810,21 @@
 (defun ppr2-column (lst loc col channel state eviscp)
 
 ; We print the elements of lst in a column.  The column number is col and we
-; assume the print head is currently in column loc, loc <= col.  Thus, to
-; indent to col we print col-loc spaces.  After every element of lst but the
-; last, we print a newline.
+; assume the print head is currently in column loc.  If loc <= col, to indent
+; to col we print col-loc spaces; otherwise print 1 space.  After every element
+; of lst but the last, we print a newline.
 
   (cond ((null lst) state)
         (t (pprogn
-            (spaces (+ col (- loc)) loc channel state)
-            (ppr2 (car lst) col channel state eviscp)
+            (spaces (if (> col loc)
+                        (+ col (- loc))
+                      1)
+                    loc channel state)
+            (ppr2 (car lst)
+                  (if (> col loc)
+                      col
+                    (+ loc 1))
+                  channel state eviscp)
             (cond ((null (cdr lst)) state)
                   (t (pprogn
                       (newline channel state)
@@ -2714,6 +2857,29 @@
                         (+ col (+ 2 (cadr (car (cddr x)))))
                         channel state eviscp)
            (princ$ #\) channel state)))
+    (special-term
+     (let* ((rx (cddr x)) ; actual arguments to print
+            (x1 (car rx))
+            (x1-sz (cadr x1))
+            (init-args-pp-info (cadr rx))
+            (init-args-indent
+             (car init-args-pp-info)) ; if null goes on first line
+            (init-args-pp (cdr init-args-pp-info))
+            (init-args-pp-col (cond (init-args-indent (+ col init-args-indent))
+                                    (t (+ col x1-sz 2))))
+            (x2-indent (car (cddr rx)))
+            (x2 (cdr (cddr rx))))
+       (pprogn
+        (princ$ #\( channel state)
+        (ppr2 x1 (+ col 1) channel state eviscp)
+        (if init-args-indent (newline channel state) state)
+        (if init-args-pp (ppr2-column init-args-pp
+                                      (if init-args-indent 0 (+ col x1-sz 1))
+                                      init-args-pp-col channel state eviscp)
+          state)
+        (newline channel state)
+        (ppr2-column x2 0 (+ col x2-indent) channel state eviscp)
+        (princ$ #\) channel state))))
     (otherwise (pprogn
                 (princ$ #\( channel state)
                 (ppr2 (car (cddr x)) (+ col (car x)) channel
@@ -5072,10 +5238,10 @@
                             (fmt-ctx ctx col channel state)
                             (fmt1 ":  " nil col channel state nil)))))))
 
-(defun er-soft-off-p1 (summary wrld)
+(defun er-off-p1 (summary wrld)
 
-; This function is used by er-soft to determine whether a given error should be
-; printed.
+; This function is used by er-soft, er-hard?, and er-hard to determine whether
+; a given error should be printed.
 
   (declare (xargs :guard (and (or (null summary)
                                   (and (stringp summary)
@@ -5088,7 +5254,7 @@
         summary
         (table-alist 'inhibit-er-table wrld))))
 
-(defun er-soft-off-p (summary state)
+(defun er-off-p (summary state)
   (declare (xargs :stobjs state
                   :guard (and (or (null summary)
                                   (and (stringp summary)
@@ -5096,7 +5262,7 @@
                               (state-p state)
                               (standard-string-alistp
                                (table-alist 'inhibit-er-table (w state))))))
-  (er-soft-off-p1 summary (w state)))
+  (er-off-p1 summary (w state)))
 
 (defun error-fms-channel (hardp ctx summary str alist channel state newlines)
 
@@ -5112,7 +5278,7 @@
 ; by our er macro.  We rewrote the function this way simply so we
 ; would not have to remember that some variables are special.
 
-  (cond ((er-soft-off-p summary state)
+  (cond ((er-off-p summary state)
          state)
         (t
          (flet ((newlines (n channel state)
@@ -6529,8 +6695,10 @@
                  (f-get-global 'warnings-as-errors state)))))
        (cond
         ((and (eq warnings-as-errors-val :always)
-              (not (member-string-equal summary
-                                        *uninhibited-warning-summaries*)))
+              (not (and summary
+                        (member-string-equal
+                         summary
+                         *uninhibited-warning-summaries*))))
          (let ((str (cond ((consp str) ; see handling of str+ in warning1-body
                            (car str))
                           (t str))))
@@ -6553,8 +6721,10 @@
                        (hard-error ctx (cons summary str) alist))
                   state)))))
         ((and check-warning-off
-              (not (member-string-equal summary
-                                        *uninhibited-warning-summaries*))
+              (not (and summary
+                        (member-string-equal
+                         summary
+                         *uninhibited-warning-summaries*)))
               ,(if commentp
                    '(or (ec-call ; for guard verification of warning1-cw
                          (member-equal 'warning
@@ -6569,8 +6739,10 @@
                       (warning-off-p summary state))))
          ,(if commentp nil 'state))
         ((and warnings-as-errors-val
-              (not (member-string-equal summary
-                                        *uninhibited-warning-summaries*)))
+              (not (and summary
+                        (member-string-equal
+                         summary
+                         *uninhibited-warning-summaries*))))
          (let ((str (cond ((consp str) ; see handling of str+ in warning1-body
                            (car str))
                           (t str))))

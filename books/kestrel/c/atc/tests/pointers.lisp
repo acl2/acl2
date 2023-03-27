@@ -5,7 +5,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,7 +63,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun |swap_uints| (|x| |y|)
+  (declare (xargs :guard (and (c::star (c::uintp |x|))
+                              (c::star (c::uintp |y|)))
+                  :guard-hints (("Goal" :in-theory (enable c::declar)))))
+  (let* ((|temp| (c::declar (c::uint-read |x|)))
+         (|x| (c::uint-write (c::uint-read |y|)))
+         (|y| (c::uint-write |temp|)))
+    (mv |x| |y|)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (c::atc |f1| |f2|
         |g1| |g2| |g3|
         |h1| |h2|
+        |swap_uints|
         :file-name "pointers" :header t)

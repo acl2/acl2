@@ -16,6 +16,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -285,16 +286,19 @@
   (defruled var-in-scopes-p-when-valuep-of-read-auto-var-aux
     (implies (valuep (read-auto-var-aux var scopes))
              (var-in-scopes-p var scopes))
+    :induct t
     :enable read-auto-var-aux)
 
   (defruled var-in-scopes-p-when-read-auto-var-aux
     (implies (read-auto-var-aux var scopes)
              (var-in-scopes-p var scopes))
+    :induct t
     :enable read-auto-var-aux)
 
   (defruled not-var-in-scopes-p-when-not-read-auto-var-aux
     (implies (not (read-auto-var-aux var scopes))
              (not (var-in-scopes-p var scopes)))
+    :induct t
     :enable read-auto-var-aux
     :prep-lemmas
     ((defrule lemma
@@ -374,13 +378,15 @@
      ///
      (defret consp-of-update-var-aux
        (equal (consp new-scopes)
-              (consp scopes)))
+              (consp scopes))
+       :hints (("Goal" :induct t)))
      (defruled var-in-scopes-p-of-update-var-aux
        (implies (var-in-scopes-p var2 scopes)
                 (equal (var-in-scopes-p var (update-var-aux var2 val scopes))
                        (or (equal (ident-fix var)
                                   (ident-fix var2))
                            (var-in-scopes-p var scopes))))
+       :induct t
        :enable var-in-scopes-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -792,6 +798,7 @@
                            (equal (type-of-value val2)
                                   (type-of-value val))
                          (write-var-aux-okp var val scopes))))
+       :induct t
        :enable (var-in-scopes-p
                 write-var-aux-okp
                 update-var-aux))
@@ -802,6 +809,7 @@
                                           val
                                           (update-var-aux var2 val2 scopes))
                        (write-var-aux-okp var val scopes)))
+       :induct t
        :enable (var-in-scopes-p
                 write-var-aux-okp
                 update-var-aux))))
@@ -843,6 +851,7 @@
                 (equal (write-var-aux-okp var val scopes)
                        (equal (type-of-value val)
                               (type-of-value old-val))))
+       :induct t
        :enable (write-var-aux-okp
                 read-auto-var-aux))))
 
@@ -865,6 +874,7 @@
        (implies (write-var-aux-okp var val scopes)
                 (equal (write-auto-var-aux var val scopes)
                        (update-var-aux var val scopes)))
+       :induct (update-var-aux var val scopes)
        :enable (write-var-aux-okp
                 write-auto-var-aux
                 update-var-aux
@@ -874,6 +884,7 @@
        (implies (and (consp scopes)
                      (consp (write-auto-var-aux var val scopes)))
                 (var-in-scopes-p var scopes))
+       :induct t
        :enable (var-in-scopes-p write-auto-var-aux))))
 
   (defval *atc-write-var-rules*
@@ -1003,6 +1014,7 @@
                                   (ident-fix var2))
                            (remove-flexible-array-member val2)
                          (read-auto-var-aux var scopes))))
+       :induct t
        :enable (var-in-scopes-p
                 read-auto-var-aux
                 update-var-aux))
@@ -1011,6 +1023,7 @@
                     (not (var-in-scopes-p var2 scopes)))
                 (equal (read-auto-var-aux var (update-var-aux var2 val2 scopes))
                        (read-auto-var-aux var scopes)))
+       :induct t
        :enable (var-in-scopes-p
                 read-auto-var-aux
                 update-var-aux))))
@@ -1365,6 +1378,7 @@
     ((defrule lemma
        (equal (update-var-aux var val (update-var-aux var val2 scopes))
               (update-var-aux var val scopes))
+       :induct t
        :enable update-var-aux)))
 
   (defruled update-var-of-update-var-less
@@ -1393,6 +1407,7 @@
                     (ident-fix var2)))
         (equal (update-var-aux var val (update-var-aux var2 val2 scopes))
                (update-var-aux var2 val2 (update-var-aux var val scopes))))
+       :induct t
        :enable update-var-aux)))
 
   (defruled update-var-of-read-var-same
@@ -1413,6 +1428,7 @@
                            (read-auto-var-aux var scopes))))
                 (equal (update-var-aux var (read-auto-var-aux var scopes) scopes)
                        (scope-list-fix scopes)))
+       :induct t
        :enable (read-auto-var-aux
                 update-var-aux
                 len))
@@ -1798,6 +1814,7 @@
           (object-disjointp objdes objdes2))
      (equal (update-object objdes obj (update-object objdes2 obj2 compst))
             (update-object objdes2 obj2 (update-object objdes obj compst))))
+    :rule-classes ((:rewrite :loop-stopper nil))
     :enable (update-object
              object-disjointp
              objdesign->base-address))
@@ -1815,6 +1832,7 @@
           (object-disjointp objdes objdes2))
      (equal (update-object objdes obj (update-object objdes2 obj2 compst))
             (update-object objdes2 obj2 (update-object objdes obj compst))))
+    :rule-classes ((:rewrite :loop-stopper nil))
     :enable (update-object
              object-disjointp
              objdesign->base-address))
@@ -1991,6 +2009,7 @@
     ((defrule lemma
        (equal (var-in-scopes-p var (update-var-aux var2 val scopes))
               (var-in-scopes-p var scopes))
+       :induct t
        :enable (var-in-scopes-p update-var-aux))))
 
   (defruled var-autop-of-update-static-var

@@ -1,7 +1,7 @@
-; A very fast function to split a list
+; Some rules about split-list-fast.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,29 +13,15 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; This book introduces the function split-list-fast, which splits a list into
-;; two pieces of roughly the same size, where the order doesn't really matter
-;; (e.g., for mergesort).
+;; See also split-list-fast-rules.lisp.
 
-;; Note: "split-list" (without the "-fast") is already the name of a function
-;; in the rtl library.
+(include-book "split-list-fast-defs")
 
 (in-theory (disable mv-nth)) ;; We always keep mv-nth disabled.  (we could go to nth, but then do we go to car if n=0?)
 
 ;;;
-;;; split-list-fast-aux
+;;; Rules about split-list-fast-aux
 ;;;
-
-;acc contains the elems that the slow-moving guy has passed
-;; Returns (mv first-half second-half).
-;This walks down TAIL twice as fast as it walks down LST
-(defun split-list-fast-aux (lst tail acc)
-  (declare (xargs :guard (and (true-listp tail)
-                              (true-listp lst))))
-  (if (or (endp tail)
-          (endp (cdr tail)))
-      (mv acc lst)
-    (split-list-fast-aux (cdr lst) (cddr tail) (cons (car lst) acc))))
 
 (defthm true-listp-of-mv-nth-0-of-split-list-fast-aux
   (implies (true-listp acc)
@@ -88,7 +74,7 @@
                                      (* 2 (LEN (CDR LST))))))))
 
 ;;;
-;;; split-list-fast
+;;; Rules about split-list-fast
 ;;;
 
 ;reuses the tail of the list

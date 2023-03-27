@@ -11,8 +11,6 @@
 
 (in-package "C")
 
-(include-book "errors")
-
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 
@@ -834,6 +832,16 @@
    (declor fun-declor))
   :tag :fun-declon
   :pred fun-declonp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist fun-declon-list
+  :short "Fixtype of lists of function declarations."
+  :elt-type fun-declon
+  :true-listp t
+  :elementp-of-nil nil
+  :pred fun-declon-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

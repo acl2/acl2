@@ -1,6 +1,6 @@
 ; Replacing calls of functions in untranslated terms
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,9 @@
 ;; calls of new functions, perhaps with wrappers, etc.).
 
 (include-book "helpers")
+(include-book "bstar-helpers")
+(include-book "case-match-helpers")
+(include-book "cond-helpers")
 (include-book "untranslated-constantp")
 (include-book "untranslated-variablep")
 (include-book "kestrel/utilities/make-var-names" :dir :system)
@@ -163,14 +166,16 @@
                       (cw "NOTE: Macroexpanding non-supported b* form: ~x0.~%" term) ; suppress?
                       (replace-calls-in-untranslated-term-aux (magic-macroexpand1$$ term 'replace-calls-in-untranslated-term-aux wrld state)
                                                               alist permissivep (+ -1 count) wrld state)))))
-             (cond ;; (cond <clauses>)
+             (cond ; (cond ...clauses...)
               ;; Note that cond clauses can have length 1 or 2.  We flatten the clauses, process the resulting list of untranslated terms, and then recreate the clauses
               ;; by walking through them and putting in the new items:
-              (let* ((clauses (fargs term))
-                     (items (append-all2 clauses))
-                     (new-items (replace-calls-in-untranslated-terms-aux items alist permissivep (+ -1 count) wrld state)))
-                `(cond ,@(recreate-cond-clauses clauses new-items))))
-             ((case) ;; (case <expr> ...cases...)
+              (b* ((clauses (fargs term))
+                   ((when (not (legal-cond-clausesp clauses)))
+                    (er hard? 'replace-calls-in-untranslated-term-aux "Bad COND clauses: ~x0." clauses))
+                   (terms (extract-terms-from-cond-clauses clauses))
+                   (new-terms (replace-calls-in-untranslated-terms-aux terms alist permissivep (+ -1 count) wrld state)))
+                `(cond ,@(recreate-cond-clauses clauses new-terms))))
+             (case ;; (case <expr> ...cases...)
               (let* ((expr (farg1 term))
                      (cases (rest (fargs term)))
                      (vals-to-match (strip-cars cases))
@@ -178,7 +183,7 @@
                 `(case ,(replace-calls-in-untranslated-term-aux expr alist permissivep (+ -1 count) wrld state)
                    ,@(make-doublets vals-to-match
                                     (replace-calls-in-untranslated-terms-aux vals-to-return alist permissivep (+ -1 count) wrld state)))))
-             ((case-match)              ;; (case-match <var> ...cases...)
+             (case-match ;; (case-match <var> ...cases...)
               (let* ((var (farg1 term)) ; must be a symbol
                      (cases (rest (fargs term)))
                      (terms-from-cases (extract-terms-from-case-match-cases cases))

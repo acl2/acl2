@@ -27,6 +27,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -361,6 +362,7 @@
          (equal (,<type>-list-from-integer-list
                  (,integer-list-from-<type>-list x))
                 (,<type>-list-fix x))
+         :induct t
          :enable (,integer-list-from-<type>-list
                   ,<type>-list-from-integer-list))
 
@@ -370,6 +372,7 @@
          (equal (,integer-list-from-<type>-list
                  (,<type>-list-from-integer-list x))
                 (,<type>-integer-list-fix x))
+         :induct t
          :enable (,integer-list-from-<type>-list
                   ,<type>-list-from-integer-list))
 

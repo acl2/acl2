@@ -8162,6 +8162,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Now we define the weak notion of term that guards metafunctions.
 
+(defmacro len$ (x)
+
+; This variant of len is logically just len, but it executes as length in
+; guard-verified and program-mode code.  In such code it should thus be called
+; only when x is a true list, but it may be slightly faster than len because
+; the Lisp implementation may optimize the definition of length.  The following
+; experiment (performed on an Intel-based Mac) showed length to be faster than
+; len in CCL and perhaps about the same in SBCL.
+
+; :q ; go into raw Lisp
+; (defconstant *c* (loop for i from 1 to 1000 by 10
+;                        collect (make-list (* 1000 i))))
+; (defun f () (loop for x in *c* when (= (len x) 3) collect x))
+; (defun g () (loop for x in *c* when (= (length x) 3) collect x))
+; (time (f))
+; (time (g))
+
+; At first glance it may appear that x is being evaluated twice below from a
+; call of len$.  But in fact, only the :logic or the :exec code will be
+; evaluated from a call of len$.
+
+  `(mbe :logic (len ,x)
+        :exec (length ,x)))
+
 (mutual-recursion
 
 (defun pseudo-termp (x)
@@ -8181,12 +8205,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the checks below.
 
                (and (true-listp (car x))
-                    (equal (length (car x)) 3)
+                    (equal (len$ (car x)) 3)
                     (eq (car (car x)) 'lambda)
                     (symbol-listp (cadr (car x)))
                     (pseudo-termp (caddr (car x)))
-                    (equal (length (cadr (car x)))
-                           (length (cdr x))))))))
+                    (equal (len$ (cadr (car x)))
+                           (len$ (cdr x))))))))
 
 (defun pseudo-term-listp (lst)
   (declare (xargs :guard t))
@@ -10502,14 +10526,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; there, we should skip evaluation of x here.
 
   (list 'if
-        '(equal (ld-skip-proofsp state) 'include-book)
+        '(or (member-eq (ld-skip-proofsp state)
+                        '(include-book initialize-acl2))
+             (f-get-global 'ld-always-skip-top-level-locals state))
         '(mv nil nil state)
-        (list 'if
-              '(equal (ld-skip-proofsp state) 'initialize-acl2)
-              '(mv nil nil state)
-              (list 'state-global-let*
-                    '((in-local-flg t))
-                    (list 'when-logic "LOCAL" x)))))
+        (list 'state-global-let*
+              '((in-local-flg t))
+              (list 'when-logic "LOCAL" x))))
 
 #+acl2-loop-only
 (defmacro defchoose (&whole event-form &rest def)
@@ -11571,6 +11594,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq x 'rational) (list 'rationalp var))
         ((eq x 'real) (list 'real/rationalp var))
         ((eq x 'complex) (list 'complex/complex-rationalp var))
+        ((eq x 'number) (list 'acl2-numberp var))
         ((and (consp x)
               (eq (car x) 'rational)
               (true-listp x)
@@ -14758,7 +14782,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (temp-touchable-vars . nil)
     (term-evisc-tuple . :default)
     (timer-alist . nil)
-    (tmp-dir . nil) ; set by lp; user-settable but not much advertised.
+    (tmp-dir . nil) ; initialized by initialize-state-globals
     (total-parallelism-work-limit ; for #+acl2-par
      . ,(default-total-parallelism-work-limit))
     (total-parallelism-work-limit-error . t) ; for #+acl2-par
@@ -15601,6 +15625,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (ld-redefinition-action . nil)
     (ld-prompt . t)
     (ld-missing-input-ok . nil)
+    (ld-always-skip-top-level-locals . nil)
     (ld-pre-eval-filter . :all)
     (ld-pre-eval-print . nil)
     (ld-post-eval-print . :command-conventions)
@@ -18146,14 +18171,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defvar *read-file-into-string-alist*
 
 ; In this alist, each key is a filename (in the native OS, as discussed further
-; below) whose value is a triple (str fwd . fc): str is initially a character
-; stream str for that file but may be replaced by nil, fwd is the
-; file-write-date at the time the stream was created, and fc is the file-clock
-; of the state at the time the stream was opened.  If str is nil, then the
-; entry may be deleted (essentially, garbage collected) when the file-clock
-; advances (see increment-file-clock), since at that point there is no
-; restriction on using read-file-into-string on the given filename and no
+; below) whose value is a pair (str . pos), where: str is initially a character
+; stream str for that file but may be replaced by nil; and pos is the position
+; of the first character not read, except pos may be nil if the entire file was
+; read.  The entry will be deleted (essentially, garbage collected) when the
+; file-clock advances (see increment-file-clock), since at that point there is
+; no restriction on using read-file-into-string on the given filename and no
 ; stream to re-use.
+
+; NOTE: We do not define macros for the two fields, because we want to update
+; them destructively using setf (and defining suitable setf expanders seems
+; like overkill).  Instead we just use car and cdr for the str and pos
+; components that are discussed above.
 
 ; We use this variable to protect our logical story on filenames.  Recall that
 ; (open-input-channels state) is logically an alist that is extended by
@@ -18164,7 +18193,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; here stems from the use of open-input-channel in
 ; read-file-into-string2-logical.  Suppose (file-clock state) is fc.  Then by
 ; using open-input-channel, read-file-into-string2-logical reads
-; (open-input-channels state) at key (list file-name :character fc+1.  Two
+; (open-input-channels state) at key (list file-name :character fc+1).  Two
 ; successive calls of read-file-into-string2-logical on file-name with the same
 ; state (hence same file-clock) should give the same result, but that won't
 ; happen if the file has changed inbetween the calls.  Note that the
@@ -18174,14 +18203,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; and a subsequent ordinary call of open-input-channel; see the call of
 ; check-against-read-file-into-string-alist in open-input-channel.  (The other
 ; way around, namely open-input-channel followed by
-; read-file-into-string2-logical, isn't a concern, because open-input-channel
-; updates the file-clock.)  Note that a key in *read-file-into-string-alist* is
-; based on fc, not fc+1.
+; read-file-into-string2-logical, isn't a concern, because when
+; open-input-channel is called in read-file-into-string2-logical, that updates
+; the file-clock.)  Note that a key in *read-file-into-string-alist* is based
+; on fc, not fc+1.
 
 ; Recall that we key on the filename in the native OS.  It would also be fine
 ; to key on the Unix filename, but our code just developed this way.  It's fine
 ; though: if we encounter the same Unix filename twice, then of course we'd
-; encouter the same OS filename twice, which would catch the problem we're
+; encounter the same OS filename twice, which would catch the problem we're
 ; trying to catch.
 
   nil)
@@ -18190,40 +18220,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (declaim (inline increment-file-clock-raw))
 #-acl2-loop-only
 (defun increment-file-clock-raw ()
-  (incf *file-clock*)
-  (when (loop for pair in *read-file-into-string-alist*
-              thereis (null (car (cdr pair)))) ; empty stream
-    (setq *read-file-into-string-alist*
-          (loop for pair in *read-file-into-string-alist*
-                when (car (cdr pair))
-                collect pair))))
-
-#-acl2-loop-only
-(defun check-against-read-file-into-string-alist (os-filename)
-
-; See *read-file-into-string-alist* for relevant background.
-
-  (let ((pair (assoc-equal os-filename *read-file-into-string-alist*)))
-    (when pair
-      (let ((stream (car (cdr pair))))
-        (when stream
-          (setf (car (cdr pair)) nil)
-          (close stream)))
-      (let ((fwd (our-ignore-errors (file-write-date os-filename))))
-        (cond
-         ((null fwd)
-          (error "Unable to determine the file-write-date of file ~s.~%~
-                  This is necessary for checking compatibility with a~%~
-                  previous read of this file using read-file-into-string.~%~
-                  Execute ~s to avoid this error.~%"
-                 os-filename
-                 '(increment-file-clock state)))
-         ((< (cadr (cdr pair)) fwd)
-          (error "An attempt to read file ~s is illegal, because~%~
-                  that file has changed since a previous read by~%~
-                  read-file-into-string.  Execute ~s to avoid this error.~%"
-                 os-filename
-                 '(increment-file-clock state))))))))
+  (loop for pair in *read-file-into-string-alist*
+        when (car (cdr pair)) ; stream
+        do (close (car (cdr pair))))
+  (setq *read-file-into-string-alist* nil)
+  (incf *file-clock*))
 
 (skip-proofs
 (defun open-input-channel (file-name typ state-state)
@@ -18250,11 +18251,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; We do two different opens here because the default :element-type is
 ; different in CLTL and CLTL2.
 
-          (let ((os-file-name
-                 (pathname-unix-to-os file-name *the-live-state*)))
-            (when (eq typ :character)
-              (check-against-read-file-into-string-alist os-file-name))
-            (increment-file-clock-raw)
+          (let* ((os-file-name
+                  (pathname-unix-to-os file-name *the-live-state*))
+                 (pair (and (eq typ :character)
+                            (assoc-equal os-file-name
+                                         *read-file-into-string-alist*))))
+            (when pair
+              (let ((stream (car (cdr pair))))
+                (when stream
+                  (setf (car (cdr pair)) nil)
+                  (close stream)))
+              (error "An attempt to open an input channel to file ~s is ~
+                      illegal~%because of a call of ~s on that file.~%Execute ~
+                      ~s to avoid this error.~%See :DOC read-file-into-string."
+                     file-name
+                     'read-file-into-string.
+                     '(increment-file-clock state)))
 
 ; Protect against the sort of behavior Bob Boyer has pointed out for GCL, as
 ; the following kills all processes:
@@ -18271,6 +18283,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (case
                      typ
                      ((:character :object)
+
+; We allow the :element-type to default to character in the following call of
+; safe-open.  That may seem surprising when typ is :object.  But read-object
+; calls read, and the CL HyperSpec doesn't impose any requirements on the
+; stream when calling read.  So we prefer to leave :element-type as the
+; default.
+
                       (safe-open os-file-name :direction :input
                                  :if-does-not-exist nil))
                      (:byte (safe-open os-file-name :direction :input
@@ -18464,16 +18483,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       ((:character :object)
                        (cond ((eq file-name :string)
                               (make-string-output-stream))
-                             (t (safe-open os-file-name :direction :output
-                                           :if-exists :supersede
+                             (t
+
+; We allow the :element-type to default to character in the following call of
+; safe-open.  That may seem surprising when typ is :object.  But read-object
+; calls read, and the CL HyperSpec doesn't impose any requirements on the
+; stream when calling read.  So we prefer to leave :element-type as the
+; default.
+
+                              (safe-open os-file-name :direction :output
+                                         :if-exists :supersede
 
 ; In ACL2(p) using CCL, we have seen an error caused when standard-co was
 ; connected to a file.  Specifically, waterfall-print-clause-id@par was
 ; printing to standard-co -- i.e., to that file -- and CCL complained because
 ; the default is for a file stream to be private to the thread that created it.
 
-                                           #+(and acl2-par ccl) :sharing
-                                           #+(and acl2-par ccl) :lock))))
+                                         #+(and acl2-par ccl) :sharing
+                                         #+(and acl2-par ccl) :lock))))
                       (:byte
                        (cond ((eq file-name :string)
                               (make-string-output-stream
@@ -21787,6 +21814,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     proofs-co
     ld-prompt
     ld-missing-input-ok
+    ld-always-skip-top-level-locals
     ld-pre-eval-filter
     ld-pre-eval-print
     ld-post-eval-print
@@ -24957,14 +24985,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-acl2-loop-only
   (when (and *acl2-time-limit*
 
-; The following test isn't currently necessary, strictly speaking.  But it's a
-; cheap test so we include it for robustness, in case for example someone calls
-; rewrite not in the scope of catch-time-limit5.
+; The following test isn't currently necessary for the prover.  But it's a
+; cheap test so we include it, for example in case someone calls rewrite not in
+; the scope of catch-time-limit5.
 
              (member-eq 'time-limit5-tag *time-limit-tags*)
              (< *acl2-time-limit* (get-internal-time)))
     (setq *next-acl2-oracle-value*
           (if (eql *acl2-time-limit* 0)
+
+; As noted in comments above the definition of *acl2-time-limit*, that variable
+; is set to 0 to indicate that a proof has been interrupted (see our-abort).
+; We check for *interrupt-string* in waterfall-step to record whether the error
+; is due to an interrupt or to reaching a time-limit.
+
               *interrupt-string*
             msg))
     (throw 'time-limit5-tag
@@ -27309,8 +27343,7 @@ Lisp definition."
 ; file-clock is greater than fc1.  Thus, there will be no way to detect
 ; logically any effect of delete-file$ on the four state fields above, since
 ; nothing was known about fields for file-clock exceeding fc1 before running
-; delete-file$.  There is no problem with read-file-into-string since it checks
-; that the file-write-date hasn't changed before returning a value.
+; delete-file$.
 
   (declare (xargs :guard (stringp file)
                   :stobjs state))
@@ -27511,7 +27544,10 @@ Lisp definition."
   (declare (xargs :guard (and (state-p state)
                               (member-eq val '(t nil :never :break :bt
                                                  :break-bt :bt-break)))
-                  :guard-hints (("Goal" :in-theory (enable state-p1)))))
+                  :guard-hints (("Goal" :in-theory (e/d (state-p1)
+                                                        ()
+                                                        ;;(all-boundp)
+                                                        )))))
   #+(and (not acl2-loop-only)
          (and gcl (not cltl2)))
   (when (live-state-p state)
@@ -29006,12 +29042,13 @@ Lisp definition."
   #-acl2-loop-only
   (progn (increment-file-clock-raw)
          state)
+  #+acl2-loop-only
+  (let ((state
 
-; For the logical definition, we use the rather goofy LET below so that ACL2
+; We use this rather goofy LET binding so that ACL2
 ; can establish the proper stobjs-out.
 
-  #+acl2-loop-only
-  (let ((state (non-exec (update-file-clock (1+ (file-clock state)) state))))
+         (non-exec (update-file-clock (1+ (file-clock state)) state))))
     state))
 
 (defun read-file-into-string2 (filename start bytes close state)
@@ -29022,11 +29059,7 @@ Lisp definition."
 ; noted below.  See acl2-set-character-encoding.
 
 ; We want the raw Lisp code below to be consistent with the logical call below
-; of read-file-into-string2-logical.  To that end, we don't pay attention to
-; the file-write-date until after attempting to open the stream: we return nil
-; if the open fails, regardless of the file-write-date, just as with the
-; logical code.  But in the raw code, if the open succeeds but the
-; file-write-date isn't suitable, we cause an error.
+; of read-file-into-string2-logical.
 
 ; In error cases we typically close the associated stream, if any.  But in
 ; these cases we first make updates to avoid having a closed stream in
@@ -29039,114 +29072,68 @@ Lisp definition."
   (declare (xargs :stobjs state :guard (and (stringp filename)
                                             (natp start)
                                             (or (null bytes)
-                                                (natp bytes)))))
+                                                (natp bytes))))
+           #+acl2-loop-only
+           (ignore close))
   #-acl2-loop-only
-  (let* ((os-filename (pathname-unix-to-os filename state))
-         (pair0 ; nil or (old-stream/nil old-file-write-date . old-file-clock)
-          (assoc-equal os-filename *read-file-into-string-alist*))
-         (pair pair0) ; to be reset below to a new pair if pair0 is nil
-         (old-stream-or-nil (car (cdr pair0)))
-         (stream (or old-stream-or-nil
-                     (open os-filename
-                           :element-type 'character ; the default
-                           :direction :input
-                           :if-does-not-exist nil)))
-         (old-fwd (cadr (cdr pair0)))
-         (old-fc (cddr (cdr pair0)))
-         (fwd (our-ignore-errors (file-write-date os-filename))))
-    (cond ((null stream)
+  (when (live-state-p state) ; perhaps always true because of signature check
+    (return-from
+     read-file-into-string2
+     (let* ((os-filename (pathname-unix-to-os filename state))
+            (pair ; nil or (old-stream/nil old-file-write-date . old-file-clock)
+             (assoc-equal os-filename *read-file-into-string-alist*))
+            (old-stream-or-nil (car (cdr pair)))
+            (stream (or old-stream-or-nil
+                        (open os-filename
+                              :element-type 'character ; the default
+                              :direction :input
+                              :if-does-not-exist nil))))
+       (cond ((null stream)
 
 ; The call of open failed.  We return nil just as we would in
 ; read-file-into-string2-logical.  But consider the converse: if
 ; read-file-into-string2-logical would return nil because its call of open
 ; would fail, then what happens here?  We still might have a stream to the file
-; even though it no longer can be opened.  Logically, we can imagine that the
-; file actually still exists in that case, so that logically it could be
-; opened.
+; (i.e., a non-nil value of old-stream-or-nil) even though it no longer can be
+; opened.  Logically, we can imagine that the file actually still exists in
+; that case, so that logically it could be opened.
 
-           (return-from read-file-into-string2 nil))
-          ((null fwd) ; e.g., if old stream exists but file has been deleted
-           (when old-stream-or-nil ; remove the closed stream from pair0
-             (setf (car (cdr pair0)) nil))
-           (close stream)
-           (error "Unable to determine the file-write-date of file ~
-                   ~s.~%Perhaps this file was read previously by ~s and then ~
-                   deleted."
-                  os-filename 'read-file-into-string))
-          ((null pair0) ; no prior read that could conflict with this one
+              (return-from read-file-into-string2 nil))
+             ((null pair) ; no prior read that could conflict with this one
 
 ; We reset pair to be the new pair that we push onto
 ; *read-file-into-string-alist*.
 
-           (push (setq pair (cons os-filename (list* stream fwd *file-clock*)))
-                 *read-file-into-string-alist*))
-          ((or (= old-fwd fwd)
-               (< old-fc *file-clock*))
-
-; The read is legal in both of these cases.  If fwd has changed (presumably
-; increased), though, we need to replace an existing stream with a new one.
-
-           (cond ((null old-stream-or-nil)
-                  (setf (car (cdr pair0)) stream))
-                 ((= old-fwd fwd)) ; nothing to do
-                 (t
-
-; We don't want a closed stream in *read-file-into-string-alist*, so we remove
-; that stream before closing it (in case there's an interrupt).
-
-                  (setf (car (cdr pair0)) nil)
-                  (close old-stream-or-nil)
-                  (setq stream
-                        (open os-filename
-                              :element-type 'character ; the default
-                              :direction :input
-                              :if-does-not-exist nil))
-                  (setf (car (cdr pair0)) stream) ; could be nil
-                  (when (null stream) ; failure to open; return nil as above
-                    (return-from read-file-into-string2 nil)))))
-          (t ; presumably original file clock but increased file-write-date
-           (when old-stream-or-nil ; remove the to-be-closed stream from pair0
-             (setf (car (cdr pair0)) nil))
-           (close stream)
-           (error "Illegal consecutive reads from file~%~s,~%which appears to ~
-                   have been written between the two reads.~%Execute ~s to ~
-                   avoid this error.~%See :DOC read-file-into-string."
-                  os-filename
-                  '(increment-file-clock state))))
-    (let* ((file-len (file-length stream))
-           (max-bytes (cond ((<= start file-len)
-                             (- file-len start))
-                            (t
-
-; Before causing an error, we do some cleaning up.
-
-                             (cond ((null pair0) ; then pop off the new pair
-                                    (pop *read-file-into-string-alist*)
-                                    (close stream))
-                                   (old-stream-or-nil
-
-; If an already-opened stream is in pair (i.e., in pair0), then we leave it
-; there since the user might want to try again with a suitable :start value.
-
-                                    nil)
-                                   (t ; Close the newly-opened stream.
-                                    (setf (car (cdr pair0)) nil)
-                                    (close stream)))
-                             (error "The :start value, ~s, specified for a ~
-                                     call~%of ~s, exceeds the length ~s of ~
-                                     file~%~s."
-                                    start 'read-file-into-string file-len
-                                    os-filename))))
-           (finish-p (if (eq close :default)
-                         (or (null bytes)
-                             (< max-bytes bytes))
-                       close))
-           (bytes (if bytes
-                      (min bytes max-bytes)
-                    max-bytes))
-           seq)
-      (declare (type (integer 0 *) file-len max-bytes bytes))
-      (when (<= bytes *read-file-into-string-bound*)
+              (push (setq pair (cons os-filename (cons stream 0)))
+                    *read-file-into-string-alist*))
+             ((and (not (eql bytes 0))
+                   (< start (cdr (cdr pair))))
+              (error "The :start value, ~s, specified for a call of ~s,~%~
+                      is less than the position ~s after a previous read of ~
+                      file~%~s at the same file-clock.~%See :DOC ~
+                      read-file-into-string."
+                     start 'read-file-into-string (cdr (cdr pair))
+                     os-filename)))
+       (let* ((file-len (file-length stream))
+              (max-bytes (cond ((<= start file-len)
+                                (- file-len start))
+                               (t
+                                (error "The :start value, ~s, specified for a ~
+                                        call~%of ~s, exceeds the length ~s of ~
+                                        file~%~s."
+                                       start 'read-file-into-string file-len
+                                       os-filename))))
+              (finish-p (if (eq close :default)
+                            (or (null bytes)
+                                (< max-bytes bytes))
+                          close))
+              (bytes (if bytes
+                         (min bytes max-bytes)
+                       max-bytes))
+              seq)
+         (declare (type (integer 0 *) file-len max-bytes bytes))
+         (when (<= bytes *read-file-into-string-bound*)
+           (setf (cdr (cdr pair)) (+ start bytes))
 
 ; The following #-acl2-loop-only code, minus the WHEN clause, is originally
 ; based on code found at
@@ -29157,42 +29144,25 @@ Lisp definition."
 
 ; The URL above says ``You can do anything you like with the code.''
 
-        (setq seq (make-string bytes))
-        (file-position stream start)
+           (setq seq (make-string bytes))
+           (file-position stream start)
 
 ; It's probably important for the following call that the character encoding is
 ; :iso-8859-1, so that stream is copied into seq one byte at a time.
 
-        (read-sequence (the string seq) stream)
-        (when (not (eql fwd
-                        (ignore-errors (file-write-date os-filename))))
-
-; The file-write-date has changed!  This is presumably a rare occurrence.  No
-; further reads will be allowed on the current stream.  We might as well close
-; it.
-
-          (cond ((null pair0) ; then pop off the new pair
-                 (pop *read-file-into-string-alist*))
-                (t (setf (car (cdr pair0)) nil)))
-          (close stream)
-          (error "Illegal attempt to call ~s concurrently~%with some change to ~
-                  that file!  See :DOC read-file-into-string."
-                 'read-file-into-string)))
-      (when finish-p
+           (read-sequence (the string seq) stream))
+         (when finish-p
 
 ; We close the stream, but we leave the entry in *read-file-into-string-alist*
 ; to prevent inappropriate reads after the file-write-date has changed but the
 ; *file-clock* has not.
 
-; Note that we use pair here, not pair0, because we want to close the stream
-; even if it's in a newly-created pair.
+; Note that we close the stream even if pair is a newly-added to
+; *read-file-into-string-alist*.
 
-        (setf (car (cdr pair)) nil)
-        (close stream))
-      seq))
-  #+acl2-loop-only
-  (declare (ignore close))
-  #+acl2-loop-only
+           (setf (car (cdr pair)) nil)
+           (close stream))
+         seq))))
   (read-file-into-string2-logical filename start bytes state))
 
 (defmacro read-file-into-string (filename &key

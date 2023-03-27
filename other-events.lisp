@@ -624,14 +624,13 @@
             (list 'quote event-form)))
     (defmacro local (x)
       (list 'if
-            '(equal (ld-skip-proofsp state) 'include-book)
+            '(or (member-eq (ld-skip-proofsp state)
+                            '(include-book initialize-acl2))
+                 (f-get-global 'ld-always-skip-top-level-locals state))
             '(mv nil nil state)
-            (list 'if
-                  '(equal (ld-skip-proofsp state) 'initialize-acl2)
-                  '(mv nil nil state)
-                  (list 'state-global-let*
-                        '((in-local-flg t))
-                        (list 'when-logic "LOCAL" x)))))
+            (list 'state-global-let*
+                  '((in-local-flg t))
+                  (list 'when-logic "LOCAL" x))))
     (defmacro defattach (&whole event-form &rest args)
       (list 'defattach-fn
             (list 'quote args)
@@ -5580,7 +5579,8 @@
                       (not (f-get-global 'skip-proofs-by-system state)))))
             (and (not user-skip-proofsp)
                  skip-proofsp)))
-         (ld-skip-proofsp skip-proofsp))
+         (ld-skip-proofsp skip-proofsp)
+         (ld-always-skip-top-level-locals nil))
         (er-progn
 
 ; Once upon a time, under the same conditions on caller as shown below, we
@@ -6104,7 +6104,7 @@
                            (not (assoc-eq 'event-landmark new-trips))))
              (fast-cert-extension
               (and empty-p
-                   (fast-cert-p state) ; optimization
+                   (eq (fast-cert-mode state) t) ; optimization
                    (f-get-global 'certify-book-info state)
                    (assoc-eq 'top-level-cltl-command-stack new-trips)))
              (retval (if fast-cert-extension
@@ -6124,9 +6124,10 @@
 ; presumably because all events in pass 2 are either local or redundant.
 ; Normally we consider this to be an "empty encapsulate" and we retract the
 ; world rather than to keep whatever properties may have been added to the
-; world.  However, when certifying a book with fast-cert we need to preserve
-; any extensions that have been made to the top-level-cltl-command-stack on
-; behalf of non-local events that are redundant with existing local events.
+; world.  However, when certifying a book with fast-cert mode active, we need
+; to preserve any extensions that have been made to the
+; top-level-cltl-command-stack on behalf of non-local events that are redundant
+; with existing local events.
 
 ; The extensions to the top-level-cltl-command-stack are for non-local
 ; redundant defun, defmacro, defconst, defchoose, defstobj, and defabsstobj
@@ -7960,7 +7961,7 @@
          (acons :translate
 
 ; Note that we do not need to restrict translate-cert-data to fns even when
-; fast-cert is active, since the world global 'translate-cert-data is not
+; fast-cert mode is active, since the world global 'translate-cert-data is not
 ; modified for local events.
 
 ; We avoid saving translate-cert-data if there has been redefinition (which
@@ -11429,7 +11430,7 @@
 ; Otherwise, this isn't well-formed and we cause an error.
 
 ; See the Essay on Fast-cert for discussion related to code below that involves
-; hackp or fast-cert-p.
+; hackp or fast-cert-status.
 
   (mv-let
     (eofp version0 state)
@@ -11442,17 +11443,18 @@
       (let* ((acl2-version (f-get-global 'acl2-version state))
              (hackp (consp version0))
              (version (if hackp (car version0) version0))
-             (fast-cert-p (fast-cert-p state))
+             (fast-cert-status (f-get-global 'fast-cert-status state))
              (version-okp
               (or (equal version0 acl2-version)
-                  (and fast-cert-p
+                  (and fast-cert-status
                        (equal version acl2-version)))))
         (pprogn
          (cond ((and hackp
-                     (eq fast-cert-p t))
+                     fast-cert-status
+                     (not (fast-cert-included-book fast-cert-status)))
 
-; This is admittedly very early in the include-book process to convert the
-; fast-cert-status from t to a string (thus making fast-cert mode permanent for
+; This is admittedly very early in the include-book process to convert the put
+; a string into the fast-cert-status (thus making fast-cert mode enabled for
 ; the session).  After all, the book may be uncertified, in which case one
 ; could very reasonably argue that including this uncertified book gives no
 ; more reason to consider the session to be tainted than including any other
@@ -11461,13 +11463,16 @@
 ; reasons.  One reason is our own convenience: we have in hand here, as the
 ; value of local variable hackp, the information that the certificate is a
 ; fast-cert certificate (i.e., the book was certified with fast-cert mode
-; active).  But a second reason is to protect against the possibility (even if
-; only a future possibility) that including this book, which was certified in
-; fast-cert mode, could pollute the session somehow.
+; enabled).  But a second reason is to protect against the possibility (even if
+; only a future possibility) that including this book, which was certified with
+; fast-cert mode enabled, could pollute the session somehow.
 
-                (f-put-global 'fast-cert-status
-                              (sysfile-to-filename file1 state)
-                              state))
+                (let ((s (sysfile-to-filename file1 state)))
+                  (f-put-global 'fast-cert-status
+                                (if (consp fast-cert-status)
+                                    (list s)
+                                  s)
+                                state)))
                (t state))
          (cond
           (version-okp
@@ -11491,11 +11496,13 @@
           (t
            (let ((msg
                   (cond
-                   ((equal version acl2-version) ; hence not fast-cert-p
+                   ((equal version
+                           acl2-version) ; so fast-cert mode is disabled
                     (cons
-                     "~x0 was certified using fast-cert, but fast-cert is not ~
-                      currently active.  See :DOC fast-cert.  No compiled ~
-                      file will be loaded with this book."
+                     "~x0 was certified using fast-cert mode enabled, but ~
+                      fast-cert mode is currently disabled.  See :DOC ~
+                      fast-cert.  No compiled file will be loaded with this ~
+                      book."
                      nil))
                    ((not (equal (acl2-version-r-p acl2-version)
                                 (acl2-version-r-p version)))
@@ -12268,9 +12275,19 @@
            (print-readably t))
           (pprogn
            (print-object$ '(in-package "ACL2") ch state)
-           (print-object$ (if (fast-cert-p state)
-                              (list (f-get-global 'acl2-version state))
-                            (f-get-global 'acl2-version state))
+           (print-object$
+
+; If fast-cert is in ACCEPT mode and no fast-cert book has yet been included,
+; then there is no need to mark this book as a fast-cert book.  Here we break
+; the abstraction of fast-cert-mode to avoid evaluating the form (f-get-global
+; 'fast-cert-status state) twice.
+
+            (if (let ((status (f-get-global 'fast-cert-status state)))
+                  (and status
+                       (or (atom status) ; fast-cert mode is active
+                           (fast-cert-included-book status))))
+                (list (f-get-global 'acl2-version state))
+              (f-get-global 'acl2-version state))
                           ch state)
            (print-object$ :BEGIN-PORTCULLIS-CMDS ch state)
            (print-objects
@@ -13764,9 +13781,8 @@
                                                       ctx
                                                       ("Provisionally certified")
                                                       "The book ~s0 was only ~
-                                                        provisionally ~
-                                                        certified (proofs ~
-                                                        ~s1)."
+                                                       provisionally ~
+                                                       certified (proofs ~s1)."
                                                       full-book-string
                                                       (if (eq (access
                                                                cert-obj
@@ -13877,7 +13893,19 @@
                                                     (list :include-book
                                                           full-book-name)
                                                     wrld6)
-                                                 wrld6)))))
+                                                 (if (global-val
+                                                      'skip-proofs-seen
+                                                      wrld3) ; installed world
+
+; In this case, the included book is certified and also, since
+; old-skip-proofs-seen = nil, no proofs had been skipped at the time execution
+; began for this include-book.  So if the world after including the book has
+; skip-proofs-seen set, we restore the value to nil.
+
+                                                     (global-set
+                                                      'skip-proofs-seen
+                                                      nil wrld6)
+                                                   wrld6))))))
                                           (wrld8
 
 ; Various events need the answer to the question: have the apply$ books been
@@ -14618,7 +14646,7 @@
                                         guard-checking from its default of T.")
                                 "")))
               (proofs-co state) state nil))
-        ((fast-cert-p state)
+        ((eq (fast-cert-mode state) t)
          (fms "* Step 3:  That completes the admissibility check.  Each form ~
                read was an embedded event form and was admissible.  Fast-cert ~
                mode is active, so we skip the check for local ~
@@ -16686,18 +16714,18 @@
                             (global-val 'known-package-alist wrld1))
                            (acl2x-file
                             (convert-book-string-to-acl2x full-book-string))
-                           (fast-cert-p0 (fast-cert-p state))
+                           (fast-cert-mode (fast-cert-mode state))
                            (fast-cert-p
 
 ; Maybe later we'll support fast-cert for pcert, but not now.
 
                             (and (not pcert)
-                                 fast-cert-p0)))
+                                 (eq fast-cert-mode t))))
                       (pprogn
                        (f-put-global 'useless-runes useless-runes state)
                        (io? event nil state
-                            (fast-cert-p full-book-string cert-op fast-cert-p0
-                                         pcert)
+                            (fast-cert-p full-book-string cert-op
+                                         fast-cert-mode)
                             (fms "CERTIFICATION ATTEMPT~#h~[~|**using ~
                                   fast-cert mode**~|~/ ~]~@0FOR ~
                                   ~x1~%~s2~@3~%~%*~ Step 1: Read ~x1 and ~
@@ -16718,13 +16746,17 @@
                                        (cons #\1 full-book-string)
                                        (cons #\2 (f-get-global 'acl2-version
                                                                state))
-                                       (cons #\3 (if (and fast-cert-p0 pcert)
+                                       (cons #\3 (if (and fast-cert-mode
+                                                          (not fast-cert-p))
                                                      "~|Note that fast-cert ~
-                                                      mode is active but will ~
-                                                      be ignored during ~
-                                                      certification until ~
-                                                      writing the certificate ~
-                                                      file."
+                                                      mode is enabled but ~
+                                                      will be ignored during ~
+                                                      certification, except ~
+                                                      for noting in the ~
+                                                      certificate file that ~
+                                                      fast-cert mode was ~
+                                                      enabled during ~
+                                                      certification."
                                                    "")))
                                  (proofs-co state) state nil))
                        (er-let* ((ev-lst
@@ -16993,11 +17025,11 @@
                                     (cons :ttags ttags-seen)))
                                   (post-alist1 (if fast-cert-p
 
-; With fast-cert we don't roll back the world, so we might have local-include
-; book commands in the world.  We punt and simply record nil here for this
-; post-alist, which forces us to rely on the build system to check that the
-; included books (or at least those that would be included non-locally at
-; include-book time) are all certified.  Future work could perhaps sort out
+; With fast-cert mode active, we don't roll back the world, so we might have
+; local-include book commands in the world.  We punt and simply record nil here
+; for this post-alist, which forces us to rely on the build system to check
+; that the included books (or at least those that would be included non-locally
+; at include-book time) are all certified.  Future work could perhaps sort out
 ; which included books are local and hence to be ignored here.
 
                                                    nil
@@ -17034,7 +17066,7 @@
                                 (let* ((wrld-post-pass1 (w state))
                                        (rollback-pair ; nil or consp
 
-; There is no rollback with fast-cert, hence no rollback-pair.
+; There is no rollback with fast-cert mode active, hence no rollback-pair.
 
                                         (and (not fast-cert-p)
                                              (global-val 'cert-replay
@@ -17190,13 +17222,13 @@
                                                        (cond
                                                         (fast-cert-p
 
-; With fast-cert we don't roll back the world, so we might have local-include
-; book commands in the certification world.  We punt and simply record nil here
-; for the pre-alist , which forces us to rely on the build system to check that
-; the included books from the portcullis commands (or at least those that would
-; be included non-locally at include-book time) are all certified.  Future work
-; could perhaps sort out which included books are local and hence to be ignored
-; here.
+; With fast-cert mode active, we don't roll back the world, so we might have
+; local-include book commands in the certification world.  We punt and simply
+; record nil here for the pre-alist , which forces us to rely on the build
+; system to check that the included books from the portcullis commands (or at
+; least those that would be included non-locally at include-book time) are all
+; certified.  Future work could perhaps sort out which included books are local
+; and hence to be ignored here.
 
                                                          nil)
                                                         (port-index
@@ -17217,7 +17249,7 @@
 ; thorough discussion see the Essay on Hidden Packages Added by Certify-book.
 
                                                        (if fast-cert-p
-; We don't bother with hidden packages when fast-cert is active.
+; We don't bother with hidden packages when fast-cert mode is active.
                                                            (value nil)
                                                          (defpkg-items
                                                            pass1-known-package-alist
@@ -17233,7 +17265,7 @@
                                                              'top-level-cltl-command-stack
                                                              (w state)))
 
-; If we are not using fast-cert, then we will compute an appropriate
+; If fast-cert mode is not active, then we will compute an appropriate
 ; cltl-command-stack later, when we need it.
 
                                                          nil)))
@@ -27185,6 +27217,7 @@
                (value :q))
              :ld-prompt  nil
              :ld-missing-input-ok nil
+             :ld-always-skip-top-level-locals nil
              :ld-pre-eval-filter :all
              :ld-pre-eval-print  nil
              :ld-post-eval-print :command-conventions
@@ -32215,7 +32248,8 @@
 ; During make-event expansion, there is no reason to prohibit local events
 ; (unless we move to inside an encapsulate or include-book, of course).
 
-       nil))
+       nil)
+      (ld-always-skip-top-level-locals nil))
      (protect-system-state-globals
       (er-let* ((result
 

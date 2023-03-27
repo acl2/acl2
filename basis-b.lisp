@@ -3475,6 +3475,7 @@
                          (equal (stobjs-in val wrld) '(nil state))
                          (equal (stobjs-out val wrld) '(nil state)))
                     (cond ((or (eq val 'brr-prompt)
+                               (eq val 'wormhole-prompt)
                                (ttag wrld))
                            (value nil))
                           (t (er soft ctx
@@ -3569,6 +3570,24 @@
    (chk-ld-missing-input-ok val 'set-ld-missing-input-ok state)
    (pprogn
     (f-put-global 'ld-missing-input-ok val state)
+    (value val))))
+
+(defun ld-always-skip-top-level-locals (state)
+  (f-get-global 'ld-always-skip-top-level-locals state))
+
+(defun chk-ld-always-skip-top-level-locals (val ctx state)
+  (cond
+   ((member-eq val '(t nil))
+    (value nil))
+   (t (er soft ctx *ld-special-error* 'ld-always-skip-top-level-locals val))))
+
+(defun set-ld-always-skip-top-level-locals (val state)
+  (er-progn
+   (chk-ld-always-skip-top-level-locals val
+                                        'set-ld-always-skip-top-level-locals
+                                        state)
+   (pprogn
+    (f-put-global 'ld-always-skip-top-level-locals val state)
     (value val))))
 
 (defun new-namep (name wrld)

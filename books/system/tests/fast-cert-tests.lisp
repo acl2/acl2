@@ -3,8 +3,8 @@
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; See also fast-cert-tests.acl2, which contains tests pertaining to fast-cert
-; for events executed at the top level.  The events below are to be executed
-; during certify-book.
+; mode for events executed at the top level.  The events below are to be
+; executed during certify-book.
 
 (in-package "ACL2")
 
@@ -30,7 +30,7 @@
 ;;; Test 1: Redundant encapsulate containing non-local redundant defun
 ;;;;;;;;;;
 
-; Let's first review what happens when fast-cert is not active (i.e., what
+; Let's first review what happens when fast-cert mode is not active (i.e., what
 ; happens by default).  At the top level (hence in forming a porcullis), the
 ; encapsulate below would be empty; it adds no event.  But inside a book being
 ; certified, the include-book pass will see only the second defun of f1.  So:
@@ -70,7 +70,7 @@
  (encapsulate
    ()
    (defun f3 (x) x)))
- 
+
 (encapsulate
   ()
   (defun f3 (x) x))

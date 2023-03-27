@@ -26,6 +26,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -104,7 +105,7 @@
 
 (define atc-make-mv-nth-terms ((indices nat-listp) (term pseudo-termp))
   :returns (terms pseudo-term-listp
-                  :hints (("Goal" :in-theory (enable pseudo-termp))))
+                  :hints (("Goal" :induct t :in-theory (enable pseudo-termp))))
   :short "Create a list of @(tsee mv-nth)s applied to a term
           for a list of indices."
   (cond ((endp indices) nil)
@@ -113,7 +114,8 @@
   ///
   (defret len-of-atc-make-mv-nth-terms
     (equal (len terms)
-           (len indices))))
+           (len indices))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1158,6 +1160,7 @@
        (if-stmt-formula `(and ,if-stmt-formula1 ,if-stmt-formula2))
        (test-type-pred (type-to-recognizer test-type wrld))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
+       (value-kind-when-test-type-pred (pack 'value-kind-when- test-type-pred))
        (if-stmt-hints
         (if (consp else-items)
             `(("Goal" :in-theory '(exec-stmt-when-ifelse-and-true
@@ -1176,7 +1179,9 @@
                                    expr-valuep-of-expr-value
                                    expr-value->value-of-expr-value
                                    value-fix-when-valuep
-                                   ,valuep-when-test-type-pred)))
+                                   ,valuep-when-test-type-pred
+                                   apconvert-expr-value-when-not-value-array
+                                   ,value-kind-when-test-type-pred)))
           `(("Goal" :in-theory '(exec-stmt-when-ifelse-and-true
                                  exec-stmt-when-ifelse-and-false
                                  (:e stmt-kind)
@@ -1191,7 +1196,9 @@
                                  expr-valuep-of-expr-value
                                  expr-value->value-of-expr-value
                                  value-fix-when-valuep
-                                 ,valuep-when-test-type-pred)))))
+                                 ,valuep-when-test-type-pred
+                                 apconvert-expr-value-when-not-value-array
+                                 ,value-kind-when-test-type-pred)))))
        (if-stmt-instructions
         `((casesplit ,(atc-contextualize test-term
                                          gin.context nil nil nil nil nil wrld))
@@ -3029,4 +3036,5 @@
   ///
 
   (defret stmt-kind-of-atc-gen-loop-stmt
-    (equal (stmt-kind (lstmt-gout->stmt gout)) :while)))
+    (equal (stmt-kind (lstmt-gout->stmt gout)) :while)
+    :hints (("Goal" :induct t))))

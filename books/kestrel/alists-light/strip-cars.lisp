@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function strip-cars.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -74,7 +74,8 @@
 (theory-invariant (incompatible (:rewrite strip-cars-of-cdr) (:definition strip-cars)))
 
 (defthmd member-equal-of-strip-cars-iff
-  (implies (alistp alist)
+  (implies (or (alistp alist)
+               key)
            (iff (member-equal key (strip-cars alist))
                 (assoc-equal key alist)))
   :hints (("Goal" :in-theory (enable assoc-equal member-equal strip-cars))))
@@ -95,3 +96,14 @@
   (equal (strip-cars (reverse x))
          (reverse (strip-cars x)))
   :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm strip-cars-iff
+  (iff (strip-cars alist)
+       (consp alist))
+  :hints (("Goal" :in-theory (enable strip-cars))))
+
+(defthm <=-of-acl2-count-of-strip-cars-linear
+  (<= (acl2-count (strip-cars x))
+      (acl2-count x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable strip-cars))))
