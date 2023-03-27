@@ -79,6 +79,7 @@
          (pred (pack fixtype 'p))
          (constructor (pack 'type- fixtype))
          (type-of-value-when-pred (pack 'type-of-value-when- pred))
+         (not-pred-of-value-pointer (pack 'not- pred '-of-value-pointer))
          (name (pack 'exec-expr-asg-indir-when- pred))
          (formula
           `(implies
@@ -113,10 +114,13 @@
                    ,formula
                    :enable (exec-expr-asg
                             exec-expr-pure
-                            apconvert-expr-value
+                            exec-unary
+                            exec-indir
                             exec-ident
+                            apconvert-expr-value
                             read-object-of-objdesign-of-var-to-read-var
-                            ,type-of-value-when-pred))))
+                            ,type-of-value-when-pred
+                            ,not-pred-of-value-pointer))))
       (mv name event)))
 
   (define atc-exec-expr-asg-indir-rules-gen-loop ((types type-listp))
