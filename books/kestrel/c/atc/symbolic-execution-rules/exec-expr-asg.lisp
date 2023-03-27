@@ -110,7 +110,11 @@
                                  compst))))
          (event `(defruled ,name
                    ,formula
-                   :enable (exec-expr-asg ,type-of-value-when-pred))))
+                   :enable (exec-expr-asg
+                            exec-expr-pure
+                            exec-ident
+                            read-object-of-objdesign-of-var-to-read-var
+                            ,type-of-value-when-pred))))
       (mv name event)))
 
   (define atc-exec-expr-asg-indir-rules-gen-loop ((types type-listp))
