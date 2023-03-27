@@ -26,14 +26,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only need the following rule,
-     in order to handle access to static objects.
+    "The first rule serves to handle access to static objects.
      We need to reduce @(tsee objdesign-of-var),
      which arises when opening @(tsee exec-ident),
      to the object designator of the static object,
      under the hypothesis that
      @(tsee read-static-var) on that variable yields a value
-     and that the variable is not in automatic storage."))
+     and that the variable is not in automatic storage.")
+   (xdoc::p
+    "The second and third rules are used in the @(tsee defstruct)-specific
+     theorems generated for symbolic execution of array member accesses.")
+   (xdoc::p
+    "The constant that collects the rules also includes
+     some rules proved elsewhere."))
 
   (defruled objdesign-of-var-when-static
     (implies (and (valuep (read-static-var id compst))
@@ -52,5 +57,23 @@
        :enable (objdesign-of-var-aux
                 var-in-scopes-p))))
 
+  (defruled not-nil-when-objdesignp
+    (implies (objdesignp x)
+             x)
+    :rule-classes :compound-recognizer)
+
+  (defruled read-object-of-objdesign-member
+    (implies (and (valuep (read-object objdes compst))
+                  (value-case (read-object objdes compst) :struct))
+             (equal (read-object (objdesign-member objdes mem) compst)
+                    (value-struct-read mem (read-object objdes compst))))
+    :do-not-induct t
+    :expand (read-object (objdesign-member objdes mem) compst))
+
   (defval *atc-object-designator-rules*
-    '(objdesign-of-var-when-static)))
+    '(objdesign-of-var-when-static
+      not-nil-when-objdesignp
+      read-object-of-objdesign-member
+      objdesignp-of-objdesign-of-var-when-valuep-of-read-var
+      read-object-of-objdesign-of-var-to-read-var
+      objdesign-of-var-when-valuep-of-read-var)))

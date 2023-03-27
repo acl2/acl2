@@ -528,6 +528,9 @@
        where each variable in @('vars')
        is a formal parameter of @('fn') with pointer or array type
        and where @('T') is not @('void') if @('vars') is @('nil').
+       (In general, @('vars') is a subset of
+       the formal parameters of @('fn') with pointer or array type;
+       that is, not all such formal parameters are necessarily affected.)
        The return type of the C function represented by @('fn') is @('T').")
      (xdoc::li
       "If @('fn') is recursive, the unnormalized body must be
