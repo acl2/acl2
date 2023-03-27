@@ -223,3 +223,10 @@
 (defund ignore-and-return-t (x)
   (declare (ignorable x))
   t)
+
+
+(define bit-listp (lst)
+  (if (atom lst)
+      (equal lst nil)
+      (and (bitp (car lst))
+           (bit-listp (cdr lst)))))

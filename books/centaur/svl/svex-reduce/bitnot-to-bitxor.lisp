@@ -87,6 +87,21 @@
                                        ('sv::bitand x y))
                                       ('sv::bitor x y)))
 
+(progn
+  (create-case-match-macro xor-pattern-3a
+                           ('sv::bitor ('sv::bitand ('sv::bitnot x) y)
+                                       ('sv::bitand x ('sv::bitnot y))))
+  (create-case-match-macro xor-pattern-3b
+                           ('sv::bitor ('sv::bitand y ('sv::bitnot x))
+                                       ('sv::bitand x ('sv::bitnot y))))
+  (create-case-match-macro xor-pattern-3c
+                           ('sv::bitor ('sv::bitand ('sv::bitnot x) y)
+                                       ('sv::bitand ('sv::bitnot y) x)))
+  (create-case-match-macro xor-pattern-3d
+                           ('sv::bitor ('sv::bitand y ('sv::bitnot x))
+                                       ('sv::bitand ('sv::bitnot y) x))))
+ 
+
 (local
  (defsection proofs-with-logbitp
 
@@ -193,7 +208,68 @@
                (SV::4VEC-BITXOR x y)))
      :hints (("Goal"
               :use ((:instance xor-pattern-1-lemma1))
-              :in-theory (e/d (4vec-bitnot-to-4vec-bitxor) ()))))))
+              :in-theory (e/d (4vec-bitnot-to-4vec-bitxor) ()))))
+
+
+   (defthm xor-pattern-3
+     (equal (4vec-bitor
+             (4vec-bitand (sv::4vec-bitnot x) y)
+             (4vec-bitand x (sv::4vec-bitnot y)))
+            (sv::4vec-bitxor x y))
+     :hints ((bitops::logbitp-reasoning)))
+
+   (defthm xor-pattern-3-2
+     (equal (4vec-bitor
+             (4vec-bitand (sv::4vec-bitxor -1 x) y)
+             (4vec-bitand (sv::4vec-bitxor -1 y) x))
+            (sv::4vec-bitxor x y))
+     :hints (("Goal"
+              :use ((:instance xor-pattern-3))
+              :in-theory (e/d (4VEC-BITAND-ASSOC-AND-COMM
+                               4vec-bitnot-to-4vec-bitxor)
+                              (SV::4VEC-BITXOR
+                               4VEC-BITOR
+                               4VEC-BITAND)))))
+
+   (defthm xor-pattern-3-3
+     (equal (4vec-bitor
+             (4vec-bitand y (sv::4vec-bitxor -1 x))
+             (4vec-bitand x (sv::4vec-bitxor -1 y)))
+            (sv::4vec-bitxor x y))
+     :hints (("Goal"
+              :use ((:instance xor-pattern-3))
+              :in-theory (e/d (4VEC-BITAND-ASSOC-AND-COMM
+                               4vec-bitnot-to-4vec-bitxor)
+                              (SV::4VEC-BITXOR
+                               4VEC-BITOR
+                               4VEC-BITAND)))))
+
+   (defthm xor-pattern-3-4
+     (equal (4vec-bitor
+             (4vec-bitand (sv::4vec-bitxor -1 x) y )
+             (4vec-bitand x (sv::4vec-bitxor -1 y)))
+            (sv::4vec-bitxor x y))
+     :hints (("Goal"
+              :use ((:instance xor-pattern-3))
+              :in-theory (e/d (4VEC-BITAND-ASSOC-AND-COMM
+                               4vec-bitnot-to-4vec-bitxor)
+                              (SV::4VEC-BITXOR
+                               4VEC-BITOR
+                               4VEC-BITAND)))))
+
+   (defthm xor-pattern-3-5
+     (equal (4vec-bitor
+             (4vec-bitand y (sv::4vec-bitxor -1 x))
+             (4vec-bitand (sv::4vec-bitxor -1 y) x))
+            (sv::4vec-bitxor x y))
+     :hints (("Goal"
+              :use ((:instance xor-pattern-3-3))
+              :in-theory (e/d (4VEC-BITAND-ASSOC-AND-COMM)
+                              (SV::4VEC-BITXOR
+                               4VEC-BITOR
+                               4VEC-BITAND)))))
+
+   ))
 
 
 
@@ -241,6 +317,32 @@
             (svex-reduce-w/-env-apply 'sv::bitxor
                                       (hons-list (svex-convert-bitnot-to-bitxor x)
                                                  (svex-convert-bitnot-to-bitxor y)))))
+
+          ((xor-pattern-3a-p svex)
+           (xor-pattern-3a-body
+            svex
+            (svex-reduce-w/-env-apply 'sv::bitxor
+                                      (hons-list (svex-convert-bitnot-to-bitxor x)
+                                                 (svex-convert-bitnot-to-bitxor y)))))
+          ((xor-pattern-3b-p svex)
+           (xor-pattern-3b-body
+            svex
+            (svex-reduce-w/-env-apply 'sv::bitxor
+                                      (hons-list (svex-convert-bitnot-to-bitxor x)
+                                                 (svex-convert-bitnot-to-bitxor y)))))
+          ((xor-pattern-3c-p svex)
+           (xor-pattern-3c-body
+            svex
+            (svex-reduce-w/-env-apply 'sv::bitxor
+                                      (hons-list (svex-convert-bitnot-to-bitxor x)
+                                                 (svex-convert-bitnot-to-bitxor y)))))
+          ((xor-pattern-3d-p svex)
+           (xor-pattern-3d-body
+            svex
+            (svex-reduce-w/-env-apply 'sv::bitxor
+                                      (hons-list (svex-convert-bitnot-to-bitxor x)
+                                                 (svex-convert-bitnot-to-bitxor y)))))
+          
           ((and (equal (sv::svex-call->fn svex) 'sv::bitnot)
                 (equal (len (sv::svex-call->args svex)) 1))
            (svex-reduce-w/-env-apply 'sv::bitxor
@@ -271,6 +373,8 @@
       :fn svexlist-convert-bitnot-to-bitxor)
     :hints (("Goal"
              :expand ((svex-p svex)
+                      (SVEXLIST-P (CDR (CADR SVEX)))
+                      (SVEX-P (CADR (CADR SVEX)))
                       (SVEX-P (CADR SVEX))
                       (SVEXLIST-P (CDDR SVEX))
                       (SVEX-P (CADDR SVEX))
@@ -340,6 +444,7 @@
                        (svexlist-convert-bitnot-to-bitxor LST))
               :in-theory (e/d (4vec-bitxor-of-minus-and-bitor/bitand
                                4vec-bitnot-to-4vec-bitxor
+                               4VEC-BITAND-ASSOC-AND-COMM
                                SVEX-CALL->ARGS
                                svex-kind
                                SVEX-CALL->FN

@@ -2755,6 +2755,46 @@ x
                                svex-eval-of-integerp-of-svex-is-correct)))))))
 
 
+(define bit-listp-of-svex ((lst sv::svexlist-p)
+                           &key
+                           ((env) 'env)
+                           ((context rp::rp-term-listp) 'context)
+                           ((config svl::svex-reduce-config-p) 'config))
+  :Returns res
+  (if (atom lst)
+      (equal lst nil)
+    (and (bitp-of-svex (car lst))
+         (bit-listp-of-svex (cdr lst))))
+  ///
+
+  (svex-eval-lemma-tmpl
+   (defret svexlist-eval-of-<fn>-is-correct
+     (implies (and res
+                   (sv::svexlist-p lst)
+                   (rp::rp-term-listp context)
+                   (rp::valid-sc env-term a)
+                   (rp::eval-and-all context a)
+                   (rp::falist-consistent-aux env env-term)
+                   (:@ :dollar-eval
+                       (width-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->width-extns config))
+                       (integerp-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->integerp-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->width-extns config) nil)
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   )
+              (bit-listp (sv::svexlist-eval lst (rp-evlt env-term a))))
+     :rule-classes (:rewrite :type-prescription :forward-chaining)
+     :hints (("Goal"
+              
+              :expand (sv::svexlist-eval lst (rp-evlt env-term a))
+
+              :in-theory (e/d (BIT-LISTP)
+                              (svex-eval-width-of-svex-is-correct
+                               svex-eval-of-integerp-of-svex-is-correct)))))))
+
+
 (define bitxor-1-term ((svex sv::svex-p))
   :prepwork ((create-case-match-macro bitxor-of-1-term-1
                                       ('sv::bitxor 1 x))
