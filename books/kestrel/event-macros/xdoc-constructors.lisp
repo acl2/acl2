@@ -1,6 +1,6 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -50,62 +50,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ xdoc::evmac-section (title &rest content)
-  :short "Construct a section
-          of the user documentation of an event macro."
-  :long
-  (xdoc::topstring-p
-   "This provides more abstraction than using a specific heading.")
-  `(xdoc::&&
-    (xdoc::h3 ,title)
-    ,@content))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmacro+ xdoc::evmac-subsection (title &rest content)
-  :short "Construct a subsection
-          of the user documentation of an event macro."
-  :long
-  (xdoc::topstring-p
-   "This provides more abstraction than using a specific heading.")
-  `(xdoc::&&
-    (xdoc::h4 ,title)
-    ,@content))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmacro+ xdoc::evmac-subsubsection (title &rest content)
-  :short "Construct a subsubsection
-          of the user documentation of an event macro."
-  :long
-  (xdoc::topstring-p
-   "This provides more abstraction than using a specific heading.")
-  `(xdoc::&&
-    (xdoc::h5 ,title)
-    ,@content))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmacro+ xdoc::evmac-subsubsubsection (title &rest content)
-  :short "Construct a subsubsubsection
-          of the user documentation of an event macro."
-  :long
-  (xdoc::topstring-p
-   "This provides more abstraction than using a specific heading.")
-  `(xdoc::&&
-    (xdoc::h6 ,title)
-    ,@content))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defconst xdoc::*evmac-section-intro-title*
   "Introduction")
 
 (defmacro+ xdoc::evmac-section-intro (&rest content)
   :short "Construct the introduction section
           of the user documentation of an event macro."
-  `(xdoc::evmac-section xdoc::*evmac-section-intro-title*
-                        ,@content))
+  `(xdoc::section xdoc::*evmac-section-intro-title*
+                  ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,8 +67,8 @@
 (defmacro+ xdoc::evmac-section-form (&rest content)
   :short "Construct the general form section
           of the user documentation of an event macro."
-  `(xdoc::evmac-section xdoc::*evmac-section-form-title*
-                        ,@content))
+  `(xdoc::section xdoc::*evmac-section-form-title*
+                  ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,8 +78,8 @@
 (defmacro+ xdoc::evmac-section-inputs (&rest content)
   :short "Construct the inputs section
           of the user documentation of an event macro."
-  `(xdoc::evmac-section xdoc::*evmac-section-inputs-title*
-                        ,@content))
+  `(xdoc::section xdoc::*evmac-section-inputs-title*
+                  ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -150,7 +102,7 @@
                                 "`"
                                 xdoc::*evmac-section-inputs-title*
                                 "' section")))
-    `(xdoc::evmac-section
+    `(xdoc::section
       xdoc::*evmac-section-appconds-title*
       (xdoc::p
        "In order for "
@@ -180,8 +132,8 @@
 (defmacro+ xdoc::evmac-section-generated (&rest content)
   :short "Construct the generated events section
           of the user documentation of an event macro."
-  `(xdoc::evmac-section xdoc::*evmac-section-generated-title*
-                        ,@content))
+  `(xdoc::section xdoc::*evmac-section-generated-title*
+                  ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,7 +158,7 @@
      the @('macro-ref') variable is not a link."))
   (b* ((macro-name (string-downcase (symbol-name macro)))
        (macro-ref (concatenate 'string "@('" macro-name "')")))
-    `(xdoc::evmac-section
+    `(xdoc::section
       xdoc::*evmac-section-redundancy-title*
       (xdoc::p
        (concatenate
@@ -843,7 +795,7 @@
                   (xdoc::a :href ,notes-ref "these notes")
                   ", which use "
                   (xdoc::a :href "res/kestrel-design-notes/notation.pdf"
-                    "this notation")
+                           "this notation")
                   ".")
                  ,@(and correspondences
                         `((xdoc::p
