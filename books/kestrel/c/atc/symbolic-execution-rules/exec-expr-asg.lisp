@@ -103,7 +103,8 @@
                  (equal eval1 (apconvert-expr-value eval))
                  (expr-valuep eval1)
                  (equal val (expr-value->value eval1))
-                 (,pred val))
+                 (,pred val)
+                 (valuep (read-object (value-pointer->designator ptr) compst)))
             (equal (exec-expr-asg e compst fenv limit)
                    (write-object (value-pointer->designator ptr)
                                  val
