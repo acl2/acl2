@@ -465,3 +465,9 @@
            :in-theory (e/d (bitp
                             logbit)
                            ()))))
+
+(def-rp-rule and*-of-t
+  (and (equal (and* t x) (and* 1 x))
+       (Implies (and (natp num1) (natp num2))
+                (equal (and* num1 (and* num2 x))
+                       (and* (+ num1 num2) x)))))
