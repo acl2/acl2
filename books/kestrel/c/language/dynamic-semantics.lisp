@@ -1058,6 +1058,8 @@
                (error (list :expr-asg-indir-not-var (expr-fix e))))
               (eval (exec-expr-pure arg compst))
               ((when (errorp eval)) eval)
+              (eval (apconvert-expr-value eval))
+              ((when (errorp eval)) eval)
               (ptr (expr-value->value eval))
               ((unless (value-case ptr :pointer))
                (error (list :indir-not-pointer ptr)))

@@ -112,6 +112,7 @@
                    ,formula
                    :enable (exec-expr-asg
                             exec-expr-pure
+                            apconvert-expr-value
                             exec-ident
                             read-object-of-objdesign-of-var-to-read-var
                             ,type-of-value-when-pred))))
