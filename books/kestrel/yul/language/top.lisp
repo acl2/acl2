@@ -38,5 +38,9 @@
   :order-subtopics nil)
 
 (xdoc::order-subtopics language
-  (concrete-syntax abstract-syntax static-semantics dynamic-semantics
-   static-soundness errors))
+                       (concrete-syntax
+                        abstract-syntax
+                        static-semantics
+                        dynamic-semantics
+                        static-soundness
+                        errors))
