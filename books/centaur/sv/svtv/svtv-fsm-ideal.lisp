@@ -32,8 +32,10 @@
 (include-book "../svex/fixpoint-override")
 (include-book "../svex/compose-theory-fixpoint")
 (include-book "../svex/compose-theory-monotonicity")
-(include-book "svtv-stobj-pipeline-monotonicity")
-(include-book "svtv-spec")
+(include-book "svtv-stobj-export")
+;; (include-book "svtv-stobj-pipeline-monotonicity")
+(include-book "override-envlist-defs")
+;; (include-book "svtv-spec")
 (include-book "../svex/depends")
 (local (include-book "../svex/compose-theory-deps"))
 (local (include-book "../svex/alist-thms"))
@@ -258,156 +260,19 @@
 
 
 
-(define svarlist-change-override ((x svarlist-p)
-                                  (type svar-overridetype-p))
-  :returns (new-x svarlist-p)
-  (if (atom x)
-      nil
-    (cons (svar-change-override (car x) type)
-          (svarlist-change-override (cdr x) type)))
-  ///
-  (defret svarlist-override-p-of-<fn>
-    (iff (svarlist-override-p new-x other-type)
-         (or (atom x)
-             (svar-overridetype-equiv other-type type)))
-    :hints(("Goal" :in-theory (enable svarlist-override-p)))))
 
-(define svarlist-to-override-triples ((x svarlist-p))
-  :returns (triples svar-override-triplelist-p)
-  (if (atom x)
-      nil
-    (cons (b* ((x1 (car x)))
-            (make-svar-override-triple
-             :refvar x1
-             :valvar (svar-change-override x1 :val)
-             :testvar (svar-change-override x1 :test)))
-          (svarlist-to-override-triples (cdr x))))
-  ///
-  (defret svar-override-triplelist->refvars-of-<fn>
-    (equal (svar-override-triplelist->refvars triples)
-           (svarlist-fix x)))
+(defthmd svarlist-to-override-alist-in-terms-of-svarlist-to-override-triples
+  (implies (svarlist-override-p x nil)
+           (equal (svarlist-to-override-alist x)
+                  (svar-override-triplelist->override-alist
+                   (svarlist-to-override-triples x))))
+  :hints(("Goal" :in-theory (enable svarlist-to-override-alist
+                                    svar-change-override
+                                    svarlist-override-p
+                                    svar-override-p
+                                    svar-override-triplelist->override-alist
+                                    svarlist-to-override-triples))))
 
-
-  (local (defret member-non-override-val-valvars-of-<fn>
-           (implies (not (svar-override-p v :val))
-                    (not (member-equal v (svar-override-triplelist->valvars triples))))))
-
-  (local (defret member-testvars-when-not-member-of-<fn>
-           (implies (and (svarlist-override-p x nil)
-                         (svar-override-p v nil)
-                         (not (member-equal (svar-fix v) (svarlist-fix x))))
-                    (not (member-equal (svar-change-override v :test)
-                                       (svar-override-triplelist->testvars triples))))
-           :hints(("Goal" :in-theory (enable svarlist-override-p
-                                             svarlist-fix
-                                             equal-of-svar-change-override)
-                   :induct t))))
-
-  (local (defret member-valvars-when-not-member-of-<fn>
-           (implies (and (svarlist-override-p x nil)
-                         (svar-override-p v nil)
-                         (not (member-equal (svar-fix v) (svarlist-fix x))))
-                    (not (member-equal (svar-change-override v :val)
-                                       (svar-override-triplelist->valvars triples))))
-           :hints(("Goal" :in-theory (enable svarlist-override-p
-                                             svarlist-fix
-                                             equal-of-svar-change-override)
-                   :induct t))))
-
-  (defthmd svar-override-p-when-other
-    (implies (and (svar-override-p x type2)
-                  (not (svar-overridetype-equiv type1 type2)))
-             (not (svar-override-p x type1)))
-    :hints(("Goal" :in-theory (enable svar-override-p))))
-
-  (local (defret member-non-override-test-testvars-of-<fn>
-           (implies (not (svar-override-p v :test))
-                    (not (member-equal v (svar-override-triplelist->testvars triples))))))
-
-  (local (defret member-override-test-when-svarlist-non-override-p
-           (implies (and (svar-override-p v :test)
-                         (svarlist-override-p x nil))
-                    (not (member-equal v (svarlist-fix x))))
-           :hints(("Goal" :in-theory (enable svarlist-override-p svarlist-fix
-                                             svar-override-p-when-other)))))
-
-  (local (defret member-override-val-when-svarlist-non-override-p
-           (implies (and (svar-override-p v :val)
-                         (svarlist-override-p x nil))
-                    (not (member-equal v (svarlist-fix x))))
-           :hints(("Goal" :in-theory (enable svarlist-override-p svarlist-fix
-                                             svar-override-p-when-other)))))
-
-  (defret no-duplicates-of-<fn>
-    (implies (and (no-duplicatesp-equal (svarlist-fix x))
-                  (svarlist-override-p x nil))
-             (and (no-duplicatesp-equal (svar-override-triplelist->valvars triples))
-                  (no-duplicatesp-equal (svar-override-triplelist->testvars triples))
-                  (not (intersectp-equal (svar-override-triplelist->valvars triples)
-                                         (svar-override-triplelist->testvars triples)))
-                  (not (intersectp-equal (svarlist-fix x) (svar-override-triplelist->valvars triples)))
-                  (not (intersectp-equal (svarlist-fix x) (svar-override-triplelist->testvars triples)))))
-    :hints(("Goal" :in-theory (enable svarlist-override-p
-                                      equal-of-svar-change-override
-                                      svar-override-p-when-other
-                                      svarlist-fix))))
-
-  (defret testvar-override-p-of-<fn>
-    (implies (svar-override-p v nil)
-             (not (member-equal v (svar-override-triplelist->testvars triples))))
-    :hints(("Goal" :in-theory (enable svar-addr-p))))
-
-  (defret testvars-dont-intersect-addr-vars-of-<fn>
-    (implies (svarlist-override-p v nil)
-             (and (not (intersectp-equal (svar-override-triplelist->testvars triples) v))
-                  (not (intersectp-equal v (svar-override-triplelist->testvars triples)))))
-    :hints(("Goal" :induct (svarlist-override-p v nil)
-            :in-theory (enable svarlist-override-p))))
-
-  (defret valvar-non-addr-of-<fn>
-    (implies (svar-override-p v nil)
-             (not (member-equal v (svar-override-triplelist->valvars triples))))
-    :hints(("Goal" :in-theory (enable svar-addr-p))))
-
-  (defret valvars-dont-intersect-addr-vars-of-<fn>
-    (implies (svarlist-override-p v nil)
-             (and (not (intersectp-equal (svar-override-triplelist->valvars triples) v))
-                  (not (intersectp-equal v (svar-override-triplelist->valvars triples)))))
-    :hints(("Goal" :induct (svarlist-override-p v nil)
-            :in-theory (enable svarlist-override-p))))
-
-  (defret override-var-non-addr-of-<fn>
-    (implies (svar-override-p v nil)
-             (not (member-equal v (svar-override-triplelist-override-vars triples))))
-    :hints(("Goal" :in-theory (enable svar-addr-p
-                                      svar-override-triplelist-override-vars))))
-
-  (defret override-vars-dont-intersect-addr-vars-of-<fn>
-    (implies (svarlist-override-p v nil)
-             (and (not (intersectp-equal (svar-override-triplelist-override-vars triples) v))
-                  (not (intersectp-equal v (svar-override-triplelist-override-vars triples)))))
-    :hints(("Goal" :induct (svarlist-override-p v nil)
-            :in-theory (enable svarlist-override-p))))
-
-  (defretd svarlist-to-override-alist-in-terms-of-<fn>
-    (implies (svarlist-override-p x nil)
-             (equal (svarlist-to-override-alist x)
-                    (svar-override-triplelist->override-alist triples)))
-    :hints(("Goal" :in-theory (enable svarlist-to-override-alist
-                                      svar-change-override
-                                      svarlist-override-p
-                                      svar-override-p
-                                      svar-override-triplelist->override-alist))))
-
-  (defretd valvars-of-<fn>
-    (equal (svar-override-triplelist->valvars triples)
-           (svarlist-change-override x :val))
-    :hints(("Goal" :in-theory (enable svarlist-change-override))))
-
-  (defretd testvars-of-<fn>
-    (equal (svar-override-triplelist->testvars triples)
-           (svarlist-change-override x :test))
-    :hints(("Goal" :in-theory (enable svarlist-change-override)))))
 
 
 (define svtv-override-varlist-muxes-agree ((vars svarlist-p)
@@ -498,7 +363,7 @@
 
 
 
-(local (in-theory (disable SVAR-OVERRIDE-TRIPLELIST-ENV-OK-IN-TERMS-OF-SVEX-OVERRIDE-TRIPLELIST-ENV-OK)))
+;(local (in-theory (disable SVAR-OVERRIDE-TRIPLELIST-ENV-OK-IN-TERMS-OF-SVEX-OVERRIDE-TRIPLELIST-ENV-OK)))
 
 (defthm svarlist-addr-p-of-svtv-assigns-override-vars
   (implies (svarlist-addr-p (svex-alist-keys assigns))
@@ -620,6 +485,8 @@
                     (env1 (svex-env-extract (svexlist-vars x) (mv-nth 0 (svexlist-partial-monotonic-eval-witness params x))))
                     (env2 (svex-env-extract (svexlist-vars x) (mv-nth 1 (svexlist-partial-monotonic-eval-witness params x)))))))))
 
+  (local (in-theory (enable svexlist-vars-of-svex-alist-vals)))
+  
   (defthm svex-alist-monotonic-on-vars-implies-partial-monotonic
     (implies (and (svex-alist-monotonic-on-vars vars x)
                   (subsetp (set-difference-equal (svex-alist-vars x)
@@ -1008,361 +875,12 @@
                                     svar-override-triple-mux-agrees))))
 
 
-(defcong set-equiv equal (svarlist-override-p x type) 1
-  :hints (("goal" :use ((:instance (:functional-instance acl2::element-list-p-set-equiv-congruence
-                                    (acl2::element-p (lambda (x) (svar-override-p x type)))
-                                    (acl2::element-list-final-cdr-p (lambda (x) t))
-                                    (acl2::element-list-p (lambda (x) (svarlist-override-p x type))))
-                         (x x) (y x-equiv)))
-           :in-theory (enable svarlist-override-p))))
 
 
 
 
 
 
-(define 4vec-override-mux-<<= ((impl-test 4vec-p)
-                               (impl-val 4vec-p)
-                               (spec-test 4vec-p)
-                               (spec-val 4vec-p)
-                               (spec-ref 4vec-p))
-  ;; Just like 4vec-override-mux-agrees, but checks 4vec-<<= instead of equal.
-  (b* ((spec-mux (4vec-bit?! spec-test spec-val spec-ref)))
-    (4vec-<<= (4vec-bit?! impl-test impl-val spec-mux)
-              spec-mux))
-  ///
-
-  (local (in-theory (disable bitops::logior-<-0-linear-2
-                             bitops::logand->=-0-linear-2
-                             bitops::upper-bound-of-logand
-                             bitops::lognot-<-const
-                             bitops::logand->=-0-linear-1
-                             bitops::logand->=-0-linear-2
-                             bitops::logbitp-when-bit
-                             bitops::lognot-natp
-                             bitops::logand-natp-type-1
-                             bitops::logbitp-when-bitmaskp)))
-
-  (local (defthm lemma1
-           (implies (4vec-<<= (4vec-bit?! impl-test impl-val mux) mux)
-                    (4vec-<<= mux
-                              (4vec-bit?! impl-test (4vec-x-override impl-val mux) mux)))
-           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-x-override 4vec-<<=))
-                  (bitops::logbitp-reasoning))))
-
-  (local (defthm lemma2
-            (implies (4vec-<<= (4vec-bit?! impl-test impl-val mux) mux)
-                     (4vec-<<= (4vec-bit?! impl-test (4vec-x-override impl-val mux) mux)
-                               mux))
-            :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-x-override 4vec-<<=))
-                   (bitops::logbitp-reasoning))))
-
-  (local (defthm lemma
-           (implies (4vec-<<= (4vec-bit?! impl-test impl-val mux) mux)
-                    (equal (4vec-bit?! impl-test (4vec-x-override impl-val mux) mux)
-                           (4vec-fix mux)))
-           :hints(("Goal" :use ((:instance 4vec-<<=-asymm
-                                 (y (4vec-bit?! impl-test (4vec-x-override impl-val mux) mux))
-                                 (x (4vec-fix mux))))
-                   :in-theory (disable 4vec-<<=-asymm)))))
-
-  (defthm 4vec-override-mux-agrees-of-x-override-with-mux-when-4vec-override-mux-<<=
-    (implies (4vec-override-mux-<<= impl-test impl-val spec-test spec-val spec-ref)
-             (4vec-override-mux-agrees impl-test (4vec-x-override impl-val (4vec-bit?! spec-test spec-val spec-ref))
-                                       spec-test spec-val spec-ref))
-    :hints(("Goal" :in-theory (enable 4vec-override-mux-agrees))))
-
-
-  (local (defthm lemma4
-           (implies (and (4vec-<<= (4vec-bit?! x y z1) z1)
-                         (4vec-<<= z1 z2))
-                    (4vec-<<= (4vec-bit?! x y z2) z2))
-           :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=
-                                             4vec-<<= 4vec-bit?!))
-                  (bitops::logbitp-reasoning))))
-
-  (defthm 4vec-override-mux-<<=-when-spec-ref-greater
-    (implies (And (4vec-override-mux-<<= impl-test impl-val spec-test spec-val spec-ref1)
-                  (4vec-<<= spec-ref1 spec-ref2))
-             (4vec-override-mux-<<= impl-test impl-val spec-test spec-val spec-ref2))
-    :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=))
-           ;; (bitops::logbitp-reasoning)
-           ))
-
-  (local (defthm 4vec-bit?!-of-then-x-less-than-else
-           (4vec-<<= (4vec-bit?! test (4vec-x) else) else)
-           :hints(("Goal" :in-theory (enable 4vec-<<= 4vec-bit?!))
-                  (bitops::logbitp-reasoning))))
-
-
-
-  (defthm 4vec-override-mux-<<=-when-impl-test-x
-    (4vec-override-mux-<<= (4vec-x) impl-val spec-test spec-val spec-ref)
-    :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=))))
-
-  (defthm 4vec-override-mux-<<=-when-impl-val-x
-    (4vec-override-mux-<<= impl-test (4vec-x) spec-test spec-val spec-ref)
-    :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=)))))
-
-
-(define svar-override-triple-mux-<<= ((x svar-override-triple-p)
-                                      (impl-env svex-env-p)
-                                      (spec-env svex-env-p)
-                                      (spec-outs svex-env-p))
-  (b* (((svar-override-triple x)))
-    (4vec-override-mux-<<=
-     (svex-env-lookup x.testvar impl-env)
-     (svex-env-lookup x.valvar impl-env)
-     (svex-env-lookup x.testvar spec-env)
-     (svex-env-lookup x.valvar spec-env)
-     (svex-env-lookup x.refvar spec-outs))))
-
-
-(define svar-override-triplelist-muxes-<<= ((x svar-override-triplelist-p)
-                                              (impl-env svex-env-p)
-                                              (spec-env svex-env-p)
-                                              (spec-outs svex-env-p))
-  (if (atom x)
-      t
-    (and (svar-override-triple-mux-<<= (car x) impl-env spec-env spec-outs)
-         (svar-override-triplelist-muxes-<<= (cdr x) impl-env spec-env spec-outs)))
-  ///
-  (defthm svar-override-triplelist-muxes-<<=-of-append-impl-env-non-onverrides
-    (implies (and (not (intersectp-equal (svar-override-triplelist->valvars x)
-                                         (alist-keys (svex-env-fix a))))
-                  (not (intersectp-equal (svar-override-triplelist->testvars x)
-                                         (alist-keys (svex-env-fix a)))))
-             (equal (svar-override-triplelist-muxes-<<= x (append a impl-env) spec-env spec-outs)
-                    (svar-override-triplelist-muxes-<<= x impl-env spec-env spec-outs)))
-    :hints(("Goal" :in-theory (enable svar-override-triplelist->testvars
-                                      svar-override-triplelist->valvars
-                                      svar-override-triple-mux-<<=
-                                      svex-env-boundp-iff-member-alist-keys))))
-
-  (defthm svar-override-triplelist-muxes-<<=-of-append-spec-env-non-onverrides
-    (implies (and (not (intersectp-equal (svar-override-triplelist->valvars x)
-                                         (alist-keys (svex-env-fix a))))
-                  (not (intersectp-equal (svar-override-triplelist->testvars x)
-                                         (alist-keys (svex-env-fix a)))))
-             (equal (svar-override-triplelist-muxes-<<= x impl-env (append a spec-env) spec-outs)
-                    (svar-override-triplelist-muxes-<<= x impl-env spec-env spec-outs)))
-    :hints(("Goal" :in-theory (enable svar-override-triplelist->testvars
-                                      svar-override-triplelist->valvars
-                                      svar-override-triple-mux-<<=
-                                      svex-env-boundp-iff-member-alist-keys))))
-
-  (defthm svar-override-triplelist-muxes-<<=-of-extract-impl-env
-    (implies (subsetp-equal (svar-override-triplelist-override-vars x) (svarlist-fix keys))
-             (equal (svar-override-triplelist-muxes-<<= x (svex-env-extract keys impl-env) spec-env spec-outs)
-                    (svar-override-triplelist-muxes-<<= x impl-env spec-env spec-outs)))
-    :hints(("Goal" :in-theory (enable svex-env-boundp-iff-member-alist-keys
-                                      svar-override-triple-mux-<<=
-                                      svar-override-triplelist-override-vars)))))
-
-
-
-
-(define svar-override-triplelist-mux-override-intermediate-env ((x svar-override-triplelist-p)
-                                                                (impl-env svex-env-p)
-                                                                (spec-env svex-env-p)
-                                                                (spec-outs svex-env-p))
-  :returns (intermed-env svex-env-p)
-  (b* (((when (atom x)) nil)
-       ((svar-override-triple x1) (car x)))
-    (cons (cons x1.valvar
-                (4vec-x-override (svex-env-lookup x1.valvar impl-env)
-                                 (4vec-bit?! (svex-env-lookup x1.testvar spec-env)
-                                             (svex-env-lookup x1.valvar spec-env)
-                                             (svex-env-lookup x1.refvar spec-outs))))
-          (svar-override-triplelist-mux-override-intermediate-env (cdr x) impl-env spec-env spec-outs)))
-  ///
-  (defret svex-env-boundp-of-<fn>
-    (iff (svex-env-boundp var intermed-env)
-         (member-equal (svar-fix var) (svar-override-triplelist->valvars x)))
-    :hints(("Goal" :in-theory (enable svex-env-boundp-of-cons-split))))
-
-  (defret svex-env-lookup-of-<fn>
-    (equal (svex-env-lookup var intermed-env)
-           (b* (((svar-override-triple trip) (svar-override-triplelist-lookup-valvar var x)))
-             (if trip
-                 (4vec-x-override (svex-env-lookup trip.valvar impl-env)
-                                  (4vec-bit?! (svex-env-lookup trip.testvar spec-env)
-                                              (svex-env-lookup trip.valvar spec-env)
-                                              (svex-env-lookup trip.refvar spec-outs)))
-               (4vec-x))))
-    :hints(("Goal" :in-theory (enable svar-override-triplelist-lookup-valvar
-                                      svex-env-lookup-of-cons-split))))
-
-  ;; (local (defthm member-testvar-valvars-of-triples-when-not-intersectp
-  ;;          (implies (and (member-equal (svar-override-triple-fix trip)
-  ;;                                      (svar-override-triplelist-fix triples))
-  ;;                        (member-equal (svar-override-triple-fix trip2)
-  ;;                                      (svar-override-triplelist-fix triples))
-  ;;                        (not (intersectp-equal (svar-override-triplelist->valvars triples)
-  ;;                                               (svar-override-triplelist->testvars triples))))
-  ;;                   (not (equal (svar-override-triple->testvar trip)
-  ;;                               (svar-override-triple->valvar trip2))))
-  ;;          :hints(("Goal" :in-theory (enable svar-override-triplelist->valvars
-  ;;                                            svar-override-triplelist->testvars
-  ;;                                            svar-override-triplelist-fix)))))
-
-  (local (defthm member-testvar-of-testvars-when-member-triple
-           (implies (and (member-equal (svar-override-triple-fix trip)
-                                       (svar-override-triplelist-fix triples)))
-                    (member-equal (svar-override-triple->testvar trip)
-                                  (svar-override-triplelist->testvars triples)))
-           :hints(("Goal" :in-theory (enable svar-override-triplelist->testvars
-                                             svar-override-triplelist-fix)))))
-
-  (local (defthm member-valvar-of-valvars-when-member-triple
-           (implies (and (member-equal (svar-override-triple-fix trip)
-                                       (svar-override-triplelist-fix triples)))
-                    (member-equal (svar-override-triple->valvar trip)
-                                  (svar-override-triplelist->valvars triples)))
-           :hints(("Goal" :in-theory (enable svar-override-triplelist->valvars
-                                             svar-override-triplelist-fix)))))
-
-
-  (local (defthm member-testvar-valvars-when-not-intersectp
-           (implies (and (member-equal (svar-override-triple-fix trip)
-                                       (svar-override-triplelist-fix triples))
-                         (not (intersectp-equal (svar-override-triplelist->valvars triples)
-                                                (svar-override-triplelist->testvars triples))))
-                    (not (member-equal (svar-override-triple->testvar trip)
-                                       (svar-override-triplelist->valvars triples))))
-           :hints(("Goal" :in-theory (enable svar-override-triplelist->valvars
-                                             svar-override-triplelist->testvars
-                                             svar-override-triplelist-fix)))))
-
-  (local (defthm svar-override-triple->valvar-of-lookup-valvar
-           (implies (member-equal (svar-fix key) (svar-override-triplelist->valvars x))
-                    (equal (svar-override-triple->valvar (svar-override-triplelist-lookup-valvar key x))
-                           (svar-fix key)))
-           :hints(("Goal" :in-theory (enable svar-override-triplelist-lookup-valvar
-                                             svar-override-triplelist->valvars)))))
-
-
-  (local (defthm lookup-valvar-of-svar-override-triple->valvar-when-no-dups
-           (implies (and (member-equal (svar-override-triple-fix trip)
-                                       (svar-override-triplelist-fix x))
-                         (no-duplicatesp-equal (svar-override-triplelist->valvars x)))
-                    (equal (svar-override-triplelist-lookup-valvar (svar-override-triple->valvar trip) x)
-                           (svar-override-triple-fix trip)))
-           :hints(("Goal" :in-theory (enable svar-override-triplelist-lookup-valvar
-                                             svar-override-triplelist->valvars
-                                             svar-override-triplelist-fix)))))
-
-  (local (defret <fn>-when-svar-override-triplelist-muxes-<<=-lemma
-           (implies (and (svar-override-triplelist-muxes-<<= y impl-env spec-env spec-outs)
-                         (not (intersectp-equal (svar-override-triplelist->valvars x)
-                                                (svar-override-triplelist->testvars x)))
-                         (no-duplicatesp-equal (svar-override-triplelist->valvars x))
-                         (subsetp (svar-override-triplelist-fix y) (svar-override-triplelist-fix x)))
-                    (svar-override-triplelist-muxes-agree
-                     y (append intermed-env
-                               (svex-env-extract (svar-override-triplelist->testvars x) impl-env)
-                               spec-env)
-                     spec-env spec-outs))
-           :hints(("Goal" :in-theory (e/d (svar-override-triplelist-muxes-<<=
-                                           svar-override-triplelist-muxes-agree
-                                           svar-override-triplelist->testvars
-                                           svar-override-triplelist->valvars
-                                           svar-override-triple-mux-<<=
-                                           svar-override-triple-mux-agrees
-                                           svar-override-triplelist-fix
-                                           svex-env-lookup-of-cons-split))
-                   :induct (len y)))))
-
-  (defret <fn>-when-svar-override-triplelist-muxes-<<=
-    (implies (and (svar-override-triplelist-muxes-<<= x impl-env spec-env spec-outs)
-                  (not (intersectp-equal (svar-override-triplelist->valvars x)
-                                         (svar-override-triplelist->testvars x)))
-                  (no-duplicatesp-equal (svar-override-triplelist->valvars x)))
-             (svar-override-triplelist-muxes-agree
-              x (append intermed-env
-                        (svex-env-extract (svar-override-triplelist->testvars x) impl-env)
-                        spec-env)
-              spec-env spec-outs))
-    :hints(("Goal" :use ((:instance <fn>-when-svar-override-triplelist-muxes-<<=-lemma
-                          (y x)))
-            :in-theory (disable <fn> <fn>-when-svar-override-triplelist-muxes-<<=-lemma))))
-
-
-  (defret svex-env-extract-testvars-of-append-<fn>
-    (implies (and (subsetp-equal (svarlist-fix vars) (svar-override-triplelist->testvars x))
-                  (not (intersectp-equal (svar-override-triplelist->valvars x)
-                                         (svar-override-triplelist->testvars x))))
-             (equal (svex-env-extract vars (append intermed-env other-env))
-                    (svex-env-extract vars other-env)))
-    :hints(("Goal" :in-theory (e/d (svex-env-extract)
-                                   (<fn>))
-            :induct (len vars))))
-
-  (local (defthm override-vars-under-set-equiv
-           (set-equiv (svar-override-triplelist-override-vars x)
-                      (append (svar-override-triplelist->testvars x)
-                              (svar-override-triplelist->valvars x)))
-           :hints(("Goal" :in-theory (enable svar-override-triplelist->valvars
-                                             svar-override-triplelist->testvars
-                                             svar-override-triplelist-override-vars)
-                   :induct t)
-                  (and stable-under-simplificationp
-                       '(:in-theory (enable acl2::set-unequal-witness-rw))))))
-
-  (defret <fn>->>=-impl-env
-    (implies (svex-env-<<= (svex-env-removekeys (svar-override-triplelist-override-vars x) impl-env) spec-env)
-             (svex-env-<<= impl-env (append intermed-env
-                                            (svex-env-extract (svar-override-triplelist->testvars x) impl-env)
-                                            spec-env)))
-    :hints(("goal" :in-theory (disable <fn>))
-           (and stable-under-simplificationp
-                (let* ((lit (car (last clause)))
-                       (w `(svex-env-<<=-witness . ,(cdr lit))))
-                  `(:expand (,lit)
-                    :use ((:instance svex-env-<<=-necc
-                           (x (svex-env-removekeys (svar-override-triplelist-override-vars x) impl-env))
-                           (y spec-env)
-                           (var ,w)))
-                    :in-theory (disable svex-env-<<=-necc))))))
-
-  (defret svex-envs-agree-except-override-vars-of-<fn>
-    (svex-envs-agree-except (svar-override-triplelist-override-vars x)
-                            (append intermed-env
-                                    (svex-env-extract (svar-override-triplelist->testvars x) impl-env)
-                                    spec-env)
-                            spec-env)
-    :hints(("Goal" :in-theory (enable svex-envs-agree-except-by-witness))))
-
-  (defret svex-env-muxtests-subsetp-of-<fn>
-    (implies (and (subsetp-equal (svarlist-fix testvars) (svar-override-triplelist->testvars x))
-                  (not (intersectp-equal (svar-override-triplelist->valvars x)
-                                         (svar-override-triplelist->testvars x))))
-             (equal (svex-env-muxtests-subsetp
-                     testvars
-                     spec-env
-                     (append intermed-env
-                             (svex-env-extract (svar-override-triplelist->testvars x) impl-env)
-                             spec-env))
-                    (svex-env-muxtests-subsetp testvars spec-env impl-env)))
-    :hints(("Goal" :in-theory (enable svarlist-fix svex-env-muxtests-subsetp)))))
-
-
-(define svar-override-triplelist-envlists-muxes-<<= ((x svar-override-triplelist-p)
-                                                     (impl-envs svex-envlist-p)
-                                                     (spec-envs svex-envlist-p)
-                                                     (spec-outs svex-envlist-p))
-  (if (atom impl-envs)
-      t
-    (and (svar-override-triplelist-muxes-<<= x (car impl-envs) (car spec-envs) (car spec-outs))
-         (svar-override-triplelist-envlists-muxes-<<= x (cdr impl-envs) (cdr spec-envs) (cdr spec-outs)))))
-
-(define svex-envlists-muxtests-subsetp ((tests svarlist-p)
-                                        (spec-envs svex-envlist-p)
-                                        (impl-envs svex-envlist-p))
-  (if (atom spec-envs)
-      t
-    (and (svex-env-muxtests-subsetp tests (car spec-envs) (car impl-envs))
-         (svex-envlists-muxtests-subsetp tests (cdr spec-envs) (cdr impl-envs)))))
 
 
 (defthm svex-env-muxtests-subsetp-of-append-spec-env-non-testvars
@@ -1392,6 +910,12 @@
                                                   vars-of-svex-compose-strong)
                                  (member-svex-alist-keys))
           :induct (len x))))
+
+
+;; (define svex-override-triplelist-muxes-agree ((triples svex-override-triplelist-p)
+                                              
+
+
 
 (define flatnorm->ideal-fsm ((x flatnorm-res-p))
   :returns (fsm base-fsm-p)
@@ -1434,29 +958,31 @@
   ;; an evaluation of the ideal-fsm with (more, but <<=-compatible) overrides approximates another evaluation with
   ;; fewer overrides.  For this, we basically combine steps 1 and 3 above, skipping step 2.
 
-  ;; 0. ideal-fsm == ideal-fsm with overrides
-  (defthm flatnorm->ideal-fsm-equivalent-to-ideal-fsm-with-overrides-values
-    (b* (((flatnorm-res x))
-         ((base-fsm ideal-fsm) (flatnorm->ideal-fsm x))
-         (override-flatnorm (flatnorm-add-overrides x triples))
-         ((base-fsm override-fsm) (flatnorm->ideal-fsm override-flatnorm))
-         (override-vars (svar-override-triplelist-override-vars triples))
-         (spec-values (svex-alist-eval ideal-fsm.values ref-env))
-         (impl-values (svex-alist-eval override-fsm.values override-env)))
-      (implies (and
-                ;; since this is just a lemma for later in this encapsulate we'll explicitly bind ref-env to what we need
-                (bind-free '((ref-env . ref-env)) (ref-env))
 
-                (svex-envs-agree-except override-vars override-env ref-env)
-                (svex-alist-monotonic-on-vars (svex-alist-keys x.assigns) x.assigns)
-                (no-duplicatesp-equal (svex-alist-keys x.assigns))
-                (svex-alist-width x.assigns)
-                (svar-override-triplelist-env-ok triples override-env spec-values)
-                (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys x.assigns))
-                (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys x.assigns)))
-                (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars x.assigns))))
-               (svex-envs-equivalent impl-values spec-values)))
-    :hints(("Goal" :in-theory (enable flatnorm-add-overrides))))
+  
+  ;; ;; ;; ;; 0. ideal-fsm == ideal-fsm with overrides
+  ;; ;; ;; (defthm flatnorm->ideal-fsm-equivalent-to-ideal-fsm-with-overrides-values
+  ;; ;; ;;   (b* (((flatnorm-res x))
+  ;; ;; ;;        ((base-fsm ideal-fsm) (flatnorm->ideal-fsm x))
+  ;; ;; ;;        (override-flatnorm (flatnorm-add-overrides x triples))
+  ;; ;; ;;        ((base-fsm override-fsm) (flatnorm->ideal-fsm override-flatnorm))
+  ;; ;; ;;        (override-vars (svar-override-triplelist-override-vars triples))
+  ;; ;; ;;        (spec-values (svex-alist-eval ideal-fsm.values ref-env))
+  ;; ;; ;;        (impl-values (svex-alist-eval override-fsm.values override-env)))
+  ;; ;; ;;     (implies (and
+  ;; ;; ;;               ;; since this is just a lemma for later in this encapsulate we'll explicitly bind ref-env to what we need
+  ;; ;; ;;               (bind-free '((ref-env . ref-env)) (ref-env))
+
+  ;; ;; ;;               (svex-envs-agree-except override-vars override-env ref-env)
+  ;; ;; ;;               (svex-alist-monotonic-on-vars (svex-alist-keys x.assigns) x.assigns)
+  ;; ;; ;;               (no-duplicatesp-equal (svex-alist-keys x.assigns))
+  ;; ;; ;;               (svex-alist-width x.assigns)
+  ;; ;; ;;               (svar-override-triplelist-env-ok triples override-env spec-values)
+  ;; ;; ;;               (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys x.assigns))
+  ;; ;; ;;               (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys x.assigns)))
+  ;; ;; ;;               (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars x.assigns))))
+  ;; ;; ;;              (svex-envs-equivalent impl-values spec-values)))
+  ;; ;; ;;   :hints(("Goal" :in-theory (enable flatnorm-add-overrides))))
 
 
   (local (defthm svex-env-extract-append-when-agree-except-3
@@ -1483,28 +1009,28 @@
              t))
      :hints (("goal" :in-theory (enable svex-alist-eval-equivalent-when-extract-vars-similar)))))
 
-  (defthm flatnorm->ideal-fsm-equivalent-to-ideal-fsm-with-overrides-nextstate
-    (b* (((flatnorm-res x))
-         ((base-fsm ideal-fsm) (flatnorm->ideal-fsm x))
-         (override-flatnorm (flatnorm-add-overrides x triples))
-         ((base-fsm override-fsm) (flatnorm->ideal-fsm override-flatnorm))
-         (override-vars (svar-override-triplelist-override-vars triples))
-         (spec-values (svex-alist-eval ideal-fsm.values ref-env))
-         (spec-nextstate (svex-alist-eval ideal-fsm.nextstate ref-env))
-         (impl-nextstate (svex-alist-eval override-fsm.nextstate override-env)))
-      (implies (and (bind-free '((ref-env . ref-env)) (ref-env))
-                    (svex-envs-agree-except override-vars override-env ref-env)
-                    (svex-alist-monotonic-on-vars (svex-alist-keys x.assigns) x.assigns)
-                    (no-duplicatesp-equal (svex-alist-keys x.assigns))
-                    (svex-alist-width x.assigns)
-                    (svar-override-triplelist-env-ok triples override-env spec-values)
-                    (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys x.assigns))
-                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys x.assigns)))
-                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars x.assigns)))
-                    (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars x.delays))))
-               (svex-envs-equivalent impl-nextstate spec-nextstate)))
-    :hints(("Goal" :in-theory (enable flatnorm-add-overrides)
-            :use flatnorm->ideal-fsm-equivalent-to-ideal-fsm-with-overrides-values)))
+  ;; ;; ;; (defthm flatnorm->ideal-fsm-equivalent-to-ideal-fsm-with-overrides-nextstate
+  ;; ;; ;;   (b* (((flatnorm-res x))
+  ;; ;; ;;        ((base-fsm ideal-fsm) (flatnorm->ideal-fsm x))
+  ;; ;; ;;        (override-flatnorm (flatnorm-add-overrides x triples))
+  ;; ;; ;;        ((base-fsm override-fsm) (flatnorm->ideal-fsm override-flatnorm))
+  ;; ;; ;;        (override-vars (svar-override-triplelist-override-vars triples))
+  ;; ;; ;;        (spec-values (svex-alist-eval ideal-fsm.values ref-env))
+  ;; ;; ;;        (spec-nextstate (svex-alist-eval ideal-fsm.nextstate ref-env))
+  ;; ;; ;;        (impl-nextstate (svex-alist-eval override-fsm.nextstate override-env)))
+  ;; ;; ;;     (implies (and (bind-free '((ref-env . ref-env)) (ref-env))
+  ;; ;; ;;                   (svex-envs-agree-except override-vars override-env ref-env)
+  ;; ;; ;;                   (svex-alist-monotonic-on-vars (svex-alist-keys x.assigns) x.assigns)
+  ;; ;; ;;                   (no-duplicatesp-equal (svex-alist-keys x.assigns))
+  ;; ;; ;;                   (svex-alist-width x.assigns)
+  ;; ;; ;;                   (svar-override-triplelist-env-ok triples override-env spec-values)
+  ;; ;; ;;                   (subsetp-equal (svar-override-triplelist->refvars triples) (svex-alist-keys x.assigns))
+  ;; ;; ;;                   (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-keys x.assigns)))
+  ;; ;; ;;                   (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars x.assigns)))
+  ;; ;; ;;                   (not (intersectp-equal (svar-override-triplelist-override-vars triples) (svex-alist-vars x.delays))))
+  ;; ;; ;;              (svex-envs-equivalent impl-nextstate spec-nextstate)))
+  ;; ;; ;;   :hints(("Goal" :in-theory (enable flatnorm-add-overrides)
+  ;; ;; ;;           :use flatnorm->ideal-fsm-equivalent-to-ideal-fsm-with-overrides-values)))
 
 
   ;; 1. agreeable evaluations of ideal-fsm with overrides agree -- svex-alist-eval-fixpoint-override-impl-equiv-spec
@@ -1746,6 +1272,7 @@
                                     svarlist-to-override-alist-in-terms-of-svarlist-to-override-triples
                                     svex-alist-partial-monotonic-when-netevalcomp-p)))))
 
+  
   (defthm phase-fsm-composition-partial-monotonic-nextstate
     (b* (((flatnorm-res x))
          ((base-fsm approx-fsm))
@@ -1921,14 +1448,14 @@
            :hints(("Goal" :in-theory (enable phase-fsm-composition-p
                                              svtv-flatnorm-apply-overrides)))))
 
-  (local (defthm svar-override-triplelist-env-ok-<<=-of-append-irrel
-           (implies (not (intersectp-equal (svar-override-triplelist-override-vars triples)
-                                           (double-rewrite (alist-keys (svex-env-fix a)))))
-                    (equal (svar-override-triplelist-env-ok-<<= triples (append a b) c)
-                           (svar-override-triplelist-env-ok-<<= triples b c)))
-           :hints(("Goal" :in-theory (enable svar-override-triplelist-env-ok-<<=
-                                             svar-override-triplelist-override-vars
-                                             svex-env-boundp-iff-member-alist-keys)))))
+  ;; ;; ;; (local (defthm svar-override-triplelist-env-ok-<<=-of-append-irrel
+  ;; ;; ;;          (implies (not (intersectp-equal (svar-override-triplelist-override-vars triples)
+  ;; ;; ;;                                          (double-rewrite (alist-keys (svex-env-fix a)))))
+  ;; ;; ;;                   (equal (svar-override-triplelist-env-ok-<<= triples (append a b) c)
+  ;; ;; ;;                          (svar-override-triplelist-env-ok-<<= triples b c)))
+  ;; ;; ;;          :hints(("Goal" :in-theory (enable svar-override-triplelist-env-ok-<<=
+  ;; ;; ;;                                            svar-override-triplelist-override-vars
+  ;; ;; ;;                                            svex-env-boundp-iff-member-alist-keys)))))
 
 
   (defthm base-fsm-eval-of-flatnorm->ideal-fsm-refines-more-overridden-approximation
@@ -2579,149 +2106,6 @@
 
 
 
-(define svex-env-filter-override ((x svex-env-p)
-                                  (type svar-overridetype-p))
-  :returns (new-x svex-env-p)
-  (if (atom x)
-      nil
-    (if (and (mbt (and (consp (car x))
-                       (svar-p (caar x))))
-             (svar-override-p (caar x) type))
-        (cons (mbe :logic (cons (caar x) (4vec-fix (cdar x)))
-                   :exec (car x))
-              (svex-env-filter-override (cdr x) type))
-      (svex-env-filter-override (cdr x) type)))
-  ///
-  (defret boundp-of-<fn>
-    (equal (svex-env-boundp k new-x)
-           (and (svar-override-p k type)
-                (svex-env-boundp k x)))
-    :hints(("Goal" :in-theory (enable svex-env-boundp))))
-
-  (defret lookup-of-<fn>
-    (equal (svex-env-lookup k new-x)
-           (if (svar-override-p k type)
-               (svex-env-lookup k x)
-             (4vec-x)))
-    :hints(("Goal" :in-theory (enable svex-env-lookup))))
-
-  (defthm svex-env-filter-override-of-append
-    (equal (svex-env-filter-override (append x y) type)
-           (append (svex-env-filter-override x type)
-                   (svex-env-filter-override y type))))
-
-  (local (defthm svar-override-p-diff
-           (implies (and (svar-override-p x type1)
-                         (not (svar-overridetype-equiv type1 type2)))
-                    (not (svar-override-p x type2)))
-           :hints(("Goal" :in-theory (enable svar-override-p)))))
-
-
-  (local
-   (defret svex-env-filter-override-when-keys-override-p-lemma
-     (implies (svarlist-override-p (alist-keys (svex-env-fix x)) key-type)
-              (equal new-x
-                     (and (svar-overridetype-equiv type key-type)
-                          (svex-env-fix x))))
-     :hints(("Goal" :in-theory (e/d (svex-env-fix
-                                     svarlist-override-p)
-                                    (svar-overridetype-equiv))))))
-
-  (defret svex-env-filter-override-when-keys-override-p
-    (implies (and (equal keys (alist-keys (svex-env-fix x)))
-                  (svarlist-override-p keys key-type))
-             (equal new-x
-                    (and (svar-overridetype-equiv type key-type)
-                         (svex-env-fix x)))))
-
-  (defret svex-env-filter-override-when-keys-change-override-p
-    (implies (and (equal keys (alist-keys (svex-env-fix x)))
-                  (bind-free (case-match keys
-                               (('svarlist-change-override & key-type)
-                                `((key-type . ,key-type)))
-                               (& nil))
-                             (key-type))
-                  (svarlist-override-p keys key-type))
-             (equal new-x
-                    (and (svar-overridetype-equiv type key-type)
-                         (svex-env-fix x)))))
-
-  (defret svarlist-override-p-alist-keys-of-<fn>
-    (svarlist-override-p (alist-keys new-x) type)
-    :hints(("Goal" :in-theory (enable svarlist-override-p))))
-
-  (local (in-theory (enable svex-env-fix))))
-
-
-
-
-(define svex-alistlist-all-keys ((x svex-alistlist-p))
-  (if (atom x)
-      nil
-    (append (svex-alist-keys (car x))
-            (svex-alistlist-all-keys (cdr x)))))
-
-(define svex-envlist-all-keys ((x svex-envlist-p))
-  (if (atom x)
-      nil
-    (append (alist-keys (svex-env-fix (car x)))
-            (svex-envlist-all-keys (cdr x))))
-  ///
-  (defthm svex-envlist-all-keys-of-svex-alistlist-eval
-    (Equal (svex-envlist-all-keys (svex-alistlist-eval x env))
-           (svex-alistlist-all-keys x))
-    :hints(("Goal" :in-theory (enable svex-alistlist-all-keys
-                                      svex-alistlist-eval)))))
-
-(define svex-envlist-filter-override ((x svex-envlist-p)
-                                       (type svar-overridetype-p))
-  :returns (new-x svex-envlist-p)
-  (if (atom x)
-      nil
-    (cons (svex-env-filter-override (car x) type)
-          (svex-envlist-filter-override (cdr x) type)))
-  ///
-
-  (defthm svex-envlist-filter-override-of-append
-    (equal (svex-envlist-filter-override (append x y) type)
-           (append (svex-envlist-filter-override x type)
-                   (svex-envlist-filter-override y type))))
-
-
-  (local
-   (defret svex-envlist-filter-override-when-keys-override-p-lemma
-     (implies (svarlist-override-p (svex-envlist-all-keys x) key-type)
-              (equal new-x
-                     (if (svar-overridetype-equiv key-type type)
-                         (svex-envlist-fix x)
-                       (repeat (len x) nil))))
-     :hints(("Goal" :in-theory (enable svex-envlist-all-keys
-                                       svarlist-override-p
-                                       repeat)))))
-
-  (defret svex-envlist-filter-override-when-keys-override-p
-    (implies (and (equal keys (svex-envlist-all-keys x))
-                  (svarlist-override-p keys key-type))
-             (equal new-x
-                    (if (svar-overridetype-equiv key-type type)
-                        (svex-envlist-fix x)
-                      (repeat (len x) nil)))))
-
-  (defret svex-envlist-filter-override-when-keys-change-override-p
-    (implies (and (equal keys (svex-envlist-all-keys x))
-                  (bind-free (case-match keys
-                               (('svarlist-change-override & key-type)
-                                `((key-type . ,key-type)))
-                               (& nil))
-                             (key-type))
-                  (svarlist-override-p keys key-type))
-             (equal new-x
-                    (if (svar-overridetype-equiv key-type type)
-                        (svex-envlist-fix x)
-                      (repeat (len x) nil))))))
-
-
-
 
 (defsection svex-env-override-var-muxes-<<=
   (defun-sk svex-env-override-var-muxes-<<= (impl-env spec-env spec-outs)
@@ -2875,538 +2259,7 @@
 ;;            :in-theory (disable svex-alist-eval-of-extract-supserset-of-dependencies))))
 
 
-(define svex-envlist-extract-keys ((keys svarlist-p)
-                                   (envs svex-envlist-p))
-  :returns (new-envs svex-envlist-p)
-  (if (atom envs)
-      nil
-    (cons (svex-env-extract keys (car envs))
-          (svex-envlist-extract-keys keys (cdr envs))))
-  ///
-  (local (defthm set-difference-of-append
-           (Equal (set-difference-equal (append a b) c)
-                  (append (set-difference-equal a c) (set-difference-equal b c)))))
 
-  (local (defthm svex-alist-eval-of-append-lemma
-           (implies (subsetp-equal (set-difference-equal (svex-alist-dependencies x)
-                                                         (svarlist-fix st-keys))
-                                   (svarlist-fix in-keys))
-                    (svex-envs-equivalent (SVEX-ALIST-EVAL
-                                           x
-                                           (APPEND (SVEX-ENV-EXTRACT st-keys INITST)
-                                                   (SVEX-ENV-EXTRACT in-KEYS in)))
-                                          (SVEX-ALIST-EVAL
-                                           x
-                                           (APPEND (SVEX-ENV-EXTRACT st-keys INITST)
-                                                   in))))
-           :hints(("Goal" :in-theory (enable svex-alist-eval-equiv-when-extract-dependencies-similar
-                                             svex-envs-similar)))))
 
-  (defthm base-fsm-eval-of-svex-envlist-extract-keys
-    (implies (subsetp-equal (set-difference-equal (append (svex-alist-dependencies (base-fsm->values fsm))
-                                                          (svex-alist-dependencies (base-fsm->nextstate fsm)))
-                                                  (svex-alist-keys (base-fsm->nextstate fsm)))
-                            (svarlist-fix keys))
-             (svex-envlists-equivalent (base-fsm-eval (svex-envlist-extract-keys keys ins) initst fsm)
-                                       (base-fsm-eval ins initst fsm)))
-    :hints(("Goal" :in-theory (enable base-fsm-eval
-                                      svex-envlists-equivalent-redef
-                                      base-fsm-step
-                                      base-fsm-step-outs
-                                      base-fsm-step-env)
-            :induct (base-fsm-eval ins initst fsm))))
-
-  (defthm base-fsm-final-state-of-svex-envlist-extract-keys
-    (implies (subsetp-equal (set-difference-equal (svex-alist-dependencies nextstate)
-                                                  (svex-alist-keys nextstate))
-                            (svarlist-fix keys))
-             (svex-envs-equivalent (base-fsm-final-state (svex-envlist-extract-keys keys ins) initst nextstate)
-                                   (base-fsm-final-state ins initst nextstate)))
-    :hints(("Goal" :in-theory (enable base-fsm-final-state
-                                      base-fsm-step
-                                      base-fsm-step-env)
-            :induct (base-fsm-final-state ins initst nextstate))))
-
-  (defthm svar-override-triplelist-envlist-muxes-<<=-of-extract-impl-env
-    (implies (subsetp-equal (svar-override-triplelist-override-vars x) (svarlist-fix keys))
-             (equal (svar-override-triplelist-envlists-muxes-<<= x (svex-envlist-extract-keys keys impl-env) spec-env spec-outs)
-                    (svar-override-triplelist-envlists-muxes-<<= x impl-env spec-env spec-outs)))
-    :hints(("Goal" :in-theory (enable svar-override-triplelist-envlists-muxes-<<=))))
-
-
-  (defthm svex-env-muxtests-subsetp-of-extract-impl-env
-    (implies (subsetp-equal (svarlist-fix testvars) (svarlist-fix keys))
-             (equal (svex-env-muxtests-subsetp testvars spec-env (svex-env-extract keys impl-env))
-                    (svex-env-muxtests-subsetp testvars spec-env impl-env)))
-    :hints(("Goal" :in-theory (enable svex-env-muxtests-subsetp))))
-
-  (defthm svex-envlists-muxtests-subsetp-of-extract-impl-env
-    (implies (subsetp-equal (svarlist-fix testvars) (svarlist-fix keys))
-             (equal (svex-envlists-muxtests-subsetp testvars spec-envs (svex-envlist-extract-keys keys impl-envs))
-                    (svex-envlists-muxtests-subsetp testvars spec-envs impl-envs)))
-    :hints(("Goal" :in-theory (enable svex-envlists-muxtests-subsetp))))
-
-  (defret len-of-<fn>
-    (equal (len new-envs)
-           (len envs))))
-
-
-(define svarlist-filter-override ((x svarlist-p)
-                                  (type svar-overridetype-p))
-  :returns (new-x svarlist-p)
-  (if (Atom x)
-      nil
-    (if (svar-override-p (car x) type)
-        (cons (svar-fix (car x))
-              (svarlist-filter-override (cdr x) type))
-      (svarlist-filter-override (cdr x) type)))
-  ///
-
-  (defret svarlist-override-p-of-<fn>
-    (svarlist-override-p new-x type)
-    :hints(("Goal" :in-theory (enable svarlist-override-p))))
-
-  (local (defthm svar-fix-equals-x
-           (equal (equal (svar-fix x) x)
-                  (svar-p x))))
-
-  (defret member-of-<fn>
-    (iff (member-equal v new-x)
-         (and (svar-override-p v type)
-              (member-equal v (svarlist-fix x))))))
-
-
-(define svar-override-okp ((x svar-p))
-  (or (svar-override-p x :test)
-      (svar-override-p x :val)
-      (svar-override-p x nil))
-  ///
-  (defthm svar-override-okp-when-svar-override-p
-    (implies (svar-override-p x type)
-             (svar-override-okp x))
-    :hints(("Goal" :in-theory (enable svar-override-p))))
-  (defthm svar-override-okp-of-svar-change-override
-    (svar-override-okp (svar-change-override x type))))
-
-(define svarlist-override-okp ((x svarlist-p))
-  (if (atom x)
-      t
-    (and (svar-override-okp (car x))
-         (svarlist-override-okp (cdr x))))
-  ///
-  (defthm svarlist-override-okp-of-append
-    (iff (svarlist-override-okp (append x y))
-         (and (svarlist-override-okp x)
-              (svarlist-override-okp y))))
-
-  (defthm svarlist-override-okp-when-svarlist-override-p
-    (implies (svarlist-override-p x type)
-             (svarlist-override-okp x))
-    :hints(("Goal" :in-theory (enable svarlist-override-p))))
-
-  (defthm svarlist-override-okp-of-svarlist-change-override
-    (svarlist-override-okp (svarlist-change-override x type))
-    :hints(("Goal" :in-theory (enable svarlist-change-override)))))
-
-
-(define svarlist-override-okp-badguy ((x svarlist-p))
-  :returns (badguy)
-  (if (atom x)
-      nil
-    (if (svar-override-okp (car x))
-        (svarlist-override-okp-badguy (cdr x))
-      (svar-fix (car x))))
-  ///
-  (defretd svarlist-override-okp-iff-badguy
-    (iff (svarlist-override-okp x)
-         (or (not (member-equal badguy (svarlist-fix x)))
-             (svar-override-okp badguy)))
-    :hints(("Goal" :in-theory (enable svarlist-override-okp))))
-
-  (defretd svarlist-override-okp-by-badguy
-    (implies (or (not (member-equal badguy (svarlist-fix x)))
-                 (svar-override-okp badguy))
-             (svarlist-override-okp x))
-    :hints(("Goal" :in-theory (enable svarlist-override-okp-iff-badguy)))))
-
-
-
-
-
-(defcong svex-envlists-equivalent equal (svex-envlist-<<= x y) 1
-  :hints(("Goal" :in-theory (enable svex-envlist-<<= svex-envlists-equivalent-redef))))
-
-(defcong svex-envlists-equivalent equal (svex-envlist-<<= x y) 2
-  :hints(("Goal" :in-theory (enable svex-envlist-<<= svex-envlists-equivalent-redef))))
-
-(defsection base-fsm-eval-of-design->ideal-fsm-refines-overridden-approximation
-  (local (defthm subsetp-of-set-difference
-           (implies (subsetp-equal a c)
-                    (subsetp-equal (set-difference-equal a b) c))))
-
-
-  (local (defthm svar-override-p-nil-when-member-svarlist-override-okp
-           (implies (and (member-equal (svar-fix var) (svarlist-fix keys))
-                         (svarlist-override-okp keys))
-                    (equal (svar-override-p var nil)
-                           (not (or (svar-override-p var :test)
-                                    (svar-override-p var :val)))))
-           :hints(("Goal" :in-theory (enable svarlist-override-okp
-                                             svar-override-okp
-                                             svarlist-fix
-                                             svar-override-p-when-other)))))
-
-  (local
-   (defthmd svex-alist-not-depends-on-compose-free
-     (implies (and (svex-alist-eval-equiv! y (svex-alist-compose x a))
-                   (case-split (or (not (svex-alist-depends-on v x))
-                                   (svex-lookup v a)))
-                   (not (svex-alist-depends-on v a)))
-              (not (svex-alist-depends-on v y)))))
-
-  (local (defthm svex-alist-vars-of-svarlist-to-override-alist
-           (implies (svarlist-override-p x nil)
-                    (set-equiv (svex-alist-vars (svarlist-to-override-alist x))
-                               (append (svarlist-fix x)
-                                       (svarlist-change-override x :test)
-                                       (svarlist-change-override x :val))))
-           :hints(("Goal" :in-theory (enable svarlist-change-override
-                                             svarlist-to-override-alist-in-terms-of-svarlist-to-override-triples
-                                             svarlist-to-override-triples
-                                             svar-override-triplelist->override-alist
-                                             svex-alist-vars
-                                             svarlist-fix
-                                             svarlist-override-p)
-                   :induct t)
-                  (and stable-under-simplificationp
-                       '(:in-theory (enable acl2::set-unequal-witness-rw))))))
-
-  (local (defthmd svex-alist-not-depends-on-of-netevalcomp-split
-           (implies (and (netevalcomp-p comp network)
-                         (subsetp-equal (svex-alist-keys comp) (svex-alist-keys network))
-                         (case-split
-                           (not (member-equal (svar-fix v) (set-difference-equal (svex-alist-vars network)
-                                                                                 (svex-alist-keys network))))))
-                    (not (svex-alist-depends-on v comp)))
-           :hints(("Goal" :in-theory (enable svex-alist-not-depends-on-of-netevalcomp)))))
-
-  (local (defthmd vars-of-svex-alist-compose-strong-split
-           (implies (and (case-split (not (member-equal v (set-difference-equal (svex-alist-vars x) (svex-alist-keys y)))))
-                         (not (member-equal v (svex-alist-vars y))))
-                    (not (member-equal v (svex-alist-vars (svex-alist-compose x y)))))
-           :hints(("Goal" :in-theory (enable vars-of-svex-alist-compose-strong)))))
-
-
-  (defthm vars-of-svtv-assigns-override-vars
-    (implies (not (member-equal v (svex-alist-keys assigns)))
-             (not (member-equal v (svtv-assigns-override-vars assigns config))))
-    :hints(("Goal" :in-theory (enable svtv-assigns-override-vars))))
-
-  (defthm svex-alist-depends-on-of-append
-    (implies (and (not (svex-alist-depends-on v x))
-                  (not (svex-alist-depends-on v y)))
-             (not (svex-alist-depends-on v (append x y))))
-    :hints (("goal" :expand ((svex-alist-depends-on v (append x y))))))
-
-  (local (defthm svex-alist-depends-on-of-svex-alist-compose-strong-split
-         (implies (and (case-split (or (not (svex-alist-depends-on v x))
-                                       (svex-lookup v a)))
-                       (not (svex-alist-depends-on v a)))
-                  (not (svex-alist-depends-on v (svex-alist-compose x a))))
-         :hints (("goal" :expand ((svex-alist-depends-on v (svex-alist-compose x a))))
-                 '(:cases ((svex-lookup v a))))))
-
-  (local (defthm svex-alist-not-depends-on-of-phase-fsm-compositionp
-           (b* (((flatnorm-res flatnorm))
-                ((phase-fsm-config config))
-                (override-vars (svtv-assigns-override-vars flatnorm.assigns config.override-config)))
-             (implies (and (phase-fsm-composition-p phase-fsm flatnorm config)
-                           (svarlist-override-p (svex-alist-keys flatnorm.assigns) nil)
-                           (not (member-equal (svar-fix v)
-                                              (set-difference-equal (svex-alist-vars flatnorm.assigns)
-                                                                    (svex-alist-keys flatnorm.assigns))))
-                           (not (member-equal (svar-fix v)
-                                              (svarlist-change-override override-vars :test)))
-                           (not (member-equal (svar-fix v)
-                                              (svarlist-change-override override-vars :val))))
-                      (and (not (svex-alist-depends-on v (base-fsm->values phase-fsm)))
-                           (implies (not (member-equal (svar-fix v)
-                                                       (set-difference-equal (svex-alist-vars flatnorm.delays)
-                                                                             (svex-alist-keys flatnorm.assigns))))
-                                    (not (svex-alist-depends-on v (base-fsm->nextstate phase-fsm)))))))
-           :hints(("Goal" :in-theory (enable phase-fsm-composition-p
-                                             vars-of-svex-alist-compose-strong-split
-                                             svex-alist-not-depends-on-of-netevalcomp-split
-                                             svex-alist-not-depends-on-compose-free
-                                             ;; svex-alist-not-depends-on-neteval-ordering-compile-x-subst-free
-                                             svtv-flatnorm-apply-overrides)))))
-
-  (local (defthm svex-alist-not-depends-on-of-obj-phase-fsm
-           (b* (((svtv-data-obj data))
-                ((flatnorm-res flatnorm) data.flatnorm)
-                ((phase-fsm-config config) data.phase-fsm-setup)
-                (override-vars (svtv-assigns-override-vars flatnorm.assigns config.override-config)))
-             (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic data))
-                           data.flatten-validp
-                           data.flatnorm-validp
-                           data.phase-fsm-validp
-                           ;; (modalist-addr-p (design->modealist data.design))
-                           (not (member-equal (svar-fix v)
-                                              (set-difference-equal (svex-alist-vars flatnorm.assigns)
-                                                                    (svex-alist-keys flatnorm.assigns))))
-                           (not (member-equal (svar-fix v)
-                                              (svarlist-change-override override-vars :test)))
-                           (not (member-equal (svar-fix v)
-                                              (svarlist-change-override override-vars :val))))
-                      (and (not (svex-alist-depends-on v (base-fsm->values data.phase-fsm)))
-                           (implies (not (member-equal (svar-fix v)
-                                                       (set-difference-equal (svex-alist-vars flatnorm.delays)
-                                                                             (svex-alist-keys flatnorm.assigns))))
-                                    (not (svex-alist-depends-on v (base-fsm->nextstate data.phase-fsm)))))))
-           :hints (("goal" :use ((:instance phase-fsm-validp-of-svtv-data-obj (x data)))
-                    :in-theory (disable phase-fsm-validp-of-svtv-data-obj)))))
-
-  (defthm svex-env-<<=-of-removekeys-when-svex-env-<<=-filter-override
-    (implies (and (svex-env-<<= (svex-env-filter-override override-inputs nil) ref-inputs)
-                  (svarlist-override-okp keys)
-                  (svarlist-override-p (svar-override-triplelist->testvars triples) :test)
-                  (svarlist-override-p (svar-override-triplelist->valvars triples) :val)
-                  (subsetp-equal (svarlist-filter-override keys :test) (svar-override-triplelist->testvars triples))
-                  (subsetp-equal (svarlist-filter-override keys :val) (svar-override-triplelist->valvars triples)))
-             (svex-env-<<= (svex-env-removekeys
-                            (svar-override-triplelist-override-vars triples)
-                            (svex-env-extract keys override-inputs))
-                           ref-inputs))
-    :hints ((and stable-under-simplificationp
-                 (b* ((lit (car (last clause)))
-                      (w `(svex-env-<<=-witness . ,(cdr lit))))
-                   `(:expand (,lit)
-                     :use ((:instance svex-env-<<=-necc
-                            (x (svex-env-filter-override override-inputs nil))
-                            (y ref-inputs)
-                            (var ,w)))
-                     :in-theory (e/d ()
-                                     (svex-env-<<=-necc)))))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (svar-override-triplelist-override-vars-under-set-equiv)
-                                   (svex-env-<<=-necc)))))
-    :otf-flg t)
-
-
-  (local (defun ind (override-inputs ref-inputs)
-           (if (atom override-inputs)
-               ref-inputs
-             (ind (cdr override-inputs) (cdr ref-inputs)))))
-
-  (defthm svex-envlist-<<=-of-removekeys-when-svex-envlist-<<=-filter-override
-    (implies (and (svex-envlist-<<= (svex-envlist-filter-override override-inputs nil) ref-inputs)
-                  (svarlist-override-okp keys)
-                  (svarlist-override-p (svar-override-triplelist->testvars triples) :test)
-                  (svarlist-override-p (svar-override-triplelist->valvars triples) :val)
-                  (subsetp-equal (svarlist-filter-override keys :test) (svar-override-triplelist->testvars triples))
-                  (subsetp-equal (svarlist-filter-override keys :val) (svar-override-triplelist->valvars triples)))
-             (svex-envlist-<<= (svex-envlist-removekeys
-                                (svar-override-triplelist-override-vars triples)
-                                (svex-envlist-extract-keys keys override-inputs))
-                               ref-inputs))
-    :hints(("Goal" :in-theory (enable svex-envlist-<<=
-                                      svex-envlist-removekeys
-                                      svex-envlist-extract-keys
-                                      svex-envlist-filter-override)
-            :induct (ind override-inputs ref-inputs))))
-
-  (local (defthm svarlist-override-okp-when-svarlist-override-p-nil
-           (implies (svarlist-override-p x nil)
-                    (svarlist-override-okp x))
-           :hints(("Goal" :in-theory (enable svarlist-override-p)))))
-
-  (local (defthm set-difference-of-append
-           (Equal (set-difference-equal (append a b) c)
-                  (append (set-difference-equal a c) (set-difference-equal b c)))))
-
-
-  (local (defthm member-when-not-svar-override-okp
-           (implies (and (not (svar-override-okp v))
-                         (svarlist-override-okp x))
-                    (not (member-equal v x)))
-           :hints(("Goal" :in-theory (enable svarlist-override-okp)))))
-
-
-  (local (defretd svarlist-override-okp-by-badguy-split
-           (implies (and (acl2::rewriting-positive-literal `(svarlist-override-okp ,x))
-                         (case-split
-                          (or (not (member-equal badguy (svarlist-fix x)))
-                              (svar-override-okp badguy))))
-                    (svarlist-override-okp x))
-           :hints(("Goal" :in-theory (enable svarlist-override-okp-iff-badguy)))))
-
-  (defthm svarlist-override-okp-dependencies-of-phase-fsm-composition
-    (b* (((flatnorm-res flatnorm))
-         ((phase-fsm-config config))
-         ;; (override-vars (svtv-assigns-override-vars flatnorm.assigns config.override-config))
-         )
-      (implies (and (phase-fsm-composition-p phase-fsm flatnorm config)
-                    (svarlist-override-p (svex-alist-keys flatnorm.assigns) nil)
-                    (svarlist-override-okp (svex-alist-vars flatnorm.assigns)))
-               (and (svarlist-override-okp (svex-alist-dependencies (base-fsm->values phase-fsm)))
-                    (implies (svarlist-override-okp (svex-alist-vars flatnorm.delays))
-                             (svarlist-override-okp (svex-alist-dependencies (base-fsm->nextstate phase-fsm)))))))
-    :hints(("Goal" :in-theory (enable svarlist-override-okp-by-badguy-split))))
-
-  (defthm svarlist-non-override-p-svex-alist-vars-of-obj-flatnorm
-    (b* (((svtv-data-obj data))
-         ((flatnorm-res flatnorm) data.flatnorm))
-      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic data))
-                    data.flatten-validp
-                    data.flatnorm-validp)
-               (and (svarlist-override-p (svex-alist-vars flatnorm.assigns) nil)
-                    (svarlist-override-p (svex-alist-vars flatnorm.delays) nil))))
-    :hints(("Goal" :in-theory (e/d (svarlist-override-okp-iff-badguy)
-                                   (flatnorm-of-svtv-data-obj))
-            :use ((:instance flatnorm-of-svtv-data-obj (x data))))))
-
-
-
-
-  (defthm svarlist-override-okp-dependencies-of-obj-phase-fsm
-    (b* (((svtv-data-obj data))
-         ((flatnorm-res flatnorm) data.flatnorm)
-         ((phase-fsm-config config) data.phase-fsm-setup))
-      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic data))
-                    data.flatten-validp
-                    data.flatnorm-validp
-                    data.phase-fsm-validp)
-               (and (svarlist-override-okp (svex-alist-dependencies (base-fsm->values data.phase-fsm)))
-                    (svarlist-override-okp (svex-alist-dependencies (base-fsm->nextstate data.phase-fsm))))))
-    :hints (("goal" :use ((:instance phase-fsm-validp-of-svtv-data-obj (x data)))
-             :in-theory (disable phase-fsm-validp-of-svtv-data-obj))))
-
-
-  (defthm svarlist-filter-override-of-append
-    (equal (svarlist-filter-override (append a b) type)
-           (append (svarlist-filter-override a type)
-                   (svarlist-filter-override b type)))
-    :hints(("Goal" :in-theory (enable svarlist-filter-override))))
-
-
-  (local (defthmd subsetp-witness-backchain-1
-           (implies (let ((a (acl2::subsetp-witness x y)))
-                      (or (member a y) (not (member a x))))
-                    (subsetp x y))
-           :hints(("Goal" :in-theory (enable acl2::subsetp-witness-rw)))))
-
-  (local (defthmd subsetp-witness-backchain-2
-           (implies (let ((a (acl2::subsetp-witness x y)))
-                      (or (not (member a x)) (member a y)))
-                    (subsetp x y))
-           :hints(("Goal" :in-theory (enable acl2::subsetp-witness-rw)))))
-
-
-  (local (defthm member-when-svar-override-p
-           (implies (and (svar-override-p v type)
-                         (svar-p v)
-                         (not (svar-overridetype-equiv type nil))
-                         (svarlist-override-p x nil))
-                    (not (member-equal v x)))
-           :hints(("Goal" :in-theory (enable svarlist-override-p
-                                             svar-override-p-when-other)))))
-
-  (local (defthm member-of-svarlist-change-override
-           (implies (and (svar-override-p v type2)
-                         (not (svar-overridetype-equiv type type2)))
-                    (not (member-equal v (svarlist-change-override x type))))
-           :hints(("Goal" :in-theory (enable svarlist-change-override)))))
-
-  (defthm base-fsm-eval-of-design->ideal-fsm-refines-overridden-approximation
-    (b* (((svtv-data-obj data))
-         (ideal-fsm (design->ideal-fsm data.design data.phase-fsm-setup))
-         (spec-values (base-fsm-eval ref-inputs ref-initst ideal-fsm))
-         (impl-values (base-fsm-eval override-inputs override-initst data.phase-fsm)))
-      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic data))
-                    data.flatten-validp
-                    data.flatnorm-validp
-                    data.phase-fsm-validp
-                    (flatnorm-setup->monotonify data.flatnorm-setup)
-
-                    (equal (len override-inputs) (len ref-inputs))
-                    (svex-envlists-override-var-muxes-<<= override-inputs ref-inputs spec-values)
-                    (svex-envlist-<<= (svex-envlist-filter-override override-inputs nil) ref-inputs)
-                    (svex-envlists-override-test-vars-subsetp ref-inputs override-inputs)
-
-                    (svex-env-<<= override-initst ref-initst))
-               (svex-envlist-<<= impl-values spec-values)))
-    :hints (("Goal" :do-not-induct t
-             :use ((:instance base-fsm-eval-of-design->ideal-fsm-refines-overridden-approximation-when-triples-ok
-                    (override-inputs
-                     (b* (((svtv-data-obj data))
-                          ((flatnorm-res fl) data.flatnorm)
-                          (triples
-                           (svarlist-to-override-triples
-                            (svtv-assigns-override-vars fl.assigns
-                                                        (phase-fsm-config->override-config data.phase-fsm-setup)))))
-                       (svex-envlist-extract-keys
-                        (append (svex-alist-dependencies (base-fsm->values data.phase-fsm))
-                                (svex-alist-dependencies (base-fsm->nextstate data.phase-fsm))
-                                (svar-override-triplelist->testvars triples)
-                                (svar-override-triplelist->valvars triples))
-                        override-inputs)))))
-             :in-theory (e/d (svar-override-triplelist-override-vars-under-set-equiv
-                              testvars-of-svarlist-to-override-triples
-                              valvars-of-svarlist-to-override-triples)
-                             (base-fsm-eval-of-design->ideal-fsm-refines-overridden-approximation-when-triples-ok)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (svar-override-triplelist-override-vars-under-set-equiv
-                                    testvars-of-svarlist-to-override-triples
-                                    valvars-of-svarlist-to-override-triples
-                                    subsetp-witness-backchain-1)
-                                   (base-fsm-eval-of-design->ideal-fsm-refines-overridden-approximation-when-triples-ok)))))
-    :otf-flg t)
-
-
-  (defthm base-fsm-final-state-of-design->ideal-fsm-refines-overridden-approximation
-    (b* (((svtv-data-obj data))
-         ((base-fsm ideal-fsm) (design->ideal-fsm data.design data.phase-fsm-setup))
-         (spec-values (base-fsm-eval ref-inputs ref-initst ideal-fsm))
-         (spec-finalstate (base-fsm-final-state ref-inputs ref-initst ideal-fsm.nextstate))
-         (impl-finalstate (base-fsm-final-state override-inputs override-initst (base-fsm->nextstate data.phase-fsm))))
-      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic data))
-                    data.flatten-validp
-                    data.flatnorm-validp
-                    data.phase-fsm-validp
-                    (flatnorm-setup->monotonify data.flatnorm-setup)
-
-                    (equal (len override-inputs) (len ref-inputs))
-                    (svex-envlists-override-var-muxes-<<= override-inputs ref-inputs spec-values)
-                    (svex-envlist-<<= (svex-envlist-filter-override override-inputs nil) ref-inputs)
-                    (svex-envlists-override-test-vars-subsetp ref-inputs override-inputs)
-
-                    (svex-env-<<= override-initst ref-initst))
-               (svex-env-<<= impl-finalstate spec-finalstate)))
-    :hints (("Goal" :do-not-induct t
-             :use ((:instance base-fsm-final-state-of-design->ideal-fsm-refines-overridden-approximation-when-triples-ok
-                    (override-inputs
-                     (b* (((svtv-data-obj data))
-                          ((flatnorm-res fl) data.flatnorm)
-                          (triples
-                           (svarlist-to-override-triples
-                            (svtv-assigns-override-vars fl.assigns
-                                                        (phase-fsm-config->override-config data.phase-fsm-setup)))))
-                       (svex-envlist-extract-keys
-                        (append (svex-alist-dependencies (base-fsm->values data.phase-fsm))
-                                (svex-alist-dependencies (base-fsm->nextstate data.phase-fsm))
-                                (svar-override-triplelist->testvars triples)
-                                (svar-override-triplelist->valvars triples))
-                        override-inputs)))))
-             :in-theory (e/d (svar-override-triplelist-override-vars-under-set-equiv
-                              testvars-of-svarlist-to-override-triples
-                              valvars-of-svarlist-to-override-triples)
-                             (base-fsm-eval-of-design->ideal-fsm-refines-overridden-approximation-when-triples-ok)))
-            (and stable-under-simplificationp
-                 '(:in-theory (e/d (svar-override-triplelist-override-vars-under-set-equiv
-                                    testvars-of-svarlist-to-override-triples
-                                    valvars-of-svarlist-to-override-triples
-                                    subsetp-witness-backchain-1)
-                                   (base-fsm-eval-of-design->ideal-fsm-refines-overridden-approximation-when-triples-ok)))))
-    :otf-flg t))
 
 

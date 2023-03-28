@@ -35,6 +35,7 @@
 (include-book "fsm-base")
 (include-book "expand")
 (include-book "../svex/monotonify")
+(include-book "../svex/override-types")
 (local (include-book "../svex/alist-thms"))
 
 (local (include-book "std/lists/sets" :dir :system))
@@ -48,8 +49,8 @@
     (cons (b* ((x1 (car x)))
             (cons (svar-fix x1)
                   (svcall bit?!
-                          (svex-var (change-svar x1 :override-test t))
-                          (svex-var (change-svar x1 :override-val t))
+                          (svex-var (svar-change-override x1 :test))
+                          (svex-var (svar-change-override x1 :val))
                           (svex-var x1))))
           (svarlist-to-override-alist (cdr x))))
   ///

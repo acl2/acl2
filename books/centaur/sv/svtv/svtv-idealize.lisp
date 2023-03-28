@@ -28,6 +28,10 @@
 ; Matt K. mod: Avoid ACL2(p) error from computed hint that returns state.
 (set-waterfall-parallelism nil)
 
+;; TEMP
+(include-book "svtv-override-proof")
+
+
 (include-book "svtv-idealize-defs")
 (include-book "process")
 (include-book "std/util/defredundant" :dir :system)
@@ -37,6 +41,7 @@
 (include-book "centaur/fgl/def-fgl-rewrite" :dir :system)
 (include-book "centaur/fgl/config" :dir :system)
 (local (include-book "svtv-idealize-proof"))
+(local (include-book "svtv-spec-override-mux"))
 (local (include-book "std/alists/alist-keys" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :Dir :System))

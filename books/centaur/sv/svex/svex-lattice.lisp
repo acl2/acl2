@@ -773,3 +773,43 @@
     (implies (svex-alist-<<= x y)
              (svex-alist-<<= (svex-alist-compose x a) (svex-alist-compose y a)))
     :hints (("goal" :expand ((svex-alist-<<= (svex-alist-compose x a) (svex-alist-compose y a)))))))
+
+
+(define svex-alist-check-monotonic ((x svex-alist-p))
+  (if (atom x)
+      t
+    (and (or (not (mbt (and (consp (car x))
+                            (svar-p (caar x)))))
+             (svex-check-monotonic (cdar x)))
+         (svex-alist-check-monotonic (cdr x))))
+  ///
+  (defthm svex-lookup-when-svex-alist-check-monotonic
+    (implies (svex-alist-check-monotonic x)
+             (svex-monotonic-p (svex-lookup k x)))
+    :hints(("Goal" :in-theory (enable svex-lookup
+                                      svex-monotonic-p-of-const
+                                      hons-assoc-equal))))
+  
+  (defthm svex-alist-monotonic-p-when-svex-alist-check-monotonic
+    (implies (svex-alist-check-monotonic x)
+             (svex-alist-monotonic-p x))
+    :hints(("Goal" :in-theory (enable svex-alist-monotonic-in-terms-of-lookup))))
+
+  (local (in-theory (enable svex-alist-fix))))
+
+
+(define svex-alistlist-check-monotonic ((x svex-alistlist-p))
+  (if (atom x)
+      t
+    (and (svex-alist-check-monotonic (car x))
+         (svex-alistlist-check-monotonic (cdr x))))
+  ///
+  
+  (defthm svex-envlist-<<=-when-svex-alistlist-check-monotonic
+    (implies (and (svex-alistlist-check-monotonic x)
+                  (svex-env-<<= a b))
+             (svex-envlist-<<= (svex-alistlist-eval x a)
+                               (svex-alistlist-eval x b)))
+    :hints(("Goal" :in-theory (enable svex-alistlist-eval
+                                      svex-envlist-<<=)))))
+

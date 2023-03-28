@@ -134,19 +134,6 @@
 ;; (local (fty::defmap svtv-name-lhs-map :key-type svar :val-type lhs :true-listp t))
 
 
-(defsection svtv-name-lhs-map-p-of-fal-extract
-  (local (defthm lookup-when-not-svar-p-of-svtv-name-lhs-map
-           (implies (and (svtv-name-lhs-map-p x)
-                         (not (svar-p k)))
-                    (not (hons-assoc-equal k x)))
-           :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
-  (local (defthm car-of-hons-assoc-equal
-           (equal (car (hons-assoc-equal k x))
-                  (and (hons-assoc-equal k x) k))))
-  (defthm svtv-name-lhs-map-p-of-fal-extract
-    (implies (svtv-name-lhs-map-p x)
-             (svtv-name-lhs-map-p (fal-extract keys x)))
-    :hints(("Goal" :in-theory (enable fal-extract svtv-name-lhs-map-p)))))
 
 
 (define svtv-fsm-env-inversemap ((keys svarlist-p)

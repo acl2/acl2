@@ -30,7 +30,7 @@
 (include-book "../svex/compose-theory-monotonicity")
 (local (include-book "../svex/alist-thms"))
 (local (include-book "std/lists/sets" :dir :system))
-
+(local (std::add-default-post-define-hook :fix))
 #||
 (include-book
  "svtv-stobj-defsvtv")
@@ -249,37 +249,34 @@
                                     svex-lookup-when-member-svex-alist-keys)
           :do-not-induct t)))
 
+;; (defthm svex-alist-partial-monotonic-of-svarlist-to-override-alist
+;;   (implies (svarlist-non-override-test-p x)
+;;            (svex-alist-partial-monotonic
+;;             (svarlist->override-tests x)
+;;             (svarlist-to-override-alist x)))
+;;   :hints(("Goal" :in-theory (enable svarlist-to-override-alist
+;;                                     svarlist->override-tests
+;;                                     svarlist-non-override-test-p))))
+
 (defthm svex-alist-partial-monotonic-of-svarlist-to-override-alist
-  (implies (svarlist-non-override-test-p x)
+  (implies (svarlist-override-p x nil)
            (svex-alist-partial-monotonic
-            (svarlist->override-tests x)
+            (svarlist-change-override x :test)
             (svarlist-to-override-alist x)))
   :hints(("Goal" :in-theory (enable svarlist-to-override-alist
-                                    svarlist->override-tests
-                                    svarlist-non-override-test-p))))
+                                    svarlist-change-override
+                                    svarlist-override-p))))
 
-(defthm svarlist-non-override-test-p-when-svarlist-addr-p
-  (implies (svarlist-addr-p x)
-           (svarlist-non-override-test-p x))
-  :hints(("Goal" :in-theory (enable svarlist-addr-p
-                                    svar-addr-p
-                                    svarlist-non-override-test-p))))
+(defthm svarlist-override-p-when-svarlist-addr-p
+    (implies (svarlist-addr-p x)
+             (svarlist-override-p x nil))
+    :hints(("Goal" :in-theory (enable svarlist-override-p
+                                      svarlist-addr-p
+                                      svar-override-p
+                                      svar-addr-p))))
 
          
 
-(defthm svtv-data-obj-ok-implies-svarlist-addr-p-of-flatnorm-assigns-keys
-  (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic obj))
-                (svtv-data-obj->flatnorm-validp obj)
-                (svtv-data-obj->flatten-validp obj))
-           (svarlist-addr-p (svex-alist-keys (flatnorm-res->assigns (svtv-data-obj->flatnorm obj)))))
-  :hints (("Goal" :use ((:instance svtv-data$ap-implies-flatnorm-okp
-                         (x (svtv-data-obj-to-stobj-logic obj)) )
-                        (:instance svtv-data$ap-implies-flatten-okp
-                         (x (svtv-data-obj-to-stobj-logic obj)) ))
-           :in-theory (enable svtv-data$c-flatnorm-okp
-                              svtv-data$c-flatten-okp
-                              svtv-normalize-assigns
-                              svtv-design-flatten))))
 
 (defthm svtv-data-obj-ok-implies-svarlist-addr-p-of-flatnorm-delays
   (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic obj))
@@ -299,28 +296,21 @@
 
 
 
-(defthm svex-alist-compose-preserves-partial-monotonic-when-monotonic
-  (implies (and (svex-alist-partial-monotonic params a)
-                (svex-alist-monotonic-p x)
-                (svex-compose-alist-selfbound-keys-p params a))
-           (svex-alist-partial-monotonic params (svex-alist-compose x a)))
-  :hints (("goal" :use ((:instance svex-alist-compose-preserves-svex-alist-partial-monotonic
-                         (params2 params) (params nil)))
-           :expand ((svex-compose-alist-selfbound-keys-p nil a)))))
 
 
 
-(defthmd svarlist-non-override-test-p-when-subsetp
+
+(defthmd svarlist-override-p-when-subsetp
   (implies (and (subsetp-equal x y)
-                (svarlist-non-override-test-p y))
-           (svarlist-non-override-test-p x))
+                (svarlist-override-p y type))
+           (svarlist-override-p x type))
   :hints (("Goal" :use ((:instance (:functional-instance acl2::element-list-p-when-subsetp-equal-non-true-list
-                                    (acl2::element-list-p svarlist-non-override-test-p)
+                                    (acl2::element-list-p (lambda (x) (svarlist-override-p x type)))
                                     (acl2::element-list-final-cdr-p (lambda (x) t))
-                                    (acl2::element-p (lambda (x) (b* (((svar x))) (not x.override-test))))
-                                    (acl2::element-example (lambda () (make-svar :name 'x))))
+                                    (acl2::element-p (lambda (x) (svar-override-p x type)))
+                                    (acl2::element-example (lambda () (svar-change-override nil type))))
                          (x x) (y y)))
-           :in-theory (enable svarlist-non-override-test-p))))
+           :in-theory (enable svarlist-override-p))))
 
 (local (defthm subsetp-of-set-diff
          (subsetp-equal (set-difference-equal x y) x)))
@@ -328,32 +318,48 @@
 (local (defthm subsetp-of-intersect
          (subsetp-equal (intersection-equal x y) x)))
 
-(defthm svarlist-non-override-test-p-of-svtv-assigns-override-vars
-  (implies (svarlist-non-override-test-p (svex-alist-keys assigns))
-           (svarlist-non-override-test-p (svtv-assigns-override-vars assigns config)))
+(defthm svarlist-override-p-of-svtv-assigns-override-vars
+  (implies (svarlist-override-p (svex-alist-keys assigns) nil)
+           (svarlist-override-p (svtv-assigns-override-vars assigns config) nil))
   :hints(("Goal" :in-theory (enable svtv-assigns-override-vars)
-          :use ((:instance svarlist-non-override-test-p-when-subsetp
+          :use ((:instance svarlist-override-p-when-subsetp
                  (x (svtv-assigns-override-vars assigns config))
-                 (y (svex-alist-keys assigns)))))))
+                 (y (svex-alist-keys assigns))
+                 (type nil))))))
 
-(local (defthm member-of-override-tests-when-not-override-test
-         (implies (not (svar->override-test x))
-                  (not (member-equal x (svarlist->override-tests y))))
-         :hints(("Goal" :in-theory (enable svarlist->override-tests)))))
+(local (defthm member-of-svarlist-change-override-when-other-override-p
+         (implies (and (svar-override-p x type2)
+                       (not (equal (svar-overridetype-fix type2)
+                                   (svar-overridetype-fix type))))
+                  (not (member-equal x (svarlist-change-override y type))))
+         :hints(("Goal" :in-theory (enable svarlist-change-override)))))
 
-(local (defthm intersectp-of-override-tests-when-non-override-test-p
-         (implies (svarlist-non-override-test-p x)
-                  (not (intersectp-equal x (svarlist->override-tests y))))
-         :hints(("Goal" :in-theory (enable svarlist->override-tests svarlist-non-override-test-p
+(local (defthm intersectp-of-change-override-when-not-override-p
+         (implies (and (svarlist-override-p x type2)
+                       (not (equal (svar-overridetype-fix type2)
+                                   (svar-overridetype-fix type))))
+                  (not (intersectp-equal x (svarlist-change-override y type))))
+         :hints(("Goal" :in-theory (enable svarlist-change-override
+                                           svarlist-override-p
+                                           intersectp-equal)))))
+
+(local (defthm intersectp-of-change-override-when-override-p-nil
+         (implies (and (svarlist-override-p x nil)
+                       (svar-overridetype-fix type))
+                  (not (intersectp-equal x (svarlist-change-override y type))))
+         :hints(("Goal" :in-theory (enable svarlist-change-override
+                                           svarlist-override-p
                                            intersectp-equal)))))
 
 
+
 (defthm svex-alist-partial-monotonic-of-svtv-flatnorm-apply-overrides
-  (implies (and (svarlist-non-override-test-p (svex-alist-keys (flatnorm-res->assigns flatnorm)))
+  (implies (and (svarlist-override-p (svex-alist-keys (flatnorm-res->assigns flatnorm)) nil)
                 (svex-alist-monotonic-p (flatnorm-res->assigns flatnorm)))
            (svex-alist-partial-monotonic
-            (svarlist->override-tests
-             (svtv-assigns-override-vars (flatnorm-res->assigns flatnorm) config))
+            (svarlist-change-override
+             (svtv-assigns-override-vars (flatnorm-res->assigns flatnorm) config)
+             :test)
             (mv-nth 0 (svtv-flatnorm-apply-overrides flatnorm config))))
   :hints(("Goal" :in-theory (enable svtv-flatnorm-apply-overrides))))
 
@@ -405,11 +411,12 @@
                 (svtv-data-obj->phase-fsm-validp obj)
                 (flatnorm-setup->monotonify (svtv-data-obj->flatnorm-setup obj)))
            (svex-alist-partial-monotonic
-            (svarlist->override-tests
+            (svarlist-change-override
              (svtv-assigns-override-vars (flatnorm-res->assigns
                                           (svtv-data-obj->flatnorm obj))
                                          (phase-fsm-config->override-config
-                                          (svtv-data-obj->phase-fsm-setup obj))))
+                                          (svtv-data-obj->phase-fsm-setup obj)))
+             :test)
             (base-fsm->values (svtv-data-obj->phase-fsm obj))))
   :hints (("Goal" :use ((:instance phase-fsm-validp-of-svtv-data-obj (x obj) )
                         (:instance phase-fsm-composition-p-implies-netevalcomp-p
@@ -488,11 +495,12 @@
                 (svtv-data-obj->phase-fsm-validp obj)
                 (flatnorm-setup->monotonify (svtv-data-obj->flatnorm-setup obj)))
            (not (intersectp-equal
-                 (svarlist->override-tests
+                 (svarlist-change-override
                   (svtv-assigns-override-vars (flatnorm-res->assigns
                                                (svtv-data-obj->flatnorm obj))
                                               (phase-fsm-config->override-config
-                                               (svtv-data-obj->phase-fsm-setup obj))))
+                                               (svtv-data-obj->phase-fsm-setup obj)))
+                  :test)
                  (svex-alist-keys (base-fsm->values (svtv-data-obj->phase-fsm obj))))))
   :hints (("Goal" :use ((:instance phase-fsm-validp-of-svtv-data-obj (x obj) )
                         (:instance phase-fsm-composition-p-implies-netevalcomp-p
@@ -511,11 +519,12 @@
                 (svtv-data-obj->phase-fsm-validp obj)
                 (flatnorm-setup->monotonify (svtv-data-obj->flatnorm-setup obj)))
            (not (intersectp-equal
-                 (svarlist->override-tests
+                 (svarlist-change-override
                   (svtv-assigns-override-vars (flatnorm-res->assigns
                                                (svtv-data-obj->flatnorm obj))
                                               (phase-fsm-config->override-config
-                                               (svtv-data-obj->phase-fsm-setup obj))))
+                                               (svtv-data-obj->phase-fsm-setup obj)))
+                  :test)
                  (svex-alist-keys (base-fsm->nextstate (svtv-data-obj->phase-fsm obj))))))
   :hints (("Goal" :use ((:instance phase-fsm-validp-of-svtv-data-obj (x obj) )
                         (:instance phase-fsm-composition-p-implies-nextstate
@@ -565,11 +574,12 @@
                           (fast-alist-clean)))))
 
 (defthm svtv-flatnorm-apply-overrides-delays-monotonic
-  (implies (and (svarlist-non-override-test-p (svex-alist-keys (flatnorm-res->assigns flatnorm)))
+  (implies (and (svarlist-override-p (svex-alist-keys (flatnorm-res->assigns flatnorm)) nil)
                 (svex-alist-monotonic-p (flatnorm-res->delays flatnorm)))
            (svex-alist-partial-monotonic
-            (svarlist->override-tests
-             (svtv-assigns-override-vars (flatnorm-res->assigns flatnorm) config))
+            (svarlist-change-override
+             (svtv-assigns-override-vars (flatnorm-res->assigns flatnorm) config)
+             :test)
             (mv-nth 1 (svtv-flatnorm-apply-overrides flatnorm config))))
   :hints(("Goal" :in-theory (e/d (svtv-flatnorm-apply-overrides)
                                  (fast-alist-clean)))))
@@ -623,11 +633,12 @@
                 (svtv-data-obj->phase-fsm-validp obj)
                 (flatnorm-setup->monotonify (svtv-data-obj->flatnorm-setup obj)))
            (svex-alist-partial-monotonic
-            (svarlist->override-tests
+            (svarlist-change-override
              (svtv-assigns-override-vars (flatnorm-res->assigns
                                           (svtv-data-obj->flatnorm obj))
                                          (phase-fsm-config->override-config
-                                          (svtv-data-obj->phase-fsm-setup obj))))
+                                          (svtv-data-obj->phase-fsm-setup obj)))
+             :test)
             (base-fsm->nextstate (svtv-data-obj->phase-fsm obj))))
   :hints (("Goal" :use ((:instance phase-fsm-validp-of-svtv-data-obj (x obj) )
                         (:instance phase-fsm-composition-p-implies-nextstate
@@ -645,17 +656,6 @@
   :hints(("Goal" :in-theory (enable svex-envs-equivalent-implies-alist-eval-equiv))))
 
 
-(defthm svex-alist-monotonic-p-of-append
-  (implies (and (svex-alist-monotonic-p a)
-                (svex-alist-monotonic-p b))
-           (svex-alist-monotonic-p (append a b)))
-  :hints (("goal" :expand ((svex-alist-monotonic-p (append a b))))))
-
-
-(defthmd svex-monotonic-p-of-const
-  (implies (svex-case x :quote)
-           (svex-monotonic-p x))
-  :hints(("Goal" :in-theory (enable svex-monotonic-p))))
 
 (defthm svex-alist-monotonic-p-of-extract
   (implies (svex-alist-monotonic-p a)
@@ -663,13 +663,6 @@
   :hints (("goal" :expand ((:with svex-alist-monotonic-in-terms-of-lookup
                             (svex-alist-monotonic-p (svex-alist-extract keys a))))
            :in-theory (enable svex-monotonic-p-of-const))))
-
-(defthm svex-alist-partial-monotonic-of-append
-  (implies (And (svex-alist-partial-monotonic params a)
-                (svex-alist-partial-monotonic params b))
-           (svex-alist-partial-monotonic params (append a b)))
-  :hints (("goal" :expand ((svex-alist-partial-monotonic params (append a b)))
-           :in-theory (enable svex-alist-partial-monotonic-necc))))
 
 
 (local (defthmd svex-alist-compose-of-extract
@@ -782,20 +775,21 @@
 
 
 (defthm not-intersectp-override-tests-when-svarlist-addr-p
-  (implies (svarlist-addr-p y)
-           (not (intersectp-equal (svarlist->override-tests x) y))))
+  (implies (and (svarlist-addr-p y)
+                (svar-overridetype-fix type))
+           (not (intersectp-equal (svarlist-change-override x type) y))))
 
 (defthm cycle-fsm-okp-implies-values-partial-monotonic
   (implies (and (svtv-data$c-cycle-fsm-okp svtv-data cycle-fsm)
-                (svex-alist-partial-monotonic (svarlist->override-tests keys)
+                (svex-alist-partial-monotonic (svarlist-change-override keys :test)
                                               (base-fsm->values (svtv-data$c->phase-fsm svtv-data)))
-                (svex-alist-partial-monotonic (svarlist->override-tests keys)
+                (svex-alist-partial-monotonic (svarlist-change-override keys :test)
                                               (base-fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))
                 (svarlist-addr-p (svex-alist-keys (base-fsm->values (svtv-data$c->phase-fsm svtv-data))))
                 (svarlist-addr-p (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
-           (and (svex-alist-partial-monotonic (svarlist->override-tests keys)
+           (and (svex-alist-partial-monotonic (svarlist-change-override keys :test)
                                               (base-fsm->values cycle-fsm))
-                (svex-alist-partial-monotonic (svarlist->override-tests keys)
+                (svex-alist-partial-monotonic (svarlist-change-override keys :test)
                                               (base-fsm->nextstate cycle-fsm))))
   :hints(("Goal" :use ((:instance cycle-fsm-okp-implies-cycle-compile-values-equiv)))))
 
@@ -812,11 +806,12 @@
                 (svtv-data-obj->cycle-fsm-validp obj)
                 (flatnorm-setup->monotonify (svtv-data-obj->flatnorm-setup obj)))
            (svex-alist-partial-monotonic
-            (svarlist->override-tests
+            (svarlist-change-override
              (svtv-assigns-override-vars (flatnorm-res->assigns
                                           (svtv-data-obj->flatnorm obj))
                                          (phase-fsm-config->override-config
-                                          (svtv-data-obj->phase-fsm-setup obj))))
+                                          (svtv-data-obj->phase-fsm-setup obj)))
+             :test)
             (base-fsm->values (svtv-data-obj->cycle-fsm obj))))
   :hints (("goal" :use ((:instance svtv-data$ap-implies-cycle-fsm-okp
                          (x (svtv-data-obj-to-stobj-logic obj)))))))
@@ -829,11 +824,12 @@
                 (svtv-data-obj->cycle-fsm-validp obj)
                 (flatnorm-setup->monotonify (svtv-data-obj->flatnorm-setup obj)))
            (svex-alist-partial-monotonic
-            (svarlist->override-tests
+            (svarlist-change-override
              (svtv-assigns-override-vars (flatnorm-res->assigns
                                           (svtv-data-obj->flatnorm obj))
                                          (phase-fsm-config->override-config
-                                          (svtv-data-obj->phase-fsm-setup obj))))
+                                          (svtv-data-obj->phase-fsm-setup obj)))
+             :test)
             (base-fsm->nextstate (svtv-data-obj->cycle-fsm obj))))
   :hints (("goal" :use ((:instance svtv-data$ap-implies-cycle-fsm-okp
                          (x (svtv-data-obj-to-stobj-logic obj)))))))
@@ -949,7 +945,7 @@
   (if (atom x)
       nil
     (append (and (mbt (and (consp x) (svar-p (caar x))))
-                 (svar->override-test (caar x))
+                 (svar-override-p (caar x) :test)
                  (svex-vars (cdar x)))
             (svtv-input-subst-extract-override-vars (cdr x))))
   ///
@@ -958,16 +954,10 @@
     (b* ((vars (svtv-input-subst-extract-override-vars x)))
       (implies (equal (svex-env-extract vars env1)
                       (svex-env-extract vars env2))
-               (Equal (equal (svex-eval (svex-lookup (make-svar :name name :delay delay
-                                                                :nonblocking nonblocking
-                                                                :override-test t
-                                                                :override-val override-val)
+               (Equal (equal (svex-eval (svex-lookup (svar-change-override var :test)
                                                      x)
                                         env1)
-                             (svex-eval (svex-lookup (make-svar :name name :delay delay
-                                                                :nonblocking nonblocking
-                                                                :override-test t
-                                                                :override-val override-val)
+                             (svex-eval (svex-lookup (svar-change-override var :test)
                                                      x)
                                         env2))
                       t)))
@@ -978,14 +968,16 @@
     (b* ((vars (svtv-input-subst-extract-override-vars x)))
       (implies (equal (svex-env-extract vars env1)
                       (svex-env-extract vars env2))
-               (Equal (equal (svex-env-extract (svarlist->override-tests keys)
+               (Equal (equal (svex-env-extract (svarlist-change-override keys :test)
                                                (svex-alist-eval x env1))
-                             (svex-env-extract (svarlist->override-tests keys)
+                             (svex-env-extract (svarlist-change-override keys :test)
                                                (svex-alist-eval x env2)))
                       t)))
-    :hints(("Goal" :in-theory (enable svarlist->override-tests
+    :hints(("Goal" :in-theory (enable svarlist-change-override
                                       svex-env-extract)
-            :induct (svarlist->override-tests keys)))))
+            :induct (svarlist-change-override keys :test))))
+
+  (local (in-theory (enable svex-alist-fix))))
 
 (define svtv-input-substs-extract-override-vars ((x svex-alistlist-p))
   (if (atom x)
@@ -997,7 +989,7 @@
     (b* ((vars (svtv-input-substs-extract-override-vars x)))
       (implies (equal (svex-env-extract vars env1)
                       (svex-env-extract vars env2))
-               (svex-envlists-agree (svarlist->override-tests keys)
+               (svex-envlists-agree (svarlist-change-override keys :test)
                                     (svex-alistlist-eval x env1)
                                     (svex-alistlist-eval x env2))))
     :hints(("Goal" :in-theory (enable svex-envlists-agree
@@ -1014,10 +1006,6 @@
                                       (svtv-data-obj->namemap obj))))
 
 
-(defthm svex-monotonic-p-when-svex-check-monotonic
-  (implies (svex-check-monotonic x)
-           (svex-monotonic-p x))
-  :hints(("Goal" :in-theory (enable svex-monotonic-p))))
 
 
 (defthm lhatom-subst-zero-partial-monotonic
@@ -1055,50 +1043,16 @@
   :hints(("Goal" :in-theory (enable svtv-name-lhs-map-subst))))
 
 
-(define svex-alist-check-monotonic ((x svex-alist-p))
-  (if (atom x)
-      t
-    (and (or (not (mbt (and (consp (car x))
-                            (svar-p (caar x)))))
-             (svex-check-monotonic (cdar x)))
-         (svex-alist-check-monotonic (cdr x))))
-  ///
-  (defthm svex-lookup-when-svex-alist-check-monotonic
-    (implies (svex-alist-check-monotonic x)
-             (svex-monotonic-p (svex-lookup k x)))
-    :hints(("Goal" :in-theory (enable svex-lookup
-                                      svex-monotonic-p-of-const
-                                      hons-assoc-equal))))
-  
-  (defthm svex-alist-monotonic-p-when-svex-alist-check-monotonic
-    (implies (svex-alist-check-monotonic x)
-             (svex-alist-monotonic-p x))
-    :hints(("Goal" :in-theory (enable svex-alist-monotonic-in-terms-of-lookup)))))
-
-
-(define svex-alistlist-check-monotonic ((x svex-alistlist-p))
-  (if (atom x)
-      t
-    (and (svex-alist-check-monotonic (car x))
-         (svex-alistlist-check-monotonic (cdr x))))
-  ///
-  
-  (defthm svex-envlist-<<=-when-svex-alistlist-check-monotonic
-    (implies (and (svex-alistlist-check-monotonic x)
-                  (svex-env-<<= a b))
-             (svex-envlist-<<= (svex-alistlist-eval x a)
-                               (svex-alistlist-eval x b)))
-    :hints(("Goal" :in-theory (enable svex-alistlist-eval
-                                      svex-envlist-<<=)))))
 
 
 (encapsulate nil
   (local (defthm partial-monotonicity-of-base-fsm-eval-bind
-           (implies (and (bind-free '((params . (SVARLIST->OVERRIDE-TESTS
+           (implies (and (bind-free '((params . (SVARLIST-CHANGE-OVERRIDE
                                                  (SVTV-ASSIGNS-OVERRIDE-VARS
                                                   (FLATNORM-RES->ASSIGNS$INLINE (SVTV-DATA-OBJ->FLATNORM$INLINE OBJ))
                                                   (PHASE-FSM-CONFIG->OVERRIDE-CONFIG$INLINE
-                                                   (SVTV-DATA-OBJ->PHASE-FSM-SETUP$INLINE OBJ))))))
+                                                   (SVTV-DATA-OBJ->PHASE-FSM-SETUP$INLINE OBJ)))
+                                                 ':test)))
                                     (params))
                          (svex-alist-partial-monotonic params (base-fsm->values x))
                          (svex-alist-partial-monotonic params (base-fsm->nextstate x))

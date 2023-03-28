@@ -29,8 +29,10 @@
 (set-waterfall-parallelism nil)
 
 (include-book "fsm-obj")
+(include-book "../svex/override-types")
 (include-book "../svex/env-ops")
 (include-book "centaur/bitops/part-install" :Dir :system)
+(include-book "std/alists/alist-defuns" :dir :system)
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
@@ -2226,68 +2228,6 @@
 ;; For now we'll build in the assumption that lhs-eval-zero is what we're
 ;; using; if we need others they can be added later.
 
-(defenum svar-overridetype-p
-  (:val :test nil))
-
-
-(defthm svar-overridetype-fix-possibilities
-  (or (equal (svar-overridetype-fix x) :val)
-      (equal (svar-overridetype-fix x) :test)
-      (equal (svar-overridetype-fix x) nil))
-  :hints(("Goal" :in-theory (enable svar-overridetype-fix)))
-  :rule-classes ((:forward-chaining :trigger-terms ((svar-overridetype-fix x)))))
-
-
-(define svar-override-p ((x svar-p)
-                         (type svar-overridetype-p))
-  (b* (((svar x)))
-    (case (svar-overridetype-fix type)
-      (:val (and x.override-val (not x.override-test)))
-      (:test (and x.override-test (not x.override-val)))
-      (t (and (not x.override-test) (not x.override-val))))))
-
-(define svarlist-override-p ((x svarlist-p)
-                             (type svar-overridetype-p))
-  (if (atom x)
-      t
-    (and (svar-override-p (car x) type)
-         (svarlist-override-p (cdr x) type)))
-  ///
-  (defthm svarlist-override-p-of-append
-    (iff (svarlist-override-p (append x y) type)
-         (and (svarlist-override-p x type)
-              (svarlist-override-p y type)))))
-
-(define svar-change-override ((x svar-p)
-                              (type svar-overridetype-p))
-  :returns (new-x svar-p)
-  (b* ((type (svar-overridetype-fix type)))
-    (change-svar x :override-test (eq type :test) :override-val (eq type :val)))
-  ///
-  (defret svar-override-p-of-<fn>
-    (iff (svar-override-p new-x other-type)
-         (svar-overridetype-equiv other-type type))
-    :hints(("Goal" :in-theory (enable svar-override-p))))
-
-  (defthmd equal-of-svar-change-override
-    (implies (syntaxp (not (and (equal type ''nil))))
-             (equal (equal v1 (svar-change-override v2 type))
-                    (and (svar-p v1)
-                         (svar-override-p v1 type)
-                         (equal (svar-change-override v1 nil)
-                                (svar-change-override v2 nil)))))
-    :hints(("Goal" :in-theory (enable svar-change-override
-                                      svar-override-p))))
-
-  (defthm svar-change-override-of-svar-change-override
-    (equal (svar-change-override (svar-change-override x type1) type2)
-           (svar-change-override x type2)))
-
-  (defthm svar-change-override-when-svar-override-p
-    (implies (svar-override-p x type)
-             (equal (svar-change-override x type)
-                    (svar-fix x)))
-    :hints(("Goal" :in-theory (enable svar-override-p)))))
 
 
 (define svtv-name-lhs-map-keys-change-override ((map svtv-name-lhs-map-p)
@@ -2429,3 +2369,16 @@
 
 
 
+(defsection svtv-name-lhs-map-p-of-fal-extract
+  (local (defthm lookup-when-not-svar-p-of-svtv-name-lhs-map
+           (implies (and (svtv-name-lhs-map-p x)
+                         (not (svar-p k)))
+                    (not (hons-assoc-equal k x)))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
+  (local (defthm car-of-hons-assoc-equal
+           (equal (car (hons-assoc-equal k x))
+                  (and (hons-assoc-equal k x) k))))
+  (defthm svtv-name-lhs-map-p-of-fal-extract
+    (implies (svtv-name-lhs-map-p x)
+             (svtv-name-lhs-map-p (fal-extract keys x)))
+    :hints(("Goal" :in-theory (enable fal-extract svtv-name-lhs-map-p)))))
