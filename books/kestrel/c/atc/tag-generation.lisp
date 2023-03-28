@@ -773,7 +773,18 @@
                    value-kind-when-slongp
                    value-kind-when-ullongp
                    value-kind-when-sllongp
-                   expr-value-fix-when-expr-valuep)
+                   expr-value-fix-when-expr-valuep
+                   exec-ident
+                   read-object-of-objdesign-of-var-to-read-var
+                   expr-fix-when-exprp
+                   exprp-of-expr-memberp->target
+                   expr-valuep-of-expr-value
+                   expr-value->value-of-expr-value
+                   value-fix-when-valuep
+                   objdesign-of-var-when-valuep-of-read-var)
+                 :expand
+                 ((exec-expr-pure (expr-memberp->target (expr-binary->arg1 e))
+                                  compst))
                  :use
                  (:instance
                   ,writer-return-thm

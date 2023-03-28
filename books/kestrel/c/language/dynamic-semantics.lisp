@@ -1198,9 +1198,9 @@
               (mem (expr-memberp->name left))
               ((unless (expr-case str :ident))
                (error (list :expr-asg-memberp-not-var left)))
-              (var (expr-ident->get str))
-              (ptr (read-var var compst))
-              ((when (errorp ptr)) ptr)
+              (eval (exec-expr-pure str compst))
+              ((when (errorp eval)) eval)
+              (ptr (expr-value->value eval))
               ((unless (value-case ptr :pointer))
                (error (list :mistype-struct
                             :required :pointer
