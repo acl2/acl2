@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -341,7 +341,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section
+   (xdoc::section
     "Solution Determination"
 
     (xdoc::p
@@ -351,7 +351,7 @@
       If no solution is found, the transformation fails
       with an informative error message.")
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Rewriting"
 
      (xdoc::p
@@ -471,7 +471,7 @@
        but the formulation used is more convenient
        for generating the proof of @('old-if-new')."))
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Manual"
 
      (xdoc::p
