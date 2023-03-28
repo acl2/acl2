@@ -1339,6 +1339,9 @@ from the ACL2 loop or within the raw Lisp break:</p>
  (defconsts *my-stack* (fgl::interp-st-extract-stack fgl::interp-st))
  ;; Or put it in a state global, accessed as (@ :my-stack):
  (f-put-global ':my-stack (fgl::interp-st-extract-stack fgl::interp-st) state)
+ ;; The following macro does the same as the call above:
+ (fgl::save-fgl-stack :to :my-stack)
+
 
  ;; From within a raw Lisp break, save the stack as a defparameter:
  (defparameter *my-stack* (fgl::interp-st-extract-stack (cdr (assoc 'fgl::interp-st *user-stobj-alist*)))
