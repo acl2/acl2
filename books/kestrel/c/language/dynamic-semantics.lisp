@@ -1200,6 +1200,8 @@
                (error (list :expr-asg-memberp-not-var left)))
               (eval (exec-expr-pure str compst))
               ((when (errorp eval)) eval)
+              (eval (apconvert-expr-value eval))
+              ((when (errorp eval)) eval)
               (ptr (expr-value->value eval))
               ((unless (value-case ptr :pointer))
                (error (list :mistype-struct
